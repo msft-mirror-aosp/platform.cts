@@ -514,6 +514,40 @@ public class ExternalStorageHostTest extends BaseHostJUnit4Test {
         }
     }
 
+
+    @Test
+    public void testGrantUriPermission() throws Exception {
+        doGrantUriPermission(MEDIA, "testGrantUriPermission", new String[]{});
+        doGrantUriPermission(MEDIA, "testGrantUriPermission",
+                new String[]{PERM_READ_EXTERNAL_STORAGE});
+        doGrantUriPermission(MEDIA, "testGrantUriPermission",
+                new String[]{PERM_READ_EXTERNAL_STORAGE, PERM_WRITE_EXTERNAL_STORAGE});
+    }
+
+    @Test
+    public void testGrantUriPermission29() throws Exception {
+        doGrantUriPermission(MEDIA_29, "testGrantUriPermission", new String[]{});
+        doGrantUriPermission(MEDIA_29, "testGrantUriPermission",
+                new String[]{PERM_READ_EXTERNAL_STORAGE});
+        doGrantUriPermission(MEDIA_29, "testGrantUriPermission",
+                new String[]{PERM_READ_EXTERNAL_STORAGE, PERM_WRITE_EXTERNAL_STORAGE});
+    }
+
+    private void doGrantUriPermission(Config config, String method, String[] grantPermissions)
+            throws Exception {
+        uninstallPackage(config.apk);
+        installPackage(config.apk);
+        for (int user : mUsers) {
+            // Over revoke all permissions and grant necessary permissions later.
+            updatePermissions(config.pkg, user, new String[] {
+                    PERM_READ_EXTERNAL_STORAGE,
+                    PERM_WRITE_EXTERNAL_STORAGE,
+            }, false);
+            updatePermissions(config.pkg, user, grantPermissions, true);
+            runDeviceTests(config.pkg, config.clazz, method, user);
+        }
+    }
+
     @Test
     public void testMediaNone() throws Exception {
         doMediaNone(MEDIA);

@@ -62,10 +62,12 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
     private HostsideMainlineModuleDetector mainlineModuleDetector = new HostsideMainlineModuleDetector(this);
 
     @Rule public TestName testName = new TestName();
+    @Rule public PocPusher pocPusher = new PocPusher();
 
     private static Map<ITestDevice, IBuildInfo> sBuildInfo = new HashMap<>();
     private static Map<ITestDevice, IAbi> sAbi = new HashMap<>();
     private static Map<ITestDevice, String> sTestName = new HashMap<>();
+    private static Map<ITestDevice, PocPusher> sPocPusher = new HashMap<>();
 
     /**
      * Waits for device to be online, marks the most recent boottime of the device
@@ -82,6 +84,9 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
         sBuildInfo.put(getDevice(), getBuild());
         sAbi.put(getDevice(), getAbi());
         sTestName.put(getDevice(), testName.getMethodName());
+
+        pocPusher.setDevice(getDevice()).setBuild(getBuild()).setAbi(getAbi());
+        sPocPusher.put(getDevice(), pocPusher);
     }
 
     /**
@@ -133,6 +138,10 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
 
     public static String getTestName(ITestDevice device) {
         return sTestName.get(device);
+    }
+
+    public static PocPusher getPocPusher(ITestDevice device) {
+        return sPocPusher.get(device);
     }
 
     // TODO convert existing assertMatches*() to RegexUtils.assertMatches*()
@@ -258,7 +267,15 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
     }
 
     private long getDeviceUptime() throws DeviceNotAvailableException {
-        String uptime = getDevice().executeShellCommand("cat /proc/uptime");
+        String uptime = null;
+        int attempts = 5;
+        do {
+            if (attempts-- <= 0) {
+                throw new RuntimeException("could not get device uptime");
+            }
+            getDevice().waitForDeviceAvailable();
+            uptime = getDevice().executeShellCommand("cat /proc/uptime").trim();
+        } while (uptime.isEmpty());
         return Long.parseLong(uptime.substring(0, uptime.indexOf('.')));
     }
 

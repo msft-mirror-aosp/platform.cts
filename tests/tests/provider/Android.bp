@@ -9,7 +9,8 @@ android_test {
         "cts",
         "vts10",
         "general-tests",
-	"mts",
+        "mts",
+        "sts",
     ],
 
     libs: [
@@ -20,6 +21,7 @@ android_test {
     ],
 
     static_libs: [
+        "androidx.test.core",
         "androidx.slice_slice-core",
         "androidx.slice_slice-view",
         "compatibility-device-util-axt",

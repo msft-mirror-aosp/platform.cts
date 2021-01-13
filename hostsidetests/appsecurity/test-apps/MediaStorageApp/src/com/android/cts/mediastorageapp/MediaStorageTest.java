@@ -212,6 +212,47 @@ public class MediaStorageTest {
         }
     }
 
+    /**
+     * Test prefix and non-prefix uri grant for all packages
+     */
+    @Test
+    public void testGrantUriPermission() {
+        final int flagGrantRead = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+        final int flagGrantWrite = Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        final int flagGrantReadPrefix =
+                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION;
+        final int flagGrantWritePrefix =
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION;
+
+        for (Uri uri : new Uri[] {
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        }) {
+            // Non-prefix grant
+            checkGrantUriPermission(uri, flagGrantRead, true);
+            checkGrantUriPermission(uri, flagGrantWrite, true);
+
+            // Prefix grant
+            checkGrantUriPermission(uri, flagGrantReadPrefix, false);
+            checkGrantUriPermission(uri, flagGrantWritePrefix, false);
+        }
+    }
+
+    private void checkGrantUriPermission(Uri uri, int mode, boolean isGrantAllowed) {
+        if (isGrantAllowed) {
+            mContext.grantUriPermission(mContext.getPackageName(), uri, mode);
+        } else {
+            try {
+                mContext.grantUriPermission(mContext.getPackageName(), uri, mode);
+                fail("Expected granting to be blocked for flag 0x" + Integer.toHexString(mode));
+            } catch (SecurityException expected) {
+            }
+        }
+    }
+
     @Test
     public void testMediaRead() throws Exception {
         doMediaRead(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, MediaStorageTest::createAudio);
@@ -367,6 +408,8 @@ public class MediaStorageTest {
         doMediaEscalation_RequestWrite(MediaStorageTest::createAudio);
         doMediaEscalation_RequestWrite(MediaStorageTest::createVideo);
         doMediaEscalation_RequestWrite(MediaStorageTest::createImage);
+        doMediaEscalation_RequestWrite(MediaStorageTest::createPlaylist);
+        doMediaEscalation_RequestWrite(MediaStorageTest::createSubtitle);
     }
 
     private void doMediaEscalation_RequestWrite(Callable<Uri> create) throws Exception {
@@ -375,7 +418,7 @@ public class MediaStorageTest {
 
         try (ParcelFileDescriptor pfd = mContentResolver.openFileDescriptor(red, "w")) {
             fail("Expected write access to be blocked");
-        } catch (RecoverableSecurityException expected) {
+        } catch (SecurityException expected) {
         }
 
         doEscalation(MediaStore.createWriteRequest(mContentResolver, Arrays.asList(red)));
@@ -389,6 +432,8 @@ public class MediaStorageTest {
         doMediaEscalation_RequestTrash(MediaStorageTest::createAudio);
         doMediaEscalation_RequestTrash(MediaStorageTest::createVideo);
         doMediaEscalation_RequestTrash(MediaStorageTest::createImage);
+        doMediaEscalation_RequestTrash(MediaStorageTest::createPlaylist);
+        doMediaEscalation_RequestTrash(MediaStorageTest::createSubtitle);
     }
 
     private void doMediaEscalation_RequestTrash(Callable<Uri> create) throws Exception {
@@ -407,6 +452,8 @@ public class MediaStorageTest {
         doMediaEscalation_RequestFavorite(MediaStorageTest::createAudio);
         doMediaEscalation_RequestFavorite(MediaStorageTest::createVideo);
         doMediaEscalation_RequestFavorite(MediaStorageTest::createImage);
+        doMediaEscalation_RequestFavorite(MediaStorageTest::createPlaylist);
+        doMediaEscalation_RequestFavorite(MediaStorageTest::createSubtitle);
     }
 
     private void doMediaEscalation_RequestFavorite(Callable<Uri> create) throws Exception {
@@ -425,6 +472,8 @@ public class MediaStorageTest {
         doMediaEscalation_RequestDelete(MediaStorageTest::createAudio);
         doMediaEscalation_RequestDelete(MediaStorageTest::createVideo);
         doMediaEscalation_RequestDelete(MediaStorageTest::createImage);
+        doMediaEscalation_RequestDelete(MediaStorageTest::createPlaylist);
+        doMediaEscalation_RequestDelete(MediaStorageTest::createSubtitle);
     }
 
     private void doMediaEscalation_RequestDelete(Callable<Uri> create) throws Exception {
@@ -514,6 +563,33 @@ public class MediaStorageTest {
             try (OutputStream out = session.openOutputStream()) {
                 final Bitmap bitmap = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888);
                 bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
+            }
+            return session.publish();
+        }
+    }
+
+    private static Uri createPlaylist() throws IOException {
+        final Context context = InstrumentationRegistry.getTargetContext();
+        final String displayName = "cts" + System.nanoTime();
+        final PendingParams params = new PendingParams(
+                MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, displayName, "audio/mpegurl");
+        final Uri pendingUri = MediaStoreUtils.createPending(context, params);
+        try (PendingSession session = MediaStoreUtils.openPending(context, pendingUri)) {
+            return session.publish();
+        }
+    }
+
+    private static Uri createSubtitle() throws IOException {
+        final Context context = InstrumentationRegistry.getTargetContext();
+        final String displayName = "cts" + System.nanoTime();
+        final PendingParams params = new PendingParams(
+                MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), displayName,
+                "application/x-subrip");
+        final Uri pendingUri = MediaStoreUtils.createPending(context, params);
+        try (PendingSession session = MediaStoreUtils.openPending(context, pendingUri)) {
+            try (InputStream in = context.getResources().getAssets().open("testmp3.mp3");
+                 OutputStream out = session.openOutputStream()) {
+                 FileUtils.copy(in, out);
             }
             return session.publish();
         }

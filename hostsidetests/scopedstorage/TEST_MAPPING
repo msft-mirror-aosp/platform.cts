@@ -1,10 +1,16 @@
 {
   "presubmit": [
     {
+      "name": "CtsScopedStorageCoreHostTest"
+    },
+    {
       "name": "CtsScopedStorageHostTest"
     },
     {
       "name": "CtsScopedStoragePublicVolumeHostTest"
+    },
+    {
+      "name": "CtsScopedStorageDeviceOnlyTest"
     }
   ]
 }

@@ -41,7 +41,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -62,7 +61,6 @@ import com.google.common.io.ByteStreams;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -70,6 +68,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -83,11 +82,16 @@ public class TestUtils {
 
     public static final String QUERY_TYPE = "android.scopedstorage.cts.queryType";
     public static final String INTENT_EXTRA_PATH = "android.scopedstorage.cts.path";
+    public static final String INTENT_EXTRA_CALLING_PKG = "android.scopedstorage.cts.calling_pkg";
     public static final String INTENT_EXCEPTION = "android.scopedstorage.cts.exception";
     public static final String CREATE_FILE_QUERY = "android.scopedstorage.cts.createfile";
     public static final String CREATE_IMAGE_ENTRY_QUERY =
             "android.scopedstorage.cts.createimageentry";
     public static final String DELETE_FILE_QUERY = "android.scopedstorage.cts.deletefile";
+    public static final String CAN_OPEN_FILE_FOR_READ_QUERY =
+            "android.scopedstorage.cts.can_openfile_read";
+    public static final String CAN_OPEN_FILE_FOR_WRITE_QUERY =
+            "android.scopedstorage.cts.can_openfile_write";
     public static final String OPEN_FILE_FOR_READ_QUERY =
             "android.scopedstorage.cts.openfile_read";
     public static final String OPEN_FILE_FOR_WRITE_QUERY =
@@ -120,6 +124,7 @@ public class TestUtils {
     public static void setupDefaultDirectories() {
         for (File dir : getDefaultTopLevelDirs()) {
             dir.mkdir();
+            assertThat(dir.exists()).isTrue();
         }
     }
 
@@ -131,10 +136,14 @@ public class TestUtils {
         uiAutomation.adoptShellPermissionIdentity("android.permission.GRANT_RUNTIME_PERMISSIONS");
         try {
             uiAutomation.grantRuntimePermission(packageName, permission);
-            // Wait for OP_READ_EXTERNAL_STORAGE to get updated.
-            SystemClock.sleep(1000);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
+        }
+        try {
+            pollForPermission(packageName, permission, true);
+        } catch (Exception e) {
+            fail("Exception on polling for permission grant for " + packageName + " for "
+                    + permission + ": " + e.getMessage());
         }
     }
 
@@ -148,6 +157,12 @@ public class TestUtils {
             uiAutomation.revokeRuntimePermission(packageName, permission);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
+        }
+        try {
+            pollForPermission(packageName, permission, false);
+        } catch (Exception e) {
+            fail("Exception on polling for permission revoke for " + packageName + " for "
+                    + permission + ": " + e.getMessage());
         }
     }
 
@@ -170,7 +185,8 @@ public class TestUtils {
     /**
      * Executes a shell command.
      */
-    public static String executeShellCommand(String command) throws IOException {
+    public static String executeShellCommand(String pattern, Object...args) throws IOException {
+        String command = String.format(pattern, args);
         int attempt = 0;
         while (attempt++ < 5) {
             try {
@@ -267,9 +283,10 @@ public class TestUtils {
      *
      * <p>This method drops shell permission identity.
      */
-    public static boolean openFileAs(TestApp testApp, File file, boolean forWrite)
+    public static boolean canOpenFileAs(TestApp testApp, File file, boolean forWrite)
             throws Exception {
-        return openFileAs(testApp, file.getAbsolutePath(), forWrite);
+        String actionName = forWrite ? CAN_OPEN_FILE_FOR_WRITE_QUERY : CAN_OPEN_FILE_FOR_READ_QUERY;
+        return getResultFromTestApp(testApp, file.getPath(), actionName);
     }
 
     /**
@@ -277,10 +294,11 @@ public class TestUtils {
      *
      * <p>This method drops shell permission identity.
      */
-    public static boolean openFileAs(TestApp testApp, String path, boolean forWrite)
+    public static ParcelFileDescriptor openFileAs(TestApp testApp, File file, boolean forWrite)
             throws Exception {
-        return getResultFromTestApp(
-                testApp, path, forWrite ? OPEN_FILE_FOR_WRITE_QUERY : OPEN_FILE_FOR_READ_QUERY);
+        String actionName = forWrite ? OPEN_FILE_FOR_WRITE_QUERY : OPEN_FILE_FOR_READ_QUERY;
+        String mode = forWrite ? "rw" : "r";
+        return getPfdFromTestApp(testApp, file, actionName, mode);
     }
 
     /**
@@ -317,7 +335,7 @@ public class TestUtils {
             final String packageName = testApp.getPackageName();
             uiAutomation.adoptShellPermissionIdentity(
                     Manifest.permission.INSTALL_PACKAGES, Manifest.permission.DELETE_PACKAGES);
-            if (InstallUtils.getInstalledVersion(packageName) != -1) {
+            if (isAppInstalled(testApp)) {
                 Uninstall.packages(packageName);
             }
             Install.single(testApp).commit();
@@ -328,6 +346,10 @@ public class TestUtils {
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    public static boolean isAppInstalled(TestApp testApp) {
+        return InstallUtils.getInstalledVersion(testApp.getPackageName()) != -1;
     }
 
     /**
@@ -566,6 +588,29 @@ public class TestUtils {
     }
 
     /**
+     * Opens the given file via file path
+     */
+    @NonNull
+    public static ParcelFileDescriptor openWithFilePath(File file, boolean forWrite)
+            throws IOException {
+        return ParcelFileDescriptor.open(file,
+                forWrite
+                ? ParcelFileDescriptor.MODE_READ_WRITE : ParcelFileDescriptor.MODE_READ_ONLY);
+    }
+
+    /**
+     * Returns whether we can open the file.
+     */
+    public static boolean canOpen(File file, boolean forWrite) {
+        try {
+            openWithFilePath(file, forWrite);
+            return true;
+        } catch (IOException expected) {
+            return false;
+        }
+    }
+
+    /**
      * Asserts the given operation throws an exception of type {@code T}.
      */
     public static <T extends Exception> void assertThrows(Class<T> clazz, Operation<Exception> r)
@@ -680,25 +725,6 @@ public class TestUtils {
     }
 
     /**
-     * Returns whether we can open the file.
-     */
-    public static boolean canOpen(File file, boolean forWrite) {
-        if (forWrite) {
-            try (FileOutputStream fis = new FileOutputStream(file)) {
-                return true;
-            } catch (IOException expected) {
-                return false;
-            }
-        } else {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                return true;
-            } catch (IOException expected) {
-                return false;
-            }
-        }
-    }
-
-    /**
      * Polls for external storage to be mounted.
      */
     public static void pollForExternalStorageState() throws Exception {
@@ -715,6 +741,48 @@ public class TestUtils {
         pollForCondition(() -> granted == checkPermissionAndAppOp(perm),
                 "Timed out while waiting for permission " + perm + " to be "
                         + (granted ? "granted" : "revoked"));
+    }
+
+    /**
+     * Polls until {@code app} is granted or denied the given permission.
+     */
+    public static void pollForPermission(TestApp app, String perm, boolean granted)
+            throws Exception {
+        pollForPermission(app.getPackageName(), perm, granted);
+    }
+
+    /**
+     * Polls until {@code packageName} is granted or denied the given permission.
+     */
+    public static void pollForPermission(String packageName, String perm, boolean granted)
+            throws Exception {
+        pollForCondition(
+                () -> granted == checkPermission(packageName, perm),
+                "Timed out while waiting for permission " + perm + " to be "
+                        + (granted ? "granted" : "revoked"));
+    }
+
+    /**
+     * Returns true iff {@code packageName} is granted a given permission.
+     */
+    public static boolean checkPermission(String packageName, String perm) {
+        try {
+            int uid = getContext().getPackageManager().getPackageUid(packageName, 0);
+
+            Optional<ActivityManager.RunningAppProcessInfo> process = getAppProcessInfo(
+                    packageName);
+            int pid = process.isPresent() ? process.get().pid : -1;
+            return checkPermissionAndAppOp(perm, packageName, pid, uid);
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns true iff {@code app} is granted a given permission.
+     */
+    public static boolean checkPermission(TestApp app, String perm) {
+        return checkPermission(app.getPackageName(), perm);
     }
 
     /**
@@ -772,6 +840,20 @@ public class TestUtils {
     public static void resetDefaultExternalStorageVolume() {
         sStorageVolumeName = MediaStore.VOLUME_EXTERNAL;
         sExternalStorageDirectory = Environment.getExternalStorageDirectory();
+    }
+
+    /**
+     * Asserts the default volume used in helper methods is the primary volume.
+     */
+    public static void assertDefaultVolumeIsPrimary() {
+        assertVolumeType(true /* isPrimary */);
+    }
+
+    /**
+     * Asserts the default volume used in helper methods is a public volume.
+     */
+    public static void assertDefaultVolumeIsPublic() {
+        assertVolumeType(false /* isPrimary */);
     }
 
     /**
@@ -882,8 +964,16 @@ public class TestUtils {
     private static boolean checkPermissionAndAppOp(String permission) {
         final int pid = Os.getpid();
         final int uid = Os.getuid();
+        final String packageName = getContext().getPackageName();
+        return checkPermissionAndAppOp(permission, packageName, pid, uid);
+    }
+
+    /**
+     * Checks if the given {@code permission} is granted and corresponding AppOp is MODE_ALLOWED.
+     */
+    private static boolean checkPermissionAndAppOp(String permission, String packageName, int pid,
+            int uid) {
         final Context context = getContext();
-        final String packageName = context.getPackageName();
         if (context.checkPermission(permission, pid, uid) != PackageManager.PERMISSION_GRANTED) {
             return false;
         }
@@ -913,7 +1003,9 @@ public class TestUtils {
             uiAutomation.adoptShellPermissionIdentity(Manifest.permission.FORCE_STOP_PACKAGES);
 
             getContext().getSystemService(ActivityManager.class).forceStopPackage(packageName);
-            Thread.sleep(1000);
+            pollForCondition(() -> {
+                return !isProcessRunning(packageName);
+            }, "Timed out while waiting for " + packageName + " to be stopped");
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -938,6 +1030,7 @@ public class TestUtils {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(QUERY_TYPE, actionName);
         intent.putExtra(INTENT_EXTRA_PATH, dirPath);
+        intent.putExtra(INTENT_EXTRA_CALLING_PKG, getContext().getPackageName());
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         getContext().startActivity(intent);
         if (!latch.await(POLLING_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
@@ -955,28 +1048,8 @@ public class TestUtils {
      */
     private static HashMap<String, String> getMetadataFromTestApp(
             TestApp testApp, String dirPath, String actionName) throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final HashMap<String, String> appOutputList = new HashMap<>();
-        final Exception[] exception = new Exception[1];
-        exception[0] = null;
-        final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.hasExtra(INTENT_EXCEPTION)) {
-                    exception[0] = (Exception) (intent.getExtras().get(INTENT_EXCEPTION));
-                } else if (intent.hasExtra(actionName)) {
-                    HashMap<String, String> res =
-                            (HashMap<String, String>) intent.getExtras().get(actionName);
-                    appOutputList.putAll(res);
-                }
-                latch.countDown();
-            }
-        };
-        sendIntentToTestApp(testApp, dirPath, actionName, broadcastReceiver, latch);
-        if (exception[0] != null) {
-            throw exception[0];
-        }
-        return appOutputList;
+        Bundle bundle = getFromTestApp(testApp, dirPath, actionName);
+        return (HashMap<String, String>) bundle.get(actionName);
     }
 
     /**
@@ -984,27 +1057,8 @@ public class TestUtils {
      */
     private static ArrayList<String> getContentsFromTestApp(
             TestApp testApp, String dirPath, String actionName) throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final ArrayList<String> appOutputList = new ArrayList<String>();
-        final Exception[] exception = new Exception[1];
-        exception[0] = null;
-        final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.hasExtra(INTENT_EXCEPTION)) {
-                    exception[0] = (Exception) (intent.getSerializableExtra(INTENT_EXCEPTION));
-                } else if (intent.hasExtra(actionName)) {
-                    appOutputList.addAll(intent.getStringArrayListExtra(actionName));
-                }
-                latch.countDown();
-            }
-        };
-
-        sendIntentToTestApp(testApp, dirPath, actionName, broadcastReceiver, latch);
-        if (exception[0] != null) {
-            throw exception[0];
-        }
-        return appOutputList;
+        Bundle bundle = getFromTestApp(testApp, dirPath, actionName);
+        return bundle.getStringArrayList(actionName);
     }
 
     /**
@@ -1012,8 +1066,23 @@ public class TestUtils {
      */
     private static boolean getResultFromTestApp(TestApp testApp, String dirPath, String actionName)
             throws Exception {
+        Bundle bundle = getFromTestApp(testApp, dirPath, actionName);
+        return bundle.getBoolean(actionName, false);
+    }
+
+    private static ParcelFileDescriptor getPfdFromTestApp(TestApp testApp, File dirPath,
+            String actionName, String mode) throws Exception {
+        Bundle bundle = getFromTestApp(testApp, dirPath.getPath(), actionName);
+        return getContentResolver().openFileDescriptor(bundle.getParcelable(actionName), mode);
+    }
+
+    /**
+     * <p>This method drops shell permission identity.
+     */
+    private static Bundle getFromTestApp(TestApp testApp, String dirPath, String actionName)
+            throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        final boolean[] appOutput = new boolean[1];
+        final Bundle[] bundle = new Bundle[1];
         final Exception[] exception = new Exception[1];
         exception[0] = null;
         BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -1021,8 +1090,8 @@ public class TestUtils {
             public void onReceive(Context context, Intent intent) {
                 if (intent.hasExtra(INTENT_EXCEPTION)) {
                     exception[0] = (Exception) (intent.getSerializableExtra(INTENT_EXCEPTION));
-                } else if (intent.hasExtra(actionName)) {
-                    appOutput[0] = intent.getBooleanExtra(actionName, false);
+                } else {
+                    bundle[0] = intent.getExtras();
                 }
                 latch.countDown();
             }
@@ -1032,7 +1101,7 @@ public class TestUtils {
         if (exception[0] != null) {
             throw exception[0];
         }
-        return appOutput[0];
+        return bundle[0];
     }
 
     /**
@@ -1109,19 +1178,22 @@ public class TestUtils {
     }
 
     /**
-     * Gets the name of the public volume.
+     * Gets the name of the public volume, waiting for a bit for it to be available.
      */
     public static String getPublicVolumeName() throws Exception {
         final String[] volName = new String[1];
         pollForCondition(() -> {
-            volName[0] = getPublicVolumeNameInternal();
+            volName[0] = getCurrentPublicVolumeName();
             return volName[0] != null;
         }, "Timed out while waiting for public volume to be ready");
 
         return volName[0];
     }
 
-    private static String getPublicVolumeNameInternal() {
+    /**
+     * @return the currently mounted public volume, if any.
+     */
+    public static String getCurrentPublicVolumeName() {
         final String[] allVolumeDetails;
         try {
             allVolumeDetails = executeShellCommand("sm list-volumes")
@@ -1168,5 +1240,27 @@ public class TestUtils {
         pollForCondition(
                 () -> Environment.isExternalStorageManager(),
                 "Timed out while waiting for MANAGE_EXTERNAL_STORAGE");
+    }
+
+    private static void assertVolumeType(boolean isPrimary) {
+        String[] parts = getExternalFilesDir().getAbsolutePath().split("/");
+        assertThat(parts.length).isAtLeast(3);
+        assertThat(parts[1]).isEqualTo("storage");
+        if (isPrimary) {
+            assertThat(parts[2]).isEqualTo("emulated");
+        } else {
+            assertThat(parts[2]).isNotEqualTo("emulated");
+        }
+    }
+
+    private static boolean isProcessRunning(String packageName) {
+        return getAppProcessInfo(packageName).isPresent();
+    }
+
+    private static Optional<ActivityManager.RunningAppProcessInfo> getAppProcessInfo(
+            String packageName) {
+        return getContext().getSystemService(
+                ActivityManager.class).getRunningAppProcesses().stream().filter(
+                        p -> packageName.equals(p.processName)).findFirst();
     }
 }
