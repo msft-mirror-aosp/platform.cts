@@ -21,6 +21,7 @@ import java.util.Map;
 
 public enum CecOperand {
     FEATURE_ABORT(0x00),
+    IMAGE_VIEW_ON(0x04),
     TEXT_VIEW_ON(0x0d),
     SET_MENU_LANGUAGE(0x32),
     STANDBY(0x36),
@@ -50,8 +51,11 @@ public enum CecOperand {
     GET_CEC_VERSION(0x9f),
     REPORT_SHORT_AUDIO_DESCRIPTOR(0xa3),
     REQUEST_SHORT_AUDIO_DESCRIPTOR(0xa4),
+    GIVE_FEATURES(0xa5),
+    REPORT_FEATURES(0xa6),
     INITIATE_ARC(0xc0),
     ARC_INITIATED(0xc1),
+    ARC_TERMINATED(0xc2),
     REQUEST_ARC_INITIATION(0xc3),
     REQUEST_ARC_TERMINATION(0xc4),
     TERMINATE_ARC(0xc5),

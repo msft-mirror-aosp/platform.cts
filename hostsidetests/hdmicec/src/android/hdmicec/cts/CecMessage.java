@@ -16,24 +16,14 @@
 
 package android.hdmicec.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CecMessage {
 
     private static final int HEXADECIMAL_RADIX = 16;
-
-    /** Gets the hexadecimal ASCII character values of a string. */
-    public static String getHexAsciiString(String string) {
-        String asciiString = "";
-        byte[] ascii = string.trim().getBytes();
-
-        for (byte b : ascii) {
-            asciiString.concat(Integer.toHexString(b));
-        }
-
-        return asciiString;
-    }
 
     public static String formatParams(String rawParams) {
         StringBuilder params = new StringBuilder("");
@@ -146,6 +136,12 @@ public class CecMessage {
             params.append(String.format(":%02x", (int) rawParams.charAt(i)));
         }
         return params.toString();
+    }
+
+    /** Assert for the DUT's physical address with the value passed from command line argument. */
+    public static void assertPhysicalAddressValid(String message, int expectedPhysicalAddress) {
+        int physicalAddress = getParams(message, HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH);
+        assertThat(physicalAddress).isEqualTo(expectedPhysicalAddress);
     }
 
     private static String getNibbles(String message) {

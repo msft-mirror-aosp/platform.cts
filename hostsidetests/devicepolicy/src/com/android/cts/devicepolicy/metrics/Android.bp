@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 java_library_host {
     name: "device-policy-log-verifier-util",
     srcs: ["*.java"],
     libs: [
         "tradefed",
+    ],
+    static_libs: [
+        "cts-statsd-atom-host-test-utils",
     ],
 }

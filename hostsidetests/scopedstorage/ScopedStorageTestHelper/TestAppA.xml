@@ -19,10 +19,12 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
+    <uses-sdk android:minSdkVersion="30" />
+
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application android:label="TestAppA">
-        <activity android:name="android.scopedstorage.cts.ScopedStorageTestHelper">
+        <activity android:name="android.scopedstorage.cts.ScopedStorageTestHelper" android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT"/>

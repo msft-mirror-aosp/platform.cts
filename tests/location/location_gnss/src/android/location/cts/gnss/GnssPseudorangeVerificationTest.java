@@ -27,7 +27,6 @@ import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.location.cts.gnss.pseudorange.PseudorangePositionVelocityFromRealTimeEvents;
-import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
@@ -110,10 +109,13 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
   @CddTest(requirement="7.3.3")
   public void testPseudorangeValue() throws Exception {
     // Checks if Gnss hardware feature is present, skips test (pass) if not
-    if (!TestMeasurementUtil.canTestRunOnCurrentDevice(Build.VERSION_CODES.N,
-          mTestLocationManager,
-          TAG)) {
+    if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
       return;
+    }
+
+    if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
+        Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
+        return;
     }
 
     mLocationListener = new TestLocationListener(LOCATION_TO_COLLECT_COUNT);
@@ -133,11 +135,6 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         success);
 
     Log.i(TAG, "Location status received = " + mLocationListener.isLocationReceived());
-
-    if (!mMeasurementListener.verifyStatus()) {
-      // If verifyStatus returns false, an assert exception happens and test fails.
-      return; // exit (with pass)
-    }
 
     List<GnssMeasurementsEvent> events = mMeasurementListener.getEvents();
     int eventCount = events.size();
@@ -256,9 +253,12 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
     @RequiresDevice  // emulated devices do not support real measurements so far.
     public void testPseudoPosition() throws Exception {
         // Checks if Gnss hardware feature is present, skips test (pass) if not
-        if (!TestMeasurementUtil.canTestRunOnCurrentDevice(Build.VERSION_CODES.N,
-                mTestLocationManager,
-                TAG)) {
+        if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
+            return;
+        }
+
+        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
+            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
             return;
         }
 

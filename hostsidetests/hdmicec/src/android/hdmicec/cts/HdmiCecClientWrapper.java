@@ -16,26 +16,29 @@
 
 package android.hdmicec.cts;
 
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
+
+import org.junit.rules.ExternalResource;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import org.junit.rules.ExternalResource;
 
 /** Class that helps communicate with the cec-client */
 public final class HdmiCecClientWrapper extends ExternalResource {
 
-    private static final String CEC_CONSOLE_READY = "waiting for input";
     private static final int MILLISECONDS_TO_READY = 10000;
     private static final int DEFAULT_TIMEOUT = 20000;
     private static final int BUFFER_SIZE = 1024;
@@ -45,52 +48,118 @@ public final class HdmiCecClientWrapper extends ExternalResource {
     private BufferedReader mInputConsole;
     private boolean mCecClientInitialised = false;
 
-    private LogicalAddress targetDevice;
+    private LogicalAddress selfDevice = LogicalAddress.RECORDER_1;
+    private LogicalAddress targetDevice = LogicalAddress.UNKNOWN;
     private String clientParams[];
+    private StringBuilder sendVendorCommand = new StringBuilder("cmd hdmi_control vendorcommand ");
+    private int physicalAddress = 0xFFFF;
 
-    public HdmiCecClientWrapper(LogicalAddress targetDevice, String ...clientParams) {
-        this.targetDevice = targetDevice;
+    private static final String CEC_PORT_BUSY = "unable to open the device on port";
+
+    public HdmiCecClientWrapper(String ...clientParams) {
         this.clientParams = clientParams;
     }
 
     @Override
-    protected void before() throws Throwable {
-        this.init();
-    };
-
-    @Override
     protected void after() {
         this.killCecProcess();
-    };
+    }
+
+    void setTargetLogicalAddress(LogicalAddress dutLogicalAddress) {
+        targetDevice = dutLogicalAddress;
+    }
+
+    public List<String> getValidCecClientPorts() throws Exception {
+
+        List<String> listPortsCommand = new ArrayList();
+
+        listPortsCommand.add("cec-client");
+        listPortsCommand.add("-l");
+
+        List<String> comPorts = new ArrayList();
+        Process cecClient = RunUtil.getDefault().runCmdInBackground(listPortsCommand);
+        BufferedReader inputConsole =
+                new BufferedReader(new InputStreamReader(cecClient.getInputStream()));
+        while (cecClient.isAlive()) {
+            if (inputConsole.ready()) {
+                String line = inputConsole.readLine();
+                if (line.toLowerCase().contains("com port")) {
+                    String port = line.split(":")[1].trim();
+                    comPorts.add(port);
+                }
+            }
+        }
+        inputConsole.close();
+        cecClient.waitFor();
+
+        return comPorts;
+    }
+
+    boolean initValidCecClient(ITestDevice device, List<String> clientCommands) throws Exception {
+        String serialNo = device.getProperty("ro.serialno");
+        File mDeviceEntry = new File(HdmiCecConstants.CEC_MAP_FOLDER, serialNo);
+        List<String> launchCommand = new ArrayList(clientCommands);
+        try (BufferedReader reader = new BufferedReader(new FileReader(mDeviceEntry))) {
+            String port = reader.readLine();
+            launchCommand.add(port);
+            mCecClient = RunUtil.getDefault().runCmdInBackground(launchCommand);
+            mInputConsole = new BufferedReader(new InputStreamReader(mCecClient.getInputStream()));
+
+            /* Wait for the client to become ready */
+            if (checkConsoleOutput(
+                    CecClientMessage.CLIENT_CONSOLE_READY + "", MILLISECONDS_TO_READY)) {
+                        mOutputConsole =
+                                new BufferedWriter(
+                                        new OutputStreamWriter(mCecClient.getOutputStream()),
+                                        BUFFER_SIZE);
+                        return true;
+            } else {
+                CLog.e("Console did not get ready!");
+                /* Kill the unwanted cec-client process. */
+                Process killProcess = mCecClient.destroyForcibly();
+                killProcess.waitFor();
+            }
+        } catch (IOException ioe) {
+            throw new Exception("Could not open port mapping file");
+        }
+
+        return false;
+    }
 
     /** Initialise the client */
-    private void init() throws Exception {
+    void init(boolean startAsTv, ITestDevice device) throws Exception {
+        if (targetDevice == LogicalAddress.UNKNOWN) {
+            throw new IllegalStateException("Missing logical address of the target device.");
+        }
+
         List<String> commands = new ArrayList();
 
         commands.add("cec-client");
+
         /* "-p 2" starts the client as if it is connected to HDMI port 2, taking the physical
          * address 2.0.0.0 */
         commands.add("-p");
         commands.add("2");
-        /* "-t x" starts the client as a TV device */
-        commands.add("-t");
-        commands.add("x");
+        physicalAddress = 0x2000;
+        if (startAsTv) {
+            commands.add("-t");
+            commands.add("x");
+            selfDevice = LogicalAddress.TV;
+        }
+        /* "-d 15" set the log level to ERROR|WARNING|NOTICE|TRAFFIC */
+        commands.add("-d");
+        commands.add("15");
         commands.addAll(Arrays.asList(clientParams));
-
-        mCecClient = RunUtil.getDefault().runCmdInBackground(commands);
-        mInputConsole = new BufferedReader(new InputStreamReader(mCecClient.getInputStream()));
-
-        /* Wait for the client to become ready */
-        mCecClientInitialised = true;
-        if (checkConsoleOutput(CecClientMessage.CLIENT_CONSOLE_READY + "", MILLISECONDS_TO_READY)) {
-            mOutputConsole = new BufferedWriter(
-                                new OutputStreamWriter(mCecClient.getOutputStream()), BUFFER_SIZE);
-            return;
+        if (Arrays.asList(clientParams).contains("a")) {
+            selfDevice = LogicalAddress.AUDIO_SYSTEM;
         }
 
-        mCecClientInitialised = false;
+        mCecClientInitialised = true;
+        if (!initValidCecClient(device, commands)) {
+            mCecClientInitialised = false;
 
-        throw (new Exception("Could not initialise cec-client process"));
+            throw (new Exception("Could not initialise cec-client process"));
+        }
     }
 
     private void checkCecClient() throws Exception {
@@ -119,6 +188,15 @@ public final class HdmiCecClientWrapper extends ExternalResource {
     }
 
     /**
+     * Sends a CEC message from source device to the device passed in the constructor through the
+     * output console of the cec-communication channel with the appended params.
+     */
+    public void sendCecMessage(LogicalAddress source, CecOperand message, String params)
+            throws Exception {
+        sendCecMessage(source, targetDevice, message, params);
+    }
+
+    /**
      * Sends a CEC message from source device to a destination device through the output console of
      * the cec-communication channel.
      */
@@ -128,15 +206,86 @@ public final class HdmiCecClientWrapper extends ExternalResource {
     }
 
     /**
+     * Broadcasts a CEC ACTIVE_SOURCE message from client device source through the output console
+     * of the cec-communication channel.
+     */
+    public void broadcastActiveSource(LogicalAddress source) throws Exception {
+        int sourcePa = (source == selfDevice) ? physicalAddress : 0xFFFF;
+        sendCecMessage(
+                source,
+                LogicalAddress.BROADCAST,
+                CecOperand.ACTIVE_SOURCE,
+                CecMessage.formatParams(sourcePa, HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH));
+    }
+
+    /**
+     * Broadcasts a CEC ACTIVE_SOURCE message with physicalAddressOfActiveDevice from client device
+     * source through the output console of the cec-communication channel.
+     */
+    public void broadcastActiveSource(LogicalAddress source, int physicalAddressOfActiveDevice)
+            throws Exception {
+        sendCecMessage(
+                source,
+                LogicalAddress.BROADCAST,
+                CecOperand.ACTIVE_SOURCE,
+                CecMessage.formatParams(
+                        physicalAddressOfActiveDevice, HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH));
+    }
+
+    /**
+     * Broadcasts a CEC REPORT_PHYSICAL_ADDRESS message from client device source through the output
+     * console of the cec-communication channel.
+     */
+    public void broadcastReportPhysicalAddress(LogicalAddress source) throws Exception {
+        String deviceType = CecMessage.formatParams(source.getDeviceType());
+        int sourcePa = (source == selfDevice) ? physicalAddress : 0xFFFF;
+        String physicalAddress =
+                CecMessage.formatParams(sourcePa, HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH);
+        sendCecMessage(
+                source,
+                LogicalAddress.BROADCAST,
+                CecOperand.REPORT_PHYSICAL_ADDRESS,
+                physicalAddress + deviceType);
+    }
+
+    /**
+     * Broadcasts a CEC REPORT_PHYSICAL_ADDRESS message with physicalAddressToReport from client
+     * device source through the output console of the cec-communication channel.
+     */
+    public void broadcastReportPhysicalAddress(LogicalAddress source, int physicalAddressToReport)
+            throws Exception {
+        String deviceType = CecMessage.formatParams(source.getDeviceType());
+        String physicalAddress =
+                CecMessage.formatParams(
+                        physicalAddressToReport, HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH);
+        sendCecMessage(
+                source,
+                LogicalAddress.BROADCAST,
+                CecOperand.REPORT_PHYSICAL_ADDRESS,
+                physicalAddress + deviceType);
+    }
+
+    /**
      * Sends a CEC message from source device to a destination device through the output console of
      * the cec-communication channel with the appended params.
      */
     public void sendCecMessage(LogicalAddress source, LogicalAddress destination,
             CecOperand message, String params) throws Exception {
         checkCecClient();
-        mOutputConsole.write("tx " + source + destination + ":" + message + params);
+        String sendMessageString = "tx " + source + destination + ":" + message + params;
+        CLog.v("Sending CEC message: " + sendMessageString);
+        mOutputConsole.write(sendMessageString);
         mOutputConsole.newLine();
         mOutputConsole.flush();
+    }
+
+    /**
+     * Sends a <USER_CONTROL_PRESSED> and <USER_CONTROL_RELEASED> from source to device through the
+     * output console of the cec-communication channel with the mentioned keycode.
+     */
+    public void sendUserControlPressAndRelease(LogicalAddress source, int keycode, boolean holdKey)
+            throws Exception {
+        sendUserControlPressAndRelease(source, targetDevice, keycode, holdKey);
     }
 
     /**
@@ -195,10 +344,22 @@ public final class HdmiCecClientWrapper extends ExternalResource {
         sendUserControlPress(source, destination, secondKeycode, false);
     }
 
+    /** Sends a poll message to the device */
+    public void sendPoll() throws Exception {
+        sendPoll(targetDevice);
+    }
+
+    /** Sends a poll message to the destination */
+    public void sendPoll(LogicalAddress destination) throws Exception {
+        String command = CecClientMessage.POLL + " " + destination;
+        sendConsoleMessage(command);
+    }
+
+
     /** Sends a message to the output console of the cec-client */
     public void sendConsoleMessage(String message) throws Exception {
         checkCecClient();
-        CLog.v("Sending message:: " + message);
+        CLog.v("Sending console message:: " + message);
         mOutputConsole.write(message);
         mOutputConsole.flush();
     }
@@ -212,15 +373,24 @@ public final class HdmiCecClientWrapper extends ExternalResource {
     public boolean checkConsoleOutput(String expectedMessage,
                                        long timeoutMillis) throws Exception {
         checkCecClient();
+        return checkConsoleOutput(expectedMessage, timeoutMillis, mInputConsole);
+    }
+
+    /** Check for any string on the specified input console */
+    public boolean checkConsoleOutput(
+            String expectedMessage, long timeoutMillis, BufferedReader inputConsole)
+            throws Exception {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
 
         while ((endTime - startTime <= timeoutMillis)) {
-            if (mInputConsole.ready()) {
-                String line = mInputConsole.readLine();
-                if (line.contains(expectedMessage)) {
+            if (inputConsole.ready()) {
+                String line = inputConsole.readLine();
+                if (line != null && line.toLowerCase().contains(expectedMessage.toLowerCase())) {
                     CLog.v("Found " + expectedMessage + " in " + line);
                     return true;
+                } else if (line.toLowerCase().contains(CEC_PORT_BUSY.toLowerCase())) {
+                    throw new CecPortBusyException();
                 }
             }
             endTime = System.currentTimeMillis();
@@ -228,18 +398,22 @@ public final class HdmiCecClientWrapper extends ExternalResource {
         return false;
     }
 
-    /** Gets all the messages received from the given source device during a period of duration
-     * seconds.
+    /** Gets all the messages received from the given list of source devices during a period of
+     * duration seconds.
      */
-    public List<CecOperand> getAllMessages(LogicalAddress source, int duration) throws Exception {
+    public List<CecOperand> getAllMessages(List<LogicalAddress> sourceList, int duration)
+            throws Exception {
         List<CecOperand> receivedOperands = new ArrayList<>();
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
+
+        String source = sourceList.toString().replace(",", "").replace(" ", "");
+
         Pattern pattern = Pattern.compile("(.*>>)(.*?)" +
                 "(" + source + "\\p{XDigit}):(.*)",
             Pattern.CASE_INSENSITIVE);
 
-        while ((endTime - startTime <= duration)) {
+        while ((endTime - startTime <= (duration * 1000))) {
             if (mInputConsole.ready()) {
                 String line = mInputConsole.readLine();
                 if (pattern.matcher(line).matches()) {
@@ -254,6 +428,43 @@ public final class HdmiCecClientWrapper extends ExternalResource {
         return receivedOperands;
     }
 
+    /**
+     * Gets the list of logical addresses which receives messages with operand expectedMessage
+     * during a period of duration seconds.
+     */
+    public List<LogicalAddress> getAllDestLogicalAddresses(CecOperand expectedMessage, int duration)
+            throws Exception {
+        return getAllDestLogicalAddresses(expectedMessage, "", duration);
+    }
+
+    /**
+     * Gets the list of logical addresses which receives messages with operand expectedMessage and
+     * params during a period of duration seconds.
+     */
+    public List<LogicalAddress> getAllDestLogicalAddresses(
+            CecOperand expectedMessage, String params, int duration) throws Exception {
+        List<LogicalAddress> destinationAddresses = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+        Pattern pattern =
+                Pattern.compile(
+                        "(.*>>)(.*?)" + ":(" + expectedMessage + params + ")(.*)",
+                        Pattern.CASE_INSENSITIVE);
+
+        while ((endTime - startTime <= (duration * 1000))) {
+            if (mInputConsole.ready()) {
+                String line = mInputConsole.readLine();
+                if (pattern.matcher(line).matches()) {
+                    LogicalAddress destination = CecMessage.getDestination(line);
+                    if (!destinationAddresses.contains(destination)) {
+                        destinationAddresses.add(destination);
+                    }
+                }
+            }
+            endTime = System.currentTimeMillis();
+        }
+        return destinationAddresses;
+    }
 
     /**
      * Looks for the CEC expectedMessage broadcast on the cec-client communication channel and
@@ -261,7 +472,8 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      * is not found within the timeout, an exception is thrown.
      */
     public String checkExpectedOutput(CecOperand expectedMessage) throws Exception {
-        return checkExpectedOutput(LogicalAddress.BROADCAST, expectedMessage, DEFAULT_TIMEOUT);
+        return checkExpectedOutput(
+                targetDevice, LogicalAddress.BROADCAST, expectedMessage, DEFAULT_TIMEOUT, false);
     }
 
     /**
@@ -271,7 +483,30 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      */
     public String checkExpectedOutput(LogicalAddress toDevice,
                                       CecOperand expectedMessage) throws Exception {
-        return checkExpectedOutput(toDevice, expectedMessage, DEFAULT_TIMEOUT);
+        return checkExpectedOutput(targetDevice, toDevice, expectedMessage, DEFAULT_TIMEOUT, false);
+    }
+
+    /**
+     * Looks for the broadcasted CEC expectedMessage sent from cec-client device fromDevice on the
+     * cec-client communication channel and returns the first line that contains that message within
+     * default timeout. If the CEC message is not found within the timeout, an exception is thrown.
+     */
+    public String checkExpectedMessageFromClient(
+            LogicalAddress fromDevice, CecOperand expectedMessage) throws Exception {
+        return checkExpectedMessageFromClient(
+                fromDevice, LogicalAddress.BROADCAST, expectedMessage);
+    }
+
+    /**
+     * Looks for the CEC expectedMessage sent from cec-client device fromDevice to CEC device
+     * toDevice on the cec-client communication channel and returns the first line that contains
+     * that message within default timeout. If the CEC message is not found within the timeout, an
+     * exception is thrown.
+     */
+    public String checkExpectedMessageFromClient(
+            LogicalAddress fromDevice, LogicalAddress toDevice, CecOperand expectedMessage)
+            throws Exception {
+        return checkExpectedOutput(fromDevice, toDevice, expectedMessage, DEFAULT_TIMEOUT, true);
     }
 
     /**
@@ -281,7 +516,8 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      */
     public String checkExpectedOutput(CecOperand expectedMessage,
                                       long timeoutMillis) throws Exception {
-        return checkExpectedOutput(LogicalAddress.BROADCAST, expectedMessage, timeoutMillis);
+        return checkExpectedOutput(
+                targetDevice, LogicalAddress.BROADCAST, expectedMessage, timeoutMillis, false);
     }
 
     /**
@@ -291,13 +527,40 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      */
     public String checkExpectedOutput(LogicalAddress toDevice, CecOperand expectedMessage,
                                        long timeoutMillis) throws Exception {
+        return checkExpectedOutput(targetDevice, toDevice, expectedMessage, timeoutMillis, false);
+    }
+
+    /**
+     * Looks for the CEC expectedMessage sent from CEC device fromDevice to CEC device toDevice on
+     * the cec-client communication channel and returns the first line that contains that message
+     * within timeoutMillis. If the CEC message is not found within the timeout, an exception is
+     * thrown. This method looks for the CEC messages coming from Cec-client if fromCecClient is
+     * true.
+     */
+    public String checkExpectedOutput(
+            LogicalAddress fromDevice,
+            LogicalAddress toDevice,
+            CecOperand expectedMessage,
+            long timeoutMillis,
+            boolean fromCecClient)
+            throws Exception {
         checkCecClient();
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
-        Pattern pattern = Pattern.compile("(.*>>)(.*?)" +
-                                          "(" + targetDevice + toDevice + "):" +
-                                          "(" + expectedMessage + ")(.*)",
-                                          Pattern.CASE_INSENSITIVE);
+        String direction = fromCecClient ? "<<" : ">>";
+        Pattern pattern =
+                Pattern.compile(
+                        "(.*"
+                                + direction
+                                + ")(.*?)"
+                                + "("
+                                + fromDevice
+                                + toDevice
+                                + "):"
+                                + "("
+                                + expectedMessage
+                                + ")(.*)",
+                        Pattern.CASE_INSENSITIVE);
 
         while ((endTime - startTime <= timeoutMillis)) {
             if (mInputConsole.ready()) {
@@ -320,8 +583,19 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      */
     public void checkOutputDoesNotContainMessage(LogicalAddress toDevice,
             CecOperand incorrectMessage) throws Exception {
-        checkOutputDoesNotContainMessage(toDevice, incorrectMessage, DEFAULT_TIMEOUT);
+        checkOutputDoesNotContainMessage(toDevice, incorrectMessage, "", DEFAULT_TIMEOUT);
      }
+
+    /**
+     * Looks for the CEC message incorrectMessage along with the params sent to CEC device toDevice
+     * on the cec-client communication channel and throws an exception if it finds the line that
+     * contains the message with its params within the default timeout. If the CEC message is not
+     * found within the timeout, function returns without error.
+     */
+    public void checkOutputDoesNotContainMessage(
+            LogicalAddress toDevice, CecOperand incorrectMessage, String params) throws Exception {
+        checkOutputDoesNotContainMessage(toDevice, incorrectMessage, params, DEFAULT_TIMEOUT);
+    }
 
     /**
      * Looks for the CEC message incorrectMessage sent to CEC device toDevice on the cec-client
@@ -329,16 +603,36 @@ public final class HdmiCecClientWrapper extends ExternalResource {
      * within timeoutMillis. If the CEC message is not found within the timeout, function returns
      * without error.
      */
-    public void checkOutputDoesNotContainMessage(LogicalAddress toDevice, CecOperand incorrectMessage,
-            long timeoutMillis) throws Exception {
+    public void checkOutputDoesNotContainMessage(
+            LogicalAddress toDevice, CecOperand incorrectMessage, long timeoutMillis)
+            throws Exception {
+        checkOutputDoesNotContainMessage(toDevice, incorrectMessage, "", timeoutMillis);
+    }
 
+    /**
+     * Looks for the CEC message incorrectMessage along with the params sent to CEC device toDevice
+     * on the cec-client communication channel and throws an exception if it finds the line that
+     * contains the message and params within timeoutMillis. If the CEC message is not found within
+     * the timeout, function returns without error.
+     */
+    public void checkOutputDoesNotContainMessage(
+            LogicalAddress toDevice, CecOperand incorrectMessage, String params, long timeoutMillis)
+            throws Exception {
         checkCecClient();
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
-        Pattern pattern = Pattern.compile("(.*>>)(.*?)" +
-                                          "(" + targetDevice + toDevice + "):" +
-                                          "(" + incorrectMessage + ")(.*)",
-                                          Pattern.CASE_INSENSITIVE);
+        Pattern pattern =
+                Pattern.compile(
+                        "(.*>>)(.*?)"
+                                + "("
+                                + targetDevice
+                                + toDevice
+                                + "):"
+                                + "("
+                                + incorrectMessage
+                                + params
+                                + ")(.*)",
+                        Pattern.CASE_INSENSITIVE);
 
         while ((endTime - startTime <= timeoutMillis)) {
             if (mInputConsole.ready()) {
@@ -352,6 +646,30 @@ public final class HdmiCecClientWrapper extends ExternalResource {
             endTime = System.currentTimeMillis();
         }
      }
+
+    /** Returns the device type that the cec-client has started as. */
+    public LogicalAddress getSelfDevice() {
+        return selfDevice;
+    }
+
+    /** Set the physical address of the cec-client instance */
+    public void setPhysicalAddress(int newPhysicalAddress) throws Exception {
+        String command =
+                String.format(
+                        "pa %02d %02d",
+                        (newPhysicalAddress & 0xFF00) >> 8, newPhysicalAddress & 0xFF);
+        sendConsoleMessage(command);
+        physicalAddress = newPhysicalAddress;
+    }
+
+    /** Get the physical address of the cec-client instance, will return 0xFFFF if uninitialised */
+    public int getPhysicalAddress() {
+        return physicalAddress;
+    }
+
+    public void clearClientOutput() {
+        mInputConsole = new BufferedReader(new InputStreamReader(mCecClient.getInputStream()));
+    }
 
     /**
      * Kills the cec-client process that was created in init().
@@ -376,7 +694,9 @@ public final class HdmiCecClientWrapper extends ExternalResource {
             }
         } catch (Exception e) {
             /* If cec-client is not running, do not throw an exception, just return. */
-            CLog.w("Unable to close cec-client", e);
+            CLog.w(new Exception("Unable to close cec-client", e));
         }
     }
+
+    public static class CecPortBusyException extends Exception {}
 }

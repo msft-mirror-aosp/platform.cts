@@ -20,6 +20,7 @@ import com.android.compatibility.common.util.MetricsReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.config.Option;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IAbiReceiver;
@@ -46,6 +47,7 @@ import java.math.BigInteger;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
+import static org.hamcrest.core.Is.is;
 
 public class SecurityTestCase extends BaseHostJUnit4Test {
 
@@ -58,7 +60,6 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
 
     private long kernelStartTime;
 
-    private HostsideOomCatcher oomCatcher = new HostsideOomCatcher(this);
     private HostsideMainlineModuleDetector mainlineModuleDetector = new HostsideMainlineModuleDetector(this);
 
     @Rule public TestName testName = new TestName();
@@ -68,6 +69,11 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
     private static Map<ITestDevice, IAbi> sAbi = new HashMap<>();
     private static Map<ITestDevice, String> sTestName = new HashMap<>();
     private static Map<ITestDevice, PocPusher> sPocPusher = new HashMap<>();
+
+    @Option(name = "set-kptr_restrict",
+            description = "If kptr_restrict should be set to 2 after every reboot")
+    private boolean setKptr_restrict = false;
+    private boolean ignoreKernelAddress = false;
 
     /**
      * Waits for device to be online, marks the most recent boottime of the device
@@ -80,13 +86,23 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
         // TODO:(badash@): Watch for other things to track.
         //     Specifically time when app framework starts
 
-        oomCatcher.start();
         sBuildInfo.put(getDevice(), getBuild());
         sAbi.put(getDevice(), getAbi());
         sTestName.put(getDevice(), testName.getMethodName());
 
         pocPusher.setDevice(getDevice()).setBuild(getBuild()).setAbi(getAbi());
         sPocPusher.put(getDevice(), pocPusher);
+
+        if (setKptr_restrict) {
+            if (getDevice().enableAdbRoot()) {
+                CLog.i("setting kptr_restrict to 2");
+                getDevice().executeShellCommand("echo 2 > /proc/sys/kernel/kptr_restrict");
+                getDevice().disableAdbRoot();
+            } else {
+                // not a rootable device
+                ignoreKernelAddress = true;
+            }
+        }
     }
 
     /**
@@ -95,8 +111,6 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
      */
     @After
     public void tearDown() throws Exception {
-        oomCatcher.stop(getDevice().getSerialNumber());
-
         try {
             getDevice().waitForDeviceAvailable(90 * 1000);
         } catch (DeviceNotAvailableException e) {
@@ -105,27 +119,11 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
             getDevice().waitForDeviceAvailable(30 * 1000);
         }
 
-        if (oomCatcher.isOomDetected()) {
-            // we don't need to check kernel start time if we intentionally rebooted because oom
-            updateKernelStartTime();
-            switch (oomCatcher.getOomBehavior()) {
-                case FAIL_AND_LOG:
-                    fail("The device ran out of memory.");
-                    break;
-                case PASS_AND_LOG:
-                    Log.logAndDisplay(Log.LogLevel.INFO, LOG_TAG, "Skipping test.");
-                    break;
-                case FAIL_NO_LOG:
-                    fail();
-                    break;
-            }
-        } else {
-            long deviceTime = getDeviceUptime() + kernelStartTime;
-            long hostTime = System.currentTimeMillis() / 1000;
-            assertTrue("Phone has had a hard reset", (hostTime - deviceTime) < 2);
+        long deviceTime = getDeviceUptime() + kernelStartTime;
+        long hostTime = System.currentTimeMillis() / 1000;
+        assertTrue("Phone has had a hard reset", (hostTime - deviceTime) < 2);
 
-            // TODO(badash@): add ability to catch runtime restart
-        }
+        // TODO(badash@): add ability to catch runtime restart
     }
 
     public static IBuildInfo getBuildInfo(ITestDevice device) {
@@ -180,6 +178,7 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
      */
     public void assertNotKernelPointer(Callable<String> getPtrFunction, ITestDevice deviceToReboot)
             throws Exception {
+        assumeFalse("Cannot set kptr_restrict to 2, ignoring kptr test.", ignoreKernelAddress);
         String ptr = null;
         for (int i = 0; i < 4; i++) { // ~0.4% chance of false positive
             ptr = getPtrFunction.call();
@@ -228,10 +227,37 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
     }
 
     /**
-     * Check if a driver is present on a machine.
+     * Check if a driver is present and readable.
      */
     protected boolean containsDriver(ITestDevice device, String driver) throws Exception {
-        boolean containsDriver = AdbUtils.runCommandGetExitCode("test -r " + driver, device) == 0;
+        return containsDriver(device, driver, true);
+    }
+
+    /**
+     * Check if a driver is present on a machine.
+     */
+    protected boolean containsDriver(ITestDevice device, String driver, boolean checkReadable)
+            throws Exception {
+        boolean containsDriver = false;
+        if (driver.contains("*")) {
+            // -A  list all files but . and ..
+            // -d  directory, not contents
+            // -1  list one file per line
+            // -f  unsorted
+            String ls = "ls -A -d -1 -f " + driver;
+            if (AdbUtils.runCommandGetExitCode(ls, device) == 0) {
+                String[] expanded = device.executeShellCommand(ls).split("\\R");
+                for (String expandedDriver : expanded) {
+                    containsDriver |= containsDriver(device, expandedDriver, checkReadable);
+                }
+            }
+        } else {
+            if(checkReadable) {
+                containsDriver = AdbUtils.runCommandGetExitCode("test -r " + driver, device) == 0;
+            } else {
+                containsDriver = AdbUtils.runCommandGetExitCode("test -e " + driver, device) == 0;
+            }
+        }
 
         MetricsReportLog reportLog = buildMetricsReportLog(getDevice());
         reportLog.addValue("path", driver, ResultType.NEUTRAL, ResultUnit.NONE);
@@ -293,10 +319,6 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
         kernelStartTime = (System.currentTimeMillis() / 1000) - uptime;
     }
 
-    public HostsideOomCatcher getOomCatcher() {
-        return oomCatcher;
-    }
-
     /**
      * Return true if a module is play managed.
      *
@@ -312,5 +334,29 @@ public class SecurityTestCase extends BaseHostJUnit4Test {
      */
     boolean moduleIsPlayManaged(String modulePackageName) throws Exception {
         return mainlineModuleDetector.getPlayManagedModules().contains(modulePackageName);
+    }
+
+    public void assumeIsSupportedNfcDevice(ITestDevice device) throws Exception {
+        String supportedDrivers[] = { "/dev/nq-nci*", "/dev/pn54*", "/dev/pn551*", "/dev/pn553*",
+                                      "/dev/pn557*", "/dev/pn65*", "/dev/pn66*", "/dev/pn67*",
+                                      "/dev/pn80*", "/dev/pn81*", "/dev/sn100*", "/dev/sn220*",
+                                      "/dev/st54j*" };
+        boolean isDriverFound = false;
+        for(String supportedDriver : supportedDrivers) {
+            if(containsDriver(device, supportedDriver, false)) {
+                isDriverFound = true;
+                break;
+            }
+        }
+        String[] output = device.executeShellCommand("ls -la /dev | grep nfc").split("\\n");
+        String nfcDevice = null;
+        for (String line : output) {
+            if(line.contains("nfc")) {
+                String text[] = line.split("\\s+");
+                nfcDevice = text[text.length - 1];
+            }
+        }
+        assumeTrue("NFC device " + nfcDevice + " is not supported. Hence skipping the test",
+                   isDriverFound);
     }
 }

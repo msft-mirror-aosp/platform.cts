@@ -59,9 +59,11 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.MemInfoReader;
+import com.android.server.os.TombstoneProtos.Tombstone;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -101,7 +103,7 @@ public final class ActivityManagerAppExitInfoTest extends InstrumentationTestCas
     private static final int EXIT_CODE = 123;
     private static final int CRASH_SIGNAL = OsConstants.SIGSEGV;
 
-    private static final int WAITFOR_MSEC = 5000;
+    private static final int WAITFOR_MSEC = 10000;
     private static final int WAITFOR_SETTLE_DOWN = 2000;
 
     private static final int CMD_PID = 1;
@@ -823,6 +825,11 @@ public final class ActivityManagerAppExitInfoTest extends InstrumentationTestCas
         // Start a process and crash it
         startService(ACTION_NATIVE_CRASH, STUB_SERVICE_NAME, true, false);
 
+        // Native crashes are handled asynchronously from the actual crash, so
+        // it's possible for us to notice that the process crashed before an
+        // actual tombstone exists.
+        Thread.sleep(1000);
+
         long now2 = System.currentTimeMillis();
         List<ApplicationExitInfo> list = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 STUB_PACKAGE_NAME, mStubPackagePid, 1,
@@ -832,6 +839,21 @@ public final class ActivityManagerAppExitInfoTest extends InstrumentationTestCas
         assertTrue(list != null && list.size() == 1);
         verify(list.get(0), mStubPackagePid, mStubPackageUid, STUB_PACKAGE_NAME,
                 ApplicationExitInfo.REASON_CRASH_NATIVE, null, null, now, now2);
+
+        InputStream trace = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                list.get(0),
+                (i) -> {
+                    try {
+                        return i.getTraceInputStream();
+                    } catch (IOException ex) {
+                        return null;
+                    }
+                },
+                android.Manifest.permission.DUMP);
+
+        assertNotNull(trace);
+        Tombstone tombstone = Tombstone.parseFrom(trace);
+        assertEquals(tombstone.getPid(), mStubPackagePid);
     }
 
     public void testUserRequested() throws Exception {
@@ -978,7 +1000,7 @@ public final class ActivityManagerAppExitInfoTest extends InstrumentationTestCas
 
     private void prepareTestUser() throws Exception {
         // Create the test user
-        mOtherUserId = createUser("TestUser_" + SystemClock.uptimeMillis(), true);
+        mOtherUserId = createUser("TestUser_" + SystemClock.uptimeMillis(), false);
         mOtherUserHandle = UserHandle.of(mOtherUserId);
         // Start the other user
         assertTrue(startUser(mOtherUserId, true));

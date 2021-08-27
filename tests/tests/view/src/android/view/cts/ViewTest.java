@@ -115,6 +115,7 @@ import androidx.test.rule.ActivityTestRule;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -164,7 +165,7 @@ public class ViewTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mActivity = mActivityRule.getActivity();
-        PollingCheck.waitFor(mActivity::hasWindowFocus);
+        WindowUtil.waitForFocus(mActivity);
         mResources = mActivity.getResources();
         mMockParent = new MockViewParent(mActivity);
         PollingCheck.waitFor(5 * DateUtils.SECOND_IN_MILLIS, mActivity::hasWindowFocus);
@@ -2343,6 +2344,65 @@ public class ViewTest {
         final View scrollView = mActivity.findViewById(R.id.scroll_view);
 
         scrollView.getLocationOnScreen(new int[] { 0 });
+    }
+
+    @Test
+    public void testSetAllowClickWhenDisabled() throws Throwable {
+        MockView mockView = (MockView) mActivity.findViewById(R.id.mock_view);
+
+        mActivityRule.runOnUiThread(() -> {
+            mockView.setClickable(true);
+            mockView.setEnabled(false);
+        });
+
+        View.OnClickListener listener = mock(View.OnClickListener.class);
+        mockView.setOnClickListener(listener);
+
+        int[] xy = new int[2];
+        mockView.getLocationOnScreen(xy);
+
+        final int viewWidth = mockView.getWidth();
+        final int viewHeight = mockView.getHeight();
+        final float x = xy[0] + viewWidth / 2.0f;
+        final float y = xy[1] + viewHeight / 2.0f;
+
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis();
+        MotionEvent downEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN,
+                x, y, 0);
+        downTime = SystemClock.uptimeMillis();
+        eventTime = SystemClock.uptimeMillis();
+        MotionEvent upEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP,
+                x, y, 0);
+
+        assertFalse(mockView.hasCalledOnTouchEvent());
+        mockView.dispatchTouchEvent(downEvent);
+        mockView.dispatchTouchEvent(upEvent);
+
+        mInstrumentation.waitForIdleSync();
+        assertTrue(mockView.hasCalledOnTouchEvent());
+
+        verifyZeroInteractions(listener);
+
+        mActivityRule.runOnUiThread(() -> {
+            mockView.setAllowClickWhenDisabled(true);
+        });
+
+        downTime = SystemClock.uptimeMillis();
+        eventTime = SystemClock.uptimeMillis();
+        downEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN,
+                x, y, 0);
+        downTime = SystemClock.uptimeMillis();
+        eventTime = SystemClock.uptimeMillis();
+        upEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP,
+                x, y, 0);
+
+        mockView.dispatchTouchEvent(downEvent);
+        mockView.dispatchTouchEvent(upEvent);
+
+        mInstrumentation.waitForIdleSync();
+
+        verify(listener, times(1)).onClick(mockView);
     }
 
     @Test
@@ -5077,6 +5137,30 @@ public class ViewTest {
 
         // now that it is detached, it should be false.
         assertFalse(view.isShowingLayoutBounds());
+    }
+
+    @Test
+    public void testClipToOutline() {
+        View clipToOutlineUnsetView = mActivity.findViewById(R.id.clip_to_outline_unset);
+        assertFalse(clipToOutlineUnsetView.getClipToOutline());
+        clipToOutlineUnsetView.setClipToOutline(true);
+        assertTrue(clipToOutlineUnsetView.getClipToOutline());
+        clipToOutlineUnsetView.setClipToOutline(false);
+        assertFalse(clipToOutlineUnsetView.getClipToOutline());
+
+        View clipToOutlineFalseView = mActivity.findViewById(R.id.clip_to_outline_false);
+        assertFalse(clipToOutlineFalseView.getClipToOutline());
+        clipToOutlineFalseView.setClipToOutline(true);
+        assertTrue(clipToOutlineFalseView.getClipToOutline());
+        clipToOutlineFalseView.setClipToOutline(false);
+        assertFalse(clipToOutlineFalseView.getClipToOutline());
+
+        View clipToOutlineTrueView = mActivity.findViewById(R.id.clip_to_outline_true);
+        assertTrue(clipToOutlineTrueView.getClipToOutline());
+        clipToOutlineTrueView.setClipToOutline(false);
+        assertFalse(clipToOutlineTrueView.getClipToOutline());
+        clipToOutlineTrueView.setClipToOutline(true);
+        assertTrue(clipToOutlineTrueView.getClipToOutline());
     }
 
     private static class MockDrawable extends Drawable {

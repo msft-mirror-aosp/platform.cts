@@ -37,14 +37,22 @@ public class SignatureTest extends AbstractApiTest {
     private static final String TAG = SignatureTest.class.getSimpleName();
 
     protected String[] expectedApiFiles;
+    protected String[] previousApiFiles;
     protected String[] baseApiFiles;
     private String[] unexpectedApiFiles;
 
     @Override
     protected void initializeFromArgs(Bundle instrumentationArgs) {
-        expectedApiFiles = getCommaSeparatedList(instrumentationArgs, "expected-api-files");
-        baseApiFiles = getCommaSeparatedList(instrumentationArgs, "base-api-files");
-        unexpectedApiFiles = getCommaSeparatedList(instrumentationArgs, "unexpected-api-files");
+        expectedApiFiles = getCommaSeparatedListOptional(instrumentationArgs, "expected-api-files");
+        baseApiFiles = getCommaSeparatedListOptional(instrumentationArgs, "base-api-files");
+        unexpectedApiFiles = getCommaSeparatedListOptional(instrumentationArgs, "unexpected-api-files");
+        previousApiFiles = getCommaSeparatedListOptional(instrumentationArgs, "previous-api-files");
+
+        if (expectedApiFiles.length + unexpectedApiFiles.length == 0) {
+            throw new IllegalStateException(
+                    "Expected at least one file to be specified in"
+                            + " 'expected-api-files' or 'unexpected-api-files'");
+        }
     }
 
     /**
@@ -56,7 +64,7 @@ public class SignatureTest extends AbstractApiTest {
         runWithTestResultObserver(mResultObserver -> {
             Set<JDiffClassDescription> unexpectedClasses = loadUnexpectedClasses();
             for (JDiffClassDescription classDescription : unexpectedClasses) {
-                Class<?> unexpectedClass = findUnexpectedClass(classDescription, classProvider);
+                Class<?> unexpectedClass = findUnexpectedClass(classDescription, mClassProvider);
                 if (unexpectedClass != null) {
                     mResultObserver.notifyFailure(
                             FailureType.UNEXPECTED_CLASS,
@@ -66,16 +74,16 @@ public class SignatureTest extends AbstractApiTest {
             }
 
             ApiComplianceChecker complianceChecker =
-                    new ApiComplianceChecker(mResultObserver, classProvider);
+                    new ApiComplianceChecker(mResultObserver, mClassProvider);
 
             // Load classes from any API files that form the base which the expected APIs extend.
             loadBaseClasses(complianceChecker);
-
-            ApiDocumentParser apiDocumentParser = new ApiDocumentParser(TAG);
-
-            parseApiResourcesAsStream(apiDocumentParser, expectedApiFiles)
-                    .filter(not(unexpectedClasses::contains))
-                    .forEach(complianceChecker::checkSignatureCompliance);
+            // Load classes from system API files and check for signature compliance.
+            checkClassesSignatureCompliance(complianceChecker, expectedApiFiles, unexpectedClasses,
+                    false /* isPreviousApi */);
+            // Load classes from previous API files and check for signature compliance.
+            checkClassesSignatureCompliance(complianceChecker, previousApiFiles, unexpectedClasses,
+                    true /* isPreviousApi */);
 
             // After done parsing all expected API files, perform any deferred checks.
             complianceChecker.checkDeferred();
@@ -110,4 +118,14 @@ public class SignatureTest extends AbstractApiTest {
         parseApiResourcesAsStream(apiDocumentParser, baseApiFiles)
                 .forEach(complianceChecker::addBaseClass);
     }
+
+    private void checkClassesSignatureCompliance(ApiComplianceChecker complianceChecker,
+            String[] classes, Set<JDiffClassDescription> unexpectedClasses, boolean isPreviousApi) {
+        ApiDocumentParser apiDocumentParser = new ApiDocumentParser(TAG);
+        parseApiResourcesAsStream(apiDocumentParser, classes)
+                .filter(not(unexpectedClasses::contains))
+                .map(clazz -> clazz.setPreviousApiFlag(isPreviousApi))
+                .forEach(complianceChecker::checkSignatureCompliance);
+    }
+
 }

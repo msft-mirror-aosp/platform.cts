@@ -7,10 +7,12 @@
       "name": "CtsScopedStorageHostTest"
     },
     {
-      "name": "CtsScopedStoragePublicVolumeHostTest"
-    },
-    {
       "name": "CtsScopedStorageDeviceOnlyTest"
+    }
+  ],
+  "presubmit-large": [
+    {
+      "name": "CtsScopedStoragePublicVolumeHostTest"
     }
   ]
 }

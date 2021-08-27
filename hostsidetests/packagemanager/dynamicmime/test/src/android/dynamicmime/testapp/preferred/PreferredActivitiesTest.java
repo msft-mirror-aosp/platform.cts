@@ -51,19 +51,37 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     private static final String ACTION = "android.dynamicmime.preferred.TEST_ACTION";
 
+    private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
+    private static final int NAV_BAR_INTERACTION_MODE_GESTURAL = 2;
+
     private static final BySelector BUTTON_ALWAYS = By.res("android:id/button_always");
+    private static final BySelector RESOLVER_DIALOG = By.res(Pattern.compile(".*:id/contentPanel.*"));
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60L);
+
+    private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
 
     private TestStrategy mTest;
 
     public PreferredActivitiesTest() {
         super(MimeGroupCommands.preferredApp(context()), MimeGroupAssertions.notUsed());
+        assumeNavigationMode();
+    }
+
+    private void assumeNavigationMode() {
+        Resources res = context().getResources();
+        int navModeResId = res.getIdentifier(NAV_BAR_INTERACTION_MODE_RES_NAME, "integer",
+            "android");
+        int navMode = res.getInteger(navModeResId);
+
+        assumeTrue("Non-gesture navigation mode required",
+            navMode != NAV_BAR_INTERACTION_MODE_GESTURAL);
     }
 
     @Before
@@ -275,6 +293,16 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     }
 
     private UiObject2 findActivityInDialog(String label) {
+        if (!Utils.hasFeature(FEATURE_WEARABLE)) {
+            getUiDevice()
+                .wait(Until.findObject(RESOLVER_DIALOG), TIMEOUT)
+                .swipe(Direction.UP, 1f);
+        } else {
+            getUiDevice()
+                .wait(Until.findObject(BUTTON_ALWAYS), TIMEOUT)
+                .swipe(Direction.RIGHT, 1f);
+        }
+
         return getUiDevice().findObject(By.text(label));
     }
 

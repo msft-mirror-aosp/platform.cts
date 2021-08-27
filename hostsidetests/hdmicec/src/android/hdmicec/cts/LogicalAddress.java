@@ -35,17 +35,11 @@ public enum LogicalAddress {
     RESERVED_1(0xc),
     RESERVED_2(0xd),
     SPECIFIC_USE(0xe),
-    BROADCAST(0xf);
+    BROADCAST(0xf),
+    UNKNOWN(0xf);
 
     private final int address;
     private static Map deviceMap = new HashMap<>();
-
-    // CEC Device feature list
-    public static final String HDMI_CEC_FEATURE = "feature:android.hardware.hdmi.cec";
-    public static final String LEANBACK_FEATURE = "feature:android.software.leanback";
-
-    // CEC Device property list
-    public static final String HDMI_DEVICE_TYPE_PROPERTY = "ro.hdmi.device_type";
 
     @Override
     public String toString() {
@@ -58,27 +52,35 @@ public enum LogicalAddress {
         }
     }
 
-    public String getDeviceType() {
+    public String getDeviceTypeString() {
+        return Integer.toString(getDeviceType());
+    }
+
+    public int getLogicalAddressAsInt() {
+        return this.address;
+    }
+
+    public int getDeviceType() {
         switch (this) {
             case PLAYBACK_1:
             case PLAYBACK_2:
             case PLAYBACK_3:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE;
             case TV:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_TV);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_TV;
             case AUDIO_SYSTEM:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM;
             case RECORDER_1:
             case RECORDER_2:
             case RECORDER_3:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_RECORDER);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_RECORDER;
             case TUNER_1:
             case TUNER_2:
             case TUNER_3:
             case TUNER_4:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_TUNER);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_TUNER;
             default:
-                return Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_RESERVED);
+                return HdmiCecConstants.CEC_DEVICE_TYPE_RESERVED;
         }
     }
 

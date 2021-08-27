@@ -47,13 +47,12 @@ import static org.junit.Assume.assumeTrue;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.cts.activities.AccessibilityWindowReportingActivity;
-import android.accessibilityservice.cts.utils.DisplayUtils;
+import android.accessibilityservice.cts.activities.NonDefaultDisplayActivity;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.graphics.Rect;
 import android.os.SystemClock;
-import android.util.DisplayMetrics;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -125,6 +124,11 @@ public class AccessibilityWindowReportingTest {
         mActivity = launchActivityAndWaitForItToBeOnscreen(
                 sInstrumentation, sUiAutomation, mActivityRule);
         mActivityTitle = getActivityTitle(sInstrumentation, mActivity);
+    }
+
+    private static boolean perDisplayFocusEnabled() {
+        return sInstrumentation.getTargetContext().getResources()
+                .getBoolean(android.R.bool.config_perDisplayFocusEnabled);
     }
 
     @Test
@@ -260,17 +264,25 @@ public class AccessibilityWindowReportingTest {
             final Activity activityOnVirtualDisplay =
                     launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
                             sUiAutomation,
-                            AccessibilityEmbeddedDisplayTest.EmbeddedDisplayActivity.class,
+                            NonDefaultDisplayActivity.class,
                             virtualDisplayId);
+
+            final CharSequence activityTitle = getActivityTitle(sInstrumentation,
+                    activityOnVirtualDisplay);
+
             // Window manager changed the behavior of focused window at a virtual display. A window
             // at virtual display needs to be touched then it becomes to be focused one. Adding this
             // touch event on the activity window of the virtual display to pass this test case.
             sUiAutomation.executeAndWaitForEvent(
                     () -> {
-                        final DisplayMetrics displayMetrics =
-                                mActivity.getResources().getDisplayMetrics();
-                        final int xOnScreen = displayMetrics.widthPixels / 2;
-                        final int yOnScreen = displayMetrics.heightPixels / 2;
+                        final Rect areaOfActivityWindowOnVirtualDisplay = new Rect();
+                        findWindowByTitleAndDisplay(sUiAutomation, activityTitle, virtualDisplayId)
+                                .getBoundsInScreen(areaOfActivityWindowOnVirtualDisplay);
+
+                        final int xOnScreen =
+                            areaOfActivityWindowOnVirtualDisplay.centerX();
+                        final int yOnScreen =
+                            areaOfActivityWindowOnVirtualDisplay.centerY();
                         final long downEventTime = SystemClock.uptimeMillis();
                         final MotionEvent downEvent = MotionEvent.obtain(downEventTime,
                                 downEventTime, MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 0);
@@ -289,16 +301,19 @@ public class AccessibilityWindowReportingTest {
                             WINDOWS_CHANGE_ACTIVE),
                     TIMEOUT_ASYNC_PROCESSING);
 
-            final CharSequence activityTitle = getActivityTitle(sInstrumentation,
-                    activityOnVirtualDisplay);
             // Make sure activityWindow on virtual display is focused.
             AccessibilityWindowInfo activityWindowOnVirtualDisplay =
                 findWindowByTitleAndDisplay(sUiAutomation, activityTitle, virtualDisplayId);
             // Windows may have changed - refresh.
             activityWindow = findWindowByTitle(sUiAutomation, mActivityTitle);
             try {
-                assertFalse(activityWindow.isActive());
-                assertFalse(activityWindow.isFocused());
+                if (!perDisplayFocusEnabled()) {
+                    assertFalse(activityWindow.isActive());
+                    assertFalse(activityWindow.isFocused());
+                } else {
+                    assertTrue(activityWindow.isActive());
+                    assertTrue(activityWindow.isFocused());
+                }
                 assertTrue(activityWindowOnVirtualDisplay.isActive());
                 assertTrue(activityWindowOnVirtualDisplay.isFocused());
             } finally {

@@ -17,94 +17,77 @@
 package android.hdmicec.cts.playback;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
-import android.hdmicec.cts.HdmiCecClientWrapper;
 import android.hdmicec.cts.HdmiCecConstants;
 import android.hdmicec.cts.LogicalAddress;
-import android.hdmicec.cts.RequiredPropertyRule;
-import android.hdmicec.cts.RequiredFeatureRule;
 
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-/** HDMI CEC test to check if the device reports power status correctly (Section 11.2.14) */
+/**
+ * HDMI CEC tests verifying power status related messages of the device (CEC 2.0 CTS Section 7.6)
+ */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public final class HdmiCecPowerStatusTest extends BaseHostJUnit4Test {
+public final class HdmiCecPowerStatusTest extends BaseHdmiCecCtsTest {
 
-    private static final int ON = 0x0;
-    private static final int OFF = 0x1;
-    private static final int IN_TRANSITION_TO_STANDBY = 0x3;
-
-    private static final int SLEEP_TIMESTEP_SECONDS = 1;
-    private static final int WAIT_TIME = 5;
-    private static final int MAX_SLEEP_TIME = 8;
-
-    public HdmiCecClientWrapper hdmiCecClient = new HdmiCecClientWrapper(LogicalAddress.PLAYBACK_1);
+    public HdmiCecPowerStatusTest() {
+        super(HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
+    }
 
     @Rule
     public RuleChain ruleChain =
-        RuleChain
-            .outerRule(new RequiredFeatureRule(this, LogicalAddress.HDMI_CEC_FEATURE))
-            .around(new RequiredFeatureRule(this, LogicalAddress.LEANBACK_FEATURE))
-            .around(RequiredPropertyRule.asCsvContainsValue(
-                this,
-                LogicalAddress.HDMI_DEVICE_TYPE_PROPERTY,
-                LogicalAddress.PLAYBACK_1.getDeviceType()))
-            .around(hdmiCecClient);
+            RuleChain
+                    .outerRule(CecRules.requiresCec(this))
+                    .around(CecRules.requiresLeanback(this))
+                    .around(CecRules.requiresDeviceType(this, LogicalAddress.PLAYBACK_1))
+                    .around(hdmiCecClient);
 
     /**
-     * Test 11.2.14-1
-     * Tests that the device broadcasts a <REPORT_POWER_STATUS> with params 0x0 when the device is
-     * powered on.
+     * Test HF4-6-7
+     * Same as Test HF4-6-9
+     *
+     * Tests that a device comes out of the Standby state when it receives a {@code <Set Stream
+     * Path>} message with its Physical Address as operand.
+     *
+     * Only applies if the DUT has Primary Device "Playback Device", "Recording Device", or "Tuner".
      */
     @Test
-    public void cect_11_2_14_1_PowerStatusWhenOn() throws Exception {
+    public void cect_hf4_6_7_setStreamPath_powerOn() throws Exception {
         ITestDevice device = getDevice();
-        /* Make sure the device is not booting up/in standby */
-        device.waitForBootComplete(HdmiCecConstants.REBOOT_TIMEOUT);
-        hdmiCecClient.sendCecMessage(LogicalAddress.TV, CecOperand.GIVE_POWER_STATUS);
-        String message = hdmiCecClient.checkExpectedOutput(LogicalAddress.TV,
-            CecOperand.REPORT_POWER_STATUS);
-        assertThat(CecMessage.getParams(message)).isEqualTo(ON);
-    }
 
-    /**
-     * Test 11.2.14-2
-     * Tests that the device broadcasts a <REPORT_POWER_STATUS> with params 0x1 when the device is
-     * powered on.
-     */
-    @Test
-    public void cect_11_2_14_2_PowerStatusWhenOff() throws Exception {
-        ITestDevice device = getDevice();
         try {
-            /* Make sure the device is not booting up/in standby */
-            device.waitForBootComplete(HdmiCecConstants.REBOOT_TIMEOUT);
-            /* Home Key to prevent device from going to deep suspend state */
-            device.executeShellCommand("input keyevent KEYCODE_HOME");
             device.executeShellCommand("input keyevent KEYCODE_SLEEP");
-            TimeUnit.SECONDS.sleep(WAIT_TIME);
-            int waitTimeSeconds = WAIT_TIME;
-            int powerStatus;
-            do {
-                TimeUnit.SECONDS.sleep(SLEEP_TIMESTEP_SECONDS);
-                waitTimeSeconds += SLEEP_TIMESTEP_SECONDS;
-                hdmiCecClient.sendCecMessage(LogicalAddress.TV, CecOperand.GIVE_POWER_STATUS);
-                powerStatus = CecMessage.getParams(hdmiCecClient.checkExpectedOutput(
-                        LogicalAddress.TV, CecOperand.REPORT_POWER_STATUS));
-            } while (powerStatus == IN_TRANSITION_TO_STANDBY && waitTimeSeconds <= MAX_SLEEP_TIME);
-            assertThat(powerStatus).isEqualTo(OFF);
+
+            TimeUnit.SECONDS.sleep(HdmiCecConstants.MAX_SLEEP_TIME_SECONDS);
+
+            String wakeStateBefore = device.executeShellCommand(
+                    "dumpsys power | grep mWakefulness=");
+            assertThat(wakeStateBefore.trim()).isEqualTo("mWakefulness=Asleep");
+
+            hdmiCecClient.sendCecMessage(
+                    LogicalAddress.TV,
+                    LogicalAddress.BROADCAST,
+                    CecOperand.SET_STREAM_PATH,
+                    CecMessage.formatParams(getDumpsysPhysicalAddress(),
+                            HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH));
+
+            TimeUnit.SECONDS.sleep(HdmiCecConstants.DEVICE_WAIT_TIME_SECONDS);
+            String wakeStateAfter = device.executeShellCommand(
+                    "dumpsys power | grep mWakefulness=");
+            assertWithMessage("Device should wake up on <Set Stream Path>")
+                    .that(wakeStateAfter.trim()).isEqualTo("mWakefulness=Awake");
         } finally {
-            /* Wake up the device */
             device.executeShellCommand("input keyevent KEYCODE_WAKEUP");
         }
     }

@@ -17,25 +17,60 @@
 package android.os.cts
 
 import android.companion.CompanionDeviceManager
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.FEATURE_AUTOMOTIVE
 import android.content.pm.PackageManager.FEATURE_COMPANION_DEVICE_SETUP
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.MacAddress
+import android.os.Binder
+import android.os.Bundle
+import android.os.Parcelable
+import android.os.UserHandle
 import android.platform.test.annotations.AppModeFull
 import android.test.InstrumentationTestCase
+import android.util.Size
+import android.util.SizeF
+import android.util.SparseArray
+import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE
+import android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT
+import android.widget.EditText
+import android.widget.TextView
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
+import com.android.compatibility.common.util.MatcherUtils
+import com.android.compatibility.common.util.MatcherUtils.hasIdThat
+import com.android.compatibility.common.util.SystemUtil.eventually
+import com.android.compatibility.common.util.SystemUtil.getEventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
+import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.ThrowingSupplier
+import com.android.compatibility.common.util.UiAutomatorUtils.waitFindObject
+import com.android.compatibility.common.util.children
+import com.android.compatibility.common.util.click
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.containsString
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.Matcher
+import org.hamcrest.Matchers.empty
+import org.hamcrest.Matchers.not
+import org.junit.Assert.assertThat
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.Serializable
 
 const val COMPANION_APPROVE_WIFI_CONNECTIONS =
         "android.permission.COMPANION_APPROVE_WIFI_CONNECTIONS"
 const val DUMMY_MAC_ADDRESS = "00:00:00:00:00:10"
 const val MANAGE_COMPANION_DEVICES = "android.permission.MANAGE_COMPANION_DEVICES"
 const val SHELL_PACKAGE_NAME = "com.android.shell"
+const val TEST_APP_PACKAGE_NAME = "android.os.cts.companiontestapp"
+const val TEST_APP_APK_LOCATION = "/data/local/tmp/cts/os/CtsCompanionTestApp.apk"
 val InstrumentationTestCase.context get() = InstrumentationRegistry.getTargetContext()
 
 /**
@@ -44,7 +79,14 @@ val InstrumentationTestCase.context get() = InstrumentationRegistry.getTargetCon
 @RunWith(AndroidJUnit4::class)
 class CompanionDeviceManagerTest : InstrumentationTestCase() {
 
-    val cdm by lazy { context.getSystemService(CompanionDeviceManager::class.java) }
+    val cdm: CompanionDeviceManager by lazy {
+        context.getSystemService(CompanionDeviceManager::class.java)
+    }
+    val pm: PackageManager by lazy { context.packageManager }
+    private val hasFeatureCompanionDeviceSetup: Boolean by lazy {
+        pm.hasSystemFeature(FEATURE_COMPANION_DEVICE_SETUP)
+    }
+    private val isAuto: Boolean by lazy { pm.hasSystemFeature(FEATURE_AUTOMOTIVE) }
 
     private fun isShellAssociated(macAddress: String, packageName: String): Boolean {
         val userId = context.userId
@@ -68,7 +110,25 @@ class CompanionDeviceManagerTest : InstrumentationTestCase() {
 
     @Before
     fun assumeHasFeature() {
-        assumeTrue(context.packageManager.hasSystemFeature(FEATURE_COMPANION_DEVICE_SETUP))
+        assumeTrue(hasFeatureCompanionDeviceSetup)
+        // TODO(b/191699828) test does not work in automotive due to accessibility issue
+        assumeFalse(isAuto)
+    }
+
+    @After
+    fun removeAllAssociations() {
+        // If the devices does not have the feature or is an Auto, the test didn't run, and the
+        // clean up is not needed (will actually crash if the feature is missing).
+        // See assumeHasFeature @Before method.
+        if (!hasFeatureCompanionDeviceSetup || isAuto) return
+
+        val userId = context.userId
+        val associations = getAssociatedDevices(TEST_APP_PACKAGE_NAME)
+
+        for (address in associations) {
+            runShellCommandOrThrow(
+                    "cmd companiondevice disassociate $userId $TEST_APP_PACKAGE_NAME $address")
+        }
     }
 
     @AppModeFull(reason = "Companion API for non-instant apps only")
@@ -98,5 +158,155 @@ class CompanionDeviceManagerTest : InstrumentationTestCase() {
             DUMMY_MAC_ADDRESS, SHELL_PACKAGE_NAME, MANAGE_COMPANION_DEVICES,
             COMPANION_APPROVE_WIFI_CONNECTIONS))
         assertFalse(isShellAssociated(DUMMY_MAC_ADDRESS, SHELL_PACKAGE_NAME))
+    }
+
+    @AppModeFull(reason = "Companion API for non-instant apps only")
+    @Test
+    fun testDump() {
+        val userId = context.userId
+        val packageName = context.packageName
+
+        try {
+            runShellCommand(
+                    "cmd companiondevice associate $userId $packageName $DUMMY_MAC_ADDRESS")
+            val output = runShellCommand("dumpsys companiondevice")
+            assertThat(output, containsString(packageName))
+            assertThat(output, containsString(DUMMY_MAC_ADDRESS))
+        } finally {
+            runShellCommand(
+                    "cmd companiondevice disassociate $userId $packageName $DUMMY_MAC_ADDRESS")
+        }
+    }
+
+    @AppModeFull(reason = "Companion API for non-instant apps only")
+    @Test
+    fun testProfiles() {
+        installApk("--user ${UserHandle.myUserId()} $TEST_APP_APK_LOCATION")
+        startApp(TEST_APP_PACKAGE_NAME)
+
+        waitFindNode(hasClassThat(`is`(equalTo(EditText::class.java.name))))
+                .performAction(ACTION_SET_TEXT,
+                        bundleOf(ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE to ""))
+        waitForIdle()
+
+        click("Watch")
+        val device = getEventually({
+            click("Associate")
+            waitFindNode(hasIdThat(containsString("device_list")),
+                    failMsg = "Test requires a discoverable bluetooth device nearby",
+                    timeoutMs = 9_000)
+                    .children
+                    .find { it.className == TextView::class.java.name }
+                    .assertNotNull { "Empty device list" }
+        }, 90_000)
+        device!!.click()
+
+        eventually {
+            assertThat(getAssociatedDevices(TEST_APP_PACKAGE_NAME), not(empty()))
+        }
+        val deviceAddress = getAssociatedDevices(TEST_APP_PACKAGE_NAME).last()
+
+        runShellCommandOrThrow("cmd companiondevice simulate_connect $deviceAddress")
+        assertPermission(
+                TEST_APP_PACKAGE_NAME, "android.permission.CALL_PHONE", PERMISSION_GRANTED)
+
+        runShellCommandOrThrow("cmd companiondevice simulate_disconnect $deviceAddress")
+        assertPermission(
+                TEST_APP_PACKAGE_NAME, "android.permission.CALL_PHONE", PERMISSION_GRANTED)
+    }
+
+    @AppModeFull(reason = "Companion API for non-instant apps only")
+    @Test
+    fun testRequestNotifications() {
+        installApk("--user ${UserHandle.myUserId()} $TEST_APP_APK_LOCATION")
+        startApp(TEST_APP_PACKAGE_NAME)
+
+        waitFindNode(hasClassThat(`is`(equalTo(EditText::class.java.name))))
+                .performAction(ACTION_SET_TEXT,
+                        bundleOf(ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE to ""))
+        waitForIdle()
+
+        val deviceForAssociation = getEventually({
+            click("Associate")
+            waitFindNode(hasIdThat(containsString("device_list")),
+                    failMsg = "Test requires a discoverable bluetooth device nearby",
+                    timeoutMs = 5_000)
+                    .children
+                    .find { it.className == TextView::class.java.name }
+                    .assertNotNull { "Empty device list" }
+        }, 60_000)
+
+        deviceForAssociation!!.click()
+
+        waitForIdle()
+
+        val deviceForNotifications = getEventually({
+            click("Request Notifications")
+            waitFindNode(hasIdThat(containsString("button1")),
+                    failMsg = "The Request Notifications dialog is not showing up",
+                    timeoutMs = 5_000)
+                    .assertNotNull { "Request Notifications is not implemented" }
+        }, 60_000)
+
+        deviceForNotifications!!.click()
+
+        waitForIdle()
+    }
+
+    private fun getAssociatedDevices(
+        pkg: String,
+        user: UserHandle = android.os.Process.myUserHandle()
+    ): List<String> {
+        return runShellCommandOrThrow("cmd companiondevice list ${user.identifier}")
+                .lines()
+                .filter { it.startsWith(pkg) }
+                .map { it.substringAfterLast(" ") }
+    }
+}
+
+private fun click(label: String) {
+    waitFindObject(byTextIgnoreCase(label)).click()
+    waitForIdle()
+}
+
+fun hasClassThat(condition: Matcher<in String?>?): Matcher<AccessibilityNodeInfo> {
+    return MatcherUtils.propertyMatches(
+            "class",
+            { obj: AccessibilityNodeInfo -> obj.className },
+            condition)
+}
+
+fun bundleOf(vararg entries: Pair<String, Any>) = Bundle().apply {
+    entries.forEach { (k, v) -> set(k, v) }
+}
+
+operator fun Bundle.set(key: String, value: Any?) {
+    if (value is Array<*> && value.isArrayOf<Parcelable>()) {
+        putParcelableArray(key, value as Array<Parcelable>)
+        return
+    }
+    if (value is Array<*> && value.isArrayOf<CharSequence>()) {
+        putCharSequenceArray(key, value as Array<CharSequence>)
+        return
+    }
+    when (value) {
+        is Byte -> putByte(key, value)
+        is Char -> putChar(key, value)
+        is Short -> putShort(key, value)
+        is Float -> putFloat(key, value)
+        is CharSequence -> putCharSequence(key, value)
+        is Parcelable -> putParcelable(key, value)
+        is Size -> putSize(key, value)
+        is SizeF -> putSizeF(key, value)
+        is ArrayList<*> -> putParcelableArrayList(key, value as ArrayList<Parcelable>)
+        is SparseArray<*> -> putSparseParcelableArray(key, value as SparseArray<Parcelable>)
+        is Serializable -> putSerializable(key, value)
+        is ByteArray -> putByteArray(key, value)
+        is ShortArray -> putShortArray(key, value)
+        is CharArray -> putCharArray(key, value)
+        is FloatArray -> putFloatArray(key, value)
+        is Bundle -> putBundle(key, value)
+        is Binder -> putBinder(key, value)
+        else -> throw IllegalArgumentException("" + value)
     }
 }

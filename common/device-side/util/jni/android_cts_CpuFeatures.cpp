@@ -28,12 +28,6 @@ jboolean android_cts_CpuFeatures_isArmCpu(JNIEnv* env, jobject thiz)
     return cpuFamily == ANDROID_CPU_FAMILY_ARM;
 }
 
-jboolean android_cts_CpuFeatures_isMipsCpu(JNIEnv* env, jobject thiz)
-{
-    AndroidCpuFamily cpuFamily = android_getCpuFamily();
-    return cpuFamily == ANDROID_CPU_FAMILY_MIPS;
-}
-
 jboolean android_cts_CpuFeatures_isX86Cpu(JNIEnv* env, jobject thiz)
 {
     AndroidCpuFamily cpuFamily = android_getCpuFamily();
@@ -44,12 +38,6 @@ jboolean android_cts_CpuFeatures_isArm64Cpu(JNIEnv* env, jobject thiz)
 {
     AndroidCpuFamily cpuFamily = android_getCpuFamily();
     return cpuFamily == ANDROID_CPU_FAMILY_ARM64;
-}
-
-jboolean android_cts_CpuFeatures_isMips64Cpu(JNIEnv* env, jobject thiz)
-{
-    AndroidCpuFamily cpuFamily = android_getCpuFamily();
-    return cpuFamily == ANDROID_CPU_FAMILY_MIPS64;
 }
 
 jboolean android_cts_CpuFeatures_isX86_64Cpu(JNIEnv* env, jobject thiz)
@@ -80,14 +68,10 @@ jboolean android_cts_CpuFeatures_isNativeBridgedCpu(JNIEnv* env, jobject thiz)
 static JNINativeMethod gMethods[] = {
     {  "isArmCpu", "()Z",
             (void *) android_cts_CpuFeatures_isArmCpu  },
-    {  "isMipsCpu", "()Z",
-            (void *) android_cts_CpuFeatures_isMipsCpu  },
     {  "isX86Cpu", "()Z",
             (void *) android_cts_CpuFeatures_isX86Cpu  },
     {  "isArm64Cpu", "()Z",
             (void *) android_cts_CpuFeatures_isArm64Cpu  },
-    {  "isMips64Cpu", "()Z",
-            (void *) android_cts_CpuFeatures_isMips64Cpu  },
     {  "isX86_64Cpu", "()Z",
             (void *) android_cts_CpuFeatures_isX86_64Cpu  },
     {  "getHwCaps", "()I",

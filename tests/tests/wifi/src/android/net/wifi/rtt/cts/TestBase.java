@@ -32,6 +32,7 @@ import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.List;
@@ -58,6 +59,9 @@ public class TestBase extends WifiJUnit3TestBase {
     // Interval between failure scans
     private static final int INTERVAL_BETWEEN_FAILURE_SCAN_MILLIS = 5_000;
 
+    // 5GHz Frequency band
+    private static final int FREQUENCY_OF_5GHZ_BAND_IN_MHZ = 5_000;
+
     protected WifiRttManager mWifiRttManager;
     protected WifiManager mWifiManager;
     private LocationManager mLocationManager;
@@ -65,6 +69,8 @@ public class TestBase extends WifiJUnit3TestBase {
 
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
     protected final Executor mExecutor;
+    private Boolean mWasVerboseLoggingEnabled;
+
     {
         mHandlerThread.start();
         mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
@@ -77,6 +83,15 @@ public class TestBase extends WifiJUnit3TestBase {
     static boolean shouldTestWifiRtt(Context context) {
         final PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT);
+    }
+
+    /**
+     * Returns a flag indicating whether or not Wi-Fi Aware should be tested. Wi-Fi Aware
+     * should be tested if the feature is supported on the current device.
+     */
+    static boolean shouldTestWifiAware(Context context) {
+        final PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
     }
 
     @Override
@@ -98,6 +113,13 @@ public class TestBase extends WifiJUnit3TestBase {
 
         mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
         assertNotNull("Wi-Fi Manager", mWifiManager);
+
+        // turn on verbose logging for tests
+        mWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.isVerboseLoggingEnabled());
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.setVerboseLoggingEnabled(true));
+
         mWifiLock = mWifiManager.createWifiLock(TAG);
         mWifiLock.acquire();
         if (!mWifiManager.isWifiEnabled()) {
@@ -123,6 +145,9 @@ public class TestBase extends WifiJUnit3TestBase {
             super.tearDown();
             return;
         }
+
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.setVerboseLoggingEnabled(mWasVerboseLoggingEnabled));
 
         super.tearDown();
     }
@@ -223,13 +248,46 @@ public class TestBase extends WifiJUnit3TestBase {
      *
      * @param numScanRetries Maximum number of scans retries (in addition to first scan).
      */
-    protected ScanResult scanForTestAp(int numScanRetries)
+    protected ScanResult scanForTest11mcCapableAp(int numScanRetries)
             throws InterruptedException {
         int scanCount = 0;
         ScanResult bestTestAp = null;
         while (scanCount <= numScanRetries) {
             for (ScanResult scanResult : scanAps()) {
                 if (!scanResult.is80211mcResponder()) {
+                    continue;
+                }
+                if (bestTestAp == null || scanResult.level > bestTestAp.level) {
+                    bestTestAp = scanResult;
+                }
+            }
+            if (bestTestAp == null) {
+                // Ongoing connection may cause scan failure, wait for a while before next scan.
+                Thread.sleep(INTERVAL_BETWEEN_FAILURE_SCAN_MILLIS);
+            }
+            scanCount++;
+        }
+        return bestTestAp;
+    }
+
+    /**
+     * Start a scan and return a test AP which does NOT support IEEE 802.11mc, with a BSS in the
+     * 5GHz band, and which has the highest RSSI. Will perform N (parameterized) scans and get
+     * the best AP across all scan results.
+     *
+     * Returns null if test AP is not found in the specified number of scans.
+     *
+     * @param numScanRetries Maximum number of scans retries (in addition to first scan).
+     */
+    protected ScanResult scanForTestNon11mcCapableAp(int numScanRetries)
+            throws InterruptedException {
+        int scanCount = 0;
+        ScanResult bestTestAp = null;
+        while (scanCount <= numScanRetries) {
+            for (ScanResult scanResult : scanAps()) {
+                // Ensure using a 5GHz or greater channel
+                if (scanResult.is80211mcResponder()
+                        || scanResult.centerFreq0 < FREQUENCY_OF_5GHZ_BAND_IN_MHZ) {
                     continue;
                 }
                 if (bestTestAp == null || scanResult.level > bestTestAp.level) {

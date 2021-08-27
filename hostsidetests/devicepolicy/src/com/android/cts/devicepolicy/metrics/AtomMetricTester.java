@@ -15,7 +15,7 @@
  */
 package com.android.cts.devicepolicy.metrics;
 
-import static junit.framework.Assert.assertTrue;
+import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.internal.os.StatsdConfigProto.AtomMatcher;
 import com.android.internal.os.StatsdConfigProto.EventMetric;
@@ -23,24 +23,22 @@ import com.android.internal.os.StatsdConfigProto.FieldValueMatcher;
 import com.android.internal.os.StatsdConfigProto.SimpleAtomMatcher;
 import com.android.internal.os.StatsdConfigProto.StatsdConfig;
 import com.android.os.AtomsProto.Atom;
-import com.android.os.StatsLog.ConfigMetricsReport;
 import com.android.os.StatsLog.ConfigMetricsReportList;
 import com.android.os.StatsLog.EventMetricData;
-import com.android.os.StatsLog.StatsLogReport;
 import com.android.tradefed.device.CollectingByteOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
+
 import com.google.common.io.Files;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
+
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Tests Statsd atoms.
@@ -63,9 +61,6 @@ class AtomMetricTester {
     }
 
     void cleanLogs() throws Exception {
-        if (isStatsdDisabled()) {
-            return;
-        }
         removeConfig(CONFIG_ID);
         getReportList(); // Clears data.
     }
@@ -106,26 +101,7 @@ class AtomMetricTester {
      */
     List<EventMetricData> getEventMetricDataList() throws Exception {
         ConfigMetricsReportList reportList = getReportList();
-        return getEventMetricDataList(reportList);
-    }
-
-    /**
-     * Extracts and sorts the EventMetricData from the given ConfigMetricsReportList (which must
-     * contain a single report).
-     */
-    private List<EventMetricData> getEventMetricDataList(ConfigMetricsReportList reportList)
-            throws Exception {
-        assertTrue("Expected one report", reportList.getReportsCount() == 1);
-        final ConfigMetricsReport report = reportList.getReports(0);
-        final List<StatsLogReport> metricsList = report.getMetricsList();
-        return metricsList.stream()
-                .flatMap(statsLogReport -> statsLogReport.getEventMetrics().getDataList().stream())
-                .sorted(Comparator.comparing(EventMetricData::getElapsedTimestampNanos))
-                .peek(eventMetricData -> {
-                    CLog.d("Atom at " + eventMetricData.getElapsedTimestampNanos()
-                            + ":\n" + eventMetricData.getAtom().toString());
-                })
-                .collect(Collectors.toList());
+        return ReportUtils.getEventMetricDataList(reportList);
     }
 
     /** Gets the statsd report. Note that this also deletes that report from statsd. */
@@ -235,15 +211,5 @@ class AtomMetricTester {
         final CollectingByteOutputReceiver receiver = new CollectingByteOutputReceiver();
         mDevice.executeShellCommand(command, receiver);
         return parser.parseFrom(receiver.getOutput());
-    }
-
-    boolean isStatsdDisabled() throws DeviceNotAvailableException {
-        // if ro.statsd.enable doesn't exist, statsd is running by default.
-        if ("false".equals(mDevice.getProperty("ro.statsd.enable"))
-                && "true".equals(mDevice.getProperty("ro.config.low_ram"))) {
-            CLog.d("Statsd is not enabled on the device");
-            return true;
-        }
-        return false;
     }
 }

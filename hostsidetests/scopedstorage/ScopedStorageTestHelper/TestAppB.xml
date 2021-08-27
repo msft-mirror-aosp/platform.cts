@@ -19,8 +19,10 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
+    <uses-sdk android:minSdkVersion="30" />
+
     <application android:label="TestAppB">
-        <activity android:name="android.scopedstorage.cts.ScopedStorageTestHelper">
+        <activity android:name="android.scopedstorage.cts.ScopedStorageTestHelper" android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT"/>

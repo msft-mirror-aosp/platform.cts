@@ -17,13 +17,15 @@ package android.slice.cts
 import android.app.slice.Slice
 import android.app.slice.SliceSpec
 import android.content.ContentResolver
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 
-import android.platform.test.annotations.SecurityTest
+import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.rule.ActivityTestRule
 import androidx.test.runner.AndroidJUnit4
 import org.junit.Before
+import org.junit.Assume.assumeFalse
 
 import org.junit.Rule
 import org.junit.Test
@@ -47,20 +49,31 @@ class SliceProviderTest {
 
     private lateinit var contentResolver: ContentResolver
 
+    private var isSlicesDisabled: Boolean = false
+
     @Before
     fun setUp() {
         contentResolver = activityTestRule.activity.contentResolver
+        isSlicesDisabled = activityTestRule
+                            .activity
+                            .packageManager
+                            .hasSystemFeature(
+                                PackageManager.FEATURE_SLICES_DISABLED)
     }
 
     @Test
-    @SecurityTest(minPatchLevel = "2019-11-01")
+    @AsbSecurityTest(cveBugId = [138441555])
     fun testCallSliceUri_ValidAuthority() {
+        assumeFalse(isSlicesDisabled)
+
         doQuery(validActionUri)
     }
 
     @Test(expected = SecurityException::class)
-    @SecurityTest(minPatchLevel = "2019-11-01")
+    @AsbSecurityTest(cveBugId = [138441555])
     fun testCallSliceUri_ShadyAuthority() {
+        assumeFalse(isSlicesDisabled)
+
         doQuery(shadyActionUri)
     }
 

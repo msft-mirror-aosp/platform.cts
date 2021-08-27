@@ -33,9 +33,11 @@ import static android.scopedstorage.cts.lib.TestUtils.assertCantRenameDirectory;
 import static android.scopedstorage.cts.lib.TestUtils.assertCantRenameFile;
 import static android.scopedstorage.cts.lib.TestUtils.assertDirectoryContains;
 import static android.scopedstorage.cts.lib.TestUtils.assertFileContent;
+import static android.scopedstorage.cts.lib.TestUtils.assertMountMode;
 import static android.scopedstorage.cts.lib.TestUtils.assertThrows;
 import static android.scopedstorage.cts.lib.TestUtils.canOpen;
 import static android.scopedstorage.cts.lib.TestUtils.canOpenFileAs;
+import static android.scopedstorage.cts.lib.TestUtils.canQueryOnUri;
 import static android.scopedstorage.cts.lib.TestUtils.checkPermission;
 import static android.scopedstorage.cts.lib.TestUtils.createFileAs;
 import static android.scopedstorage.cts.lib.TestUtils.deleteFileAs;
@@ -67,6 +69,7 @@ import static android.scopedstorage.cts.lib.TestUtils.getMusicDir;
 import static android.scopedstorage.cts.lib.TestUtils.getNotificationsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getPicturesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getPodcastsDir;
+import static android.scopedstorage.cts.lib.TestUtils.getRecordingsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getRingtonesDir;
 import static android.scopedstorage.cts.lib.TestUtils.grantPermission;
 import static android.scopedstorage.cts.lib.TestUtils.installApp;
@@ -80,10 +83,15 @@ import static android.scopedstorage.cts.lib.TestUtils.queryImageFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryVideoFile;
 import static android.scopedstorage.cts.lib.TestUtils.readExifMetadataFromTestApp;
 import static android.scopedstorage.cts.lib.TestUtils.revokePermission;
+import static android.scopedstorage.cts.lib.TestUtils.setAppOpsModeForUid;
 import static android.scopedstorage.cts.lib.TestUtils.setAttrAs;
 import static android.scopedstorage.cts.lib.TestUtils.uninstallApp;
 import static android.scopedstorage.cts.lib.TestUtils.uninstallAppNoThrow;
 import static android.scopedstorage.cts.lib.TestUtils.updateDisplayNameWithMediaProvider;
+import static android.scopedstorage.cts.lib.TestUtils.verifyInsertFromExternalMediaDirViaRelativePath_allowed;
+import static android.scopedstorage.cts.lib.TestUtils.verifyInsertFromExternalPrivateDirViaRelativePath_denied;
+import static android.scopedstorage.cts.lib.TestUtils.verifyUpdateToExternalMediaDirViaRelativePath_allowed;
+import static android.scopedstorage.cts.lib.TestUtils.verifyUpdateToExternalPrivateDirsViaRelativePath_denied;
 import static android.system.OsConstants.F_OK;
 import static android.system.OsConstants.O_APPEND;
 import static android.system.OsConstants.O_CREAT;
@@ -109,6 +117,7 @@ import android.Manifest;
 import android.app.AppOpsManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -116,6 +125,8 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.os.storage.StorageManager;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -123,6 +134,7 @@ import android.system.StructStat;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.cts.install.lib.TestApp;
 
@@ -143,7 +155,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -208,10 +219,15 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     private static final String OPSTR_MANAGE_EXTERNAL_STORAGE =
             permissionToOp(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
 
+    private static final String TRANSFORMS_DIR = ".transforms";
+    private static final String TRANSFORMS_TRANSCODE_DIR = TRANSFORMS_DIR + "/" + "transcode";
+    private static final String TRANSFORMS_SYNTHETIC_DIR = TRANSFORMS_DIR + "/" + "synthetic";
+
     @Parameter(0)
     public String mVolumeName;
 
-    @Parameters
+    /** Parameters data. */
+    @Parameters(name = "volume={0}")
     public static Iterable<? extends Object> data() {
         return ScopedStorageDeviceTest.getTestParameters();
     }
@@ -354,6 +370,31 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 () -> {
                     new File(getExternalStorageDir(), VIDEO_FILE_NAME).createNewFile();
                 });
+    }
+
+    /**
+     * Test that we enforce certain media types can only be created in certain directories.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testTypePathConformity_recordingsDir() throws Exception {
+        final File recordingsDir = getRecordingsDir();
+
+        // Only audio files can be created in Recordings
+        assertThrows(IOException.class, "Operation not permitted",
+                () -> {
+                    new File(recordingsDir, NONMEDIA_FILE_NAME).createNewFile();
+                });
+        assertThrows(IOException.class, "Operation not permitted",
+                () -> {
+                    new File(recordingsDir, VIDEO_FILE_NAME).createNewFile();
+                });
+        assertThrows(IOException.class, "Operation not permitted",
+                () -> {
+                    new File(recordingsDir, IMAGE_FILE_NAME).createNewFile();
+                });
+
+        assertCanCreateFile(new File(recordingsDir, AUDIO_FILE_NAME));
     }
 
     /**
@@ -815,9 +856,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             try (InputStream in =
                          getContext().getResources().openRawResource(R.raw.img_with_metadata);
-                 OutputStream out = new FileOutputStream(jpgFile)) {
+                FileOutputStream out = new FileOutputStream(jpgFile)) {
                 // Dump the image we have to external storage
                 FileUtils.copy(in, out);
+                // Sync file to disk to ensure file is fully written to the lower fs attempting to
+                // open for redaction. Otherwise, the FUSE daemon might not accurately parse the
+                // EXIF tags and might misleadingly think there are not tags to redact
+                out.getFD().sync();
 
                 HashMap<String, String> exif = getExifMetadata(jpgFile);
                 assertExifMetadataMatch(exif, originalExif);
@@ -1031,6 +1076,12 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testDefaultNoIsolatedStorageFlag() throws Exception {
+        assertThat(Environment.isExternalStorageLegacy()).isFalse();
+    }
+
+    @Test
     public void testCreateLowerCaseDeleteUpperCase() throws Exception {
         File upperCase = new File(getDownloadDir(), "CREATE_LOWER_DELETE_UPPER");
         File lowerCase = new File(getDownloadDir(), "create_lower_delete_upper");
@@ -1130,13 +1181,16 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     private void createDeleteCreate(File create, File delete) throws Exception {
         try {
             assertThat(create.createNewFile()).isTrue();
-            Thread.sleep(5);
+            // Wait for the kernel to update the dentry cache.
+            Thread.sleep(100);
 
             assertThat(delete.delete()).isTrue();
-            Thread.sleep(5);
+            // Wait for the kernel to clean up the dentry cache.
+            Thread.sleep(100);
 
             assertThat(create.createNewFile()).isTrue();
-            Thread.sleep(5);
+            // Wait for the kernel to update the dentry cache.
+            Thread.sleep(100);
         } finally {
             create.delete();
             delete.delete();
@@ -1185,9 +1239,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                     getExifMetadataFromRawResource(R.raw.img_with_metadata);
             try (InputStream in =
                          getContext().getResources().openRawResource(R.raw.img_with_metadata);
-                 OutputStream out = new FileOutputStream(imgFile)) {
+                FileOutputStream out = new FileOutputStream(imgFile)) {
                 // Dump the image we have to external storage
                 FileUtils.copy(in, out);
+                // Sync file to disk to ensure file is fully written to the lower fs.
+                out.getFD().sync();
             }
             HashMap<String, String> exif = getExifMetadata(imgFile);
             assertExifMetadataMatch(exif, originalExif);
@@ -1204,11 +1260,17 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // Revoke A_M_L and verify sensitive data redaction
             revokePermission(
                     APP_C.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            // revokePermission waits for permission status to be updated, but MediaProvider still
+            // needs to get permission change callback and clear its permission cache.
+            Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_C, imgFile.getPath());
             assertExifMetadataMismatch(exifFromTestApp, originalExif);
 
             // Re-grant A_M_L and verify access to sensitive data
             grantPermission(APP_C.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            // grantPermission waits for permission status to be updated, but MediaProvider still
+            // needs to get permission change callback and clear its permission cache.
+            Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_C, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
         } finally {
@@ -1298,6 +1360,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             revokePermission(packageName, permission);
         } else {
             denyAppOpsToUid(uid, opstr);
+            // TODO(191724755): Poll for AppOp state change instead
+            Thread.sleep(200);
         }
         assertThat(canOpenFileAs(app, file, forWrite)).isFalse();
 
@@ -1306,6 +1370,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             grantPermission(packageName, permission);
         } else {
             allowAppOpsToUid(uid, opstr);
+            // TODO(191724755): Poll for AppOp state change instead
+            Thread.sleep(200);
         }
         assertThat(canOpenFileAs(app, file, forWrite)).isTrue();
 
@@ -1314,8 +1380,44 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             revokePermission(packageName, permission);
         } else {
             denyAppOpsToUid(uid, opstr);
+            // TODO(191724755): Poll for AppOp state change instead
+            Thread.sleep(200);
         }
         assertThat(canOpenFileAs(app, file, forWrite)).isFalse();
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testDisableOpResetForSystemGallery() throws Exception {
+        final File otherAppImageFile = new File(getDcimDir(), "other_" + IMAGE_FILE_NAME);
+        final File otherAppVideoFile = new File(getDcimDir(), "other_" + VIDEO_FILE_NAME);
+
+        try {
+            allowAppOpsToUid(Process.myUid(), SYSTEM_GALERY_APPOPS);
+
+            // Have another app create an image file
+            assertThat(createFileAs(APP_B_NO_PERMS, otherAppImageFile.getPath())).isTrue();
+            assertThat(otherAppImageFile.exists()).isTrue();
+
+            // Have another app create a video file
+            assertThat(createFileAs(APP_B_NO_PERMS, otherAppVideoFile.getPath())).isTrue();
+            assertThat(otherAppVideoFile.exists()).isTrue();
+
+            assertCanWriteAndRead(otherAppImageFile, BYTES_DATA1);
+            assertCanWriteAndRead(otherAppVideoFile, BYTES_DATA1);
+
+            // Reset app op should not reset System Gallery privileges
+            executeShellCommand("appops reset " + THIS_PACKAGE_NAME);
+
+            // Assert we can still write to images/videos
+            assertCanWriteAndRead(otherAppImageFile, BYTES_DATA2);
+            assertCanWriteAndRead(otherAppVideoFile, BYTES_DATA2);
+
+        } finally {
+            deleteFileAsNoThrow(APP_B_NO_PERMS, otherAppImageFile.getAbsolutePath());
+            deleteFileAsNoThrow(APP_B_NO_PERMS, otherAppVideoFile.getAbsolutePath());
+            denyAppOpsToUid(Process.myUid(), SYSTEM_GALERY_APPOPS);
+        }
     }
 
     @Test
@@ -1532,6 +1634,39 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         } finally {
             videoFile1.delete();
             videoFile2.delete();
+        }
+    }
+
+    /**
+     * Test that ScanFile() after renaming file extension updates the right
+     * MIME type from the file metadata.
+     */
+    @Test
+    public void testScanUpdatesMimeTypeForRenameFileExtension() throws Exception {
+        final String audioFileName = "ScopedStorageDeviceTest_" + NONCE;
+        final File mpegFile = new File(getMusicDir(), audioFileName + ".mp3");
+        final File nonMpegFile = new File(getMusicDir(), audioFileName + ".snd");
+        try {
+            // Copy audio content to mpegFile
+            try (InputStream in =
+                         getContext().getResources().openRawResource(R.raw.test_audio);
+                 FileOutputStream out = new FileOutputStream(mpegFile)) {
+                FileUtils.copy(in, out);
+                out.getFD().sync();
+            }
+            assertThat(MediaStore.scanFile(getContentResolver(), mpegFile)).isNotNull();
+            assertThat(getFileMimeTypeFromDatabase(mpegFile)).isEqualTo("audio/mpeg");
+
+            // This rename changes MIME type from audio/mpeg to audio/basic
+            assertCanRenameFile(mpegFile, nonMpegFile);
+            assertThat(getFileMimeTypeFromDatabase(nonMpegFile)).isNotEqualTo("audio/mpeg");
+
+            assertThat(MediaStore.scanFile(getContentResolver(), nonMpegFile)).isNotNull();
+            // Above scan should read file metadata and update the MIME type to audio/mpeg
+            assertThat(getFileMimeTypeFromDatabase(nonMpegFile)).isEqualTo("audio/mpeg");
+        } finally {
+            mpegFile.delete();
+            nonMpegFile.delete();
         }
     }
 
@@ -1941,7 +2076,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
-    public void testDeletePendingAndTrashed() throws Exception {
+    public void testDeletePendingAndTrashed_ownerCanDelete() throws Exception {
         final File pendingVideoFile = new File(getDcimDir(), VIDEO_FILE_NAME);
         final File trashedImageFile = new File(getPicturesDir(), IMAGE_FILE_NAME);
         final File pendingPdfFile = new File(getDownloadDir(), NONMEDIA_FILE_NAME);
@@ -1960,7 +2095,25 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // App can delete its own pending and trashed file.
             assertCanDeletePaths(pendingVideoFilePath, trashedImageFilePath, pendingPdfFilePath,
                     trashedPdfFilePath);
+        } finally {
+            deletePaths(pendingVideoFilePath, trashedImageFilePath, pendingPdfFilePath,
+                    trashedPdfFilePath);
+            deleteFiles(pendingVideoFile, trashedImageFile, pendingPdfFile, trashedPdfFile);
+        }
+    }
 
+    @Test
+    public void testDeletePendingAndTrashed_otherAppCantDelete() throws Exception {
+        final File pendingVideoFile = new File(getDcimDir(), VIDEO_FILE_NAME);
+        final File trashedImageFile = new File(getPicturesDir(), IMAGE_FILE_NAME);
+        final File pendingPdfFile = new File(getDownloadDir(), NONMEDIA_FILE_NAME);
+        final File trashedPdfFile = new File(getDocumentsDir(), NONMEDIA_FILE_NAME);
+        // Actual path of the file gets rewritten for pending and trashed files.
+        String pendingVideoFilePath = null;
+        String trashedImageFilePath = null;
+        String pendingPdfFilePath = null;
+        String trashedPdfFilePath = null;
+        try {
             pendingVideoFilePath = getFilePathFromUri(createPendingFile(pendingVideoFile));
             trashedImageFilePath = getFilePathFromUri(createTrashedFile(trashedImageFile));
             pendingPdfFilePath = getFilePathFromUri(createPendingFile(pendingPdfFile));
@@ -1969,11 +2122,52 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // App can't delete other app's pending and trashed file.
             assertCantDeletePathsAs(APP_A_HAS_RES, pendingVideoFilePath, trashedImageFilePath,
                     pendingPdfFilePath, trashedPdfFilePath);
+        } finally {
+            deletePaths(pendingVideoFilePath, trashedImageFilePath, pendingPdfFilePath,
+                    trashedPdfFilePath);
+            deleteFiles(pendingVideoFile, trashedImageFile, pendingPdfFile, trashedPdfFile);
+        }
+    }
+
+    @Test
+    public void testDeletePendingAndTrashed_fileManagerCanDelete() throws Exception {
+        final File pendingVideoFile = new File(getDcimDir(), VIDEO_FILE_NAME);
+        final File trashedImageFile = new File(getPicturesDir(), IMAGE_FILE_NAME);
+        final File pendingPdfFile = new File(getDownloadDir(), NONMEDIA_FILE_NAME);
+        final File trashedPdfFile = new File(getDocumentsDir(), NONMEDIA_FILE_NAME);
+        // Actual path of the file gets rewritten for pending and trashed files.
+        String pendingVideoFilePath = null;
+        String trashedImageFilePath = null;
+        String pendingPdfFilePath = null;
+        String trashedPdfFilePath = null;
+        try {
+            pendingVideoFilePath = getFilePathFromUri(createPendingFile(pendingVideoFile));
+            trashedImageFilePath = getFilePathFromUri(createTrashedFile(trashedImageFile));
+            pendingPdfFilePath = getFilePathFromUri(createPendingFile(pendingPdfFile));
+            trashedPdfFilePath = getFilePathFromUri(createTrashedFile(trashedPdfFile));
 
             // File Manager can delete any pending and trashed file
             assertCanDeletePathsAs(APP_FM, pendingVideoFilePath, trashedImageFilePath,
                     pendingPdfFilePath, trashedPdfFilePath);
+        } finally {
+            deletePaths(pendingVideoFilePath, trashedImageFilePath, pendingPdfFilePath,
+                    trashedPdfFilePath);
+            deleteFiles(pendingVideoFile, trashedImageFile, pendingPdfFile, trashedPdfFile);
+        }
+    }
 
+    @Test
+    public void testDeletePendingAndTrashed_systemGalleryCanDeleteMedia() throws Exception {
+        final File pendingVideoFile = new File(getDcimDir(), VIDEO_FILE_NAME);
+        final File trashedImageFile = new File(getPicturesDir(), IMAGE_FILE_NAME);
+        final File pendingPdfFile = new File(getDownloadDir(), NONMEDIA_FILE_NAME);
+        final File trashedPdfFile = new File(getDocumentsDir(), NONMEDIA_FILE_NAME);
+        // Actual path of the file gets rewritten for pending and trashed files.
+        String pendingVideoFilePath = null;
+        String trashedImageFilePath = null;
+        String pendingPdfFilePath = null;
+        String trashedPdfFilePath = null;
+        try {
             pendingVideoFilePath = getFilePathFromUri(createPendingFile(pendingVideoFile));
             trashedImageFilePath = getFilePathFromUri(createTrashedFile(trashedImageFile));
             pendingPdfFilePath = getFilePathFromUri(createPendingFile(pendingPdfFile));
@@ -2353,6 +2547,59 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     /**
+     * b/182479650: Test that Screenshots directory is not hidden because of .nomedia presence
+     */
+    @Test
+    public void testNoMediaDoesntHideSpecialDirectories() throws Exception {
+        for (File directory : new File [] {
+                getDcimDir(),
+                getDownloadDir(),
+                new File(getDcimDir(), "Camera"),
+                new File(getPicturesDir(), Environment.DIRECTORY_SCREENSHOTS),
+                new File(getMoviesDir(), Environment.DIRECTORY_SCREENSHOTS),
+                new File(getExternalStorageDir(), Environment.DIRECTORY_SCREENSHOTS)
+        }) {
+            assertNoMediaDoesntHideSpecialDirectories(directory);
+        }
+    }
+
+    private void assertNoMediaDoesntHideSpecialDirectories(File directory) throws Exception {
+        final File nomediaFile = new File(directory, ".nomedia");
+        final File videoFile = new File(directory, VIDEO_FILE_NAME);
+        Log.d(TAG, "Directory " + directory);
+
+        try {
+            // Recreate required file and directory
+            if (!directory.exists()) {
+                Log.d(TAG, "mkdir directory " + directory);
+                createDirectoryAsLegacyApp(directory);
+            }
+            assertWithMessage("Exists " + directory).that(directory.exists()).isTrue();
+
+            Log.d(TAG, "CreateFileAs " + nomediaFile);
+            createFileAsLegacyApp(nomediaFile);
+            assertWithMessage("Exists " + nomediaFile).that(nomediaFile.exists()).isTrue();
+
+            createFileAsLegacyApp(videoFile);
+            assertWithMessage("Exists " + videoFile).that(videoFile.exists()).isTrue();
+            final Uri targetUri = MediaStore.scanFile(getContentResolver(), videoFile);
+            assertWithMessage("Scan result for " + videoFile).that(targetUri)
+                    .isNotNull();
+
+            assertWithMessage("Uri path segment for " + targetUri)
+                    .that(targetUri.getPathSegments()).contains("video");
+
+            // Verify that the imageFile is not hidden because of .nomedia presence
+            assertWithMessage("Query as other app ")
+                    .that(canQueryOnUri(APP_A_HAS_RES, targetUri)).isTrue();
+        } finally {
+            deleteAsLegacyApp(videoFile);
+            deleteAsLegacyApp(nomediaFile);
+            deleteAsLegacyApp(directory);
+        }
+    }
+
+    /**
      * Test that readdir lists unsupported file types in default directories.
      */
     @Test
@@ -2476,6 +2723,174 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             hiddenFile.delete();
             jpgFile.delete();
         }
+    }
+
+    @Test
+    public void testInsertFromExternalDirsViaRelativePath() throws Exception {
+        verifyInsertFromExternalMediaDirViaRelativePath_allowed();
+        verifyInsertFromExternalPrivateDirViaRelativePath_denied();
+    }
+
+    @Test
+    public void testUpdateToExternalDirsViaRelativePath() throws Exception {
+        verifyUpdateToExternalMediaDirViaRelativePath_allowed();
+        verifyUpdateToExternalPrivateDirsViaRelativePath_denied();
+    }
+
+    @Test
+    public void testInsertFromExternalDirsViaRelativePathAsSystemGallery() throws Exception {
+        int uid = Process.myUid();
+        try {
+            setAppOpsModeForUid(uid, AppOpsManager.MODE_ALLOWED, SYSTEM_GALERY_APPOPS);
+            verifyInsertFromExternalMediaDirViaRelativePath_allowed();
+            verifyInsertFromExternalPrivateDirViaRelativePath_denied();
+        } finally {
+            setAppOpsModeForUid(uid, AppOpsManager.MODE_ERRORED, SYSTEM_GALERY_APPOPS);
+        }
+    }
+
+    @Test
+    public void testUpdateToExternalDirsViaRelativePathAsSystemGallery() throws Exception {
+        int uid = Process.myUid();
+        try {
+            setAppOpsModeForUid(uid, AppOpsManager.MODE_ALLOWED, SYSTEM_GALERY_APPOPS);
+            verifyUpdateToExternalMediaDirViaRelativePath_allowed();
+            verifyUpdateToExternalPrivateDirsViaRelativePath_denied();
+        } finally {
+            setAppOpsModeForUid(uid, AppOpsManager.MODE_ERRORED, SYSTEM_GALERY_APPOPS);
+        }
+    }
+
+    @Test
+    public void testDeferredScanHidesPartialDatabaseRows() throws Exception {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+        // Insert a pending row
+        final Uri targetUri = getContentResolver().insert(getImageContentUri(), values, null);
+        try (InputStream in =
+                     getContext().getResources().openRawResource(R.raw.img_with_metadata)) {
+            try (ParcelFileDescriptor pfd =
+                         getContentResolver().openFileDescriptor(targetUri, "w")) {
+                // Write image content to the file
+                FileUtils.copy(in, new ParcelFileDescriptor.AutoCloseOutputStream(pfd));
+            }
+        }
+
+        // Verify that metadata is not updated yet.
+        try (Cursor c = getContentResolver().query(targetUri, new String[] {
+                MediaStore.Images.ImageColumns.DATE_TAKEN}, null, null)) {
+            assertThat(c.moveToFirst()).isTrue();
+            assertThat(c.getString(0)).isNull();
+        }
+        // Get file path to use in the next query().
+        final String imageFilePath = getFilePathFromUri(targetUri);
+
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+        Bundle extras = new Bundle();
+        extras.putBoolean(MediaStore.QUERY_ARG_DEFER_SCAN, true);
+        // Publish the file, but, defer the scan on update().
+        assertThat(getContentResolver().update(targetUri, values, extras)).isEqualTo(1);
+
+        // The update() above can return before scanning is complete. Verify that either we don't
+        // see the file in published files or if the file appears in the collection, it means that
+        // deferred scan is now complete, hence verify metadata is intact.
+        try (Cursor c = getContentResolver().query(getImageContentUri(),
+                new String[] {MediaStore.Images.ImageColumns.DATE_TAKEN},
+                MediaStore.Files.FileColumns.DATA + "=?", new String[] {imageFilePath}, null)) {
+            if (c.getCount() == 1) {
+                // If the file appears in media collection as published file, verify that metadata
+                // is correct.
+                assertThat(c.moveToFirst()).isTrue();
+                assertThat(c.getString(0)).isNotNull();
+                Log.i(TAG, "Verified that deferred scan on " + imageFilePath + " is complete"
+                        + " and hence metadata is updated");
+
+            } else {
+                assertThat(c.getCount()).isEqualTo(0);
+                Log.i(TAG, "Verified that " + imageFilePath + " was excluded in default query");
+            }
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testTransformsDirFileOperations() throws Exception {
+        final String path = Environment.getExternalStorageDirectory() + "/" + TRANSFORMS_DIR;
+        final File file = new File(path);
+        assertThat(file.exists()).isTrue();
+        testTransformsDirCommon(file);
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testTransformsSyntheticDirFileOperations() throws Exception {
+        final String path =
+                Environment.getExternalStorageDirectory() + "/" + TRANSFORMS_SYNTHETIC_DIR;
+        final File file = new File(path);
+        assertThat(file.exists()).isTrue();
+        testTransformsDirCommon(file);
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testTransformsTranscodeDirFileOperations() throws Exception {
+        final String path =
+                Environment.getExternalStorageDirectory() + "/" + TRANSFORMS_TRANSCODE_DIR;
+        final File file = new File(path);
+        assertThat(file.exists()).isFalse();
+        testTransformsDirCommon(file);
+    }
+
+
+    /**
+     * Test mount modes for a platform signed app with ACCESS_MTP permission.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testMTPAppWithPlatformSignatureMountMode() throws Exception {
+        final String shellPackageName = "com.android.shell";
+        final int uid = getContext().getPackageManager().getPackageUid(shellPackageName, 0);
+        assertMountMode(shellPackageName, uid, StorageManager.MOUNT_MODE_EXTERNAL_ANDROID_WRITABLE);
+    }
+
+    /**
+     * Test mount modes for ExternalStorageProvider and DownloadsProvider.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = 31, codeName = "S")
+    public void testExternalStorageProviderAndDownloadsProvider() throws Exception {
+        assertWritableMountModeForProvider(DocumentsContract.EXTERNAL_STORAGE_PROVIDER_AUTHORITY);
+        assertWritableMountModeForProvider(DocumentsContract.DOWNLOADS_PROVIDER_AUTHORITY);
+    }
+
+    private void assertWritableMountModeForProvider(String auth) {
+        final ProviderInfo provider = getContext().getPackageManager()
+                .resolveContentProvider(auth, 0);
+        int uid = provider.applicationInfo.uid;
+        final String packageName = provider.applicationInfo.packageName;
+
+        assertMountMode(packageName, uid, StorageManager.MOUNT_MODE_EXTERNAL_ANDROID_WRITABLE);
+    }
+
+    private boolean canRenameFile(File file) {
+        return file.renameTo(new File(file.getAbsolutePath() + "test"));
+    }
+
+    private void testTransformsDirCommon(File file) throws Exception {
+        assertThat(file.delete()).isFalse();
+        assertThat(canRenameFile(file)).isFalse();
+
+        final File newFile = new File(file.getAbsolutePath(), "test");
+        assertThat(newFile.mkdir()).isFalse();
+        assertThrows(IOException.class, () -> newFile.createNewFile());
+    }
+
+    private void assertCanWriteAndRead(File file, byte[] data) throws Exception {
+        // Assert we can write to images/videos
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(data);
+        }
+        assertFileContent(file, data);
     }
 
     /**

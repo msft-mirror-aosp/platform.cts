@@ -19,6 +19,7 @@
      package="android.hdmicec.app">
     <uses-feature android:name="android.software.leanback"
          android:required="false"/>
+    <uses-permission android:name="android.permission.HDMI_CEC" />
     <application>
         <activity android:name=".HdmiCecKeyEventCapture"
              android:exported="true">
@@ -38,7 +39,19 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".HdmiControlManagerHelper" >
+            <intent-filter>
+                <action android:name="android.hdmicec.app.OTP" />
+                <action android:name="android.hdmicec.app.DEVICE_SELECT" />
+            </intent-filter>
+        </activity>
+
+        <uses-library android:name="android.test.runner" />
     </application>
+
+
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.hdmicec.app" />
 
     <uses-sdk android:minSdkVersion="28"   android:targetSdkVersion="28" />
 
