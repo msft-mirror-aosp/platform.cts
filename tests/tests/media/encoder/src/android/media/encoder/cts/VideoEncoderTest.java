@@ -42,6 +42,7 @@ import android.media.cts.MediaTestBase;
 import android.media.cts.NonMediaMainlineTest;
 import android.media.cts.OutputSurface;
 import android.media.cts.Preconditions;
+import android.media.cts.TestArgs;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
@@ -64,6 +65,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.lang.Throwable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,12 +102,18 @@ public class VideoEncoderTest extends MediaTestBase {
     private static final String SOURCE_URL =
             mInpPrefix + "video_480x360_mp4_h264_871kbps_30fps.mp4";
 
-    private static final String CODEC_PREFIX_KEY = "codec-prefix";
-    private static final String mCodecPrefix;
-
     private final Encoder mEncHandle;
-
+    private final int mWidth;
+    private final int mHeight;
+    private final boolean mFlexYuv;
+    private final TestMode mMode;
     private final boolean DEBUG = false;
+
+    enum TestMode {
+        TEST_MODE_SPECIFIC, // test basic encoding for given configuration
+        TEST_MODE_DETAILED, // test detailed encoding for given configuration
+        TEST_MODE_INTRAREFRESH // test intra refresh
+    }
 
     @Before
     @Override
@@ -119,10 +127,6 @@ public class VideoEncoderTest extends MediaTestBase {
         super.tearDown();
     }
 
-    static {
-        android.os.Bundle args = InstrumentationRegistry.getArguments();
-        mCodecPrefix = args.getString(CODEC_PREFIX_KEY);
-    }
 
     class VideoStorage {
         private LinkedList<Pair<ByteBuffer, BufferInfo>> mStream;
@@ -174,21 +178,36 @@ public class VideoEncoderTest extends MediaTestBase {
                 }
                 public void onInputBufferAvailable(MediaCodec codec, int ix) {
                     if (it.hasNext()) {
-                        Pair<ByteBuffer, BufferInfo> el = it.next();
-                        el.first.clear();
                         try {
-                            codec.getInputBuffer(ix).put(el.first);
-                        } catch (java.nio.BufferOverflowException e) {
-                            Log.e(TAG, "cannot fit " + el.first.limit()
-                                    + "-byte encoded buffer into "
-                                    + codec.getInputBuffer(ix).remaining()
-                                    + "-byte input buffer of " + codec.getName()
-                                    + " configured for " + codec.getInputFormat());
-                            throw e;
+                            Pair<ByteBuffer, BufferInfo> el = it.next();
+                            el.first.clear();
+                            try {
+                                codec.getInputBuffer(ix).put(el.first);
+                            } catch (java.nio.BufferOverflowException e) {
+                                String diagnostic = "cannot fit " + el.first.limit()
+                                        + "-byte encoded buffer into "
+                                        + codec.getInputBuffer(ix).remaining()
+                                        + "-byte input buffer of " + codec.getName()
+                                        + " configured for " + codec.getInputFormat();
+                                Log.e(TAG, diagnostic);
+                                errorMsg.set(diagnostic + e);
+                                synchronized (condition) {
+                                    condition.notifyAll();
+                                }
+                                // no sense trying to enqueue the failed buffer
+                                return;
+                            }
+                            BufferInfo info = el.second;
+                                codec.queueInputBuffer(
+                                    ix, 0, info.size, info.presentationTimeUs, info.flags);
+                        } catch (Throwable t) {
+                          errorMsg.set("exception in onInputBufferAvailable( "
+                                       +  codec.getName() + "," + ix
+                                       + "): " + t);
+                          synchronized (condition) {
+                              condition.notifyAll();
+                          }
                         }
-                        BufferInfo info = el.second;
-                        codec.queueInputBuffer(
-                                ix, 0, info.size, info.presentationTimeUs, info.flags);
                     }
                 }
                 public void onError(MediaCodec codec, MediaCodec.CodecException e) {
@@ -953,22 +972,24 @@ public class VideoEncoderTest extends MediaTestBase {
         }
     }
 
-    class Encoder {
+    static class EncoderSize {
+        private final boolean DEBUG = false;
+        private static final String TAG = "EncoderSize";
         final private String mName;
         final private String mMime;
         final private CodecCapabilities mCaps;
         final private VideoCapabilities mVideoCaps;
 
-        final private Map<Size, Set<Size>> mMinMax;     // extreme sizes
-        final private Map<Size, Set<Size>> mNearMinMax; // sizes near extreme
-        final private Set<Size> mArbitraryW;            // arbitrary widths in the middle
-        final private Set<Size> mArbitraryH;            // arbitrary heights in the middle
-        final private Set<Size> mSizes;                 // all non-specifically tested sizes
+        final public Map<Size, Set<Size>> mMinMax;     // extreme sizes
+        final public Map<Size, Set<Size>> mNearMinMax; // sizes near extreme
+        final public Set<Size> mArbitraryW;            // arbitrary widths in the middle
+        final public Set<Size> mArbitraryH;            // arbitrary heights in the middle
+        final public Set<Size> mSizes;                 // all non-specifically tested sizes
 
         final private int xAlign;
         final private int yAlign;
 
-        Encoder(String name, String mime, CodecCapabilities caps) {
+        EncoderSize(String name, String mime, CodecCapabilities caps) {
             mName = name;
             mMime = mime;
             mCaps = caps;
@@ -1000,15 +1021,17 @@ public class VideoEncoderTest extends MediaTestBase {
                 int width, height;
                 try {
                     width = alignedPointInRange(i * 0.125, xAlign, mVideoCaps.getSupportedWidths());
-                    height = alignedPointInRange(
-                            j * 0.077, yAlign, mVideoCaps.getSupportedHeightsFor(width));
+                    height = alignedPointInRange(j * 0.077, yAlign,
+                            mVideoCaps.getSupportedHeightsFor(width));
                     mArbitraryW.add(new Size(width, height));
                 } catch (IllegalArgumentException e) {
                 }
 
                 try {
-                    height = alignedPointInRange(i * 0.125, yAlign, mVideoCaps.getSupportedHeights());
-                    width = alignedPointInRange(j * 0.077, xAlign, mVideoCaps.getSupportedWidthsFor(height));
+                    height = alignedPointInRange(i * 0.125, yAlign,
+                            mVideoCaps.getSupportedHeights());
+                    width = alignedPointInRange(j * 0.077, xAlign,
+                            mVideoCaps.getSupportedWidthsFor(height));
                     mArbitraryH.add(new Size(width, height));
                 } catch (IllegalArgumentException e) {
                 }
@@ -1108,33 +1131,23 @@ public class VideoEncoderTest extends MediaTestBase {
                     width * (double)y / x, yAlign, mVideoCaps.getSupportedHeightsFor(width));
             return new Size(width, height);
         }
+    }
+
+    class Encoder {
+        final private String mName;
+        final private String mMime;
+        final private CodecCapabilities mCaps;
+        final private VideoCapabilities mVideoCaps;
 
 
-        public boolean testExtreme(int x, int y, boolean flexYUV, boolean near) {
-            boolean skipped = true;
-            for (Size s : (near ? mNearMinMax : mMinMax).get(new Size(x, y))) {
-                if (test(s.getWidth(), s.getHeight(), false /* optional */, flexYUV)) {
-                    skipped = false;
-                }
-            }
-            return !skipped;
-        }
-
-        public boolean testArbitrary(boolean flexYUV, boolean widths) {
-            boolean skipped = true;
-            for (Size s : (widths ? mArbitraryW : mArbitraryH)) {
-                if (test(s.getWidth(), s.getHeight(), false /* optional */, flexYUV)) {
-                    skipped = false;
-                }
-            }
-            return !skipped;
+        Encoder(String name, String mime, CodecCapabilities caps) {
+            mName = name;
+            mMime = mime;
+            mCaps = caps;
+            mVideoCaps = caps.getVideoCapabilities();
         }
 
         public boolean testSpecific(int width, int height, boolean flexYUV) {
-            // already tested by one of the min/max tests
-            if (mSizes.contains(new Size(width, height))) {
-                return false;
-            }
             return test(width, height, true /* optional */, flexYUV);
         }
 
@@ -1162,7 +1175,8 @@ public class VideoEncoderTest extends MediaTestBase {
                     public Boolean apply(MediaFormat fmt) {
                         int intraPeriod = fmt.getInteger(MediaFormat.KEY_INTRA_REFRESH_PERIOD);
                         // Make sure intra period is correct and carried in the output format.
-                        // intraPeriod must be larger than 0 and operate within 20% of refresh period.
+                        // intraPeriod must be larger than 0 and operate within 20% of refresh
+                        // period.
                         if (intraPeriod > 1.2 * period || intraPeriod < 0.8 * period) {
                             throw new RuntimeException("Intra period mismatch");
                         }
@@ -1267,337 +1281,110 @@ public class VideoEncoderTest extends MediaTestBase {
         return encoder;
     }
 
-    static private List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList) {
+    @Parameterized.Parameters(name = "{index}({0}_{1}_{2}x{3}_{4}_{5})")
+    public static Collection<Object[]> input() {
+        final String[] mediaTypesList = new String[] {
+                MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_H263,
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                MediaFormat.MIMETYPE_VIDEO_MPEG4,
+                MediaFormat.MIMETYPE_VIDEO_VP8,
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+        };
         final List<Object[]> argsList = new ArrayList<>();
-        int argLength = exhaustiveArgsList.get(0).length;
-        for (Object[] arg : exhaustiveArgsList) {
-            String[] encodersForMime = MediaUtils.getEncoderNamesForMime((String) arg[0]);
-            for (String encoder : encodersForMime) {
-                if (mCodecPrefix != null && !encoder.startsWith(mCodecPrefix)) {
+        for (String mediaType : mediaTypesList) {
+            if (TestArgs.shouldSkipMediaType(mediaType)) {
+                continue;
+            }
+            String[] encoders = MediaUtils.getEncoderNamesForMime(mediaType);
+            for (String encoder : encoders) {
+                if (TestArgs.shouldSkipCodec(encoder)) {
                     continue;
                 }
-                Object[] testArgs = new Object[argLength + 1];
-                testArgs[0] = encoder;
-                System.arraycopy(arg, 0, testArgs, 1, argLength);
-                argsList.add(testArgs);
+                CodecCapabilities caps = getCodecCapabities(encoder, mediaType, true);
+                assertNotNull(caps);
+                EncoderSize encoderSize = new EncoderSize(encoder, mediaType, caps);
+                final Set<Size> sizes = new HashSet<Size>();
+                for (boolean near : new boolean[] {false, true}) {
+                    Map<Size, Set<Size>> testSizes =
+                            near ? encoderSize.mNearMinMax : encoderSize.mMinMax;
+                    for (int x = 0; x < 2; x++) {
+                        for (int y = 0; y < 2; y++) {
+                            for (Size s : testSizes.get(new Size(x, y))) {
+                                sizes.add(new Size(s.getWidth(), s.getHeight()));
+                            }
+                        }
+                    }
+                }
+                for (boolean widths : new boolean[] {false, true}) {
+                    for (Size s : (widths ? encoderSize.mArbitraryW : encoderSize.mArbitraryH)) {
+                        sizes.add(new Size(s.getWidth(), s.getHeight()));
+                    }
+                }
+                final Set<Size> specificSizes = new HashSet<Size>();
+                specificSizes.add(new Size(176, 144));
+                specificSizes.add(new Size(320, 180));
+                specificSizes.add(new Size(320, 240));
+                specificSizes.add(new Size(720, 480));
+                specificSizes.add(new Size(1280, 720));
+                specificSizes.add(new Size(1920, 1080));
+
+                for (boolean flexYuv : new boolean[] {false, true}) {
+                    for (Size s : specificSizes) {
+                        argsList.add(new Object[]{encoder, mediaType, s.getWidth(), s.getHeight(),
+                                flexYuv, TestMode.TEST_MODE_DETAILED});
+                    }
+                }
+
+                argsList.add(new Object[]{encoder, mediaType, 480, 360, true,
+                        TestMode.TEST_MODE_INTRAREFRESH});
+                sizes.removeAll(specificSizes);
+                specificSizes.addAll(sizes);
+                for (boolean flexYuv : new boolean[] {false, true}) {
+                    for (Size s : specificSizes) {
+                        argsList.add(new Object[]{encoder, mediaType, s.getWidth(), s.getHeight(),
+                                flexYuv, TestMode.TEST_MODE_SPECIFIC});
+                    }
+                }
             }
         }
         return argsList;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1})")
-    public static Collection<Object[]> input() {
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_VIDEO_AVC},
-                {MediaFormat.MIMETYPE_VIDEO_H263},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC},
-                {MediaFormat.MIMETYPE_VIDEO_MPEG4},
-                {MediaFormat.MIMETYPE_VIDEO_VP8},
-                {MediaFormat.MIMETYPE_VIDEO_VP9},
-        });
-        return prepareParamList(exhaustiveArgsList);
-    }
-
-    public VideoEncoderTest(String encoderName, String mime) {
+    public VideoEncoderTest(String encoderName, String mime, int width, int height, boolean flexYuv,
+                            TestMode mode) {
         mEncHandle = getEncHandle(encoderName, mime);
+        mWidth = width;
+        mHeight = height;
+        mFlexYuv = flexYuv;
+        mMode = mode;
     }
 
     @Test
-    public void testFlexMinMin() {
-        minmin(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfMinMin() {
-        minmin(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexMinMax() {
-        minmax(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfMinMax() {
-        minmax(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexMaxMin() {
-        maxmin(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfMaxMin() {
-        maxmin(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexMaxMax() {
-        maxmax(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfMaxMax() {
-        maxmax(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexNearMinMin() {
-        nearminmin(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfNearMinMin() {
-        nearminmin(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexNearMinMax() {
-        nearminmax(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfNearMinMax() {
-        nearminmax(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexNearMaxMin() {
-        nearmaxmin(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfNearMaxMin() {
-        nearmaxmin(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexNearMaxMax() {
-        nearmaxmax(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfNearMaxMax() {
-        nearmaxmax(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexArbitraryW() {
-        arbitraryw(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfArbitraryW() {
-        arbitraryw(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexArbitraryH() {
-        arbitraryh(new Encoder[]{mEncHandle}, true);
-    }
-
-    @Test
-    public void testSurfArbitraryH() {
-        arbitraryh(new Encoder[]{mEncHandle}, false);
-    }
-
-    @Test
-    public void testFlexQCIF() {
-        specific(new Encoder[]{mEncHandle}, 176, 144, true);
-    }
-
-    @Test
-    public void testSurfQCIF() {
-        specific(new Encoder[]{mEncHandle}, 176, 144, false);
-    }
-
-    @Test
-    public void testFlex480p() {
-        specific(new Encoder[]{mEncHandle}, 720, 480, true);
-    }
-
-    @Test
-    public void testSurf480p() {
-        specific(new Encoder[]{mEncHandle}, 720, 480, false);
-    }
-
-    @Test
-    public void testFlex720p() {
-        specific(new Encoder[]{mEncHandle}, 1280, 720, true);
-    }
-
-    @Test
-    public void testSurf720p() {
-        specific(new Encoder[]{mEncHandle}, 1280, 720, false);
-    }
-
-    @Test
-    public void testFlex1080p() {
-        specific(new Encoder[]{mEncHandle}, 1920, 1080, true);
-    }
-
-    @Test
-    public void testSurf1080p() {
-        specific(new Encoder[]{mEncHandle}, 1920, 1080, false);
-    }
-
-    @Test
-    public void testFlex360pWithIntraRefresh() {
-        intraRefresh(new Encoder[]{mEncHandle}, 480, 360);
-    }
-
-    // Tests encoder profiles required by CDD.
-    @Test
-    public void testLowQualitySDSupport() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        support(new Encoder[]{mEncHandle}, 720, 480, 20, 384 * 1000);
-    }
-
-    @Test
-    public void testHighQualitySDSupport() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        support(new Encoder[]{mEncHandle}, 720, 480, 30, 2 * 1000000);
-    }
-
-    @Test
-    public void testFlexQVGA20fps384kbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 320, 240, 20, 384 * 1000, true);
-    }
-
-    @Test
-    public void testSurfQVGA20fps384kbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 320, 240, 20, 384 * 1000, false /* flex */);
-    }
-
-    @Test
-    public void testFlex480p30fps2Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 720, 480, 30, 2 * 1000000, true /* flex */);
-    }
-
-    @Test
-    public void testSurf480p30fps2Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 720, 480, 30, 2 * 1000000, false /* flex */);
-    }
-
-    @Test
-    public void testFlex720p30fps4Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 1280, 720, 30, 4 * 1000000, true /* flex */);
-    }
-
-    @Test
-    public void testSurf720p30fps4Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 1280, 720, 30, 4 * 1000000, false /* flex */);
-    }
-
-    @Test
-    public void testFlex1080p30fps10Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 1920, 1080, 30, 10 * 1000000, true /* flex */);
-    }
-
-    @Test
-    public void testSurf1080p30fps10Mbps() {
-        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
-                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
-                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
-        detailed(new Encoder[]{mEncHandle}, 1920, 1080, 30, 10 * 1000000, false /* flex */);
-    }
-
-    private void minmin(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 0 /* x */, 0 /* y */, flexYUV, false /* near */);
-    }
-
-    private void minmax(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 0 /* x */, 1 /* y */, flexYUV, false /* near */);
-    }
-
-    private void maxmin(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 1 /* x */, 0 /* y */, flexYUV, false /* near */);
-    }
-
-    private void maxmax(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 1 /* x */, 1 /* y */, flexYUV, false /* near */);
-    }
-
-    private void nearminmin(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 0 /* x */, 0 /* y */, flexYUV, true /* near */);
-    }
-
-    private void nearminmax(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 0 /* x */, 1 /* y */, flexYUV, true /* near */);
-    }
-
-    private void nearmaxmin(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 1 /* x */, 0 /* y */, flexYUV, true /* near */);
-    }
-
-    private void nearmaxmax(Encoder[] encoders, boolean flexYUV) {
-        extreme(encoders, 1 /* x */, 1 /* y */, flexYUV, true /* near */);
-    }
-
-    private void extreme(Encoder[] encoders, int x, int y, boolean flexYUV, boolean near) {
-        boolean skipped = true;
-        if (encoders.length == 0) {
-            MediaUtils.skipTest("no such encoder present");
-            return;
+    public void testEncode() {
+        int frameRate = 30;
+        int bitRate;
+        int lumaSamples = mWidth * mHeight;
+        if (lumaSamples <= 320 * 240) {
+            bitRate = 384 * 1000;
+        } else if (lumaSamples <= 720 * 480) {
+            bitRate = 2 * 1000000;
+        } else if (lumaSamples <= 1280 * 720) {
+            bitRate = 4 * 1000000;
+        } else {
+            bitRate = 10 * 1000000;
         }
-        for (Encoder encoder: encoders) {
-            if (encoder.testExtreme(x, y, flexYUV, near)) {
-                skipped = false;
-            }
+        switch (mMode) {
+            case TEST_MODE_SPECIFIC:
+                specific(new Encoder[]{mEncHandle}, mWidth, mHeight, mFlexYuv);
+                break;
+            case TEST_MODE_DETAILED:
+                detailed(new Encoder[]{mEncHandle}, mWidth, mHeight, frameRate, bitRate, mFlexYuv);
+                break;
+            case TEST_MODE_INTRAREFRESH:
+                intraRefresh(new Encoder[]{mEncHandle}, mWidth, mHeight);
+                break;
         }
-        if (skipped) {
-            MediaUtils.skipTest("duplicate resolution extreme");
-        }
-    }
-
-    private void arbitrary(Encoder[] encoders, boolean flexYUV, boolean widths) {
-        boolean skipped = true;
-        if (encoders.length == 0) {
-            MediaUtils.skipTest("no such encoder present");
-            return;
-        }
-        for (Encoder encoder: encoders) {
-            if (encoder.testArbitrary(flexYUV, widths)) {
-                skipped = false;
-            }
-        }
-        if (skipped) {
-            MediaUtils.skipTest("duplicate resolution");
-        }
-    }
-
-    private void arbitraryw(Encoder[] encoders, boolean flexYUV) {
-        arbitrary(encoders, flexYUV, true /* widths */);
-    }
-
-    private void arbitraryh(Encoder[] encoders, boolean flexYUV) {
-        arbitrary(encoders, flexYUV, false /* widths */);
     }
 
     /* test specific size */
@@ -1638,6 +1425,9 @@ public class VideoEncoderTest extends MediaTestBase {
     private void detailed(
             Encoder[] encoders, int width, int height, int frameRate, int bitRate,
             boolean flexYUV) {
+        Assume.assumeTrue("Test is currently enabled only for avc and vp8 encoders",
+                mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_AVC) ||
+                        mEncHandle.mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP8));
         if (encoders.length == 0) {
             MediaUtils.skipTest("no such encoder present");
             return;
@@ -1654,22 +1444,4 @@ public class VideoEncoderTest extends MediaTestBase {
         }
     }
 
-    /* test size and rate are supported */
-    private void support(Encoder[] encoders, int width, int height, int frameRate, int bitRate) {
-        boolean supported = false;
-        if (encoders.length == 0) {
-            MediaUtils.skipTest("no such encoder present");
-            return;
-        }
-        for (Encoder encoder : encoders) {
-            if (encoder.testSupport(width, height, frameRate, bitRate)) {
-                supported = true;
-                break;
-            }
-        }
-        if (!supported) {
-            fail("unsupported format " + width + "x" + height + " " +
-                    frameRate + "fps " + bitRate + "bps");
-        }
-    }
 }

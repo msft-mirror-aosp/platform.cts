@@ -198,9 +198,13 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
                 .asInterface(controlConn.getService());
         control.resetLatchForServiceBound(true /* bind */);
 
+        mUiAutomation.adoptShellPermissionIdentity("android.permission.CONTROL_INCALL_EXPERIENCE");
         SelfManagedConnection connection = placeAndVerifySelfManagedCall();
         control.checkBindStatus(true /* bindStatus */);
+        assertTrue(control.checkBindStatus(true /* bindStatus */));
+        connection.waitOnInCallServiceTrackingChanged();
         assertTrue(connection.isTracked());
+        mUiAutomation.dropShellPermissionIdentity();
 
         connection.disconnectAndDestroy();
         assertIsInCall(false);
@@ -219,14 +223,15 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
                 DEFAULT_DIALER_INCALLSERVICE_2);
         ICtsThirdPartyInCallServiceControl control = ICtsThirdPartyInCallServiceControl.Stub
                 .asInterface(controlConn.getService());
-        assertTrue(setDefaultDialer(DEFAULT_DIALER_PKG_2));
+        TestUtils.setDefaultDialer(getInstrumentation(), DEFAULT_DIALER_PKG_2);
         control.resetLatchForServiceBound(true /* bind */);
 
         SelfManagedConnection connection = placeAndVerifySelfManagedCall();
-        control.checkBindStatus(true /* bindStatus */);
+        assertTrue(control.checkBindStatus(true /* bindStatus */));
 
         connection.waitOnInCallServiceTrackingChanged();
         assertTrue(connection.isAlternativeUiShowing());
+        mUiAutomation.dropShellPermissionIdentity();
 
         connection.disconnectAndDestroy();
         assertIsInCall(false);
@@ -281,8 +286,8 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
-     * Test {@link TelecomManager#getSelfManagedPhoneAccounts} works on packages with only the
-     * {@link android.Manifest.permission#MANAGE_OWN_CALLS} permission
+     * Test {@link TelecomManager#getOwnSelfManagedPhoneAccounts} works on packages with only the
+     * {@link android.Manifest.permission#MANAGE_OWN_CALLS} permission.
      */
     public void testTelecomManagerGetSelfManagedPhoneAccountsForPackage() throws Exception {
         if (!mShouldTestTelecom) {
@@ -303,7 +308,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
                 TEST_SELF_MANAGED_PHONE_ACCOUNT);
 
         List<PhoneAccountHandle> pah =
-                mCarModeIncallServiceControlSelfManaged.getSelfManagedPhoneAccounts();
+                mCarModeIncallServiceControlSelfManaged.getOwnSelfManagedPhoneAccounts();
 
         // assert that we can get all the self-managed phone accounts registered to
         // CarModeTestAppSelfManaged

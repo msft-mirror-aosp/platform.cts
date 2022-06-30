@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package android.telephony2.cts;
+package android.telephony5.cts;
 
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeFull;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyUtils;
 
@@ -53,6 +54,7 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
     }
 
     @Test
+    @AppModeFull
     public void testReadNonDangerousPermission() throws Exception {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return;

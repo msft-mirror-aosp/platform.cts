@@ -38,7 +38,9 @@ MIN_CIRCLE_PTS = 25
 MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
 NAME = os.path.splitext(os.path.basename(__file__))[0]
 NUM_STEPS = 10
+OFFSET_LOW_VAL = 10  # number of pixels
 OFFSET_RTOL = 0.15
+OFFSET_RTOL_LOW_OFFSET = 0.20
 OFFSET_RTOL_MIN_FD = 0.30
 RADIUS_RTOL = 0.10
 RADIUS_RTOL_MIN_FD = 0.15
@@ -271,13 +273,13 @@ class ZoomTest(its_base_test.ItsBaseTest):
           if circle_cropped(circle, size):
             logging.debug('zoom %.2f is too large! Skip further captures', z)
             break
-        except AssertionError:
+        except AssertionError as e:
           if z/z_list[0] >= ZOOM_MAX_THRESH:
             break
           else:
             raise AssertionError(
                 f'No circle was detected for zoom ratio <= {ZOOM_MAX_THRESH}. '
-                'Please take pictures according to instructions carefully!')
+                'Take pictures according to instructions carefully!') from e
         test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
                         'o_tol': offset_tol, 'fl': cap_fl}
 
@@ -323,9 +325,13 @@ class ZoomTest(its_base_test.ItsBaseTest):
         offset_rel = (distance(offset_abs[0], offset_abs[1]) / z_ratio /
                       distance(offset_init[0], offset_init[1]))
         logging.debug('offset_rel: %.3f', offset_rel)
-        if not math.isclose(offset_rel, 1.0, rel_tol=data['o_tol']):
+        rel_tol = data['o_tol']
+        if (np.linalg.norm(offset_init) < OFFSET_LOW_VAL and
+            rel_tol == OFFSET_RTOL):
+          rel_tol = OFFSET_RTOL_LOW_OFFSET
+        if not math.isclose(offset_rel, 1.0, rel_tol=rel_tol):
           raise AssertionError(f"zoom: {data['z']:.2f}, offset(rel to 1): "
-                               f"{offset_rel:.4f}, RTOL: {data['o_tol']}")
+                               f'{offset_rel:.4f}, RTOL: {rel_tol}')
 
 if __name__ == '__main__':
   test_runner.main()

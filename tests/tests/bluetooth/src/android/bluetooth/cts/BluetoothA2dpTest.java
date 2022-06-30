@@ -17,16 +17,16 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothA2dp.DYNAMIC_BUFFER_SUPPORT_A2DP_SOFTWARE_ENCODING;
+import static android.bluetooth.BluetoothA2dp.DYNAMIC_BUFFER_SUPPORT_NONE;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
@@ -41,11 +41,10 @@ public class BluetoothA2dpTest extends AndroidTestCase {
     private static final String TAG = BluetoothA2dpTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
-    private static final String PROFILE_SUPPORTED_A2DP = "profile_supported_a2dp";
 
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;;
+    private UiAutomation mUiAutomation;
 
     private BluetoothA2dp mBluetoothA2dp;
     private boolean mIsA2dpSupported;
@@ -56,10 +55,13 @@ public class BluetoothA2dpTest extends AndroidTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        mHasBluetooth = getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
 
+        mHasBluetooth = TestUtils.hasBluetooth();
         if (!mHasBluetooth) return;
+
+        mIsA2dpSupported = TestUtils.isProfileEnabled(BluetoothProfile.A2DP);
+        if (!mIsA2dpSupported) return;
+
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
@@ -72,14 +74,6 @@ public class BluetoothA2dpTest extends AndroidTestCase {
         mIsProfileReady = false;
         mBluetoothA2dp = null;
 
-        Resources bluetoothResources = mContext.getPackageManager().getResourcesForApplication(
-                "com.android.bluetooth");
-        int a2dpSupportId = bluetoothResources.getIdentifier(
-                PROFILE_SUPPORTED_A2DP, "bool", "com.android.bluetooth");
-        assertTrue("resource profile_supported_a2dp not found", a2dpSupportId != 0);
-        mIsA2dpSupported = bluetoothResources.getBoolean(a2dpSupportId);
-        if (!mIsA2dpSupported) return;
-
         mAdapter.getProfileProxy(getContext(), new BluetoothA2dpServiceListener(),
                 BluetoothProfile.A2DP);
     }
@@ -87,16 +81,19 @@ public class BluetoothA2dpTest extends AndroidTestCase {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
-        if (mHasBluetooth) {
-            if (mAdapter != null && mBluetoothA2dp != null) {
-                mAdapter.closeProfileProxy(BluetoothProfile.A2DP, mBluetoothA2dp);
-                mBluetoothA2dp = null;
-                mIsProfileReady = false;
-            }
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-            mAdapter = null;
-            mUiAutomation.dropShellPermissionIdentity();
+        if (!(mHasBluetooth && mIsA2dpSupported)) {
+            return;
         }
+        if (mAdapter != null && mBluetoothA2dp != null) {
+            mAdapter.closeProfileProxy(BluetoothProfile.A2DP, mBluetoothA2dp);
+            mBluetoothA2dp = null;
+            mIsProfileReady = false;
+        }
+        if (mAdapter != null) {
+            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        }
+        mAdapter = null;
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     public void test_getConnectedDevices() {
@@ -146,6 +143,7 @@ public class BluetoothA2dpTest extends AndroidTestCase {
     public void test_getCodecStatus() {
         if (!(mHasBluetooth && mIsA2dpSupported)) return;
 
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothA2dp);
 
@@ -163,14 +161,6 @@ public class BluetoothA2dpTest extends AndroidTestCase {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothA2dp);
 
-        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-
-        BluetoothCodecConfig codecConfig = new BluetoothCodecConfig.Builder()
-                .setCodecType(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC)
-                .setCodecPriority(0)
-                .build();
-        mBluetoothA2dp.setCodecConfigPreference(testDevice, codecConfig);
-        assertNull(mBluetoothA2dp.getCodecStatus(testDevice));
         assertThrows(IllegalArgumentException.class, () -> {
             mBluetoothA2dp.setCodecConfigPreference(null, null);
         });
@@ -194,6 +184,141 @@ public class BluetoothA2dpTest extends AndroidTestCase {
         assertThrows(SecurityException.class, () -> mBluetoothA2dp
                 .setOptionalCodecsEnabled(testDevice, BluetoothA2dp.OPTIONAL_CODECS_PREF_ENABLED));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+    }
+
+    public void test_getConnectionPolicy() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        // Verify returns false when invalid input is given
+        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+                mBluetoothA2dp.getConnectionPolicy(null));
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns false if bluetooth is not enabled
+        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+                mBluetoothA2dp.getConnectionPolicy(testDevice));
+    }
+
+    public void test_setConnectionPolicy() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        // Verify returns false when invalid input is given
+        assertFalse(mBluetoothA2dp.setConnectionPolicy(
+                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(mBluetoothA2dp.setConnectionPolicy(
+                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns false if bluetooth is not enabled
+        assertFalse(mBluetoothA2dp.setConnectionPolicy(
+                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+    }
+
+    public void test_getDynamicBufferSupport() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        int dynamicBufferSupport = mBluetoothA2dp.getDynamicBufferSupport();
+        assertTrue(dynamicBufferSupport >= DYNAMIC_BUFFER_SUPPORT_NONE
+                && dynamicBufferSupport <= DYNAMIC_BUFFER_SUPPORT_A2DP_SOFTWARE_ENCODING);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns DYNAMIC_BUFFER_SUPPORT_NONE if bluetooth is not enabled
+        assertEquals(DYNAMIC_BUFFER_SUPPORT_NONE, mBluetoothA2dp.getDynamicBufferSupport());
+    }
+
+    public void test_getBufferConstraints() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        assertNotNull(mBluetoothA2dp.getBufferConstraints());
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        // Verify returns null if bluetooth is not enabled
+        assertNull(mBluetoothA2dp.getBufferConstraints());
+    }
+
+    public void test_setBufferLengthMillis() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        int sourceCodecTypeAAC = 1;
+
+        assertTrue(mBluetoothA2dp.setBufferLengthMillis(sourceCodecTypeAAC, 0));
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        // Verify returns null if bluetooth is not enabled
+        assertFalse(mBluetoothA2dp.setBufferLengthMillis(sourceCodecTypeAAC, 0));
+    }
+
+    public void test_optionalCodecs() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
+        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsSupported(testDevice));
+
+        mBluetoothA2dp.enableOptionalCodecs(testDevice);
+        // Device is not in state machine so should not be enabled
+        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
+
+        mBluetoothA2dp.disableOptionalCodecs(testDevice);
+        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            mBluetoothA2dp.isOptionalCodecsEnabled(null);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            mBluetoothA2dp.isOptionalCodecsSupported(null);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            mBluetoothA2dp.enableOptionalCodecs(null);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            mBluetoothA2dp.disableOptionalCodecs(null);
+        });
+    }
+
+    public void test_setAvrcpAbsoluteVolume() {
+        if (!(mHasBluetooth && mIsA2dpSupported)) return;
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothA2dp);
+
+        // Only check if no crash occurs
+        try {
+            mBluetoothA2dp.setAvrcpAbsoluteVolume(0);
+        } catch (Exception e) {
+            fail("setAvrcpAbsoluteVolume(0) should not fail. " + e.getMessage());
+        }
     }
 
     private static <T extends Exception> void assertThrows(Class<T> clazz, Runnable r) {

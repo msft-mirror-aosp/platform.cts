@@ -42,5 +42,10 @@ android_test {
     ],
 
     sdk_version: "test_current",
+    data: [
+        ":CtsMalformedInputTests",
+        ":CtsNoLocaleConfigTagTests",
+    ],
+    per_testcase_directory: true,
 }
 

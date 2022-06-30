@@ -69,8 +69,8 @@ import java.util.function.Supplier;
 @RunWith(JUnit4.class)
 public class SilentUpdateTests {
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String P_APK = "SilentInstallP.apk";
     private static final String Q_APK = "SilentInstallQ.apk";
+    private static final String R_APK = "SilentInstallR.apk";
     private static final String INSTALLER_PACKAGE_NAME = "com.android.tests.silentupdate";
     static final long SILENT_UPDATE_THROTTLE_TIME_SECOND = 10;
 
@@ -133,17 +133,17 @@ public class SilentUpdateTests {
     }
 
     @Test
-    public void updatePreQApp_RequiresUserAction() throws Exception {
-        Assert.assertEquals("Updating to a pre-Q app should require user action",
+    public void updatePreRApp_RequiresUserAction() throws Exception {
+        Assert.assertEquals("Updating to a pre-R app should require user action",
                 PackageInstaller.STATUS_PENDING_USER_ACTION,
-                silentInstallResource(P_APK));
+                silentInstallResource(Q_APK));
     }
 
     @Test
-    public void updateQApp_RequiresNoUserAction() throws Exception {
-        Assert.assertEquals("Updating to a Q app should not require user action",
+    public void updateRApp_RequiresNoUserAction() throws Exception {
+        Assert.assertEquals("Updating to an R app should not require user action",
                 PackageInstaller.STATUS_SUCCESS,
-                silentInstallResource(Q_APK));
+                silentInstallResource(R_APK));
     }
 
     @Test
@@ -155,8 +155,8 @@ public class SilentUpdateTests {
                 .putLong("lastUpdateTime", lastUpdateTime)
                 .commit();
         commit(fileSupplier(
-                "/data/local/tmp/silentupdatetest/CtsSilentUpdateTestCases.apk"),
-                false /* requireUserAction */, true /* dontKillApp */);
+                "/data/local/tmp/silentupdatetest/CtsSilentUpdateTestCases_mdpi-v4.apk"),
+                false /* requireUserAction */, INSTALLER_PACKAGE_NAME);
     }
 
     @Test
@@ -266,7 +266,7 @@ public class SilentUpdateTests {
     private int install(Supplier<InputStream> apkStreamSupplier, Boolean requireUserAction)
             throws Exception {
         InstallStatusListener isl = commit(apkStreamSupplier, requireUserAction,
-                false /* dontKillApp */);
+                null /* dontKillPackageName */);
         final Intent statusUpdate = isl.getResult();
         final int result =
                 statusUpdate.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE);
@@ -279,16 +279,21 @@ public class SilentUpdateTests {
     }
 
     private InstallStatusListener commit(Supplier<InputStream> apkStreamSupplier,
-            Boolean requireUserAction, boolean dontKillApp) throws IOException {
+            Boolean requireUserAction, String dontKillPackageName) throws IOException {
         final Context context = getContext();
         final PackageInstaller installer = context.getPackageManager().getPackageInstaller();
-        SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+        SessionParams params = new SessionParams(
+                dontKillPackageName == null ? SessionParams.MODE_FULL_INSTALL
+                        : SessionParams.MODE_INHERIT_EXISTING);
         if (requireUserAction != null) {
             params.setRequireUserAction(requireUserAction
                     ? USER_ACTION_REQUIRED
                     : USER_ACTION_NOT_REQUIRED);
         }
-        params.setDontKillApp(dontKillApp);
+        if (dontKillPackageName != null) {
+            params.setAppPackageName(dontKillPackageName);
+            params.setDontKillApp(true);
+        }
         int sessionId = installer.createSession(params);
         Assert.assertEquals("SessionInfo.getRequireUserAction and "
                         + "SessionParams.setRequireUserAction are not equal",

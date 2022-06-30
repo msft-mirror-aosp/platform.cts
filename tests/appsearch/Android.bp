@@ -19,17 +19,11 @@ package {
 android_test {
     name: "CtsAppSearchTestCases",
     defaults: ["cts_defaults"],
-    sdk_version: "module_current",
-    libs: [
-        "framework-annotations-lib",
-        "framework-appsearch.impl",
-    ],
     static_libs: [
         "AppSearchTestUtils",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
-        "service-appsearch",
         "testng",
     ],
     srcs: [
@@ -41,6 +35,11 @@ android_test {
         "general-tests",
         "mts-appsearch",
     ],
+    data: [
+        ":CtsAppSearchTestHelperA",
+        ":CtsAppSearchTestHelperB",
+    ],
+    per_testcase_directory: true,
 }
 
 android_test_helper_app {

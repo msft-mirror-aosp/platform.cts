@@ -24,7 +24,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
-import android.app.admin.DevicePolicyManager;
 import android.app.backup.BackupManager;
 import android.content.Context;
 
@@ -38,6 +37,7 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Backup;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.utils.Poll;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -52,8 +52,6 @@ public final class BackupTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final Context sContext = TestApis.context().instrumentedContext();
-    private static final DevicePolicyManager sLocalDevicePolicyManager =
-            sContext.getSystemService(DevicePolicyManager.class);
     private static final BackupManager sLocalBackupManager = new BackupManager(sContext);
 
     @PolicyAppliesTest(policy = Backup.class)
@@ -78,8 +76,12 @@ public final class BackupTest {
             sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(
                     sDeviceState.dpc().componentName(), true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isBackupServiceEnabled(
-                    sDeviceState.dpc().componentName())).isTrue();
+            Poll.forValue("DPC isBackupServiceEnabled",
+                    () -> sDeviceState.dpc().devicePolicyManager().isBackupServiceEnabled(
+                            sDeviceState.dpc().componentName()))
+                    .toBeEqualTo(true)
+                    .errorOnFail()
+                    .await();
             assertThat(sLocalBackupManager
                     .isBackupServiceActive(TestApis.users().instrumented().userHandle())).isTrue();
         } finally {
@@ -96,8 +98,13 @@ public final class BackupTest {
             sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(
                     sDeviceState.dpc().componentName(), false);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isBackupServiceEnabled(
-                    sDeviceState.dpc().componentName())).isFalse();
+
+            Poll.forValue("DPC isBackupServiceEnabled",
+                            () -> sDeviceState.dpc().devicePolicyManager().isBackupServiceEnabled(
+                                    sDeviceState.dpc().componentName()))
+                    .toBeEqualTo(false)
+                    .errorOnFail()
+                    .await();
             assertThat(sLocalBackupManager
                     .isBackupServiceActive(TestApis.users().instrumented().userHandle())).isFalse();
         } finally {

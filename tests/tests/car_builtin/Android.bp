@@ -30,6 +30,7 @@ android_test {
     ],
     resource_dirs: ["res"],
     libs: [
+        "android.car",
         "android.car.builtin",
         "android.test.base",
     ],
@@ -44,4 +45,8 @@ android_test {
 
     platform_apis: true,
     sdk_version: "module_current",
+    data: [
+        ":CtsCarBuiltinSimpleApp",
+    ],
+    per_testcase_directory: true,
 }

@@ -26,17 +26,13 @@ import android.graphics.Bitmap;
 import android.os.UserHandle;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
-import androidx.test.core.app.ApplicationProvider;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.BitmapUtils;
-import com.android.compatibility.common.util.TestNameUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,10 +62,13 @@ public final class Helper {
     public static final String EXTRA_FINISH_COMMAND = "finish_command";
     public static final String EXTRA_SOURCE_LOCALE = "source_locale";
     public static final String EXTRA_TARGET_LOCALE = "target_locale";
-    public static final String EXTRA_VERIFY_RESULT = "verify_result";
+    public static final String EXTRA_PACKAGE_NAME = "package_name";
+    public static final String EXTRA_CALL_COUNT = "call_count";
 
     public static final String CUSTOM_TRANSLATION_ID_MY_TAG = "myTag";
     public static final String LOCAL_TEST_FILES_DIR = "/sdcard/CtsTranslationTestCases";
+    public static final int TEMP_SERVICE_DURATION_MS = 30_000;
+
     private static final String LOG_TAG = "log.tag.UiTranslation";
 
     /**
@@ -80,7 +79,8 @@ public final class Helper {
     public static void setTemporaryTranslationService(String service) {
         Log.d(TAG, "Setting translation service to " + service);
         final int userId = UserHandle.myUserId();
-        runShellCommand("cmd translation set temporary-service %d %s 12000", userId, service);
+        runShellCommand("cmd translation set temporary-service %d %s %d", userId, service,
+                TEMP_SERVICE_DURATION_MS);
     }
 
     /**
@@ -100,7 +100,8 @@ public final class Helper {
     public static void setTemporaryContentCaptureService(String service) {
         Log.d(TAG, "Setting content capture service to " + service);
         final int userId = UserHandle.myUserId();
-        runShellCommand("cmd content_capture set temporary-service %d %s 12000", userId, service);
+        runShellCommand("cmd content_capture set temporary-service %d %s %d", userId, service,
+                TEMP_SERVICE_DURATION_MS);
     }
 
     /**

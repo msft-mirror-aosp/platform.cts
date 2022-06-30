@@ -36,11 +36,14 @@ import androidx.test.runner.AndroidJUnit4;
 
 // TODO: b/189472651 uncomment when TM version code is published
 //  import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
 
 /**
  * Class to exercise AudioManager.getDevicesForAttributes()
@@ -57,7 +60,6 @@ public class CallAudioInterceptionTest {
     @Before
     public void setUp() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mAudioManager = context.getSystemService(AudioManager.class);
         mAudioManager.setMode(AudioManager.MODE_NORMAL);
@@ -65,7 +67,11 @@ public class CallAudioInterceptionTest {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.CALL_AUDIO_INTERCEPTION,
+                        Manifest.permission.CAPTURE_AUDIO_OUTPUT,
                         Manifest.permission.MODIFY_PHONE_STATE);
+
+        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        clearAudioserverPermissionCache();
     }
 
     /** Test teardown */
@@ -75,6 +81,7 @@ public class CallAudioInterceptionTest {
         InstrumentationRegistry.getInstrumentation()
               .getUiAutomation()
               .dropShellPermissionIdentity();
+        clearAudioserverPermissionCache();
     }
 
     /**
@@ -309,5 +316,14 @@ public class CallAudioInterceptionTest {
 // TODO: b/189472651 uncomment when TM version code is published
 //        assumeTrue(" Call redirection not available",
 //                ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+    }
+
+    private void clearAudioserverPermissionCache() {
+        try {
+            SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+                    "cmd media.audio_policy purge_permission-cache");
+        } catch (IOException e) {
+            fail("cannot purge audio server permission cache");
+        }
     }
 }

@@ -44,7 +44,9 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
 
     @Override
     void onTearDownVirtualInputDevice() {
-        mVirtualKeyboard.close();
+        if (mVirtualKeyboard != null) {
+            mVirtualKeyboard.close();
+        }
     }
 
     @Test
@@ -61,7 +63,7 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
                         KeyEvent.ACTION_DOWN,
                         KeyEvent.KEYCODE_A,
                         /* repeat= */ 0,
-                        /* metaState= */ KeyEvent.META_NUM_LOCK_ON,
+                        /* metaState= */ 0,
                         /* deviceId= */ 0,
                         /* scancode= */ 0,
                         /* flags= */ 0,
@@ -72,7 +74,7 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
                         KeyEvent.ACTION_UP,
                         KeyEvent.KEYCODE_A,
                         /* repeat= */ 0,
-                        /* metaState= */ KeyEvent.META_NUM_LOCK_ON,
+                        /* metaState= */ 0,
                         /* deviceId= */ 0,
                         /* scancode= */ 0,
                         /* flags= */ 0,

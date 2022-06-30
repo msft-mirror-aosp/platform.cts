@@ -25,6 +25,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 
+import android.hardware.biometrics.CryptoObject;
 import android.security.identity.AccessControlProfile;
 import android.security.identity.AccessControlProfileId;
 import android.security.identity.PersonalizationData;
@@ -154,6 +155,10 @@ public class MultiDocumentPresentationTest {
             new CredentialDataRequest.Builder()
             .setDeviceSignedEntriesToRequest(dsEntriesToRequest)
             .setRequestMessage(Util.createItemsRequest(dsEntriesToRequest, null))
+            .setAllowUsingExhaustedKeys(true)
+            .setReaderSignature(null)
+            .setIncrementUseCount(true)
+            .setAllowUsingExpiredKeys(false)
             .build());
         byte[] resultCbor = rd.getDeviceNameSpaces();
         try {
@@ -195,5 +200,21 @@ public class MultiDocumentPresentationTest {
             // Then compare it with what the TA produced.
             assertArrayEquals(expectedMac, rd.getDeviceMac());
         }
+    }
+
+    @Test
+    public void cryptoObjectReturnsCorrectSession() throws Exception {
+        assumeTrue("IC HAL is not implemented", TestUtil.isHalImplemented());
+        assumeTrue("IdentityCredentialStore.createPresentationSession(int) not supported",
+                   TestUtil.getFeatureVersion() >= 202201);
+
+        Context appContext = InstrumentationRegistry.getTargetContext();
+        IdentityCredentialStore store = IdentityCredentialStore.getInstance(appContext);
+
+        PresentationSession session = store.createPresentationSession(
+            IdentityCredentialStore.CIPHERSUITE_ECDHE_HKDF_ECDSA_WITH_AES_256_GCM_SHA256);
+
+        CryptoObject cryptoObject = new CryptoObject(session);
+        assertEquals(session, cryptoObject.getPresentationSession());
     }
 }

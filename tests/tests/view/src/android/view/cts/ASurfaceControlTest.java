@@ -55,6 +55,7 @@ import static android.view.cts.util.FrameCallbackData.nGetFrameTimelines;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -120,6 +121,7 @@ public class ASurfaceControlTest {
     @Before
     public void setup() {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        assumeFalse(mActivity.isOnWatch());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1620,6 +1622,30 @@ public class ASurfaceControlTest {
                         } else {
                             return YELLOW;
                         }
+                    }
+                });
+    }
+
+    @Test
+    public void testSurfaceTransaction_scaleToZero() {
+        verifyTest(
+                new BasicSurfaceHolderCallback() {
+                    @Override
+                    public void surfaceCreated(SurfaceHolder holder) {
+                        long parentSurfaceControl = createFromWindow(holder.getSurface());
+                        long childSurfaceControl = create(parentSurfaceControl);
+
+                        setSolidBuffer(parentSurfaceControl,
+                                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, PixelColor.YELLOW);
+                        setSolidBuffer(childSurfaceControl,
+                                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, PixelColor.RED);
+                        setScale(childSurfaceControl, 0f, 0f);
+                    }
+                },
+                new PixelChecker(PixelColor.YELLOW) {
+                    @Override
+                    public boolean checkPixels(int matchingPixelCount, int width, int height) {
+                        return matchingPixelCount > 9000 & matchingPixelCount < 11000;
                     }
                 });
     }

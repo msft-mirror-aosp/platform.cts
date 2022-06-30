@@ -24,7 +24,6 @@ import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.support.test.uiautomator.UiDevice;
 import android.view.KeyEvent;
-import android.view.OnBackInvokedCallback;
 
 import androidx.lifecycle.Lifecycle;
 import androidx.test.core.app.ActivityScenario;
@@ -117,12 +116,7 @@ public class BackNavigationTests {
         CountDownLatch backRegisteredLatch = new CountDownLatch(1);
         mScenario.onActivity(activity -> {
             activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    new OnBackInvokedCallback() {
-                        @Override
-                        public void onBackInvoked() {
-                            backInvokedLatch.countDown();
-                        }
-                    }, 0);
+                    0, backInvokedLatch::countDown);
             backRegisteredLatch.countDown();
         });
         try {

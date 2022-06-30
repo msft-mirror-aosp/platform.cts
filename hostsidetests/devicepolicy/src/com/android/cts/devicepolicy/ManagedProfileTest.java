@@ -123,6 +123,16 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
     }
 
     @Test
+    public void testOverrideApn() throws Exception {
+        assumeHasTelephonyFeature();
+
+        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
+                "testAddGetRemoveOverrideApn", mProfileUserId);
+        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
+                "testUpdateOverrideApn", mProfileUserId);
+    }
+
+    @Test
     public void testCannotCallMethodsOnParentProfile() throws Exception {
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ParentProfileTest",
                 "testCannotWipeParentProfile", mProfileUserId);
@@ -516,6 +526,10 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                     "addCrossProfileIntents", mProfileUserId);
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
                     "startSwitchToOtherProfileIntent", mProfileUserId);
+
+            // TODO(b/223178698): Investigate potential increase in latency
+            Thread.sleep(30000);
+
             assertResolverActivityInForeground(mProfileUserId);
         } finally {
             pressHome();

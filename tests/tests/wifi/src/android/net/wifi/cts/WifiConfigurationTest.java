@@ -163,14 +163,25 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertEquals(RANDOMIZATION_AUTO, configuration.getMacRandomizationSetting());
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     public void testGetDefaultDppAkmConfigurations() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
 
-        assertEquals(false, configuration.isDppConfigurator());
+        assertFalse(configuration.isDppConfigurator());
         assertThat(configuration.getDppCSignKey()).isNotNull();
         assertThat(configuration.getDppConnector()).isNotNull();
         assertThat(configuration.getDppNetAccessKey()).isNotNull();
         assertThat(configuration.getDppPrivateEcKey()).isNotNull();
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testSetGetIsRepeaterEnabled() throws Exception {
+        WifiConfiguration configuration = new WifiConfiguration();
+
+        assertFalse(configuration.isRepeaterEnabled());
+        configuration.setRepeaterEnabled(true);
+        assertTrue(configuration.isRepeaterEnabled());
+        configuration.setRepeaterEnabled(false);
+        assertFalse(configuration.isRepeaterEnabled());
     }
 }

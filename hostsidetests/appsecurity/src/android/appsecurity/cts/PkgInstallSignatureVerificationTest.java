@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Tests for APK signature verification during installation.
@@ -45,6 +47,7 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
     private static final String TEST_PKG2 = "android.appsecurity.cts.tinyapp2";
     private static final String COMPANION_TEST_PKG = "android.appsecurity.cts.tinyapp_companion";
     private static final String COMPANION2_TEST_PKG = "android.appsecurity.cts.tinyapp_companion2";
+    private static final String COMPANION3_TEST_PKG = "android.appsecurity.cts.tinyapp_companion3";
     private static final String DEVICE_TESTS_APK = "CtsV3SigningSchemeRotationTest.apk";
     private static final String DEVICE_TESTS_PKG = "android.appsecurity.cts.v3rotationtests";
     private static final String DEVICE_TESTS_CLASS = DEVICE_TESTS_PKG + ".V3RotationTest";
@@ -585,7 +588,6 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
     }
 
     public void testInstallV3KeyRotationOlderSharedUid() throws Exception {
-
         // tests that a sharedUid APK can still install with another app that is signed by a newer
         // signing certificate, but which allows sharedUid with the older one
         assertInstallSucceeds(
@@ -672,6 +674,65 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         assertInstallFromBuildFails("v3-por_Z_1_2-default-caps-sharedUid-companion.apk");
     }
 
+    public void testInstallV3WithRestoredCapabilityInSharedUserId() throws Exception {
+        // A sharedUserId contains the shared signing lineage for all packages in the UID; this
+        // shared lineage contain the full signing history for all packages along with the merged
+        // capabilities for each signer shared between the packages. This test verifies if one
+        // package revokes a capability from a previous signer, but subsequently restores that
+        // capability, then since all packages have granted the capability, it is restored to the
+        // previous signer in the shared lineage.
+
+        // Install a package with the SHARED_USER_ID capability revoked for the original signer
+        // in the lineage; verify that a package signed with only the original signer cannot join
+        // the sharedUserId.
+        assertInstallFromBuildSucceeds(
+                "v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion.apk");
+        assertInstallFromBuildSucceeds("v3-ec-p256-with-por_1_2-no-shUid-cap-sharedUid.apk");
+        assertInstallFromBuildFails("v3-ec-p256-1-sharedUid-companion2.apk");
+
+        // Update the package that revoked the SHARED_USER_ID with an updated lineage that restores
+        // this capability to the original signer; verify the package signed with the original
+        // signing key can now join the sharedUserId since all existing packages in the UID grant
+        // this capability to the original signer.
+        assertInstallFromBuildSucceeds("v3-ec-p256-with-por_1_2-default-caps-sharedUid.apk");
+        assertInstallFromBuildSucceeds("v3-ec-p256-1-sharedUid-companion2.apk");
+    }
+
+    public void testInstallV3WithRevokedCapabilityInSharedUserId() throws Exception {
+        // While a capability can be restored to a common signer in the shared signing lineage, if
+        // one package has revoked a capability from a common signer and another package is
+        // installed / updated which restores the capability to that signer, the revocation of
+        // the capability by the existing package should take precedence. A capability can only
+        // be restored to a common signer if all packages in the sharedUserId have granted this
+        // capability to the signer.
+
+        // Install a package with the SHARED_USER_ID capability revoked from the original signer,
+        // then install another package in the sharedUserId that grants this capability to the
+        // original signer. Since a package exists in the sharedUserId that has revoked this
+        // capability, another package signed with this capability shouldn't be able to join the
+        // sharedUserId.
+        assertInstallFromBuildSucceeds("v3-ec-p256-with-por_1_2-no-shUid-cap-sharedUid.apk");
+        assertInstallFromBuildSucceeds(
+                "v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion.apk");
+        assertInstallFromBuildFails("v3-ec-p256-1-sharedUid-companion2.apk");
+
+        // Install the same package that grants the SHARED_USER_ID capability to the original
+        // signer; when iterating over the existing packages in the packages in the sharedUserId,
+        // the original version of this package should be skipped since the lineage from the
+        // updated package is used when merging with the shared lineage.
+        assertInstallFromBuildSucceeds(
+                "v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion.apk");
+        assertInstallFromBuildFails("v3-ec-p256-1-sharedUid-companion2.apk");
+
+        // Install another package that has granted the SHARED_USER_ID to the original signer; this
+        // should trigger another merge with all packages in the sharedUserId. Since one still
+        // remains that revokes the capability, the capability should be revoked in the shared
+        // lineage.
+        assertInstallFromBuildSucceeds(
+                "v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion3.apk");
+        assertInstallFromBuildFails("v3-ec-p256-1-sharedUid-companion2.apk");
+    }
+
     public void testInstallV3UpdateAfterRotation() throws Exception {
         // This test performs an end to end verification of the update of an app with a rotated
         // key. The app under test exports a bound service that performs its own PackageManager key
@@ -716,12 +777,12 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_noRotation_succeeds");
 
-        assertInstallSucceeds("CtsSignatureQueryService_v2-tgt-33.apk");
+        assertInstallFromBuildSucceeds("CtsSignatureQueryService_v2-tgt-33.apk");
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_withRotation_succeeds");
 
-        assertInstallSucceeds("CtsSignatureQueryService_v3-tgt-33.apk");
-        assertInstallSucceeds("CtsSignatureQueryServiceTest_v2-tgt-33.apk");
+        assertInstallFromBuildSucceeds("CtsSignatureQueryService_v3-tgt-33.apk");
+        assertInstallFromBuildSucceeds("CtsSignatureQueryServiceTest_v2-tgt-33.apk");
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_withRotation_succeeds");
     }
@@ -739,12 +800,12 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_noRotation_succeeds");
 
-        assertInstallV4Succeeds("CtsSignatureQueryService_v2-tgt-33.apk");
+        assertInstallV4FromBuildSucceeds("CtsSignatureQueryService_v2-tgt-33.apk");
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_withRotation_succeeds");
 
-        assertInstallV4Succeeds("CtsSignatureQueryService_v3-tgt-33.apk");
-        assertInstallV4Succeeds("CtsSignatureQueryServiceTest_v2-tgt-33.apk");
+        assertInstallV4FromBuildSucceeds("CtsSignatureQueryService_v3-tgt-33.apk");
+        assertInstallV4FromBuildSucceeds("CtsSignatureQueryServiceTest_v2-tgt-33.apk");
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_withRotation_succeeds");
     }
@@ -1002,6 +1063,17 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         Utils.runDeviceTests(
                 getDevice(), DEVICE_TESTS_PKG, DEVICE_TESTS_CLASS,
                 "testGetApkContentsSignersShowsMultipleSigners");
+    }
+
+    public void testInstallV3MultipleSignersInLineageGetSigningCertificateHistory()
+            throws Exception {
+        // The APK used for this test is signed with a lineage containing 5 keys in the signing
+        // history; this test verifies SigningInfo#getSigningCertificateHistory returns all of an
+        // APKs signers in their order of rotation.
+        assertInstallFromBuildSucceeds("v3-ec-p256-with-por-1_2_3_4_5-default-caps.apk");
+        Utils.runDeviceTests(
+                getDevice(), DEVICE_TESTS_PKG, DEVICE_TESTS_CLASS,
+                "testGetSigningCertificateHistoryReturnsSignersInOrder");
     }
 
     public void testInstallV3KeyRotationHasSigningCertificate() throws Exception {
@@ -1837,7 +1909,11 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
     private String uninstallCompanionPackages() throws DeviceNotAvailableException {
         String result1 = getDevice().uninstallPackage(COMPANION_TEST_PKG);
         String result2 = getDevice().uninstallPackage(COMPANION2_TEST_PKG);
-        return result1 != null ? result1 : result2;
+        String result3 = getDevice().uninstallPackage(COMPANION3_TEST_PKG);
+        return Stream.of(result1, result2, result3)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private String uninstallDeviceTestPackage() throws DeviceNotAvailableException {

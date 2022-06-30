@@ -29,9 +29,8 @@ AE_MODES = {0: 'OFF', 1: 'ON', 2: 'ON_AUTO_FLASH', 3: 'ON_ALWAYS_FLASH',
             4: 'ON_AUTO_FLASH_REDEYE', 5: 'ON_EXTERNAL_FLASH'}
 AE_STATES = {0: 'INACTIVE', 1: 'SEARCHING', 2: 'CONVERGED', 3: 'LOCKED',
              4: 'FLASH_REQUIRED', 5: 'PRECAPTURE'}
-_FLASH_CHECK_FIRST_API_LEVEL = 32
-_GRAD_DELTA_ATOL = 100  # gradiant for tablets as screen aborbs energy
-_MEAN_DELTA_ATOL = 100  # mean used for reflective charts
+_GRAD_DELTA_ATOL = 50  # gradiant for tablets as screen aborbs energy
+_MEAN_DELTA_ATOL = 50  # mean used for reflective charts
 _NUM_FRAMES = 8
 _PATCH_H = 0.25  # center 25%
 _PATCH_W = 0.25
@@ -39,14 +38,21 @@ _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 VGA_W, VGA_H = 640, 480
+_CAPTURE_INTENT_STILL_CAPTURE = 2
+_AE_MODE_ON_AUTO_FLASH = 2
 
 
 def take_captures(cam, auto_flash=False):
   req = capture_request_utils.auto_capture_request()
+  req['android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
   if auto_flash:
-    req['android.control.aeMode'] = 2  # 'ON_AUTO_FLASH'
+    req['android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
   fmt = {'format': 'yuv', 'width': VGA_W, 'height': VGA_H}
-  return cam.do_capture([req]*_NUM_FRAMES, fmt)
+  captures = []
+  for _ in range(_NUM_FRAMES):
+    one_capture = cam.do_capture(req, fmt)
+    captures.append(one_capture)
+  return captures
 
 
 class AutoFlashTest(its_base_test.ItsBaseTest):
@@ -68,7 +74,7 @@ class AutoFlashTest(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
-          first_api_level >= _FLASH_CHECK_FIRST_API_LEVEL)
+          first_api_level >= its_session_utils.ANDROID13_API_LEVEL)
 
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
@@ -133,14 +139,10 @@ class AutoFlashTest(its_base_test.ItsBaseTest):
         exp = int(metadata['android.sensor.exposureTime'])
         iso = int(metadata['android.sensor.sensitivity'])
         logging.debug('ISO: %d, exp: %d ns', iso, exp)
-        if i == 0:
-          logging.debug('AE_MODE (cap): %s',
-                        AE_MODES[metadata['android.control.aeMode']])
+        logging.debug('AE_MODE (cap): %s',
+                      AE_MODES[metadata['android.control.aeMode']])
         ae_state = AE_STATES[metadata['android.control.aeState']]
         logging.debug('AE_STATE (cap): %s', ae_state)
-        if ae_state != AE_STATES[4]:  # FLASH_REQUIRED
-          raise AssertionError('Scene not dark enough to trigger auto-flash. '
-                               'Check scene.')
         flash_exp_x_iso.append(exp*iso)
         y, _, _ = image_processing_utils.convert_capture_to_planes(
             caps[i], props)
@@ -153,6 +155,11 @@ class AutoFlashTest(its_base_test.ItsBaseTest):
 
         image_processing_utils.write_image(
             y, f'{test_name}_auto_flash_Y_{i}.jpg')
+
+        if i == 0:
+          if ae_state != AE_STATES[4]:  # FLASH_REQUIRED
+            raise AssertionError('Scene not dark enough to trigger auto-flash. '
+                                 'Check scene.')
 
       # log results
       logging.debug('Flash exposure X ISOs %s', str(flash_exp_x_iso))

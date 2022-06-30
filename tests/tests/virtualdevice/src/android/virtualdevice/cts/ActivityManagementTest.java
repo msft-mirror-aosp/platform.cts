@@ -25,6 +25,7 @@ import static android.virtualdevice.cts.util.VirtualDeviceTestUtils.createActivi
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.after;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.annotation.Nullable;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.ActivityListener;
@@ -44,6 +46,7 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.os.ResultReceiver;
@@ -71,6 +74,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntConsumer;
 
 /**
  * Tests for activity management, like launching and listening to activity change events, in the
@@ -100,7 +104,7 @@ public class ActivityManagementTest {
     @Mock
     private VirtualDisplay.Callback mVirtualDisplayCallback;
     @Mock
-    private VirtualDeviceManager.LaunchCallback mLaunchCallback;
+    private IntConsumer mLaunchCompleteListener;
     @Nullable private ServiceConnectionFuture<IStreamedTestApp> mServiceConnection;
     @Mock
     private OnReceiveResultListener mOnReceiveResultListener;
@@ -110,6 +114,9 @@ public class ActivityManagementTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         Context context = getApplicationContext();
+        assumeTrue(
+                context.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
         mResultReceiver = VirtualDeviceTestUtils.createResultReceiver(mOnReceiveResultListener);
     }
@@ -137,7 +144,7 @@ public class ActivityManagementTest {
                         DEFAULT_VIRTUAL_DEVICE_PARAMS);
         ActivityListener activityListener = mock(ActivityListener.class);
         Executor mockExecutor = mock(Executor.class);
-        mVirtualDevice.addActivityListener(activityListener, mockExecutor);
+        mVirtualDevice.addActivityListener(mockExecutor, activityListener);
         VirtualDisplay virtualDisplay = mVirtualDevice.createVirtualDisplay(
                 /* width= */ 100,
                 /* height= */ 100,
@@ -175,7 +182,7 @@ public class ActivityManagementTest {
                         mFakeAssociationRule.getAssociationInfo().getId(),
                         DEFAULT_VIRTUAL_DEVICE_PARAMS);
         ActivityListener activityListener = mock(ActivityListener.class);
-        mVirtualDevice.addActivityListener(activityListener);
+        mVirtualDevice.addActivityListener(context.getMainExecutor(), activityListener);
         VirtualDisplay virtualDisplay = mVirtualDevice.createVirtualDisplay(
                 /* width= */ 100,
                 /* height= */ 100,
@@ -210,7 +217,7 @@ public class ActivityManagementTest {
                         mFakeAssociationRule.getAssociationInfo().getId(),
                         DEFAULT_VIRTUAL_DEVICE_PARAMS);
         ActivityListener activityListener = mock(ActivityListener.class);
-        mVirtualDevice.addActivityListener(activityListener);
+        mVirtualDevice.addActivityListener(context.getMainExecutor(), activityListener);
         VirtualDisplay virtualDisplay = mVirtualDevice.createVirtualDisplay(
                 /* width= */ 100,
                 /* height= */ 100,
@@ -254,10 +261,11 @@ public class ActivityManagementTest {
                 mVirtualDisplayCallback);
 
         mVirtualDevice.launchPendingIntent(virtualDisplay.getDisplay().getDisplayId(),
-                pendingIntent, Runnable::run, mLaunchCallback);
+                pendingIntent, Runnable::run, mLaunchCompleteListener);
 
         verify(mOnReceiveResultListener, timeout(5000)).onReceiveResult(
                 eq(Activity.RESULT_OK), nullable(Bundle.class));
+        verify(mLaunchCompleteListener).accept(eq(VirtualDeviceManager.LAUNCH_SUCCESS));
     }
 
     @Test
@@ -277,14 +285,22 @@ public class ActivityManagementTest {
                 /* flags= */ 0,
                 Runnable::run,
                 mVirtualDisplayCallback);
+        // Android 10 (and higher) place restrictions on when apps can start activities when the
+        // app is running in the background. To except the restriction, starting an activity before
+        // launching activity from background.
+        // See https://developer.android.com/guide/components/activities/background-starts for
+        // more details.
+        launchStreamedAppActivityOnDisplay(virtualDisplay.getDisplay().getDisplayId());
 
         mVirtualDevice.launchPendingIntent(
                 virtualDisplay.getDisplay().getDisplayId(),
                 pendingIntent, Runnable::run,
-                mLaunchCallback);
+                mLaunchCompleteListener);
 
         verify(mOnReceiveResultListener, timeout(5000)).onReceiveResult(
                 eq(Activity.RESULT_OK), nullable(Bundle.class));
+        verify(mLaunchCompleteListener, timeout(5000)).accept(
+                eq(VirtualDeviceManager.LAUNCH_SUCCESS));
     }
 
     @Test
@@ -309,15 +325,26 @@ public class ActivityManagementTest {
                 virtualDisplay.getDisplay().getDisplayId(),
                 pendingIntent,
                 Runnable::run,
-                mLaunchCallback);
+                mLaunchCompleteListener);
 
         verify(mOnReceiveResultListener, after(5000).never()).onReceiveResult(
                 eq(Activity.RESULT_OK), nullable(Bundle.class));
+        verify(mLaunchCompleteListener).accept(eq(VirtualDeviceManager.LAUNCH_FAILURE_NO_ACTIVITY));
     }
 
     private IStreamedTestApp getTestAppService() throws Exception {
         mServiceConnection = TestAppHelper.createTestAppService();
         return mServiceConnection.getFuture().get(10, TimeUnit.SECONDS);
+    }
+
+    private void launchStreamedAppActivityOnDisplay(int displayId) {
+        Context context = getApplicationContext();
+        Intent activityPendingIntent = TestAppHelper.createActivityLaunchedReceiverIntent(
+                mResultReceiver);
+        activityPendingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ActivityOptions activityOptions = ActivityOptions.makeBasic();
+        activityOptions.setLaunchDisplayId(displayId);
+        context.startActivity(activityPendingIntent, activityOptions.toBundle());
     }
 }
 

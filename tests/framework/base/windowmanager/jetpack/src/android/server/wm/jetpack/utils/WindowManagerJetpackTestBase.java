@@ -17,6 +17,7 @@
 package android.server.wm.jetpack.utils;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
@@ -31,6 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.ComponentName;
@@ -39,6 +41,7 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -55,6 +58,7 @@ import java.util.Set;
 public class WindowManagerJetpackTestBase {
 
     public static final String ACTIVITY_ID_LABEL = "ActivityID";
+    public static final String EXTRA_EMBED_ACTIVITY = "EmbedActivity";
 
     public Instrumentation mInstrumentation;
     public Context mContext;
@@ -87,23 +91,46 @@ public class WindowManagerJetpackTestBase {
 
     public Activity startActivityNewTask(@NonNull Class activityClass,
             @Nullable String activityId) {
-        final Intent intent = new Intent(mContext, activityClass);
+        return startActivityNewTask(mContext, mInstrumentation, activityClass, activityId);
+    }
+
+    public static Activity startActivityNewTask(@NonNull Context context,
+            @NonNull Instrumentation instrumentation, @NonNull Class activityClass,
+            @Nullable String activityId) {
+        final Intent intent = new Intent(context, activityClass);
         intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
         if (activityId != null) {
             intent.putExtra(ACTIVITY_ID_LABEL, activityId);
         }
-        final Activity activity = mInstrumentation.startActivitySync(intent);
-        return activity;
+        return instrumentation.startActivitySync(intent);
     }
 
     /**
      * Start an activity using a component name. Can be used for activities from a different UIDs.
      */
-    public void startActivityNewTask(@NonNull ComponentName activityComponent) {
-        final Intent intent = new Intent();
-        intent.setClassName(activityComponent.getPackageName(), activityComponent.getClassName());
-        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+    public static void startActivityNoWait(@NonNull Context context,
+            @NonNull ComponentName activityComponent, @NonNull Bundle extras) {
+        final Intent intent = new Intent()
+                .setClassName(activityComponent.getPackageName(), activityComponent.getClassName())
+                .addFlags(FLAG_ACTIVITY_NEW_TASK)
+                .putExtras(extras);
+        context.startActivity(intent);
+    }
+
+    /**
+     * Start an activity using a component name on the specified display with
+     * {@link FLAG_ACTIVITY_SINGLE_TOP}. Can be used for activities from a different UIDs.
+     */
+    public static void startActivityOnDisplaySingleTop(@NonNull Context context,
+            int displayId, @NonNull ComponentName activityComponent, @NonNull Bundle extras) {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(displayId);
+
+        Intent intent = new Intent()
+                .addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_SINGLE_TOP)
+                .setComponent(activityComponent)
+                .putExtras(extras);
+        context.startActivity(intent, options.toBundle());
     }
 
     /**
@@ -121,11 +148,13 @@ public class WindowManagerJetpackTestBase {
      * Starts a specified activity class from {@param activityToLaunchFrom}.
      */
     public static void startActivityFromActivity(@NonNull Activity activityToLaunchFrom,
-            @NonNull ComponentName activityToLaunchComponent, @NonNull String newActivityId) {
+            @NonNull ComponentName activityToLaunchComponent, @NonNull String newActivityId,
+            @NonNull Bundle extras) {
         Intent intent = new Intent();
         intent.setClassName(activityToLaunchComponent.getPackageName(),
                 activityToLaunchComponent.getClassName());
         intent.putExtra(ACTIVITY_ID_LABEL, newActivityId);
+        intent.putExtras(extras);
         activityToLaunchFrom.startActivity(intent);
     }
 
@@ -147,6 +176,14 @@ public class WindowManagerJetpackTestBase {
 
     public static Rect getMaximumActivityBounds(Activity activity) {
         return activity.getWindowManager().getMaximumWindowMetrics().getBounds();
+    }
+
+    /**
+     * Gets the width of a full-screen task.
+     */
+    public int getTaskWidth() {
+        return mContext.getSystemService(WindowManager.class).getMaximumWindowMetrics().getBounds()
+                .width();
     }
 
     public static void setActivityOrientationActivityHandlesOrientationChanges(

@@ -16,8 +16,6 @@
 
 package android.photopicker.cts.util;
 
-import static android.os.SystemProperties.getBoolean;
-import static android.provider.MediaStore.Files.FileColumns;
 import static android.provider.MediaStore.PickerMediaColumns;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -27,6 +25,8 @@ import static org.junit.Assert.fail;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.UriPermission;
 import android.database.Cursor;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -41,7 +41,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Photo Picker Utility methods for test assertions.
@@ -56,6 +58,20 @@ public class PhotoPickerAssertionsUtils {
 
         final String auth = uri.getPathSegments().get(0);
         assertThat(auth).isEqualTo("picker");
+    }
+
+    public static void assertPersistedGrant(Uri uri, ContentResolver resolver) {
+        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        final List<UriPermission> uriPermissions = resolver.getPersistedUriPermissions();
+        final List<Uri> uris = new ArrayList<>();
+        for (UriPermission perm : uriPermissions) {
+            if (perm.isReadPermission()) {
+                uris.add(perm.getUri());
+            }
+        }
+
+        assertThat(uris).contains(uri);
     }
 
     public static void assertMimeType(Uri uri, String expectedMimeType) throws Exception {
@@ -73,12 +89,7 @@ public class PhotoPickerAssertionsUtils {
             assertThat(c).isNotNull();
             assertThat(c.moveToFirst()).isTrue();
 
-            final String mimeType;
-            if (getBoolean("sys.photopicker.pickerdb.enabled", true)) {
-                mimeType = c.getString(c.getColumnIndex(PickerMediaColumns.MIME_TYPE));
-            } else {
-                mimeType = c.getString(c.getColumnIndex(FileColumns.MIME_TYPE));
-            }
+            final String mimeType = c.getString(c.getColumnIndex(PickerMediaColumns.MIME_TYPE));
 
             if (mimeType.startsWith("image")) {
                 assertImageRedactedReadOnlyAccess(uri, resolver);

@@ -17,15 +17,19 @@
 package com.android.bedstead.nene.devicepolicy;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.os.Build.VERSION_CODES.R;
+import static android.os.Build.VERSION_CODES.TIRAMISU;
 
 import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.compatibility.common.util.enterprise.DeviceAdminReceiverUtils.ACTION_DISABLE_SELF;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
@@ -57,6 +61,31 @@ public final class ProfileOwner extends DevicePolicyController {
             Package pkg,
             ComponentName componentName) {
         super(user, pkg, componentName);
+    }
+
+    /** Returns whether the current profile is organization owned. */
+    @TargetApi(R)
+    public boolean isOrganizationOwned() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(R)) {
+            return false;
+        }
+
+        DevicePolicyManager devicePolicyManager =
+                TestApis.context().androidContextAsUser(mUser).getSystemService(
+                        DevicePolicyManager.class);
+        return devicePolicyManager.isOrganizationOwnedDeviceWithManagedProfile();
+    }
+
+    /** Sets whether the current profile is organization owned. */
+    @TargetApi(TIRAMISU)
+    public void setIsOrganizationOwned(boolean isOrganizationOwned) {
+        Versions.requireMinimumVersion(TIRAMISU);
+
+        DevicePolicyManager devicePolicyManager =
+                TestApis.context().androidContextAsUser(mUser).getSystemService(
+                        DevicePolicyManager.class);
+        devicePolicyManager.setProfileOwnerOnOrganizationOwnedDevice(mComponentName,
+                isOrganizationOwned);
     }
 
     @Override
@@ -113,6 +142,7 @@ public final class ProfileOwner extends DevicePolicyController {
         Intent intent = new Intent(ACTION_DISABLE_SELF);
         intent.setComponent(new ComponentName(pkg().packageName(),
                 "com.android.bedstead.testapp.TestAppBroadcastController"));
+        Context context = TestApis.context().androidContextAsUser(mUser);
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
@@ -122,7 +152,7 @@ public final class ProfileOwner extends DevicePolicyController {
                 BlockingBroadcastReceiver b = new BlockingBroadcastReceiver(
                         TestApis.context().instrumentedContext());
 
-                TestApis.context().androidContextAsUser(mUser).sendOrderedBroadcast(
+                context.sendOrderedBroadcast(
                         intent, /* receiverPermission= */ null, b, /* scheduler= */
                         null, /* initialCode= */
                         Activity.RESULT_CANCELED, /* initialData= */ null, /* initialExtras= */
@@ -131,14 +161,16 @@ public final class ProfileOwner extends DevicePolicyController {
                 b.awaitForBroadcastOrFail(Duration.ofSeconds(30).toMillis());
                 assertThat(b.getResultCode()).isEqualTo(Activity.RESULT_OK);
             }).timeout(Duration.ofMinutes(5)).runAndWrapException();
+
+            DevicePolicyManager dpm = context.getSystemService(DevicePolicyManager.class);
+
+            Poll.forValue(() -> dpm.isRemovingAdmin(mComponentName, mUser.id()))
+                    .toNotBeEqualTo(true)
+                    .timeout(Duration.ofMinutes(5))
+                    .errorOnFail()
+                    .await();
         }
 
-//        TODO(b/219894175) Expose isRemovingAdmin as a TestAPI for U.
-//        DevicePolicyManager dpm = context.getSystemService(DevicePolicyManager.class);
-//
-//        Poll.forValue(() -> dpm.isRemovingAdmin(mComponentName, mUser.id()))
-//                .toNotBeEqualTo(true)
-//                .await();
     }
 
     @Override

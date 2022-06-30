@@ -16,6 +16,7 @@
 
 package com.android.bedstead.harrier.annotations.parameterized;
 
+import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.EARLY;
 import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.LATE;
 
 import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
@@ -34,7 +35,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation
+@ParameterizedAnnotation(shadows = IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile.class)
 @RequireRunOnPrimaryUser
 @EnsureHasNoDeviceOwner
 @EnsureHasWorkProfile(dpcIsPrimary = true)
@@ -49,5 +50,5 @@ public @interface IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner {
      *
      * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default LATE;
+    int weight() default EARLY;
 }

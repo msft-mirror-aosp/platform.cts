@@ -240,9 +240,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
         waitForWithAmState(state -> !state.isDisplayFrozen(), "Display unfrozen");
     }
 
-    public void waitForActivityState(ComponentName activityName, String activityState) {
-        waitForWithAmState(state -> state.hasActivityState(activityName, activityState),
+    public boolean waitForActivityState(ComponentName activityName, String activityState) {
+        return waitForWithAmState(state -> state.hasActivityState(activityName, activityState),
                 "state of " + getActivityName(activityName) + " to be " + activityState);
+    }
+
+    public void waitAndAssertActivityState(ComponentName activityName, String activityState) {
+        assertTrue(waitForActivityState(activityName, activityState));
     }
 
     public void waitForActivityRemoved(ComponentName activityName) {
@@ -735,7 +739,8 @@ public class WindowManagerStateHelper extends WindowManagerState {
         final List<Task> tasks = getRootTasks();
         for (Task task : tasks) {
             task.forAllTasks((t) -> assertWithMessage("Empty task was found, id = " + t.mTaskId)
-                    .that(t.mTasks.size() + t.mActivities.size()).isGreaterThan(0));
+                    .that(t.mTasks.size() + t.mTaskFragments.size() + t.mActivities.size())
+                    .isGreaterThan(0));
             if (task.isLeafTask()) {
                 continue;
             }

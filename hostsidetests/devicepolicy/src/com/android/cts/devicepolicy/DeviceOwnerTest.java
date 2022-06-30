@@ -32,6 +32,7 @@ import android.stats.devicepolicy.EventId;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -342,6 +343,8 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeCreateAndManageUserTest("testCreateAndManageUser_RemoveRestrictionSet");
     }
 
+    @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "220386262",
+            reason = "Often fails on automotive due to race condition")
     @Test
     public void testCreateAndManageUser_newUserDisclaimer() throws Exception {
         assumeCanStartNewUser();
@@ -872,12 +875,40 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
             // Launch the activity again to get it out of stopped state on the primary user.
             startProtectedPackage(mPrimaryUserId);
             // Try to force-stop the package under test on the primary user.
-            tryStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ false);
+            tryForceStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ false);
         } finally {
             // Clear the protected packages so that the package under test can be force-stopped.
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
                     "testClearSetUserControlDisabledPackages", mPrimaryUserId);
-            tryStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ true);
+            tryForceStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ true);
+
+            // Removal of the installed simple app on the primary user is done in tear down.
+        }
+    }
+
+    @Test
+    public void testSetUserControlDisabledPackages_singleUser_reboot_verifyPackageNotFgsStopped()
+            throws Exception {
+        try {
+            installAppAsUser(SIMPLE_APP_APK, mPrimaryUserId);
+            startProtectedPackage(mPrimaryUserId);
+            // Set the package under test as a protected package.
+            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+                    "testSetUserControlDisabledPackages");
+
+            // Reboot and verify protected packages are persisted
+            rebootAndWaitUntilReady();
+
+            // The simple app package seems to be set into stopped state on reboot.
+            // Launch the activity again to get it out of stopped state on the primary user.
+            startProtectedPackage(mPrimaryUserId);
+            // Try to task-manager stop the package under test on the primary user.
+            tryFgsStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ false);
+        } finally {
+            // Clear the protected packages so that the package under test can be stopped.
+            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
+                    "testClearSetUserControlDisabledPackages", mPrimaryUserId);
+            tryFgsStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ true);
 
             // Removal of the installed simple app on the primary user is done in tear down.
         }
@@ -921,12 +952,65 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 // Launch the activity again to get it out of stopped state for the created user.
                 startProtectedPackage(userId);
                 // Try to force-stop the package under test on the created user.
-                tryStoppingProtectedPackage(userId, /* canUserStopPackage= */ false);
+                tryForceStoppingProtectedPackage(userId, /* canUserStopPackage= */ false);
             } finally {
                 // Clear the protected packages so that the package under test can be force-stopped.
                 runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
                         "testClearSetUserControlDisabledPackages", mPrimaryUserId);
-                tryStoppingProtectedPackage(userId, /* canUserStopPackage= */ true);
+                tryForceStoppingProtectedPackage(userId, /* canUserStopPackage= */ true);
+
+                // Removal of the created user and the installed simple app on the created user are
+                // done in tear down.
+            }
+        } finally {
+            setStopBgUsersOnSwitchProperty(stopBgUsersOnSwitchValue);
+        }
+    }
+
+    @Test
+    @Ignore("b/204508654")
+    public void testSetUserControlDisabledPackages_multiUser_reboot_verifyPackageNotFgsStopped()
+            throws Exception {
+        assumeCanCreateAdditionalUsers(1);
+        final int userId = createUser();
+
+        String stopBgUsersOnSwitchValue = getStopBgUsersOnSwitchProperty();
+        try {
+            // Set it to zero otherwise test will crash on automotive when switching users
+            setStopBgUsersOnSwitchProperty("0");
+            try {
+                installAppAsUser(SIMPLE_APP_APK, userId);
+                switchUser(userId);
+                startProtectedPackage(userId);
+                // Set the package under test as a protected package.
+                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
+                        "testSetUserControlDisabledPackages", mPrimaryUserId);
+
+                // Reboot and verify protected packages are persisted.
+                CLog.i("Reboot");
+                rebootAndWaitUntilReady();
+                CLog.i("Device is ready");
+
+                if (isHeadlessSystemUserMode()) {
+                    // Device stars on last user, so we need to explicitly start the user running
+                    // the tests
+                    startUser(mPrimaryUserId);
+                } else {
+                    // Device starts on the primary user and not on the last user (i.e. the created
+                    // user) before the reboot occurred.
+                    switchUser(userId);
+                }
+
+                // The simple app package seems to be set into stopped state on reboot.
+                // Launch the activity again to get it out of stopped state for the created user.
+                startProtectedPackage(userId);
+                // Try to force-stop the package under test on the created user.
+                tryFgsStoppingProtectedPackage(userId, /* canUserStopPackage= */ false);
+            } finally {
+                // Clear the protected packages so that the package under test can be force-stopped.
+                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
+                        "testClearSetUserControlDisabledPackages", mPrimaryUserId);
+                tryFgsStoppingProtectedPackage(userId, /* canUserStopPackage= */ true);
 
                 // Removal of the created user and the installed simple app on the created user are
                 // done in tear down.
@@ -950,11 +1034,11 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     /**
      * Helper when testing {@link DevicePolicyManager#setUserControlDisabledPackages} API that
-     * attempts to stop the protected package under test for a given user.
+     * attempts to force-stop the protected package under test for a given user.
      * @param userId The user Id to stop the package for
      * @param canUserStopPackage Whether the user can force stop the protected package
      */
-    private void tryStoppingProtectedPackage(int userId, boolean canUserStopPackage)
+    private void tryForceStoppingProtectedPackage(int userId, boolean canUserStopPackage)
             throws Exception {
         forceStopPackageForUser(SIMPLE_APP_PKG, userId);
         if (canUserStopPackage) {
@@ -963,6 +1047,25 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
         } else {
             executeDeviceTestMethod(".UserControlDisabledPackagesTest",
                     "testForceStopWithUserControlDisabled");
+        }
+    }
+
+    /**
+     * Helper when testing {@link DevicePolicyManager#setUserControlDisabledPackages} API that
+     * attempts to apply the "task-manager" FGS stop operation to the protected package under test
+     * for a given user.
+     * @param userId The user Id to stop the package for
+     * @param canUserStopPackage Whether the user should be able to stop the app
+     */
+    private void tryFgsStoppingProtectedPackage(int userId, boolean canUserStopPackage)
+            throws Exception {
+        fgsStopPackageForUser(SIMPLE_APP_PKG, userId);
+        if (canUserStopPackage) {
+            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+                    "testFgsStopWithUserControlEnabled");
+        } else {
+            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+                    "testFgsStopWithUserControlDisabled");
         }
     }
 

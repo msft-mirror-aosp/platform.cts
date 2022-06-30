@@ -162,6 +162,13 @@ jobject Utils_getQuadrantBuffer(JNIEnv* env, jobject /*clazz*/, jint width, jint
     return result;
 }
 
+jlong Utils_getBufferId(JNIEnv* env, jobject /*clazz*/, jobject jHardwareBuffer) {
+    AHardwareBuffer* buffer = AHardwareBuffer_fromHardwareBuffer(env, jHardwareBuffer);
+    uint64_t id = 0;
+    AHardwareBuffer_getId(buffer, &id);
+    return id;
+}
+
 jlong SurfaceTransaction_create(JNIEnv* /*env*/, jclass) {
     return reinterpret_cast<jlong>(ASurfaceTransaction_create());
 }
@@ -596,10 +603,10 @@ jobject SurfaceControlTest_getFrameTimelines(JNIEnv* env, jclass) {
     ATrace_endSection();
     verifyChoreographer(env, choreographer);
 
-    ExtendedCallback cb1("cb1", env);
+    VsyncCallback cb1("cb1", env);
     auto start = now();
     ATrace_beginSection("postVsyncCallback");
-    AChoreographer_postVsyncCallback(choreographer, extendedFrameCallback, &cb1);
+    AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);
     ATrace_endSection();
     auto delayPeriod = std::chrono::duration_cast<std::chrono::milliseconds>(DELAY_PERIOD).count();
     ATrace_beginSection("ALooper_pollOnce");
@@ -621,7 +628,7 @@ jobject SurfaceControlTest_getFrameTimelines(JNIEnv* env, jclass) {
         return NULL;
     }
     for (int i = 0; i < cb1.getTimeline().size(); i++) {
-        ExtendedCallback::FrameTime frameTimeline = cb1.getTimeline()[i];
+        VsyncCallback::FrameTime frameTimeline = cb1.getTimeline()[i];
         jobject frameTimelineObj =
                 env->NewObject(gFrameTimelineClassInfo.clazz, gFrameTimelineClassInfo.constructor,
                                frameTimeline.vsyncId, frameTimeline.expectedPresentTime,
@@ -686,6 +693,7 @@ static const JNINativeMethod JNI_METHODS[] = {
         {"getSolidBuffer", "(III)Landroid/hardware/HardwareBuffer;", (void*)Utils_getSolidBuffer},
         {"getQuadrantBuffer", "(IIIIII)Landroid/hardware/HardwareBuffer;",
          (void*)Utils_getQuadrantBuffer},
+        {"getBufferId", "(Landroid/hardware/HardwareBuffer;)J", (void*)Utils_getBufferId},
 };
 
 static const JNINativeMethod FRAME_TIMELINE_JNI_METHODS[] = {

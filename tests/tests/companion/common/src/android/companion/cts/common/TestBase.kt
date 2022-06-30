@@ -16,10 +16,12 @@
 
 package android.companion.cts.common
 
+import android.Manifest
 import android.annotation.CallSuper
 import android.app.Instrumentation
 import android.app.UiAutomation
 import android.companion.AssociationInfo
+import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -34,10 +36,14 @@ import org.junit.Assume.assumeTrue
 import org.junit.AssumptionViolatedException
 import org.junit.Before
 import java.io.IOException
+import kotlin.test.assertContains
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -73,8 +79,7 @@ abstract class TestBase {
         })
 
         // Make sure CompanionDeviceServices are not bound.
-        assertFalse(PrimaryCompanionService.isBound)
-        assertFalse(SecondaryCompanionService.isBound)
+        assertValidCompanionDeviceServicesUnbind()
 
         setUp()
     }
@@ -112,6 +117,28 @@ abstract class TestBase {
         }
     }
 
+    protected fun createSelfManagedAssociation(
+        displayName: String,
+        onAssociationCreatedAction: ((AssociationInfo) -> Unit)? = null
+    ): Int {
+        val callback = RecordingCallback(onAssociationCreatedAction = onAssociationCreatedAction)
+        val request: AssociationRequest = AssociationRequest.Builder()
+                .setSelfManaged(true)
+                .setDisplayName(displayName)
+                .build()
+        callback.assertInvokedByActions {
+            withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
+                cdm.associate(request, SIMPLE_EXECUTOR, callback)
+            }
+        }
+
+        val callbackInvocation = callback.invocations.first()
+        assertIs<RecordingCallback.OnAssociationCreated>(callbackInvocation)
+        return callbackInvocation.associationInfo.id
+    }
+
+    protected fun runShellCommand(cmd: String) = instrumentation.runShellCommand(cmd)
+
     private fun CompanionDeviceManager.disassociateAll() =
             allAssociations.forEach { disassociate(it.id) }
 }
@@ -129,6 +156,89 @@ fun assertAssociations(
     expected: Set<Pair<String, MacAddress?>>
 ) = assertEquals(actual = actual.map { it.packageName to it.deviceMacAddress }.toSet(),
         expected = expected)
+
+/**
+ * Assert that CDM binds valid CompanionDeviceServices, both primary and secondary.
+ * Use when services are expected to switch its state to "bound".
+ */
+fun assertValidCompanionDeviceServicesBind() =
+        assertTrue("Both valid CompanionDeviceServices - Primary and Secondary - should bind") {
+            waitFor(timeout = 1.seconds, interval = 100.milliseconds) {
+                PrimaryCompanionService.isBound && SecondaryCompanionService.isBound
+            }
+        }
+
+/**
+ * Assert both primary and secondary CompanionDeviceServices stay bound.
+ * Use when services are expected to be in "bound" state already.
+ */
+fun assertValidCompanionDeviceServicesRemainBound() =
+        assertFalse("Both valid CompanionDeviceServices should stay bound") {
+            waitFor(timeout = 3.seconds, interval = 100.milliseconds) {
+                !PrimaryCompanionService.isBound || !SecondaryCompanionService.isBound
+            }
+        }
+
+/**
+ * Assert that CDM unbinds valid CompanionDeviceServices, both primary and secondary.
+ * Use when services are expected to switch its state to "unbound".
+ */
+fun assertValidCompanionDeviceServicesUnbind() =
+        assertTrue("CompanionDeviceServices should not bind") {
+            waitFor(timeout = 1.seconds, interval = 100.milliseconds) {
+                !PrimaryCompanionService.isBound && !SecondaryCompanionService.isBound
+            }
+        }
+
+/**
+ * Assert that neither primary nor secondary CompanionDeviceService is bound.
+ * Use when services are expected to be in "unbound" state already.
+ */
+fun assertValidCompanionDeviceServicesRemainUnbound() =
+        assertFalse("CompanionDeviceServices should not be bound") {
+            waitFor(timeout = 3.seconds, interval = 100.milliseconds) {
+                PrimaryCompanionService.isBound || SecondaryCompanionService.isBound
+            }
+        }
+
+/**
+ * Assert that CDM did not bind invalid CompanionDeviceServices
+ * (i.e. missing permission or intent-filter).
+ */
+fun assertInvalidCompanionDeviceServicesNotBound() =
+        assertFalse("CompanionDeviceServices that do not require " +
+                "BIND_COMPANION_DEVICE_SERVICE permission or do not declare an intent-filter for " +
+                "\"android.companion.CompanionDeviceService\" action should not be bound") {
+            MissingPermissionCompanionService.isBound ||
+                    MissingIntentFilterActionCompanionService.isBound
+    }
+
+/**
+ * Assert that device (dis)appearance detection callback is only triggered for the primary
+ * CompanionDeviceService and not on any of the non-primary or invalid CompanionDeviceServices.
+ */
+fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared: Boolean) {
+    val snapshotSecondary = HashSet(SecondaryCompanionService.connectedDevices)
+    val snapshotUnauthorized = HashSet(MissingPermissionCompanionService.connectedDevices)
+    val snapshotInvalid = HashSet(MissingIntentFilterActionCompanionService.connectedDevices)
+
+    // Check that the primary CompanionDeviceService received onDevice(Dis)Appeared() callback
+    if (appeared) {
+        PrimaryCompanionService.waitAssociationToAppear(associationId)
+        assertContains(PrimaryCompanionService.associationIdsForConnectedDevices, associationId)
+    } else {
+        PrimaryCompanionService.waitAssociationToDisappear(associationId)
+        assertFalse(PrimaryCompanionService.associationIdsForConnectedDevices
+                .contains(associationId))
+    }
+
+    // ... while neither the non-primary nor incorrectly defined CompanionDeviceServices -
+    // have NOT. (Give it 1 more second.)
+    sleepFor(1.seconds)
+    assertContentEquals(snapshotSecondary, SecondaryCompanionService.connectedDevices)
+    assertContentEquals(snapshotUnauthorized, MissingPermissionCompanionService.connectedDevices)
+    assertContentEquals(snapshotInvalid, MissingIntentFilterActionCompanionService.connectedDevices)
+}
 
 /**
  * @return whether the condition was met before time ran out.
@@ -174,3 +284,7 @@ fun Instrumentation.runShellCommand(cmd: String): String {
 
 fun Instrumentation.setSystemProp(name: String, value: String) =
         runShellCommand("setprop $name $value")
+
+fun MacAddress.toUpperCaseString() = toString().toUpperCase()
+
+fun sleepFor(duration: Duration) = sleep(duration.inWholeMilliseconds)

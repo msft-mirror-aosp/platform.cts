@@ -59,6 +59,7 @@ sealed class CompanionService<T : CompanionService<T>>(
     override fun onDeviceAppeared(associationInfo: AssociationInfo) {
         Log.d(TAG, "$this.onDevice_Appeared(), association=$associationInfo")
         _connectedDevices[associationInfo.id] = associationInfo
+
         super.onDeviceAppeared(associationInfo)
     }
 
@@ -85,6 +86,10 @@ sealed class CompanionService<T : CompanionService<T>>(
         Log.d(TAG, "$this.onDestroy()")
         instanceHolder.instance = null
         super.onDestroy()
+    }
+
+    fun removeConnectedDevice(associationId: Int) {
+        _connectedDevices.remove(associationId)
     }
 }
 
@@ -127,6 +132,13 @@ sealed class InstanceHolder<T : CompanionService<T>> {
         }
         if (!gone) throw AssertionError("""Association with $associationId hasn't "disappeared"""")
     }
+
+    // This is a useful function to use to conveniently "forget" that a device is currently present.
+    // Use to bypass the "unbinding while there are connected devices" for simulated devices.
+    // (Don't worry! they would have removed themselves after 1 minute anyways!)
+    fun forgetDevicePresence(associationId: Int) {
+        instance?.removeConnectedDevice(associationId)
+    }
 }
 
 class PrimaryCompanionService : CompanionService<PrimaryCompanionService>(Companion) {
@@ -135,4 +147,14 @@ class PrimaryCompanionService : CompanionService<PrimaryCompanionService>(Compan
 
 class SecondaryCompanionService : CompanionService<SecondaryCompanionService>(Companion) {
     companion object : InstanceHolder<SecondaryCompanionService>()
+}
+
+class MissingPermissionCompanionService
+    : CompanionService<MissingPermissionCompanionService>(Companion) {
+    companion object : InstanceHolder<MissingPermissionCompanionService>()
+}
+
+class MissingIntentFilterActionCompanionService
+    : CompanionService<MissingIntentFilterActionCompanionService>(Companion) {
+    companion object : InstanceHolder<MissingIntentFilterActionCompanionService>()
 }

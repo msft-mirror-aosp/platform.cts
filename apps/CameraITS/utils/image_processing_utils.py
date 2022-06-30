@@ -137,7 +137,7 @@ def unpack_raw10_image(img):
   # Cut out the 4x2b LSBs and put each in bits [1:0] of their own 8b words.
   lsbs = img[::, 4::5].reshape(h, w // 4)
   lsbs = numpy.right_shift(
-      numpy.packbits(numpy.unpackbits(lsbs).reshape(h, w // 4, 4, 2), 3), 6)
+      numpy.packbits(numpy.unpackbits(lsbs).reshape((h, w // 4, 4, 2)), 3), 6)
   # Pair the LSB bits group to 0th pixel instead of 3rd pixel
   lsbs = lsbs.reshape(h, w // 4, 4)[:, :, ::-1]
   lsbs = lsbs.reshape(h, w)
@@ -190,7 +190,7 @@ def unpack_raw12_image(img):
   # Cut out the 2x4b LSBs and put each in bits [3:0] of their own 8b words.
   lsbs = img[::, 2::3].reshape(h, w // 2)
   lsbs = numpy.right_shift(
-      numpy.packbits(numpy.unpackbits(lsbs).reshape(h, w // 2, 2, 4), 3), 4)
+      numpy.packbits(numpy.unpackbits(lsbs).reshape((h, w // 2, 2, 4)), 3), 4)
   # Pair the LSB bits group to pixel 0 instead of pixel 1
   lsbs = lsbs.reshape(h, w // 2, 2)[:, :, ::-1]
   lsbs = lsbs.reshape(h, w)
@@ -243,7 +243,21 @@ def decompress_jpeg_to_rgb_image(jpeg_buffer):
   img = Image.open(io.BytesIO(jpeg_buffer))
   w = img.size[0]
   h = img.size[1]
-  return numpy.array(img).reshape(h, w, 3) / 255.0
+  return numpy.array(img).reshape((h, w, 3)) / 255.0
+
+
+def convert_image_to_numpy_array(image_path):
+  """Converts image at image_path to numpy array and returns the array.
+
+  Args:
+    image_path: file path
+  Returns:
+    numpy array
+  """
+  if not os.path.exists(image_path):
+    raise AssertionError(f'{image_path} does not exist.')
+  image = Image.open(image_path)
+  return numpy.array(image)
 
 
 def convert_capture_to_planes(cap, props=None):
@@ -439,7 +453,7 @@ def convert_raw_to_rgb_image(r_plane, gr_plane, gb_plane, b_plane, props,
   img = (((img.reshape(h, w, 3) - black_levels) * scale) * gains).clip(0.0, 1.0)
   if apply_ccm_raw_to_rgb:
     img = numpy.dot(
-        img.reshape(w * h, 3), ccm.T).reshape(h, w, 3).clip(0.0, 1.0)
+        img.reshape(w * h, 3), ccm.T).reshape((h, w, 3)).clip(0.0, 1.0)
   return img
 
 
@@ -822,6 +836,7 @@ def compute_image_rms_difference_1d(rgb_x, rgb_y):
   return math.sqrt(sum([pow(rgb_x[i] - rgb_y[i], 2.0)
                         for i in range(len_rgb_x)]) / len_rgb_x)
 
+
 def compute_image_rms_difference_3d(rgb_x, rgb_y):
   """Calculate the RMS difference between 2 RBG images as 3D arrays.
 
@@ -844,8 +859,10 @@ def compute_image_rms_difference_3d(rgb_x, rgb_y):
   for i in range(shape_rgb_x[0]):
     for j in range(shape_rgb_x[1]):
       for k in range(shape_rgb_x[2]):
-        mean_square_sum += pow(rgb_x[i][j][k] - rgb_y[i][j][k], 2.0);
-  return math.sqrt(mean_square_sum / (shape_rgb_x[0] * shape_rgb_x[1] * shape_rgb_x[2]))
+        mean_square_sum += pow(rgb_x[i][j][k] - rgb_y[i][j][k], 2.0)
+  return (math.sqrt(mean_square_sum /
+                    (shape_rgb_x[0] * shape_rgb_x[1] * shape_rgb_x[2])))
+
 
 class ImageProcessingUtilsTest(unittest.TestCase):
   """Unit tests for this module."""
@@ -921,7 +938,7 @@ class ImageProcessingUtilsTest(unittest.TestCase):
     ref_image = [0.1, 0.2, 0.3]
     lut_max = 65536
     lut = numpy.array([i*2 for i in range(lut_max)])
-    x = numpy.array(ref_image).reshape(1, 1, 3)
+    x = numpy.array(ref_image).reshape((1, 1, 3))
     y = apply_lut_to_image(x, lut).reshape(3).tolist()
     y_ref = [i*2 for i in ref_image]
     self.assertTrue(numpy.allclose(y, y_ref, atol=1/lut_max))

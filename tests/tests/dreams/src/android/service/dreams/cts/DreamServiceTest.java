@@ -16,21 +16,20 @@
 package android.service.dreams.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ComponentName;
+import android.content.pm.PackageManager;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.service.dreams.DreamService;
 import android.view.ActionMode;
 import android.view.Display;
 
-import androidx.test.filters.FlakyTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@FlakyTest(detail = "Promote once confirmed non-flaky")
 public class DreamServiceTest extends ActivityManagerTestBase {
     private static final String DREAM_SERVICE_COMPONENT =
             "android.app.dream.cts.app/.SeparateProcessDreamService";
@@ -68,6 +67,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
     @Test
     public void testDreamInSeparateProcess() {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+
         final ComponentName dreamService =
                 ComponentName.unflattenFromString(DREAM_SERVICE_COMPONENT);
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);

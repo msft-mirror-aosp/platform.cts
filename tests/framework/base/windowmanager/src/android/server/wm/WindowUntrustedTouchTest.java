@@ -22,6 +22,7 @@ import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
 import static android.view.WindowInsets.Type.navigationBars;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -31,6 +32,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
+
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -161,7 +164,7 @@ public class WindowUntrustedTouchTest {
 
     @Rule
     public ActivityScenarioRule<TestActivity> activityRule =
-            new ActivityScenarioRule<>(TestActivity.class);
+            new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
 
     @BeforeClass
     public static void setUpClass() {
@@ -180,13 +183,7 @@ public class WindowUntrustedTouchTest {
 
     @Before
     public void setUp() throws Exception {
-        ActivityOptions options = ActivityOptions.makeBasic();
-        // Launch test in the fullscreen mode with navigation bar hidden,
-        // in order to ensure text toast is tappable and overlays above the test app
-        // on ARC++ and cf_pc devices. b/191075641.
-        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
-        activityRule.getScenario().launch(TestActivity.class, options.toBundle())
-                .onActivity(activity -> {
+        activityRule.getScenario().onActivity(activity -> {
             mActivity = activity;
             mContainer = mActivity.view;
             // On ARC++, text toast is fixed on the screen. Its position may overlays the navigation
@@ -236,10 +233,10 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenFeatureInDisabledModeAndOneSawWindowAbove_allowsTouch()
+    public void testWhenFeatureInDisabledModeAndActivityWindowAbove_allowsTouch()
             throws Throwable {
         setBlockUntrustedTouchesMode(FEATURE_MODE_DISABLED);
-        addSawOverlay(APP_A, WINDOW_1, /* opacity */ .9f);
+        addActivityOverlay(APP_A, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -247,10 +244,10 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenFeatureInPermissiveModeAndOneSawWindowAbove_allowsTouch()
+    public void testWhenFeatureInPermissiveModeAndActivityWindowAbove_allowsTouch()
             throws Throwable {
         setBlockUntrustedTouchesMode(FEATURE_MODE_PERMISSIVE);
-        addSawOverlay(APP_A, WINDOW_1, /* opacity */ .9f);
+        addActivityOverlay(APP_A, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -343,12 +340,13 @@ public class WindowUntrustedTouchTest {
     /** SAWs */
 
     @Test
-    public void testWhenOneSawWindowAboveThreshold_blocksTouch() throws Throwable {
+    public void testWhenOneSawWindowAboveThreshold_allowsTouch() throws Throwable {
         addSawOverlay(APP_A, WINDOW_1, .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
-        assertTouchNotReceived();
+        // Opacity will be automatically capped and touches will pass through.
+        assertTouchReceived();
     }
 
     @Test
@@ -414,14 +412,15 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenOneSawWindowAboveThresholdAndSelfSawWindow_blocksTouch()
+    public void testWhenOneSawWindowAboveThresholdAndSelfSawWindow_allowsTouch()
             throws Throwable {
         addSawOverlay(APP_A, WINDOW_1, .9f);
         addSawOverlay(APP_SELF, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
-        assertTouchNotReceived();
+        // Opacity will be automatically capped and touches will pass through.
+        assertTouchReceived();
     }
 
     @Test
@@ -460,14 +459,15 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenThresholdIs0AndSawWindowAboveThreshold_blocksTouch()
+    public void testWhenThresholdIs0AndSawWindowAboveThreshold_allowsTouch()
             throws Throwable {
         setMaximumObscuringOpacityForTouch(0);
         addSawOverlay(APP_A, WINDOW_1, .1f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
-        assertTouchNotReceived();
+        // Opacity will be automatically capped and touches will pass through.
+        assertTouchReceived();
     }
 
     @Test
@@ -514,15 +514,14 @@ public class WindowUntrustedTouchTest {
         assertTouchNotReceived();
     }
 
-    /** Blocked due to b/194480991 */
     @Test
-    public void testWhenOneActivityWindowWithZeroOpacity_blocksTouch()
+    public void testWhenOneActivityWindowWithZeroOpacity_allowsTouch()
             throws Throwable {
         addActivityOverlay(APP_A, /* opacity */ 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
-        assertTouchNotReceived();
+        assertTouchReceived();
     }
 
     @Test
@@ -546,9 +545,8 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenOneSelfActivityChildWindow_allowsTouch() throws Throwable {
-        IBinder token = mActivity.getWindow().getAttributes().token;
-        addActivityChildWindow(APP_SELF, WINDOW_1, token);
+    public void testWhenOneSelfActivityWindow_allowsTouch() throws Throwable {
+        addActivityOverlay(APP_SELF, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -635,6 +633,39 @@ public class WindowUntrustedTouchTest {
         assertTouchReceived();
     }
 
+    @Test
+    public void testWhenActivityChildWindowWithDifferentTokenFromDifferentApp_blocksTouch()
+            throws Exception {
+        // Creates a new activity with 0 opacity
+        BlockingResultReceiver receiver = new BlockingResultReceiver();
+        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        // Verify it allows touches
+        mTouchHelper.tapOnViewCenter(mContainer);
+        assertTouchReceived();
+        // Now get its token and put a child window from another app with it
+        IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
+        addActivityChildWindow(APP_B, WINDOW_1, token);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchNotReceived();
+    }
+
+    @Test
+    public void testWhenActivityChildWindowWithDifferentTokenFromSameApp_allowsTouch()
+            throws Exception {
+        // Creates a new activity with 0 opacity
+        BlockingResultReceiver receiver = new BlockingResultReceiver();
+        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        // Now get its token and put a child window owned by us
+        IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
+        addActivityChildWindow(APP_SELF, WINDOW_1, token);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchReceived();
+    }
+
     /** Activity transitions */
 
     @Test
@@ -658,6 +689,13 @@ public class WindowUntrustedTouchTest {
         assertThat(durationSet).isGreaterThan(
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
         addExitAnimationActivity(APP_A);
+
+        // Wait for ExitAnimationActivity open transition to complete to avoid counting this
+        // transition in the duration of the exit animation below. Otherwise
+        // waitForAppTransitionRunningOnDisplay might return immediately if this transition is not
+        // done by then instead of waiting for the exit animation to start running.
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+
         sendFinishToExitAnimationActivity(APP_A,
                 Components.ExitAnimationActivityReceiver.EXTRA_VALUE_LONG_ANIMATION_0_7);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
@@ -704,6 +742,12 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenExitAnimationBelowThreshold_allowsTouch() {
         addExitAnimationActivity(APP_A);
+
+        // Wait for ExitAnimationActivity open transition to complete to avoid
+        // waitForAppTransitionRunningOnDisplay returning immediately if this transition is not
+        // done by then instead of waiting for the exit animation to start running.
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+
         sendFinishToExitAnimationActivity(APP_A,
                 Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_7);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
@@ -747,6 +791,12 @@ public class WindowUntrustedTouchTest {
         addToastOverlay(APP_SELF, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        Rect containerRect = new Rect(viewXY[0], viewXY[1], viewXY[0] + mContainer.getWidth(),
+                viewXY[1] + mContainer.getHeight());
+        assumeTrue("Toast displayed outside of activity bounds.",
+                containerRect.contains(toast.centerX(), toast.centerY()));
 
         mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
 
@@ -816,11 +866,10 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenOneSelfCustomToastOneSelfActivityChildAndOneSawBelowThreshold_allowsTouch()
+    public void testWhenOneSelfCustomToastWindowOneSelfActivityWindowAndOneSawBelowThreshold_allowsTouch()
             throws Throwable {
-        IBinder token = mActivity.getWindow().getAttributes().token;
-        addActivityChildWindow(APP_SELF, WINDOW_1, token);
-        addSawOverlay(APP_A, WINDOW_2, .5f);
+        addActivityOverlay(APP_SELF, /* opacity */ .9f);
+        addSawOverlay(APP_A, WINDOW_1, .5f);
         addToastOverlay(APP_SELF, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -938,7 +987,7 @@ public class WindowUntrustedTouchTest {
             @AnimRes int enterAnim, @AnimRes int exitAnim) {
         ConditionVariable animationsStarted = new ConditionVariable(false);
         ActivityOptions options = ActivityOptions.makeCustomAnimation(mContext, enterAnim, exitAnim,
-                0, mMainHandler, animationsStarted::open, /* finishedListener */ null);
+                0, mMainHandler, (t) -> animationsStarted.open(), /* finishedListener */ null);
         // We're testing the opacity coming from the animation here, not the one declared in the
         // activity, so we set its opacity to 1
         addActivityOverlay(packageName, /* opacity */ 1, touchable, options.toBundle());
@@ -1019,7 +1068,9 @@ public class WindowUntrustedTouchTest {
     private void addSawOverlay(String packageName, String windowSuffix, float opacity)
             throws Throwable {
         String name = getWindowName(packageName, windowSuffix);
-        getService(packageName).showSystemAlertWindow(name, opacity);
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        getService(packageName).showSystemAlertWindow(name, opacity, viewXY[0], viewXY[1]);
         mSawWindowsAdded.add(name);
         if (!mWmState.waitFor("saw window " + name,
                 state -> state.isWindowVisible(name) && state.isWindowSurfaceShown(name))) {
@@ -1091,6 +1142,15 @@ public class WindowUntrustedTouchTest {
 
     private static ComponentName repackage(String packageName, ComponentName baseComponent) {
         return new ComponentName(packageName, baseComponent.getClassName());
+    }
+
+    private static Bundle createLaunchActivityOptionsBundle() {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        // Launch test in the fullscreen mode with navigation bar hidden,
+        // in order to ensure text toast is tappable and overlays above the test app
+        // on freeform first devices. b/191075641.
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        return options.toBundle();
     }
 
     public static class TestActivity extends Activity {

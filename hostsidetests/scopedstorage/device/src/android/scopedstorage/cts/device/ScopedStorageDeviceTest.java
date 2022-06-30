@@ -19,7 +19,6 @@ package android.scopedstorage.cts.device;
 import static android.app.AppOpsManager.permissionToOp;
 import static android.os.ParcelFileDescriptor.MODE_CREATE;
 import static android.os.ParcelFileDescriptor.MODE_READ_WRITE;
-import static android.os.SystemProperties.getBoolean;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.assertExifMetadataMatch;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.assertExifMetadataMismatch;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadata;
@@ -108,6 +107,7 @@ import static android.system.OsConstants.S_IRWXU;
 import static android.system.OsConstants.W_OK;
 
 import static androidx.test.InstrumentationRegistry.getContext;
+import static androidx.test.InstrumentationRegistry.getTargetContext;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -143,6 +143,7 @@ import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.cts.install.lib.TestApp;
+import com.android.modules.utils.build.SdkLevel;
 
 import com.google.common.io.Files;
 
@@ -198,10 +199,14 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     // The following apps are installed before the tests are run via a target_preparer.
     // See test config for details.
-    // An app with READ_EXTERNAL_STORAGE permission
-    private static final TestApp APP_A_HAS_RES = new TestApp("TestAppA",
-            "android.scopedstorage.cts.testapp.A.withres", 1, false,
-            "CtsScopedStorageTestAppA.apk");
+    // An app with READ_EXTERNAL_STORAGE and READ_MEDIA_* permissions
+    private static final TestApp APP_A_HAS_RES =
+            new TestApp(
+                    "TestAppA",
+                    "android.scopedstorage.cts.testapp.A.withres",
+                    1,
+                    false,
+                    "CtsScopedStorageTestAppA.apk");
     // An app with no permissions
     private static final TestApp APP_B_NO_PERMS = new TestApp("TestAppB",
             "android.scopedstorage.cts.testapp.B.noperms", 1, false,
@@ -895,11 +900,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         try {
             assertThat(file.createNewFile()).isTrue();
 
-            ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
-            ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw");
-
-            assertRWR(readPfd, writePfd);
-            assertUpperFsFd(writePfd); // With cache
+            try (ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
+                 ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw")) {
+                assertRWR(readPfd, writePfd);
+                assertUpperFsFd(writePfd); // With cache
+            }
         } finally {
             file.delete();
         }
@@ -913,11 +918,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         try {
             assertThat(file.createNewFile()).isTrue();
 
-            ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw");
-            ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
-
-            assertRWR(readPfd, writePfd);
-            assertLowerFsFdWithPassthrough(writePfd);
+            try (ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw");
+                 ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE)) {
+                assertRWR(readPfd, writePfd);
+                assertLowerFsFdWithPassthrough(file.getPath(), writePfd);
+            }
         } finally {
             file.delete();
         }
@@ -931,11 +936,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         try {
             assertThat(file.createNewFile()).isTrue();
 
-            ParcelFileDescriptor writePfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
-            ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw");
-
-            assertRWR(readPfd, writePfd);
-            assertUpperFsFd(readPfd); // With cache
+            try (ParcelFileDescriptor writePfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
+                 ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw")) {
+                assertRWR(readPfd, writePfd);
+                assertUpperFsFd(readPfd); // With cache
+            }
         } finally {
             file.delete();
         }
@@ -949,11 +954,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         try {
             assertThat(file.createNewFile()).isTrue();
 
-            ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw");
-            ParcelFileDescriptor writePfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
-
-            assertRWR(readPfd, writePfd);
-            assertLowerFsFdWithPassthrough(readPfd);
+            try (ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw");
+                 ParcelFileDescriptor writePfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE)) {
+                assertRWR(readPfd, writePfd);
+                assertLowerFsFdWithPassthrough(file.getPath(), readPfd);
+            }
         } finally {
             file.delete();
         }
@@ -968,13 +973,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             assertThat(file.createNewFile()).isTrue();
 
             // We upgrade 'w' only to 'rw'
-            ParcelFileDescriptor writePfd = openWithMediaProvider(file, "w");
-            ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw");
-
-            assertRWR(readPfd, writePfd);
-            assertRWR(writePfd, readPfd); // Can read on 'w' only pfd
-            assertLowerFsFdWithPassthrough(writePfd);
-            assertLowerFsFdWithPassthrough(readPfd);
+            try (ParcelFileDescriptor writePfd = openWithMediaProvider(file, "w");
+                 ParcelFileDescriptor readPfd = openWithMediaProvider(file, "rw")) {
+                assertRWR(readPfd, writePfd);
+                assertRWR(writePfd, readPfd); // Can read on 'w' only pfd
+                assertLowerFsFdWithPassthrough(file.getPath(), writePfd);
+                assertLowerFsFdWithPassthrough(file.getPath(), readPfd);
+            }
         } finally {
             file.delete();
         }
@@ -991,15 +996,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             // Even if we close the original fd, since we have a dup open
             // the FUSE IO should still bypass the cache
-            try (ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw")) {
-                try (ParcelFileDescriptor writePfdDup = writePfd.dup();
-                     ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(
-                             file, MODE_READ_WRITE)) {
-                    writePfd.close();
+            try (ParcelFileDescriptor writePfd = openWithMediaProvider(file, "rw");
+                 ParcelFileDescriptor writePfdDup = writePfd.dup();
+                 ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE)) {
+                writePfd.close();
 
-                    assertRWR(readPfd, writePfdDup);
-                    assertLowerFsFdWithPassthrough(writePfdDup);
-                }
+                assertRWR(readPfd, writePfdDup);
+                assertLowerFsFdWithPassthrough(file.getPath(), writePfdDup);
             }
         } finally {
             file.delete();
@@ -1026,12 +1029,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             writePfd.close();
 
             // Upper fs open and read without direct_io
-            ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE);
-            Os.pread(readPfd.getFileDescriptor(), readBuffer, 0, 10, 0);
+            try (ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE)) {
+                Os.pread(readPfd.getFileDescriptor(), readBuffer, 0, 10, 0);
 
-            // Last write on lower fs is visible via upper fs
-            assertThat(readBuffer).isEqualTo(writeBuffer);
-            assertThat(readPfd.getStatSize()).isEqualTo(writeBuffer.length);
+                // Last write on lower fs is visible via upper fs
+                assertThat(readBuffer).isEqualTo(writeBuffer);
+                assertThat(readPfd.getStatSize()).isEqualTo(writeBuffer.length);
+            }
         } finally {
             file.delete();
         }
@@ -1127,6 +1131,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
+    // There is a minor bug which, alghough fixed in sc-dev (aosp/1834457),
+    // cannot be propagated to the already released sc-release branche
+    // (b/234145920), where mainline-modules are tested.
+    // Skip this test in S to avoid failures in outdated targets.
+    @SdkSuppress(minSdkVersion = 33, codeName = "T")
     public void testAppendUpdatesMtime() throws Exception {
         writeAndCheckMtime(true);
     }
@@ -1260,9 +1269,18 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testReadStorageInvalidation() throws Exception {
-        testAppOpInvalidation(APP_C, new File(getDcimDir(), "read_storage.jpg"),
+        if (SdkLevel.isAtLeastT()) {
+            testAppOpInvalidation(
+                APP_C,
+                new File(getDcimDir(), "read_storage.jpg"),
+                Manifest.permission.READ_MEDIA_IMAGES,
+                AppOpsManager.OPSTR_READ_MEDIA_IMAGES,
+                /* forWrite */ false);
+        } else {
+            testAppOpInvalidation(APP_C, new File(getDcimDir(), "read_storage.jpg"),
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 AppOpsManager.OPSTR_READ_EXTERNAL_STORAGE, /* forWrite */ false);
+        }
     }
 
     @Test
@@ -1435,7 +1453,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             Thread.sleep(200);
         }
         assertThat(canOpenFileAs(app, file, forWrite)).isTrue();
-
         // Deny
         if (permission != null) {
             revokePermission(packageName, permission);
@@ -3335,8 +3352,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         assertStartsWith(path, prefix);
     }
 
-    private void assertLowerFsFdWithPassthrough(ParcelFileDescriptor pfd) throws Exception {
-        if (getBoolean("persist.sys.fuse.passthrough.enable", false)) {
+    private void assertLowerFsFdWithPassthrough(final String path, ParcelFileDescriptor pfd)
+            throws Exception {
+        final ContentResolver resolver = getTargetContext().getContentResolver();
+        final Bundle res = resolver.call(MediaStore.AUTHORITY, "uses_fuse_passthrough", path, null);
+        boolean passthroughEnabled = res.getBoolean("uses_fuse_passthrough_result");
+
+        if (passthroughEnabled) {
             assertUpperFsFd(pfd);
         } else {
             assertLowerFsFd(pfd);

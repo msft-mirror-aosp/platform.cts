@@ -64,6 +64,7 @@ import com.android.cts.install.lib.Install;
 import com.android.cts.install.lib.InstallUtils;
 import com.android.cts.install.lib.TestApp;
 import com.android.cts.install.lib.Uninstall;
+import com.android.modules.utils.build.SdkLevel;
 
 import com.google.common.io.ByteStreams;
 
@@ -111,6 +112,8 @@ public class TestUtils {
     public static final String IS_URI_REDACTED_VIA_FILEPATH =
             "android.scopedstorage.cts.is_uri_redacted_via_filepath";
     public static final String QUERY_URI = "android.scopedstorage.cts.query_uri";
+    public static final String QUERY_MAX_ROW_ID = "android.scopedstorage.cts.query_max_row_id";
+    public static final String QUERY_MIN_ROW_ID = "android.scopedstorage.cts.query_min_row_id";
     public static final String OPEN_FILE_FOR_READ_QUERY =
             "android.scopedstorage.cts.openfile_read";
     public static final String OPEN_FILE_FOR_WRITE_QUERY =
@@ -586,6 +589,11 @@ public class TestUtils {
             assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(1);
             if (grantStoragePermission) {
                 grantPermission(packageName, Manifest.permission.READ_EXTERNAL_STORAGE);
+                if (SdkLevel.isAtLeastT()) {
+                    grantPermission(packageName, Manifest.permission.READ_MEDIA_IMAGES);
+                    grantPermission(packageName, Manifest.permission.READ_MEDIA_AUDIO);
+                    grantPermission(packageName, Manifest.permission.READ_MEDIA_VIDEO);
+                }
             }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
@@ -856,8 +864,7 @@ public class TestUtils {
      * Returns whether we can open the file.
      */
     public static boolean canOpen(File file, boolean forWrite) {
-        try {
-            openWithFilePath(file, forWrite);
+        try (ParcelFileDescriptor ignore = openWithFilePath(file, forWrite)) {
             return true;
         } catch (IOException expected) {
             return false;
@@ -890,6 +897,16 @@ public class TestUtils {
 
     public static void setShouldForceStopTestApp(boolean value) {
         sShouldForceStopTestApp = value;
+    }
+
+    public static long readMaximumRowIdFromDatabaseAs(TestApp app, Uri uri) throws Exception {
+        final String actionName = QUERY_MAX_ROW_ID;
+        return getFromTestApp(app, uri, actionName).getLong(actionName, Long.MIN_VALUE);
+    }
+
+    public static long readMinimumRowIdFromDatabaseAs(TestApp app, Uri uri) throws Exception {
+        final String actionName = QUERY_MIN_ROW_ID;
+        return getFromTestApp(app, uri, actionName).getLong(actionName, Long.MAX_VALUE);
     }
 
     /**
@@ -1702,7 +1719,7 @@ public class TestUtils {
     private static boolean isVolumeMounted(String type) {
         try {
             final String volume = executeShellCommand("sm list-volumes " + type).trim();
-            return volume != null && volume.contains("mounted");
+            return volume != null && volume.contains(" mounted");
         } catch (Exception e) {
             return false;
         }
@@ -1714,6 +1731,18 @@ public class TestUtils {
 
     private static boolean isEmulatedVolumeMounted() {
         return isVolumeMounted("emulated");
+    }
+
+    private static boolean isFuseReady() {
+        for (String volumeName : MediaStore.getExternalVolumeNames(getContext())) {
+            final Uri uri = MediaStore.Files.getContentUri(volumeName);
+            try (Cursor c = getContentResolver().query(uri, null, null, null)) {
+                assertThat(c).isNotNull();
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1734,6 +1763,8 @@ public class TestUtils {
                     "Timed out while waiting for public volume");
             pollForCondition(TestUtils::isEmulatedVolumeMounted,
                     "Timed out while waiting for emulated volume");
+            pollForCondition(TestUtils::isFuseReady,
+                    "Timed out while waiting for fuse");
         }
     }
 
@@ -1879,4 +1910,33 @@ public class TestUtils {
                 .that(getContentResolver().update(uri, values, Bundle.EMPTY)).isEqualTo(1);
     }
 
+    public static void waitForMountedAndIdleState(ContentResolver resolver) throws Exception {
+        // We purposefully perform these operations twice in this specific
+        // order, since clearing the data on a package can asynchronously
+        // perform a vold reset, which can make us think storage is ready and
+        // mounted when it's moments away from being torn down.
+        pollForExternalStorageMountedState();
+        MediaStore.waitForIdle(resolver);
+        pollForExternalStorageMountedState();
+        MediaStore.waitForIdle(resolver);
+    }
+
+    private static void pollForExternalStorageMountedState() throws Exception {
+        final File target = Environment.getExternalStorageDirectory();
+        pollForCondition(() -> isExternalStorageDirectoryMounted(target),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
+    }
+
+    private static boolean isExternalStorageDirectoryMounted(File target) {
+        boolean isMounted = Environment.MEDIA_MOUNTED.equals(
+                Environment.getExternalStorageState(target));
+        if (isMounted) {
+            try {
+                return Os.statvfs(target.getAbsolutePath()).f_blocks > 0;
+            } catch (Exception e) {
+                // Waiting for external storage to be mounted
+            }
+        }
+        return false;
+    }
 }

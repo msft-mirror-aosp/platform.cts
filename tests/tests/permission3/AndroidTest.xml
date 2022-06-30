@@ -19,6 +19,7 @@
 <configuration description="Config for CTS Permission3 test cases">
 
     <option name="test-suite-tag" value="cts" />
+    <option name="test-suite-tag" value="gts" />
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
@@ -43,6 +44,7 @@
         <option name="push" value="CtsAccessMicrophoneApp.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneApp.apk" />
         <option name="push" value="CtsAccessMicrophoneApp2.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneApp2.apk" />
         <option name="push" value="CtsAccessMicrophoneAppLocationProvider.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneAppLocationProvider.apk" />
+        <option name="push" value="CtsAppLocationProviderWithSummary.apk->/data/local/tmp/cts/permission3/CtsAppLocationProviderWithSummary.apk" />
         <option name="push" value="CtsPermissionPolicyApp25.apk->/data/local/tmp/cts/permission3/CtsPermissionPolicyApp25.apk" />
         <option name="push" value="CtsUsePermissionApp22.apk->/data/local/tmp/cts/permission3/CtsUsePermissionApp22.apk" />
         <option name="push" value="CtsUsePermissionApp22CalendarOnly.apk->/data/local/tmp/cts/permission3/CtsUsePermissionApp22CalendarOnly.apk" />
@@ -63,6 +65,8 @@
         <option name="push" value="CtsHelperAppOverlay.apk->/data/local/tmp/cts/permission3/CtsHelperAppOverlay.apk" />
         <option name="push" value="CtsCreateNotificationChannelsApp31.apk->/data/local/tmp/cts/permission3/CtsCreateNotificationChannelsApp31.apk" />
         <option name="push" value="CtsCreateNotificationChannelsApp33.apk->/data/local/tmp/cts/permission3/CtsCreateNotificationChannelsApp33.apk" />
+        <option name="push" value="CtsDifferentPkgNameApp.apk->/data/local/tmp/cts/permission3/CtsDifferentPkgNameApp.apk" />
+        <option name="push" value="CtsMediaPermissionApp33WithStorage.apk->/data/local/tmp/cts/permission3/CtsMediaPermissionApp33WithStorage.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

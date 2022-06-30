@@ -565,7 +565,7 @@ public class TunerTest {
                         TunerVersionChecker.TUNER_VERSION_2_0)) {
                 fail("Get Frontend Status Readiness should throw IllegalStateException.");
             } else {
-                assertFalse(readiness.isEmpty());
+                assertTrue(readiness.isEmpty());
             }
         } catch (IllegalStateException e) {
             // pass
@@ -600,7 +600,7 @@ public class TunerTest {
                     }
                 }
             } else {
-                assertNull(readiness);
+                assertTrue(readiness.isEmpty());
             }
             tuner.cancelTuning();
             tuner.close();
@@ -649,7 +649,7 @@ public class TunerTest {
         TunerTestLnbCallback lnbCB2 = new TunerTestLnbCallback();
 
         // add it as sharee
-        lnb.addCallback(lnbCB2, getExecutor());
+        lnb.addCallback(getExecutor(), lnbCB2);
 
         // check callback
         lnb.sendDiseqcMessage(new byte[] {1, 2});
@@ -1565,7 +1565,7 @@ public class TunerTest {
 
         // add sharee and check the callback
         TunerTestLnbCallback lnbCB2 = new TunerTestLnbCallback();
-        lnbA.addCallback(lnbCB2, getExecutor());
+        lnbA.addCallback(getExecutor(), lnbCB2);
         lnbA.sendDiseqcMessage(new byte[] {1, 2});
         assertTrue(lnbCB1.getOnDiseqcMessageCalled());
         lnbCB1.resetOnDiseqcMessageCalled();
@@ -2242,7 +2242,8 @@ public class TunerTest {
 
         assertEquals(f.start(), Tuner.RESULT_SUCCESS);
         assertEquals(f.flush(), Tuner.RESULT_SUCCESS);
-        assertTrue(f.read(new byte[3], 0, 3) != 0);
+        int size = f.read(new byte[3], 0, 3);
+        assertTrue(size >= 0 && size <= 3);
         assertEquals(f.stop(), Tuner.RESULT_SUCCESS);
 
         mLockLatch = new CountDownLatch(1);
@@ -2273,7 +2274,8 @@ public class TunerTest {
 
         assertEquals(f.start(), Tuner.RESULT_SUCCESS);
         assertEquals(f.flush(), Tuner.RESULT_SUCCESS);
-        assertTrue(f.read(new byte[3], 0, 3) != 0);
+        int size = f.read(new byte[3], 0, 3);
+        assertTrue(size >= 0 && size <= 3);
         assertEquals(f.stop(), Tuner.RESULT_SUCCESS);
 
         mLockLatch = new CountDownLatch(1);
@@ -2303,7 +2305,8 @@ public class TunerTest {
 
         assertEquals(f.start(), Tuner.RESULT_SUCCESS);
         assertEquals(f.flush(), Tuner.RESULT_SUCCESS);
-        assertTrue(f.read(new byte[3], 0, 3) != 0);
+        int size = f.read(new byte[3], 0, 3);
+        assertTrue(size >= 0 && size <= 3);
         assertEquals(f.stop(), Tuner.RESULT_SUCCESS);
 
         mLockLatch = new CountDownLatch(1);
@@ -2427,6 +2430,51 @@ public class TunerTest {
                 int status = mTuner.setMaxNumberOfFrontends(type, 0);
                 assertEquals(Tuner.RESULT_UNAVAILABLE, status);
             }
+        }
+        // validate the behavior of tune
+        FrontendInfo info1 = mTuner.getFrontendInfoById(ids.get(0));
+        FrontendSettings feSettings1 = createFrontendSettings(info1);
+        int type1 = info1.getType();
+        if (ids.size() >= 1) {
+            int originalMax1 = mTuner.getMaxNumberOfFrontends(type1);
+            assertEquals(Tuner.RESULT_SUCCESS, mTuner.tune(feSettings1));
+            assertNotNull(mTuner.getFrontendInfo());
+
+            // validate that set max cannot be set to lower value than current usage
+            assertEquals(Tuner.RESULT_INVALID_ARGUMENT,
+                    mTuner.setMaxNumberOfFrontends(type1, 0));
+
+            // validate max value is reflected in the tune behavior
+            mTuner.closeFrontend();
+            assertEquals(Tuner.RESULT_SUCCESS,
+                    mTuner.setMaxNumberOfFrontends(type1, 0));
+            assertEquals(Tuner.RESULT_UNAVAILABLE,
+                    mTuner.tune(feSettings1));
+
+            assertEquals(Tuner.RESULT_SUCCESS,
+                    mTuner.setMaxNumberOfFrontends(type1, originalMax1));
+            assertEquals(Tuner.RESULT_SUCCESS, mTuner.tune(feSettings1));
+            assertNotNull(mTuner.getFrontendInfo());
+            mTuner.closeFrontend();
+        }
+
+        // validate max number on one frontend type has no impact on other
+        if (ids.size() >= 2) {
+            FrontendInfo info2 = mTuner.getFrontendInfoById(ids.get(1));
+            int type2 = info2.getType();
+            int originalMax2 = mTuner.getMaxNumberOfFrontends(type2);
+
+            assertEquals(Tuner.RESULT_SUCCESS,
+                    mTuner.setMaxNumberOfFrontends(type2, 0));
+            assertEquals(Tuner.RESULT_SUCCESS,
+                    mTuner.tune(feSettings1));
+            assertNotNull(mTuner.getFrontendInfo());
+
+            // set it back to the original max
+            assertEquals(Tuner.RESULT_SUCCESS,
+                    mTuner.setMaxNumberOfFrontends(type2, originalMax2));
+            mTuner.closeFrontend();
+
         }
     }
 

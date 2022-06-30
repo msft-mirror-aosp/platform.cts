@@ -286,6 +286,8 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         }
         final SizeInfo dockedSizes = getLastReportedSizesForActivity(activityName);
         assertSizesAreSane(initialFullscreenSizes, dockedSizes);
+        final boolean orientationChanged =
+                initialFullscreenSizes.orientation != dockedSizes.orientation;
 
         separateTestJournal();
         // Restore to fullscreen.
@@ -298,10 +300,17 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         // (dock task was minimized), start the activity again to ensure the activity is at
         // foreground.
         launchActivity(activityName, WINDOWING_MODE_FULLSCREEN);
-        assertActivityLifecycle(activityName, relaunch);
-        final SizeInfo finalFullscreenSizes = getLastReportedSizesForActivity(activityName);
+        if (relaunch && !orientationChanged) {
+            // If there is no orientation changes while moving the non-resizeable activity out of
+            // the split, the Activity won't be relaunched because size changes won't cross the
+            // size config buckets. So, there won't be any lifecycle changes.
+            waitForOnMultiWindowModeChanged(activityName);
+        } else {
+            assertActivityLifecycle(activityName, relaunch);
+        }
 
-        // After activity configuration was changed twice it must report same size as original one.
+        // It must report same size as original one after split-screen dismissed.
+        final SizeInfo finalFullscreenSizes = getLastReportedSizesForActivity(activityName);
         assertSizesAreSame(initialFullscreenSizes, finalFullscreenSizes);
     }
 
@@ -366,6 +375,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testTranslucentAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         separateTestJournal();
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
@@ -537,6 +547,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
         // TODO(b/209920544) remove assumeFalse after issue fix.
         assumeFalse(ENABLE_SHELL_TRANSITIONS);
+        disableIgnoreOrientationRequest();
 
         final RotationSession rotationSession = createManagedRotationSession();
         rotationSession.set(ROTATION_0);
@@ -555,6 +566,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testTaskCloseRestoreFixedOrientation() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         // Start landscape activity.
         launchActivity(LANDSCAPE_ORIENTATION_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
@@ -760,6 +772,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         // TODO(b/110533226): Fix test on devices with display cutout
         assumeFalse("Skipping test: display cutout present, can't predict exact lifecycle",
                 hasDisplayCutout());
+        disableIgnoreOrientationRequest();
 
         // Start portrait-fixed activity
         separateTestJournal();
@@ -803,6 +816,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testTaskMoveToBackOrientation() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         // Start landscape activity.
         launchActivity(LANDSCAPE_ORIENTATION_ACTIVITY, WINDOWING_MODE_FULLSCREEN);

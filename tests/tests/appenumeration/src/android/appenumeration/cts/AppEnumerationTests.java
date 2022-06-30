@@ -208,6 +208,8 @@ import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -1972,6 +1974,25 @@ public class AppEnumerationTests {
     }
 
     @Test
+    public void canPackageQuery_cannotDetectPackageExistence() {
+        ensurePackageIsNotInstalled(TARGET_STUB);
+        final Exception ex1 = assertThrows(PackageManager.NameNotFoundException.class,
+                () -> canPackageQuery(QUERIES_NOTHING, TARGET_STUB, ""));
+        final StringWriter stackTrace1 = new StringWriter();
+        ex1.printStackTrace(new PrintWriter(stackTrace1));
+
+        ensurePackageIsInstalled(TARGET_STUB, TARGET_STUB_APK);
+
+        final Exception ex2 = assertThrows(PackageManager.NameNotFoundException.class,
+                () -> canPackageQuery(QUERIES_NOTHING, TARGET_STUB, ""));
+        final StringWriter stackTrace2 = new StringWriter();
+        ex1.printStackTrace(new PrintWriter(stackTrace2));
+
+        assertThat(ex1.getMessage(), is(ex2.getMessage()));
+        assertThat(stackTrace1.toString(), is(stackTrace2.toString()));
+    }
+
+    @Test
     public void checkPackage_queriesNothing_validateFailed() {
         // Using ROOT_UID here to pass the check in #verifyAndGetBypass, this is intended by design.
         assertThrows(SecurityException.class,
@@ -2014,6 +2035,36 @@ public class AppEnumerationTests {
         final PendingIntent pendingIntent = getPendingIntentActivity(TARGET_NO_API);
         assertThat(getPendingIntentCreatorPackage(QUERIES_NOTHING, pendingIntent),
                 is(emptyOrNullString()));
+    }
+
+    @Test
+    public void makeUidVisible_throwsException() throws Exception {
+        final int recipientUid = sPm.getPackageUid(
+                QUERIES_NOTHING, PackageManager.PackageInfoFlags.of(0));
+        final int visibleUid = sPm.getPackageUid(
+                TARGET_NO_API, PackageManager.PackageInfoFlags.of(0));
+        assertThrows(SecurityException.class,
+                () -> sPm.makeUidVisible(recipientUid, visibleUid));
+    }
+
+    @Test
+    public void makeUidVisible_queriesNothing_canSeeStub() throws Exception {
+        ensurePackageIsInstalled(TARGET_STUB, TARGET_STUB_APK);
+        try {
+            assertNotVisible(QUERIES_NOTHING, TARGET_STUB);
+
+            final int recipientUid = sPm.getPackageUid(
+                    QUERIES_NOTHING, PackageManager.PackageInfoFlags.of(0));
+            final int visibleUid = sPm.getPackageUid(
+                    TARGET_STUB, PackageManager.PackageInfoFlags.of(0));
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> sPm.makeUidVisible(recipientUid, visibleUid),
+                            Manifest.permission.MAKE_UID_VISIBLE);
+
+            assertVisible(QUERIES_NOTHING, TARGET_STUB);
+        } finally {
+            ensurePackageIsNotInstalled(TARGET_STUB);
+        }
     }
 
     private void assertNotVisible(String sourcePackageName, String targetPackageName)

@@ -26,6 +26,8 @@ import android.app.UiAutomation;
 import android.car.Car;
 import android.car.VehiclePropertyIds;
 import android.car.telemetry.CarTelemetryManager;
+import android.car.telemetry.TelemetryProto;
+import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.ArrayMap;
 
@@ -33,8 +35,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.car.telemetry.TelemetryProto;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +48,7 @@ import java.util.concurrent.Semaphore;
 @RunWith(AndroidJUnit4.class)
 public class CarTelemetryManagerTest extends CarApiTestBase {
 
-    /* Test MetricsConfig that does nothing. */
+    /** Test MetricsConfig that does nothing. */
     private static final TelemetryProto.MetricsConfig TEST_CONFIG =
             TelemetryProto.MetricsConfig.newBuilder()
                     .setName("test_config")
@@ -57,7 +57,7 @@ public class CarTelemetryManagerTest extends CarApiTestBase {
                     .build();
     private static final String TEST_CONFIG_NAME = TEST_CONFIG.getName();
 
-    /* MetricsConfig with simple script that listens for parking brake change. */
+    /** MetricsConfig with simple script that listens for parking brake change. */
     private static final String PARKING_BRAKE_CHANGE_SCRIPT = new StringBuilder()
             .append("function onParkingBrakeChange(published_data, saved_state)\n")
             .append("    result = {data = \"Hello World!\"}\n")
@@ -86,7 +86,7 @@ public class CarTelemetryManagerTest extends CarApiTestBase {
                     .build();
     private static final String PARKING_BRAKE_CONFIG_NAME = PARKING_BRAKE_CONFIG.getName();
 
-    /*
+    /**
      * MetricsConfig with a bad script that listens for parking brake change, will produce error.
      */
     private static final TelemetryProto.MetricsConfig ERROR_CONFIG =
@@ -261,11 +261,11 @@ public class CarTelemetryManagerTest extends CarApiTestBase {
 
         private final Semaphore mSemaphore = new Semaphore(0);
         private final Map<String, byte[]> mErrorMap = new ArrayMap<>();
-        private final Map<String, byte[]> mReportMap = new ArrayMap<>();
+        private final Map<String, PersistableBundle> mReportMap = new ArrayMap<>();
         private final Map<String, Integer> mStatusMap = new ArrayMap<>();
 
         @Override
-        public void onResult(@NonNull String metricsConfigName, @Nullable byte[] report,
+        public void onResult(@NonNull String metricsConfigName, @Nullable PersistableBundle report,
                 @Nullable byte[] error, int status) {
             mReportMap.put(metricsConfigName, report);
             mErrorMap.put(metricsConfigName, error);

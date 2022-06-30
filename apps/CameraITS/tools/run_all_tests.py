@@ -138,7 +138,11 @@ SUB_CAMERA_TESTS = {
     ],
 }
 
-_DST_SCENE_DIR = '/mnt/sdcard/Download/'
+_LIGHTING_CONTROL_TESTS = [
+    'test_auto_flash.py'
+    ]
+
+_DST_SCENE_DIR = '/sdcard/Download/'
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
@@ -312,8 +316,9 @@ def get_updated_yml_file(yml_file_contents):
     Updated yml file contents.
   """
   os.chmod(YAML_FILE_DIR, 0o755)
-  _, new_yaml_file = tempfile.mkstemp(
+  file_descriptor, new_yaml_file = tempfile.mkstemp(
       suffix='.yml', prefix='config_', dir=YAML_FILE_DIR)
+  os.close(file_descriptor)
   with open(new_yaml_file, 'w') as f:
     yaml.dump(yml_file_contents, stream=f, default_flow_style=False)
   new_yaml_file_name = os.path.basename(new_yaml_file)
@@ -348,7 +353,10 @@ def main():
   logging.basicConfig(level=logging.INFO)
   # Make output directories to hold the generated files.
   topdir = tempfile.mkdtemp(prefix='CameraITS_')
-  subprocess.call(['chmod', 'g+rx', topdir])
+  try:
+    subprocess.call(['chmod', 'g+rx', topdir])
+  except OSError as e:
+    logging.info(repr(e))
   logging.info('Saving output files to: %s', topdir)
 
   scenes = []
@@ -393,6 +401,12 @@ def main():
     if test_params_content['rotator_cntl'].lower() in VALID_CONTROLLERS:
       testing_sensor_fusion_with_controller = True
 
+  testing_flash_with_controller = False
+  if (TEST_KEY_TABLET in config_file_test_key or
+      'manual' in config_file_test_key):
+    if test_params_content['lighting_cntl'].lower() == 'arduino':
+      testing_flash_with_controller = True
+
   # Prepend 'scene' if not specified at cmd line
   for i, s in enumerate(scenes):
     if (not s.startswith('scene') and
@@ -412,7 +426,7 @@ def main():
     auto_scene_switch = True
   else:
     auto_scene_switch = False
-    logging.info('Manual testing: no tablet defined or testing scene5.')
+    logging.info('No tablet: manual, sensor_fusion, or scene5 testing.')
 
   for camera_id in camera_id_combos:
     test_params_content['camera'] = camera_id
@@ -504,18 +518,23 @@ def main():
         # Handle repeated test
         if 'tests/' in test:
           cmd = [
-              'python3',
+              'python',
               os.path.join(os.environ['CAMERA_ITS_TOP'], test), '-c',
               '%s' % new_yml_file_name
           ]
         else:
           cmd = [
-              'python3',
+              'python',
               os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', s, test),
               '-c',
               '%s' % new_yml_file_name
           ]
         for num_try in range(NUM_TRIES):
+          # Handle manual lighting control redirected stdout in test
+          if (test in _LIGHTING_CONTROL_TESTS and
+              not testing_flash_with_controller):
+            print('Turn lights OFF in rig and press <ENTER> to continue.')
+
           # pylint: disable=subprocess-run-check
           with open(MOBLY_TEST_SUMMARY_TXT_FILE, 'w') as fp:
             output = subprocess.run(cmd, stdout=fp)
@@ -525,10 +544,9 @@ def main():
           # socket FAILs.
           with open(MOBLY_TEST_SUMMARY_TXT_FILE, 'r') as file:
             test_code = output.returncode
-            test_failed = False
             test_skipped = False
             test_not_yet_mandated = False
-            test_mpc_req = ""
+            test_mpc_req = ''
             content = file.read()
 
             # Find media performance class logging
@@ -538,7 +556,8 @@ def main():
               # MPC12_CAMERA_LAUNCH_PATTERN or MPC12_JPEG_CAPTURE_PATTERN in
               # ItsTestActivity.java.
               mpc_string_match = re.search(
-                  '^(1080p_jpeg_capture_time_ms:|camera_launch_time_ms:)', one_line)
+                  '^(1080p_jpeg_capture_time_ms:|camera_launch_time_ms:)',
+                  one_line)
               if mpc_string_match:
                 test_mpc_req = one_line
                 break
@@ -566,7 +585,6 @@ def main():
                 logging.info('Retry %s/%s', s, test)
               else:
                 num_fail += 1
-                test_failed = True
                 break
             os.remove(MOBLY_TEST_SUMMARY_TXT_FILE)
         logging.info('%s %s/%s', return_string, s, test)
@@ -576,13 +594,15 @@ def main():
           results[s][METRICS_KEY].append(test_mpc_req)
         msg_short = '%s %s' % (return_string, test)
         scene_test_summary += msg_short + '\n'
+        if test in _LIGHTING_CONTROL_TESTS and not testing_flash_with_controller:
+          print('Turn lights ON in rig and press <ENTER> to continue.')
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_end_time = int(round(time.time() * 1000))
       skip_string = ''
       tot_tests = len(scene_test_list)
       if num_skip > 0:
-        skipstr = f",{num_skip} test{'s' if num_skip > 1 else ''} skipped"
+        skip_string = f",{num_skip} test{'s' if num_skip > 1 else ''} skipped"
       test_result = '%d / %d tests passed (%.1f%%)%s' % (
           num_pass + num_not_mandated_fail, len(scene_test_list) - num_skip,
           100.0 * float(num_pass + num_not_mandated_fail) /

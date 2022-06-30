@@ -24,6 +24,7 @@ android_test {
         "androidx.test.rules",
         "ctstestrunner-axt",
         "permission-test-util-lib",
+        "services.core",
         "CtsSharedUserMigrationTestLibs",
     ],
     libs: [
@@ -36,5 +37,17 @@ android_test {
         "cts",
         "general-tests",
     ],
-    sdk_version: "test_current",
+    platform_apis: true,
+    data: [
+        ":CtsSharedUserMigrationInstallTestApp4",
+        ":CtsSharedUserMigrationPermissionTestApp2",
+        ":CtsSharedUserMigrationInstallTestApp3",
+        ":CtsSharedUserMigrationPermissionTestApp1",
+        ":CtsSharedUserMigrationDataTestApp1",
+        ":CtsSharedUserMigrationDataTestApp2",
+        ":CtsSharedUserMigrationPermissionTestApp3",
+        ":CtsSharedUserMigrationInstallTestApp",
+        ":CtsSharedUserMigrationInstallTestApp2",
+    ],
+    per_testcase_directory: true,
 }

@@ -17,6 +17,7 @@
 package android.devicepolicy.cts;
 
 
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_AUTOMOTIVE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_BLUETOOTH;
 import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_CONNECT;
 import static com.android.bedstead.nene.permissions.CommonPermissions.LOCAL_MAC_ADDRESS;
@@ -36,6 +37,7 @@ import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
@@ -73,6 +75,7 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @EnsureBluetoothEnabled
     @PolicyAppliesTest(policy = Bluetooth.class)
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE) // TODO(b/220306133): bluetooth from background
     public void disable_bluetoothIsDisabled() {
         BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
                 sDeviceState.dpc().user(), BluetoothAdapter.ACTION_STATE_CHANGED,
@@ -95,6 +98,7 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @EnsureBluetoothDisabled
     @PolicyAppliesTest(policy = Bluetooth.class)
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE) // TODO(b/220306133): bluetooth from background
     public void enable_bluetoothIsEnabled() {
         BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
                 sDeviceState.dpc().user(), BluetoothAdapter.ACTION_STATE_CHANGED,
@@ -102,7 +106,12 @@ public final class BluetoothTest {
 
         try (PermissionContext p =
                      sDeviceState.dpc().permissions().withPermission(BLUETOOTH_CONNECT)) {
-            assertThat(sDeviceState.dpc().bluetoothManager().getAdapter().enable()).isTrue();
+            // For some reason it doesn't always immediately recognise that the permission has
+            // been granted to the DPC
+            Poll.forValue("return value for enable from adapter",
+                    () -> sDeviceState.dpc().bluetoothManager().getAdapter().enable())
+                    .toBeEqualTo(true)
+                    .errorOnFail().await();
             r.awaitForBroadcast();
 
             Poll.forValue("Bluetooth Enabled for DPC",

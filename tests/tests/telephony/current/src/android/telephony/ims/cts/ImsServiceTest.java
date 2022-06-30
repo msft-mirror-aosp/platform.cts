@@ -269,11 +269,23 @@ public class ImsServiceTest {
 
     private static class SingleRegistrationCapabilityReceiver extends BaseReceiver {
         private int mCapability;
+        private int mSubId;
+
+        SingleRegistrationCapabilityReceiver(int subId) {
+            mSubId = subId;
+        }
 
         @Override
         public void onReceive(Context context, Intent intent) {
             if (ProvisioningManager.ACTION_RCS_SINGLE_REGISTRATION_CAPABILITY_UPDATE
                     .equals(intent.getAction())) {
+                // if sub id in intent is not expected, then intent should be ignored.
+                int subId = intent.getIntExtra(ProvisioningManager.EXTRA_SUBSCRIPTION_ID,
+                        SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+                if (mSubId != subId) {
+                    return;
+                }
+
                 mCapability = intent.getIntExtra(ProvisioningManager.EXTRA_STATUS,
                         ProvisioningManager.STATUS_DEVICE_NOT_CAPABLE
                         | ProvisioningManager.STATUS_CARRIER_NOT_CAPABLE);
@@ -321,7 +333,7 @@ public class ImsServiceTest {
         InstrumentationRegistry.getInstrumentation().getContext()
                 .registerReceiver(sReceiver, filter);
 
-        sSrcReceiver = new SingleRegistrationCapabilityReceiver();
+        sSrcReceiver = new SingleRegistrationCapabilityReceiver(sTestSub);
         InstrumentationRegistry.getInstrumentation().getContext()
                 .registerReceiver(sSrcReceiver, new IntentFilter(
                         ProvisioningManager.ACTION_RCS_SINGLE_REGISTRATION_CAPABILITY_UPDATE));
@@ -1472,14 +1484,8 @@ public class ImsServiceTest {
                 ImsException.class);
 
         // IMS registers
-        ArraySet<String> featureTags = new ArraySet<>();
-        // Chat Session
-        featureTags.add(CHAT_FEATURE_TAG);
-        featureTags.add(FILE_TRANSFER_FEATURE_TAG);
-        ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(
-                IMS_REGI_TECH_LTE).setFeatureTags(featureTags).build();
-        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(attr);
-        waitForParam(mQueue, attr);
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(
+                IMS_REGI_TECH_LTE);
 
         // Notify framework that the RCS capability status is changed and PRESENCE UCE is enabled.
         RcsImsCapabilities capabilities =
@@ -1497,6 +1503,20 @@ public class ImsServiceTest {
         // Verify that the publish is triggered and receive the publish state changed callback.
         assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+
+        assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
+        assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
+        publishStateQueue.clear();
+
+        // IMS registers
+        ArraySet<String> featureTags = new ArraySet<>();
+        // Chat Session
+        featureTags.add(CHAT_FEATURE_TAG);
+        featureTags.add(FILE_TRANSFER_FEATURE_TAG);
+        ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(
+                IMS_REGI_TECH_LTE).setFeatureTags(featureTags).build();
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(attr);
+        waitForParam(mQueue, attr);
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
@@ -1572,9 +1592,9 @@ public class ImsServiceTest {
         capExchangeImpl.setPublishOperator((listener, pidfXml, cb) -> {
             int networkResp = 200;
             String reason = "";
+            receivedPidfXml.add(pidfXml);
             cb.onNetworkResponse(networkResp, reason);
             listener.onPublish();
-            receivedPidfXml.add(pidfXml);
         });
 
         Uri imsUri;
@@ -1589,9 +1609,35 @@ public class ImsServiceTest {
 
         final String expectedUriString = expectedUriBuilder.toString();
 
-        // IMS registers
-        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(
-                IMS_REGI_TECH_LTE);
+        LinkedBlockingQueue<ImsRegistrationAttributes> mQueue = new LinkedBlockingQueue<>();
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onRegistered(ImsRegistrationAttributes attr) {
+                        mQueue.offer(attr);
+                    }
+
+                    @Override
+                    public void onRegistering(ImsRegistrationAttributes attr) {}
+
+                    @Override
+                    public void onUnregistered(ImsReasonInfo info) {}
+
+                    @Override
+                    public void onTechnologyChangeFailed(int type, ImsReasonInfo info) {}
+                };
+        ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(imsRcsManager,
+                (m) -> m.registerImsRegistrationCallback(getContext().getMainExecutor(), callback),
+                ImsException.class);
+
+        ArraySet<String> featureTags = new ArraySet<>();
+        // Chat Session
+        featureTags.add(CHAT_FEATURE_TAG);
+        featureTags.add(FILE_TRANSFER_FEATURE_TAG);
+        ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(
+                IMS_REGI_TECH_LTE).setFeatureTags(featureTags).build();
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(attr);
+        waitForParam(mQueue, attr);
 
         // Notify framework that the RCS capability status is changed and PRESENCE UCE is enabled.
         RcsImsCapabilities capabilities =
@@ -1638,6 +1684,9 @@ public class ImsServiceTest {
         // contains the associated URI.
         assertFalse(receivedPidfXml.isEmpty());
         assertTrue(receivedPidfXml.get(0).contains(expectedUriString));
+
+        // Reset the received pidf xml data
+        receivedPidfXml.clear();
 
         overrideCarrierConfig(null);
     }
@@ -2157,6 +2206,37 @@ public class ImsServiceTest {
             automation.dropShellPermissionIdentity();
         }
 
+        // Reply the SIP code 504 SERVER TIMEOUT
+        capExchangeImpl.setPublishOperator((listener, pidfXml, cb) -> {
+            int networkResp = 504;
+            String reason = "SERVER TIMEOUT";
+            cb.onNetworkResponse(networkResp, reason);
+            listener.onPublish();
+        });
+
+        // Notify framework to send the PUBLISH request to the ImsService.
+        eventListener.onRequestPublishCapabilities(
+                RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
+
+        // Verify ImsService receive the publish request from framework.
+        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+
+        try {
+            // Verify the publish state callback is received.
+            assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING,
+                    waitForIntResult(publishStateQueue));
+            assertEquals(RcsUceAdapter.PUBLISH_STATE_RCS_PROVISION_ERROR,
+                    waitForIntResult(publishStateQueue));
+            // Verify the value of getting from the API is PUBLISH_STATE_RCS_PROVISION_ERROR
+            automation.adoptShellPermissionIdentity();
+            int publishState = uceAdapter.getUcePublishState();
+            assertEquals(RcsUceAdapter.PUBLISH_STATE_RCS_PROVISION_ERROR, publishState);
+        } finally {
+            publishStateQueue.clear();
+            automation.dropShellPermissionIdentity();
+        }
+
         LinkedBlockingQueue<Integer> errorQueue = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Long> errorRetryQueue = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Boolean> completeQueue = new LinkedBlockingQueue<>();
@@ -2268,6 +2348,8 @@ public class ImsServiceTest {
         overrideCarrierConfig(null);
     }
 
+    @Ignore("the compatibility framework does not currently support changing compatibility flags"
+            + " on user builds for device side CTS tests. Ignore this test until support is added")
     @Test
     public void testRcsPublishWithDisableCompactCommand() throws Exception {
         TelephonyUtils.disableCompatCommand(InstrumentationRegistry.getInstrumentation(),
@@ -3286,6 +3368,13 @@ public class ImsServiceTest {
                 mOnFeatureChangedQueue.offer(new Pair<>(capability,
                         new Pair<>(tech, isProvisioned)));
             }
+
+            @Override
+            public void onRcsFeatureProvisioningChanged(
+                    @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned){
+            }
         };
 
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -3457,7 +3546,21 @@ public class ImsServiceTest {
         ProvisioningManager.Callback callback = new ProvisioningManager.Callback() {};
 
         ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
-                new ProvisioningManager.FeatureProvisioningCallback() {};
+                new ProvisioningManager.FeatureProvisioningCallback() {
+            @Override
+            public void onFeatureProvisioningChanged(
+                    @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned) {
+            }
+
+            @Override
+            public void onRcsFeatureProvisioningChanged(
+                    @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned){
+            }
+        };
 
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
@@ -3558,6 +3661,13 @@ public class ImsServiceTest {
 
         ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
                 new ProvisioningManager.FeatureProvisioningCallback() {
+            @Override
+            public void onFeatureProvisioningChanged(
+                    @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned) {
+            }
+
             @Override
             public void onRcsFeatureProvisioningChanged(
                     @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
@@ -3688,6 +3798,8 @@ public class ImsServiceTest {
         bundle.putPersistableBundle(
                 CarrierConfigManager.Ims.KEY_RCS_REQUIRES_PROVISIONING_BUNDLE,
                 innerBundle);
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_CARRIER_RCS_PROVISIONING_REQUIRED_BOOL, false);
 
         overrideCarrierConfig(bundle);
 
@@ -3697,7 +3809,21 @@ public class ImsServiceTest {
                 ProvisioningManager.createForSubscriptionId(sTestSub);
         ProvisioningManager.Callback callback = new ProvisioningManager.Callback() {};
         ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
-                new ProvisioningManager.FeatureProvisioningCallback() {};
+                new ProvisioningManager.FeatureProvisioningCallback() {
+            @Override
+            public void onFeatureProvisioningChanged(
+                    @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned) {
+            }
+
+            @Override
+            public void onRcsFeatureProvisioningChanged(
+                    @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                    @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                    boolean isProvisioned){
+            }
+        };
 
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {

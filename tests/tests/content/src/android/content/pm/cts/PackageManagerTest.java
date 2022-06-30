@@ -41,6 +41,8 @@ import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.common.truth.Expect;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -109,6 +111,7 @@ import junit.framework.AssertionFailedError;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -200,6 +203,8 @@ public class PackageManagerTest {
     private static final String NON_EXISTENT_PACKAGE_NAME = "android.content.cts.nonexistent.pkg";
     private static final String STUB_PACKAGE_APK = SAMPLE_APK_BASE
             + "CtsSyncAccountAccessStubs.apk";
+    private static final String STUB_PACKAGE_SPLIT =
+            SAMPLE_APK_BASE + "CtsSyncAccountAccessStubs_mdpi-v4.apk";
 
     private static final int MAX_SAFE_LABEL_LENGTH = 1000;
 
@@ -230,6 +235,8 @@ public class PackageManagerTest {
             ComponentName.createRelative(MOCK_LAUNCHER_PACKAGE_NAME, ".MockProvider");
 
     private final ServiceTestRule mServiceTestRule = new ServiceTestRule();
+
+    @Rule public final Expect expect = Expect.create();
 
     @Before
     public void setup() throws Exception {
@@ -986,7 +993,7 @@ public class PackageManagerTest {
         assertEquals(3, result.length);
         assertEquals("shared:android.uid.system", result[0]);
         assertEquals(null, result[1]);
-        assertEquals("com.android.cts.ctsshim", result[2]);
+        assertEquals("shared:com.android.cts.ctsshim", result[2]);
     }
 
     @Test
@@ -1738,20 +1745,26 @@ public class PackageManagerTest {
      */
     @Test
     public void testGetInstalledPackages_WithFactoryFlag_ContainsNoDuplicates() {
+        final Set<String> packageNames = new HashSet<>();
         runTestWithFlags(PACKAGE_INFO_MATCH_FLAGS,
-                this::testGetInstalledPackages_WithFactoryFlag_ContainsNoDuplicates);
+                flags -> testGetInstalledPackages_WithFactoryFlag_ContainsNoDuplicates(flags,
+                        packageNames));
     }
 
-    public void testGetInstalledPackages_WithFactoryFlag_ContainsNoDuplicates(int flags) {
+    public void testGetInstalledPackages_WithFactoryFlag_ContainsNoDuplicates(int flags,
+            Set<String> packageNames) {
         List<PackageInfo> packageInfos =
                 mPackageManager.getInstalledPackages(
                         PackageManager.PackageInfoFlags.of(flags | MATCH_FACTORY_ONLY));
-        Set<String> foundPackages = new HashSet<>();
+
+        final Set<String> localPackageNames = new HashSet<>();
         for (PackageInfo pi : packageInfos) {
-            if (foundPackages.contains(pi.packageName)) {
-                throw new AssertionError(pi.packageName + " is listed at least twice.");
+            final String packageName = pi.packageName;
+            // Duplicate: already in local.
+            // Dedup error messages: not in global.
+            if (!localPackageNames.add(pi.packageName) && packageNames.add(packageName)) {
+                expect.withMessage("Duplicate package " + packageName + " detected").fail();
             }
-            foundPackages.add(pi.packageName);
         }
     }
 
@@ -1785,12 +1798,14 @@ public class PackageManagerTest {
     }
 
     private boolean installPackage(String apkPath) {
-        return installPackage(apkPath, false /* dontKill */);
+        return SystemUtil.runShellCommand(
+                "pm install -t " + apkPath).equals("Success\n");
     }
 
-    private boolean installPackage(String apkPath, boolean dontKill) {
+    private boolean addSplitDontKill(String packageName, String splitPath) {
         return SystemUtil.runShellCommand(
-                "pm install -t " + (dontKill ? "--dont-kill " : "") + apkPath).equals("Success\n");
+                "pm install-streaming -p " + packageName + " --dont-kill -t " + splitPath).equals(
+                "Success\n");
     }
 
     private void uninstallPackage(String packageName) {
@@ -2177,6 +2192,8 @@ public class PackageManagerTest {
 
     @Test
     public void testInstallUpdate_dontKill_applicationIsNotKilled() throws Exception {
+        installPackage(STUB_PACKAGE_APK);
+
         final Intent intent = new Intent();
         intent.setComponent(STUB_SERVICE_COMPONENT);
         final AtomicBoolean killed = new AtomicBoolean();
@@ -2191,7 +2208,7 @@ public class PackageManagerTest {
             }
         }, Context.BIND_AUTO_CREATE);
 
-        installPackage(STUB_PACKAGE_APK, true /* dontKill */);
+        addSplitDontKill(STUB_PACKAGE_NAME, STUB_PACKAGE_SPLIT);
         // The application shouldn't be killed after updating with --dont-kill.
         assertThrows(AssertionFailedError.class,
                 () -> TestUtils.waitUntil(

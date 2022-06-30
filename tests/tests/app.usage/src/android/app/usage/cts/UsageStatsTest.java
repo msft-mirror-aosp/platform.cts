@@ -20,15 +20,15 @@ import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_FREQUENT;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_NEVER;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RARE;
-import static android.content.Intent.EXTRA_REMOTE_CALLBACK;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_WORKING_SET;
 import static android.provider.DeviceConfig.NAMESPACE_APP_STANDBY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -38,13 +38,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
-import android.app.BroadcastOptions;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.usage.BroadcastResponseStats;
 import android.app.usage.EventStats;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageEvents.Event;
@@ -59,11 +57,9 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Process;
-import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -111,6 +107,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -144,15 +141,17 @@ public class UsageStatsTest {
 
     private static final String JOBSCHEDULER_RUN_SHELL_COMMAND = "cmd jobscheduler run";
 
-    private static final String TEST_APP_PKG = "android.app.usage.cts.test1";
+    static final String TEST_APP_PKG = "android.app.usage.cts.test1";
 
-    private static final String TEST_APP_CLASS = "android.app.usage.cts.test1.SomeActivity";
+    static final String TEST_APP_CLASS = "android.app.usage.cts.test1.SomeActivity";
     private static final String TEST_APP_CLASS_LOCUS
             = "android.app.usage.cts.test1.SomeActivityWithLocus";
-    private static final String TEST_APP_CLASS_SERVICE
+    static final String TEST_APP_CLASS_SERVICE
             = "android.app.usage.cts.test1.TestService";
-    private static final String TEST_APP_CLASS_BROADCAST_RECEIVER
+    static final String TEST_APP_CLASS_BROADCAST_RECEIVER
             = "android.app.usage.cts.test1.TestBroadcastReceiver";
+    private static final String TEST_APP_CLASS_FINISH_SELF_ON_RESUME =
+            "android.app.usage.cts.test1.FinishOnResumeActivity";
     private static final String TEST_AUTHORITY = "android.app.usage.cts.test1.provider";
     private static final String TEST_APP_CONTENT_URI_STRING = "content://" + TEST_AUTHORITY;
     private static final String TEST_APP2_PKG = "android.app.usage.cts.test2";
@@ -163,18 +162,15 @@ public class UsageStatsTest {
     private static final ComponentName TEST_APP2_PIP_COMPONENT = new ComponentName(TEST_APP2_PKG,
             TEST_APP2_CLASS_PIP);
 
-    private static final String TEST_APP3_PKG = "android.app.usage.cts.test3";
-    private static final String TEST_APP4_PKG = "android.app.usage.cts.test4";
+    private static final String TEST_APP_API_32_PKG = "android.app.usage.cts.testapi32";
 
     // TODO(206518483): Define these constants in UsageStatsManager to avoid hardcoding here.
     private static final String KEY_NOTIFICATION_SEEN_HOLD_DURATION =
             "notification_seen_duration";
     private static final String KEY_NOTIFICATION_SEEN_PROMOTED_BUCKET =
             "notification_seen_promoted_bucket";
-    private static final String KEY_BROADCAST_RESPONSE_WINDOW_DURATION_MS =
-            "broadcast_response_window_timeout_ms";
-    private static final String KEY_BROADCAST_RESPONSE_FG_THRESHOLD_STATE =
-            "broadcast_response_fg_threshold_state";
+    private static final String KEY_RETAIN_NOTIFICATION_SEEN_IMPACT_FOR_PRE_T_APPS =
+            "retain_notification_seen_impact_for_pre_t_apps";
 
     private static final int DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -188,9 +184,6 @@ public class UsageStatsTest {
     private static final String CHANNEL_ID = "my_channel";
 
     private static final long TIMEOUT_BINDER_SERVICE_SEC = 2;
-
-    private static final long TEST_RESPONSE_STATS_ID_1 = 11;
-    private static final long TEST_RESPONSE_STATS_ID_2 = 22;
 
     private static final String TEST_NOTIFICATION_CHANNEL_ID = "test-channel-id";
     private static final String TEST_NOTIFICATION_CHANNEL_NAME = "test-channel-name";
@@ -261,15 +254,6 @@ public class UsageStatsTest {
                                 Process.myUserHandle().getIdentifier()),
                 REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
                 REVOKE_RUNTIME_PERMISSIONS);
-
-        // Clear broadcast response stats
-        setAppOpsMode("allow");
-        try {
-            mUsageStatsManager.clearBroadcastEvents();
-            mUsageStatsManager.clearBroadcastResponseStats(null /* packageName */, 0 /* id */);
-        } finally {
-            resetAppOpsMode();
-        }
     }
 
 
@@ -324,21 +308,6 @@ public class UsageStatsTest {
     private void launchTestActivity(String pkgName, String className) {
         mContext.startActivity(createTestActivityIntent(pkgName, className));
         mUiDevice.wait(Until.hasObject(By.clazz(pkgName, className)), TIMEOUT);
-    }
-
-    private void launchTestActivityAndWaitToBeResumed(String pkgName, String className)
-            throws Exception {
-        // Make sure the screen is awake and unlocked. Otherwise, the app activity won't be resumed.
-        mUiDevice.wakeUp();
-        dismissKeyguard();
-
-        final Intent intent = createTestActivityIntent(pkgName, className);
-        final CountDownLatch latch = new CountDownLatch(1);
-        intent.putExtra(EXTRA_REMOTE_CALLBACK, new RemoteCallback(result -> latch.countDown()));
-        mContext.startActivity(intent);
-        if (!latch.await(DEFAULT_TIMEOUT_MS, TimeUnit.SECONDS)) {
-            fail("Timed out waiting for the test app activity to be resumed");
-        }
     }
 
     private void launchSubActivities(Class<? extends Activity>[] activityClasses) {
@@ -582,6 +551,14 @@ public class UsageStatsTest {
                 startTime, endTime);
         UsageStats stats = events.get(mTargetPackage);
         int startingCount = stats.getAppLaunchCount();
+        // Launch count is updated by UsageStatsService depending on last background package.
+        // When running this test on single screen device (where tasks are launched in the same
+        // TaskDisplayArea), the last background package is updated when the HOME activity is
+        // paused. In a hierarchy with multiple TaskDisplayArea there is no guarantee the Home
+        // Activity will be paused as the activities we launch might be placed on a different
+        // TaskDisplayArea. Starting an activity and finishing it immediately will update the last
+        // background package of the UsageStatsService regardless of the HOME Activity state.
+        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME);
         launchSubActivity(Activities.ActivityOne.class);
         launchSubActivity(Activities.ActivityTwo.class);
         endTime = System.currentTimeMillis();
@@ -589,10 +566,9 @@ public class UsageStatsTest {
                 startTime, endTime);
         stats = events.get(mTargetPackage);
         assertEquals(startingCount + 1, stats.getAppLaunchCount());
+        mUiDevice.pressHome();
 
-        // Launch a new activity so the other sub activities go into a paused state.
-        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS);
-
+        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME);
         launchSubActivity(Activities.ActivityOne.class);
         launchSubActivity(Activities.ActivityTwo.class);
         launchSubActivity(Activities.ActivityThree.class);
@@ -897,6 +873,7 @@ public class UsageStatsTest {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
+    @MediumTest
     @Test
     public void testNotificationSeen_verifyBucket() throws Exception {
         // Skip the test for wearable devices, televisions and automotives; none of them have
@@ -920,6 +897,157 @@ public class UsageStatsTest {
             mUiDevice.wakeUp();
             dismissKeyguard();
             final TestServiceConnection connection = bindToTestServiceAndGetConnection();
+            final TestServiceConnection connection2 = bindToTestServiceAndGetConnection(
+                    TEST_APP_API_32_PKG);
+            try {
+                ITestReceiver testReceiver = connection.getITestReceiver();
+                ITestReceiver testReceiver2 = connection2.getITestReceiver();
+                for (ITestReceiver receiver : new ITestReceiver[] {
+                        testReceiver,
+                        testReceiver2
+                }) {
+                    receiver.cancelAll();
+                    receiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
+                            TEST_NOTIFICATION_CHANNEL_NAME,
+                            TEST_NOTIFICATION_CHANNEL_DESC);
+                    receiver.postNotification(TEST_NOTIFICATION_ID_1,
+                            buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
+                                    TEST_NOTIFICATION_TEXT_1));
+                }
+            } finally {
+                connection.unbind();
+                connection2.unbind();
+            }
+            for (String pkg : new String[] {TEST_APP_PKG, TEST_APP_API_32_PKG}) {
+                setStandByBucket(pkg, "rare");
+                executeShellCmd("cmd usagestats clear-last-used-timestamps " + pkg);
+                waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(pkg),
+                        STANDBY_BUCKET_RARE);
+            }
+            mUiDevice.openNotification();
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
+                    STANDBY_BUCKET_FREQUENT);
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_API_32_PKG),
+                    STANDBY_BUCKET_FREQUENT);
+            SystemClock.sleep(promotedBucketHoldDurationMs);
+            // Verify that after the promoted duration expires, the app drops into a
+            // lower standby bucket.
+            // Note: "set-standby-bucket" command only updates the bucket of the app and not
+            // it's last used timestamps. So, it is possible when the standby bucket is calculated
+            // the app is not going to be back in RARE bucket we set earlier. So, just verify
+            // the app gets demoted to some lower bucket.
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
+                    result -> result > STANDBY_BUCKET_FREQUENT,
+                    "bucket should be > FREQUENT");
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_API_32_PKG),
+                    result -> result > STANDBY_BUCKET_FREQUENT,
+                    "bucket should be > FREQUENT");
+            mUiDevice.pressHome();
+        }
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @MediumTest
+    @Test
+    public void testNotificationSeen_verifyBucket_retainPreTImpact() throws Exception {
+        // Skip the test for wearable devices, televisions and automotives; none of them have
+        // a notification shade, as notifications are shown via a different path than phones
+        assumeFalse("Test cannot run on a watch- notification shade is not shown",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse("Test cannot run on a television- notifications are not shown",
+                mContext.getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_LEANBACK_ONLY));
+        assumeFalse("Test cannot run on an automotive - notification shade is not shown",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
+        final long promotedBucketHoldDurationMs = TimeUnit.MINUTES.toMillis(2);
+        try (DeviceConfigStateHelper deviceConfigStateHelper =
+                     new DeviceConfigStateHelper(NAMESPACE_APP_STANDBY)) {
+            deviceConfigStateHelper.set(KEY_NOTIFICATION_SEEN_PROMOTED_BUCKET,
+                    String.valueOf(STANDBY_BUCKET_FREQUENT));
+            deviceConfigStateHelper.set(KEY_NOTIFICATION_SEEN_HOLD_DURATION,
+                    String.valueOf(promotedBucketHoldDurationMs));
+            deviceConfigStateHelper.set(KEY_RETAIN_NOTIFICATION_SEEN_IMPACT_FOR_PRE_T_APPS,
+                    String.valueOf(true));
+
+            mUiDevice.wakeUp();
+            dismissKeyguard();
+            final TestServiceConnection connection = bindToTestServiceAndGetConnection();
+            final TestServiceConnection connection2 = bindToTestServiceAndGetConnection(
+                    TEST_APP_API_32_PKG);
+            try {
+                ITestReceiver testReceiver = connection.getITestReceiver();
+                ITestReceiver testReceiver2 = connection2.getITestReceiver();
+                for (ITestReceiver receiver : new ITestReceiver[] {
+                        testReceiver,
+                        testReceiver2
+                }) {
+                    receiver.cancelAll();
+                    receiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
+                            TEST_NOTIFICATION_CHANNEL_NAME,
+                            TEST_NOTIFICATION_CHANNEL_DESC);
+                    receiver.postNotification(TEST_NOTIFICATION_ID_1,
+                            buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
+                                    TEST_NOTIFICATION_TEXT_1));
+                }
+            } finally {
+                connection.unbind();
+                connection2.unbind();
+            }
+            for (String pkg : new String[] {TEST_APP_PKG, TEST_APP_API_32_PKG}) {
+                setStandByBucket(pkg, "rare");
+                executeShellCmd("cmd usagestats clear-last-used-timestamps " + pkg);
+                waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(pkg),
+                        STANDBY_BUCKET_RARE);
+            }
+            mUiDevice.openNotification();
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
+                    STANDBY_BUCKET_FREQUENT);
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_API_32_PKG),
+                    STANDBY_BUCKET_WORKING_SET);
+            SystemClock.sleep(promotedBucketHoldDurationMs);
+            // Verify that after the promoted duration expires, the app drops into a
+            // lower standby bucket.
+            // Note: "set-standby-bucket" command only updates the bucket of the app and not
+            // it's last used timestamps. So, it is possible when the standby bucket is calculated
+            // the app is not going to be back in RARE bucket we set earlier. So, just verify
+            // the app gets demoted to some lower bucket.
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
+                    result -> result > STANDBY_BUCKET_FREQUENT,
+                    "bucket should be > FREQUENT");
+            // App targeting api level 32 should still be in the working set bucket after a few
+            // minutes.
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_API_32_PKG),
+                    STANDBY_BUCKET_WORKING_SET);
+            mUiDevice.pressHome();
+        }
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @MediumTest
+    @Test
+    public void testNotificationSeen_noImpact() throws Exception {
+        // Skip the test for wearable devices, televisions and automotives; none of them have
+        // a notification shade, as notifications are shown via a different path than phones
+        assumeFalse("Test cannot run on a watch- notification shade is not shown",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse("Test cannot run on a television- notifications are not shown",
+                mContext.getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_LEANBACK_ONLY));
+        assumeFalse("Test cannot run on an automotive - notification shade is not shown",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
+        final long promotedBucketHoldDurationMs = TimeUnit.MINUTES.toMillis(1);
+        try (DeviceConfigStateHelper deviceConfigStateHelper =
+                     new DeviceConfigStateHelper(NAMESPACE_APP_STANDBY)) {
+            deviceConfigStateHelper.set(KEY_NOTIFICATION_SEEN_PROMOTED_BUCKET,
+                    String.valueOf(STANDBY_BUCKET_NEVER));
+            deviceConfigStateHelper.set(KEY_NOTIFICATION_SEEN_HOLD_DURATION,
+                    String.valueOf(promotedBucketHoldDurationMs));
+
+            mUiDevice.wakeUp();
+            dismissKeyguard();
+            final TestServiceConnection connection = bindToTestServiceAndGetConnection();
             try {
                 ITestReceiver testReceiver = connection.getITestReceiver();
                 testReceiver.cancelAll();
@@ -933,1388 +1061,19 @@ public class UsageStatsTest {
                 connection.unbind();
             }
             setStandByBucket(TEST_APP_PKG, "rare");
+            executeShellCmd("cmd usagestats clear-last-used-timestamps " + TEST_APP_PKG);
             waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
                     STANDBY_BUCKET_RARE);
             mUiDevice.openNotification();
+            // Verify there is no change in the standby bucket
             waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
-                    STANDBY_BUCKET_FREQUENT);
-            // TODO(206518483): Verify the behavior after the promoted duration expires (which
-            // currently doesn't work as expected).
-            // SystemClock.sleep(promotedBucketHoldDurationMs);
-            // assertEquals(STANDBY_BUCKET_RARE, mUsageStatsManager.getAppStandbyBucket(
-            //                 TEST_APP_PKG));
+                    STANDBY_BUCKET_RARE);
+            SystemClock.sleep(promotedBucketHoldDurationMs);
+            // Verify there is no change in the standby bucket even after the hold duration
+            // is elapsed.
+            waitUntil(() -> mUsageStatsManager.getAppStandbyBucket(TEST_APP_PKG),
+                    STANDBY_BUCKET_RARE);
             mUiDevice.pressHome();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastOptions_noPermission() throws Exception {
-        final BroadcastOptions options = BroadcastOptions.makeBasic();
-        options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-        final Intent intent = new Intent().setComponent(new ComponentName(
-                TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-        sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-        setAppOpsMode("ignore");
-        try {
-            assertThrows(SecurityException.class, () -> {
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            });
-        } finally {
-            resetAppOpsMode();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testQueryBroadcastResponseStats_noPermission() throws Exception {
-        mUsageStatsManager.queryBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-
-        setAppOpsMode("ignore");
-        try {
-            assertThrows(SecurityException.class, () -> {
-                mUsageStatsManager.queryBroadcastResponseStats(TEST_APP_PKG,
-                        TEST_RESPONSE_STATS_ID_1);
-            });
-        } finally {
-            resetAppOpsMode();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testClearBroadcastResponseStats_noPermission() throws Exception {
-        mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-
-        setAppOpsMode("ignore");
-        try {
-            assertThrows(SecurityException.class, () -> {
-                mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG,
-                        TEST_RESPONSE_STATS_ID_1);
-            });
-        } finally {
-            resetAppOpsMode();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_broadcastDispatchedCount() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Send a normal broadcast and verify none of the counts get incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            sendBroadcastAndWaitForReceipt(intent, null);
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Trigger a notification from test app and verify notification-posted count gets
-            // incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    1 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_notificationPostedCount() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Send a normal broadcast and verify none of the counts get incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            sendBroadcastAndWaitForReceipt(intent, null);
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Trigger a notification from test app and verify notification-posted count gets
-            // incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    1 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_notificationUpdatedCount() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Post a notification (before sending any broadcast) and verify none of the counts
-            // get incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Update a previously posted notification (change content text) and verify
-            // notification-updated count gets incremented.
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_notificationCancelledCount() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Post a notification (before sending any broadcast) and verify none of the counts
-            // get incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            sendBroadcastAndWaitForReceipt(intent, null);
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Cancel a previously posted notification (change content text) and verify
-            // notification-cancelled count gets incremented.
-            testReceiver.cancelNotification(TEST_NOTIFICATION_ID_1);
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    1 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_multipleEvents() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Send a normal broadcast and verify none of the counts get incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            sendBroadcastAndWaitForReceipt(intent, null);
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Trigger a notification from test app and verify notification-posted count gets
-            // incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    1 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send another broadcast and trigger another notification.
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_2,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_2,
-                            TEST_NOTIFICATION_TEXT_2));
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    2 /* broadcastCount */,
-                    2 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send another broadcast with a different ID and update a previously posted
-            // notification.
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_2);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    2 /* broadcastCount */,
-                    2 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Update/cancel a previously posted notifications and verify there is
-            // no change in counts.
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            testReceiver.cancelNotification(TEST_NOTIFICATION_ID_2);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    2 /* broadcastCount */,
-                    2 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_clearCounts() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-        try {
-            ITestReceiver testReceiver = connection.getITestReceiver();
-            testReceiver.cancelAll();
-
-            // Send a broadcast with a request to record response and verify broadcast-sent
-            // count gets incremented.
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Trigger a notification from test app and verify notification-posted count gets
-            // incremented.
-            testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    1 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            // Send the broadcast again after clearing counts and verify counts get incremented
-            // as expected.
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    1 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            testReceiver.cancelNotification(TEST_NOTIFICATION_ID_1);
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    2 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    1 /* notificationUpdatedCount */,
-                    1 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            testReceiver.cancelAll();
-        } finally {
-            connection.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @MediumTest
-    @Test
-    public void testBroadcastResponseStats_changeResponseWindowDuration() throws Exception {
-        final long broadcastResponseWindowDurationMs = TimeUnit.MINUTES.toMillis(2);
-        try (DeviceConfigStateHelper deviceConfigStateHelper =
-                new DeviceConfigStateHelper(NAMESPACE_APP_STANDBY)) {
-            deviceConfigStateHelper.set(KEY_BROADCAST_RESPONSE_WINDOW_DURATION_MS,
-                    String.valueOf(broadcastResponseWindowDurationMs));
-
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-            assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                    0 /* broadcastCount */,
-                    0 /* notificationPostedCount */,
-                    0 /* notificationUpdatedCount */,
-                    0 /* notificationCancelledCount */);
-
-            final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-            try {
-                ITestReceiver testReceiver = connection.getITestReceiver();
-                testReceiver.cancelAll();
-
-                // Send a broadcast with a request to record response and verify broadcast-sent
-                // count gets incremented.
-                final Intent intent = new Intent().setComponent(new ComponentName(
-                        TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-                final BroadcastOptions options = BroadcastOptions.makeBasic();
-                options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                // Trigger a notification from test app and verify notification-posted count gets
-                // incremented.
-                testReceiver.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                        TEST_NOTIFICATION_CHANNEL_NAME,
-                        TEST_NOTIFICATION_CHANNEL_DESC);
-                testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                        buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                                TEST_NOTIFICATION_TEXT_1));
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        1 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                testReceiver.cancelNotification(TEST_NOTIFICATION_ID_1);
-                mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG,
-                        TEST_RESPONSE_STATS_ID_1);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                SystemClock.sleep(broadcastResponseWindowDurationMs);
-                // Trigger a notification from test app but verify counts do not get
-                // incremented as the notification is posted after the window durations is expired.
-                testReceiver.postNotification(TEST_NOTIFICATION_ID_1,
-                        buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                                TEST_NOTIFICATION_TEXT_1));
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                testReceiver.cancelAll();
-            } finally {
-                connection.unbind();
-            }
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_appNotInForeground() throws Exception {
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-        assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                0 /* broadcastCount */,
-                0 /* notificationPostedCount */,
-                0 /* notificationUpdatedCount */,
-                0 /* notificationCancelledCount */);
-
-        try (DeviceConfigStateHelper deviceConfigStateHelper =
-                     new DeviceConfigStateHelper(NAMESPACE_APP_STANDBY)) {
-            final TestServiceConnection connection = bindToTestServiceAndGetConnection();
-            try {
-                deviceConfigStateHelper.set(KEY_BROADCAST_RESPONSE_FG_THRESHOLD_STATE,
-                        String.valueOf(ActivityManager.PROCESS_STATE_TOP));
-
-                ITestReceiver testReceiver = connection.getITestReceiver();
-                testReceiver.cancelAll();
-
-                // Send a broadcast with a request to record response and verify broadcast-sent
-                // count gets incremented.
-                final Intent intent = new Intent().setComponent(new ComponentName(
-                        TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-                final BroadcastOptions options = BroadcastOptions.makeBasic();
-                options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                // Bring the test app to the foreground, send the broadcast again and verify that
-                // counts do not change.
-                launchTestActivityAndWaitToBeResumed(TEST_APP_PKG, TEST_APP_CLASS);
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        1 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                // Change the threshold to something lower than TOP, send the broadcast again
-                // and verify that counts get incremented.
-                deviceConfigStateHelper.set(KEY_BROADCAST_RESPONSE_FG_THRESHOLD_STATE,
-                        String.valueOf(ActivityManager.PROCESS_STATE_PERSISTENT));
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        2 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                mUiDevice.pressHome();
-                // Change the threshold to a process state higher than RECEIVER, send the
-                // broadcast again and verify that counts do not change.
-                deviceConfigStateHelper.set(KEY_BROADCAST_RESPONSE_FG_THRESHOLD_STATE,
-                        String.valueOf(ActivityManager.PROCESS_STATE_HOME));
-                sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_1,
-                        2 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-                assertResponseStats(TEST_APP_PKG, TEST_RESPONSE_STATS_ID_2,
-                        0 /* broadcastCount */,
-                        0 /* notificationPostedCount */,
-                        0 /* notificationUpdatedCount */,
-                        0 /* notificationCancelledCount */);
-
-                testReceiver.cancelAll();
-            } finally {
-                connection.unbind();
-            }
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_multiplePackages() throws Exception {
-        final ArrayMap<String, BroadcastResponseStats> expectedStats = new ArrayMap<>();
-        // Initially all the counts should be empty
-        assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-        final TestServiceConnection connection1 = bindToTestServiceAndGetConnection(TEST_APP_PKG);
-        final TestServiceConnection connection3 = bindToTestServiceAndGetConnection(TEST_APP3_PKG);
-        final TestServiceConnection connection4 = bindToTestServiceAndGetConnection(TEST_APP4_PKG);
-        try {
-            ITestReceiver testReceiver1 = connection1.getITestReceiver();
-            ITestReceiver testReceiver3 = connection3.getITestReceiver();
-            ITestReceiver testReceiver4 = connection4.getITestReceiver();
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-            testReceiver4.cancelAll();
-
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent3 = new Intent().setComponent(new ComponentName(
-                    TEST_APP3_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent4 = new Intent().setComponent(new ComponentName(
-                    TEST_APP4_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
-            options.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-
-            expectedStats.put(TEST_APP_PKG, new BroadcastResponseStats(TEST_APP_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStats.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Send a broadcast to test-pkg3 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent3, options.toBundle());
-            expectedStats.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStats.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Trigger a notification from test-pkg1 and verify notification-posted count gets
-            // incremented.
-            testReceiver1.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStats.get(TEST_APP_PKG).incrementNotificationsPostedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Trigger a notification from test-pkg3 and verify notification-posted count gets
-            // incremented.
-            testReceiver3.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver3.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStats.get(TEST_APP3_PKG).incrementNotificationsPostedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent, options.toBundle());
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-            expectedStats.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStats.get(TEST_APP_PKG).incrementNotificationsUpdatedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Trigger a notification from test-pkg3 and verify stats remain the same
-            testReceiver4.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver4.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            // Send a broadcast to test-pkg4 with a request to record response and verify
-            // broadcast-send count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent4, options.toBundle());
-            testReceiver4.cancelNotification(TEST_NOTIFICATION_ID_1);
-            expectedStats.put(TEST_APP4_PKG, new BroadcastResponseStats(TEST_APP4_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStats.get(TEST_APP4_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStats.get(TEST_APP4_PKG).incrementNotificationsCancelledCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            mUsageStatsManager.clearBroadcastResponseStats(null, TEST_RESPONSE_STATS_ID_1);
-            expectedStats.clear();
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStats);
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-            testReceiver4.cancelAll();
-        } finally {
-            connection1.unbind();
-            connection3.unbind();
-            connection4.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_multiplePackages_multipleIds() throws Exception {
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId1 = new ArrayMap<>();
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId2 = new ArrayMap<>();
-        // Initially all the counts should be empty
-        assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-        assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-        final TestServiceConnection connection1 = bindToTestServiceAndGetConnection(TEST_APP_PKG);
-        final TestServiceConnection connection3 = bindToTestServiceAndGetConnection(TEST_APP3_PKG);
-        final TestServiceConnection connection4 = bindToTestServiceAndGetConnection(TEST_APP4_PKG);
-        try {
-            ITestReceiver testReceiver1 = connection1.getITestReceiver();
-            ITestReceiver testReceiver3 = connection3.getITestReceiver();
-            ITestReceiver testReceiver4 = connection4.getITestReceiver();
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-            testReceiver4.cancelAll();
-
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent3 = new Intent().setComponent(new ComponentName(
-                    TEST_APP3_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent4 = new Intent().setComponent(new ComponentName(
-                    TEST_APP4_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-
-            final BroadcastOptions options1 = BroadcastOptions.makeBasic();
-            options1.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            final BroadcastOptions options2 = BroadcastOptions.makeBasic();
-            options2.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_2);
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options2.toBundle());
-
-            // Trigger a notification from test-pkg1 and verify notification-posted count gets
-            // incremented.
-            testReceiver1.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStatsForId1.put(TEST_APP_PKG, new BroadcastResponseStats(TEST_APP_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsPostedCount(1);
-            expectedStatsForId2.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_2));
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            // Trigger a notification from test-pkg4 and verify notification-posted count gets
-            // incremented.
-            testReceiver4.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver4.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            sendBroadcastAndWaitForReceipt(intent4, options2.toBundle());
-            expectedStatsForId2.put(TEST_APP4_PKG, new BroadcastResponseStats(TEST_APP4_PKG,
-                    TEST_RESPONSE_STATS_ID_2));
-            expectedStatsForId2.get(TEST_APP4_PKG).incrementBroadcastsDispatchedCount(1);
-
-            testReceiver3.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver3.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            testReceiver4.cancelNotification(TEST_NOTIFICATION_ID_1);
-            expectedStatsForId2.get(TEST_APP4_PKG).incrementNotificationsCancelledCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(null, TEST_RESPONSE_STATS_ID_1);
-            expectedStatsForId1.clear();
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-            testReceiver4.cancelAll();
-        } finally {
-            connection1.unbind();
-            connection3.unbind();
-            connection4.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_clearCounts_multiplePackages() throws Exception {
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId1 = new ArrayMap<>();
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId2 = new ArrayMap<>();
-        // Initially all the counts should be empty
-        assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-        assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-        final TestServiceConnection connection1 = bindToTestServiceAndGetConnection(TEST_APP_PKG);
-        final TestServiceConnection connection3 = bindToTestServiceAndGetConnection(TEST_APP3_PKG);
-        try {
-            ITestReceiver testReceiver1 = connection1.getITestReceiver();
-            ITestReceiver testReceiver3 = connection3.getITestReceiver();
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent3 = new Intent().setComponent(new ComponentName(
-                    TEST_APP3_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final BroadcastOptions options1 = BroadcastOptions.makeBasic();
-            options1.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            final BroadcastOptions options2 = BroadcastOptions.makeBasic();
-            options2.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_2);
-
-            testReceiver1.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver3.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options1.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            testReceiver3.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStatsForId1.put(TEST_APP_PKG, new BroadcastResponseStats(TEST_APP_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsPostedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementNotificationsPostedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options2.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-            testReceiver3.cancelNotification(TEST_NOTIFICATION_ID_1);
-
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsUpdatedCount(1);
-            expectedStatsForId2.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_2));
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementNotificationsCancelledCount(1);
-
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(null /* packageName */,
-                    TEST_RESPONSE_STATS_ID_1);
-            expectedStatsForId1.clear();
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(null /* packageName */,
-                    TEST_RESPONSE_STATS_ID_2);
-            expectedStatsForId2.clear();
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-        } finally {
-            connection1.unbind();
-            connection3.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_clearCounts_multipleIds() throws Exception {
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId1 = new ArrayMap<>();
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId2 = new ArrayMap<>();
-        // Initially all the counts should be empty
-        assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-        assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-        final TestServiceConnection connection1 = bindToTestServiceAndGetConnection(TEST_APP_PKG);
-        final TestServiceConnection connection3 = bindToTestServiceAndGetConnection(TEST_APP3_PKG);
-        try {
-            ITestReceiver testReceiver1 = connection1.getITestReceiver();
-            ITestReceiver testReceiver3 = connection3.getITestReceiver();
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent3 = new Intent().setComponent(new ComponentName(
-                    TEST_APP3_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final BroadcastOptions options1 = BroadcastOptions.makeBasic();
-            options1.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            final BroadcastOptions options2 = BroadcastOptions.makeBasic();
-            options2.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_2);
-
-            testReceiver1.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver3.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options1.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            testReceiver3.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStatsForId1.put(TEST_APP_PKG, new BroadcastResponseStats(TEST_APP_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsPostedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementNotificationsPostedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options2.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-            testReceiver3.cancelNotification(TEST_NOTIFICATION_ID_1);
-
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsUpdatedCount(1);
-            expectedStatsForId2.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_2));
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementNotificationsCancelledCount(1);
-
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP_PKG, 0 /* id */);
-            expectedStatsForId1.remove(TEST_APP_PKG);
-            expectedStatsForId2.remove(TEST_APP_PKG);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(TEST_APP3_PKG, 0 /* id */);
-            expectedStatsForId1.remove(TEST_APP3_PKG);
-            expectedStatsForId2.remove(TEST_APP3_PKG);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-        } finally {
-            connection1.unbind();
-            connection3.unbind();
-        }
-    }
-
-    @AppModeFull(reason = "No broadcast message response stats in instant apps")
-    @Test
-    public void testBroadcastResponseStats_clearAllCounts() throws Exception {
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId1 = new ArrayMap<>();
-        final ArrayMap<String, BroadcastResponseStats> expectedStatsForId2 = new ArrayMap<>();
-        // Initially all the counts should be empty
-        assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-        assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-        final TestServiceConnection connection1 = bindToTestServiceAndGetConnection(TEST_APP_PKG);
-        final TestServiceConnection connection3 = bindToTestServiceAndGetConnection(TEST_APP3_PKG);
-        try {
-            ITestReceiver testReceiver1 = connection1.getITestReceiver();
-            ITestReceiver testReceiver3 = connection3.getITestReceiver();
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-
-            final Intent intent = new Intent().setComponent(new ComponentName(
-                    TEST_APP_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final Intent intent3 = new Intent().setComponent(new ComponentName(
-                    TEST_APP3_PKG, TEST_APP_CLASS_BROADCAST_RECEIVER));
-            final BroadcastOptions options1 = BroadcastOptions.makeBasic();
-            options1.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_1);
-            final BroadcastOptions options2 = BroadcastOptions.makeBasic();
-            options2.recordResponseEventWhileInBackground(TEST_RESPONSE_STATS_ID_2);
-
-            testReceiver1.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-            testReceiver3.createNotificationChannel(TEST_NOTIFICATION_CHANNEL_ID,
-                    TEST_NOTIFICATION_CHANNEL_NAME,
-                    TEST_NOTIFICATION_CHANNEL_DESC);
-
-            // Send a broadcast to test-pkg1 with a request to record response and verify
-            // broadcast-sent count gets incremented.
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options1.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-            testReceiver3.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_1));
-
-            expectedStatsForId1.put(TEST_APP_PKG, new BroadcastResponseStats(TEST_APP_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_1));
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsPostedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP3_PKG).incrementNotificationsPostedCount(1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            sendBroadcastAndWaitForReceipt(intent, options1.toBundle());
-            sendBroadcastAndWaitForReceipt(intent3, options2.toBundle());
-
-            testReceiver1.postNotification(TEST_NOTIFICATION_ID_1,
-                    buildNotification(TEST_NOTIFICATION_CHANNEL_ID, TEST_NOTIFICATION_ID_1,
-                            TEST_NOTIFICATION_TEXT_2));
-            testReceiver3.cancelNotification(TEST_NOTIFICATION_ID_1);
-
-            expectedStatsForId1.get(TEST_APP_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId1.get(TEST_APP_PKG).incrementNotificationsUpdatedCount(1);
-            expectedStatsForId2.put(TEST_APP3_PKG, new BroadcastResponseStats(TEST_APP3_PKG,
-                    TEST_RESPONSE_STATS_ID_2));
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementBroadcastsDispatchedCount(1);
-            expectedStatsForId2.get(TEST_APP3_PKG).incrementNotificationsCancelledCount(1);
-
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            mUsageStatsManager.clearBroadcastResponseStats(null /* packageName */, 0 /* id */);
-            expectedStatsForId1.clear();
-            expectedStatsForId2.clear();
-            assertResponseStats(TEST_RESPONSE_STATS_ID_1, expectedStatsForId1);
-            assertResponseStats(TEST_RESPONSE_STATS_ID_2, expectedStatsForId2);
-
-            testReceiver1.cancelAll();
-            testReceiver3.cancelAll();
-        } finally {
-            connection1.unbind();
-            connection3.unbind();
         }
     }
 
@@ -2325,70 +1084,6 @@ public class UsageStatsTest {
                 .setContentTitle(String.format(TEST_NOTIFICATION_TITLE_FMT, notificationId))
                 .setContentText(notificationText)
                 .build();
-    }
-
-    private void sendBroadcastAndWaitForReceipt(Intent intent, Bundle options)
-            throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        intent.putExtra(EXTRA_REMOTE_CALLBACK, new RemoteCallback(result -> latch.countDown()));
-        mContext.sendBroadcast(intent, null /* receiverPermission */, options);
-        if (!latch.await(DEFAULT_TIMEOUT_MS, TimeUnit.SECONDS)) {
-            fail("Timed out waiting for the test app to receive the broadcast");
-        }
-    }
-
-    private void assertResponseStats(String packageName, long id, int... expectedCounts) {
-        final BroadcastResponseStats expectedStats = new BroadcastResponseStats(packageName, id);
-        expectedStats.incrementBroadcastsDispatchedCount(expectedCounts[0]);
-        expectedStats.incrementNotificationsPostedCount(expectedCounts[1]);
-        expectedStats.incrementNotificationsUpdatedCount(expectedCounts[2]);
-        expectedStats.incrementNotificationsCancelledCount(expectedCounts[3]);
-        assertResponseStats(packageName, id, expectedStats);
-    }
-
-    private void assertResponseStats(String packageName, long id,
-            BroadcastResponseStats expectedStats) {
-
-        final List<BroadcastResponseStats> actualStats = PollingCheck.waitFor(DEFAULT_TIMEOUT_MS,
-                () -> mUsageStatsManager.queryBroadcastResponseStats(packageName, id),
-                result -> {
-                    final BroadcastResponseStats stats = (result == null || result.isEmpty())
-                            ? new BroadcastResponseStats(packageName, id) : result.get(0);
-                    return Objects.equals(expectedStats, stats);
-                });
-        if (actualStats != null && actualStats.size() > 1) {
-            fail("More than one object returned; expected=" + expectedStats
-                    + ", actual=" + Arrays.toString(actualStats.toArray()));
-        }
-        final BroadcastResponseStats stats = (actualStats == null || actualStats.isEmpty())
-                ? new BroadcastResponseStats(packageName, id) : actualStats.get(0);
-        assertEquals(expectedStats, stats);
-    }
-
-    private void assertResponseStats(long id,
-            ArrayMap<String, BroadcastResponseStats> expectedStats) {
-        final List<BroadcastResponseStats> actualStats = PollingCheck.waitFor(DEFAULT_TIMEOUT_MS,
-                () -> mUsageStatsManager.queryBroadcastResponseStats(null /* packageName */, id),
-                result -> compareStats(expectedStats, result));
-        final String errorMsg = String.format("\nEXPECTED(%d)=%s\nACTUAL(%d)=%s\n",
-                expectedStats.size(), expectedStats,
-                actualStats.size(), Arrays.toString(actualStats.toArray()));
-        assertTrue(errorMsg, compareStats(expectedStats, actualStats));
-    }
-
-    private boolean compareStats(ArrayMap<String, BroadcastResponseStats> expectedStats,
-            List<BroadcastResponseStats> actualStats) {
-        if (expectedStats.size() != actualStats.size()) {
-            return false;
-        }
-        for (int i = 0; i < actualStats.size(); ++i) {
-            final BroadcastResponseStats actualPackageStats = actualStats.get(i);
-            final String packageName = actualPackageStats.getPackageName();
-            if (!actualPackageStats.equals(expectedStats.get(packageName))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
@@ -2734,10 +1429,19 @@ public class UsageStatsTest {
         return events;
     }
 
-    private <T> void waitUntil(Supplier<T> resultSupplier, T expectedResult) throws Exception {
+    private <T> void waitUntil(Supplier<T> resultSupplier, T expectedResult) {
         final T actualResult = PollingCheck.waitFor(DEFAULT_TIMEOUT_MS, resultSupplier,
                 result -> Objects.equals(expectedResult, result));
         assertEquals(expectedResult, actualResult);
+    }
+
+    private <T> void waitUntil(Supplier<T> resultSupplier, Function<T, Boolean> condition,
+            String conditionDesc) {
+        final T actualResult = PollingCheck.waitFor(DEFAULT_TIMEOUT_MS, resultSupplier,
+                condition);
+        Log.d(TAG, "Expecting '" + conditionDesc + "'; actual result=" + actualResult);
+        assertTrue("Timed out waiting for '" + conditionDesc + "', actual=" + actualResult,
+                condition.apply(actualResult));
     }
 
     static class AggrEventData {
@@ -3467,7 +2171,7 @@ public class UsageStatsTest {
 
     private TestServiceConnection bindToTestServiceAndGetConnection(String packageName)
             throws Exception {
-        final TestServiceConnection connection = new TestServiceConnection();
+        final TestServiceConnection connection = new TestServiceConnection(mContext);
         final Intent intent = new Intent().setComponent(
                 new ComponentName(packageName, TEST_APP_CLASS_SERVICE));
         mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -3524,8 +2228,13 @@ public class UsageStatsTest {
         }
     }
 
-    private class TestServiceConnection implements ServiceConnection {
+    static class TestServiceConnection implements ServiceConnection {
         private BlockingQueue<IBinder> mBlockingQueue = new LinkedBlockingQueue<>();
+        private Context mContext;
+
+        TestServiceConnection(Context context) {
+            mContext = context;
+        }
 
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             mBlockingQueue.offer(service);

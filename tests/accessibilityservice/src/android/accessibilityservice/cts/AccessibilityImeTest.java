@@ -28,18 +28,26 @@ import static org.junit.Assert.assertTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
+import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibilityservice.InputMethod;
 import android.accessibilityservice.cts.activities.AccessibilityEndToEndActivity;
 import android.accessibilityservice.cts.utils.AsyncUtils;
+import android.accessibilityservice.cts.utils.RunOnMainUtils;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.LargeTest;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,6 +66,7 @@ import java.util.concurrent.CountDownLatch;
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class AccessibilityImeTest {
+    private static final String LOG_TAG = "AccessibilityImeTest";
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
 
@@ -107,15 +116,67 @@ public class AccessibilityImeTest {
         mInitialText = mActivity.getString(R.string.text_input_blah);
     }
 
+    /**
+     * Verifies that
+     * 1) {@link android.accessibilityservice.AccessibilityService#onCreateInputMethod()} will be
+     * called and 2) it will return the default implementation of
+     * {@link android.accessibilityservice.InputMethod}, which is still functional.
+     */
+    @Test
+    public void testDefaultImplementation() throws Exception {
+        InstrumentedAccessibilityService serviceToBeCleanedUp = null;
+        try {
+            final StubSimpleImeAccessibilityService service =
+                    enableService(StubSimpleImeAccessibilityService.class);
+            serviceToBeCleanedUp = service;
+            assertTrue("time out waiting for onCreateInputMethod() to get called.",
+                    service.awaitOnCreateInputMethod(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS));
+
+            final InputMethod inputMethod = service.getInputMethod();
+            assertNotNull(inputMethod);
+
+            // Set a unique value to "privateImeOptions".
+            final String markerValue = "Test-" + SystemClock.elapsedRealtimeNanos();
+            sInstrumentation.runOnMainSync(() -> mEditText.setPrivateImeOptions(markerValue));
+
+            requestFocusAndSetCursorToEnd();
+
+            // Wait until EditorInfo#privateImeOptions becomes the expected marker value.
+            PollingCheck.waitFor(AsyncUtils.DEFAULT_TIMEOUT_MS,
+                    () -> TextUtils.equals(
+                            markerValue,
+                            RunOnMainUtils.getOnMain(sInstrumentation, () -> {
+                                final EditorInfo editorInfo =
+                                        inputMethod.getCurrentInputEditorInfo();
+                                return editorInfo != null ? editorInfo.privateImeOptions : null;
+                            })));
+
+            assertTrue(RunOnMainUtils.getOnMain(sInstrumentation,
+                    inputMethod::getCurrentInputStarted));
+
+            final InputMethod.AccessibilityInputConnection connection =
+                    inputMethod.getCurrentInputConnection();
+            assertNotNull(connection);
+
+            connection.commitText("abc", 1, null);
+
+            final String expectedText = mInitialText + "abc";
+            PollingCheck.waitFor(AsyncUtils.DEFAULT_TIMEOUT_MS,
+                    () -> RunOnMainUtils.getOnMain(sInstrumentation,
+                            () -> TextUtils.equals(expectedText, mEditText.getText())));
+        } finally {
+            if (serviceToBeCleanedUp != null) {
+                serviceToBeCleanedUp.disableSelfAndRemove();
+            }
+        }
+    }
+
     @Test
     public void testInputConnection_requestIme() throws InterruptedException {
         CountDownLatch startInputLatch = new CountDownLatch(1);
         sStubImeAccessibilityService.setStartInputCountDownLatch(startInputLatch);
 
-        mActivity.runOnUiThread(() -> {
-            mEditText.requestFocus();
-            mEditText.setSelection(mInitialText.length(), mInitialText.length());
-        });
+        requestFocusAndSetCursorToEnd();
 
         assertTrue("time out waiting for input to start",
                 startInputLatch.await(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS));
@@ -124,9 +185,9 @@ public class AccessibilityImeTest {
                 sStubImeAccessibilityService.getInputMethod().getCurrentInputConnection();
         assertNotNull(connection);
 
+        sStubImeAccessibilityService.setSelectionTarget(mInitialText.length() * 2);
         CountDownLatch selectionChangeLatch = new CountDownLatch(1);
         sStubImeAccessibilityService.setSelectionChangeLatch(selectionChangeLatch);
-        sStubImeAccessibilityService.setSelectionTarget(mInitialText.length() * 2);
 
         connection.commitText(mInitialText, 1, null);
 
@@ -140,10 +201,7 @@ public class AccessibilityImeTest {
         CountDownLatch startInputLatch = new CountDownLatch(1);
         sStubNonImeAccessibilityService.setStartInputCountDownLatch(startInputLatch);
 
-        mActivity.runOnUiThread(() -> {
-            mEditText.requestFocus();
-            mEditText.setSelection(mInitialText.length(), mInitialText.length());
-        });
+        requestFocusAndSetCursorToEnd();
 
         assertFalse("should time out waiting for input to start",
                 startInputLatch.await(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS));
@@ -155,12 +213,8 @@ public class AccessibilityImeTest {
         CountDownLatch startInputLatch = new CountDownLatch(1);
         sStubImeAccessibilityService.setStartInputCountDownLatch(startInputLatch);
 
-        mActivity.runOnUiThread(() -> {
-            mEditText.requestFocus();
-            mEditText.setSelection(mInitialText.length(), mInitialText.length());
-        });
+        requestFocusAndSetCursorToEnd();
 
-        final int targetPos = mInitialText.length() - 1;
         assertTrue("time out waiting for input to start",
                 startInputLatch.await(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS));
         assertNotNull(sStubImeAccessibilityService.getInputMethod());
@@ -168,13 +222,22 @@ public class AccessibilityImeTest {
                 sStubImeAccessibilityService.getInputMethod().getCurrentInputConnection();
         assertNotNull(connection);
 
+        final int targetPos = mInitialText.length() - 1;
+        sStubImeAccessibilityService.setSelectionTarget(targetPos);
         CountDownLatch selectionChangeLatch = new CountDownLatch(1);
         sStubImeAccessibilityService.setSelectionChangeLatch(selectionChangeLatch);
-        sStubImeAccessibilityService.setSelectionTarget(targetPos);
 
         connection.setSelection(targetPos, targetPos);
-        assertTrue("time out waiting for selection change",
-                selectionChangeLatch.await(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS));
+        boolean changed = selectionChangeLatch.await(AsyncUtils.DEFAULT_TIMEOUT_MS, MILLISECONDS);
+        // Add some logs to help debug flakiness.
+        if (!changed) {
+            Log.v(LOG_TAG, "selection start after set selection is "
+                    + mEditText.getSelectionStart());
+            Log.v(LOG_TAG, "selection end after set selection is "
+                    + mEditText.getSelectionEnd());
+
+        }
+        assertTrue("time out waiting for selection change", changed);
 
         assertEquals(targetPos, mEditText.getSelectionStart());
         assertEquals(targetPos, mEditText.getSelectionEnd());
@@ -185,17 +248,14 @@ public class AccessibilityImeTest {
 
     @Test
     public void testSelectionChange_notRequestIme() throws InterruptedException {
-        mActivity.runOnUiThread(() -> {
-            mEditText.requestFocus();
-            mEditText.setSelection(mInitialText.length(), mInitialText.length());
-        });
+        requestFocusAndSetCursorToEnd();
 
         final int targetPos = mInitialText.length() - 1;
+        sStubNonImeAccessibilityService.setSelectionTarget(targetPos);
         CountDownLatch selectionChangeLatch = new CountDownLatch(1);
         sStubNonImeAccessibilityService.setSelectionChangeLatch(selectionChangeLatch);
-        sStubNonImeAccessibilityService.setSelectionTarget(targetPos);
 
-        mActivity.runOnUiThread(() -> {
+        sInstrumentation.runOnMainSync(() -> {
             mEditText.setSelection(targetPos, targetPos);
         });
         assertFalse("should time out waiting for selection change",
@@ -208,5 +268,17 @@ public class AccessibilityImeTest {
         assertEquals(-1, sStubNonImeAccessibilityService.oldSelEnd);
         assertEquals(-1, sStubNonImeAccessibilityService.selStart);
         assertEquals(-1, sStubNonImeAccessibilityService.selEnd);
+    }
+
+    private void requestFocusAndSetCursorToEnd() {
+        sInstrumentation.runOnMainSync(() -> {
+            mEditText.requestFocus();
+            mEditText.setSelection(mInitialText.length(), mInitialText.length());
+        });
+        assertTrue("edit text is not focused", mEditText.isFocused());
+        assertEquals("selection start not set to text end", mInitialText.length(),
+                mEditText.getSelectionStart());
+        assertEquals("selection end not set to text end", mInitialText.length(),
+                mEditText.getSelectionEnd());
     }
 }

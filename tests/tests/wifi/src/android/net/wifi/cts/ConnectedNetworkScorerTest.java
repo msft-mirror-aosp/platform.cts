@@ -47,6 +47,7 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.DhcpOption;
 import android.net.wifi.WifiConfiguration;
@@ -81,6 +82,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -116,6 +118,9 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
 
         mWifiManager = mContext.getSystemService(WifiManager.class);
         assertThat(mWifiManager).isNotNull();
+        // Location mode must be enabled, otherwise the connection info will be redacted.
+        assertThat(Objects.requireNonNull(mContext.getSystemService(LocationManager.class))
+                .isLocationEnabled()).isTrue();
 
         mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
 
@@ -802,7 +807,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
      *
      * Verifies that these APIs can be invoked successfully with permissions.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
     public void testAddAndRemoveCustomDhcpOptions() throws Exception {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -824,7 +829,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
      *
      * Verifies that SecurityException is thrown when permissions are missing.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
     public void testAddCustomDhcpOptionsOnMissingPermissions() throws Exception {
         try {

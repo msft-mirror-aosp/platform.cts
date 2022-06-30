@@ -16,7 +16,6 @@
 package android.app.dream.cts.app;
 
 import android.annotation.NonNull;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.view.View;
@@ -54,11 +53,10 @@ public class DreamOverlayService extends android.service.dreams.DreamOverlayServ
                 intent.setPackage(TEST_PACKAGE);
                 intent.setAction(ACTION_DREAM_OVERLAY_SHOWN);
                 sendBroadcast(intent);
-                requestExit();
             }
         });
 
-        final WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        final WindowManager wm = getSystemService(WindowManager.class);
         wm.addView(layout, layoutParams);
     }
 }

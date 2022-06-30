@@ -16,8 +16,11 @@
 
 package android.renderscript.cts;
 
+import android.os.Build;
+import android.platform.test.annotations.AppModeFull;
 import android.renderscript.*;
 import android.util.Log;
+import com.android.compatibility.common.util.PropertyUtil;
 
 public class IntrinsicResize extends IntrinsicBase {
 
@@ -25,6 +28,12 @@ public class IntrinsicResize extends IntrinsicBase {
     static final int inY = 157;
 
   private void testResize(int w, int h, Element.DataType dt, int vecSize, float scaleX, float scaleY, boolean useOpt) {
+
+        // The LaunchOptions tests are new tests added in T, so skip the tests if the vendor
+        // partition has an earlier version.
+        if (useOpt && !PropertyUtil.isVendorApiLevelAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            return;
+        }
 
         Element e = makeElement(dt, vecSize);
 
@@ -479,342 +488,422 @@ public class IntrinsicResize extends IntrinsicBase {
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 4, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 3, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 2, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 1, 1.f, 1.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 4, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 3, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 2, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 1, 2.f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 4, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 3, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 2, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 1, 0.5f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 4, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 3, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 2, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 1, 2.f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 4, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 3, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 2, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.UNSIGNED_8, 1, 0.5f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 4, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 3, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 2, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 1, 1.f, 1.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 4, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 3, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 2, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 1, 2.f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 4, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 3, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 2, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 1, 0.5f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 4, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 3, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 2, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 1, 2.f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_4_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 4, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_3_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 3, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_2_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 2, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_U8_1_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.UNSIGNED_8, 1, 0.5f, 0.5f, true);
         checkError();
     }
 
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 4, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 3, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 2, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE10_10_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 1, 1.f, 1.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 4, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 3, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 2, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE20_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 1, 2.f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 4, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 3, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 2, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE05_20_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 1, 0.5f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 4, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 3, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 2, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE20_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 1, 2.f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 4, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 3, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 2, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE05_05_inSquare_opt() {
         testResize(inX, inX, Element.DataType.FLOAT_32, 1, 0.5f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 4, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 3, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 2, 1.f, 1.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE10_10_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 1, 1.f, 1.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 4, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 3, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 2, 2.f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE20_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 1, 2.f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 4, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 3, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 2, 0.5f, 2.f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE05_20_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 1, 0.5f, 2.f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 4, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 3, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 2, 2.f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE20_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 1, 2.f, 0.5f, true);
         checkError();
     }
 
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_4_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 4, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_3_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 3, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_2_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 2, 0.5f, 0.5f, true);
         checkError();
     }
+    @AppModeFull(reason = "Instant apps cannot query vendor API level")
     public void test_F32_1_SCALE05_05_inRectangle_opt() {
         testResize(inX, inY, Element.DataType.FLOAT_32, 1, 0.5f, 0.5f, true);
         checkError();

@@ -16,6 +16,7 @@
 package android.server.wm;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.backlegacyapp.Components.BACK_LEGACY;
 
 import static org.junit.Assert.assertFalse;
@@ -38,6 +39,8 @@ import org.junit.Test;
 public class BackNavigationLegacyTest extends ActivityManagerTestBase {
     private Instrumentation mInstrumentation;
 
+    private UiDevice mUiDevice;
+
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -50,7 +53,9 @@ public class BackNavigationLegacyTest extends ActivityManagerTestBase {
         launchActivity(BACK_LEGACY);
         mWmState.assertActivityDisplayed(BACK_LEGACY);
         waitAndAssertActivityState(BACK_LEGACY, STATE_RESUMED, "Activity should be resumed");
-        UiDevice.getInstance(mInstrumentation).pressKeyCode(KeyEvent.KEYCODE_BACK);
+        mUiDevice = UiDevice.getInstance(mInstrumentation);
+        mUiDevice.pressKeyCode(KeyEvent.KEYCODE_BACK);
+        waitAndAssertActivityState(BACK_LEGACY, STATE_STOPPED, "Activity should be stopped");
         assertTrue("OnBackPressed should have been called",
                 TestJournalContainer.get(BACK_LEGACY).extras.getBoolean(
                         Components.KEY_ON_BACK_PRESSED_CALLED));

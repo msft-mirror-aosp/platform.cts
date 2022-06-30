@@ -29,6 +29,7 @@ import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchSessionShim;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
+import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
@@ -142,7 +143,7 @@ public class GlobalSearchSessionPlatformCtsTest {
     public void setUp() throws Exception {
         mContext = ApplicationProvider.getApplicationContext();
         mDb =
-                AppSearchSessionShimImpl.createSearchSession(
+                AppSearchSessionShimImpl.createSearchSessionAsync(
                                 new AppSearchManager.SearchContext.Builder(DB_NAME).build())
                         .get();
         cleanup();
@@ -239,6 +240,40 @@ public class GlobalSearchSessionPlatformCtsTest {
     }
 
     @Test
+    public void testRemoveVisibilitySetting_noRemainingSettings() throws Exception {
+        // Set schema and allow PKG_A to access.
+        mDb.setSchema(
+                new SetSchemaRequest.Builder()
+                        .addSchemas(AppSearchEmail.SCHEMA)
+                        .setSchemaTypeVisibilityForPackage(
+                                AppSearchEmail.SCHEMA_TYPE,
+                                /*visible=*/ true,
+                                new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                        .build())
+                .get();
+        checkIsBatchResultSuccess(
+                mDb.put(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(EMAIL_DOCUMENT)
+                                .build()));
+
+        // PKG_A can access.
+        assertPackageCanAccess(EMAIL_DOCUMENT, PKG_A);
+        assertPackageCannotAccess(PKG_B);
+
+        // Remove the schema.
+        mDb.setSchema(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
+
+        // Add the schema back with default visibility setting.
+        mDb.setSchema(new SetSchemaRequest.Builder()
+                .addSchemas(AppSearchEmail.SCHEMA).build()).get();
+
+        // No pcakage can access.
+        assertPackageCannotAccess(PKG_A);
+        assertPackageCannotAccess(PKG_B);
+    }
+
+    @Test
     public void testAllowMultiplePackageAccess() throws Exception {
         mDb.setSchema(
                         new SetSchemaRequest.Builder()
@@ -325,11 +360,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, "database",
+                            .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
@@ -356,11 +392,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, "database",
+                            .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
@@ -372,11 +409,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, "database",
+                            .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
@@ -388,11 +426,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, "database",
+                            .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
@@ -404,11 +443,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, "database",
+                            .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
@@ -421,9 +461,9 @@ public class GlobalSearchSessionPlatformCtsTest {
     public void testAllowPermissions_sameError() throws Exception {
         // Try to get document before we put them, this is not found error.
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         AppSearchBatchResult<String, GenericDocument> nonExistentResult = mGlobalSearchSession
-                .getByDocumentId(PKG_A, "database",
+                .getByDocumentIdAsync(PKG_A, "database",
                         new GetByDocumentIdRequest.Builder("namespace")
                                 .addIds("id1")
                                 .build()).get();
@@ -437,9 +477,9 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Try to get document w/o permission, this is unAuthority error.
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         AppSearchBatchResult<String, GenericDocument> unAuthResult = mGlobalSearchSession
-                .getByDocumentId(PKG_A, "database",
+                .getByDocumentIdAsync(PKG_A, "database",
                         new GetByDocumentIdRequest.Builder("namespace")
                                 .addIds("id1")
                                 .build()).get();
@@ -459,11 +499,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, DB_NAME,
+                            .getByDocumentIdAsync(PKG_A, DB_NAME,
                                     new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                             .addIds("id1")
                                             .build()).get();
@@ -472,7 +513,7 @@ public class GlobalSearchSessionPlatformCtsTest {
 
                     // Can't get non existent document
                     AppSearchBatchResult<String, GenericDocument> nonExistent = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, DB_NAME,
+                            .getByDocumentIdAsync(PKG_A, DB_NAME,
                                     new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                             .addIds("id2")
                                             .build()).get();
@@ -490,11 +531,12 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can't get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentId(PKG_A, DB_NAME,
+                            .getByDocumentIdAsync(PKG_A, DB_NAME,
                                     new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                             .addIds("id1")
                                             .build()).get();
@@ -514,10 +556,11 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     AppSearchBatchResult<String, GenericDocument> nonExistentResult =
-                            mGlobalSearchSession.getByDocumentId(PKG_A, DB_NAME,
+                            mGlobalSearchSession.getByDocumentIdAsync(PKG_A, DB_NAME,
                                     new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                             .addIds("id1")
                                             .build()).get();
@@ -535,10 +578,11 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     AppSearchBatchResult<String, GenericDocument> unAuthResult =
-                            mGlobalSearchSession.getByDocumentId(PKG_A, DB_NAME,
+                            mGlobalSearchSession.getByDocumentIdAsync(PKG_A, DB_NAME,
                                     new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                             .addIds("id1")
                                             .build()).get();
@@ -557,10 +601,10 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Can't get the document because we don't have global permissions
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         AppSearchBatchResult<String, GenericDocument> noGlobalResult = mGlobalSearchSession
-                .getByDocumentId(PKG_A, DB_NAME,
+                .getByDocumentIdAsync(PKG_A, DB_NAME,
                         new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
                                 .addIds("id1")
                                 .build()).get();
@@ -582,7 +626,8 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -610,7 +655,8 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -635,7 +681,8 @@ public class GlobalSearchSessionPlatformCtsTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     mGlobalSearchSession =
-                            GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -658,7 +705,7 @@ public class GlobalSearchSessionPlatformCtsTest {
         indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
 
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         SearchResultsShim searchResults =
                 mGlobalSearchSession.search(
@@ -670,6 +717,147 @@ public class GlobalSearchSessionPlatformCtsTest {
         List<SearchResult> page = searchResults.getNextPage().get();
         assertThat(page).isEmpty();
     }
+
+    @Test
+    public void testGlobalGetSchema_packageAccess_defaultAccess() throws Exception {
+        // 1. Create a schema in the test with default (no) access.
+        mDb.setSchema(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA)
+                                .build())
+                .get();
+
+        // 2. Neither PKG_A nor PKG_B should be able to retrieve the schema.
+        List<String> schemaStrings = getSchemaAsPackage(PKG_A);
+        assertThat(schemaStrings).isNull();
+
+        schemaStrings = getSchemaAsPackage(PKG_B);
+        assertThat(schemaStrings).isNull();
+    }
+
+    @Test
+    public void testGlobalGetSchema_packageAccess_singleAccess() throws Exception {
+        // 1. Create a schema in the test with access granted to PKG_A, but not PKG_B.
+        mDb.setSchema(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA)
+                                .setSchemaTypeVisibilityForPackage(
+                                        AppSearchEmail.SCHEMA_TYPE,
+                                        /*visible=*/ true,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .build())
+                .get();
+
+        // 2. Only PKG_A should be able to retrieve the schema.
+        List<String> schemaStrings = getSchemaAsPackage(PKG_A);
+        assertThat(schemaStrings).containsExactly(AppSearchEmail.SCHEMA.toString());
+
+        schemaStrings = getSchemaAsPackage(PKG_B);
+        assertThat(schemaStrings).isNull();
+    }
+
+    @Test
+    public void testGlobalGetSchema_packageAccess_multiAccess() throws Exception {
+        // 1. Create a schema in the test with access granted to PKG_A and PKG_B.
+        mDb.setSchema(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA)
+                                .setSchemaTypeVisibilityForPackage(
+                                        AppSearchEmail.SCHEMA_TYPE,
+                                        /*visible=*/ true,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .setSchemaTypeVisibilityForPackage(
+                                        AppSearchEmail.SCHEMA_TYPE,
+                                        /*visible=*/ true,
+                                        new PackageIdentifier(PKG_B, PKG_B_CERT_SHA256))
+                                .build())
+                .get();
+
+        // 2. Both packages should be able to retrieve the schema.
+        List<String> schemaStrings = getSchemaAsPackage(PKG_A);
+        assertThat(schemaStrings).containsExactly(AppSearchEmail.SCHEMA.toString());
+
+        schemaStrings = getSchemaAsPackage(PKG_B);
+        assertThat(schemaStrings).containsExactly(AppSearchEmail.SCHEMA.toString());
+    }
+
+    @Test
+    public void testGlobalGetSchema_packageAccess_revokeAccess() throws Exception {
+        // 1. Create a schema in the test with access granted to PKG_A.
+        mDb.setSchema(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA)
+                                .setSchemaTypeVisibilityForPackage(
+                                        AppSearchEmail.SCHEMA_TYPE,
+                                        /*visible=*/ true,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .build())
+                .get();
+
+        // 2. Now revoke that access.
+        mDb.setSchema(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA)
+                                .setSchemaTypeVisibilityForPackage(
+                                        AppSearchEmail.SCHEMA_TYPE,
+                                        /*visible=*/ false,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .build())
+                .get();
+
+        // 3. PKG_A should NOT be able to retrieve the schema.
+        List<String> schemaStrings = getSchemaAsPackage(PKG_A);
+        assertThat(schemaStrings).isNull();
+    }
+
+    @Test
+    public void testGlobalGetSchema_globalAccess_singleAccess() throws Exception {
+        // 1. Index documents for PKG_A and PKG_B. This will set the schema for each with the
+        // corresponding access set.
+        indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
+        indexNotGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
+                                mContext).get();
+
+                    // 2. The schema for PKG_A should be retrievable, but PKG_B should not be.
+                    GetSchemaResponse response =
+                            mGlobalSearchSession.getSchema(PKG_A, DB_NAME).get();
+                    assertThat(response.getSchemas()).hasSize(1);
+
+                    response = mGlobalSearchSession.getSchema(PKG_B, DB_NAME).get();
+                    assertThat(response.getSchemas()).isEmpty();
+                },
+                READ_GLOBAL_APP_SEARCH_DATA);
+    }
+
+    @Test
+    public void testGlobalGetSchema_globalAccess_multiAccess() throws Exception {
+        // 1. Index documents for PKG_A and PKG_B. This will set the schema for each with the
+        // corresponding access set.
+        indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
+        indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
+                                mContext).get();
+
+                    // 2. The schema for both PKG_A and PKG_B should be retrievable.
+                    GetSchemaResponse response =
+                            mGlobalSearchSession.getSchema(PKG_A, DB_NAME).get();
+                    assertThat(response.getSchemas()).hasSize(1);
+
+                    response = mGlobalSearchSession.getSchema(PKG_B, DB_NAME).get();
+                    assertThat(response.getSchemas()).hasSize(1);
+                },
+                READ_GLOBAL_APP_SEARCH_DATA);
+    }
+
 
     @Test
     public void testReportSystemUsage() throws Exception {
@@ -706,7 +894,7 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
             mGlobalSearchSession =
-                    GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                    GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
             mGlobalSearchSession
                     .reportSystemUsage(
                             new ReportSystemUsageRequest.Builder(
@@ -732,7 +920,7 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Query the data
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         // Sort by app usage count: id1 should win
         try (SearchResultsShim results = mDb.search(
@@ -794,18 +982,18 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Set up schema
         mGlobalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSession(mContext).get();
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         mDb.setSchema(new SetSchemaRequest.Builder()
                 .addSchemas(AppSearchEmail.SCHEMA).build()).get();
 
         // Register this observer twice, on different packages.
         Executor executor = MoreExecutors.directExecutor();
-        mGlobalSearchSession.addObserver(
+        mGlobalSearchSession.registerObserverCallback(
                 mContext.getPackageName(),
                 new ObserverSpec.Builder().addFilterSchemas(AppSearchEmail.SCHEMA_TYPE).build(),
                 executor,
                 observer);
-        mGlobalSearchSession.addObserver(
+        mGlobalSearchSession.registerObserverCallback(
                 /*observedPackage=*/fakePackage,
                 new ObserverSpec.Builder().addFilterSchemas("Gift").build(),
                 executor,
@@ -840,7 +1028,7 @@ public class GlobalSearchSessionPlatformCtsTest {
         observer.clear();
 
         // Unregister observer from com.example.package
-        mGlobalSearchSession.removeObserver("com.example.package", observer);
+        mGlobalSearchSession.unregisterObserverCallback("com.example.package", observer);
 
         // Index some more documents
         assertThat(observer.getDocumentChanges()).isEmpty();
@@ -859,7 +1047,7 @@ public class GlobalSearchSessionPlatformCtsTest {
         observer.clear();
 
         // Unregister the final observer
-        mGlobalSearchSession.removeObserver(mContext.getPackageName(), observer);
+        mGlobalSearchSession.unregisterObserverCallback(mContext.getPackageName(), observer);
 
         // Index some more documents
         assertThat(observer.getDocumentChanges()).isEmpty();
@@ -868,6 +1056,17 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Make sure there have been no further notifications
         assertThat(observer.getDocumentChanges()).isEmpty();
+    }
+
+    private List<String> getSchemaAsPackage(String pkg) throws Exception {
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            return commandReceiver.globalGetSchema(mContext.getPackageName(), DB_NAME);
+        } finally {
+            serviceConnection.unbind();
+        }
     }
 
     private void assertPackageCannotAccess(String pkg) throws Exception {

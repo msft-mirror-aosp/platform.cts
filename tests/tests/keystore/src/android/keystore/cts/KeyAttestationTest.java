@@ -64,6 +64,7 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.keystore.cts.Attestation;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
@@ -79,6 +80,9 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.RequiresDevice;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.permissions.PermissionContext;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -302,10 +306,7 @@ public class KeyAttestationTest {
         }
     }
 
-    @RestrictedBuildTest
-    @RequiresDevice
-    @Test
-    public void testEcAttestation_DeviceLocked() throws Exception {
+    private void testEcAttestation_DeviceLocked(Boolean expectStrongBox) throws Exception {
         if (!TestUtils.isAttestationSupported()) {
             return;
         }
@@ -323,11 +324,11 @@ public class KeyAttestationTest {
                     .setAttestationChallenge(new byte[128])
                     .setKeyValidityStart(now)
                     .setKeyValidityForOriginationEnd(originationEnd)
-                    .setKeyValidityForConsumptionEnd(consumptionEnd);
+                    .setKeyValidityForConsumptionEnd(consumptionEnd)
+                    .setIsStrongBoxBacked(expectStrongBox);
 
-        if (TestUtils.hasStrongBox(getContext())) {
+        if (expectStrongBox) {
             builder.setDigests(DIGEST_NONE, DIGEST_SHA256);
-            builder.setIsStrongBoxBacked(true);
         } else {
             builder.setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512);
         }
@@ -339,13 +340,30 @@ public class KeyAttestationTest {
 
         try {
             Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
-            verifyCertificateChain(certificates, TestUtils.hasStrongBox(getContext()));
+            verifyCertificateChain(certificates, expectStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             checkDeviceLocked(Attestation.loadFromCertificate(attestationCert));
         } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
+    }
+
+    @RestrictedBuildTest
+    @RequiresDevice
+    @Test
+    public void testEcAttestation_DeviceLocked() throws Exception {
+        testEcAttestation_DeviceLocked(false /* expectStrongBox */);
+    }
+
+    @RestrictedBuildTest
+    @RequiresDevice
+    @Test
+    public void testEcAttestation_DeviceLockedStrongbox() throws Exception {
+        if (!TestUtils.hasStrongBox(getContext()))
+            return;
+
+        testEcAttestation_DeviceLocked(true /* expectStrongBox */);
     }
 
     @Test
@@ -470,6 +488,54 @@ public class KeyAttestationTest {
         } finally {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
+            keyStore.deleteEntry(keystoreAlias);
+        }
+    }
+
+    @Test
+    public void testEcAttestation_UniqueIdWorksWithCorrectPermission() throws Exception {
+        String keystoreAlias = "test_key";
+        KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
+                .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512)
+                .setAttestationChallenge(new byte[128])
+                .setUniqueIdIncluded(true)
+                .build();
+
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+
+        try (PermissionContext c = TestApis.permissions().withPermission(
+                  "android.permission.REQUEST_UNIQUE_ID_ATTESTATION")) {
+            generateKeyPair(KEY_ALGORITHM_EC, spec);
+            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Attestation attestation = Attestation.loadFromCertificate((X509Certificate) certificates[0]);
+            byte[] firstUniqueId = attestation.getUniqueId();
+            assertTrue("UniqueId must not be empty", firstUniqueId.length > 0);
+
+            // The unique id rotates (30 days in the default implementation), and it's possible to
+            // get a spurious failure if the test runs exactly when the rotation occurs. Allow a
+            // single retry, just in case.
+            byte[] secondUniqueId = null;
+            for (int i = 0; i < 2; ++i) {
+                keyStore.deleteEntry(keystoreAlias);
+
+                generateKeyPair(KEY_ALGORITHM_EC, spec);
+                certificates = keyStore.getCertificateChain(keystoreAlias);
+                attestation = Attestation.loadFromCertificate((X509Certificate) certificates[0]);
+                secondUniqueId = attestation.getUniqueId();
+
+                if (Arrays.equals(firstUniqueId, secondUniqueId)) {
+                    break;
+                } else {
+                    firstUniqueId = secondUniqueId;
+                    secondUniqueId = null;
+                }
+            }
+            assertTrue("UniqueIds must be consistent",
+                    Arrays.equals(firstUniqueId, secondUniqueId));
+
+        } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
     }
@@ -601,10 +667,7 @@ public class KeyAttestationTest {
         }
     }
 
-    @RestrictedBuildTest
-    @RequiresDevice  // Emulators have no place to store the needed key
-    @Test
-    public void testRsaAttestation_DeviceLocked() throws Exception {
+    private void testRsaAttestation_DeviceLocked(Boolean expectStrongBox) throws Exception {
         if (!TestUtils.isAttestationSupported()) {
             return;
         }
@@ -622,11 +685,11 @@ public class KeyAttestationTest {
                     .setAttestationChallenge("challenge".getBytes())
                     .setKeyValidityStart(now)
                     .setKeyValidityForOriginationEnd(originationEnd)
-                    .setKeyValidityForConsumptionEnd(consumptionEnd);
+                    .setKeyValidityForConsumptionEnd(consumptionEnd)
+                    .setIsStrongBoxBacked(expectStrongBox);
 
-        if (TestUtils.hasStrongBox(getContext())) {
+        if (expectStrongBox) {
             builder.setDigests(DIGEST_NONE, DIGEST_SHA256);
-            builder.setIsStrongBoxBacked(true);
         } else {
             builder.setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512);
         }
@@ -638,13 +701,30 @@ public class KeyAttestationTest {
 
         try {
             Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
-            verifyCertificateChain(certificates, TestUtils.hasStrongBox(getContext()));
+            verifyCertificateChain(certificates, expectStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             checkDeviceLocked(Attestation.loadFromCertificate(attestationCert));
         } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
+    }
+
+    @RestrictedBuildTest
+    @RequiresDevice  // Emulators have no place to store the needed key
+    @Test
+    public void testRsaAttestation_DeviceLocked() throws Exception {
+        testRsaAttestation_DeviceLocked(false /* expectStrongbox */);
+    }
+
+    @RestrictedBuildTest
+    @RequiresDevice  // Emulators have no place to store the needed key
+    @Test
+    public void testRsaAttestation_DeviceLockedStrongbox() throws Exception {
+        if (!TestUtils.hasStrongBox(getContext()))
+            return;
+
+        testRsaAttestation_DeviceLocked(true /* expectStrongbox */);
     }
 
     @Test
@@ -724,21 +804,6 @@ public class KeyAttestationTest {
         testDeviceIdAttestationFailure(AttestationUtils.ID_TYPE_SERIAL, null);
         testDeviceIdAttestationFailure(AttestationUtils.ID_TYPE_IMEI, "Unable to retrieve IMEI");
         testDeviceIdAttestationFailure(AttestationUtils.ID_TYPE_MEID, "Unable to retrieve MEID");
-    }
-
-    @Test
-    public void testMandatoryDeviceidAttestation() {
-        // ID attestation is only mandatory on devices that have shipped with T and
-        // above.
-        if (Build.VERSION.DEVICE_INITIAL_SDK_INT <= Build.VERSION_CODES.S) {
-            return;
-        }
-        // ID attestation is tested by other tests (outside of this class), including negative
-        // tests that ID attestation is failing if the platform does not declare support.
-        // Hence, it's safe to only test here that the feature is supported.
-        PackageManager pm = getContext().getPackageManager();
-        assertThat("As of Android T, devices must support ID attestation",
-                pm.hasSystemFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION),is(true));
     }
 
     @SuppressWarnings("deprecation")
@@ -1023,27 +1088,38 @@ public class KeyAttestationTest {
 
     private void checkValidityPeriod(Attestation attestation, Date startTime,
             boolean includesValidityDates) {
-        AuthorizationList validityPeriodList;
-        AuthorizationList nonValidityPeriodList;
-        if (attestation.getTeeEnforced().getCreationDateTime() != null) {
-            validityPeriodList = attestation.getTeeEnforced();
-            nonValidityPeriodList = attestation.getSoftwareEnforced();
-        } else {
-            validityPeriodList = attestation.getSoftwareEnforced();
-            nonValidityPeriodList = attestation.getTeeEnforced();
-        }
+        AuthorizationList validityPeriodList = attestation.getSoftwareEnforced();
+        AuthorizationList nonValidityPeriodList = attestation.getTeeEnforced();
 
-        if (attestation.getKeymasterVersion() == 2) {
-            Date creationDateTime = validityPeriodList.getCreationDateTime();
+        // A bug in Android S leads Android S devices with KeyMint1 not to add a creationDateTime.
+        boolean creationDateTimeBroken =
+            Build.VERSION.SDK_INT == Build.VERSION_CODES.S &&
+            attestation.getKeymasterVersion() == Attestation.KM_VERSION_KEYMINT_1;
 
-            assertNotNull(creationDateTime);
+        if (!creationDateTimeBroken) {
             assertNull(nonValidityPeriodList.getCreationDateTime());
 
-            // We allow a little slop on creation times because the TEE/HAL may not be quite synced
-            // up with the system.
-            assertTrue("Test start time (" + startTime.getTime() + ") and key creation time (" +
-                    creationDateTime.getTime() + ") should be close",
-                    Math.abs(creationDateTime.getTime() - startTime.getTime()) <= 2000);
+            Date creationDateTime = validityPeriodList.getCreationDateTime();
+
+            boolean requireCreationDateTime =
+                attestation.getKeymasterVersion() >= Attestation.KM_VERSION_KEYMINT_1;
+
+            // b/232078430: skip time checks in Android T due to unfixed bug.
+            boolean doTimeChecks = false;
+
+            if (doTimeChecks && (requireCreationDateTime || creationDateTime != null)) {
+                assertNotNull(creationDateTime);
+
+                assertTrue("Test start time (" + startTime.getTime() + ") and key creation time (" +
+                        creationDateTime.getTime() + ") should be close",
+                        Math.abs(creationDateTime.getTime() - startTime.getTime()) <= 2000);
+
+                // Allow 1 second leeway in case of nearest-second rounding.
+                Date now = new Date();
+                assertTrue("Key creation time (" + creationDateTime.getTime() + ") must be now (" +
+                        now.getTime() + ") or earlier.",
+                        now.getTime() >= (creationDateTime.getTime() - 1000));
+            }
         }
 
         if (includesValidityDates) {
@@ -1416,6 +1492,7 @@ public class KeyAttestationTest {
     public static void verifyCertificateChain(Certificate[] certChain, boolean expectStrongBox)
             throws GeneralSecurityException {
         assertNotNull(certChain);
+        boolean strongBoxSubjectFound = false;
         for (int i = 1; i < certChain.length; ++i) {
             try {
                 PublicKey pubKey = certChain[i].getPublicKey();
@@ -1442,19 +1519,19 @@ public class KeyAttestationTest {
                 if (i == 1) {
                     // First cert should have subject "CN=Android Keystore Key".
                     assertEquals(signedCertSubject, new X500Name("CN=Android Keystore Key"));
-                } else {
-                    // Only strongbox implementations should have strongbox in the subject line
-                    assertEquals(expectStrongBox, signedCertSubject.toString()
-                                                                   .toLowerCase()
-                                                                   .contains("strongbox"));
+                } else if (signedCertSubject.toString().toLowerCase().contains("strongbox")) {
+                    strongBoxSubjectFound = true;
                 }
             } catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException
                     | NoSuchProviderException | SignatureException e) {
                 throw new GeneralSecurityException("Using StrongBox: " + expectStrongBox + "\n"
-                        + "Failed to verify certificate "
-                        + certChain[i - 1] + " with public key " + certChain[i].getPublicKey(), e);
+                                + "Failed to verify certificate " + certChain[i - 1]
+                                + " with public key " + certChain[i].getPublicKey(),
+                        e);
             }
         }
+        // At least one intermediate in a StrongBox chain must have "strongbox" in the subject.
+        assertEquals(expectStrongBox, strongBoxSubjectFound);
     }
 
     private void testDeviceIdAttestationFailure(int idType,

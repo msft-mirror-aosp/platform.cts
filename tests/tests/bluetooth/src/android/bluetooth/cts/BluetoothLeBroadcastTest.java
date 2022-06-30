@@ -16,20 +16,28 @@
 
 package android.bluetooth.cts;
 
+import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
+import android.bluetooth.BluetoothLeAudioContentMetadata;
 import android.bluetooth.BluetoothLeBroadcast;
-import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothLeBroadcastChannel;
+import android.bluetooth.BluetoothLeBroadcastMetadata;
+import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.os.Build;
 import android.util.Log;
 
@@ -45,6 +53,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -55,7 +65,26 @@ public class BluetoothLeBroadcastTest {
     private static final String TAG = BluetoothLeBroadcastTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
-    private static final String PROFILE_SUPPORTED_LE_BROADCAST = "profile_supported_le_broadcast";
+
+    private static final String TEST_MAC_ADDRESS = "00:11:22:33:44:55";
+    private static final int TEST_BROADCAST_ID = 42;
+    private static final int TEST_ADVERTISER_SID = 1234;
+    private static final int TEST_PA_SYNC_INTERVAL = 100;
+    private static final int TEST_PRESENTATION_DELAY_MS = 345;
+
+    private static final int TEST_CODEC_ID = 42;
+    private static final int TEST_CHANNEL_INDEX = 56;
+
+    // For BluetoothLeAudioCodecConfigMetadata
+    private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
+    private static final long TEST_AUDIO_LOCATION_FRONT_RIGHT = 0x02;
+
+    // For BluetoothLeAudioContentMetadata
+    private static final String TEST_PROGRAM_INFO = "Test";
+    // German language code in ISO 639-3
+    private static final String TEST_LANGUAGE = "deu";
+
+    private static final int TEST_REASON = BluetoothStatusCodes.REASON_LOCAL_STACK_REQUEST;
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -67,20 +96,75 @@ public class BluetoothLeBroadcastTest {
     private Condition mConditionProfileIsConnected;
     private ReentrantLock mProfileConnectedlock;
 
+    private boolean mOnBroadcastStartedCalled = false;
+    private boolean mOnBroadcastStartFailedCalled = false;
+    private boolean mOnBroadcastStoppedCalled = false;
+    private boolean mOnBroadcastStopFailedCalled = false;
+    private boolean mOnPlaybackStartedCalled = false;
+    private boolean mOnPlaybackStoppedCalled = false;
+    private boolean mOnBroadcastUpdatedCalled = false;
+    private boolean mOnBroadcastUpdateFailedCalled = false;
+    private boolean mOnBroadcastMetadataChangedCalled = false;
+
+    private BluetoothLeBroadcastMetadata mTestMetadata;
+    private CountDownLatch mCallbackCountDownLatch;
+
+    BluetoothLeBroadcastSubgroup createBroadcastSubgroup() {
+        BluetoothLeAudioCodecConfigMetadata codecMetadata =
+                new BluetoothLeAudioCodecConfigMetadata.Builder()
+                        .setAudioLocation(TEST_AUDIO_LOCATION_FRONT_LEFT).build();
+        BluetoothLeAudioContentMetadata contentMetadata =
+                new BluetoothLeAudioContentMetadata.Builder()
+                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+        BluetoothLeBroadcastSubgroup.Builder builder = new BluetoothLeBroadcastSubgroup.Builder()
+                .setCodecId(TEST_CODEC_ID)
+                .setCodecSpecificConfig(codecMetadata)
+                .setContentMetadata(contentMetadata);
+
+        BluetoothLeAudioCodecConfigMetadata channelCodecMetadata =
+                new BluetoothLeAudioCodecConfigMetadata.Builder()
+                        .setAudioLocation(TEST_AUDIO_LOCATION_FRONT_RIGHT).build();
+
+        // builder expect at least one channel
+        BluetoothLeBroadcastChannel channel =
+                new BluetoothLeBroadcastChannel.Builder()
+                        .setSelected(true)
+                        .setChannelIndex(TEST_CHANNEL_INDEX)
+                        .setCodecMetadata(channelCodecMetadata)
+                        .build();
+        builder.addChannel(channel);
+        return builder.build();
+    }
+
+    BluetoothLeBroadcastMetadata createBroadcastMetadata() {
+        BluetoothDevice testDevice =
+                mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
+
+        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
+                        .setEncrypted(false)
+                        .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM)
+                        .setSourceAdvertisingSid(TEST_ADVERTISER_SID)
+                        .setBroadcastId(TEST_BROADCAST_ID)
+                        .setBroadcastCode(null)
+                        .setPaSyncInterval(TEST_PA_SYNC_INTERVAL)
+                        .setPresentationDelayMicros(TEST_PRESENTATION_DELAY_MS);
+        // builder expect at least one subgroup
+        builder.addSubgroup(createBroadcastSubgroup());
+        return builder.build();
+    }
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             return;
         }
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
-
+        mHasBluetooth = TestUtils.hasBluetooth();
         if (!mHasBluetooth) {
             return;
         }
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = manager.getAdapter();
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
         mProfileConnectedlock = new ReentrantLock();
@@ -88,89 +172,82 @@ public class BluetoothLeBroadcastTest {
         mIsProfileReady = false;
         mBluetoothLeBroadcast = null;
 
-        Resources bluetoothResources = null;
-        try {
-            bluetoothResources = mContext.getPackageManager().getResourcesForApplication(
-                    "com.android.bluetooth");
-        } catch (PackageManager.NameNotFoundException e) {
-            return;
+        mIsLeBroadcastSupported =
+                mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
+        if (mIsLeBroadcastSupported) {
+            boolean isBroadcastSourceEnabledInConfig =
+                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
+            assertTrue("Config must be true when profile is supported",
+                    isBroadcastSourceEnabledInConfig);
         }
-        int leBroadcastSupportId = bluetoothResources.getIdentifier(
-                PROFILE_SUPPORTED_LE_BROADCAST, "bool", "com.android.bluetooth");
-        if (leBroadcastSupportId == 0) {
-            return;
-        }
-        mIsLeBroadcastSupported = bluetoothResources.getBoolean(
-                leBroadcastSupportId);
         if (!mIsLeBroadcastSupported) {
             return;
         }
 
-        mAdapter.getProfileProxy(mContext, new ServiceListener(),
+        mIsLeBroadcastSupported = mAdapter.getProfileProxy(mContext, new ServiceListener(),
                 BluetoothProfile.LE_AUDIO_BROADCAST);
+        assertTrue("Profile proxy should be accessible when profile is supported",
+                mIsLeBroadcastSupported);
     }
 
     @After
     public void tearDown() {
         if (mHasBluetooth) {
-            if (mAdapter != null && mBluetoothLeBroadcast != null) {
-                mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO_BROADCAST,
-                        mBluetoothLeBroadcast);
+            if (mBluetoothLeBroadcast != null) {
+                mBluetoothLeBroadcast.close();
                 mBluetoothLeBroadcast = null;
                 mIsProfileReady = false;
             }
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+            if (mAdapter != null) {
+                assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+            }
             mAdapter = null;
+            TestUtils.dropPermissionAsShellUid();
         }
     }
 
     @Test
     public void testGetConnectedDevices() {
-        if (!(mHasBluetooth && mIsLeBroadcastSupported)) return;
-
+        if (shouldSkipTest()) {
+            return;
+        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeBroadcast);
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices = mBluetoothLeBroadcast.getConnectedDevices();
-        assertTrue(connectedDevices.isEmpty());
+        // Verify if asserts as Broadcaster is not connection-oriented profile
+        assertThrows(UnsupportedOperationException.class,
+                () -> mBluetoothLeBroadcast.getConnectedDevices());
     }
 
     @Test
     public void testGetDevicesMatchingConnectionStates() {
-        if (!(mHasBluetooth && mIsLeBroadcastSupported)) return;
-
+        if (shouldSkipTest()) {
+            return;
+        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeBroadcast);
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices =
-                mBluetoothLeBroadcast.getDevicesMatchingConnectionStates(null);
-        assertTrue(connectedDevices.isEmpty());
+        // Verify if asserts as Broadcaster is not connection-oriented profile
+        assertThrows(UnsupportedOperationException.class,
+                () -> mBluetoothLeBroadcast.getDevicesMatchingConnectionStates(null));
     }
 
     @Test
     public void testGetConnectionState() {
-        if (!(mHasBluetooth && mIsLeBroadcastSupported)) return;
+        if (shouldSkipTest()) {
+            return;
+        }
 
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeBroadcast);
 
-        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-
-        // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothLeBroadcast.getConnectionState(null));
-
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-
-        // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothLeBroadcast.getConnectionState(testDevice));
+        // Verify if asserts as Broadcaster is not connection-oriented profile
+        assertThrows(UnsupportedOperationException.class,
+                () -> mBluetoothLeBroadcast.getConnectionState(null));
     }
 
     @Test
@@ -184,6 +261,294 @@ public class BluetoothLeBroadcastTest {
             return;
         }
         assertTrue(mIsLeBroadcastSupported);
+    }
+
+    @Test
+    public void testRegisterUnregisterCallback() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        Executor executor = mContext.getMainExecutor();
+        BluetoothLeBroadcast.Callback callback =
+                new BluetoothLeBroadcast.Callback() {
+                    @Override
+                    public void onBroadcastStarted(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastStartFailed(int reason) {}
+                    @Override
+                    public void onBroadcastStopped(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastStopFailed(int reason) {}
+                    @Override
+                    public void onPlaybackStarted(int reason, int broadcastId) {}
+                    @Override
+                    public void onPlaybackStopped(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastUpdated(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastUpdateFailed(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastMetadataChanged(int broadcastId,
+                            BluetoothLeBroadcastMetadata metadata) {}
+                };
+
+        // Verify invalid parameters
+        assertThrows(NullPointerException.class, () ->
+                mBluetoothLeBroadcast.registerCallback(null, callback));
+        assertThrows(NullPointerException.class, () ->
+                mBluetoothLeBroadcast.registerCallback(executor, null));
+        assertThrows(NullPointerException.class, () ->
+                mBluetoothLeBroadcast.unregisterCallback(null));
+
+        // Verify valid parameters
+        mBluetoothLeBroadcast.registerCallback(executor, callback);
+        mBluetoothLeBroadcast.unregisterCallback(callback);
+    }
+
+    @Test
+    public void testRegisterCallbackNoPermission() {
+        if (shouldSkipTest()) {
+            return;
+        }
+
+        TestUtils.dropPermissionAsShellUid();
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
+
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        Executor executor = mContext.getMainExecutor();
+        BluetoothLeBroadcast.Callback callback =
+                new BluetoothLeBroadcast.Callback() {
+                    @Override
+                    public void onBroadcastStarted(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastStartFailed(int reason) {}
+                    @Override
+                    public void onBroadcastStopped(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastStopFailed(int reason) {}
+                    @Override
+                    public void onPlaybackStarted(int reason, int broadcastId) {}
+                    @Override
+                    public void onPlaybackStopped(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastUpdated(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastUpdateFailed(int reason, int broadcastId) {}
+                    @Override
+                    public void onBroadcastMetadataChanged(int broadcastId,
+                            BluetoothLeBroadcastMetadata metadata) {}
+                };
+
+        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
+        assertThrows(SecurityException.class,
+                () -> mBluetoothLeBroadcast.registerCallback(executor, callback));
+
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+    }
+
+    @Test
+    public void testCallbackCalls() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        BluetoothLeBroadcast.Callback callback =
+                new BluetoothLeBroadcast.Callback() {
+                    @Override
+                    public void onBroadcastStarted(int reason, int broadcastId) {
+                        mOnBroadcastStartedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastStartFailed(int reason) {
+                        mOnBroadcastStartFailedCalled = true;
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastStopped(int reason, int broadcastId) {
+                        mOnBroadcastStoppedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastStopFailed(int reason) {
+                        mOnBroadcastStopFailedCalled = true;
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onPlaybackStarted(int reason, int broadcastId) {
+                        mOnPlaybackStartedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onPlaybackStopped(int reason, int broadcastId) {
+                        mOnPlaybackStoppedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastUpdated(int reason, int broadcastId) {
+                        mOnBroadcastUpdatedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastUpdateFailed(int reason, int broadcastId) {
+                        mOnBroadcastUpdateFailedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(TEST_REASON, reason);
+                        mCallbackCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onBroadcastMetadataChanged(int broadcastId,
+                            BluetoothLeBroadcastMetadata metadata) {
+                        mOnBroadcastMetadataChangedCalled = true;
+                        assertEquals(TEST_BROADCAST_ID, broadcastId);
+                        assertEquals(mTestMetadata, metadata);
+                        mCallbackCountDownLatch.countDown();
+                    }
+                };
+
+        mCallbackCountDownLatch = new CountDownLatch(9);
+        try {
+            callback.onBroadcastStarted(TEST_REASON, TEST_BROADCAST_ID);
+            callback.onBroadcastStartFailed(TEST_REASON);
+            callback.onBroadcastStopped(TEST_REASON, TEST_BROADCAST_ID);
+            callback.onBroadcastStopFailed(TEST_REASON);
+            callback.onPlaybackStarted(TEST_REASON, TEST_BROADCAST_ID);
+            callback.onPlaybackStopped(TEST_REASON, TEST_BROADCAST_ID);
+            callback.onBroadcastUpdated(TEST_REASON, TEST_BROADCAST_ID);
+            callback.onBroadcastUpdateFailed(TEST_REASON, TEST_BROADCAST_ID);
+            mTestMetadata = createBroadcastMetadata();
+            callback.onBroadcastMetadataChanged(TEST_BROADCAST_ID, mTestMetadata);
+
+            // Wait for all the callback calls or 5 seconds to verify
+            mCallbackCountDownLatch.await(5, TimeUnit.SECONDS);
+            assertTrue(mOnBroadcastStartedCalled);
+            assertTrue(mOnBroadcastStartFailedCalled);
+            assertTrue(mOnBroadcastStoppedCalled);
+            assertTrue(mOnBroadcastStopFailedCalled);
+            assertTrue(mOnPlaybackStartedCalled);
+            assertTrue(mOnPlaybackStoppedCalled);
+            assertTrue(mOnBroadcastUpdatedCalled);
+            assertTrue(mOnBroadcastUpdateFailedCalled);
+            assertTrue(mOnBroadcastMetadataChangedCalled);
+        } catch (InterruptedException e) {
+            fail("Failed to register callback call: " + e.toString());
+        }
+    }
+
+    @Test
+    public void testStartBroadcast() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
+                new BluetoothLeAudioContentMetadata.Builder();
+        byte[] broadcastCode = {1, 2, 3, 4, 5, 6};
+        mBluetoothLeBroadcast.startBroadcast(contentMetadataBuilder.build(), broadcastCode);
+    }
+
+    @Test
+    public void testUpdateBroadcast() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
+                new BluetoothLeAudioContentMetadata.Builder();
+        mBluetoothLeBroadcast.updateBroadcast(1, contentMetadataBuilder.build());
+    }
+
+    @Test
+    public void testStopBroadcast() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        mBluetoothLeBroadcast.stopBroadcast(1);
+    }
+
+    @Test
+    public void testIsPlaying() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        assertFalse(mBluetoothLeBroadcast.isPlaying(1));
+    }
+
+    @Test
+    public void testGetAllBroadcastMetadata() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        List<BluetoothLeBroadcastMetadata> metaList =
+                mBluetoothLeBroadcast.getAllBroadcastMetadata();
+        assertTrue(metaList.isEmpty());
+    }
+
+    @Test
+    public void testGetMaximumNumberOfBroadcasts() {
+        if (shouldSkipTest()) {
+            return;
+        }
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcast);
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        assertEquals(1, mBluetoothLeBroadcast.getMaximumNumberOfBroadcasts());
+    }
+
+    private boolean shouldSkipTest() {
+        return !(mHasBluetooth && mIsLeBroadcastSupported);
     }
 
     private boolean waitForProfileConnect() {

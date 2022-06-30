@@ -16,10 +16,14 @@
 
 package android.app.cts;
 
+import static android.Manifest.permission.POST_NOTIFICATIONS;
+import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
+import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.app.Notification.FLAG_BUBBLE;
 import static android.app.NotificationManager.BUBBLE_PREFERENCE_ALL;
 import static android.app.NotificationManager.BUBBLE_PREFERENCE_NONE;
 import static android.app.NotificationManager.BUBBLE_PREFERENCE_SELECTED;
+import static android.app.stubs.BubbledActivity.EXTRA_LOCUS_ID;
 import static android.app.stubs.BubblesTestService.EXTRA_TEST_CASE;
 import static android.app.stubs.BubblesTestService.TEST_CALL;
 import static android.app.stubs.BubblesTestService.TEST_MESSAGING;
@@ -30,6 +34,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static org.junit.Assert.assertThrows;
 
+import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
@@ -47,9 +52,12 @@ import android.content.IntentFilter;
 import android.content.LocusId;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
+import android.permission.PermissionManager;
+import android.permission.cts.PermissionUtils;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -64,6 +72,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
+    private static final String TAG = NotificationManagerBubbleTest.class.getSimpleName();
+
+    private static final String STUB_PACKAGE_NAME = "android.app.stubs";
+
     // use a value of 10000 for consistency with other CTS tests (see
     // android.server.wm.intentLaunchRunner#ACTIVITY_LAUNCH_TIMEOUT)
     private static final int ACTIVITY_LAUNCH_TIMEOUT = 10000;
@@ -74,6 +86,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        PermissionUtils.grantPermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS);
+        PermissionUtils.grantPermission(mContext.getPackageName(), POST_NOTIFICATIONS);
 
         // This setting is forced on / off for certain tests, save it & restore what's on the
         // device after tests are run
@@ -94,6 +108,17 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
         // Restore bubbles setting
         setBubblesGlobal(mBubblesEnabledSettingToRestore);
+
+        // Use test API to prevent PermissionManager from killing the test process when revoking
+        // permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mContext.getSystemService(PermissionManager.class)
+                        .revokePostNotificationPermissionWithoutKillForTest(
+                                mContext.getPackageName(),
+                                android.os.Process.myUserHandle().getIdentifier()),
+                REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
+                REVOKE_RUNTIME_PERMISSIONS);
+        PermissionUtils.revokePermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS);
     }
 
     private boolean isBubblesFeatureSupported() {
@@ -150,24 +175,42 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
      * in this method.
      */
     private void verifyNotificationBubbleState(int id, boolean shouldBeBubble) {
-        // FLAG_BUBBLE relies on notification being posted, wait for notification listener
-        sleep();
-
-        for (StatusBarNotification sbn : mListener.mPosted) {
-            if (sbn.getId() == id) {
-                boolean isBubble = (sbn.getNotification().flags & FLAG_BUBBLE) != 0;
-                if (isBubble != shouldBeBubble) {
-                    final String failure = shouldBeBubble
-                            ? "Notification with id= " + id + " wasn't a bubble"
-                            : "Notification with id= " + id + " was a bubble and shouldn't be";
-                    fail(failure);
-                } else {
-                    // pass
-                    return;
+        boolean notificationFound = false;
+        boolean bubbleStateMatches = false;
+        try {
+            // Wait up to 5 seconds for the notification
+            for (int i = 0; i < 50; i++) {
+                // FLAG_BUBBLE relies on notification being posted, wait for notification listener
+                Thread.sleep(100);
+                for (StatusBarNotification sbn : mListener.mPosted) {
+                    if (sbn.getId() == id) {
+                        notificationFound = true;
+                        boolean isBubble = (sbn.getNotification().flags & FLAG_BUBBLE) != 0;
+                        if (isBubble == shouldBeBubble) {
+                            bubbleStateMatches = true;
+                            break;
+                        }
+                    }
                 }
             }
+        } catch (InterruptedException ignored) {
         }
-        fail("Couldn't find posted notification with id= " + id);
+
+        if (bubbleStateMatches) {
+            // pass
+            return;
+        }
+
+        String failure;
+        if (notificationFound) {
+            failure = shouldBeBubble
+                    ? "Notification with id= " + id + " wasn't a bubble"
+                    : "Notification with id= " + id + " was a bubble and shouldn't be";
+        } else {
+            failure = "Couldn't find posted notification with id=" + id;
+        }
+        Log.e(TAG, failure + " listener=" + mListener);
+        fail(failure);
     }
 
     private void setBubblesGlobal(boolean enabled) {
@@ -210,7 +253,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
      * @return the SendBubbleActivity that was opened.
      */
     private SendBubbleActivity startSendBubbleActivity() {
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(1);
         mBubbleBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -237,14 +280,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
         SendBubbleActivity sendBubbleActivity = (SendBubbleActivity) monitor.waitForActivity();
 
         // Make sure device is unlocked
-        KeyguardManager keyguardManager = mContext.getSystemService(KeyguardManager.class);
-        keyguardManager.requestDismissKeyguard(sendBubbleActivity,
-                new KeyguardManager.KeyguardDismissCallback() {
-                    @Override
-                    public void onDismissSucceeded() {
-                        latch.countDown();
-                    }
-                });
+        ensureDeviceUnlocked(sendBubbleActivity);
         try {
             latch.await(500, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
@@ -261,6 +297,53 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
                 new Instrumentation.ActivityMonitor(clazz.getName(), result, false);
         InstrumentationRegistry.getInstrumentation().addMonitor(monitor);
         return monitor;
+    }
+
+    private BubbledActivity startBubbleActivity(int id) {
+        return startBubbleActivity(id, true /* addLocusId */);
+    }
+
+    /**
+     * Starts the same activity that is in the bubble produced by this activity.
+     */
+    private BubbledActivity startBubbleActivity(int id, boolean addLocusId) {
+        Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
+
+        final Intent intent = new Intent(mContext, BubbledActivity.class);
+        // Clear any previous instance of this activity
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (addLocusId) {
+            intent.putExtra(EXTRA_LOCUS_ID, String.valueOf(id));
+        }
+
+        InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+
+        BubbledActivity bubbledActivity = (BubbledActivity) monitor.waitForActivity();
+        ensureDeviceUnlocked(bubbledActivity);
+        return bubbledActivity;
+    }
+
+    /**
+     * Make sure device is unlocked so the activity can become visible
+     */
+    private void ensureDeviceUnlocked(Activity activity) {
+        // Make sure device is unlocked
+        KeyguardManager keyguardManager = mContext.getSystemService(KeyguardManager.class);
+        if (keyguardManager.isKeyguardLocked()) {
+            CountDownLatch latch = new CountDownLatch(1);
+            keyguardManager.requestDismissKeyguard(activity,
+                    new KeyguardManager.KeyguardDismissCallback() {
+                        @Override
+                        public void onDismissSucceeded() {
+                            latch.countDown();
+                        }
+                    });
+            try {
+                latch.await(500, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {
+            }
+        }
     }
 
     private void cleanupSendBubbleActivity() {
@@ -849,13 +932,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             verifyNotificationBubbleState(notifId, true /* shouldBeBubble */);
             mListener.resetData();
 
-            // Prep to find bubbled activity
-            Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
-
             // Launch same activity as whats in the bubble
-            a.startBubbleActivity(notifId);
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            BubbledActivity activity = startBubbleActivity(notifId);
 
             // It should have the locusId
             assertEquals(new LocusId(String.valueOf(notifId)),
@@ -897,13 +975,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             verifyNotificationBubbleState(BUBBLE_NOTIF_ID, true /* shouldBeBubble */);
             mListener.resetData();
 
-            // Prep to find bubbled activity
-            Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
-
             // Launch same activity as whats in the bubble
-            a.startBubbleActivity(BUBBLE_NOTIF_ID);
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            BubbledActivity activity = startBubbleActivity(BUBBLE_NOTIF_ID);
 
             // It should have the locusId
             assertEquals(new LocusId(String.valueOf(BUBBLE_NOTIF_ID)),
@@ -945,13 +1018,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             verifyNotificationBubbleState(BUBBLE_NOTIF_ID, true /* shouldBeBubble */);
             mListener.resetData();
 
-            // Prep to find bubbled activity
-            Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
-
             // Launch same activity as whats in the bubble
-            a.startBubbleActivity(BUBBLE_NOTIF_ID, false /* addLocusId */);
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            BubbledActivity activity = startBubbleActivity(BUBBLE_NOTIF_ID, false /* addLocusId */);
 
             // It shouldn't have the locusId
             assertNull(activity.getLocusId());
@@ -994,13 +1062,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             verifyNotificationBubbleState(BUBBLE_NOTIF_ID, true /* shouldBeBubble */);
             mListener.resetData();
 
-            // Prep to find bubbled activity
-            Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
-
             // Launch same activity as whats in the bubble
-            a.startBubbleActivity(BUBBLE_NOTIF_ID, true /* addLocusId */);
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            BubbledActivity activity = startBubbleActivity(BUBBLE_NOTIF_ID, true /* addLocusId */);
 
             // Activity has the locus
             assertNotNull(activity.getLocusId());
@@ -1048,13 +1111,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
 
-            // Prep to find bubbled activity
-            Instrumentation.ActivityMonitor monitor = startBubbledActivityMonitor();
-
             // Launch same activity as whats in the bubble
-            a.startBubbleActivity(notifId);
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            BubbledActivity activity = startBubbleActivity(notifId);
 
             // It should have the locusId
             assertEquals(new LocusId(String.valueOf(notifId)),

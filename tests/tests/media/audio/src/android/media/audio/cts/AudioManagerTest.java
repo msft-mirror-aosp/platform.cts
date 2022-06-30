@@ -277,6 +277,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
 
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
     public void testSpeakerphoneIntent() throws Exception {
+        //  Speaker Phone Not supported in Automotive
+        if (isAutomotive()) {
+            return;
+        }
         final MyBlockingIntentReceiver receiver = new MyBlockingIntentReceiver(
                 AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED);
         final boolean initialSpeakerphoneState = mAudioManager.isSpeakerphoneOn();
@@ -464,6 +468,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
         assertTrueCheckTimeout(mAudioManager, p -> !p.isBluetoothScoOn(),
                 DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isBluetoothScoOn returned true");
 
+        //  Speaker Phone Not supported in Automotive
+        if (isAutomotive()) {
+            return;
+        }
         mAudioManager.setSpeakerphoneOn(true);
         assertTrueCheckTimeout(mAudioManager, p -> p.isSpeakerphoneOn(),
                 DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isSpeakerPhoneOn() returned false");
@@ -1992,34 +2000,38 @@ public class AudioManagerTest extends InstrumentationTestCase {
 
     public void testAssistantUidRouting() {
         try {
-            mAudioManager.addAssistantServicesUids(new ArrayList<>(0));
+            mAudioManager.addAssistantServicesUids(new int[0]);
             fail("addAssistantServicesUids must fail due to no permission");
         } catch (SecurityException e) {
         }
 
         try {
-            mAudioManager.removeAssistantServicesUids(new ArrayList<>(0));
+            mAudioManager.removeAssistantServicesUids(new int[0]);
             fail("removeAssistantServicesUids must fail due to no permission");
         } catch (SecurityException e) {
         }
 
         try {
-            List<Integer> uids = mAudioManager.getAssistantServicesUids();
+            int[] uids = mAudioManager.getAssistantServicesUids();
             fail("getAssistantServicesUids must fail due to no permission");
         } catch (SecurityException e) {
         }
 
         try {
-            mAudioManager.setActiveAssistantServiceUids(new ArrayList<>(0));
+            mAudioManager.setActiveAssistantServiceUids(new int[0]);
             fail("setActiveAssistantServiceUids must fail due to no permission");
         } catch (SecurityException e) {
         }
 
         try {
-            List<Integer> uids = mAudioManager.getActiveAssistantServicesUids();
+            int[] activeUids = mAudioManager.getActiveAssistantServicesUids();
             fail("getActiveAssistantServicesUids must fail due to no permission");
         } catch (SecurityException e) {
         }
+    }
+
+    public void testGetHalVersion() {
+        assertNotEquals(null, AudioManager.getHalVersion());
     }
 
     private void assertStreamVolumeEquals(int stream, int expectedVolume) throws Exception {
@@ -2087,6 +2099,11 @@ public class AudioManagerTest extends InstrumentationTestCase {
             Thread.sleep(REPEATED_CHECK_POLL_PERIOD_MS);
         }
         assertTrue(errorString, result);
+    }
+
+    private boolean isAutomotive() {
+        PackageManager pm = mContext.getPackageManager();
+        return pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
     // getParameters() & setParameters() are deprecated, so don't test

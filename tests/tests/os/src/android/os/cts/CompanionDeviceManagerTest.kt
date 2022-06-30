@@ -54,6 +54,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.Serializable
@@ -100,8 +101,6 @@ class CompanionDeviceManagerTest {
     @Before
     fun assumeHasFeature() {
         assumeTrue(hasFeatureCompanionDeviceSetup)
-        // TODO(b/191699828) test does not work in automotive due to accessibility issue
-        assumeFalse(isAuto)
     }
 
     @After
@@ -165,6 +164,7 @@ class CompanionDeviceManagerTest {
 
     @AppModeFull(reason = "Companion API for non-instant apps only")
     @Test
+    @Ignore("b/212535524")
     fun testRequestNotifications() {
         // Skip this test for Android TV due to NotificationAccessConfirmationActivity only exists
         // in Settings but not in TvSettings for Android TV devices (b/199224565).

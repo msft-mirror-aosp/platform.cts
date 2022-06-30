@@ -26,8 +26,9 @@ import static android.virtualdevice.cts.util.VirtualDeviceTestUtils.createActivi
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.TruthJUnit.assume;
 
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -43,6 +44,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -91,16 +93,22 @@ public class StreamedAppBehaviorTest {
     private Context mContext;
     @Mock
     private VirtualDisplay.Callback mVirtualDisplayCallback;
+    @Mock
+    private ActivityListener mActivityListener;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         mContext = getApplicationContext();
+        assumeTrue(
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
         mVirtualDeviceManager = mContext.getSystemService(VirtualDeviceManager.class);
         mVirtualDevice =
                 mVirtualDeviceManager.createVirtualDevice(
                         mFakeAssociationRule.getAssociationInfo().getId(),
                         DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        mVirtualDevice.addActivityListener(mContext.getMainExecutor(), mActivityListener);
         mVirtualDisplay = mVirtualDevice.createVirtualDisplay(
                 /* width= */ 100,
                 /* height= */ 100,
@@ -123,8 +131,6 @@ public class StreamedAppBehaviorTest {
 
     @Test
     public void appsInVirtualDevice_shouldNotHaveAccessToClipboard() {
-        ActivityListener activityListener = mock(ActivityListener.class);
-        mVirtualDevice.addActivityListener(activityListener);
         ClipboardManager clipboardManager = mContext.getSystemService(ClipboardManager.class);
         clipboardManager.setPrimaryClip(
                 new ClipData(
@@ -158,7 +164,7 @@ public class StreamedAppBehaviorTest {
         assertThat(resultData).isNotNull();
         ClipData appReadClipData = resultData.getParcelableExtra("readClip");
         assertThat(appReadClipData).isNull();
-        verify(activityListener, timeout(3000))
+        verify(mActivityListener, timeout(3000))
                 .onDisplayEmpty(eq(mVirtualDisplay.getDisplay().getDisplayId()));
         assertThat(clipboardManager.getPrimaryClip().getItemAt(0).getText().toString())
                 .isEqualTo("clipboard content from test");
@@ -168,7 +174,7 @@ public class StreamedAppBehaviorTest {
     public void appsInVirtualDevice_shouldNotHaveAccessToCamera() throws CameraAccessException {
         CameraManager manager = mContext.getSystemService(CameraManager.class);
         String[] cameras = manager.getCameraIdList();
-        assumeNotNull(cameras);
+        assume().that(cameras).isNotNull();
 
         for (String cameraId : cameras) {
             EmptyActivity activity =

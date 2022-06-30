@@ -58,6 +58,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -366,9 +367,18 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
     @Test
     public void testLaunchSecondaryHomeActivityOnDisplayWithDecorations() {
         createManagedHomeActivitySession(SECONDARY_HOME_ACTIVITY);
+        boolean useSystemProvidedLauncher = mContext.getResources().getBoolean(
+                Resources.getSystem().getIdentifier("config_useSystemProvidedLauncherForSecondary",
+                        "bool", "android"));
 
-        // Provided secondary home activity should be automatically launched on the new display.
-        assertSecondaryHomeResumedOnNewDisplay(SECONDARY_HOME_ACTIVITY);
+        if (useSystemProvidedLauncher) {
+            // Default secondary home activity should be automatically launched on the new display
+            // if forced by the config.
+            assertSecondaryHomeResumedOnNewDisplay(getDefaultSecondaryHomeComponent());
+        } else {
+            // Provided secondary home activity should be automatically launched on the new display.
+            assertSecondaryHomeResumedOnNewDisplay(SECONDARY_HOME_ACTIVITY);
+        }
     }
 
     private void assertSecondaryHomeResumedOnNewDisplay(ComponentName homeComponentName) {
@@ -742,6 +752,12 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         assumeTrue("Skip the test if the size of the created displays aren't identical",
                 firstDisplay.getDisplayRect().equals(secondDisplay.getDisplayRect()));
 
+        // Make firstDisplay the top focus display.
+        tapOnDisplayCenter(firstDisplay.mId);
+
+        mWmState.waitForWithAmState(state -> state.getFocusedDisplayId() == firstDisplay.mId,
+                "First display must be top focused.");
+
         // Initialize IME test environment
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeTestActivitySession =
@@ -751,8 +767,6 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         // display to the firstDisplay.
         ImeEventStream configChangeVerifyStream = clearOnConfigurationChangedFromStream(stream);
 
-        // Make firstDisplay the top focus display.
-        tapOnDisplayCenter(firstDisplay.mId);
         imeTestActivitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class,
                 firstDisplay.mId);
         imeTestActivitySession.runOnMainSyncAndWait(
@@ -915,15 +929,21 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
 
     private void assertImeWindowAndDisplayConfiguration(
             WindowState imeWinState, DisplayContent display) {
+        // The IME window should inherit the configuration from the IME DisplayArea.
+        final WindowManagerState.DisplayArea imeContainerDisplayArea = display.getImeContainer();
         final Configuration configurationForIme = imeWinState.mMergedOverrideConfiguration;
-        final Configuration configurationForDisplay =  display.mMergedOverrideConfiguration;
+        final Configuration configurationForImeContainer =
+                imeContainerDisplayArea.mMergedOverrideConfiguration;
         final int displayDensityDpiForIme = configurationForIme.densityDpi;
-        final int displayDensityDpi = configurationForDisplay.densityDpi;
+        final int displayDensityDpiForImeContainer = configurationForImeContainer.densityDpi;
         final Rect displayBoundsForIme = configurationForIme.windowConfiguration.getBounds();
-        final Rect displayBounds = configurationForDisplay.windowConfiguration.getBounds();
+        final Rect displayBoundsForImeContainer =
+                configurationForImeContainer.windowConfiguration.getBounds();
 
-        assertEquals("Display density not the same", displayDensityDpi, displayDensityDpiForIme);
-        assertEquals("Display bounds not the same", displayBounds, displayBoundsForIme);
+        assertEquals("Display density not the same",
+                displayDensityDpiForImeContainer, displayDensityDpiForIme);
+        assertEquals("Display bounds not the same",
+                displayBoundsForImeContainer, displayBoundsForIme);
     }
 
     private void tapAndAssertEditorFocusedOnImeActivity(

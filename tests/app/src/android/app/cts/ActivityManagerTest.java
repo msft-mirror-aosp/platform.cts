@@ -29,11 +29,12 @@ import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -72,6 +73,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Binder;
 import android.os.Bundle;
@@ -80,9 +82,14 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.NewUserRequest;
 import android.os.Parcel;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.UserHandle;
+import android.os.UserManager;
+import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
@@ -109,9 +116,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -156,9 +161,6 @@ public class ActivityManagerTest {
 
     private static final String MCC_TO_UPDATE = "987";
     private static final String MNC_TO_UPDATE = "654";
-    private static final String SHELL_COMMAND_GET_CONFIG = "am get-config";
-    private static final String SHELL_COMMAND_RESULT_CONFIG_NAME_MCC = "mcc";
-    private static final String SHELL_COMMAND_RESULT_CONFIG_NAME_MNC = "mnc";
 
     // Return states of the ActivityReceiverFilter.
     public static final int RESULT_PASS = 1;
@@ -722,48 +724,22 @@ public class ActivityManagerTest {
             return;
         }
 
-        // Store the original mcc mnc to set back
-        String[] mccMncConfigOriginal = new String[2];
-        // Store other configs to check they won't be affected
-        Set<String> otherConfigsOriginal = new HashSet<>();
-        getMccMncConfigsAndOthers(mccMncConfigOriginal, otherConfigsOriginal);
-
+        Configuration originalConfig = mTargetContext.getResources().getConfiguration();
         String[] mccMncConfigToUpdate = new String[] {MCC_TO_UPDATE, MNC_TO_UPDATE};
         boolean success = ShellIdentityUtils.invokeMethodWithShellPermissions(mActivityManager,
                 (am) -> am.updateMccMncConfiguration(mccMncConfigToUpdate[0],
                         mccMncConfigToUpdate[1]));
 
         if (success) {
-            String[] mccMncConfigUpdated = new String[2];
-            Set<String> otherConfigsUpdated = new HashSet<>();
-            getMccMncConfigsAndOthers(mccMncConfigUpdated, otherConfigsUpdated);
-            // Check the mcc mnc are updated as expected
-            assertArrayEquals(mccMncConfigToUpdate, mccMncConfigUpdated);
-            // Check other configs are not changed
-            assertEquals(otherConfigsOriginal, otherConfigsUpdated);
+            Configuration changedConfig = mTargetContext.getResources().getConfiguration();
+            assertEquals(MNC_TO_UPDATE, Integer.toString(changedConfig.mnc));
+            assertEquals(MCC_TO_UPDATE, Integer.toString(changedConfig.mcc));
         }
 
-        // Set mcc mnc configs back in the end of the test
+        // Set mcc mnc configs back in the end of the test if they were set to something else.
         ShellIdentityUtils.invokeMethodWithShellPermissions(mActivityManager,
-                (am) -> am.updateMccMncConfiguration(mccMncConfigOriginal[0],
-                        mccMncConfigOriginal[1]));
-    }
-
-    private void getMccMncConfigsAndOthers(String[] mccMncConfigs, Set<String> otherConfigs)
-            throws Exception {
-        String[] configs = SystemUtil.runShellCommand(
-                mInstrumentation, SHELL_COMMAND_GET_CONFIG).split(" |\\-");
-        for (String config : configs) {
-            if (config.startsWith(SHELL_COMMAND_RESULT_CONFIG_NAME_MCC)) {
-                mccMncConfigs[0] = config.substring(
-                        SHELL_COMMAND_RESULT_CONFIG_NAME_MCC.length());
-            } else if (config.startsWith(SHELL_COMMAND_RESULT_CONFIG_NAME_MNC)) {
-                mccMncConfigs[1] = config.substring(
-                        SHELL_COMMAND_RESULT_CONFIG_NAME_MNC.length());
-            } else {
-                otherConfigs.add(config);
-            }
-        }
+                (am) -> am.updateMccMncConfiguration(Integer.toString(originalConfig.mcc),
+                        Integer.toString(originalConfig.mnc)));
     }
 
     /**
@@ -1167,6 +1143,13 @@ public class ActivityManagerTest {
                     remote.pid, remoteProcessName)));
             assertFalse(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
                     proc.pid, SIMPLE_PACKAGE_NAME)));
+
+            if (isAtvDevice()) {
+                // On operator tier devices of AndroidTv, Activity is put behind TvLauncher
+                // after turnScreenOff by android.intent.category.HOME intent from
+                // TvRecommendation.
+                return;
+            }
 
             // force device idle
             toggleScreenOn(false);
@@ -1969,6 +1952,124 @@ public class ActivityManagerTest {
         }
     }
 
+    @Test
+    public void testGetUidProcessState_checkAccess() throws Exception {
+        boolean hasPermissionGrantChanged = false;
+        if (!PermissionUtils.isPermissionGranted(STUB_PACKAGE_NAME,
+                android.Manifest.permission.PACKAGE_USAGE_STATS)) {
+            PermissionUtils.grantPermission(
+                    STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
+            hasPermissionGrantChanged = true;
+        }
+        int newUserId = UserHandle.USER_NULL;
+        try {
+            // Verify that calling the API doesn't trigger any exceptions.
+            mActivityManager.getUidProcessState(Process.myUid());
+
+            assumeTrue(UserManager.supportsMultipleUsers());
+            newUserId = createNewUser();
+            assertNotEquals(UserHandle.USER_NULL, newUserId);
+            startUser(newUserId);
+            installExistingPackageAsUser(STUB_PACKAGE_NAME, newUserId);
+            final int uidFromNewUser = UserHandle.getUid(newUserId, Process.myUid());
+            // Verify that calling the API for a uid on a different user results in an exception.
+            assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessState(
+                    uidFromNewUser));
+
+            // Verify that calling the API with shell identity (which has
+            // INTERACT_ACROSS_USERS_FULL permission) for a uid on a different user works.
+            SystemUtil.runWithShellPermissionIdentity(() -> mActivityManager.getUidProcessState(
+                    uidFromNewUser));
+        } finally {
+            if (newUserId != UserHandle.USER_NULL) {
+                removeUser(newUserId);
+            }
+            if (hasPermissionGrantChanged) {
+                PermissionUtils.revokePermission(
+                        STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
+            }
+        }
+    }
+
+    @Test
+    public void testGetUidProcessCapabilities_checkAccess() throws Exception {
+        boolean hasPermissionGrantChanged = false;
+        if (!PermissionUtils.isPermissionGranted(STUB_PACKAGE_NAME,
+                android.Manifest.permission.PACKAGE_USAGE_STATS)) {
+            PermissionUtils.grantPermission(
+                    STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
+            hasPermissionGrantChanged = true;
+        }
+        int newUserId = UserHandle.USER_NULL;
+        try {
+            // Verify that calling the API doesn't trigger any exceptions.
+            mActivityManager.getUidProcessCapabilities(Process.myUid());
+
+            assumeTrue(UserManager.supportsMultipleUsers());
+            newUserId = createNewUser();
+            assertNotEquals(UserHandle.USER_NULL, newUserId);
+            startUser(newUserId);
+            installExistingPackageAsUser(STUB_PACKAGE_NAME, newUserId);
+            final int uidFromNewUser = UserHandle.getUid(newUserId, Process.myUid());
+            // Verify that calling the API for a uid on a different user results in an exception.
+            assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessState(
+                    uidFromNewUser));
+
+            // Verify that calling the API with shell identity (which has
+            // INTERACT_ACROSS_USERS_FULL permission) for a uid on a different user works.
+            SystemUtil.runWithShellPermissionIdentity(() -> mActivityManager.getUidProcessState(
+                    uidFromNewUser));
+        } finally {
+            if (newUserId != UserHandle.USER_NULL) {
+                removeUser(newUserId);
+            }
+            if (hasPermissionGrantChanged) {
+                PermissionUtils.revokePermission(
+                        STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
+            }
+        }
+    }
+
+    private int createNewUser() throws Exception {
+        final UserManager userManager = mTargetContext.getSystemService(UserManager.class);
+        return SystemUtil.runWithShellPermissionIdentity(() -> {
+            final NewUserRequest newUserRequest = new NewUserRequest.Builder()
+                    .setName("test_user")
+                    .setUserType(UserManager.USER_TYPE_FULL_SECONDARY)
+                    .build();
+            final UserHandle newUser = userManager.createUser(newUserRequest)
+                    .getUser();
+            return newUser == null ? UserHandle.USER_NULL : newUser.getIdentifier();
+        });
+    }
+
+    private void startUser(int userId) throws Exception {
+        final String cmd = "cmd activity start-user -w " + userId;
+        final String output = executeShellCommand(cmd);
+        if (output.startsWith("Error")) {
+            fail("Error starting the new user u" + userId + ": " + output);
+        }
+        final String state = executeShellCommand("am get-started-user-state " + userId);
+        if (!state.contains("RUNNING_UNLOCKED")) {
+            fail("Unexpected state for the new user u" + userId + ": " + state);
+        }
+    }
+
+    private void removeUser(int userId) throws Exception {
+        final String cmd = "cmd package remove-user " + userId;
+        final String output = executeShellCommand(cmd);
+        if (output.startsWith("Error")) {
+            fail("Error removing the user u" + userId + ": " + output);
+        }
+    }
+
+    private void installExistingPackageAsUser(String packageName, int userId)
+            throws Exception {
+        final String cmd = String.format("cmd package install-existing --user %d --wait %s",
+                userId, packageName);
+        executeShellCommand(cmd);
+    }
+
     private int[] getLruPositions(String[] packageNames) throws Exception {
         final List<String> lru = getCachedAppsLru();
         assertTrue("Failed to get cached app list", lru.size() > 0);
@@ -2192,5 +2293,11 @@ public class ActivityManagerTest {
             return new ComponentName(resolveInfo.activityInfo.packageName,
                     resolveInfo.activityInfo.name);
         }
+    }
+
+    private boolean isAtvDevice() {
+        final Context context = mInstrumentation.getTargetContext();
+        return context.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_TELEVISION);
     }
 }

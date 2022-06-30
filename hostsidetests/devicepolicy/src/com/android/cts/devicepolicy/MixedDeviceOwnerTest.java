@@ -35,10 +35,9 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
+import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,9 +45,6 @@ import java.util.Map;
  * Tests that should be run identically in both cases are added in DeviceAndProfileOwnerTest.
  */
 public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
-
-    private static final String DELEGATION_NETWORK_LOGGING = "delegation-network-logging";
-    private static final String LOG_TAG_DEVICE_OWNER = "device-owner";
 
     private static final String ARG_SECURITY_LOGGING_BATCH_NUMBER = "batchNumber";
     private static final int SECURITY_EVENTS_BATCH_SIZE = 100;
@@ -88,6 +84,16 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         super.tearDown();
     }
 
+    @Override
+    protected void installAppPermissionAppAsUser()
+            throws FileNotFoundException, DeviceNotAvailableException {
+        super.installAppPermissionAppAsUser();
+
+        if (isHeadlessSystemUserMode()) {
+            installAppPermissionAppAsUser(mDeviceOwnerUserId);
+        }
+    }
+
     @Test
     public void testLockTask_unaffiliatedUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
@@ -105,14 +111,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
                 ".AffiliationTest",
                 "testSetLockTaskPackagesClearedIfUserBecomesUnaffiliated",
                 userId);
-    }
-
-    @Override
-    @Test
-    @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "218408549",
-            reason = "Will be migrated to new test infra")
-    public void testDelegation() throws Exception {
-        super.testDelegation();
     }
 
     @Override
@@ -185,38 +183,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
                 .build());
 
         executeDeviceTestMethod(".TimeManagementTest", "testSetTimeZone_failIfAutoTimeZoneEnabled");
-    }
-
-    Map<String, DevicePolicyEventWrapper[]> getAdditionalDelegationTests() {
-        final Map<String, DevicePolicyEventWrapper[]> result = new HashMap<>();
-        DevicePolicyEventWrapper[] expectedMetrics = new DevicePolicyEventWrapper[] {
-                new DevicePolicyEventWrapper.Builder(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                        .setAdminPackageName(DELEGATE_APP_PKG)
-                        .setBoolean(true)
-                        .setInt(1)
-                        .setStrings(LOG_TAG_DEVICE_OWNER)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_NETWORK_LOGS_VALUE)
-                        .setAdminPackageName(DELEGATE_APP_PKG)
-                        .setBoolean(true)
-                        .setStrings(LOG_TAG_DEVICE_OWNER)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                        .setAdminPackageName(DELEGATE_APP_PKG)
-                        .setBoolean(true)
-                        .setInt(0)
-                        .setStrings(LOG_TAG_DEVICE_OWNER)
-                        .build(),
-        };
-        result.put(".NetworkLoggingDelegateTest", expectedMetrics);
-        return result;
-    }
-
-    @Override
-    List<String> getAdditionalDelegationScopes() {
-        final List<String> result = new ArrayList<>();
-        result.add(DELEGATION_NETWORK_LOGGING);
-        return result;
     }
 
     @Test
@@ -296,6 +262,10 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         executeDeviceTestMethodOnDeviceOwnerUser(".systemupdate.InstallUpdateTest", testName);
     }
 
+    // This test sometimes fail on headless system user mode because the DO app doesn't have
+    // INTERACT_ACROSS_USERS to use DpmWrapper - given that it will be refactored to use the new
+    // test infra, it's not worth to figure out why...
+    @FlakyTest(bugId = 137088260)
     @Test
     public void testSecurityLoggingWithSingleUser() throws Exception {
         // Backup stay awake setting because testGenerateLogs() will turn it off.
@@ -452,6 +422,15 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     public void testPermissionPrompts() throws Exception {
     }
 
+
+    @Override
+    @LargeTest
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't have UI")
+    public void testPackageInstallUserRestrictions() throws Exception {
+        super.testPackageInstallUserRestrictions();
+    }
+
     @Override
     @Test
     @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
@@ -506,6 +485,42 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't have UI / credentials")
     public void testSetKeyguardDisabledFeatures() throws Exception {
         super.testSetKeyguardDisabledFeatures();
+    }
+
+    @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
+    public void testPermissionAppUpdate() throws Exception {
+        super.testPermissionAppUpdate();
+    }
+
+    @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
+    public void testPermissionMixedPolicies() throws Exception {
+        super.testPermissionMixedPolicies();
+    }
+
+    @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
+    public void testPermissionPolicy() throws Exception {
+        super.testPermissionPolicy();
+    }
+
+    @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
+    public void testAutoGrantMultiplePermissionsInGroup() throws Exception {
+        super.testAutoGrantMultiplePermissionsInGroup();
+    }
+
+    @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
+    public void testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted()
+            throws Exception {
+        super.testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted();
     }
 
     @Override

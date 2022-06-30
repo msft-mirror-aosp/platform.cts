@@ -29,6 +29,7 @@ import static android.server.wm.StateLogger.logE;
 import static android.server.wm.TestTaskOrganizer.INVALID_TASK_ID;
 import static android.util.DisplayMetrics.DENSITY_DEFAULT;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.window.DisplayAreaOrganizer.FEATURE_IME;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -152,6 +153,7 @@ public class WindowManagerState {
     private String mInputMethodWindowAppToken = null;
     private boolean mDisplayFrozen;
     private boolean mSanityCheckFocusedWindow = true;
+    private boolean mWindowFramesValid;
 
     static String appStateToString(int appState) {
         switch (appState) {
@@ -322,6 +324,7 @@ public class WindowManagerState {
 
             retry = mRootTasks.isEmpty() || mTopFocusedTaskId == -1 || mWindowStates.isEmpty()
                     || mFocusedApp == null || (mSanityCheckFocusedWindow && mFocusedWindow == null)
+                    || !mWindowFramesValid
                     || (mTopResumedActivityRecord == null
                     || mResumedActivitiesInRootTasks.isEmpty())
                     && !mKeyguardControllerState.keyguardShowing;
@@ -347,6 +350,9 @@ public class WindowManagerState {
         }
         if (mFocusedApp == null) {
             logE("No Focused App...");
+        }
+        if (!mWindowFramesValid) {
+            logE("Window Frames Invalid...");
         }
     }
 
@@ -431,6 +437,7 @@ public class WindowManagerState {
             mInputMethodWindowAppToken = Integer.toHexString(state.inputMethodWindow.hashCode);
         }
         mDisplayFrozen = state.displayFrozen;
+        mWindowFramesValid = state.windowFramesValid;
     }
 
     private void reset() {
@@ -452,6 +459,7 @@ public class WindowManagerState {
         mPinnedStackMovementBounds.setEmpty();
         mInputMethodWindowAppToken = null;
         mDisplayFrozen = false;
+        mWindowFramesValid = false;
     }
 
     public String getFocusedApp() {
@@ -507,6 +515,15 @@ public class WindowManagerState {
                 .that(result.size()).isAtMost(1);
 
         return result.stream().findFirst().orElse(null);
+    }
+
+    @Nullable
+    public DisplayArea getImeContainer(int displayId) {
+        final DisplayContent displayContent = getDisplay(displayId);
+        if (displayContent == null) {
+            return null;
+        }
+        return displayContent.getImeContainer();
     }
 
     int getFrontRootTaskId(int displayId) {
@@ -1262,6 +1279,18 @@ public class WindowManagerState {
             return result.stream().findFirst().orElse(null);
         }
 
+        @NonNull
+        DisplayArea getImeContainer() {
+            final List<DisplayArea> imeContainers = new ArrayList<>();
+            final Predicate<DisplayArea> p = da -> da.getFeatureId() == FEATURE_IME;
+            collectDescendantsOfTypeIf(DisplayArea.class, p, this, imeContainers);
+
+            assertWithMessage("There must be exactly one ImeContainer per DisplayContent.")
+                    .that(imeContainers.size()).isEqualTo(1);
+
+            return imeContainers.get(0);
+        }
+
         ArrayList<Task> getRootTasks() {
             return mRootTasks;
         }
@@ -1541,6 +1570,17 @@ public class WindowManagerState {
             return getActivity(activityName) != null;
         }
 
+        public int getActivityCount() {
+            int count = mActivities.size();
+            for (TaskFragment taskFragment : mTaskFragments) {
+                count += taskFragment.getActivityCount();
+            }
+            for (Task task : mTasks) {
+                count += task.getActivityCount();
+            }
+            return count;
+        }
+
         @Override
         int getActivityType() {
             return mTaskType;
@@ -1602,6 +1642,17 @@ public class WindowManagerState {
             return null;
         }
 
+        public int getActivityCount() {
+            int count = mActivities.size();
+            for (TaskFragment taskFragment : mTaskFragments) {
+                count += taskFragment.getActivityCount();
+            }
+            for (Task task : mTasks) {
+                count += task.getActivityCount();
+            }
+            return count;
+        }
+
         @Override
         int getActivityType() {
             return mTaskFragmentType;
@@ -1621,6 +1672,7 @@ public class WindowManagerState {
         public boolean translucent;
         private WindowContainer mParent;
         private boolean mEnableRecentsScreenshot;
+        private int mLastDropInputMode;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
@@ -1636,6 +1688,7 @@ public class WindowManagerState {
             }
             translucent = proto.translucent;
             mEnableRecentsScreenshot = proto.enableRecentsScreenshot;
+            mLastDropInputMode = proto.lastDropInputMode;
             mParent = parent;
         }
 
@@ -1677,6 +1730,10 @@ public class WindowManagerState {
 
         public boolean enableRecentsScreenshot() {
             return mEnableRecentsScreenshot;
+        }
+
+        public int getLastDropInputMode() {
+            return mLastDropInputMode;
         }
 
         @Override
@@ -1822,7 +1879,7 @@ public class WindowManagerState {
             return mFeatureId;
         }
 
-        boolean isOrganized() {
+        public boolean isOrganized() {
             return mIsOrganized;
         }
 
@@ -1992,6 +2049,7 @@ public class WindowManagerState {
         private int mRequestedWidth;
         private int mRequestedHeight;
         private List<Rect> mKeepClearRects;
+        private List<Rect> mUnrestrictedKeepClearRects;
 
         WindowState(WindowStateProto proto) {
             super(proto.windowContainer);
@@ -2037,6 +2095,10 @@ public class WindowManagerState {
             mKeepClearRects = new ArrayList();
             for (RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
+            }
+            mUnrestrictedKeepClearRects = new ArrayList();
+            for (RectProto r : proto.unrestrictedKeepClearAreas) {
+                mUnrestrictedKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
         }
 
@@ -2110,6 +2172,10 @@ public class WindowManagerState {
 
         public List<Rect> getKeepClearRects() {
             return mKeepClearRects;
+        }
+
+        public List<Rect> getUnrestrictedKeepClearRects() {
+            return mUnrestrictedKeepClearRects;
         }
 
         private String getWindowTypeSuffix(int windowType) {

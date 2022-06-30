@@ -27,7 +27,6 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSap;
 import android.content.pm.PackageManager;
-import android.sysprop.BluetoothProperties;
 import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
@@ -39,13 +38,13 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BluetoothSapTest extends AndroidTestCase {
-    private static final String TAG = BluetoothLeAudioTest.class.getSimpleName();
+    private static final String TAG = BluetoothSapTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
 
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;;
+    private UiAutomation mUiAutomation;
 
     private BluetoothSap mBluetoothSap;
     private boolean mIsProfileReady;
@@ -62,7 +61,7 @@ public class BluetoothSapTest extends AndroidTestCase {
 
         if (!mHasBluetooth) return;
 
-        mIsSapSupported = BluetoothProperties.isProfileSapServerEnabled().orElse(false);
+        mIsSapSupported = TestUtils.isProfileEnabled(BluetoothProfile.SAP);
         if (!mIsSapSupported) return;
 
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -72,7 +71,7 @@ public class BluetoothSapTest extends AndroidTestCase {
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
         mProfileConnectedlock = new ReentrantLock();
-        mConditionProfileIsConnected  = mProfileConnectedlock.newCondition();
+        mConditionProfileIsConnected = mProfileConnectedlock.newCondition();
         mIsProfileReady = false;
         mBluetoothSap = null;
 
@@ -85,13 +84,14 @@ public class BluetoothSapTest extends AndroidTestCase {
         super.tearDown();
         if (mHasBluetooth && mIsSapSupported) {
             if (mAdapter != null && mBluetoothSap != null) {
-                mAdapter.closeProfileProxy(BluetoothProfile.SAP, mBluetoothSap);
-                // mBluetoothSap.close();
+                mBluetoothSap.close();
                 mBluetoothSap = null;
                 mIsProfileReady = false;
             }
             mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+            if (mAdapter != null) {
+                assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+            }
             mUiAutomation.dropShellPermissionIdentity();
             mAdapter = null;
         }
@@ -139,7 +139,8 @@ public class BluetoothSapTest extends AndroidTestCase {
                 BluetoothProfile.STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mBluetoothSap.getConnectionState(testDevice));
+        assertEquals(mBluetoothSap.getConnectionState(testDevice),
+                BluetoothProfile.STATE_DISCONNECTED);
     }
 
     @MediumTest
@@ -155,7 +156,7 @@ public class BluetoothSapTest extends AndroidTestCase {
         mUiAutomation.dropShellPermissionIdentity();
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertThrows(SecurityException.class, () -> mBluetoothSap.setConnectionPolicy(testDevice,
-                    BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
         assertThrows(SecurityException.class, () -> mBluetoothSap.getConnectionPolicy(testDevice));
     }
 

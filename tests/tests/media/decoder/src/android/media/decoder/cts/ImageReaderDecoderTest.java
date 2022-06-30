@@ -32,6 +32,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.CodecUtils;
 import android.media.cts.Preconditions;
+import android.media.cts.TestArgs;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
@@ -39,6 +40,7 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 
 import android.util.Log;
+import android.util.Pair;
 import android.view.Surface;
 
 import androidx.test.filters.SmallTest;
@@ -64,6 +66,7 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -111,6 +114,7 @@ public class ImageReaderDecoderTest {
     public String mCodecName;
     public MediaAsset mMediaAsset;
     public int mMode;
+    public String mTestId;
     MediaCodec mDecoder = null;
     MediaExtractor mExtractor = null;
 
@@ -120,6 +124,7 @@ public class ImageReaderDecoderTest {
         mCodecName = codecName;
         mMediaAsset = asset;
         mMode = mode;
+        mTestId = testId;
     }
 
     @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
@@ -127,8 +132,14 @@ public class ImageReaderDecoderTest {
         final List<Object[]> argsList = new ArrayList<>();
         for (MediaAssets assets : ASSETS) {
             String mime = assets.getMime();
+            if (TestArgs.shouldSkipMediaType(mime)) {
+                continue;
+            }
             String[] decoders = MediaUtils.getDecoderNamesForMime(mime);
             for (String decoder: decoders) {
+                if (TestArgs.shouldSkipCodec(decoder)) {
+                    continue;
+                }
                 for (MediaAsset asset : assets.getAssets()) {
                     String id = asset.getWidth() + "x" + asset.getHeight();
                     id += "_" + asset.getBitDepth() + "bit";
@@ -379,16 +390,23 @@ public class ImageReaderDecoderTest {
     }
 
     private static class ImageListener implements ImageReader.OnImageAvailableListener {
-        private final LinkedBlockingQueue<Image> mQueue =
-                new LinkedBlockingQueue<Image>();
+        private final LinkedBlockingQueue<Pair<Image, Exception>> mQueue =
+                new LinkedBlockingQueue<Pair<Image, Exception>>();
 
         @Override
         public void onImageAvailable(ImageReader reader) {
             try {
-                mQueue.put(reader.acquireNextImage());
-            } catch (InterruptedException e) {
-                throw new UnsupportedOperationException(
-                        "Can't handle InterruptedException in onImageAvailable");
+                mQueue.put(Pair.create(reader.acquireNextImage(), null /* Exception */));
+            } catch (Exception e) {
+                // pass any exception back to the other thread, taking the exception
+                // here crashes the instrumentation in cts/junit.
+                Log.e(TAG, "Can't handle Exceptions in onImageAvailable " + e);
+                try {
+                    mQueue.put(Pair.create(null /* Image */, e));
+                } catch (Exception e2) {
+                    // ignore the nested exception, other side will see a timeout.
+                    Log.e(TAG, "Failed to send exception info across queue: " + e2);
+                }
             }
         }
 
@@ -399,7 +417,11 @@ public class ImageReaderDecoderTest {
          * @return The image from the image reader.
          */
         public Image getImage(long timeout) throws InterruptedException {
-            Image image = mQueue.poll(timeout, TimeUnit.MILLISECONDS);
+            Pair<Image,Exception> imageResult = mQueue.poll(timeout, TimeUnit.MILLISECONDS);
+            Image image = imageResult.first;
+            Exception e = imageResult.second;
+
+            assertNull("onImageAvailable() generated an exception: " + e, e);
             assertNotNull("Wait for an image timed out in " + timeout + "ms", image);
             return image;
         }
@@ -500,9 +522,7 @@ public class ImageReaderDecoderTest {
 
                 if (doRender) {
                     outputFrameCount++;
-                    String fileName = DEBUG_FILE_NAME_BASE + MediaUtils.getTestName()
-                            + (mode == MODE_IMAGE ? "_image_" : "_reader_")
-                            + width + "x" + height + "_" + outputFrameCount + ".yuv";
+                    String fileName = DEBUG_FILE_NAME_BASE + mCodecName + "_" + mTestId + ".yuv";
 
                     Image image = null;
                     try {
@@ -582,15 +602,6 @@ public class ImageReaderDecoderTest {
         int[][] colors = new int[][] {
             { 111, 96, 204 }, { 178, 27, 174 }, { 100, 192, 92 }, { 106, 117, 62 }
         };
-
-        // For P010 multiply expected colors by 4 to account for bit-depth 10
-        if (image.getFormat() == ImageFormat.YCBCR_P010) {
-            for (int i = 0; i < colors.length; i++) {
-                for (int j = 0; j < colors[0].length; j++) {
-                    colors[i][j] = colors[i][j] << 2;
-                }
-            }
-        }
 
         // successively accumulate statistics for each layer of the swirl
         // by using overlapping rectangles, and the observation that

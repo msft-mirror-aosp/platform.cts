@@ -31,7 +31,8 @@ import static android.server.wm.app.Components.ALIAS_TEST_ACTIVITY;
 import static android.server.wm.app.Components.NO_HISTORY_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.server.wm.lifecycle.LifecycleLog.ActivityCallback.ON_STOP;
+import static android.server.wm.lifecycle.LifecycleConstants.ON_STOP;
+import static android.server.wm.lifecycle.LifecycleConstants.getComponentName;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -97,7 +98,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Navigate home
         launchHomeActivity();
         waitAndAssertActivityStates(state(FirstActivity.class, ON_STOP));
-        getLifecycleLog().clear();
+        getTransitionLog().clear();
 
         // Start activity again with flags in question. Verify activity is resumed.
         // A new instance of activity will be created, and the old one destroyed.

@@ -32,16 +32,16 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.AudioCapabilities;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.CodecProfileLevel;
+import android.media.MediaCodecInfo.EncoderCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaCodecList;
-import android.media.MediaCrypto;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.cts.AudioHelper;
 import android.media.cts.InputSurface;
 import android.media.cts.OutputSurface;
 import android.media.cts.Preconditions;
 import android.media.cts.StreamUtils;
+import android.media.cts.TestUtils;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.os.ConditionVariable;
@@ -63,14 +63,11 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.MediaUtils;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -2427,6 +2424,11 @@ public class MediaCodecTest extends AndroidTestCase {
                 continue;
             }
             MediaCodec codec = null;
+            if (!TestUtils.isTestableCodecInCurrentMode(info.getName())) {
+                Log.d(TAG, "skip testing codec " + info.getName() + " in current mode:"
+                                + (TestUtils.isMtsMode() ? " MTS" : " CTS"));
+                continue;
+            }
             try {
                 codec = MediaCodec.createByCodecName(info.getName());
                 List<String> vendorParams = codec.getSupportedVendorParameters();
@@ -2467,12 +2469,48 @@ public class MediaCodecTest extends AndroidTestCase {
                     int height = videoCaps.getSupportedHeightsFor(width).getLower();
                     format = MediaFormat.createVideoFormat(type, width, height);
                     if (info.isEncoder()) {
-                        format.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
+                        EncoderCapabilities encCaps = caps.getEncoderCapabilities();
+                        if (encCaps != null) {
+                            int bitrateMode = -1;
+                            List<Integer> candidates = Arrays.asList(
+                                    EncoderCapabilities.BITRATE_MODE_VBR,
+                                    EncoderCapabilities.BITRATE_MODE_CBR,
+                                    EncoderCapabilities.BITRATE_MODE_CQ,
+                                    EncoderCapabilities.BITRATE_MODE_CBR_FD);
+                            for (int candidate : candidates) {
+                                if (encCaps.isBitrateModeSupported(candidate)) {
+                                    bitrateMode = candidate;
+                                    break;
+                                }
+                            }
+                            if (VERBOSE) {
+                                Log.d(TAG, "video encoder: bitrate mode = " + bitrateMode);
+                            }
+                            format.setInteger(MediaFormat.KEY_BITRATE_MODE, bitrateMode);
+                            switch (bitrateMode) {
+                            case EncoderCapabilities.BITRATE_MODE_VBR:
+                            case EncoderCapabilities.BITRATE_MODE_CBR:
+                            case EncoderCapabilities.BITRATE_MODE_CBR_FD:
+                                format.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
+                                break;
+                            case EncoderCapabilities.BITRATE_MODE_CQ:
+                                format.setInteger(
+                                        MediaFormat.KEY_QUALITY,
+                                        encCaps.getQualityRange().getLower());
+                                if (VERBOSE) {
+                                    Log.d(TAG, "video encoder: quality = " +
+                                            encCaps.getQualityRange().getLower());
+                                }
+                                break;
+                            default:
+                                format.removeKey(MediaFormat.KEY_BITRATE_MODE);
+                            }
+                        }
                         format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
                         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
                         format.setInteger(
                                 MediaFormat.KEY_COLOR_FORMAT,
-                                CodecCapabilities.COLOR_FormatYUV420Flexible);
+                                CodecCapabilities.COLOR_FormatSurface);
                     }
                 } else {
                     Log.i(TAG, info.getName() + " is in neither audio nor video domain; skipped");
@@ -2482,6 +2520,10 @@ public class MediaCodecTest extends AndroidTestCase {
                 codec.configure(
                         format, null, null,
                         info.isEncoder() ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0);
+                Surface inputSurface = null;
+                if (videoCaps != null && info.isEncoder()) {
+                    inputSurface = codec.createInputSurface();
+                }
                 codec.start();
                 codec.unsubscribeFromVendorParameters(vendorParams);
                 codec.stop();

@@ -24,7 +24,7 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.REGEX_PACKAGE_NAME
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findPreviewAddButton;
-import static android.provider.CloudMediaProvider.CloudMediaSurfaceEventCallback.PLAYBACK_EVENT_READY;
+import static android.provider.CloudMediaProvider.CloudMediaSurfaceStateChangedCallback.PLAYBACK_STATE_READY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -48,12 +48,14 @@ import androidx.test.uiautomator.UiSelector;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -94,7 +96,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
 
         setCloudProvider(mContext, CloudProviderPrimary.AUTHORITY);
         assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
-                        CloudProviderPrimary.AUTHORITY)).isTrue();
+                CloudProviderPrimary.AUTHORITY)).isTrue();
 
         mSurfaceControllerListener = CloudProviderPrimary.getMockSurfaceControllerListener();
         mAssertInOrder = Mockito.inOrder(mSurfaceControllerListener);
@@ -111,16 +113,17 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Re-enable once b/223224727 is fixed")
     public void testBasicVideoPreview() throws Exception {
-        initCloudProviderWithVideo(Pair.create(null, CLOUD_ID1));
+        initCloudProviderWithVideo(Arrays.asList(Pair.create(null, CLOUD_ID1)));
 
         launchPreviewMultiple(/* count */ 1);
 
         final int surfaceId = 0;
         verifyInitialVideoPreviewSetup(surfaceId, CLOUD_ID1);
-        // Remote Preview calls onMediaPlay when PLAYBACK_EVENT_READY is sent by the
+        // Remote Preview calls onMediaPlay when PLAYBACK_STATE_READY is sent by the
         // CloudMediaProvider
-        verifyPlaybackEventReady(surfaceId);
+        verifyPlaybackStartedWhenPlayerReady(surfaceId);
 
         // TODO(b/215187981): Add test for onMediaPause()
 
@@ -143,23 +146,24 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Re-enable once b/223224727 is fixed")
     public void testSwipeAdjacentVideoPreview() throws Exception {
-        initCloudProviderWithVideo(Pair.create(null, CLOUD_ID1), Pair.create(null, CLOUD_ID2));
+        initCloudProviderWithVideo(
+                Arrays.asList(Pair.create(null, CLOUD_ID1), Pair.create(null, CLOUD_ID2)));
 
         launchPreviewMultiple(/* count */ 2);
 
         final int surfaceIdForFirstVideoPreview = 0;
         verifyInitialVideoPreviewSetup(surfaceIdForFirstVideoPreview, CLOUD_ID2);
-        // Remote Preview calls onMediaPlay when PLAYBACK_EVENT_READY is sent by the
+        // Remote Preview calls onMediaPlay when PLAYBACK_STATE_READY is sent by the
         // CloudMediaProvider
-        verifyPlaybackEventReady(surfaceIdForFirstVideoPreview);
+        verifyPlaybackStartedWhenPlayerReady(surfaceIdForFirstVideoPreview);
 
         // Swipe left preview mode
         swipeLeftAndWait();
 
         // Remote Preview calls onSurfaceCreated with monotonically increasing surfaceIds
         final int surfaceIdForSecondVideoPreview = 1;
-
         verifyAdjacentVideoSwipe(surfaceIdForFirstVideoPreview, surfaceIdForSecondVideoPreview,
                 CLOUD_ID1);
 
@@ -178,17 +182,18 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Re-enable once b/223224727 is fixed")
     public void testSwipeImageVideoPreview() throws Exception {
-        initCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
-        initCloudProviderWithVideo(Pair.create(null, CLOUD_ID2));
+        initCloudProviderWithImage(Arrays.asList(Pair.create(null, CLOUD_ID1)));
+        initCloudProviderWithVideo(Arrays.asList(Pair.create(null, CLOUD_ID2)));
         launchPreviewMultiple(/* count */ 2);
 
         // Remote Preview calls onSurfaceCreated with monotonically increasing surfaceIds
         int surfaceId = 0;
         verifyInitialVideoPreviewSetup(surfaceId, CLOUD_ID2);
-        // Remote Preview calls onMediaPlay when PLAYBACK_EVENT_READY is sent by the
+        // Remote Preview calls onMediaPlay when PLAYBACK_STATE_READY is sent by the
         // CloudMediaProvider
-        verifyPlaybackEventReady(surfaceId);
+        verifyPlaybackStartedWhenPlayerReady(surfaceId);
 
         // Swipe left preview mode
         swipeLeftAndWait();
@@ -206,10 +211,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         surfaceId++;
         verifyInitialVideoPreviewSetup(surfaceId, CLOUD_ID2);
 
-        // TODO (b/218871686): Remote Handler should wait for PLAYBACK_EVENT_READY to be sent.
-        // Once the above bug is fixed remove the following and call
-        // verifyPlaybackEventReady(surfaceId) instead
-        mAssertInOrder.verify(mSurfaceControllerListener).onMediaPlay(eq(surfaceId));
+        verifyPlaybackStartedWhenPlayerReady(surfaceId);
 
         final UiObject addButton = findPreviewAddButton();
         addButton.click();
@@ -223,9 +225,10 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
      *
      * @param oldSurfaceId the Surface ID which we are swiping away from
      * @param newSurfaceId the Surface ID to which we are swiping
-     * @param newMediaId the media ID of the video we are swiping to
+     * @param newMediaId   the media ID of the video we are swiping to
      */
-    private void verifyAdjacentVideoSwipe(int oldSurfaceId, int newSurfaceId, String newMediaId) {
+    private void verifyAdjacentVideoSwipe(int oldSurfaceId, int newSurfaceId, String newMediaId)
+            throws Exception {
         mAssertInOrder.verify(mSurfaceControllerListener).onSurfaceCreated(eq(newSurfaceId),
                 any(), eq(newMediaId));
 
@@ -233,10 +236,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         // (swipe is complete).
         mAssertInOrder.verify(mSurfaceControllerListener).onSurfaceDestroyed(eq(oldSurfaceId));
 
-        // Media plays automatically after the previous surface is destroyed (in other words the
-        // previous video screen is not visible at all and the swipe has completed). This is because
-        // the player is already ready.
-        mAssertInOrder.verify(mSurfaceControllerListener).onMediaPlay(eq(newSurfaceId));
+        verifyPlaybackStartedWhenPlayerReady(newSurfaceId);
     }
 
     /**
@@ -246,7 +246,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
      * * Surface related callbacks (onSurfaceCreated and onSurfaceChanged)
      *
      * @param surfaceId Surface ID to set up video preview on
-     * @param mediaId Media ID to set up video preview with
+     * @param mediaId   Media ID to set up video preview with
      */
     private void verifyInitialVideoPreviewSetup(int surfaceId, String mediaId) {
         // Remote Preview calls onPlayerCreate as the first call to CloudMediaProvider
@@ -262,14 +262,16 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
                 eq(VIDEO_PIXEL_FORMAT), anyInt(), anyInt());
     }
 
-    private void verifyPlaybackEventReady(int surfaceId) {
-        CloudProviderPrimary.sendPlaybackEvent(surfaceId, PLAYBACK_EVENT_READY);
+    private void verifyPlaybackStartedWhenPlayerReady(int surfaceId) throws Exception {
+        CloudProviderPrimary.setPlaybackState(surfaceId, PLAYBACK_STATE_READY);
+        // Wait for photo picker to receive the event and invoke media play via binder calls.
+        MediaStore.waitForIdle(mContext.getContentResolver());
         mAssertInOrder.verify(mSurfaceControllerListener).onMediaPlay(eq(surfaceId));
     }
 
-    private void initCloudProviderWithImage(Pair<String, String>... mediaPairs)
+    private void initCloudProviderWithImage(List<Pair<String, String>> mediaPairs)
             throws Exception {
-        for (Pair<String, String> pair: mediaPairs) {
+        for (Pair<String, String> pair : mediaPairs) {
             addImage(mCloudPrimaryMediaGenerator, pair.first, pair.second);
         }
 
@@ -283,9 +285,9 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
                 R.raw.lg_g4_iso_800_jpg);
     }
 
-    private void initCloudProviderWithVideo(Pair<String, String>... mediaPairs)
+    private void initCloudProviderWithVideo(List<Pair<String, String>> mediaPairs)
             throws Exception {
-        for (Pair<String, String> pair: mediaPairs) {
+        for (Pair<String, String> pair : mediaPairs) {
             addVideo(mCloudPrimaryMediaGenerator, pair.first, pair.second);
         }
 
@@ -299,10 +301,9 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
                 R.raw.test_video);
     }
 
-    private void launchPreviewMultiple(int count) throws  Exception {
+    private void launchPreviewMultiple(int count) throws Exception {
         final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
-        // TODO(b/205291616): Replace 100 with MediaStore.getPickImagesMaxLimit()
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 100);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         final List<UiObject> itemList = findItemList(count);
@@ -310,8 +311,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
 
         assertThat(itemCount).isEqualTo(count);
 
-        for (int i = 0; i < itemCount; i++) {
-            final UiObject item = itemList.get(i);
+        for (final UiObject item : itemList) {
             item.click();
             mDevice.waitForIdle();
         }
@@ -319,6 +319,9 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         final UiObject viewSelectedButton = findViewSelectedButton();
         viewSelectedButton.click();
         mDevice.waitForIdle();
+
+        // Wait for CloudMediaProvider binder calls to finish.
+        MediaStore.waitForIdle(mContext.getContentResolver());
     }
 
     private static UiObject findViewSelectedButton() {
@@ -326,17 +329,23 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
                 REGEX_PACKAGE_NAME + ":id/button_view_selected"));
     }
 
-    private void swipeLeftAndWait() {
+    private void swipeLeftAndWait() throws Exception {
         final int width = mDevice.getDisplayWidth();
         final int height = mDevice.getDisplayHeight();
         mDevice.swipe(width / 2, height / 2, width / 4, height / 2, 10);
         mDevice.waitForIdle();
+
+        // Wait for CloudMediaProvider binder calls to finish.
+        MediaStore.waitForIdle(mContext.getContentResolver());
     }
 
-    private void swipeRightAndWait() {
+    private void swipeRightAndWait() throws Exception {
         final int width = mDevice.getDisplayWidth();
         final int height = mDevice.getDisplayHeight();
         mDevice.swipe(width / 4, height / 2, width / 2, height / 2, 10);
         mDevice.waitForIdle();
+
+        // Wait for CloudMediaProvider binder calls to finish.
+        MediaStore.waitForIdle(mContext.getContentResolver());
     }
 }
