@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.os.SystemProperties;
 import android.server.wm.ActivityManagerTestBase.ReportedDisplayMetrics;
+import android.server.wm.UiDeviceUtils;
 import android.server.wm.jetpack.utils.JavaConsumerAdapter;
 import android.server.wm.jetpack.utils.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
@@ -70,6 +71,9 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
                     new JavaConsumerAdapter<>(mSplitInfoConsumer)
             );
         }
+
+        UiDeviceUtils.pressWakeupButton();
+        UiDeviceUtils.pressUnlockButton();
     }
 
     @After
