@@ -39,8 +39,6 @@ import android.util.Range;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.SystemUtil;
-
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -191,48 +189,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         assertTrue("Actual transition duration should be in the range "
                 + "<" + minDurationMs + ", " + maxDurationMs + "> ms, "
                 + "actual=" + totalTime, durationRange.contains(totalTime));
-    }
-
-    @Test
-    public void testTaskTransitionOverride() throws Exception {
-        assumeTrue(customTaskAnimationDisabled());
-
-        final long expectedDurationMs = CUSTOM_ANIMATION_DURATION - 100L;
-        final long minDurationMs = expectedDurationMs;
-        final long maxDurationMs = expectedDurationMs + 1000L;
-        final Range<Long> durationRange = new Range<>(minDurationMs, maxDurationMs);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        AtomicLong transitionStartTime = new AtomicLong();
-        AtomicLong transitionEndTime = new AtomicLong();
-
-        final ActivityOptions.OnAnimationStartedListener startedListener = () -> {
-            transitionStartTime.set(SystemClock.elapsedRealtime());
-        };
-
-        final ActivityOptions.OnAnimationFinishedListener finishedListener = () -> {
-            transitionEndTime.set(SystemClock.elapsedRealtime());
-            latch.countDown();
-        };
-
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            // Overriding task transit animation is enabled, so custom animation is played.
-            final Bundle bundle = ActivityOptions.makeCustomTaskAnimation(mContext,
-                    R.anim.alpha, 0, new Handler(Looper.getMainLooper()), startedListener,
-                    finishedListener).toBundle();
-            final Intent intent = new Intent().setComponent(TEST_ACTIVITY)
-                    .addFlags(FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent, bundle);
-            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-            waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
-                    "Activity must be launched");
-
-            latch.await(2, TimeUnit.SECONDS);
-            final long totalTime = transitionEndTime.get() - transitionStartTime.get();
-            assertTrue("Actual transition duration should be in the range "
-                    + "<" + minDurationMs + ", " + maxDurationMs + "> ms, "
-                    + "actual=" + totalTime, durationRange.contains(totalTime));
-        });
     }
 
     public static class LauncherActivity extends Activity {
