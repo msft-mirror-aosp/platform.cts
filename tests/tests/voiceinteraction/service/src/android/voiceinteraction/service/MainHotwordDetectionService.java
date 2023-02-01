@@ -49,6 +49,10 @@ import javax.annotation.concurrent.GuardedBy;
 public class MainHotwordDetectionService extends HotwordDetectionService {
     static final String TAG = "MainHotwordDetectionService";
 
+    public static byte[] FAKE_HOTWORD_AUDIO_DATA =
+            new byte[]{'h', 'o', 't', 'w', 'o', 'r', 'd', '!'};
+    public static String KEY_FAKE_DATA = "fakeData";
+    public static String VALUE_FAKE_DATA = "fakeData";
     public static final int DEFAULT_PHRASE_ID = 5;
     public static final HotwordDetectedResult DETECTED_RESULT =
             new HotwordDetectedResult.Builder()
@@ -80,6 +84,8 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
     private Handler mHandler;
     @GuardedBy("mLock")
     private boolean mStopDetectionCalled;
+    @GuardedBy("mLock")
+    private int mDetectionDelayMs = 0;
 
     @GuardedBy("mLock")
     @Nullable
@@ -123,10 +129,14 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
             } while (Utils.getParcelableSize(persistableBundle)
                     <= HotwordDetectedResult.getMaxBundleSize());
 
-            try {
-                callback.onDetected(hotwordDetectedResult);
-            } catch (IllegalArgumentException e) {
-                callback.onDetected(DETECTED_RESULT);
+            synchronized (mLock) {
+                mHandler.postDelayed(() -> {
+                    try {
+                        callback.onDetected(hotwordDetectedResult);
+                    } catch (IllegalArgumentException e) {
+                        callback.onDetected(DETECTED_RESULT);
+                    }
+                }, mDetectionDelayMs);
             }
         } else {
             callback.onRejected(REJECTED_RESULT);
@@ -171,7 +181,7 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
             Log.d(TAG, "fis.available() = " + fis.available());
             byte[] buffer = new byte[8];
             fis.read(buffer, 0, 8);
-            if (isSame(buffer, BasicVoiceInteractionService.FAKE_HOTWORD_AUDIO_DATA,
+            if (isSame(buffer, FAKE_HOTWORD_AUDIO_DATA,
                     buffer.length)) {
                 Log.d(TAG, "call callback.onDetected");
                 callback.onDetected(DETECTED_RESULT);
@@ -240,17 +250,20 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                 }
                 mStopDetectionCalled = false;
             }
+            if (options != null) {
+                mDetectionDelayMs = options.getInt(Utils.KEY_DETECTION_DELAY_MS, 0);
+            }
         }
 
         if (options != null) {
             if (options.getInt(Utils.KEY_TEST_SCENARIO, -1)
-                    == Utils.HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH) {
+                    == Utils.EXTRA_HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH) {
                 Log.d(TAG, "Crash itself. Pid: " + Process.myPid());
                 Process.killProcess(Process.myPid());
                 return;
             }
-            String fakeData = options.getString(BasicVoiceInteractionService.KEY_FAKE_DATA);
-            if (!TextUtils.equals(fakeData, BasicVoiceInteractionService.VALUE_FAKE_DATA)) {
+            String fakeData = options.getString(KEY_FAKE_DATA);
+            if (!TextUtils.equals(fakeData, VALUE_FAKE_DATA)) {
                 Log.d(TAG, "options : data is not the same");
                 return;
             }

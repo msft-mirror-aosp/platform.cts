@@ -22,6 +22,8 @@ import static junit.framework.TestCase.assertSame;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assert.assertThrows;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -43,8 +45,6 @@ import android.media.TimedText;
 import android.media.audiofx.AudioEffect;
 import android.media.audiofx.Visualizer;
 import android.media.cts.MediaPlayerTestBase;
-import android.media.cts.NonMediaMainlineTest;
-import android.media.cts.Preconditions;
 import android.media.cts.TestMediaDataSource;
 import android.media.cts.TestUtils.Monitor;
 import android.media.cts.Utils;
@@ -64,6 +64,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.Preconditions;
 
 import junit.framework.AssertionFailedError;
 
@@ -101,7 +103,7 @@ import java.util.stream.Stream;
  */
 @SmallTest
 @RequiresDevice
-@NonMediaMainlineTest
+@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class MediaPlayerTest extends MediaPlayerTestBase {
@@ -712,7 +714,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             player.reset();
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             player.prepare();
-            player.seekTo(56000);
+            // Test needs the mediaplayer to playback at least about 5 seconds of content.
+            // Clip used here has a duration of 61 seconds, so seek to 50 seconds in the media file.
+            // This leaves enough remaining time, with gapless enabled or disabled,
+            player.seekTo(50000);
         }
     }
 
@@ -924,7 +929,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
                         mContext.getPackageName(), getInstrumentation(), true /* on */);
             }
 
-            mp1 = new MediaPlayer();
+            mp1 = new MediaPlayer(mContext);
             mp1.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
             AssetFileDescriptor afd = getAssetFileDescriptorFor(res1);
@@ -934,7 +939,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
             int session = mp1.getAudioSessionId();
 
-            mp2 = new MediaPlayer();
+            mp2 = new MediaPlayer(mContext);
             mp2.setAudioSessionId(session);
             mp2.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
@@ -2612,4 +2617,11 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
+
+    @Presubmit
+    @Test
+    public void testConstructorWithNullContextFails() {
+        assertThrows(NullPointerException.class, () -> new MediaPlayer(/*context=*/null));
+    }
+
 }

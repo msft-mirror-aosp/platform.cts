@@ -32,9 +32,9 @@ import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
-import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
 import org.hyphonate.megaaudio.recorder.JavaRecorder;
 import org.hyphonate.megaaudio.recorder.Recorder;
@@ -143,14 +143,17 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
 
     @Override
     protected void calculatePass() {
-        getPassButton().setEnabled(mRoutingNotificationReceived || !mSupportsWiredPeripheral);
-        if (mRoutingNotificationReceived) {
-            ((TextView) findViewById(R.id.audio_routingnotification_testresult)).setText(
-                    "Test PASSES - Routing notification received");
+        getPassButton().setEnabled(isReportLogOkToPass()
+                && mRoutingNotificationReceived || !mSupportsWiredPeripheral);
+        TextView tv = ((TextView) findViewById(R.id.audio_routingnotification_testresult));
+        if (!isReportLogOkToPass()) {
+            tv.setText(getResources().getString(R.string.audio_general_reportlogtest));
+        } else if (mRoutingNotificationReceived) {
+            tv.setText("Test PASSES - Routing notification received");
         } else if (!mSupportsWiredPeripheral) {
-            ((TextView) findViewById(
-                    R.id.audio_routingnotification_testresult)).setText(
-                            "Test PASSES - No peripheral support");
+            tv.setText("Test PASSES - No peripheral support");
+        } else {
+            tv.setText("");
         }
     }
 
@@ -176,14 +179,14 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
         stopBtn = (Button) findViewById(R.id.audio_routingnotification_recordStopBtn);
         stopBtn.setOnClickListener(mBtnClickListener);
 
-        enableTestButtons(false);
-
         mInfoView = (TextView) findViewById(R.id.info_text);
+
+        enableTestButtons(false);
 
         mContext = this;
 
         // Setup Recorder
-        mNumFrames = Recorder.calcMinBufferFrames(NUM_CHANNELS, SAMPLE_RATE);
+        mNumFrames = Recorder.calcMinBufferFramesStatic(NUM_CHANNELS, SAMPLE_RATE);
 
         RecorderBuilder builder = new RecorderBuilder();
         try {
@@ -211,11 +214,5 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_INPUT_ROUTING);
-    }
-
-    @Override
-    public void onBackPressed () {
-        stopRecording();
-        super.onBackPressed();
     }
 }

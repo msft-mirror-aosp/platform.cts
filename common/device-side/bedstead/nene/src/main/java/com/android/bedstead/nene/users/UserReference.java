@@ -34,6 +34,7 @@ import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.Intent;
 import android.content.pm.UserInfo;
+import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
@@ -42,8 +43,10 @@ import androidx.annotation.Nullable;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
+import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
+import com.android.bedstead.nene.exceptions.PollValueFailedException;
 import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
@@ -56,10 +59,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * A representation of a User on device which may or may not exist.
- */
-public class UserReference implements AutoCloseable {
+/** A representation of a User on device which may or may not exist. */
+public final class UserReference implements AutoCloseable {
 
     private static final Set<AdbUser.UserState> RUNNING_STATES = new HashSet<>(
             Arrays.asList(AdbUser.UserState.RUNNING_LOCKED,
@@ -71,6 +72,10 @@ public class UserReference implements AutoCloseable {
 
     private static final String USER_SETUP_COMPLETE_KEY = "user_setup_complete";
 
+    private static final String TYPE_PASSWORD = "password";
+    private static final String TYPE_PIN = "pin";
+    private static final String TYPE_PATTERN = "pattern";
+
     private final int mId;
 
     private final UserManager mUserManager;
@@ -81,7 +86,9 @@ public class UserReference implements AutoCloseable {
     private Boolean mIsPrimary;
     private boolean mParentCached = false;
     private UserReference mParent;
-    private @Nullable String mPassword;
+    private @Nullable String mLockCredential;
+    private @Nullable String mLockType;
+
 
     /**
      * Returns a {@link UserReference} equivalent to the passed {@code userHandle}.
@@ -96,14 +103,34 @@ public class UserReference implements AutoCloseable {
                 .getSystemService(UserManager.class);
     }
 
-    public final int id() {
+    /**
+     * The user's id.
+     */
+    public int id() {
         return mId;
+    }
+
+    /**
+     * {@code true} if this is the system user.
+     */
+    public boolean isSystem() {
+        return id() == 0;
+    }
+
+    /**
+     * {@code true} if this is a test user which should not include any user data.
+     */
+    public boolean isForTesting() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
+            return false;
+        }
+        return userInfo().isForTesting();
     }
 
     /**
      * Get a {@link UserHandle} for the {@link #id()}.
      */
-    public final UserHandle userHandle() {
+    public UserHandle userHandle() {
         return UserHandle.of(mId);
     }
 
@@ -113,7 +140,12 @@ public class UserReference implements AutoCloseable {
      * <p>If the user does not exist, or the removal fails for any other reason, a
      * {@link NeneException} will be thrown.
      */
-    public final void remove() {
+    public void remove() {
+        ProfileOwner profileOwner = TestApis.devicePolicy().getProfileOwner(this);
+        if (profileOwner != null && profileOwner.isOrganizationOwned()) {
+            profileOwner.remove();
+        }
+
         try {
             // Expected success string is "Success: removed user"
             ShellCommand.builder("pm remove-user")
@@ -155,7 +187,7 @@ public class UserReference implements AutoCloseable {
                     .errorOnFail()
                     .timeout(Duration.ofMinutes(1))
                     .await();
-        } catch (AdbException e) {
+        } catch (AdbException | PollValueFailedException e) {
             throw new NeneException("Could not start user " + this, e);
         }
 
@@ -296,9 +328,12 @@ public class UserReference implements AutoCloseable {
             if (adbUser == null) {
                 return false;
             }
+
             return RUNNING_STATES.contains(adbUser().state());
         }
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
+            Log.d(LOG_TAG, "isUserRunning(" + this + "): "
+                    + mUserManager.isUserRunning(userHandle()));
             return mUserManager.isUserRunning(userHandle());
         }
     }
@@ -313,6 +348,8 @@ public class UserReference implements AutoCloseable {
             return adbUser.state().equals(AdbUser.UserState.RUNNING_UNLOCKED);
         }
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
+            Log.d(LOG_TAG, "isUserUnlocked(" + this + "): "
+                    + mUserManager.isUserUnlocked(userHandle()));
             return mUserManager.isUserUnlocked(userHandle());
         }
     }
@@ -350,6 +387,14 @@ public class UserReference implements AutoCloseable {
         }
 
         return mIsPrimary;
+    }
+
+    /**
+     * {@code true} if this user is a profile of another user.
+     */
+    @Experimental
+    public boolean isProfile() {
+        return parent() != null;
     }
 
     /**
@@ -401,6 +446,13 @@ public class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
             return;
         }
+
+        if (TestApis.users().system().equals(this) && TestApis.users().isHeadlessSystemUserMode()) {
+            // We should also copy the setup status onto the instrumented user as DO provisioning
+            // depends on both
+            TestApis.users().instrumented().setSetupComplete(complete);
+        }
+
         DevicePolicyManager devicePolicyManager =
                 TestApis.context().androidContextAsUser(this)
                         .getSystemService(DevicePolicyManager.class);
@@ -424,75 +476,169 @@ public class UserReference implements AutoCloseable {
     }
 
     /**
-     * True if the user has a password.
+     * True if the user has a lock credential (password, pin or pattern set).
      */
-    public boolean hasPassword() {
+    public boolean hasLockCredential() {
         return TestApis.context().androidContextAsUser(this)
                 .getSystemService(KeyguardManager.class).isDeviceSecure();
+    }
+
+    /**
+     * Set a specific type of lock credential for the user.
+     */
+    private void setLockCredential(String lockType, String lockCredential) {
+        String lockTypeSentenceCase = Character.toUpperCase(lockType.charAt(0))
+                + lockType.substring(1);
+        try {
+            ShellCommand.builder("cmd lock_settings")
+                    .addOperand("set-" + lockType)
+                    .addOption("--user", mId)
+                    .addOperand(lockCredential)
+                    .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
+                    .execute();
+        } catch (AdbException e) {
+            throw new NeneException("Error setting " + lockType, e);
+        }
+        mLockCredential = lockCredential;
+        mLockType = lockType;
     }
 
     /**
      * Set a password for the user.
      */
     public void setPassword(String password) {
-        try {
-            ShellCommand.builder("cmd lock_settings")
-                    .addOperand("set-password")
-                    .addOperand(password)
-                    .addOption("--user", mId)
-                    .validate(s -> s.startsWith("Password set to "))
-                    .execute();
-        } catch (AdbException e) {
-            throw new NeneException("Error setting password", e);
-        }
-        mPassword = password;
+        setLockCredential(TYPE_PASSWORD, password);
     }
 
     /**
-     * Clear the password for the user, using the password that was last set using Nene.
+     * Set a pin for the user.
+     */
+    public void setPin(String pin) {
+        setLockCredential(TYPE_PIN, pin);
+    }
+
+    /**
+     * Set a pattern for the user.
+     */
+    public void setPattern(String pattern) {
+        setLockCredential(TYPE_PATTERN, pattern);
+    }
+
+    /**
+     * Clear the password for the user, using the lock credential that was last set using
+     * Nene.
      */
     public void clearPassword() {
-        if (mPassword == null) {
-            throw new NeneException(
-                    "clearPassword() can only be called when setPassword was used to set the"
-                            + " password");
-        }
-        clearPassword(mPassword);
+        clearLockCredential(mLockCredential, TYPE_PASSWORD);
     }
 
     /**
-     * Clear the password for the user.
+     * Clear password for the user.
      */
     public void clearPassword(String password) {
+        clearLockCredential(password, TYPE_PASSWORD);
+    }
+
+    /**
+     * Clear the pin for the user, using the lock credential that was last set using
+     * Nene.
+     */
+    public void clearPin() {
+        clearLockCredential(mLockCredential, TYPE_PIN);
+    }
+
+    /**
+     * Clear pin for the user.
+     */
+    public void clearPin(String pin) {
+        clearLockCredential(pin, TYPE_PIN);
+    }
+
+    /**
+     * Clear the pattern for the user, using the lock credential that was last set using
+     * Nene.
+     */
+    public void clearPattern() {
+        clearLockCredential(mLockCredential, TYPE_PATTERN);
+    }
+
+    /**
+     * Clear pin for the user.
+     */
+    public void clearPattern(String pattern) {
+        clearLockCredential(pattern, TYPE_PATTERN);
+    }
+
+    /**
+     * Clear the lock credential for the user.
+     */
+    private void clearLockCredential(String lockCredential, String lockType) {
+        if (!lockType.equals(mLockType) && mLockType != null) {
+            String lockTypeSentenceCase = Character.toUpperCase(lockType.charAt(0))
+                    + lockType.substring(1);
+            throw new NeneException(
+                    "clear" + lockTypeSentenceCase + "() can only be called when set"
+                            + lockTypeSentenceCase + " was used to set the lock credential");
+        }
 
         try {
             ShellCommand.builder("cmd lock_settings")
                     .addOperand("clear")
-                    .addOption("--old", password)
+                    .addOption("--old", lockCredential)
                     .addOption("--user", mId)
                     .validate(s -> s.startsWith("Lock credential cleared"))
                     .execute();
         } catch (AdbException e) {
             if (e.output().contains("user has no password")) {
-                // No password anyway, fine
-                mPassword = null;
+                // No lock credential anyway, fine
+                mLockCredential = null;
+                mLockType = null;
                 return;
             }
-            throw new NeneException("Error clearing password", e);
+            throw new NeneException("Error clearing lock credential", e);
         }
 
-        mPassword = null;
+        mLockCredential = null;
+        mLockType = null;
     }
 
     /**
-     * Returns the password for this user if that password was set using Nene.
-     *
-     *
-     * <p>If there is no password, or the password was not set using Nene, then this will
-     * return {@code null}.
+     * returns password if password has been set using nene
      */
     public @Nullable String password() {
-        return mPassword;
+        return lockCredential(TYPE_PASSWORD);
+    }
+
+    /**
+     * returns pin if pin has been set using nene
+     */
+    public @Nullable String pin() {
+        return lockCredential(TYPE_PIN);
+    }
+
+    /**
+     * returns pattern if pattern has been set using nene
+     */
+    public @Nullable String pattern() {
+        return lockCredential(TYPE_PATTERN);
+    }
+
+    /**
+     * Returns the lock credential for this user if that lock credential was set using Nene.
+     * Where a lock credential can either be a password, pin or pattern.
+     *
+     * <p>If there is a lock credential but the lock credential was not set using the corresponding
+     * Nene method, this will throw an exception. If there is no lock credential set
+     * (regardless off the calling method) this will return {@code null}
+     */
+    private @Nullable String lockCredential(String lockType) {
+        if (mLockType != null && !lockType.equals(mLockType)) {
+            String lockTypeSentenceCase = Character.toUpperCase(lockType.charAt(0))
+                    + lockType.substring(1);
+            throw new NeneException(lockType + " not set, as set" + lockTypeSentenceCase + "() has "
+                    + "not been called");
+        }
+        return mLockCredential;
     }
 
     /**
@@ -508,6 +654,11 @@ public class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(P)) {
             return false;
         }
+
+        if (isQuietModeEnabled() == enabled) {
+            return true;
+        }
+
         try (PermissionContext p = TestApis.permissions().withPermission(MODIFY_QUIET_MODE)) {
             BlockingBroadcastReceiver r = BlockingBroadcastReceiver.create(
                             TestApis.context().instrumentedContext(),
@@ -525,6 +676,18 @@ public class UserReference implements AutoCloseable {
                 r.unregisterQuietly();
             }
         }
+    }
+
+    /**
+     * Returns true if this user is a profile and quiet mode is enabled. Otherwise false.
+     */
+    @Experimental
+    public boolean isQuietModeEnabled() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.N)) {
+            // Quiet mode not supported by < N
+            return false;
+        }
+        return mUserManager.isQuietModeEnabled(userHandle());
     }
 
     @Override
@@ -553,6 +716,9 @@ public class UserReference implements AutoCloseable {
         return TestApis.users().fetchUser(mId);
     }
 
+    /**
+     * Do not use this method except for backwards compatibility.
+     */
     private AdbUser adbUser() {
         AdbUser user = adbUserOrNull();
         if (user == null) {

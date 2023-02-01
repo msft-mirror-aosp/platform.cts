@@ -33,6 +33,12 @@ WAIT_TIME_SEC = 5
 SCROLLER_TIMEOUT_MS = 3000
 VALID_NUM_DEVICES = (1, 2)
 NOT_YET_MANDATED_ALL = 100
+DEFAULT_TABLET_BRIGHTNESS = 192
+LEGACY_TABLET_BRIGHTNESS = 96
+LEGACY_TABLET_NAME = 'dragon'
+TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
+BRIGHTNESS_ERROR = ('Tablet brightness not set as per '
+                    f'{TABLET_REQUIREMENTS_URL} in the config file')
 
 # Not yet mandated tests ['test', first_api_level not yet mandatory]
 # ie. ['test_test_patterns', 30] is MANDATED for first_api_level > 30
@@ -46,6 +52,7 @@ NOT_YET_MANDATED = {
     'scene2_c': [],
     'scene2_d': [['test_num_faces', 30]],
     'scene2_e': [['test_num_faces', 30], ['test_continuous_picture', 30]],
+    'scene2_f': [['test_num_faces', 30]],
     'scene3': [],
     'scene4': [],
     'scene5': [],
@@ -103,6 +110,17 @@ class ItsBaseTest(base_test.BaseTestClass):
       try:
         self.tablet = devices[1]
         self.tablet_screen_brightness = self.user_params['brightness']
+        tablet_name_unencoded = self.tablet.adb.shell(
+            ['getprop', 'ro.build.product']
+        )
+        tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
+        logging.debug('tablet name: %s', tablet_name)
+        if tablet_name != LEGACY_TABLET_NAME:
+          if self.tablet_screen_brightness != DEFAULT_TABLET_BRIGHTNESS:
+            raise AssertionError(BRIGHTNESS_ERROR)
+        else:
+          if self.tablet_screen_brightness != LEGACY_TABLET_BRIGHTNESS:
+            raise AssertionError(BRIGHTNESS_ERROR)
       except KeyError:
         logging.debug('Not all tablet arguments set.')
     else:  # sensor_fusion or manual run
@@ -122,7 +140,7 @@ class ItsBaseTest(base_test.BaseTestClass):
 
     arduino_serial_port = lighting_control_utils.lighting_control(
         self.lighting_cntl, self.lighting_ch)
-    if arduino_serial_port:
+    if arduino_serial_port and self.scene != 'scene0':
       lighting_control_utils.set_light_brightness(
           self.lighting_ch, 255, arduino_serial_port)
       logging.debug('Light is turned ON.')
@@ -185,17 +203,17 @@ class ItsBaseTest(base_test.BaseTestClass):
     logging.debug('dumpsys window output: %s', output.decode('utf-8').strip())
     output_list = str(output.decode('utf-8')).strip().split(' ')
     for val in output_list:
-        if 'LandscapeRotation' in val:
-            landscape_val = str(val.split('=')[-1])
-            # For some tablets the values are in constant forms such as ROTATION_90
-            if 'ROTATION_90' in landscape_val:
-                landscape_val = '1'
-            elif 'ROTATION_0' in landscape_val:
-                landscape_val = '0'
-            logging.debug('Changing the orientation to landscape mode.')
-            self.tablet.adb.shell(['settings', 'put', 'system', 'user_rotation',
-                                   landscape_val])
-            break
+      if 'LandscapeRotation' in val:
+        landscape_val = str(val.split('=')[-1])
+        # For some tablets the values are in constant forms such as ROTATION_90
+        if 'ROTATION_90' in landscape_val:
+          landscape_val = '1'
+        elif 'ROTATION_0' in landscape_val:
+          landscape_val = '0'
+        logging.debug('Changing the orientation to landscape mode.')
+        self.tablet.adb.shell(['settings', 'put', 'system', 'user_rotation',
+                               landscape_val])
+        break
     logging.debug('Reported tablet orientation is: %d',
                   int(self.tablet.adb.shell(
                       'settings get system user_rotation')))

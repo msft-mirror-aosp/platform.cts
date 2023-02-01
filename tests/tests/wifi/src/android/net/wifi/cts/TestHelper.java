@@ -24,6 +24,7 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_OEM_PAID;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_OEM_PRIVATE;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
+import static android.net.wifi.WifiManager.STATUS_LOCAL_ONLY_CONNECTION_FAILURE_UNKNOWN;
 import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -66,6 +67,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -88,6 +90,7 @@ public class TestHelper {
     private static final int DURATION_SCREEN_TOGGLE_MILLIS = 2000;
     private static final int DURATION_UI_INTERACTION_MILLIS = 25_000;
     private static final int SCAN_RETRY_CNT_TO_FIND_MATCHING_BSSID = 3;
+    private static List<ScanResult> sScanResults = null;
 
     public TestHelper(@NonNull Context context, @NonNull UiDevice uiDevice) {
         mContext = context;
@@ -181,9 +184,9 @@ public class TestHelper {
             } finally {
                 wifiManager.unregisterScanResultsCallback(scanResultsCallback);
             }
-            List<ScanResult> scanResults = wifiManager.getScanResults();
-            if (scanResults == null || scanResults.isEmpty()) continue;
-            for (ScanResult scanResult : scanResults) {
+            sScanResults = wifiManager.getScanResults();
+            if (sScanResults == null || sScanResults.isEmpty()) continue;
+            for (ScanResult scanResult : sScanResults) {
                 WifiConfiguration matchingNetwork = savedNetworks.stream()
                         .filter(network -> TextUtils.equals(
                                 scanResult.SSID, WifiInfo.sanitizeSsid(network.SSID)))
@@ -238,7 +241,7 @@ public class TestHelper {
      * Convert the provided saved network to a corresponding specifier builder.
      */
     public static WifiNetworkSpecifier.Builder createSpecifierBuilderWithCredentialFromSavedNetwork(
-            @NonNull WifiConfiguration network) {
+            @NonNull WifiConfiguration network, boolean useChannel) {
         WifiNetworkSpecifier.Builder specifierBuilder = new WifiNetworkSpecifier.Builder()
                 .setSsid(WifiInfo.sanitizeSsid(network.SSID));
         if (network.preSharedKey != null) {
@@ -255,6 +258,16 @@ public class TestHelper {
             fail("Unsupported security type found in saved networks");
         }
         specifierBuilder.setIsHiddenSsid(network.hiddenSSID);
+        if (sScanResults != null && useChannel) {
+            Optional<ScanResult> matchedResult = sScanResults
+                    .stream()
+                    .filter(scanResult -> TextUtils.equals(scanResult.SSID,
+                            WifiInfo.sanitizeSsid(network.SSID))
+                            && TextUtils.equals(scanResult.BSSID, network.BSSID)).findAny();
+            matchedResult.ifPresent(
+                    scanResult -> specifierBuilder.setPreferredChannelsFrequenciesMhz(
+                            new int[]{scanResult.frequency}));
+        }
         return specifierBuilder;
     }
 
@@ -264,8 +277,31 @@ public class TestHelper {
     public static WifiNetworkSpecifier.Builder
             createSpecifierBuilderWithCredentialFromSavedNetworkWithBssid(
             @NonNull WifiConfiguration network) {
-        return createSpecifierBuilderWithCredentialFromSavedNetwork(network)
+        return createSpecifierBuilderWithCredentialFromSavedNetwork(network, false)
                 .setBssid(MacAddress.fromString(network.BSSID));
+    }
+
+    private static class TestLocalOnlyListener implements WifiManager
+            .LocalOnlyConnectionFailureListener {
+        private CountDownLatch mBlocker;
+        public boolean onFailureCalled = false;
+        public int failureReason = STATUS_LOCAL_ONLY_CONNECTION_FAILURE_UNKNOWN;
+        TestLocalOnlyListener() {
+            mBlocker = new CountDownLatch(1);
+        }
+
+        @Override
+        public void onConnectionFailed(
+                @androidx.annotation.NonNull WifiNetworkSpecifier wifiNetworkSpecifier,
+                int failureReason) {
+            mBlocker.countDown();
+            onFailureCalled = true;
+        }
+
+        public boolean await(long timeout) throws Exception {
+            return mBlocker.await(timeout, TimeUnit.MILLISECONDS);
+        }
+
     }
 
     public static class TestNetworkCallback extends ConnectivityManager.NetworkCallback {
@@ -745,6 +781,9 @@ public class TestHelper {
             throws Exception {
         // File the network request & wait for the callback.
         TestNetworkCallback testNetworkCallback = createTestNetworkCallback();
+        TestLocalOnlyListener localOnlyListener = new TestLocalOnlyListener();
+        mWifiManager.addLocalOnlyConnectionFailureListener(Executors.newSingleThreadExecutor(),
+                localOnlyListener);
 
         // Fork a thread to handle the UI interactions.
         Thread uiThread = new Thread(() -> {
@@ -771,7 +810,7 @@ public class TestHelper {
             // interactions.
             Thread.sleep(1_000);
             // Start the UI interactions.
-            uiThread.run();
+            uiThread.start();
             // now wait for callback
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
@@ -791,6 +830,8 @@ public class TestHelper {
                         assertThat(wifiInfo.isPrimary()).isTrue();
                     }
                 }
+                assertThat(localOnlyListener.await(DURATION_NETWORK_CONNECTION_MILLIS)).isFalse();
+                assertThat(localOnlyListener.onFailureCalled).isFalse();
             }
         } catch (Throwable e /* catch assertions & exceptions */) {
             try {
@@ -807,6 +848,7 @@ public class TestHelper {
             } catch (IllegalArgumentException ie) { }
             fail("UI interaction interrupted");
         }
+        mWifiManager.removeLocalOnlyConnectionFailureListener(localOnlyListener);
         return testNetworkCallback;
     }
 

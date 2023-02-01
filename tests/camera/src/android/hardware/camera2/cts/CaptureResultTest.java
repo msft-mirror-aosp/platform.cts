@@ -604,6 +604,8 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
 
         // Keys only present when corresponding control is on are being
         // verified in its own functional test
+        // Tested in RobustnessTest.java stream use case test.
+        waiverKeys.add(CaptureResult.SCALER_RAW_CROP_REGION);
         // Only present in certain tonemap mode. Test in CaptureRequestTest.
         waiverKeys.add(CaptureResult.TONEMAP_CURVE);
         waiverKeys.add(CaptureResult.TONEMAP_GAMMA);
@@ -746,6 +748,10 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.SCALER_ROTATE_AND_CROP);
         }
 
+        if (!staticInfo.isSettingsOverrideSupported()) {
+            waiverKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
+        }
+
         if (staticInfo.isHardwareLevelAtLeastFull()) {
             return waiverKeys;
         }
@@ -776,7 +782,8 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.HOT_PIXEL_MODE);
         }
 
-        if (!staticInfo.isNoiseReductionModeControlSupported()) {
+        if (!staticInfo.isNoiseReductionModeControlSupported()
+                && staticInfo.getAvailableNoiseReductionModesChecked().length == 0) {
             waiverKeys.add(CaptureResult.NOISE_REDUCTION_MODE);
         }
 
@@ -1009,6 +1016,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.CONTROL_AF_SCENE_CHANGE);
         resultKeys.add(CaptureResult.CONTROL_EXTENDED_SCENE_MODE);
         resultKeys.add(CaptureResult.CONTROL_ZOOM_RATIO);
+        resultKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
+        resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING);
+        resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING_STATE);
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);
@@ -1034,6 +1044,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.REQUEST_PIPELINE_DEPTH);
         resultKeys.add(CaptureResult.SCALER_CROP_REGION);
         resultKeys.add(CaptureResult.SCALER_ROTATE_AND_CROP);
+        resultKeys.add(CaptureResult.SCALER_RAW_CROP_REGION);
         resultKeys.add(CaptureResult.SENSOR_EXPOSURE_TIME);
         resultKeys.add(CaptureResult.SENSOR_FRAME_DURATION);
         resultKeys.add(CaptureResult.SENSOR_SENSITIVITY);

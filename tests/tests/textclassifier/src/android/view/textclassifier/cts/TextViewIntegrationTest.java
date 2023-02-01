@@ -36,7 +36,6 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
-import android.os.RemoteException;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -55,10 +54,14 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.Timeout;
 
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -74,6 +77,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TextViewIntegrationTest {
     private static final String LOG_TAG = "TextViewIntegrationTest";
     private static final String TOOLBAR_ITEM_LABEL = "TB@#%!";
+
+    private static final Timeout UI_TIMEOUT = new Timeout("UI_TIMEOUT", 2_000, 2F, 10_000);
 
     private SimpleTextClassifier mSimpleTextClassifier;
 
@@ -92,22 +97,10 @@ public class TextViewIntegrationTest {
         Assume.assumeTrue(
                 ApplicationProvider.getApplicationContext().getPackageManager()
                         .hasSystemFeature(FEATURE_TOUCHSCREEN));
-        workAroundNotificationShadeWindowIssue();
         mSimpleTextClassifier = new SimpleTextClassifier();
         sDevice.wakeUp();
         dismissKeyguard();
         closeSystemDialog();
-    }
-
-    // Somehow there is a stale "NotificationShade" window from SysUI stealing the inputs.
-    // The window is in the "exiting" state and seems never finish exiting.
-    // The workaround here is to (hopefully) reset its state by expanding the notification panel
-    // and collapsing it again.
-    private void workAroundNotificationShadeWindowIssue() throws InterruptedException {
-        ShellUtils.runShellCommand("cmd statusbar expand-notifications");
-        Thread.sleep(1000);
-        ShellUtils.runShellCommand("cmd statusbar collapse");
-        Thread.sleep(1000);
     }
 
     private void dismissKeyguard() {
@@ -116,6 +109,15 @@ public class TextViewIntegrationTest {
 
     private static void closeSystemDialog() {
         ShellUtils.runShellCommand("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS");
+    }
+
+    private static void dumpScreenInformation(String testName) {
+        // Dump window layer state
+        String result = ShellUtils.runShellCommand("dumpsys window windows");
+        Helper.dumpsysAndSave(result, testName, Helper.LOCAL_TEST_FILES_DIR);
+        // Take screenshot
+        Helper.takeScreenshotAndSave(ApplicationProvider.getApplicationContext(),
+                testName, Helper.LOCAL_TEST_FILES_DIR);
     }
 
     @BeforeClass
@@ -168,18 +170,26 @@ public class TextViewIntegrationTest {
         // To wait for the rendering of the activity to be completed, so that the upcoming click
         // action will work.
         Thread.sleep(2000);
-        onView(allOf(withId(R.id.textview), withText(TEXT))).check(matches(isDisplayed()));
-        // Click on the span.
+        try {
+            onView(allOf(withId(R.id.textview), withText(TEXT))).check(matches(isDisplayed()));
+        } catch (Throwable t) {
+            dumpScreenInformation("smartLinkify");
+            throw t;
+        }
         Log.d(LOG_TAG, "clickIndex = " + clickIndex.get());
         onView(withId(R.id.textview)).perform(TextViewActions.tapOnTextAtIndex(clickIndex.get()));
-
-        assertFloatingToolbarIsDisplayed();
+        try {
+            assertFloatingToolbarIsDisplayed();
+        } catch (Throwable t) {
+            dumpScreenInformation("smartLinkify");
+            throw t;
+        }
     }
 
     @Test
     public void smartSelection_suggestSelectionNotIncludeTextClassification() throws Exception {
         Assume.assumeTrue(BuildCompat.isAtLeastS());
-        smartSelectionInternal();
+        smartSelectionInternal("smartSelection_suggestSelectionNotIncludeTextClassification");
 
         assertThat(mSimpleTextClassifier.getClassifyTextInvocationCount()).isEqualTo(1);
     }
@@ -188,7 +198,7 @@ public class TextViewIntegrationTest {
     public void smartSelection_suggestSelectionIncludeTextClassification() throws Exception {
         Assume.assumeTrue(BuildCompat.isAtLeastS());
         mSimpleTextClassifier.setIncludeTextClassification(true);
-        smartSelectionInternal();
+        smartSelectionInternal("smartSelection_suggestSelectionIncludeTextClassification");
 
         assertThat(mSimpleTextClassifier.getClassifyTextInvocationCount()).isEqualTo(0);
     }
@@ -197,14 +207,26 @@ public class TextViewIntegrationTest {
     @Ignore  // Enable the test once b/187862341 is fixed.
     public void smartSelection_cancelSelectionDoesNotInvokeClassifyText() throws Exception {
         Assume.assumeTrue(BuildCompat.isAtLeastS());
-        smartSelectionInternal();
+        smartSelectionInternal("smartSelection_cancelSelectionDoesNotInvokeClassifyText");
         onView(withId(R.id.textview)).perform(TextViewActions.tapOnTextAtIndex(0));
         Thread.sleep(1000);
 
         assertThat(mSimpleTextClassifier.getClassifyTextInvocationCount()).isEqualTo(1);
     }
 
-    private void smartSelectionInternal() {
+    // TODO: re-use now. Refactor to have a folder/test class for toolbar
+    @Test
+    @ApiTest(apis = "android.view.View#startActionMode")
+    public void smartSelection_toolbarContainerNoContentDescription() throws Exception {
+        smartSelectionInternal("smartSelection_toolbarContainerNoContentDescription");
+
+        UiObject2 toolbarContainer =
+                sDevice.findObject(By.res("android", "floating_popup_container"));
+        assertThat(toolbarContainer).isNotNull();
+        assertThat(toolbarContainer.getContentDescription()).isNull();
+    }
+
+    private void smartSelectionInternal(String testName) throws Exception {
         ActivityScenario<TextViewActivity> scenario = rule.getScenario();
         AtomicInteger clickIndex = new AtomicInteger();
         //                   0123456789
@@ -216,14 +238,22 @@ public class TextViewIntegrationTest {
             textView.setTextClassifier(mSimpleTextClassifier);
             clickIndex.set(9);
         });
-        onView(allOf(withId(R.id.textview), withText(TEXT))).check(matches(isDisplayed()));
-
+        try {
+            onView(allOf(withId(R.id.textview), withText(TEXT))).check(matches(isDisplayed()));
+        } catch (Throwable t) {
+            dumpScreenInformation(testName);
+            throw t;
+        }
         // Long press the url to perform smart selection.
         Log.d(LOG_TAG, "clickIndex = " + clickIndex.get());
         onView(withId(R.id.textview)).perform(
                 TextViewActions.longTapOnTextAtIndex(clickIndex.get()));
-
-        assertFloatingToolbarIsDisplayed();
+        try {
+            assertFloatingToolbarIsDisplayed();
+        } catch (Throwable t) {
+            dumpScreenInformation(testName);
+            throw t;
+        }
     }
 
     private Spannable createLinkifiedText(CharSequence text) {
@@ -243,9 +273,15 @@ public class TextViewIntegrationTest {
         return linkifiedText;
     }
 
-    private static void assertFloatingToolbarIsDisplayed() {
+    private static void assertFloatingToolbarIsDisplayed() throws Exception {
         // Simply check that the toolbar item is visible.
-        assertThat(sDevice.hasObject(By.text(TOOLBAR_ITEM_LABEL))).isTrue();
+        UiObject2 toolbarObject = waitForObject(By.text(TOOLBAR_ITEM_LABEL));
+        assertThat(toolbarObject).isNotNull();
+    }
+
+    private static UiObject2 waitForObject(BySelector selector) throws Exception {
+        return UI_TIMEOUT.run("waitForObject(" + selector + ")",
+                () -> sDevice.findObject(selector));
     }
 
     /**

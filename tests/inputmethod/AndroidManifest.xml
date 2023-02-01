@@ -19,8 +19,14 @@
      package="android.view.inputmethod.cts"
      android:targetSandboxVersion="2">
 
-    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <queries>
+        <intent>
+            <action android:name="android.view.InputMethod" />
+        </intent>
+        <package android:name="com.android.cts.mocka11yime" />
+        <package android:name="com.android.cts.mockspellchecker" />
+    </queries>
+
     <application android:label="CtsInputMethodTestCases"
          android:multiArch="true"
          android:supportsRtl="true"
@@ -31,6 +37,28 @@
 
         <!-- TestActivity etc are merged from util/AndroidManifest.xml -->
 
+        <service android:name="android.view.inputmethod.cts.inprocime.InProcIme"
+                 android:label="In-Process Test IME"
+                 android:permission="android.permission.BIND_INPUT_METHOD"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.InputMethod"/>
+            </intent-filter>
+            <meta-data android:name="android.view.im" android:resource="@xml/inprocime"/>
+        </service>
+
+       <service android:name="android.view.inputmethod.cts.disapproveime.DisapproveInputMethodService"
+                 android:label="Disapprove IME"
+                 android:permission="android.permission.BIND_INPUT_METHOD"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.InputMethod"/>
+            </intent-filter>
+            <meta-data android:name="android.view.im" android:resource="@xml/disapproveime"/>
+        </service>
+
+        <uses-library android:name="androidx.window.extensions"
+                      android:required="false" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

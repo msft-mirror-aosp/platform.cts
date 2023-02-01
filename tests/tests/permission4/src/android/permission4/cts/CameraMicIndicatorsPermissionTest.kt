@@ -117,7 +117,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
 
     private val safetyCenterEnabled = callWithShellPermissionIdentity {
         DeviceConfig.getString(DeviceConfig.NAMESPACE_PRIVACY,
-            SAFETY_CENTER_ENABLED, false.toString())
+            SAFETY_CENTER_ENABLED, false.toString())!!
     }
 
     @Before
@@ -197,6 +197,8 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
 
     @Test
     fun testCameraIndicator() {
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         val manager = context.getSystemService(CameraManager::class.java)!!
         assumeTrue(manager.cameraIdList.isNotEmpty())
         changeSafetyCenterFlag(false.toString())
@@ -229,6 +231,8 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         // Car has separate panels for mic and camera for now.
         // TODO(b/218788634): enable this test for car once the new camera indicator is implemented.
         assumeFalse(isCar)
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = false, useCamera = true, chainUsage = true)
     }
@@ -293,12 +297,14 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         safetyCenterEnabled: Boolean = false,
         finishEarly: Boolean = false
     ) {
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         var chainAttribution: AttributionSource? = null
         openApp(useMic, useCamera, useHotword, finishEarly)
         try {
             eventually {
-                val appView = uiDevice.findObject(By.textContains(APP_LABEL))
-                assertNotNull("View with text $APP_LABEL not found", appView)
+                val appView = uiDevice.findObject(UiSelector().textContains(APP_LABEL))
+                assertTrue("View with text $APP_LABEL not found", appView.exists())
             }
             if (chainUsage) {
                 chainAttribution = createChainAttribution()
@@ -347,7 +353,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         } else if (isCar) {
             assertCarIndicatorsShown(useMic, useCamera, useHotword, chainUsage)
         } else {
-            assertPrivacyChipAndIndicatorsPresent(useMic, useCamera, chainUsage,
+            assertPrivacyChipAndIndicatorsPresent(useMic || useHotword, useCamera, chainUsage,
                 safetyCenterEnabled)
         }
     }
@@ -433,12 +439,16 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         chainUsage: Boolean,
         safetyCenterEnabled: Boolean = false
     ) {
-        // Ensure the privacy chip is present (or not)
-        val chipFound = isChipPresent(useMic || useCamera)
-        if (useMic || useCamera) {
-            assertTrue("Did not find chip", chipFound)
-        } else { // hotword
-            assertFalse("Found chip, but did not expect to", chipFound)
+        // Ensure the privacy chip is present
+        if (useCamera || useMic) {
+            eventually {
+                val privacyChip = uiDevice.findObject(UiSelector().resourceId(PRIVACY_CHIP_ID))
+                assertTrue("view with id $PRIVACY_CHIP_ID not found", privacyChip.exists())
+                privacyChip.click()
+            }
+        } else {
+            val privacyChip = uiDevice.findObject(UiSelector().resourceId(PRIVACY_CHIP_ID))
+            assertFalse("Expected not to find view with id $PRIVACY_CHIP_ID", privacyChip.exists())
             return
         }
 
@@ -518,23 +528,6 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
             val shellView = uiDevice.findObjects(By.textContains(shellLabel))
             assertEquals("Expected only one shell view", 1, shellView.size)
         }
-    }
-
-    private fun isChipPresent(clickChip: Boolean): Boolean {
-        var chipFound = false
-        try {
-            eventually {
-                val privacyChip = uiDevice.findObject(By.res(PRIVACY_CHIP_ID))
-                assertNotNull("view with id $PRIVACY_CHIP_ID not found", privacyChip)
-                if (clickChip) {
-                    privacyChip.click()
-                }
-                chipFound = true
-            }
-        } catch (e: Exception) {
-            // Handle more gracefully after
-        }
-        return chipFound
     }
 
     private fun pressBack() {

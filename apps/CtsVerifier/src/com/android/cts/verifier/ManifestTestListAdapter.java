@@ -19,12 +19,14 @@ package com.android.cts.verifier;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListActivity.sInitialLaunch;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
+import android.hardware.SensorPrivacyManager;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -142,6 +144,10 @@ public class ManifestTestListAdapter extends TestListAdapter {
 
     private static final String CONFIG_QUICK_SETTINGS_SUPPORTED = "config_quick_settings_supported";
 
+    private static final String CONFIG_HAS_MIC_TOGGLE = "config_has_mic_toggle";
+
+    private static final String CONFIG_HAS_CAMERA_TOGGLE = "config_has_camera_toggle";
+
     /** The config to represent that a test is only needed to run in the main display mode
      * (i.e. unfolded) */
     private static final String SINGLE_DISPLAY_MODE = "single_display_mode";
@@ -180,6 +186,12 @@ public class ManifestTestListAdapter extends TestListAdapter {
             for (DisplayMode mode : DisplayMode.values()) {
                 allRows = getRowsWithDisplayMode(mode.toString());
                 mDisplayModesTests.put(mode.toString(), allRows);
+                PackageManager packageManager = mContext.getPackageManager();
+                boolean isCustomLauncher = packageManager.hasSystemFeature("com.google.android.tv.custom_launcher");
+                if (isCustomLauncher) {
+                    mDisabledTests.add(
+                    "com.android.cts.verifier.net.ConnectivityBackgroundTestActivity");
+                }
             }
         }
 
@@ -432,7 +444,7 @@ public class ManifestTestListAdapter extends TestListAdapter {
         return true;
     }
 
-    private boolean matchAllConfigs(String[] configs) {
+    public static boolean matchAllConfigs(Context context, String[] configs) {
         if (configs != null) {
             for (String config : configs) {
                 switch (config) {
@@ -451,14 +463,14 @@ public class ManifestTestListAdapter extends TestListAdapter {
                         }
                         break;
                     case CONFIG_VOICE_CAPABLE:
-                        TelephonyManager telephonyManager = mContext.getSystemService(
+                        TelephonyManager telephonyManager = context.getSystemService(
                                 TelephonyManager.class);
                         if (!telephonyManager.isVoiceCapable()) {
                             return false;
                         }
                         break;
                     case CONFIG_HAS_RECENTS:
-                        if (!getSystemResourceFlag("config_hasRecents")) {
+                        if (!getSystemResourceFlag(context, "config_hasRecents")) {
                             return false;
                         }
                         break;
@@ -476,10 +488,14 @@ public class ManifestTestListAdapter extends TestListAdapter {
                         }
                         break;
                     case CONFIG_QUICK_SETTINGS_SUPPORTED:
-                        if (!getSystemResourceFlag("config_quickSettingsSupported")) {
+                        if (!getSystemResourceFlag(context, "config_quickSettingsSupported")) {
                             return false;
                         }
                         break;
+                    case CONFIG_HAS_MIC_TOGGLE:
+                        return isHardwareToggleSupported(context, SensorPrivacyManager.Sensors.MICROPHONE);
+                    case CONFIG_HAS_CAMERA_TOGGLE:
+                        return isHardwareToggleSupported(context, SensorPrivacyManager.Sensors.CAMERA);
                     default:
                         break;
                 }
@@ -509,8 +525,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
         }
     }
 
-    private boolean getSystemResourceFlag(String key) {
-        final Resources systemRes = mContext.getResources().getSystem();
+    private static boolean getSystemResourceFlag(Context context, String key) {
+        final Resources systemRes = context.getResources().getSystem();
         final int id = systemRes.getIdentifier(key, "bool", "android");
         if (id == Resources.ID_NULL) {
             // The flag being queried should exist in
@@ -541,7 +557,7 @@ public class ManifestTestListAdapter extends TestListAdapter {
         for (TestListItem test : tests) {
             if (!hasAnyFeature(test.excludedFeatures) && hasAllFeatures(test.requiredFeatures)
                     && hasAllActions(test.requiredActions)
-                    && matchAllConfigs(test.requiredConfigs)
+                    && matchAllConfigs(mContext, test.requiredConfigs)
                     && matchDisplayMode(test.displayMode, mode)) {
                 if (test.applicableFeatures == null || hasAnyFeature(test.applicableFeatures)) {
                     // Add suffix in test name if the test is in the folded mode.
@@ -580,5 +596,17 @@ public class ManifestTestListAdapter extends TestListAdapter {
         } else {
             super.loadTestResults();
         }
+    }
+
+    @SuppressLint("NewApi")
+    private static boolean isHardwareToggleSupported(Context context, final int sensorType) {
+        boolean isToggleSupported = false;
+        SensorPrivacyManager sensorPrivacyManager = context.getSystemService(
+                SensorPrivacyManager.class);
+        if (sensorPrivacyManager != null) {
+            isToggleSupported = sensorPrivacyManager.supportsSensorToggle(
+                    SensorPrivacyManager.TOGGLE_TYPE_HARDWARE, sensorType);
+        }
+        return isToggleSupported;
     }
 }

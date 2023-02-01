@@ -26,10 +26,11 @@ java_library_host {
         "junit",
         "auto_value_annotations",
         "guava",
-        "NeneCommon"
+        "NeneCommon",
+        "truth-prebuilt",
     ],
 
-    plugins: ["auto_annotation_plugin"]
+    plugins: ["auto_annotation_plugin"],
 }
 
 android_library {
@@ -42,12 +43,13 @@ android_library {
         "junit",
         "auto_value_annotations",
         "guava",
-        "NeneCommonAndroid"
+        "NeneCommonAndroid",
+        "truth-prebuilt",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "27",
-    plugins: ["auto_annotation_plugin"]
+    min_sdk_version: "29",
+    plugins: ["auto_annotation_plugin"],
 }
 
 android_library {
@@ -61,20 +63,21 @@ android_library {
     static_libs: [
         "Nene",
         "RemoteDPC",
+        "RemoteAccountAuthenticator",
         "HarrierCommonAndroid",
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
-        "auto_value_annotations"
+        "auto_value_annotations",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "27",
+    min_sdk_version: "29",
 }
 
 android_test {
     name: "HarrierTest",
     srcs: [
-        "src/test/java/**/*.java"
+        "src/test/java/**/*.java",
     ],
     test_suites: [
         "general-tests",
@@ -87,8 +90,9 @@ android_test {
         "compatibility-device-util-axt",
         "platform-test-annotations",
         "truth-prebuilt",
-        "testng" // for assertThrows
+        "testng", // for assertThrows
     ],
     manifest: "src/test/AndroidManifest.xml",
-    min_sdk_version: "27"
+    min_sdk_version: "29",
+    sdk_version: "test_current",
 }

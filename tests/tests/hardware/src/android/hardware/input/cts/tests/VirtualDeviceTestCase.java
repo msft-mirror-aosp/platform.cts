@@ -16,7 +16,10 @@
 
 package android.hardware.input.cts.tests;
 
+import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
+
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
@@ -57,6 +60,8 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
 
     private static final int ARBITRARY_SURFACE_TEX_ID = 1;
 
+    protected static final int PRODUCT_ID = 1;
+    protected static final int VENDOR_ID = 1;
     protected static final int DISPLAY_WIDTH = 100;
     protected static final int DISPLAY_HEIGHT = 100;
 
@@ -89,6 +94,20 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
     VirtualDeviceManager.VirtualDevice mVirtualDevice;
     VirtualDisplay mVirtualDisplay;
 
+    /** Helper class to drop permissions temporarily and restore them at the end of a test. */
+    static final class DropShellPermissionsTemporarily implements AutoCloseable {
+        DropShellPermissionsTemporarily() {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+
+        @Override
+        public void close() {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity();
+        }
+    }
+
     @Override
     void onBeforeLaunchActivity() {
         final Context context = InstrumentationRegistry.getTargetContext();
@@ -98,6 +117,9 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
         // Virtual input devices only operate on virtual displays
         assumeTrue(packageManager.hasSystemFeature(
                 PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
+        // TODO(b/261155110): Re-enable tests once freeform mode is supported in Virtual Display.
+        assumeFalse("Skipping test: VirtualDisplay window policy doesn't support freeform.",
+                packageManager.hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
 
         final String packageName = context.getPackageName();
         associateCompanionDevice(packageName);

@@ -28,6 +28,7 @@ import static android.content.Intent.ACTION_MAIN;
 import static android.content.Intent.CATEGORY_HOME;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION;
 import static android.content.Intent.FLAG_ACTIVITY_NO_USER_ACTION;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
@@ -47,7 +48,9 @@ import static android.content.pm.PackageManager.FEATURE_TELEVISION;
 import static android.content.pm.PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
+import static android.os.UserHandle.USER_ALL;
 import static android.os.UserHandle.USER_SYSTEM;
+import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
 import static android.server.wm.ActivityLauncher.KEY_ACTIVITY_TYPE;
 import static android.server.wm.ActivityLauncher.KEY_DISPLAY_ID;
 import static android.server.wm.ActivityLauncher.KEY_INTENT_EXTRAS;
@@ -62,6 +65,7 @@ import static android.server.wm.ActivityLauncher.KEY_RANDOM_DATA;
 import static android.server.wm.ActivityLauncher.KEY_REORDER_TO_FRONT;
 import static android.server.wm.ActivityLauncher.KEY_SUPPRESS_EXCEPTIONS;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
+import static android.server.wm.ActivityLauncher.KEY_TASK_DISPLAY_AREA_FEATURE_ID;
 import static android.server.wm.ActivityLauncher.KEY_USE_APPLICATION_CONTEXT;
 import static android.server.wm.ActivityLauncher.KEY_WINDOWING_MODE;
 import static android.server.wm.ActivityLauncher.launchActivityFromExtras;
@@ -90,6 +94,7 @@ import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_M
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.LaunchingActivity.KEY_FINISH_BEFORE_LAUNCH;
 import static android.server.wm.app.Components.PipActivity.ACTION_CHANGE_ASPECT_RATIO;
+import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_EXPAND_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_SET_REQUESTED_ORIENTATION;
 import static android.server.wm.app.Components.PipActivity.ACTION_UPDATE_PIP_STATE;
@@ -108,8 +113,11 @@ import static android.view.Display.INVALID_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
+import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -126,6 +134,7 @@ import android.app.ActivityOptions;
 import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
+import android.app.WallpaperManager;
 import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -136,6 +145,8 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
@@ -172,6 +183,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
@@ -190,6 +202,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -231,7 +245,7 @@ public abstract class ActivityManagerTestBase {
             "MockIme cannot be used for devices that do not support installable IMEs";
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
-            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
+            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
 
     protected static final String LOCK_CREDENTIAL = "1234";
 
@@ -239,7 +253,7 @@ public abstract class ActivityManagerTestBase {
     private static final int UI_MODE_TYPE_VR_HEADSET = 0x07;
 
     public static final boolean ENABLE_SHELL_TRANSITIONS =
-            SystemProperties.getBoolean("persist.wm.debug.shell_transit", false);
+            SystemProperties.getBoolean("persist.wm.debug.shell_transit", true);
 
     private static Boolean sHasHomeScreen = null;
     private static Boolean sSupportsSystemDecorsOnSecondaryDisplays = null;
@@ -247,6 +261,7 @@ public abstract class ActivityManagerTestBase {
     private static Boolean sIsAssistantOnTop = null;
     private static Boolean sIsTablet = null;
     private static Boolean sDismissDreamOnActivityStart = null;
+    private static GestureNavSwitchHelper sGestureNavSwitchHelper = null;
     private static boolean sIllegalTaskStateFound;
 
     protected static final int INVALID_DEVICE_ROTATION = -1;
@@ -329,13 +344,19 @@ public abstract class ActivityManagerTestBase {
         return "am start -n " + getActivityName(activityName) + " -d " + data;
     }
 
-    protected static String getAmStartCmdOverHome(final ComponentName activityName) {
-        return "am start --activity-task-on-home -n " + getActivityName(activityName);
+    protected static String getAmStartCmdWithNoAnimation(final ComponentName activityName,
+            final CliIntentExtra... extras) {
+        return appendKeyValuePairs(
+                new StringBuilder("am start -n ")
+                        .append(getActivityName(activityName))
+                        .append(" -f 0x")
+                        .append(toHexString(FLAG_ACTIVITY_NO_ANIMATION)),
+                extras);
     }
 
-    protected static String getAmStartCmdWithDismissKeyguardIfInsecure(
+    protected static String getAmStartCmdWithDismissKeyguard(
             final ComponentName activityName) {
-        return "am start --dismiss-keyguard-if-insecure -n " + getActivityName(activityName);
+        return "am start --dismiss-keyguard -n " + getActivityName(activityName);
     }
 
     protected static String getAmStartCmdWithNoUserAction(final ComponentName activityName,
@@ -363,10 +384,29 @@ public abstract class ActivityManagerTestBase {
     protected void runWithShellPermission(Runnable runnable) {
         NestedShellPermission.run(runnable);
     }
+
     /**
      * Returns true if the activity is shown before timeout.
      */
     protected boolean waitForActivityFocused(int timeoutMs, ComponentName componentName) {
+        waitForActivityResumed(timeoutMs, componentName);
+        return getActivityName(componentName).equals(mWmState.getFocusedActivity());
+    }
+
+    /** Asserts the activity is focused before timeout. */
+    protected void assertActivityFocused(int timeoutMs, ComponentName componentName) {
+        waitForActivityResumed(timeoutMs, componentName);
+        assertThat(mWmState.getFocusedActivity()).isEqualTo(getActivityName(componentName));
+    }
+
+    /** Asserts the activity is not focused until timeout. */
+    protected void assertActivityNotFocused(int timeoutMs, ComponentName componentName) {
+        waitForActivityResumed(timeoutMs, componentName);
+        assertThat(mWmState.getFocusedActivity())
+                .isNotEqualTo(getActivityName(componentName));
+    }
+
+    private void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
@@ -378,7 +418,6 @@ public abstract class ActivityManagerTestBase {
             SystemClock.sleep(200);
             mWmState.computeState();
         }
-        return getActivityName(componentName).equals(mWmState.getFocusedActivity());
     }
 
     /**
@@ -393,6 +432,23 @@ public abstract class ActivityManagerTestBase {
 
         void doAction(String broadcastAction) {
             mContext.sendBroadcast(createIntentWithAction(broadcastAction));
+        }
+
+        void doActionWithRemoteCallback(String broadcastAction,
+                String callbackName, RemoteCallback callback) {
+            try {
+                // We need also a RemoteCallback to ensure the callback passed in is properly set
+                // in the Activity before moving forward.
+                final CompletableFuture<Boolean> future = new CompletableFuture<>();
+                final RemoteCallback setCallback = new RemoteCallback(
+                        (Bundle result) -> future.complete(true));
+                mContext.sendBroadcast(createIntentWithAction(broadcastAction)
+                        .putExtra(callbackName, callback)
+                        .putExtra(EXTRA_SET_PIP_CALLBACK, setCallback));
+                assertTrue(future.get(5000, TimeUnit.MILLISECONDS));
+            } catch (Exception e) {
+                logE("doActionWithRemoteCallback failed", e);
+            }
         }
 
         void finishBroadcastReceiverActivity() {
@@ -425,6 +481,19 @@ public abstract class ActivityManagerTestBase {
         void dismissKeyguardByMethod() {
             mContext.sendBroadcast(createIntentWithAction(ACTION_TRIGGER_BROADCAST)
                     .putExtra(EXTRA_DISMISS_KEYGUARD_METHOD, true));
+        }
+
+        void enterPipAndWait() {
+            try {
+                final CompletableFuture<Boolean> future = new CompletableFuture<>();
+                final RemoteCallback remoteCallback = new RemoteCallback(
+                        (Bundle result) -> future.complete(true));
+                mContext.sendBroadcast(createIntentWithAction(ACTION_ENTER_PIP)
+                        .putExtra(EXTRA_SET_PIP_CALLBACK, remoteCallback));
+                assertTrue(future.get(5000, TimeUnit.MILLISECONDS));
+            } catch (Exception e) {
+                logE("enterPipAndWait failed", e);
+            }
         }
 
         void expandPip() {
@@ -614,14 +683,26 @@ public abstract class ActivityManagerTestBase {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        if (isKeyguardLocked() || !Objects.requireNonNull(
-                mContext.getSystemService(PowerManager.class)).isInteractive()) {
+    public static void wakeUpAndUnlock(Context context) {
+        final KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
+        final PowerManager powerManager = context.getSystemService(PowerManager.class);
+        if (keyguardManager == null || powerManager == null) {
+            return;
+        }
+
+        if (keyguardManager.isKeyguardLocked() || !powerManager.isInteractive()) {
             pressWakeupButton();
             pressUnlockButton();
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        wakeUpAndUnlock(mContext);
+
         launchHomeActivityNoWait();
+        // TODO(b/242933292): Consider removing all the tasks belonging to android.server.wm
+        // instead of removing all and then waiting for allActivitiesResumed.
         removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
 
         runWithShellPermission(() -> {
@@ -631,6 +712,14 @@ public abstract class ActivityManagerTestBase {
             // state.
             mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
         });
+
+        // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
+        // the systemUI might have a few tasks that need to be displayed all the time.
+        // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
+        // restarts can interfere with the test state. To avoid that, its better to wait for all
+        // the activities to come in the resumed state.
+        mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
+                + "be either empty or resumed");
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -791,6 +880,15 @@ public abstract class ActivityManagerTestBase {
         return mInstrumentation.getUiAutomation().takeScreenshot();
     }
 
+    /**
+     * Do a back gesture and trigger a back event from it.
+     * Attempt to simulate human behavior, so don't wait for animations.
+     */
+    void triggerBackEventByGesture(int displayId) {
+        mTouchHelper.triggerBackEventByGesture(
+                displayId, true /* sync */, false /* waitForAnimations */);
+    }
+
     protected Bitmap takeScreenshotForBounds(Rect rect) {
         Bitmap fullBitmap = takeScreenshot();
         return Bitmap.createBitmap(fullBitmap, rect.left, rect.top,
@@ -818,8 +916,14 @@ public abstract class ActivityManagerTestBase {
         mWmState.waitForValidState(activityName);
     }
 
-    protected void launchActivityWithDismissKeyguardIfInsecure(final ComponentName activityName) {
-        executeShellCommand(getAmStartCmdWithDismissKeyguardIfInsecure(activityName));
+    protected void launchActivityWithNoAnimation(final ComponentName activityName,
+            final CliIntentExtra... extras) {
+        executeShellCommand(getAmStartCmdWithNoAnimation(activityName, extras));
+        mWmState.waitForValidState(activityName);
+    }
+
+    protected void launchActivityWithDismissKeyguard(final ComponentName activityName) {
+        executeShellCommand(getAmStartCmdWithDismissKeyguard(activityName));
         mWmState.waitForValidState(activityName);
     }
 
@@ -867,13 +971,17 @@ public abstract class ActivityManagerTestBase {
         return mWmState.getDisplay(mWmState.getDisplayByActivity(activity)).getWindowingMode();
     }
 
+    public static void closeSystemDialogs() {
+        executeShellCommand(AM_BROADCAST_CLOSE_SYSTEM_DIALOGS);
+    }
+
     /**
      * Launches the home activity directly. If there is no specific reason to simulate a home key
      * (which will trigger stop-app-switches), it is the recommended method to go home.
      */
     protected static void launchHomeActivityNoWait() {
         // dismiss all system dialogs before launch home.
-        executeShellCommand(AM_BROADCAST_CLOSE_SYSTEM_DIALOGS);
+        closeSystemDialogs();
         executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
     }
 
@@ -900,6 +1008,26 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityOnDisplay(ComponentName activityName, int windowingMode,
             int displayId, final CliIntentExtra... extras) {
         executeShellCommand(getAmStartCmd(activityName, displayId, extras)
+                + " --windowingMode " + windowingMode);
+        mWmState.waitForValidState(new WaitForValidActivityState.Builder(activityName)
+                .setWindowingMode(windowingMode)
+                .build());
+    }
+
+    protected void launchActivityOnTaskDisplayArea(ComponentName activityName, int windowingMode,
+            int launchTaskDisplayAreaFeatureId, final CliIntentExtra... extras) {
+        executeShellCommand(getAmStartCmd(activityName, extras)
+                + " --task-display-area-feature-id " + launchTaskDisplayAreaFeatureId
+                + " --windowingMode " + windowingMode);
+        mWmState.waitForValidState(new WaitForValidActivityState.Builder(activityName)
+                .setWindowingMode(windowingMode)
+                .build());
+    }
+
+    protected void launchActivityOnTaskDisplayArea(ComponentName activityName, int windowingMode,
+            int launchTaskDisplayAreaFeatureId, int displayId, final CliIntentExtra... extras) {
+        executeShellCommand(getAmStartCmd(activityName, displayId, extras)
+                + " --task-display-area-feature-id " + launchTaskDisplayAreaFeatureId
                 + " --windowingMode " + windowingMode);
         mWmState.waitForValidState(new WaitForValidActivityState.Builder(activityName)
                 .setWindowingMode(windowingMode)
@@ -1008,6 +1136,11 @@ public abstract class ActivityManagerTestBase {
      * task.
      */
     protected void moveActivityToRootTaskOrOnTop(ComponentName activityName, int rootTaskId) {
+        moveActivityToRootTaskOrOnTop(activityName, rootTaskId, FEATURE_UNDEFINED);
+    }
+
+    protected void moveActivityToRootTaskOrOnTop(ComponentName activityName, int rootTaskId,
+                                                 int taskDisplayAreaFeatureId) {
         mWmState.computeState(activityName);
         Task rootTask = getRootTask(rootTaskId);
         if (rootTask.getActivities().size() != 0) {
@@ -1016,6 +1149,7 @@ public abstract class ActivityManagerTestBase {
                     .setDisplayId(rootTask.mDisplayId)
                     .setWindowingMode(rootTask.getWindowingMode())
                     .setActivityType(rootTask.getActivityType())
+                    .setLaunchTaskDisplayAreaFeatureId(taskDisplayAreaFeatureId)
                     .setTargetActivity(activityName)
                     .allowMultipleInstances(false)
                     .setUseInstrumentation()
@@ -1073,6 +1207,14 @@ public abstract class ActivityManagerTestBase {
                 && getSupportsInsecureLockScreen();
     }
 
+    /** Try to enable gesture navigation mode */
+    protected void enableAndAssumeGestureNavigationMode() {
+        if (sGestureNavSwitchHelper == null) {
+            sGestureNavSwitchHelper = new GestureNavSwitchHelper();
+        }
+        assumeTrue(sGestureNavSwitchHelper.enableGestureNavigationMode());
+    }
+
     protected boolean supportsBlur() {
         return SystemProperties.get("ro.surface_flinger.supports_background_blur", "default")
                 .equals("1");
@@ -1120,8 +1262,9 @@ public abstract class ActivityManagerTestBase {
     protected void waitAndAssertActivityStateOnDisplay(ComponentName activityName, String state,
             int displayId, String message) {
         waitAndAssertActivityState(activityName, state, message);
-        assertEquals(message, mWmState.getDisplayByActivity(activityName),
-                displayId);
+        assertEquals(message,
+                /* expected = */ displayId,
+                /* actual = */ mWmState.getDisplayByActivity(activityName));
     }
 
     public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
@@ -1392,6 +1535,27 @@ public abstract class ActivityManagerTestBase {
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
     protected void disableIgnoreOrientationRequest() {
         mObjectTracker.manage(new IgnoreOrientationRequestSession(false /* enable */));
+    }
+
+    /**
+     * Test @Rule class that disables Immersive mode confirmation dialog.
+     */
+    protected static class DisableImmersiveModeConfirmationRule implements TestRule {
+        @Override
+        public Statement apply(Statement base, Description description) {
+            return new Statement() {
+                @Override
+                public void evaluate() throws Throwable {
+                    try (SettingsSession<String> immersiveModeConfirmationSetting =
+                                 new SettingsSession<>(
+                            Settings.Secure.getUriFor(IMMERSIVE_MODE_CONFIRMATIONS),
+                            Settings.Secure::getString, Settings.Secure::putString)) {
+                        immersiveModeConfirmationSetting.set("confirmed");
+                        base.evaluate();
+                    }
+                }
+            };
+        }
     }
 
     /**
@@ -1838,6 +2002,49 @@ public abstract class ActivityManagerTestBase {
         }
     }
 
+    protected ChangeWallpaperSession createManagedChangeWallpaperSession() {
+        return mObjectTracker.manage(new ChangeWallpaperSession());
+    }
+
+    protected class ChangeWallpaperSession implements AutoCloseable {
+        private final WallpaperManager mWallpaperManager;
+        private Bitmap mTestBitmap;
+
+        public ChangeWallpaperSession() {
+            mWallpaperManager = WallpaperManager.getInstance(mContext);
+        }
+
+        public Bitmap getTestBitmap() {
+            if (mTestBitmap == null) {
+                mTestBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+                final Canvas canvas = new Canvas(mTestBitmap);
+                canvas.drawColor(Color.BLUE);
+            }
+            return mTestBitmap;
+        }
+
+        public void setImageWallpaper(Bitmap bitmap) {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    mWallpaperManager.setBitmap(bitmap));
+        }
+
+        public void setWallpaperComponent(ComponentName componentName) {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    mWallpaperManager.setWallpaperComponent(componentName));
+        }
+
+        @Override
+        public void close() {
+            SystemUtil.runWithShellPermissionIdentity(() -> mWallpaperManager.clearWallpaper());
+            if (mTestBitmap != null) {
+                mTestBitmap.recycle();
+            }
+            // Turning screen off/on to flush deferred color events due to wallpaper changed.
+            pressSleepButton();
+            pressWakeupButton();
+            pressUnlockButton();
+        }
+    }
     /**
      * Returns whether the test device respects settings of locked user rotation mode.
      *
@@ -1987,6 +2194,7 @@ public abstract class ActivityManagerTestBase {
         static final int EQUALS = 1;
         static final int GREATER_THAN = 2;
         static final int LESS_THAN = 3;
+        static final int GREATER_THAN_OR_EQUALS = 4;
 
         final T mEvent;
         final int mRule;
@@ -2010,6 +2218,9 @@ public abstract class ActivityManagerTestBase {
                     case LESS_THAN:
                         mMessage = event + " must be less than " + count;
                         break;
+                    case GREATER_THAN_OR_EQUALS:
+                        mMessage = event + " must be greater than (or equals to) " + count;
+                        break;
                     default:
                         mMessage = "Don't care";
                 }
@@ -2027,6 +2238,8 @@ public abstract class ActivityManagerTestBase {
                     return value > mCount;
                 case LESS_THAN:
                     return value < mCount;
+                case GREATER_THAN_OR_EQUALS:
+                    return value >= mCount;
                 default:
             }
             throw new RuntimeException("Unknown CountSpec rule");
@@ -2097,7 +2310,7 @@ public abstract class ActivityManagerTestBase {
     }
 
     /** Assert the activity is either relaunched or received configuration changed. */
-    static void assertActivityLifecycle(ComponentName activityName, boolean relaunched) {
+    protected static void assertActivityLifecycle(ComponentName activityName, boolean relaunched) {
         Condition.<String>waitForResult(
                 activityName + (relaunched ? " relaunched" : " config changed"),
                 condition -> condition
@@ -2356,6 +2569,7 @@ public abstract class ActivityManagerTestBase {
         private Bundle mExtras;
         private LaunchInjector mLaunchInjector;
         private ActivitySessionClient mActivitySessionClient;
+        private int mLaunchTaskDisplayAreaFeatureId = FEATURE_UNDEFINED;
 
         private enum LauncherType {
             INSTRUMENTATION, LAUNCHING_ACTIVITY, BROADCAST_RECEIVER
@@ -2450,6 +2664,12 @@ public abstract class ActivityManagerTestBase {
 
         public LaunchActivityBuilder setWaitForLaunched(boolean shouldWait) {
             mWaitForLaunched = shouldWait;
+            return this;
+        }
+
+        public LaunchActivityBuilder setLaunchTaskDisplayAreaFeatureId(
+                int launchTaskDisplayAreaFeatureId) {
+            mLaunchTaskDisplayAreaFeatureId = launchTaskDisplayAreaFeatureId;
             return this;
         }
 
@@ -2560,6 +2780,7 @@ public abstract class ActivityManagerTestBase {
             b.putBoolean(KEY_SUPPRESS_EXCEPTIONS, mSuppressExceptions);
             b.putInt(KEY_INTENT_FLAGS, mIntentFlags);
             b.putBundle(KEY_INTENT_EXTRAS, getExtras());
+            b.putInt(KEY_TASK_DISPLAY_AREA_FEATURE_ID, mLaunchTaskDisplayAreaFeatureId);
             final Context context = getInstrumentation().getContext();
             launchActivityFromExtras(context, b, mLaunchInjector);
         }
@@ -2638,6 +2859,13 @@ public abstract class ActivityManagerTestBase {
 
             if (mIntentFlags != 0) {
                 commandBuilder.append(" --ei " + KEY_INTENT_FLAGS + " ").append(mIntentFlags);
+            }
+
+            if (mLaunchTaskDisplayAreaFeatureId != FEATURE_UNDEFINED) {
+                commandBuilder.append(" --task-display-area-feature-id ")
+                        .append(mLaunchTaskDisplayAreaFeatureId);
+                commandBuilder.append(" --ei " + KEY_TASK_DISPLAY_AREA_FEATURE_ID + " ")
+                        .append(mLaunchTaskDisplayAreaFeatureId);
             }
 
             if (mLaunchInjector != null) {

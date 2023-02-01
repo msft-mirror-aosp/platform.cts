@@ -36,6 +36,18 @@
                 android:protectionLevel="signature|privileged"
                 android:label="@string/car_permission_label_control_car_energy"
                 android:description="@string/car_permission_desc_control_car_energy"/>
+    <permission android:name="android.car.permission.READ_DRIVER_MONITORING_SETTINGS"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_read_driver_monitoring_settings"
+         android:description="@string/car_permission_desc_read_driver_monitoring_settings"/>
+    <permission android:name="android.car.permission.CONTROL_DRIVER_MONITORING_SETTINGS"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_control_driver_monitoring_settings"
+         android:description="@string/car_permission_desc_control_driver_monitoring_settings"/>
+    <permission android:name="android.car.permission.READ_DRIVER_MONITORING_STATES"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_read_driver_monitoring_states"
+         android:description="@string/car_permission_desc_read_driver_monitoring_states"/>
     <permission android:name="android.car.permission.ADJUST_RANGE_REMAINING"
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_label_adjust_range_remaining"
@@ -64,6 +76,10 @@
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_label_control_car_seats"
          android:description="@string/car_permission_desc_control_car_seats"/>
+    <permission android:name="android.car.permission.CONTROL_CAR_AIRBAGS"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_control_car_airbags"
+         android:description="@string/car_permission_desc_control_car_airbags"/>
     <permission android:name="android.car.permission.CAR_MILEAGE"
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_label_mileage"
@@ -137,6 +153,14 @@
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_label_vendor_permission_info"
          android:description="@string/car_permission_desc_vendor_permission_info"/>
+    <permission android:name="android.car.permission.MANAGE_REMOTE_DEVICE"
+                android:protectionLevel="signature|privileged"
+                android:label="@string/car_permission_label_manage_remote_device"
+                android:description="@string/car_permission_desc_manage_remote_device"/>
+    <permission android:name="android.car.permission.MANAGE_OCCUPANT_CONNECTION"
+                android:protectionLevel="signature|privileged"
+                android:label="@string/car_permission_label_manage_occupant_connection"
+                android:description="@string/car_permission_desc_manage_occupant_connection"/>
 
     <!-- Allows an application to read the vehicle exterior environment information. For example,
          it allows an application to read the vehicle exterior temperature and night mode status.
@@ -150,10 +174,6 @@
                 android:protectionLevel="signature|privileged"
                 android:label="@string/car_permission_label_car_epoch_time"
                 android:description="@string/car_permission_desc_car_epoch_time"/>
-    <permission android:name="android.car.permission.STORAGE_ENCRYPTION_BINDING_SEED"
-                android:protectionLevel="signature|privileged"
-                android:label="@string/car_permission_label_encryption_binding_seed"
-                android:description="@string/car_permission_desc_encryption_binding_seed"/>
     <permission android:name="android.car.permission.CAR_EXTERIOR_LIGHTS"
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_label_car_exterior_lights"
@@ -178,6 +198,10 @@
          android:protectionLevel="normal"
          android:label="@string/car_permission_label_car_powertrain"
          android:description="@string/car_permission_desc_car_powertrain"/>
+    <permission android:name="android.car.permission.CONTROL_CAR_POWERTRAIN"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_control_car_powertrain"
+         android:description="@string/car_permission_desc_control_car_powertrain"/>
     <permission android:name="android.car.permission.CAR_NAVIGATION_MANAGER"
          android:protectionLevel="signature|privileged"
          android:label="@string/car_permission_car_navigation_manager"
@@ -482,4 +506,40 @@
         android:protectionLevel="signature|privileged"
         android:label="@string/car_permission_label_manage_thread_priority"
         android:description="@string/car_permission_desc_manage_thread_priority"/>
+    <permission android:name="android.car.permission.BIND_OEM_CAR_SERVICE"
+        android:protectionLevel="signature|privileged"
+        android:label="@string/car_permission_label_bind_oem_car_service"
+        android:description="@string/car_permission_desc_bind_oem_car_service"/>
+    <permission android:name="android.car.permission.MANAGE_OCCUPANT_ZONE"
+        android:protectionLevel="signature|privileged"
+        android:label="@string/car_permission_label_manage_occupant_zone"
+        android:description="@string/car_permission_desc_manage_occupant_zone"/>
+     <permission android:name="android.car.permission.CONTROL_STEERING_WHEEL"
+        android:protectionLevel="signature|privileged"
+        android:label="@string/car_permission_label_control_steering_wheel"
+        android:description="@string/car_permission_desc_control_steering_wheel"/>
+     <permission android:name="android.car.permission.USE_REMOTE_ACCESS"
+        android:protectionLevel="normal"
+        android:label="@string/car_permission_label_use_remote_access"
+        android:description="@string/car_permission_desc_use_remote_access"/>
+     <permission android:name="android.car.permission.CONTROL_REMOTE_ACCESS"
+        android:protectionLevel="signature|privileged"
+        android:label="@string/car_permission_label_control_remote_access"
+        android:description="@string/car_permission_desc_control_remote_access"/>
+    <permission android:name="android.car.permission.READ_ADAS_SETTINGS"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_read_adas_settings"
+         android:description="@string/car_permission_desc_read_adas_settings"/>
+    <permission android:name="android.car.permission.CONTROL_ADAS_SETTINGS"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_control_adas_settings"
+         android:description="@string/car_permission_desc_control_adas_settings"/>
+    <permission android:name="android.car.permission.READ_ADAS_STATES"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_read_adas_states"
+         android:description="@string/car_permission_desc_read_adas_states"/>
+    <permission android:name="android.car.permission.CONTROL_ADAS_STATES"
+         android:protectionLevel="signature|privileged"
+         android:label="@string/car_permission_label_control_adas_states"
+         android:description="@string/car_permission_desc_control_adas_states"/>
 </manifest>

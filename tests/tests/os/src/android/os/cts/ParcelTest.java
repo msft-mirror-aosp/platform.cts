@@ -53,6 +53,8 @@ import com.google.common.util.concurrent.AbstractFuture;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class ParcelTest extends AndroidTestCase {
 
@@ -2557,6 +2559,23 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    public void testWriteTypedList() {
+        Parcel p = Parcel.obtain();
+        ArrayList<SimpleParcelable> list = new ArrayList<>();
+        SimpleParcelable spy = spy(new SimpleParcelable(42));
+        list.add(spy);
+        int flags = Parcelable.PARCELABLE_WRITE_RETURN_VALUE;
+        p.writeTypedList(list, flags);
+
+        verify(spy).writeToParcel(p, flags);
+
+        p.setDataPosition(0);
+        ArrayList<SimpleParcelable> read = p.createTypedArrayList(SimpleParcelable.CREATOR);
+        assertEquals(list.size(), read.size());
+        assertEquals(list.get(0).getValue(), read.get(0).getValue());
+        p.recycle();
+    }
+
     public void testCreateTypedArrayList() {
         Parcel p;
         ArrayList<Signature> s = new ArrayList<Signature>();
@@ -4143,7 +4162,7 @@ public class ParcelTest extends AndroidTestCase {
      * A class that would be Parcelable except that it doesn't have a CREATOR field declared to be
      * of the correct type.
      */
-    @SuppressWarnings("unused") // Referenced via reflection only
+    @SuppressWarnings({"unused", "ParcelableCreator"}) // Referenced via reflection only
     private static class ParcelableWithBadCreator implements Parcelable {
 
         static {
@@ -4672,5 +4691,70 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
         p = Parcel.obtain();
         assertEquals(0, p.getFlags());
+    }
+
+    public static class SimpleParcelableWithoutNestedCreator implements Parcelable {
+        private final int value;
+
+        public SimpleParcelableWithoutNestedCreator(int value) {
+            this.value = value;
+        }
+
+        private SimpleParcelableWithoutNestedCreator(Parcel in) {
+            this.value = in.readInt();
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            out.writeInt(value);
+        }
+
+        public static Parcelable.Creator<SimpleParcelableWithoutNestedCreator> CREATOR =
+                new SimpleParcelableWithoutNestedCreatorCreator();
+    }
+
+    public static class SimpleParcelableWithoutNestedCreatorCreator implements
+            Parcelable.Creator<SimpleParcelableWithoutNestedCreator> {
+        @Override
+        public SimpleParcelableWithoutNestedCreator createFromParcel(Parcel source) {
+            return new SimpleParcelableWithoutNestedCreator(source);
+        }
+
+        @Override
+        public SimpleParcelableWithoutNestedCreator[] newArray(int size) {
+            return new SimpleParcelableWithoutNestedCreator[size];
+        }
+    }
+
+    // http://b/232589966
+    public void testReadParcelableWithoutNestedCreator() {
+        Parcel p = Parcel.obtain();
+        p.writeParcelable(new SimpleParcelableWithoutNestedCreator(1), 0);
+        p.setDataPosition(0);
+        // First time checks the type of the creator using reflection
+        SimpleParcelableWithoutNestedCreator parcelable =
+                p.readParcelable(getClass().getClassLoader(),
+                        SimpleParcelableWithoutNestedCreator.class);
+        assertEquals(1, parcelable.value);
+        p.recycle();
+
+        p = Parcel.obtain();
+        p.writeParcelable(new SimpleParcelableWithoutNestedCreator(2), 0);
+        p.setDataPosition(0);
+        // Second time tries to read it from a cache
+        parcelable =
+                p.readParcelable(getClass().getClassLoader(),
+                        SimpleParcelableWithoutNestedCreator.class);
+        assertEquals(2, parcelable.value);
+        p.recycle();
     }
 }

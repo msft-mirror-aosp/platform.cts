@@ -37,15 +37,21 @@ import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -70,7 +76,6 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
@@ -78,6 +83,7 @@ import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
 import android.view.inputmethod.cts.util.RequireImeCompatFlagRule;
 import android.view.inputmethod.cts.util.TestActivity;
+import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.TestWebView;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
@@ -85,8 +91,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.ColorInt;
+import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -96,6 +104,7 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeLayoutInfo;
@@ -106,12 +115,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -125,6 +136,13 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     private static final long LAYOUT_STABLE_THRESHOLD = TimeUnit.SECONDS.toMillis(3);
 
     private static final int NEW_KEYBOARD_HEIGHT = 400;
+    private static final PreBackPressProcedure NO_OP_PRE_BACK_PRESS_PROCEDURE =
+            (instrumentation, editorRef) -> {};
+
+    private static final String DISABLE_AUTO_ROTATE_CMD =
+            "settings put system accelerometer_rotation 0";
+    private static final String ENABLE_AUTO_ROTATE_CMD =
+            "settings put system accelerometer_rotation 1";
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -139,39 +157,16 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
     }
 
-    private static Predicate<ImeEvent> editorMatcher(
-            @NonNull String eventName, @NonNull String marker) {
-        return event -> {
-            if (!TextUtils.equals(eventName, event.getEventName())) {
-                return false;
-            }
-            final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-            return TextUtils.equals(marker, editorInfo.privateImeOptions);
-        };
-    }
-
-    private static Predicate<ImeEvent> showSoftInputMatcher(int requiredFlags) {
-        return event -> {
-            if (!TextUtils.equals("showSoftInput", event.getEventName())) {
-                return false;
-            }
-            final int flags = event.getArguments().getInt("flags");
-            return (flags & requiredFlags) == requiredFlags;
-        };
-    }
-
-    private static Predicate<ImeEvent> hideSoftInputMatcher() {
-        return event -> TextUtils.equals("hideSoftInput", event.getEventName());
-    }
-
     private static Predicate<ImeEvent> onFinishInputViewMatcher(boolean expectedFinishingInput) {
-        return event -> {
+        Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onFinishInputView", event.getEventName())) {
                 return false;
             }
             final boolean finishingInput = event.getArguments().getBoolean("finishingInput");
             return finishingInput == expectedFinishingInput;
         };
+        return withDescription("onFinishInputView(finishingInput=" + expectedFinishingInput + ")",
+                matcher);
     }
 
     private Pair<EditText, EditText> launchTestActivity(@NonNull String focusedMarker,
@@ -201,6 +196,23 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private EditText launchTestActivity(@NonNull String marker) {
         return launchTestActivity(marker, getTestMarker()).first;
+    }
+
+    private EditText launchTestActivity2(@NonNull String marker) {
+        final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
+        new TestActivity.Starter().startSync(activity -> {
+            final LinearLayout layout = new LinearLayout(activity);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            final EditText focusedEditText = new EditText(activity);
+            focusedEditText.setHint("focused editText");
+            focusedEditText.setPrivateImeOptions(marker);
+            focusedEditText.requestFocus();
+            focusedEditTextRef.set(focusedEditText);
+            layout.addView(focusedEditText);
+            return layout;
+        }, TestActivity2.class);
+        return focusedEditTextRef.get();
     }
 
     @Test
@@ -246,8 +258,16 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
+    @FunctionalInterface
+    private interface PreBackPressProcedure {
+        void run(
+                Instrumentation instrumentation,
+                AtomicReference<EditText> editorRef) throws Exception;
+    }
+
     private void verifyHideImeBackPressed(
-            boolean appRequestsBackCallback, boolean imeRequestsBackCallback) throws Exception {
+            boolean appRequestsBackCallback, boolean imeRequestsBackCallback,
+            @NonNull PreBackPressProcedure preBackPressProcedure) throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final Context context = instrumentation.getTargetContext();
         final InputMethodManager imm = context.getSystemService(InputMethodManager.class);
@@ -258,6 +278,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         // WindowOnBackDispatcher is created at the same time as the ViewRootImpl, for test purpose,
         // we need to manually set the flag on ApplicationInfo before the window is created which
         // happens during the MockIme creation and TestActivity creation.
+        final boolean onBackCallbackEnabled =
+                context.getApplicationInfo().isOnBackInvokedCallbackEnabled();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(),
@@ -266,17 +288,24 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         .setOnBackCallbackEnabled(imeRequestsBackCallback)
         )) {
             final ImeEventStream stream = imeSession.openEventStream();
-
             final String marker = getTestMarker();
+            final AtomicInteger backCallbackInvocationCount = new AtomicInteger();
 
             if (appRequestsBackCallback) {
                 context.getApplicationInfo().setEnableOnBackInvokedCallback(true);
             }
 
             final EditText editText = launchTestActivity(marker);
+            final AtomicReference<EditText> editorRef = new AtomicReference<>();
+            editorRef.set(editText);
             final TestActivity testActivity = (TestActivity) editText.getContext();
 
-            if (!appRequestsBackCallback) {
+            if (appRequestsBackCallback) {
+                testActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> {
+                            backCallbackInvocationCount.getAndIncrement();
+                        });
+            } else {
                 testActivity.setIgnoreBackKey(true);
             }
 
@@ -297,6 +326,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     View.VISIBLE, TIMEOUT);
             expectImeVisible(TIMEOUT);
 
+            preBackPressProcedure.run(instrumentation, editorRef);
+
             // Pressing back key, expect soft-keyboard will become invisible.
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
@@ -304,31 +335,77 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                     View.GONE, TIMEOUT);
             expectImeInvisible(TIMEOUT);
+
+            if (appRequestsBackCallback) {
+                // Verify that IME callback is removed after IME is hidden.
+                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                assertEquals(1, backCallbackInvocationCount.get());
+            }
+        } finally {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(onBackCallbackEnabled);
         }
     }
 
     @Test
     public void testHideImeAfterBackPressed_legacyAppLegacyIme() throws Exception {
-        verifyHideImeBackPressed(false/* appRequestsBackCallback */,
-                false/* imeRequestsBackCallback */);
+        verifyHideImeBackPressed(false /* appRequestsBackCallback */,
+                false /* imeRequestsBackCallback */,
+                (instrumentation, editorRef) -> {} /* pre back press procedure */);
     }
 
     @Test
     public void testHideImeAfterBackPressed_migratedAppLegacyIme() throws Exception {
-        verifyHideImeBackPressed(true/* appRequestsBackCallback */,
-                false/* imeRequestsBackCallback */);
+        verifyHideImeBackPressed(true /* appRequestsBackCallback */,
+                false /* imeRequestsBackCallback */,
+                NO_OP_PRE_BACK_PRESS_PROCEDURE);
     }
 
     @Test
     public void testHideImeAfterBackPressed_migratedAppMigratedIme() throws Exception {
-        verifyHideImeBackPressed(true/* appRequestsBackCallback */,
-                true/* imeRequestsBackCallback */);
+        verifyHideImeBackPressed(true /* appRequestsBackCallback */,
+                true /* imeRequestsBackCallback */,
+                NO_OP_PRE_BACK_PRESS_PROCEDURE);
     }
 
     @Test
     public void testHideImeAfterBackPressed_legacyAppMigratedIme() throws Exception {
-        verifyHideImeBackPressed(false/* appRequestsBackCallback */,
-                true/* imeRequestsBackCallback */);
+        verifyHideImeBackPressed(true /* appRequestsBackCallback */,
+                true /* imeRequestsBackCallback */,
+                NO_OP_PRE_BACK_PRESS_PROCEDURE);
+    }
+
+    @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
+    @Test
+    public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
+        verifyHideImeBackPressed(true /* appRequestsBackCallback */,
+                true /* imeRequestsBackCallback */,
+                (instrumentation, editorRef) -> {
+                    TestUtils.turnScreenOff();
+                    TestUtils.turnScreenOn();
+                    TestUtils.unlockScreen();
+                    // Before testing the back procedure, ensure the test activity has the window
+                    // focus and the IME visible after screen-on.
+                    TestUtils.waitOnMainUntil(editorRef.get()::hasWindowFocus, TIMEOUT);
+                    expectImeVisible(TIMEOUT);
+                } /* pre back press procedure */);
+    }
+
+    @Test
+    public void testHideImeAfterBackPressed_rootViewChanges() throws Exception {
+        verifyHideImeBackPressed(true /* appRequestsBackCallback */,
+                true /* imeRequestsBackCallback */,
+                (instrumentation, editorRef) -> {
+                    AutoCloseableWrapper<PopupWindow> popupWindowWrapper =
+                            createPopupWindowWrapper(editorRef.get());
+                    instrumentation.waitForIdleSync();
+                    // Verify IME became invisible when the non-ime-focusable PopupWindow is shown.
+                    expectImeInvisible(NOT_EXPECT_TIMEOUT);
+
+                    runOnMainSync(() -> popupWindowWrapper.get().dismiss());
+                    // Verify IME became visible when the non-ime-focusable PopupWindow has
+                    // dismissed.
+                    expectImeVisible(TIMEOUT);
+                } /* pre back press procedure */);
     }
 
     @Test
@@ -481,7 +558,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             final AtomicReference<EditText> ediTextRef = new AtomicReference<>();
             final TestActivity testEditorActivity =
-                    TestActivity.startNewTaskSync(activity -> {
+                    new TestActivity.Starter().asNewTask().startSync(activity -> {
                         final LinearLayout layout = new LinearLayout(activity);
                         layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -492,7 +569,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         layout.addView(focusedEditText);
                         ediTextRef.set(focusedEditText);
                         return layout;
-                    });
+                    }, TestActivity.class);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
@@ -582,7 +659,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final TestActivity testActivity =
                     new TestActivity.Starter()
                             .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
-                            .startSync(LinearLayout::new);
+                            .startSync(LinearLayout::new, TestActivity.class);
 
             // Launch a dialog
             final String marker = getTestMarker();
@@ -695,7 +772,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final TestActivity testActivity =
                     new TestActivity.Starter()
                             .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
-                            .startSync(LinearLayout::new);
+                            .startSync(LinearLayout::new, TestActivity.class);
 
             // Launch a dialog and show keyboard
             final String marker = getTestMarker();
@@ -835,7 +912,71 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
             final AtomicReference<EditText> editorRef = new AtomicReference<>();
-            TestActivity.startSync(activity -> {
+            new TestActivity.Starter().withWindowingMode(
+                    WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        layout.setGravity(Gravity.BOTTOM);
+                        final EditText editText = new EditText(activity);
+                        editorRef.set(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(marker);
+                        editText.requestFocus();
+                        layout.addView(editText);
+                        return layout;
+                    }, TestActivity.class);
+            // Show IME.
+            runOnMainSync(() -> editorRef.get().getContext().getSystemService(
+                    InputMethodManager.class).showSoftInput(editorRef.get(), 0));
+
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Create then show a non-ime-focusable PopupWindow with INPUT_METHOD_NOT_NEEDED.
+            try (AutoCloseableWrapper<PopupWindow> popupWindowWrapper =
+                    createPopupWindowWrapper(editorRef.get())
+            ) {
+                instrumentation.waitForIdleSync();
+                // Verify IME became invisible when the non-ime-focusable PopupWindow is shown.
+                expectImeInvisible(NOT_EXPECT_TIMEOUT);
+
+                runOnMainSync(() -> popupWindowWrapper.get().dismiss());
+                // Verify IME became visible when the non-ime-focusable PopupWindow has dismissed.
+                expectImeVisible(TIMEOUT);
+            }
+        }
+    }
+
+    /**
+     * Test case for Bug 228766370.
+     *
+     * <p>This test ensures that IME will visible on an ime-focusable overlay window when another
+     * activity behind the overlay that requests to show IME. <p/>
+     */
+    @Test
+    public void testImeVisibleOnImeFocusableOverlay() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder()
+                        .setInputViewHeight(NEW_KEYBOARD_HEIGHT)
+                        .setDrawsBehindNavBar(true))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            TestActivity testActivity = TestActivity.startSync(activity -> {
+                final View view = new View(activity);
+                view.setLayoutParams(new LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT));
+                return view;
+            });
+
+            // Show an overlay with "IME Focusable" (NOT_FOCUSABLE | ALT_FOCUSABLE_IM) flags.
+            runOnMainSync(() -> SystemUtil.runWithShellPermissionIdentity(() ->
+                    testActivity.showOverlayWindow(true /* imeFocusable */)));
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+
+            // Start a next activity to expect IME should visible on top of the overlay.
+            final String marker = getTestMarker();
+            final AtomicReference<EditText> editorRef = new AtomicReference<>();
+            new TestActivity.Starter().asNewTask().startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
                 layout.setGravity(Gravity.BOTTOM);
@@ -846,37 +987,13 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 editText.requestFocus();
                 layout.addView(editText);
                 return layout;
-            });
+            }, TestActivity.class);
             // Show IME.
             runOnMainSync(() -> editorRef.get().getContext().getSystemService(
                     InputMethodManager.class).showSoftInput(editorRef.get(), 0));
 
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeVisible(TIMEOUT);
-
-            // Create then show a non-ime-focusable PopupWindow with INPUT_METHOD_NOT_NEEDED.
-            try (AutoCloseableWrapper<PopupWindow> popupWindowWrapper = AutoCloseableWrapper.create(
-                    TestUtils.getOnMainSync(() -> {
-                        final PopupWindow popup = new PopupWindow(editorRef.get().getContext());
-                        popup.setInputMethodMode(INPUT_METHOD_NOT_NEEDED);
-                        final TextView textView = new TextView(editorRef.get().getContext());
-                        textView.setText("Popup");
-                        popup.setContentView(textView);
-                        popup.setWidth(MATCH_PARENT);
-                        popup.setHeight(MATCH_PARENT);
-                        // Show the popup window.
-                        popup.showAsDropDown(textView);
-                        return popup;
-                    }), popup -> TestUtils.runOnMainSync(popup::dismiss))
-            ) {
-                instrumentation.waitForIdleSync();
-                // Verify IME became invisible when the non-ime-focusable PopupWindow is shown.
-                expectImeInvisible(NOT_EXPECT_TIMEOUT);
-
-                runOnMainSync(() ->popupWindowWrapper.get().dismiss());
-                // Verify IME became visible when the non-ime-focusable PopupWindow has dismissed.
-                expectImeVisible(TIMEOUT);
-            }
         }
     }
 
@@ -904,19 +1021,19 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Launch a test activity with focusing editText to show keyboard
             new TestActivity.Starter().withWindowingMode(
                     WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                final EditText editText = new EditText(activity);
-                editTextRef.set(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(markerForActivity1);
-                editText.requestFocus();
-                layout.addView(editText);
-                activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
-                if (mode == TestSoftInputMode.ALWAYS_HIDDEN_WITH_BACKWARD_NAV) {
-                    activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-                }
-                return layout;
-            });
+                        final LinearLayout layout = new LinearLayout(activity);
+                        final EditText editText = new EditText(activity);
+                        editTextRef.set(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(markerForActivity1);
+                        editText.requestFocus();
+                        layout.addView(editText);
+                        activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+                        if (mode == TestSoftInputMode.ALWAYS_HIDDEN_WITH_BACKWARD_NAV) {
+                            activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                        }
+                        return layout;
+                    }, TestActivity.class);
 
             expectEvent(stream, editorMatcher("onStartInput", markerForActivity1), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", markerForActivity1), TIMEOUT);
@@ -927,9 +1044,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Launch another app task activity to hide keyboard
             new TestActivity.Starter().asNewTask().withWindowingMode(
                     WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-                return new LinearLayout(activity);
-            });
+                        activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                        return new LinearLayout(activity);
+                    }, TestActivity.class);
             expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
             expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
@@ -941,15 +1058,15 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 final String markerForActivity2 = getTestMarker();
                 new TestActivity.Starter().asSameTaskAndClearTop().withWindowingMode(
                         WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                    final LinearLayout layout = new LinearLayout(activity);
-                    final EditText editText = new EditText(activity);
-                    editText.setHint("focused editText");
-                    editText.setPrivateImeOptions(markerForActivity2);
-                    editText.requestFocus();
-                    layout.addView(editText);
-                    activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_HIDDEN);
-                    return layout;
-                });
+                            final LinearLayout layout = new LinearLayout(activity);
+                            final EditText editText = new EditText(activity);
+                            editText.setHint("focused editText");
+                            editText.setPrivateImeOptions(markerForActivity2);
+                            editText.requestFocus();
+                            layout.addView(editText);
+                            activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_HIDDEN);
+                            return layout;
+                        }, TestActivity.class);
                 expectEvent(stream, editorMatcher("onStartInput", markerForActivity2), TIMEOUT);
             } else {
                 // Press back key to back to the first test activity
@@ -986,19 +1103,20 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final TestActivity testActivity =
                     new TestActivity.Starter().withWindowingMode(
                             WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                        final LinearLayout layout = new LinearLayout(activity);
-                        layout.setOrientation(LinearLayout.VERTICAL);
-                        layout.setGravity(Gravity.BOTTOM);
-                        final EditText editText = new EditText(activity);
-                        editTextRef.set(editText);
-                        editText.setHint("focused editText");
-                        editText.setPrivateImeOptions(marker);
-                        editText.requestFocus();
-                        layout.addView(editText);
-                        activity.getWindow().getDecorView().setFitsSystemWindows(true);
-                        activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
-                        return layout;
-                    });
+                                final LinearLayout layout = new LinearLayout(activity);
+                                layout.setOrientation(LinearLayout.VERTICAL);
+                                layout.setGravity(Gravity.BOTTOM);
+                                final EditText editText = new EditText(activity);
+                                editTextRef.set(editText);
+                                editText.setHint("focused editText");
+                                editText.setPrivateImeOptions(marker);
+                                editText.requestFocus();
+                                layout.addView(editText);
+                                final View decorView = activity.getWindow().getDecorView();
+                                decorView.setFitsSystemWindows(true);
+                                decorView.getWindowInsetsController().show(ime());
+                                return layout;
+                            }, TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
@@ -1087,6 +1205,166 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
+    /**
+     * Test case for Bug 254624767.
+     *
+     * <p>This test ensures that when the app requests to show/hide IME according to the IME insets
+     * visibility with {@link WindowInsets#isVisible(int)} during switching apps, verify the system
+     * dispatches the IME insets visibility to the app correctly during that time. </p>
+     */
+    @Test
+    public void testImeInsetsInvisibleAfterBackingFromImeHiddenActivity() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            // Launch the first activity
+            final EditText editText = launchTestActivity(marker);
+            AtomicReference<CountDownLatch> imeInsetsHiddenLatchRef = new AtomicReference<>();
+            expectEvent(stream, editorMatcher("onStartInput", marker), START_INPUT_TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            TestUtils.runOnMainSync(() -> {
+                        // Show IME with WindowInsets API and register onApplyWindowInsetsListener
+                        editText.getRootView().setOnApplyWindowInsetsListener(
+                                (v, insets) -> {
+                                    if (!insets.isVisible(WindowInsets.Type.ime())) {
+                                        if (imeInsetsHiddenLatchRef.get() != null) {
+                                            imeInsetsHiddenLatchRef.get().countDown();
+                                        }
+                                    }
+                                    return v.onApplyWindowInsets(insets);
+                                });
+                        editText.getViewTreeObserver().addOnWindowFocusChangeListener(hasFocus -> {
+                            // Test scenario: emulate the issue app implements to show IME when
+                            // focusing back if the last requested IME insets visibility is true.
+                            // And hides IME with clearing the editor focus when the app focus-out.
+                            if (hasFocus) {
+                                final boolean hasImeShown =
+                                        editText.getRootWindowInsets().isVisible(ime());
+                                if (hasImeShown) {
+                                    editText.getWindowInsetsController().show(ime());
+                                }
+                            } else {
+                                editText.getWindowInsetsController().hide(ime());
+                                editText.clearFocus();
+                            }
+                        });
+                        editText.getWindowInsetsController().show(ime());
+                    }
+            );
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Launch the second test activity with expecting to hide the IME.
+            final TestActivity secondActivity = new TestActivity.Starter()
+                    .asNewTask().startSync(activity -> {
+                        activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                        return new LinearLayout(activity);
+                    }, TestActivity.class);
+            expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
+                    View.GONE, TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Back to first activity
+            imeInsetsHiddenLatchRef.set(new CountDownLatch(1));
+            runOnMainSync(secondActivity::onBackPressed);
+
+            // Verify the visibility of IME insets should be hidden in onApplyWindowInsets and
+            // expect the first activity hides the IME according to the received IME insets
+            // visibility when backing from the second activity.
+            imeInsetsHiddenLatchRef.get().await(5, TimeUnit.SECONDS);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Test case for Bug 256739702.
+     *
+     * <p>This test ensures that when "android:screenSize|Orientation" is not set and the keyboard
+     * is shown implicitly in fullscreen mode, it will not disappear after the user rotates screen.
+     */
+    @Test
+    public void testRotateScreenWithKeyboardShownImplicitly() throws Exception {
+        final InputMethodManager imm = InstrumentationRegistry.getInstrumentation()
+                .getTargetContext().getSystemService(InputMethodManager.class);
+        // Disable auto-rotate screen and set the screen orientation to portrait mode.
+        setAutoRotateScreen(false);
+        rotateScreen(0);
+
+        // Set FullscreenModePolicy as OS_DEFAULT to call the original
+        // InputMethodService#onEvaluateFullscreenMode()
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder().setFullscreenModePolicy(
+                        ImeSettings.FullscreenModePolicy.OS_DEFAULT))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker();
+            // TestActivity2 is identical to TestActivity but doesn't handle any configChanges.
+            final EditText editText = launchTestActivity2(marker);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+            assertTrue("isActive() must return true if the View has IME focus",
+                    getOnMainSync(() -> imm.isActive(editText)));
+
+            // Call ShowSoftInput() implicitly
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText,
+                            InputMethodManager.SHOW_IMPLICIT)));
+
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
+                    View.VISIBLE, TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Rotate screen right
+            rotateScreen(3);
+            expectImeVisible(TIMEOUT);
+            assertTrue("IME should be in fullscreen mode",
+                    getOnMainSync(() -> imm.isFullscreenMode()));
+
+            // Rotate screen left
+            rotateScreen(1);
+            expectImeVisible(TIMEOUT);
+            assertTrue("IME should be in fullscreen mode",
+                    getOnMainSync(() -> imm.isFullscreenMode()));
+        }
+        setAutoRotateScreen(true);
+    }
+
+    private void setAutoRotateScreen(boolean enable) {
+        try {
+            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+            SystemUtil.runShellCommand(instrumentation, enable ? ENABLE_AUTO_ROTATE_CMD :
+                    DISABLE_AUTO_ROTATE_CMD);
+            instrumentation.waitForIdleSync();
+        } catch (IOException io) {
+            fail("Couldn't enable/disable auto-rotate screen");
+        }
+    }
+
+    private void rotateScreen(@IntRange(from = 0, to = 3) int rotation) {
+        try {
+            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+            SystemUtil.runShellCommand(instrumentation, "settings put system user_rotation "
+                    + rotation);
+            instrumentation.waitForIdleSync();
+        } catch (IOException io) {
+            fail("Couldn't rotate screen");
+        }
+    }
+
     private static ImeSettings.Builder getFloatingImeSettings(@ColorInt int navigationBarColor) {
         final ImeSettings.Builder builder = new ImeSettings.Builder();
         builder.setWindowFlags(0, FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -1118,5 +1396,22 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         WindowManagerState.DisplayArea imeContainer =  wmState.getImeContainer(displayId);
         assertNotNull("ImeContainer not found for display id: " + displayId, imeContainer);
         return imeContainer.isOrganized();
+    }
+
+    private static AutoCloseableWrapper<PopupWindow> createPopupWindowWrapper(
+            @NonNull EditText editor) {
+        return AutoCloseableWrapper.create(
+                TestUtils.getOnMainSync(() -> {
+                    final PopupWindow popup = new PopupWindow(editor.getContext());
+                    popup.setInputMethodMode(INPUT_METHOD_NOT_NEEDED);
+                    final TextView textView = new TextView(editor.getContext());
+                    textView.setText("Popup");
+                    popup.setContentView(textView);
+                    popup.setWidth(MATCH_PARENT);
+                    popup.setHeight(MATCH_PARENT);
+                    // Show the popup window.
+                    popup.showAsDropDown(textView);
+                    return popup;
+                }), popup -> TestUtils.runOnMainSync(popup::dismiss));
     }
 }

@@ -19,21 +19,15 @@ package android.media.encoder.cts;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-
 import android.media.MediaFormat;
-import android.media.MediaMuxer;
 import android.platform.test.annotations.AppModeFull;
-import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.MediaUtils;
 
-import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -75,6 +69,11 @@ public class VideoEncoderCapabilitiesTest {
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, 1280, 720, 30, 4000000, true},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, 1920, 1080, 30, 5000000, true},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, 30, 20000000, true},
+
+                {MediaFormat.MIMETYPE_VIDEO_AV1, 320, 180, 30, 800000, true},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, 640, 360, 30, 2000000, true},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, 720, 480, 30, 1600000, true},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, 1280, 720, 30, 4000000, true},
 
         });
         return exhaustiveArgsList;

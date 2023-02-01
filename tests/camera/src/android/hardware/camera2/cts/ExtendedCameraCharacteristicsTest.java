@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -49,18 +50,19 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.BlackLevelPattern;
+import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.DeviceStateSensorOrientationMap;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.RecommendedStreamConfigurationMap;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.cts.helpers.CameraUtils;
-import android.mediapc.cts.common.Requirement;
-import android.mediapc.cts.common.RequiredMeasurement;
-import android.mediapc.cts.common.RequirementConstants;
-import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.media.CamcorderProfile;
 import android.media.ImageReader;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.RequiredMeasurement;
+import android.mediapc.cts.common.Requirement;
+import android.mediapc.cts.common.RequirementConstants;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.ArraySet;
@@ -78,6 +80,7 @@ import android.view.WindowMetrics;
 
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Rule;
@@ -90,6 +93,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -979,6 +983,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP                    , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE                       , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES                      , OPT      ,   BC                   );
+                expectKeyAvailable(c, CameraCharacteristics.CONTROL_AUTOFRAMING_AVAILABLE                   , LIMITED  ,   NONE                 );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_EFFECTS                       , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES                   , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES     , OPT      ,   BC                   );
@@ -1865,7 +1870,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                         dynamicProfiles.getProfileCaptureRequestConstraints(profile);
                 boolean isSameProfilePresent = false;
                 for (Long concurrentProfile : currentConstraints) {
-                    if (concurrentProfile == profile) {
+                    if (Objects.equals(concurrentProfile, profile)) {
                         isSameProfilePresent = true;
                         continue;
                     }
@@ -1975,6 +1980,224 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                                 " dynamic range profiles must match with all publicly accessible " +
                                 "and color capable physical devices: " + physicalId + " !",
                                 physicalProfiles.equals(logicalProfiles));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.hardware.camera2.params.ColorSpaceProfiles#getProfileMap"})
+    public void testColorSpaceProfileMap() {
+        for (int i = 0; i < mAllCameraIds.length; i++) {
+            Log.i(TAG, "testColorSpaceProfileMap Testing camera ID " + mAllCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            Map<ColorSpace.Named, Map<Integer, Set<Long>>> profileMap =
+                    colorSpaceProfiles.getProfileMap();
+
+            Set<ColorSpace.Named> colorSpaces = profileMap.keySet();
+            mCollector.expectNotNull("profileMap.keySet() is null!", colorSpaces);
+            mCollector.expectTrue("profileMap.keySet() is empty!", !colorSpaces.isEmpty());
+            for (ColorSpace.Named colorSpace : colorSpaces) {
+                Set<Integer> imageFormats = profileMap.get(colorSpace).keySet();
+                mCollector.expectNotNull("profileMap.get(" + colorSpace + ").keySet() is null!",
+                        imageFormats);
+                mCollector.expectTrue("profileMap.get(" + colorSpace + ").keySet() is empty!",
+                        !imageFormats.isEmpty());
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles = profileMap.get(colorSpace).get(imageFormat);
+                    mCollector.expectNotNull("profileMap.get(" + colorSpace + ").get("
+                            + imageFormat + ") is null!", dynamicRangeProfiles);
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    public void test8BitColorSpaceOutputCharacteristics() {
+        for (int i = 0; i < mAllCameraIds.length; i++) {
+            Log.i(TAG, "test8BitColorSpaceOutputCharacteristics: Testing camera ID "
+                    + mAllCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            Set<ColorSpace.Named> supportedColorSpacesStandard =
+                    colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(
+                            ImageFormat.UNKNOWN, DynamicRangeProfiles.STANDARD);
+            mCollector.expectTrue("8-bit color spaces not present!",
+                    !supportedColorSpacesStandard.isEmpty());
+
+            Set<ColorSpace.Named> supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(
+                    ImageFormat.UNKNOWN);
+            for (ColorSpace.Named colorSpace : supportedColorSpacesStandard) {
+                mCollector.expectTrue("Standard color space " + colorSpace + " not present in "
+                        + "getSupportedColorSpaces!", supportedColorSpaces.contains(colorSpace));
+            }
+
+            for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                Set<Integer> imageFormats =
+                        colorSpaceProfiles.getSupportedImageFormatsForColorSpace(colorSpace);
+                mCollector.expectTrue("getSupportedImageFormatsForColorSpace returns an empty set "
+                        + "for a supported color space!", !imageFormats.isEmpty());
+
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles =
+                            colorSpaceProfiles.getSupportedDynamicRangeProfiles(
+                                    colorSpace, imageFormat);
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles returns an empty set "
+                            + "for a supported color space and image format!",
+                            !dynamicRangeProfiles.isEmpty());
+                }
+            }
+
+            for (ColorSpace.Named colorSpace : supportedColorSpacesStandard) {
+                Set<Integer> imageFormats =
+                        colorSpaceProfiles.getSupportedImageFormatsForColorSpace(colorSpace);
+                mCollector.expectTrue("getSupportedImageFormatsForColorSpace returns an empty set "
+                        + "for a supported color space!", !imageFormats.isEmpty());
+
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles =
+                            colorSpaceProfiles.getSupportedDynamicRangeProfiles(
+                                    colorSpace, imageFormat);
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles returns an empty set "
+                            + "for a supported color space and image format!",
+                            !dynamicRangeProfiles.isEmpty());
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles missing STANDARD for "
+                            + "color space " + colorSpace + " and image format " + imageFormat,
+                            dynamicRangeProfiles.contains(DynamicRangeProfiles.STANDARD));
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    public void test10BitColorSpaceOutputCharacteristics() {
+        for (int i = 0; i < mAllCameraIds.length; i++) {
+            Log.i(TAG, "test10BitColorSpaceOutputCharacteristics: Testing camera ID "
+                    + mAllCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                Log.i(TAG, "Camera " + mAllCameraIds[i]
+                        + " does not support color space profiles.");
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            boolean supports10BitOutput = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
+            Set<ColorSpace.Named> supportedColorSpaces = null;
+            int[] imageFormats = { ImageFormat.YCBCR_P010, ImageFormat.UNKNOWN };
+            if (!supports10BitOutput) {
+                Log.i(TAG, "Camera " + mAllCameraIds[i]
+                        + " does not support dynamic range profiles.");
+                for (int imageFormat : imageFormats) {
+                    supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(imageFormat);
+                    for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                        Set<Long> compatibleDynamicRangeProfiles =
+                                colorSpaceProfiles.getSupportedDynamicRangeProfiles(colorSpace,
+                                        imageFormat);
+                        if (!compatibleDynamicRangeProfiles.isEmpty()) {
+                            Long[] arrDynamicRangeProfiles =
+                                    compatibleDynamicRangeProfiles.toArray(new Long[0]);
+                            mCollector.expectTrue("getSupportedDynamicRangeProfiles should return a"
+                                    + " set containing only STANDARD!",
+                                    arrDynamicRangeProfiles.length == 1);
+                            mCollector.expectTrue("getSupportedDynamicRangeProfiles should return a"
+                                    + " set containing only STANDARD!",
+                                    arrDynamicRangeProfiles[0] == DynamicRangeProfiles.STANDARD);
+                        }
+
+                        for (Long dynamicRangeProfile = DynamicRangeProfiles.STANDARD;
+                                dynamicRangeProfile < DynamicRangeProfiles.PUBLIC_MAX;
+                                dynamicRangeProfile <<= 1) {
+                            Set<ColorSpace.Named> compatibleColorSpaces =
+                                    colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(
+                                            imageFormat, dynamicRangeProfile);
+                            if (dynamicRangeProfile == DynamicRangeProfiles.STANDARD) {
+                                mCollector.expectTrue("getSupportedColorSpacesForDynamicRange "
+                                        + "should return a set containing STANDARD for a supported"
+                                        + "color space and image format!",
+                                        compatibleColorSpaces.contains(colorSpace));
+                            } else {
+                                mCollector.expectTrue("getSupportedColorSpacesForDynamicRange "
+                                        + "should return an empty set for HDR!",
+                                        compatibleColorSpaces.isEmpty());
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (int imageFormat : imageFormats) {
+                    supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(
+                            imageFormat);
+                    DynamicRangeProfiles dynamicRangeProfiles = c.get(
+                            CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES);
+                    mCollector.expectNotNull("Dynamic range profile must always be present in case "
+                            + "of 10-bit capable devices!", dynamicRangeProfiles);
+                    Set<Long> supportedDynamicRangeProfiles =
+                            dynamicRangeProfiles.getSupportedProfiles();
+                    mCollector.expectTrue("Dynamic range profiles not present!",
+                            !supportedDynamicRangeProfiles.isEmpty());
+
+                    for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                        Set<Long> compatibleDynamicRangeProfiles =
+                                colorSpaceProfiles.getSupportedDynamicRangeProfiles(colorSpace,
+                                        imageFormat);
+
+                        for (Long dynamicRangeProfile : compatibleDynamicRangeProfiles) {
+                            mCollector.expectTrue("Compatible dynamic range profile not reported in"
+                                    + " DynamicRangeProfiles!",
+                                    supportedDynamicRangeProfiles.contains(dynamicRangeProfile));
+                        }
                     }
                 }
             }
@@ -2371,7 +2594,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                         // [previewFps, fps_max] in the high speed range list; if it's variable FPS
                         // range, the corresponding fixed FPS Range must be included in the range
                         // list.
-                        if (range.getLower() == range.getUpper()) {
+                        if (Objects.equals(range.getLower(), range.getUpper())) {
                             Range<Integer> variableRange = new Range<Integer>(previewFps,
                                     range.getUpper());
                             assertTrue("The variable FPS range " + variableRange +
@@ -2925,6 +3148,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * in CDD camera section 7.5
      */
     @Test
+    @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
     @CddTest(requirements = {
             "2.2.7.2/7.5/H-1-1",
             "2.2.7.2/7.5/H-1-2",

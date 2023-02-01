@@ -32,6 +32,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
+import android.platform.test.annotations.Presubmit;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.SurfaceControlViewHost;
@@ -44,6 +45,8 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -61,7 +64,9 @@ import java.util.concurrent.TimeoutException;
  * Tests that AccessibilityNodeInfos from an embedded hierarchy that is present to another
  * hierarchy are properly populated.
  */
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
 @RunWith(AndroidJUnit4.class)
+@Presubmit
 public class AccessibilityEmbeddedHierarchyTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;

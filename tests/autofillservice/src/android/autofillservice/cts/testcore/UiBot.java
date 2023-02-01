@@ -620,6 +620,15 @@ public class UiBot {
     }
 
     /**
+     * Asserts the save snackbar is showing with a custom service name and returns it.
+     */
+    public UiObject2 assertSaveShowingWithCustomServiceName(int type, String customServiceName)
+            throws Exception {
+        return assertSaveOrUpdateShowing(/* update= */ false, SaveInfo.NEGATIVE_BUTTON_STYLE_CANCEL,
+                SaveInfo.POSITIVE_BUTTON_STYLE_SAVE, null, SAVE_TIMEOUT, customServiceName, type);
+    }
+
+    /**
      * Asserts the save snackbar is showing and returns it.
      */
     public UiObject2 assertSaveShowing(Timeout timeout, int type) throws Exception {
@@ -725,6 +734,13 @@ public class UiBot {
     public UiObject2 assertSaveOrUpdateShowing(boolean update, int negativeButtonStyle,
             int positiveButtonStyle, String description, Timeout timeout, int... types)
             throws Exception {
+        return assertSaveOrUpdateShowing(update, negativeButtonStyle, positiveButtonStyle,
+            description, timeout, InstrumentedAutoFillService.getServiceLabel(), types);
+    }
+
+    public UiObject2 assertSaveOrUpdateShowing(boolean update, int negativeButtonStyle,
+            int positiveButtonStyle, String description, Timeout timeout, String serviceLabel,
+            int... types) throws Exception {
 
         final UiObject2 snackbar = waitForObject(SAVE_UI_SELECTOR, timeout);
 
@@ -750,7 +766,6 @@ public class UiBot {
             titleWithTypeId = RESOURCE_STRING_SAVE_TITLE_WITH_TYPE;
         }
 
-        final String serviceLabel = InstrumentedAutoFillService.getServiceLabel();
         switch (types.length) {
             case 1:
                 final String expectedTitle = (types[0] == SAVE_DATA_TYPE_GENERIC)
@@ -810,8 +825,19 @@ public class UiBot {
 
         final String expectedAccessibilityTitle =
                 getString(RESOURCE_STRING_SAVE_SNACKBAR_ACCESSIBILITY_TITLE);
-        assertAccessibilityTitle(snackbar, expectedAccessibilityTitle);
-
+        timeout.run(
+                String.format(
+                        "assertAccessibilityTitle(%s, %s)",
+                        snackbar,
+                        expectedAccessibilityTitle),
+                () -> {
+                    try {
+                        assertAccessibilityTitle(snackbar, expectedAccessibilityTitle);
+                    } catch (RetryableException e) {
+                        return null;
+                    }
+                    return true;
+                });
         return snackbar;
     }
 
@@ -1105,6 +1131,8 @@ public class UiBot {
         // does not expose that.
         for (AccessibilityWindowInfo window : mAutoman.getWindows()) {
             final CharSequence title = window.getTitle();
+            Log.d(TAG, "assertAccessibilityTitle(): found title =" + title + ", expected title="
+                    + expectedTitle);
             if (title != null && title.toString().equals(expectedTitle)) {
                 return;
             }

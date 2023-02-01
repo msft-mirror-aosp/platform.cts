@@ -112,10 +112,12 @@ public class BasicApiTests {
         mMockAlarmReceiver2 = new MockAlarmReceiver(mIntent2.getAction());
 
         IntentFilter filter = new IntentFilter(mIntent.getAction());
-        mContext.registerReceiver(mMockAlarmReceiver, filter);
+        mContext.registerReceiver(mMockAlarmReceiver, filter,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
 
         IntentFilter filter2 = new IntentFilter(mIntent2.getAction());
-        mContext.registerReceiver(mMockAlarmReceiver2, filter2);
+        mContext.registerReceiver(mMockAlarmReceiver2, filter2,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
 
         mDeviceConfigHelper.with("min_futurity", 0L)
                 .with("min_interval", REPEAT_PERIOD)
@@ -269,6 +271,20 @@ public class BasicApiTests {
     }
 
     @Test
+    public void testSetWindow() throws Exception {
+        final long futurityMs = 1000;
+        final long windowLength = 2000;
+        mMockAlarmReceiver.reset();
+        mAm.setWindow(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + futurityMs, windowLength, "test-tag", Runnable::run,
+                null, mMockAlarmReceiver);
+
+        Thread.sleep(futurityMs + windowLength);
+        PollingCheck.waitFor(4000, mMockAlarmReceiver::isAlarmed,
+                "Window alarm did not fire as expected");
+    }
+
+    @Test
     public void testSetRepeating() {
         mMockAlarmReceiver.reset();
         mWakeupTime = System.currentTimeMillis() + TEST_ALARM_FUTURITY;
@@ -295,12 +311,12 @@ public class BasicApiTests {
         mAm.cancel(mSender);
     }
 
-    private static final String DOZE_ON_OUTPUT = "deep idle mode";
-    private static final String DOZE_OFF_OUTPUT = "deep state: ACTIVE";
-
     private void toggleIdleMode(boolean on) {
-        SystemUtil.runShellCommand("cmd deviceidle " + (on ? "force-idle deep" : "unforce"),
-                output -> output.contains(on ? DOZE_ON_OUTPUT : DOZE_OFF_OUTPUT));
+        SystemUtil.runShellCommand("cmd deviceidle " + (on ? "force-idle deep" : "unforce"));
+        if (!on) {
+            // Make sure the device doesn't stay idle, even after unforcing.
+            SystemUtil.runShellCommand("cmd deviceidle motion");
+        }
         PollingCheck.waitFor(10_000, () -> (on == mPowerManager.isDeviceIdleMode()),
                 "Could not set doze state to " + on);
     }
@@ -390,6 +406,28 @@ public class BasicApiTests {
         }.run();
 
         assertFalse(mMockAlarmReceiver.isAlarmed());
+    }
+
+    @Test
+    public void testCancelAll() throws InterruptedException {
+        mMockAlarmReceiver.reset();
+        mMockAlarmReceiver2.reset();
+
+        final long when1Rtc = System.currentTimeMillis() + TEST_ALARM_FUTURITY;
+        mAm.setExact(AlarmManager.RTC_WAKEUP, when1Rtc, mSender);
+
+        final long nowElapsed = SystemClock.elapsedRealtime();
+        // setting the second one to fire after the first one
+        final long when2Elapsed = nowElapsed + TEST_ALARM_FUTURITY + TIME_DELTA;
+        mAm.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, when2Elapsed, "test-tag",
+                mMockAlarmReceiver2, null);
+
+        mAm.cancelAll();
+
+        // wait till some time past the scheduled expiration of the second one
+        Thread.sleep(when2Elapsed - nowElapsed + TIME_DELAY);
+
+        assertFalse(mMockAlarmReceiver.isAlarmed() || mMockAlarmReceiver2.isAlarmed());
     }
 
     @Test

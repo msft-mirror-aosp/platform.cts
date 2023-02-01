@@ -16,6 +16,7 @@
 
 package android.content.cts;
 
+import static android.content.Context.RECEIVER_EXPORTED;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -30,6 +31,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
 import android.test.ActivityInstrumentationTestCase2;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test {@link BroadcastReceiver}.
@@ -46,6 +50,8 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
             "android.content.cts.BroadcastReceiverTest.BROADCAST_INTERNAL";
     private static final String ACTION_BROADCAST_MOCKTEST =
             "android.content.cts.BroadcastReceiverTest.BROADCAST_MOCKTEST";
+    private static final String ACTION_TEST_NOT_EXPORTED =
+            "android.content.cts.BroadcastReceiverTest.TEST_NOT_EXPORTED";
     private static final String ACTION_BROADCAST_TESTABORT =
             "android.content.cts.BroadcastReceiverTest.BROADCAST_TESTABORT";
     private static final String ACTION_BROADCAST_DISABLED =
@@ -57,6 +63,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
     private static final long SEND_BROADCAST_TIMEOUT = 15000;
     private static final long START_SERVICE_TIMEOUT  = 3000;
 
+    private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
     private static final ComponentName DISABLEABLE_RECEIVER =
             new ComponentName("android.content.cts",
                     "android.content.cts.MockReceiverDisableable");
@@ -167,13 +174,20 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         }
     }
 
+    public static class TestNonExportedReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            COUNT_DOWN_LATCH.countDown();
+        }
+    }
+
     public void testOnReceive () throws InterruptedException {
         final MockActivity activity = getActivity();
 
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
-        activity.registerReceiver(internalReceiver, filter);
+        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
 
         assertEquals(0, internalReceiver.getResultCode());
         assertEquals(null, internalReceiver.getResultData());
@@ -333,6 +347,16 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 resultExtras.getString(MockReceiverAbort.RESULT_EXTRAS_ABORT_KEY));
     }
 
+    public void testReceiverNotExported() throws Exception {
+        final Context context = getInstrumentation().getContext();
+        context.sendBroadcast(new Intent(ACTION_TEST_NOT_EXPORTED));
+        try {
+            assertFalse(COUNT_DOWN_LATCH.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            fail("interrupted");
+        }
+    }
+
     public void testDisabledBroadcastReceiver() throws Exception {
         final Context context = getInstrumentation().getContext();
         PackageManager pm = context.getPackageManager();
@@ -360,7 +384,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
-        activity.registerReceiver(internalReceiver, filter);
+        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
 
         activity.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
@@ -387,7 +411,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_PICTURE);
-        activity.registerReceiver(internalReceiver, filter);
+        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
         assertFalse(internalReceiver.waitForReceiverNoException(SEND_BROADCAST_TIMEOUT));
     }
 
@@ -396,7 +420,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_VIDEO);
-        activity.registerReceiver(internalReceiver, filter);
+        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
         assertFalse(internalReceiver.waitForReceiverNoException(SEND_BROADCAST_TIMEOUT));
     }
 

@@ -46,11 +46,6 @@ license {
 }
 
 filegroup {
-    name: "CtsVerifierNotice",
-    srcs: ["NOTICE.txt"],
-}
-
-filegroup {
     name: "CtsVerifierMockVrListenerServiceFiles",
     srcs: ["src/com/android/cts/verifier/vr/MockVrListenerService.java"],
 }
@@ -94,7 +89,15 @@ android_library {
         "MediaPerformanceClassCommon",
     ],
 
-    libs: ["telephony-common"] + ["android.test.runner.stubs"] + ["android.test.base.stubs"] + ["android.test.mock.stubs"] + ["android.car-test-stubs"] + ["voip-common"] + ["truth-prebuilt"],
+    libs: [
+        "telephony-common",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
+        "android.test.mock.stubs",
+        "android.car-test-stubs",
+        "voip-common",
+        "truth",
+    ],
 
     platform_apis: true,
 
@@ -154,6 +157,7 @@ android_library {
 filegroup {
     name: "pre_installed_apps",
     srcs: [
+        ":CtsDeviceControlsApp",
         ":CtsEmptyDeviceAdmin",
         ":CtsEmptyDeviceOwner",
         ":CtsPermissionApp",
@@ -206,17 +210,17 @@ filegroup {
 genrule {
     name: "android-cts-verifier",
     srcs: [
+        ":android-cts-verifier-notice",
         ":cts_apps_to_include",
         ":CtsVerifier",
         ":camera-its",
-        ":CtsVerifierNotice",
     ],
     tools: [
         "soong_zip",
         "merge_zips",
     ],
     out: ["android-cts-verifier.zip"],
-    cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :CtsVerifierNotice) > $(genDir)/list &&" +
+    cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :android-cts-verifier-notice) > $(genDir)/list &&" +
         " $(location soong_zip) -o $(genDir)/cts-verifier.zip -j -P android-cts-verifier -l $(genDir)/list &&" +
         " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its)",
     dists: [
@@ -224,6 +228,13 @@ genrule {
             targets: ["cts"],
         },
     ],
+}
+
+gen_notice {
+    name: "android-cts-verifier-notice",
+    for: ["android-cts-verifier"],
+    stem: "NOTICE",
+    suffix: ".txt",
 }
 
 filegroup {

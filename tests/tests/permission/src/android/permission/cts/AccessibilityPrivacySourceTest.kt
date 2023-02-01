@@ -18,18 +18,18 @@ package android.permission.cts
 
 import android.accessibility.cts.common.InstrumentedAccessibilityService
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
+import android.app.ActivityOptions
 import android.app.Instrumentation
 import android.app.UiAutomation
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Process
-import android.permission.cts.NotificationListenerUtils.assertEmptyNotification
-import android.permission.cts.NotificationListenerUtils.assertNotificationExist
-import android.permission.cts.NotificationListenerUtils.cancelNotification
-import android.permission.cts.NotificationListenerUtils.cancelNotifications
-import android.permission.cts.NotificationListenerUtils.getNotification
+import android.permission.cts.CtsNotificationListenerServiceUtils.assertEmptyNotification
+import android.permission.cts.CtsNotificationListenerServiceUtils.assertNotificationExist
+import android.permission.cts.CtsNotificationListenerServiceUtils.cancelNotification
+import android.permission.cts.CtsNotificationListenerServiceUtils.cancelNotifications
+import android.permission.cts.CtsNotificationListenerServiceUtils.getNotification
 import android.permission.cts.SafetyCenterUtils.assertSafetyCenterIssueDoesNotExist
 import android.permission.cts.SafetyCenterUtils.assertSafetyCenterIssueExist
 import android.permission.cts.SafetyCenterUtils.assertSafetyCenterStarted
@@ -64,13 +64,15 @@ class AccessibilityPrivacySourceTest {
 
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.targetContext
-    private val mAccessibilityServiceRule =
-        InstrumentedAccessibilityServiceTestRule(AccessibilityTestService::class.java, false)
     private val permissionControllerPackage = context.packageManager.permissionControllerPackageName
     private val accessibilityTestService =
         ComponentName(context, AccessibilityTestService::class.java).flattenToString()
     private val safetyCenterIssueId = "accessibility_$accessibilityTestService"
     private val safetyCenterManager = context.getSystemService(SafetyCenterManager::class.java)
+
+    @get:Rule
+    val mAccessibilityServiceRule =
+            InstrumentedAccessibilityServiceTestRule(AccessibilityTestService::class.java, false)
 
     @get:Rule
     val deviceConfigSafetyCenterEnabled =
@@ -96,12 +98,18 @@ class AccessibilityPrivacySourceTest {
         InstrumentedAccessibilityService.disableAllServices()
         runShellCommand("input keyevent KEYCODE_WAKEUP")
         resetPermissionController()
+        // Bypass battery saving restrictions
+        runShellCommand("cmd tare set-vip " +
+            "${Process.myUserHandle().identifier} $permissionControllerPackage true")
         cancelNotifications(permissionControllerPackage)
     }
 
     @After
     fun cleanup() {
         cancelNotifications(permissionControllerPackage)
+        // Reset battery saving restrictions
+        runShellCommand("cmd tare set-vip " +
+            "${Process.myUserHandle().identifier} $permissionControllerPackage default")
         runWithShellPermissionIdentity { safetyCenterManager?.clearAllSafetySourceDataForTests() }
     }
 
@@ -230,7 +238,17 @@ class AccessibilityPrivacySourceTest {
             getNotification(permissionControllerPackage, ACCESSIBILITY_NOTIFICATION_ID)
         Assert.assertNotNull(statusBarNotification)
         val contentIntent = statusBarNotification!!.notification.contentIntent
-        contentIntent.send()
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
+            val options = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            )
+            contentIntent.send(/* context = */ null, /* code = */ 0, /* intent = */ null,
+                /* onFinished = */ null, /* handler = */ null, /* requiredPermission = */ null,
+                /* options = */ options.toBundle()
+            )
+        } else {
+            contentIntent.send()
+        }
         assertSafetyCenterStarted()
     }
 
@@ -247,49 +265,9 @@ class AccessibilityPrivacySourceTest {
     /** Reset the permission controllers state. */
     @Throws(Throwable::class)
     private fun resetPermissionController() {
-        PermissionUtils.clearAppState(permissionControllerPackage)
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackage,
-            ACCESSIBILITY_JOB_ID,
-            TIMEOUT_MILLIS,
-            getAutomation(),
-            "unknown"
-        )
-
-        runShellCommand(
-            "cmd jobscheduler reset-execution-quota -u " +
-                "${Process.myUserHandle().identifier} $permissionControllerPackage")
-        runShellCommand("cmd jobscheduler reset-schedule-quota")
-
-        // Setup up permission controller again (simulate a reboot)
-        val permissionControllerSetupIntent =
-            Intent(ACTION_SET_UP_ACCESSIBILITY_CHECK).apply {
-                setPackage(permissionControllerPackage)
-                setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            }
-
-        // Query for the setup broadcast receiver
-        val resolveInfos =
-            context.packageManager.queryBroadcastReceivers(permissionControllerSetupIntent, 0)
-
-        if (resolveInfos.size > 0) {
-            context.sendBroadcast(permissionControllerSetupIntent)
-        } else {
-            context.sendBroadcast(
-                Intent().apply {
-                    setClassName(permissionControllerPackage, AccessibilityOnBootReceiver)
-                    setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                    setPackage(permissionControllerPackage)
-                })
-        }
-
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackage,
-            ACCESSIBILITY_JOB_ID,
-            TIMEOUT_MILLIS,
-            getAutomation(),
-            "waiting"
-        )
+        PermissionUtils.resetPermissionControllerJob(getAutomation(), permissionControllerPackage,
+            ACCESSIBILITY_JOB_ID, TIMEOUT_MILLIS, ACTION_SET_UP_ACCESSIBILITY_CHECK,
+            AccessibilityOnBootReceiver)
     }
 
     companion object {

@@ -21,13 +21,26 @@ import android.media.AudioRecord;
 import org.hyphonate.megaaudio.common.StreamBase;
 
 public abstract class Recorder extends StreamBase {
+    private static final String TAG = Recorder.class.getSimpleName();
     protected AudioSinkProvider mSinkProvider;
 
     // This value is to indicate that no explicit call to set an input preset in the builder
     // will be made.
     // Constants can be found here:
     // https://developer.android.com/reference/android/media/MediaRecorder.AudioSource
+    // or preferentially in oboe/Definitions.h
     public static final int INPUT_PRESET_NONE = -1;
+    public static final int INPUT_PRESET_DEFAULT = 0;
+    public static final int INPUT_PRESET_GENERIC = 1;
+    public static final int INPUT_PRESET_VOICE_UPLINK = 2;
+    public static final int INPUT_PRESET_VOICE_DOWNLINK = 3;
+    public static final int INPUT_PRESET_VOICE_CALL = 4;
+    public static final int INPUT_PRESET_CAMCORDER = 5;
+    public static final int INPUT_PRESET_VOICERECOGNITION = 6;
+    public static final int INPUT_PRESET_VOICECOMMUNICATION = 7;
+    public static final int INPUT_PRESET_REMOTE_SUBMIX = 8;
+    public static final int INPUT_PRESET_UNPROCESSED = 9;
+    public static final int INPUT_PRESET_VOICEPERFORMANCE = 10;
 
     public Recorder(AudioSinkProvider sinkProvider) {
         mSinkProvider = sinkProvider;
@@ -50,8 +63,13 @@ public abstract class Recorder extends StreamBase {
     //
     // Attributes
     //
-    // This needs to be static because it is called before creating the Recorder subclass
-    public static int calcMinBufferFrames(int channelCount, int sampleRate) {
+    /**
+     * Calculate the optimal buffer size for the specified channel count and sample rate
+     * @param channelCount number of channels of audio data in record buffers
+     * @param sampleRate sample rate of recorded data
+     * @return The minimal buffer size to avoid overruns in the recording stream.
+     */
+    public static int calcMinBufferFramesStatic(int channelCount, int sampleRate) {
         int channelMask = Recorder.channelCountToChannelMask(channelCount);
         int bufferSizeInBytes =
                 AudioRecord.getMinBufferSize (sampleRate,

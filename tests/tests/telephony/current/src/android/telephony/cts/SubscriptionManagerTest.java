@@ -23,16 +23,21 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_TEMPORARILY_NOT_MET
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 import static android.telephony.TelephonyManager.SET_OPPORTUNISTIC_SUB_SUCCESS;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.annotation.Nullable;
+import android.app.AppOpsManager;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -49,11 +54,14 @@ import android.net.Uri;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.os.PersistableBundle;
+import android.os.Process;
+import android.os.UserHandle;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionPlan;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.ims.ImsException;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
@@ -63,6 +71,7 @@ import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -91,6 +100,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -263,6 +273,15 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    public void testGetAllSubscriptionInfoList() throws Exception {
+        List<SubscriptionInfo> allSubInfoList = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mSm, SubscriptionManager::getAllSubscriptionInfoList);
+        SubscriptionInfo subInfo = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.getActiveSubscriptionInfo(mSubId));
+        assertThat(allSubInfoList).contains(subInfo);
+    }
+
+    @Test
     public void testIsActiveSubscriptionId() throws Exception {
         assertTrue(mSm.isActiveSubscriptionId(mSubId));
     }
@@ -273,6 +292,12 @@ public class SubscriptionManagerTest {
         int[] subIds = mSm.getSubscriptionIds(slotId);
         assertNotNull(subIds);
         assertTrue(ArrayUtils.contains(subIds, mSubId));
+    }
+
+    @Test
+    public void testGetSubscriptionId() throws Exception {
+        int slotId = SubscriptionManager.getSlotIndex(mSubId);
+        assertThat(SubscriptionManager.getSubscriptionId(slotId)).isEqualTo(mSubId);
     }
 
     @Test
@@ -670,6 +695,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
     public void testSubscriptionGroupingWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -678,10 +704,20 @@ public class SubscriptionManagerTest {
                 (sm) -> sm.createSubscriptionGroup(subGroup));
 
         // Getting subscriptions in group.
-        List<SubscriptionInfo> infoList = mSm.getSubscriptionsInGroup(uuid);
+        List<SubscriptionInfo> infoList;
+        try {
+            mSm.getSubscriptionsInGroup(uuid);
+            fail("SecurityException should be thrown without device identifiers");
+        } catch (SecurityException ex) {
+            // Expected
+        }
+
+        // has the READ_PRIVILEGED_PHONE_STATE permission
+        infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.getSubscriptionsInGroup(uuid), READ_PRIVILEGED_PHONE_STATE);
         assertNotNull(infoList);
         assertEquals(1, infoList.size());
-        assertNull(infoList.get(0).getGroupUuid());
+        assertEquals(uuid, infoList.get(0).getGroupUuid());
 
         infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getSubscriptionsInGroup(uuid));
@@ -698,33 +734,40 @@ public class SubscriptionManagerTest {
         }
         availableInfoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getAvailableSubscriptionInfoList());
-        if (availableInfoList.size() > 1) {
-            List<Integer> availableSubGroup = availableInfoList.stream()
-                    .map(info -> info.getSubscriptionId())
-                    .filter(subId -> subId != mSubId)
-                    .collect(Collectors.toList());
+        // has the OPSTR_READ_DEVICE_IDENTIFIERS permission
+        try {
+            setIdentifierAccess(true);
+            if (availableInfoList.size() > 1) {
+                List<Integer> availableSubGroup = availableInfoList.stream()
+                        .map(info -> info.getSubscriptionId())
+                        .filter(subId -> subId != mSubId)
+                        .collect(Collectors.toList());
 
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                        (sm) -> sm.addSubscriptionsIntoGroup(availableSubGroup, uuid));
+
+                infoList = mSm.getSubscriptionsInGroup(uuid);
+                assertNotNull(infoList);
+                assertEquals(availableInfoList.size(), infoList.size());
+
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                        (sm) -> sm.removeSubscriptionsFromGroup(availableSubGroup, uuid));
+            }
+
+            // Remove from subscription group with current sub Id.
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
-                    (sm) -> sm.addSubscriptionsIntoGroup(availableSubGroup, uuid));
+                    (sm) -> sm.removeSubscriptionsFromGroup(subGroup, uuid));
 
             infoList = mSm.getSubscriptionsInGroup(uuid);
             assertNotNull(infoList);
-            assertEquals(availableInfoList.size(), infoList.size());
-
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
-                    (sm) -> sm.removeSubscriptionsFromGroup(availableSubGroup, uuid));
+            assertTrue(infoList.isEmpty());
+        } finally {
+            setIdentifierAccess(false);
         }
-
-        // Remove from subscription group with current sub Id.
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
-                (sm) -> sm.removeSubscriptionsFromGroup(subGroup, uuid));
-
-        infoList = mSm.getSubscriptionsInGroup(uuid);
-        assertNotNull(infoList);
-        assertTrue(infoList.isEmpty());
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
     public void testAddSubscriptionIntoNewGroupWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -733,28 +776,37 @@ public class SubscriptionManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
                 (sm) -> sm.addSubscriptionsIntoGroup(subGroup, uuid));
 
-        // Getting subscriptions in group.
-        List<SubscriptionInfo> infoList = mSm.getSubscriptionsInGroup(uuid);
-        assertNotNull(infoList);
-        assertEquals(1, infoList.size());
-        assertNull(infoList.get(0).getGroupUuid());
+        List<SubscriptionInfo> infoList;
+        try {
+            mSm.getSubscriptionsInGroup(uuid);
+            fail("SecurityException should be thrown without device identifiers");
+        } catch (SecurityException ex) {
+            // Expected
+        }
 
-        infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getSubscriptionsInGroup(uuid));
-        assertNotNull(infoList);
-        assertEquals(1, infoList.size());
-        assertEquals(uuid, infoList.get(0).getGroupUuid());
+        // Getting subscriptions in group.
+        try {
+            setIdentifierAccess(true);
+            infoList = mSm.getSubscriptionsInGroup(uuid);
+            assertNotNull(infoList);
+            assertEquals(1, infoList.size());
+            assertEquals(uuid, infoList.get(0).getGroupUuid());
+        } finally {
+            setIdentifierAccess(false);
+        }
 
         // Remove from subscription group with current sub Id.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
                 (sm) -> sm.removeSubscriptionsFromGroup(subGroup, uuid));
 
-        infoList = mSm.getSubscriptionsInGroup(uuid);
+        infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.getSubscriptionsInGroup(uuid));
         assertNotNull(infoList);
         assertTrue(infoList.isEmpty());
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SubscriptionManager#setOpportunistic")
     public void testSettingOpportunisticSubscription() throws Exception {
         // Set subscription to be opportunistic. This should fail
         // because we don't have MODIFY_PHONE_STATE or carrier privilege permission.
@@ -762,6 +814,12 @@ public class SubscriptionManagerTest {
             mSm.setOpportunistic(true, mSubId);
             fail();
         } catch (SecurityException expected) {
+            // Caller permission should not affect accessing SIMINFO table.
+            assertNotEquals(expected.getMessage(),
+                    "Access SIMINFO table from not phone/system UID");
+            // Caller does not have permission to manage mSubId.
+            assertEquals(expected.getMessage(),
+                    "Caller requires permission on sub " + mSubId);
         }
 
         // Shouldn't crash.
@@ -1021,82 +1079,88 @@ public class SubscriptionManagerTest {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_EDITABLE_ENHANCED_4G_LTE_BOOL, true);
         bundle.putBoolean(CarrierConfigManager.KEY_HIDE_ENHANCED_4G_LTE_BOOL, false);
+
         overrideCarrierConfig(bundle, activeDataSubId);
+        try {
+            // Get the original ims values.
+            ImsManager imsManager = InstrumentationRegistry.getContext().getSystemService(
+                    ImsManager.class);
+            ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(activeDataSubId);
+            boolean isVolteVtEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
+            boolean isVtImsEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.isVtSettingEnabled());
+            boolean isVoWiFiSettingEnabledOriginal =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
+            int voWifiModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.getVoWiFiModeSetting());
+            int voWiFiRoamingModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
 
-        // Get the original ims values.
-        ImsManager imsManager = InstrumentationRegistry.getContext().getSystemService(
-                ImsManager.class);
-        ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(activeDataSubId);
-        boolean isVolteVtEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
-        boolean isVtImsEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.isVtSettingEnabled());
-        boolean isVoWiFiSettingEnabledOriginal =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
-        int voWifiModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.getVoWiFiModeSetting());
-        int voWiFiRoamingModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
+            // Get the original RcsUce values.
+            ImsRcsManager imsRcsManager = imsManager.getImsRcsManager(activeDataSubId);
+            RcsUceAdapter rcsUceAdapter = imsRcsManager.getUceAdapter();
+            boolean isImsRcsUceEnabledOriginal =
+                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
+                    rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
+                    android.Manifest.permission.READ_PHONE_STATE);
 
-        // Get the original RcsUce values.
-        ImsRcsManager imsRcsManager = imsManager.getImsRcsManager(activeDataSubId);
-        RcsUceAdapter rcsUceAdapter = imsRcsManager.getUceAdapter();
-        boolean isImsRcsUceEnabledOriginal =
-                ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
-                android.Manifest.permission.READ_PHONE_STATE);
+            //Change values in DB.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
+                    (m) -> m.setAdvancedCallingSettingEnabled(!isVolteVtEnabledOriginal));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
+                    (m) -> m.setVtSettingEnabled(!isVtImsEnabledOriginal));
+            ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(
+                    rcsUceAdapter, (a) -> a.setUceSettingEnabled(!isImsRcsUceEnabledOriginal),
+                    ImsException.class);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
+                    (m) -> m.setVoWiFiSettingEnabled(!isVoWiFiSettingEnabledOriginal));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
+                    (m) -> m.setVoWiFiModeSetting((voWifiModeOriginal + 1) % 3));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
+                    (m) -> m.setVoWiFiRoamingModeSetting((voWiFiRoamingModeOriginal + 1) % 3));
 
-        //Change values in DB.
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                (m) -> m.setAdvancedCallingSettingEnabled(!isVolteVtEnabledOriginal));
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                (m) -> m.setVtSettingEnabled(!isVtImsEnabledOriginal));
-        ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(
-                rcsUceAdapter, (a) -> a.setUceSettingEnabled(!isImsRcsUceEnabledOriginal),
-                ImsException.class);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                (m) -> m.setVoWiFiSettingEnabled(!isVoWiFiSettingEnabledOriginal));
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                (m) -> m.setVoWiFiModeSetting((voWifiModeOriginal + 1) % 3));
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                (m) -> m.setVoWiFiRoamingModeSetting((voWiFiRoamingModeOriginal + 1) % 3));
+            // Restore back to original values.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                    (sm) -> sm.restoreAllSimSpecificSettingsFromBackup(backupData));
 
-        // Restore back to original values.
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
-                (sm) -> sm.restoreAllSimSpecificSettingsFromBackup(backupData));
+            // Get ims values to verify with.
+            boolean isVolteVtEnabledAfterRestore =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
+            boolean isVtImsEnabledAfterRestore =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mMmTelManager, (m) -> m.isVtSettingEnabled());
+            boolean isVoWiFiSettingEnabledAfterRestore =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
+            int voWifiModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.getVoWiFiModeSetting());
+            int voWiFiRoamingModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
+            // Get RcsUce values to verify with.
+            boolean isImsRcsUceEnabledAfterRestore =
+                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
+                            rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
+                            android.Manifest.permission.READ_PHONE_STATE);
 
-        // Get ims values to verify with.
-        boolean isVolteVtEnabledAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
-        boolean isVtImsEnabledAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.isVtSettingEnabled());
-        boolean isVoWiFiSettingEnabledAfterRestore =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
-        int voWifiModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.getVoWiFiModeSetting());
-        int voWiFiRoamingModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
-        // Get RcsUce values to verify with.
-        boolean isImsRcsUceEnabledAfterRestore =
-                ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                        rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
-                        android.Manifest.permission.READ_PHONE_STATE);
-
-        assertEquals(isVolteVtEnabledOriginal, isVolteVtEnabledAfterRestore);
-        if (isoCountryCode == null || isoCountryCode.equals("us") || isoCountryCode.equals("ca")) {
-            assertEquals(!isVoWiFiSettingEnabledOriginal, isVoWiFiSettingEnabledAfterRestore);
-        } else {
-            assertEquals(isVoWiFiSettingEnabledOriginal, isVoWiFiSettingEnabledAfterRestore);
+            assertEquals(isVolteVtEnabledOriginal, isVolteVtEnabledAfterRestore);
+            if (isoCountryCode == null
+                    || isoCountryCode.equals("us")
+                    || isoCountryCode.equals("ca")) {
+                assertEquals(!isVoWiFiSettingEnabledOriginal, isVoWiFiSettingEnabledAfterRestore);
+            } else {
+                assertEquals(isVoWiFiSettingEnabledOriginal, isVoWiFiSettingEnabledAfterRestore);
+            }
+            assertEquals(voWifiModeOriginal, voWifiModeAfterRestore);
+            assertEquals(voWiFiRoamingModeOriginal, voWiFiRoamingModeAfterRestore);
+            assertEquals(isVtImsEnabledOriginal, isVtImsEnabledAfterRestore);
+            assertEquals(isImsRcsUceEnabledOriginal, isImsRcsUceEnabledAfterRestore);
+        } finally {
+            // restore original carrier config.
+            overrideCarrierConfig(null, activeDataSubId);
         }
-        assertEquals(voWifiModeOriginal, voWifiModeAfterRestore);
-        assertEquals(voWiFiRoamingModeOriginal, voWiFiRoamingModeAfterRestore);
-        assertEquals(isVtImsEnabledOriginal, isVtImsEnabledAfterRestore);
-        assertEquals(isImsRcsUceEnabledOriginal, isImsRcsUceEnabledAfterRestore);
-
-        // restore original carrier config.
-        overrideCarrierConfig(null, activeDataSubId);
 
 
         try {
@@ -1295,6 +1359,114 @@ public class SubscriptionManagerTest {
         }
     }
 
+    private String getSubscriptionIso(int subId) {
+        SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.getActiveSubscriptionInfo(mSubId));
+        return info.getCountryIso();
+    }
+
+    /**
+     * Monitor the onSubscriptionsChangedListener until a condition is satisfied.
+     */
+    private void waitForSubscriptionCondition(
+            BooleanSupplier condition, long maxWaitMillis) throws Exception {
+        final Object lock = new Object();
+
+        TestThread t = new TestThread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+
+                SubscriptionManager.OnSubscriptionsChangedListener listener =
+                        new SubscriptionManager.OnSubscriptionsChangedListener() {
+                            @Override
+                            public void onSubscriptionsChanged() {
+                                synchronized (lock) {
+                                    if (condition.getAsBoolean()) lock.notifyAll();
+                                }
+                            }
+                        };
+                mSm.addOnSubscriptionsChangedListener(listener);
+                try {
+                    synchronized (lock) {
+                        if (condition.getAsBoolean()) lock.notifyAll();
+                    }
+                    Looper.loop();
+                } finally {
+                    mSm.removeOnSubscriptionsChangedListener(listener);
+                }
+            }
+        });
+
+        t.start();
+
+        synchronized (lock) {
+            if (!condition.getAsBoolean()) lock.wait(maxWaitMillis);
+        }
+    }
+
+    @Test
+    public void testCountryIso() throws Exception {
+        final String liechtensteinIso = "li";
+        final String faroeIslandsIso = "fo";
+
+        final long maxWaitMillis = 5000;
+        final String isoUT = liechtensteinIso.equals(getSubscriptionIso(mSubId))
+                ? faroeIslandsIso : liechtensteinIso;
+
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putString(CarrierConfigManager.KEY_SIM_COUNTRY_ISO_OVERRIDE_STRING, isoUT);
+        overrideCarrierConfig(bundle, mSubId);
+        try {
+            waitForSubscriptionCondition(
+                    () -> isoUT.equals(getSubscriptionIso(mSubId)),
+                    maxWaitMillis);
+
+            assertEquals(isoUT, getSubscriptionIso(mSubId));
+        } finally {
+            overrideCarrierConfig(null, mSubId);
+        }
+    }
+
+
+    @Test
+    public void testSetAndGetSubscriptionUserHandle() throws Exception {
+        // Throws IllegalArgumentException as SubscriptionId is invalid.
+        assertThrows(IllegalArgumentException.class,
+                () -> mSm.setSubscriptionUserHandle(-1, UserHandle.SYSTEM));
+
+        // Throws IllegalArgumentException as SubscriptionId is invalid.
+        assertThrows(IllegalArgumentException.class, () -> mSm.getSubscriptionUserHandle(-1));
+
+        // Throws SecurityException as we do not have MANAGE_SUBSCRIPTION_USER_ASSOCIATION
+        // permission.
+        assertThrows(SecurityException.class,
+                () -> mSm.setSubscriptionUserHandle(mSubId, UserHandle.SYSTEM));
+
+        // Throws SecurityException as we do not have MANAGE_SUBSCRIPTION_USER_ASSOCIATION
+        // permission.
+        assertThrows(SecurityException.class, () -> mSm.getSubscriptionUserHandle(mSubId));
+
+        // Set and get user handle with MANAGE_SUBSCRIPTION_USER_ASSOCIATION permission.
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.MANAGE_SUBSCRIPTION_USER_ASSOCIATION);
+            UserHandle originalUserHandle = mSm.getSubscriptionUserHandle(mSubId);
+
+            mSm.setSubscriptionUserHandle(mSubId, null);
+            assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(null);
+
+            mSm.setSubscriptionUserHandle(mSubId, UserHandle.SYSTEM);
+            assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(UserHandle.SYSTEM);
+
+            mSm.setSubscriptionUserHandle(mSubId, originalUserHandle);
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
     @Nullable
     private PersistableBundle getBundleFromBackupData(byte[] data) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(data)) {
@@ -1458,5 +1630,14 @@ public class SubscriptionManagerTest {
         boolean validNetworkType = dataNetworkType == TelephonyManager.NETWORK_TYPE_NR;
 
         return validCarrier && validNetworkType && validCapabilities;
+    }
+
+    private void setIdentifierAccess(boolean allowed) {
+        String op = AppOpsManager.OPSTR_READ_DEVICE_IDENTIFIERS;
+        AppOpsManager appOpsManager = InstrumentationRegistry.getContext().getSystemService(
+                AppOpsManager.class);
+        int mode = allowed ? AppOpsManager.MODE_ALLOWED : AppOpsManager.opToDefaultMode(op);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                appOpsManager, (appOps) -> appOps.setUidMode(op, Process.myUid(), mode));
     }
 }

@@ -49,6 +49,7 @@ import static android.scopedstorage.cts.lib.TestUtils.deleteWithMediaProvider;
 import static android.scopedstorage.cts.lib.TestUtils.deleteWithMediaProviderNoThrow;
 import static android.scopedstorage.cts.lib.TestUtils.denyAppOpsToUid;
 import static android.scopedstorage.cts.lib.TestUtils.executeShellCommand;
+import static android.scopedstorage.cts.lib.TestUtils.fileExistsAs;
 import static android.scopedstorage.cts.lib.TestUtils.getAlarmsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getAndroidDataDir;
 import static android.scopedstorage.cts.lib.TestUtils.getAndroidMediaDir;
@@ -59,6 +60,7 @@ import static android.scopedstorage.cts.lib.TestUtils.getDocumentsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getDownloadDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalFilesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalMediaDir;
+import static android.scopedstorage.cts.lib.TestUtils.getExternalObbDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalStorageDir;
 import static android.scopedstorage.cts.lib.TestUtils.getFileMimeTypeFromDatabase;
 import static android.scopedstorage.cts.lib.TestUtils.getFileOwnerPackageFromDatabase;
@@ -144,6 +146,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.cts.install.lib.TestApp;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -3123,8 +3126,37 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     @Test
     @SdkSuppress(minSdkVersion = 31, codeName = "S")
     public void testExternalStorageProviderAndDownloadsProvider() throws Exception {
+        // External Storage Provider and Downloads Provider are not supported on Wear OS
+        if (FeatureUtil.isWatch()) {
+            return;
+        }
         assertWritableMountModeForProvider(DocumentsContract.EXTERNAL_STORAGE_PROVIDER_AUTHORITY);
         assertWritableMountModeForProvider(DocumentsContract.DOWNLOADS_PROVIDER_AUTHORITY);
+    }
+
+    /**
+     * Test that normal apps cannot access Android/data and Android/obb dirs of other apps
+     */
+    @Test
+    public void testCantProbeOtherAppsExternalDirs() throws Exception {
+        // Before fuse-bpf, apps could see other app's external storage
+        boolean expectToSee = !isFuseBpfEnabled()
+                && mVolumeName.equals(MediaStore.VOLUME_EXTERNAL);
+        String message = expectToSee
+                ? "Expected to see other app's private dirs"
+                : "Expected not to see other app's private dirs";
+
+        assertWithMessage(message)
+                .that(fileExistsAs(APP_B_NO_PERMS, new File(getExternalFilesDir().getParent())))
+                .isEqualTo(expectToSee);
+
+        assertWithMessage(message)
+                .that(fileExistsAs(APP_B_NO_PERMS, getExternalObbDir()))
+                .isEqualTo(expectToSee);
+    }
+
+    private boolean isFuseBpfEnabled() throws Exception {
+        return executeShellCommand("getprop ro.fuse.bpf.is_running").trim().equals("true");
     }
 
     private void assertWritableMountModeForProvider(String auth) {

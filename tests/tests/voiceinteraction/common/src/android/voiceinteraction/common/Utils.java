@@ -68,46 +68,22 @@ public class Utils {
      */
     public static final int LIMIT_AUDIO_CHANNEL_MAX_VALUE = 63;
 
-    /** Decide which VoiceInteractionService should be started for testing. */
-    public static final int HOTWORD_DETECTION_SERVICE_NONE = 0;
-    public static final int HOTWORD_DETECTION_SERVICE_BASIC = 1;
-    public static final int HOTWORD_DETECTION_SERVICE_INVALIDATION = 2;
-    public static final int HOTWORD_DETECTION_SERVICE_WITHOUT_ISOLATED_PROCESS = 3;
-    public static final int HOTWORD_DETECTION_SERVICE_WITHIN_ISOLATED_PROCESS = 4;
-
     /**
      * Indicate which test event for testing.
      *
      * Note: The VIS is the abbreviation of VoiceInteractionService
      */
     public static final int VIS_NORMAL_TEST = 0;
-    public static final int VIS_WITHOUT_MANAGE_HOTWORD_DETECTION_PERMISSION_TEST = 1;
-    public static final int VIS_HOLD_BIND_HOTWORD_DETECTION_PERMISSION_TEST = 2;
-
-    public static final int HOTWORD_DETECTION_SERVICE_TRIGGER_TEST = 100;
-    public static final int HOTWORD_DETECTION_SERVICE_DSP_ONDETECT_TEST = 101;
-    public static final int HOTWORD_DETECTION_SERVICE_EXTERNAL_SOURCE_ONDETECT_TEST = 102;
-    public static final int HOTWORD_DETECTION_SERVICE_FROM_SOFTWARE_TRIGGER_TEST = 103;
-    public static final int HOTWORD_DETECTION_SERVICE_MIC_ONDETECT_TEST = 104;
-    public static final int HOTWORD_DETECTION_SERVICE_DSP_ONREJECT_TEST = 105;
-    public static final int HOTWORD_DETECTION_SERVICE_PROCESS_DIED_TEST = 106;
-    public static final int HOTWORD_DETECTION_SERVICE_CALL_STOP_RECOGNITION = 107;
-    public static final int HOTWORD_DETECTION_SERVICE_DSP_DESTROY_DETECTOR = 108;
-    public static final int HOTWORD_DETECTION_SERVICE_SOFTWARE_DESTROY_DETECTOR = 109;
-
-    public static final int HOTWORD_DETECTION_SERVICE_TRIGGER_SUCCESS = 1;
-    public static final int HOTWORD_DETECTION_SERVICE_TRIGGER_ILLEGAL_STATE_EXCEPTION = 2;
-    public static final int HOTWORD_DETECTION_SERVICE_TRIGGER_SECURITY_EXCEPTION = 3;
-    public static final int HOTWORD_DETECTION_SERVICE_TRIGGER_SHARED_MEMORY_NOT_READ_ONLY = 4;
-    public static final int HOTWORD_DETECTION_SERVICE_GET_ERROR = 5;
 
     /** Indicate which test scenario for testing. */
-    public static final int HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH = 1;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH = 1;
 
     /** Indicate to start a new activity for testing. */
     public static final int ACTIVITY_NEW = 0;
     /** Indicate to finish an activity for testing. */
     public static final int ACTIVITY_FINISH = 1;
+    /** Indicate to crash an activity for testing. */
+    public static final int ACTIVITY_CRASH = 2;
 
     /** Indicate what kind of parameters for calling registerVisibleActivityCallback. */
     public static final int VISIBLE_ACTIVITY_CALLBACK_REGISTER_NORMAL = 0;
@@ -164,6 +140,7 @@ public class Utils {
             "destroyedInteractor";
     public static final String DIRECT_ACTIONS_ACTIVITY_CMD_INVALIDATE_ACTIONS = "invalidateActions";
     public static final String DIRECT_ACTIONS_ACTIVITY_CMD_GET_PACKAGE_NAME = "getpackagename";
+    public static final String DIRECT_ACTIONS_ACTIVITY_CMD_GET_PACKAGE_INFO = "getpackageinfo";
 
     public static final String DIRECT_ACTIONS_RESULT_PERFORMED = "performed";
     public static final String DIRECT_ACTIONS_RESULT_CANCELLED = "cancelled";
@@ -180,25 +157,21 @@ public class Utils {
     public static final String SERVICE_NAME =
             "android.voiceinteraction.service/.MainInteractionService";
 
-    public static final String HOTWORD_DETECTION_SERVICE_TRIGGER_RESULT_INTENT =
-            "android.intent.action.HOTWORD_DETECTION_SERVICE_TRIGGER_RESULT";
-    public static final String HOTWORD_DETECTION_SERVICE_SOFTWARE_TRIGGER_RESULT_INTENT =
-            "android.intent.action.HOTWORD_DETECTION_SERVICE_SOFTWARE_TRIGGER_RESULT";
-    public static final String HOTWORD_DETECTION_SERVICE_ONDETECT_RESULT_INTENT =
-            "android.intent.action.HOTWORD_DETECTION_SERVICE_ONDETECT_RESULT";
-    public static final String KEY_SERVICE_TYPE = "serviceType";
     public static final String KEY_TEST_EVENT = "testEvent";
     public static final String KEY_TEST_RESULT = "testResult";
     public static final String KEY_TEST_SCENARIO = "testScenario";
+    public static final String KEY_DETECTION_DELAY_MS = "detectionDelayMs";
 
     public static final String VOICE_INTERACTION_KEY_CALLBACK = "callback";
     public static final String VOICE_INTERACTION_KEY_CONTROL = "control";
     public static final String VOICE_INTERACTION_KEY_COMMAND = "command";
+    public static final String VOICE_INTERACTION_KEY_TASKID = "taskId";
     public static final String VOICE_INTERACTION_DIRECT_ACTIONS_KEY_ACTION = "action";
     public static final String VOICE_INTERACTION_KEY_ARGUMENTS = "arguments";
     public static final String VOICE_INTERACTION_KEY_CLASS = "class";
     public static final String VOICE_INTERACTION_SESSION_CMD_FINISH = "hide";
     public static final String VOICE_INTERACTION_ACTIVITY_CMD_FINISH = "finish";
+    public static final String VOICE_INTERACTION_ACTIVITY_CMD_CRASH = "crash";
 
     // For v2 reliable visible activity lookup feature
     public static final String VISIBLE_ACTIVITY_CALLBACK_ONVISIBLE_INTENT =
@@ -209,6 +182,19 @@ public class Utils {
 
     public static final String VISIBLE_ACTIVITY_CMD_REGISTER_CALLBACK = "registerCallback";
     public static final String VISIBLE_ACTIVITY_CMD_UNREGISTER_CALLBACK = "unregisterCallback";
+
+    // For asking to bind to a test VoiceInteractionService if it supports it
+    public static final String ACTION_BIND_TEST_VOICE_INTERACTION =
+            "android.intent.action.ACTION_BIND_TEST_VOICE_INTERACTION";
+    public static final String TEST_VOICE_INTERACTION_SERVICE_PACKAGE_NAME =
+            "android.voiceinteraction.service";
+    public static final String PROXY_VOICE_INTERACTION_SERVICE_CLASS_NAME =
+            "android.voiceinteraction.service.ProxyVoiceInteractionService";
+    public static final String PROXY_VOICEINTERACTION_SERVICE_COMPONENT =
+            TEST_VOICE_INTERACTION_SERVICE_PACKAGE_NAME + "/"
+                    + PROXY_VOICE_INTERACTION_SERVICE_CLASS_NAME;
+    public static final String VOICE_INTERACTION_SERVICE_BINDING_HELPER_CLASS_NAME =
+            "android.voiceinteraction.service.VoiceInteractionServiceBindingHelper";
 
     public static final String toBundleString(Bundle bundle) {
         if (bundle == null) {

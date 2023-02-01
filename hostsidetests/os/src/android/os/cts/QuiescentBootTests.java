@@ -20,9 +20,8 @@ import static android.os.PowerManagerInternalProto.Wakefulness.WAKEFULNESS_ASLEE
 import static android.os.PowerManagerInternalProto.Wakefulness.WAKEFULNESS_AWAKE;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.os.PowerManagerInternalProto.Wakefulness;
 
@@ -39,8 +38,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class QuiescentBootTests extends BaseHostJUnit4Test {

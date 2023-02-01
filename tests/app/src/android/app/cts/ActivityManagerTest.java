@@ -15,6 +15,7 @@
  */
 package android.app.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL;
@@ -60,6 +61,7 @@ import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundService;
 import android.app.stubs.MockApplicationActivity;
 import android.app.stubs.MockService;
+import android.app.stubs.RemoteActivity;
 import android.app.stubs.ScreenOnActivity;
 import android.app.stubs.TestHomeActivity;
 import android.app.stubs.TrimMemService;
@@ -84,6 +86,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.NewUserRequest;
 import android.os.Parcel;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -105,6 +108,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AmMonitor;
+import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -114,7 +118,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -192,7 +199,7 @@ public class ActivityManagerTest {
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
         startSubActivity(ScreenOnActivity.class);
-        drainOrderedBroadcastQueue(2);
+        AmUtils.waitForBroadcastBarrier();
     }
 
     @After
@@ -209,27 +216,6 @@ public class ActivityManagerTest {
         if (mErrorProcessID != -1) {
             android.os.Process.killProcess(mErrorProcessID);
         }
-    }
-
-    /**
-     * Drain the ordered broadcast queue, it'll be useful when the test runs right after
-     * the device booted, the ordered broadcast queue could be clogged.
-     */
-    private void drainOrderedBroadcastQueue(int loopCount) throws Exception {
-        for (int i = loopCount; i > 0; i--) {
-            final CountDownLatch latch = new CountDownLatch(1);
-            final BroadcastReceiver receiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    latch.countDown();
-                }
-            };
-            CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
-                    CommandReceiver.COMMAND_EMPTY,
-                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null, receiver);
-            latch.await(WAITFOR_ORDERED_BROADCAST_DRAINED, TimeUnit.MILLISECONDS);
-        }
-        Log.i(TAG, "Ordered broadcast queue drained");
     }
 
     @Test
@@ -319,7 +305,8 @@ public class ActivityManagerTest {
             mActivityToFilter = activityToFilter;
             IntentFilter filter = new IntentFilter();
             filter.addAction(mActivityToFilter);
-            mInstrumentation.getTargetContext().registerReceiver(this, filter);
+            mInstrumentation.getTargetContext().registerReceiver(this, filter,
+                    Context.RECEIVER_EXPORTED);
         }
 
         // Turn off the filter.
@@ -341,7 +328,8 @@ public class ActivityManagerTest {
             }
         }
 
-        public int waitForActivity() {
+        public int waitForActivity() throws Exception {
+            AmUtils.waitForBroadcastBarrier();
             synchronized(this) {
                 try {
                     wait(TIMEOUT_IN_MS);
@@ -353,31 +341,36 @@ public class ActivityManagerTest {
     }
 
     private final <T extends Activity> void startSubActivity(Class<T> activityClass) {
+        startSubActivity(activityClass, null);
+    }
+
+    private <T extends Activity> void startSubActivity(
+            Class<T> activityClass,
+            ActivityOptions activityOptions) {
         final Instrumentation.ActivityResult result = new ActivityResult(0, new Intent());
         final ActivityMonitor monitor = new ActivityMonitor(activityClass.getName(), result, false);
         mInstrumentation.addMonitor(monitor);
-        launchActivity(STUB_PACKAGE_NAME, activityClass, null);
+        launchActivity(STUB_PACKAGE_NAME, activityClass, activityOptions);
         mStartedActivityList.add(monitor.waitForActivity());
     }
 
     private <T extends Activity> T launchActivity(
             String pkg,
             Class<T> activityCls,
-            Bundle extras) {
+            ActivityOptions activityOptions) {
         Intent intent = new Intent(Intent.ACTION_MAIN);
-        if (extras != null) {
-            intent.putExtras(extras);
-        }
-        return launchActivityWithIntent(pkg, activityCls, intent);
+        return launchActivityWithIntent(pkg, activityCls, intent, activityOptions);
     }
 
     private <T extends Activity> T launchActivityWithIntent(
             String pkg,
             Class<T> activityCls,
-            Intent intent) {
+            Intent intent,
+            ActivityOptions activityOptions) {
         intent.setClassName(pkg, activityCls.getName());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        T activity = (T) mInstrumentation.startActivitySync(intent);
+        T activity = (T) mInstrumentation.startActivitySync(
+                intent, activityOptions == null ? null : activityOptions.toBundle());
         mInstrumentation.waitForIdleSync();
         return activity;
     }
@@ -421,8 +414,10 @@ public class ActivityManagerTest {
         assertTrue(indexRecentOne != -1 && indexRecentTwo == -1);
         assertTrue(runningTaskList.get(indexRecentOne).isVisible());
 
-        // start recent2_activity.
-        startSubActivity(ActivityManagerRecentTwoActivity.class);
+        // start recent2_activity in fullscreen to hide the recent1_activity.
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        startSubActivity(ActivityManagerRecentTwoActivity.class, options);
 
         /*
          * assert both recent1_activity and recent2_activity exist in the
@@ -511,7 +506,14 @@ public class ActivityManagerTest {
     public void testGetMemoryInfo() {
         ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
         mActivityManager.getMemoryInfo(outInfo);
-        assertTrue(outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold));
+        assertTrue(
+                String.format("lowmemory (%s) == (%d <= %d)",
+                outInfo.lowMemory, outInfo.availMem, outInfo.threshold),
+                outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold));
+        assertTrue(
+                String.format("totalMem (%d) <= advertisedMem (%d)",
+                outInfo.totalMem, outInfo.advertisedMem),
+                outInfo.totalMem <= outInfo.advertisedMem);
     }
 
     @Test
@@ -806,7 +808,8 @@ public class ActivityManagerTest {
         // Prepare the time receiver action.
         Context context = mInstrumentation.getTargetContext();
         ActivityOptions options = ActivityOptions.makeBasic();
-        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO);
+        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO)
+                .setPackage(context.getPackageName());
         options.requestUsageTimeReport(PendingIntent.getBroadcast(context, 0, receiveIntent,
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE));
 
@@ -851,6 +854,8 @@ public class ActivityManagerTest {
 
     @Test
     public void testHomeVisibilityListener() throws Exception {
+        assumeFalse("With platforms that have no home screen, no need to test", noHomeScreen());
+
         LinkedBlockingQueue<Boolean> currentHomeScreenVisibility = new LinkedBlockingQueue<>(2);
         HomeVisibilityListener homeVisibilityListener = new HomeVisibilityListener() {
             @Override
@@ -895,7 +900,8 @@ public class ActivityManagerTest {
         // Prepare the time receiver action.
         Context context = mInstrumentation.getTargetContext();
         ActivityOptions options = ActivityOptions.makeBasic();
-        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO);
+        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO)
+                .setPackage(context.getPackageName());
         options.requestUsageTimeReport(PendingIntent.getBroadcast(context, 0, receiveIntent,
                     PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE));
 
@@ -945,7 +951,8 @@ public class ActivityManagerTest {
         // Prepare the time receiver action.
         Context context = mInstrumentation.getTargetContext();
         ActivityOptions options = ActivityOptions.makeBasic();
-        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO);
+        Intent receiveIntent = new Intent(ACTIVITY_TIME_TRACK_INFO)
+                .setPackage(context.getPackageName());
         options.requestUsageTimeReport(PendingIntent.getBroadcast(context, 0, receiveIntent,
                     PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE));
 
@@ -2028,6 +2035,139 @@ public class ActivityManagerTest {
                         STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
             }
         }
+    }
+
+    @Test
+    public void testObserveForegroundProcess() throws Exception {
+        final ParcelFileDescriptor[] pfds = InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().executeShellCommandRw("am observe-foreground-process");
+        final ParcelFileDescriptor stdOut = pfds[0];
+        try (InputStream in = new ParcelFileDescriptor.AutoCloseInputStream(stdOut)) {
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            final Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mTargetContext.startActivity(intent);
+            final String result = reader.readLine();
+            final int topPid = getRunningAppProcessInfo(SIMPLE_PACKAGE_NAME).pid;
+            assertEquals(result, "New foreground process: " + topPid);
+        }
+    }
+
+    @Test
+    public void testKillBackgroundProcess() throws Exception {
+        final String otherPackage = PACKAGE_NAME_APP1;
+        final ApplicationInfo ai1 = mTargetContext.getPackageManager()
+                .getApplicationInfo(otherPackage, 0);
+        final WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, Process.myUid(),
+                WAITFOR_MSEC);
+        final WatchUidRunner uid2Watcher = new WatchUidRunner(mInstrumentation, ai1.uid,
+                WAITFOR_MSEC);
+        try {
+            launchHome();
+
+            // Since we're running instrumentation, our proc state will stay above FGS.
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_FG_SERVICE, null);
+
+            // Start an activity in another process in our package, our proc state will goto TOP.
+            final CountDownLatch remoteBinderDeathLatch1 = startRemoteActivityAndLinkToDeath(
+                    new ComponentName(mTargetContext, RemoteActivity.class),
+                    uid1Watcher);
+
+            final CountDownLatch remoteBinderDeathLatch2 = startRemoteActivityAndLinkToDeath(
+                    new ComponentName(otherPackage, STUB_PACKAGE_NAME + ".RemoteActivity"),
+                    uid2Watcher);
+
+            // Launch home again so our activity will be backgrounded.
+            launchHome();
+
+            // The uid goes back to FGS state,
+            // but the process with the remote activity should have been in the background.
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_FG_SERVICE, null);
+
+            // And the test package should be in background too.
+            uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_CACHED_EMPTY, null);
+
+            // Now, try to kill the background process of our own, it should succeed.
+            mActivityManager.killBackgroundProcesses(mTargetContext.getPackageName());
+
+            assertTrue("We should be able to kill our own process",
+                    remoteBinderDeathLatch1.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+
+            // Try to kill the background process of other app, it should fail.
+            mActivityManager.killBackgroundProcesses(otherPackage);
+
+            assertFalse("We should be able to kill the processes of other package",
+                    remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+
+            // Adopt the permission, we should be able to kill it now.
+            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                    android.Manifest.permission.KILL_ALL_BACKGROUND_PROCESSES);
+            mActivityManager.killBackgroundProcesses(otherPackage);
+
+            assertTrue("We should be able to kill the processes of other package",
+                    remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        } finally {
+            uid1Watcher.finish();
+            uid2Watcher.finish();
+            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private CountDownLatch startRemoteActivityAndLinkToDeath(ComponentName activity,
+            WatchUidRunner uidWatcher) throws Exception {
+        final IBinder[] remoteBinderHolder = new IBinder[1];
+        final CountDownLatch remoteBinderLatch = new CountDownLatch(1);
+        final IBinder binder = new Binder() {
+            @Override
+            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
+                    throws RemoteException {
+                switch (code) {
+                    case IBinder.FIRST_CALL_TRANSACTION:
+                        remoteBinderHolder[0] = data.readStrongBinder();
+                        remoteBinderLatch.countDown();
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        };
+        final CountDownLatch remoteBinderDeathLatch = new CountDownLatch(1);
+        final IBinder.DeathRecipient recipient = new IBinder.DeathRecipient() {
+            @Override
+            public void binderDied() {
+                remoteBinderDeathLatch.countDown();
+            }
+        };
+        final Intent intent = new Intent();
+        intent.setComponent(activity);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        final Bundle extras = new Bundle();
+        extras.putBinder(RemoteActivity.EXTRA_CALLBACK, binder);
+        intent.putExtras(extras);
+        mTargetContext.startActivity(intent);
+
+        uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
+        assertTrue("Failed to receive the callback from remote activity",
+                remoteBinderLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        assertNotNull(remoteBinderHolder[0]);
+        remoteBinderHolder[0].linkToDeath(recipient, 0);
+
+        // Finish the activity.
+        final Parcel data = Parcel.obtain();
+        try {
+            remoteBinderHolder[0].transact(IBinder.FIRST_CALL_TRANSACTION, data, null, 0);
+        } catch (RemoteException e) {
+        } finally {
+            data.recycle();
+        }
+
+        // Sleep a while to let things go through.
+        Thread.sleep(WAIT_TIME);
+        return remoteBinderDeathLatch;
     }
 
     private int createNewUser() throws Exception {

@@ -50,7 +50,9 @@ android_test_helper_app {
     ],
     static_libs: [
         "androidx.test.rules",
+        "collector-device-lib",
         "compatibility-device-util-axt",
+        "cts-midi-lib",
         "truth-prebuilt",
     ],
     sdk_version: "test_current",

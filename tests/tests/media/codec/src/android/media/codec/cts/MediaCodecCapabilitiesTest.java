@@ -15,18 +15,7 @@
  */
 package android.media.codec.cts;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.hardware.display.DisplayManager;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.AudioCapabilities;
-import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.MediaCodecInfo.CodecProfileLevel;
-import android.media.MediaCodecInfo.VideoCapabilities;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
-import android.media.MediaCodecList;
-import android.media.MediaFormat;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AVC;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_H263;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_HEVC;
@@ -39,18 +28,28 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityManager;
+import android.content.Context;
+import android.hardware.display.DisplayManager;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.AudioCapabilities;
+import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecInfo.CodecProfileLevel;
+import android.media.MediaCodecInfo.VideoCapabilities;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
 import android.media.cts.MediaPlayerTestBase;
+import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
 import android.view.Display;
 
-import androidx.annotation.CallSuper;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.DynamicConfigDeviceSide;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
@@ -58,6 +57,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -69,12 +69,13 @@ import java.util.stream.Stream;
 /**
  * Basic validation test of data returned by MediaCodeCapabilities.
  */
-@AppModeFull(reason = "Dynamic config disabled.")
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
 
     private static final String TAG = "MediaCodecCapabilitiesTest";
-    private static final int PLAY_TIME_MS = 30000;
+    private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private static final int PLAY_TIME_MS = 20000;
     private static final int TIMEOUT_US = 1000000;  // 1 sec
     private static final int IFRAME_INTERVAL = 10;          // 10 seconds between I-frames
 
@@ -83,20 +84,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     private final MediaCodecInfo[] mAllInfos =
             mAllCodecs.getCodecInfos();
 
-    private static final String AVC_BASELINE_12_KEY =
-            "media_codec_capabilities_test_avc_baseline12";
-    private static final String AVC_BASELINE_30_KEY =
-            "media_codec_capabilities_test_avc_baseline30";
-    private static final String AVC_HIGH_31_KEY = "media_codec_capabilities_test_avc_high31";
-    private static final String AVC_HIGH_40_KEY = "media_codec_capabilities_test_avc_high40";
     private static final String MODULE_NAME = "CtsMediaCodecTestCases";
-    private DynamicConfigDeviceSide dynamicConfig;
 
     @Before
     @Override
     public void setUp() throws Throwable {
         super.setUp();
-        dynamicConfig = new DynamicConfigDeviceSide(MODULE_NAME);
     }
 
     @After
@@ -239,7 +232,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel12)) {
-            String urlString = dynamicConfig.getValue(AVC_BASELINE_12_KEY);
+            String urlString = Uri.fromFile(new File(MEDIA_DIR,
+                    "media_codec_capabilities_test_avc_baseline12.mp4")).toString();
             playVideoWithRetries(urlString, 256, 144, PLAY_TIME_MS);
         }
     }
@@ -251,7 +245,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel3)) {
-            String urlString = dynamicConfig.getValue(AVC_BASELINE_30_KEY);
+            String urlString = Uri.fromFile(new File(MEDIA_DIR,
+                    "media_codec_capabilities_test_avc_baseline30.mp4")).toString();
             playVideoWithRetries(urlString, 640, 360, PLAY_TIME_MS);
         }
     }
@@ -284,7 +279,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assumeTrue(mustSupportAvcHeight(720));
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel31)) {
-            String urlString = dynamicConfig.getValue(AVC_HIGH_31_KEY);
+            String urlString = Uri.fromFile(new File(MEDIA_DIR,
+                    "media_codec_capabilities_test_avc_high31.mp4")).toString();
             playVideoWithRetries(urlString, 1280, 720, PLAY_TIME_MS);
         }
     }
@@ -302,7 +298,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assumeTrue(mustSupportAvcHeight(1080));
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel4)) {
-            String urlString = dynamicConfig.getValue(AVC_HIGH_40_KEY);
+            String urlString = Uri.fromFile(new File(MEDIA_DIR,
+                    "media_codec_capabilities_test_avc_high40.mp4")).toString();
             playVideoWithRetries(urlString, 1920, 1080, PLAY_TIME_MS);
         }
     }
@@ -750,7 +747,15 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
             int minFrameRate = Math.max(vcaps.getSupportedFrameRatesFor(minWidth, minHeight)
                     .getLower().intValue(), 1);
             format = MediaFormat.createVideoFormat(mime, minWidth, minHeight);
-            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, caps.colorFormats[0]);
+            int colorFormat = caps.colorFormats[0];
+            for (int i = 0; i < caps.colorFormats.length; ++i) {
+                colorFormat = caps.colorFormats[i];
+                // Avoid COLOR_FormatSurface as we will be configuring the codec without a surface.
+                if (colorFormat != CodecCapabilities.COLOR_FormatSurface) {
+                    break;
+                }
+            }
+            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
             format.setInteger(MediaFormat.KEY_BIT_RATE, minBitrate);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, minFrameRate);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);

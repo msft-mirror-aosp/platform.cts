@@ -27,7 +27,6 @@ import android.media.MediaCodecInfo;
 import android.media.MediaDataSource;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.cts.Preconditions;
 import android.media.cts.TestMediaDataSource;
 import android.media.cts.StreamUtils;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION;
@@ -53,6 +52,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
@@ -376,10 +376,7 @@ public class MediaExtractorTest {
     //MPEG-H 3D Audio single stream (mha1)
     @Test
     public void testMpegh3dAudioMediaExtractorMha1() throws Exception {
-        // TODO(b/186267251) move file to cloud storage.
-        AssetFileDescriptor afd = getContext().getResources()
-            .openRawResourceFd(R.raw.sample_mpegh_mha1);
-        mExtractor.setDataSource(afd);
+        TestMediaDataSource dataSource = setDataSource("sample_mpegh_mha1.mp4");
         assertEquals(1, mExtractor.getTrackCount());
 
         // The following values below require API Build.VERSION_CODES.S
@@ -399,10 +396,7 @@ public class MediaExtractorTest {
     //MPEG-H 3D Audio single stream encapsulated in MHAS (mhm1)
     @Test
     public void testMpegh3dAudioMediaExtractorMhm1() throws Exception {
-        // TODO(b/186267251) move file to cloud storage.
-        AssetFileDescriptor afd = getContext().getResources()
-            .openRawResourceFd(R.raw.sample_mpegh_mhm1);
-        mExtractor.setDataSource(afd);
+        TestMediaDataSource dataSource = setDataSource("sample_mpegh_mhm1.mp4");
         assertEquals(1, mExtractor.getTrackCount());
 
         // The following values below require API Build.VERSION_CODES.S
@@ -506,43 +500,41 @@ public class MediaExtractorTest {
         // advances the reference set index, matches set 1 until it encounters set 2 etc.
         // At the end it verifies that all the reference sets were met.
         List<Map<Integer, AudioPresentation>> refPresentations = Arrays.asList(
-                new HashMap<Integer, AudioPresentation>() {{  // First set.
-                    put(10, new AudioPresentation.Builder(10)
+                Map.of(  // First set.
+                    10, new AudioPresentation.Builder(10)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(11, new AudioPresentation.Builder(11)
+                            .build(),
+                    11, new AudioPresentation.Builder(11)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasAudioDescription(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(12, new AudioPresentation.Builder(12)
+                            .build(),
+                    12, new AudioPresentation.Builder(12)
                             .setLocale(ULocale.FRENCH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                }},
-                new HashMap<Integer, AudioPresentation>() {{  // Second set.
-                    put(10, new AudioPresentation.Builder(10)
+                            .build()),
+                Map.of(  // Second set.
+                    10, new AudioPresentation.Builder(10)
                             .setLocale(ULocale.GERMAN)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasAudioDescription(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(11, new AudioPresentation.Builder(11)
+                            .build(),
+                    11, new AudioPresentation.Builder(11)
                             .setLocale(new ULocale("es"))
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasSpokenSubtitles(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(12, new AudioPresentation.Builder(12)
+                            .build(),
+                    12, new AudioPresentation.Builder(12)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                }},
+                            .build()),
                 null,
                 null
         );

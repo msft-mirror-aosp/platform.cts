@@ -61,13 +61,12 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
     protected void setUp() throws Exception {
         super.setUp();
 
-        // Temporarily commented out until the Trusted Hotword requirement is enforced again.
-        // mTransformedFromOp.clear();
-        // // The hotword op is allowed to all UIDs on TV and Auto devices.
-        // if (!(DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)
-        //         || DeviceUtils.hasFeature(getDevice(), FEATURE_LEANBACK_ONLY))) {
-        //     mTransformedFromOp.put(APP_OP_RECORD_AUDIO, APP_OP_RECORD_AUDIO_HOTWORD);
-        // }
+        mTransformedFromOp.clear();
+        // The hotword op is allowed to all UIDs on TV and Auto devices.
+        if (!(DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)
+                || DeviceUtils.hasFeature(getDevice(), FEATURE_LEANBACK_ONLY))) {
+            mTransformedFromOp.put(APP_OP_RECORD_AUDIO, APP_OP_RECORD_AUDIO_HOTWORD);
+        }
 
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());

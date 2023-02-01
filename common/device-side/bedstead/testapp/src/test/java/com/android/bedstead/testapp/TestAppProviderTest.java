@@ -45,7 +45,7 @@ public class TestAppProviderTest {
     private static final String KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME =
             "android.testapp.activity";
 
-    private static final String QUERY_ONLY_TEST_APP_PACKAGE_NAME = "com.android.RemoteDPC";
+    private static final String QUERY_ONLY_TEST_APP_PACKAGE_NAME = "com.android.cts.RemoteDPC";
 
     private static final String PERMISSION_DECLARED_BY_TESTAPP = "android.permission.READ_CALENDAR";
 
@@ -233,7 +233,7 @@ public class TestAppProviderTest {
     public void query_withExistingActivity_returnsMatching() {
         TestApp testApp = mTestAppProvider.query()
                 .whereActivities().contains(
-                        activity().activityClass()
+                        activity().where().activityClass()
                             .className().isEqualTo(KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME)
                 )
                 .get();

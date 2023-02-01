@@ -16,8 +16,11 @@
 
 package android.hardware.input.cts.tests;
 
+import static org.junit.Assert.assertThrows;
+
 import android.hardware.input.VirtualKeyEvent;
 import android.hardware.input.VirtualKeyboard;
+import android.hardware.input.VirtualKeyboardConfig;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 
@@ -38,8 +41,16 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
 
     @Override
     void onSetUpVirtualInputDevice() {
-        mVirtualKeyboard = mVirtualDevice.createVirtualKeyboard(mVirtualDisplay, DEVICE_NAME,
-                /* vendorId= */ 1, /* productId= */ 1);
+        final VirtualKeyboardConfig keyboardConfig =
+                new VirtualKeyboardConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setInputDeviceName(DEVICE_NAME)
+                        .setAssociatedDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
+                        .setLanguageTag(VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG)
+                        .setLayoutType(VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE)
+                        .build();
+        mVirtualKeyboard = mVirtualDevice.createVirtualKeyboard(keyboardConfig);
     }
 
     @Override
@@ -51,33 +62,63 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
 
     @Test
     public void sendKeyEvent() {
-        mVirtualKeyboard.sendKeyEvent(new VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_DOWN).build());
-        mVirtualKeyboard.sendKeyEvent(new VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_UP).build());
-        verifyEvents(Arrays.asList(new KeyEvent(
-                        /* downTime= */ 0,
-                        /* eventTime= */ 0,
-                        KeyEvent.ACTION_DOWN,
-                        KeyEvent.KEYCODE_A,
-                        /* repeat= */ 0,
-                        /* metaState= */ 0,
-                        /* deviceId= */ 0,
-                        /* scancode= */ 0,
-                        /* flags= */ 0,
-                        /* source= */ InputDevice.SOURCE_KEYBOARD),
-                new KeyEvent(
-                        /* downTime= */ 0,
-                        /* eventTime= */ 0,
-                        KeyEvent.ACTION_UP,
-                        KeyEvent.KEYCODE_A,
-                        /* repeat= */ 0,
-                        /* metaState= */ 0,
-                        /* deviceId= */ 0,
-                        /* scancode= */ 0,
-                        /* flags= */ 0,
-                        /* source= */ InputDevice.SOURCE_KEYBOARD)));
+        mVirtualKeyboard.sendKeyEvent(
+                new VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build());
+        mVirtualKeyboard.sendKeyEvent(
+                new VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build());
+        verifyEvents(
+                Arrays.asList(
+                        new KeyEvent(
+                                /* downTime= */ 0,
+                                /* eventTime= */ 0,
+                                KeyEvent.ACTION_DOWN,
+                                KeyEvent.KEYCODE_A,
+                                /* repeat= */ 0,
+                                /* metaState= */ 0,
+                                /* deviceId= */ 0,
+                                /* scancode= */ 0,
+                                /* flags= */ 0,
+                                /* source= */ InputDevice.SOURCE_KEYBOARD),
+                        new KeyEvent(
+                                /* downTime= */ 0,
+                                /* eventTime= */ 0,
+                                KeyEvent.ACTION_UP,
+                                KeyEvent.KEYCODE_A,
+                                /* repeat= */ 0,
+                                /* metaState= */ 0,
+                                /* deviceId= */ 0,
+                                /* scancode= */ 0,
+                                /* flags= */ 0,
+                                /* source= */ InputDevice.SOURCE_KEYBOARD)));
+    }
+
+    @Test
+    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        try (DropShellPermissionsTemporarily drop = new DropShellPermissionsTemporarily()) {
+            assertThrows(SecurityException.class,
+                    () -> mVirtualKeyboard.sendKeyEvent(
+                            new VirtualKeyEvent.Builder()
+                                    .setKeyCode(KeyEvent.KEYCODE_A)
+                                    .setAction(VirtualKeyEvent.ACTION_DOWN)
+                                    .build()));
+        }
+    }
+
+    @Test
+    public void rejectsUnsupportedKeyCodes() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mVirtualKeyboard.sendKeyEvent(
+                                new VirtualKeyEvent.Builder()
+                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                                        .build()));
     }
 }

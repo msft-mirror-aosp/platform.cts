@@ -40,6 +40,7 @@ import android.content.ComponentName;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.Properties;
@@ -48,13 +49,10 @@ import android.util.Size;
 
 import androidx.annotation.Nullable;
 
-import com.android.compatibility.common.util.GestureNavRule;
-
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -74,6 +72,7 @@ import org.junit.rules.TestRule;
  * atest CtsWindowManagerDeviceTestCases:CompatChangeTests
  */
 @Presubmit
+@FlakyTest(bugId = 265133599)
 public final class CompatChangeTests extends MultiDisplayTestBase {
     private static final ComponentName RESIZEABLE_PORTRAIT_ACTIVITY =
             component(ResizeablePortraitActivity.class);
@@ -104,16 +103,13 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     @Rule
     public TestRule compatChangeRule = new PlatformCompatChangeRule();
 
-    @ClassRule
-    public static GestureNavRule GESTURE_NAV_RULE = new GestureNavRule();
-
     private DisplayMetricsSession mDisplayMetricsSession;
 
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        GESTURE_NAV_RULE.assumeGestureNavigationMode();
+        enableAndAssumeGestureNavigationMode();
 
         mDisplayMetricsSession =
                 createManagedDisplayMetricsSession(DEFAULT_DISPLAY);
@@ -518,9 +514,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      */
     private void runSizeCompatTest(ComponentName activity, int windowingMode, double resizeRatio,
             boolean inSizeCompatModeAfterResize) {
-        // TODO(b/208918131): Remove once real cause is found.
-        assumeFalse(ENABLE_SHELL_TRANSITIONS);
-
         launchActivity(activity, windowingMode);
 
         assertSizeCompatMode(activity, /* expectedInSizeCompatMode= */ false);

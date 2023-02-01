@@ -17,7 +17,6 @@
 import logging
 import math
 import os
-import unittest
 import cv2
 import numpy
 
@@ -30,9 +29,11 @@ ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT = 13.5  # cm
+CHART_HEIGHT_RFOV = 13.5  # cm
+CHART_HEIGHT_WFOV = 9.5  # cm
 CHART_DISTANCE_RFOV = 31.0  # cm
 CHART_DISTANCE_WFOV = 22.0  # cm
+CHART_SCALE_RTOL = 0.1
 CHART_SCALE_START = 0.65
 CHART_SCALE_STOP = 1.35
 CHART_SCALE_STEP = 0.025
@@ -42,7 +43,9 @@ CIRCLISH_ATOL = 0.10  # contour area vs ideal circle area & aspect ratio TOL
 CIRCLISH_LOW_RES_ATOL = 0.15  # loosen for low res images
 CIRCLE_MIN_PTS = 20
 CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
+CIRCLE_COLOR_ATOL = 0.01  # circle color fill tolerance
 
+CV2_CONTOUR_LINE_THICKNESS = 3  # for drawing contours if multiple circles found
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 
 FOV_THRESH_TELE25 = 25
@@ -91,20 +94,25 @@ def calc_chart_scaling(chart_distance, camera_fov):
   chart_scaling = 1.0
   camera_fov = float(camera_fov)
   if (FOV_THRESH_TELE < camera_fov < FOV_THRESH_WFOV and
-      numpy.isclose(chart_distance, CHART_DISTANCE_WFOV, rtol=0.1)):
+      math.isclose(
+          chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_RFOV_IN_WFOV_BOX
   elif (camera_fov <= FOV_THRESH_TELE and
-        numpy.isclose(chart_distance, CHART_DISTANCE_WFOV, rtol=0.1)):
+        math.isclose(
+            chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_TELE_IN_WFOV_BOX
   elif (camera_fov <= FOV_THRESH_TELE25 and
-        (numpy.isclose(chart_distance, CHART_DISTANCE_RFOV, rtol=0.1) or
+        (math.isclose(
+            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL) or
          chart_distance > CHART_DISTANCE_RFOV)):
     chart_scaling = SCALE_TELE25_IN_RFOV_BOX
   elif (camera_fov <= FOV_THRESH_TELE40 and
-        numpy.isclose(chart_distance, CHART_DISTANCE_RFOV, rtol=0.1)):
+        math.isclose(
+            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_TELE40_IN_RFOV_BOX
   elif (camera_fov <= FOV_THRESH_TELE and
-        numpy.isclose(chart_distance, CHART_DISTANCE_RFOV, rtol=0.1)):
+        math.isclose(
+            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_TELE_IN_RFOV_BOX
   return chart_scaling
 
@@ -158,8 +166,13 @@ class Chart(object):
      scale_step: float; step value for scaling for chart search
     """
     self._file = chart_file or CHART_FILE
-    self._height = height or CHART_HEIGHT
-    self._distance = distance or CHART_DISTANCE_RFOV
+    if math.isclose(
+        distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL):
+      self._height = height or CHART_HEIGHT_RFOV
+      self._distance = distance
+    else:
+      self._height = height or CHART_HEIGHT_WFOV
+      self._distance = CHART_DISTANCE_WFOV
     self._scale_start = scale_start or CHART_SCALE_START
     self._scale_stop = scale_stop or CHART_SCALE_STOP
     self._scale_step = scale_step or CHART_SCALE_STEP
@@ -312,6 +325,28 @@ def component_shape(contour):
   return shape
 
 
+def find_circle_fill_metric(shape, img_bw, color):
+  """Find the proportion of points matching a desired color on a shape's axes.
+
+  Args:
+    shape: dictionary returned by component_shape(...)
+    img_bw: binarized numpy image array
+    color: int of [0 or 255] 0 is black, 255 is white
+  Returns:
+    float: number of x, y axis points matching color / total x, y axis points
+  """
+  matching = 0
+  total = 0
+  for y in range(shape['top'], shape['bottom']):
+    total += 1
+    matching += 1 if img_bw[y][shape['ctx']] == color else 0
+  for x in range(shape['left'], shape['right']):
+    total += 1
+    matching += 1 if img_bw[shape['cty']][x] == color else 0
+  logging.debug('Found %d matching points out of %d', matching, total)
+  return matching / total
+
+
 def find_circle(img, img_name, min_area, color):
   """Find the circle in the test image.
 
@@ -343,6 +378,7 @@ def find_circle(img, img_name, min_area, color):
 
   # Check each contour and find the circle bigger than min_area
   num_circles = 0
+  circle_contours = []
   logging.debug('Initial number of contours: %d', len(contours))
   for contour in contours:
     area = cv2.contourArea(contour)
@@ -354,13 +390,16 @@ def find_circle(img, img_name, min_area, color):
       colour = img_bw[shape['cty']][shape['ctx']]
       circlish = (math.pi * radius**2) / area
       aspect_ratio = shape['width'] / shape['height']
+      fill = find_circle_fill_metric(shape, img_bw, color)
       logging.debug('Potential circle found. radius: %.2f, color: %d, '
-                    'circlish: %.3f, ar: %.3f, pts: %d', radius, colour,
-                    circlish, aspect_ratio, num_pts)
+                    'circlish: %.3f, ar: %.3f, pts: %d, fill metric: %.3f',
+                    radius, colour, circlish, aspect_ratio, num_pts, fill)
       if (colour == color and
-          numpy.isclose(1.0, circlish, atol=circlish_atol) and
-          numpy.isclose(1.0, aspect_ratio, atol=CIRCLE_AR_ATOL) and
-          num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH):
+          math.isclose(1.0, circlish, abs_tol=circlish_atol) and
+          math.isclose(1.0, aspect_ratio, abs_tol=CIRCLE_AR_ATOL) and
+          num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH and
+          math.isclose(1.0, fill, abs_tol=CIRCLE_COLOR_ATOL)):
+        circle_contours.append(contour)
 
         # Populate circle dictionary
         circle['x'] = shape['ctx']
@@ -389,6 +428,11 @@ def find_circle(img, img_name, min_area, color):
 
   if num_circles > 1:
     image_processing_utils.write_image(img/255, img_name, True)
+    cv2.drawContours(img, circle_contours, -1, CV2_RED,
+                     CV2_CONTOUR_LINE_THICKNESS)
+    img_name_parts = img_name.split('.')
+    image_processing_utils.write_image(
+        img/255, f'{img_name_parts[0]}_contours.{img_name_parts[1]}', True)
     raise AssertionError('More than 1 black circle detected. '
                          'Background of scene may be too complex.')
 
@@ -502,7 +546,7 @@ def get_angle(input_img):
     _, (width, height), angle = rect
 
     # Skip non-squares
-    if not numpy.isclose(width, height, rtol=SQUARE_TOL):
+    if not math.isclose(width, height, rel_tol=SQUARE_TOL):
       continue
 
     # Remove very small contours: usually just tiny dots due to noise.
@@ -523,7 +567,7 @@ def get_angle(input_img):
   filtered_angles = []
   for square in square_contours:
     area = cv2.contourArea(square)
-    if not numpy.isclose(area, median_area, rtol=SQUARE_TOL):
+    if not math.isclose(area, median_area, rel_tol=SQUARE_TOL):
       continue
 
     filtered_squares.append(square)
@@ -537,53 +581,3 @@ def get_angle(input_img):
     return None
 
   return numpy.median(filtered_angles)
-
-
-class Cv2ImageProcessingUtilsTests(unittest.TestCase):
-  """Unit tests for this module."""
-
-  def test_get_angle_identify_rotated_chessboard_angle(self):
-    """Unit test to check extracted angles from images."""
-    # Array of the image files and angles containing rotated chessboards.
-    test_cases = [
-        ('', 0),
-        ('_15_ccw', -15),
-        ('_30_ccw', -30),
-        ('_45_ccw', -45),
-        ('_60_ccw', -60),
-        ('_75_ccw', -75),
-    ]
-    test_fails = ''
-
-    # For each rotated image pair (normal, wide), check angle against expected.
-    for suffix, angle in test_cases:
-      # Define image paths.
-      normal_img_path = os.path.join(
-          TEST_IMG_DIR, f'rotated_chessboards/normal{suffix}.jpg')
-      wide_img_path = os.path.join(
-          TEST_IMG_DIR, f'rotated_chessboards/wide{suffix}.jpg')
-
-      # Load and color-convert images.
-      normal_img = cv2.cvtColor(cv2.imread(normal_img_path), cv2.COLOR_BGR2GRAY)
-      wide_img = cv2.cvtColor(cv2.imread(wide_img_path), cv2.COLOR_BGR2GRAY)
-
-      # Assert angle as expected.
-      normal = get_angle(normal_img)
-      wide = get_angle(wide_img)
-      valid_angles = (angle, angle+90)  # try both angle & +90 due to squares
-      e_msg = (f'\n Rotation angle test failed: {angle}, extracted normal: '
-               f'{normal:.2f}, wide: {wide:.2f}, valid_angles: {valid_angles}')
-      matched_angles = False
-      for a in valid_angles:
-        if (math.isclose(normal, a, abs_tol=ANGLE_CHECK_TOL) and
-            math.isclose(wide, a, abs_tol=ANGLE_CHECK_TOL)):
-          matched_angles = True
-
-      if not matched_angles:
-        test_fails += e_msg
-
-    self.assertEqual(len(test_fails), 0, test_fails)
-
-
-if __name__ == '__main__':
-  unittest.main()

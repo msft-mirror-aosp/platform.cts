@@ -57,6 +57,8 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.AmUtils;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -341,6 +343,7 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.setAction(Intent.ACTION_MAIN);
+        intent.setPackage(mContext.getPackageName());
 
         final PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent,
                 PendingIntent.FLAG_MUTABLE);
@@ -385,6 +388,7 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
                 + "--user " + userId + " " + packageName;
 
         runCommand(command, instrumentation);
+        AmUtils.waitForBroadcastBarrier();
     }
 
     protected void toggleNotificationPolicyAccess(String packageName,
@@ -393,6 +397,7 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
 
         runCommand(command, instrumentation);
+        AmUtils.waitForBroadcastBarrier();
 
         NotificationManager nm = mContext.getSystemService(NotificationManager.class);
         assertEquals("Notification Policy Access Grant is "

@@ -80,6 +80,7 @@ android_test {
         ":CtsAppThatDefinesPermissionInPlatformGroup",
         ":CtsAppThatDefinesPermissionWithInvalidGroup",
         ":CtsAppThatDefinesPermissionWithInvalidGroup30",
+        ":CtsAppThatHasNotificationListener",
         ":CtsAppThatRequestsBluetoothPermission30",
         ":CtsAppThatRequestsCalendarContactsBodySensorCustomPermission",
         ":CtsAppThatRequestsBluetoothPermission31",
@@ -114,8 +115,10 @@ android_test {
         ":CtsStorageEscalationApp29Full",
         ":CtsStorageEscalationApp29Scoped",
         ":CtsVictimPermissionDefinerApp",
+        ":CtsAppThatRequestsMultiplePermissionsWithMinMaxSdk",
         ":CtsAppThatRequestsSystemAlertWindow22",
         ":CtsAppThatRequestsSystemAlertWindow23",
+        ":CtsAppThatRequestCustomCameraPermission",
     ],
     per_testcase_directory: true,
 }

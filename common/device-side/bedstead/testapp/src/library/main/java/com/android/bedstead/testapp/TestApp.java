@@ -30,6 +30,7 @@ import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.Users;
 import com.android.bedstead.testapp.processor.annotations.TestAppSender;
+import com.android.queryable.collections.QueryableActivityInfoHashSet;
 import com.android.queryable.info.ActivityInfo;
 
 import java.io.File;
@@ -169,6 +170,11 @@ public final class TestApp {
         }
     }
 
+    /** The package label, or the package name if no label is specified. */
+    public String label() {
+        return mDetails.label() != null ? mDetails.label() : packageName();
+    }
+
     /** The package name of the test app. */
     public String packageName() {
         return mDetails.mApp.getPackageName();
@@ -200,8 +206,8 @@ public final class TestApp {
     }
 
     /** The activities which exist in the test app. */
-    public Set<ActivityInfo> activities() {
-        return mDetails.mActivities;
+    public QueryableActivityInfoHashSet activities() {
+        return new QueryableActivityInfoHashSet(mDetails.mActivities);
     }
 
     /**

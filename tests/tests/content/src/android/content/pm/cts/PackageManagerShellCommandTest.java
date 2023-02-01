@@ -115,6 +115,8 @@ import java.util.stream.Collectors;
 @AppModeFull
 public class PackageManagerShellCommandTest {
     static final String TEST_APP_PACKAGE = "com.example.helloworld";
+    static final String TEST_VERIFIER_PACKAGE = "com.example.helloverifier";
+    static final String TEST_SUFFICIENT_VERIFIER_PACKAGE = "com.example.hellosufficient";
 
     private static final String CTS_PACKAGE_NAME = "android.content.cts";
 
@@ -157,6 +159,16 @@ public class PackageManagerShellCommandTest {
 
     private static final String TEST_HW_NO_APP_STORAGE = "HelloWorldNoAppStorage.apk";
 
+    private static final String TEST_SUFFICIENT = "HelloWorldWithSufficient.apk";
+
+    private static final String TEST_SUFFICIENT_VERIFIER_REJECT =
+            "HelloSufficientVerifierReject.apk";
+
+    private static final String TEST_VERIFIER_ALLOW = "HelloVerifierAllow.apk";
+    private static final String TEST_VERIFIER_REJECT = "HelloVerifierReject.apk";
+    private static final String TEST_VERIFIER_DELAYED_REJECT = "HelloVerifierDelayedReject.apk";
+    private static final String TEST_VERIFIER_DISABLED = "HelloVerifierDisabled.apk";
+
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
 
     static final long DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS = 3 * 1000;
@@ -180,7 +192,6 @@ public class PackageManagerShellCommandTest {
     private String mPackageVerifier = null;
     private String mUnusedStaticSharedLibsMinCachePeriod = null;
     private long mStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
-    private int mSecondUser = -1;
 
     private static PackageInstaller getPackageInstaller() {
         return getPackageManager().getPackageInstaller();
@@ -274,6 +285,9 @@ public class PackageManagerShellCommandTest {
         uninstallPackageSilently(TEST_APP_PACKAGE);
         assertFalse(isAppInstalled(TEST_APP_PACKAGE));
 
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+        uninstallPackageSilently(TEST_SUFFICIENT_VERIFIER_PACKAGE);
+
         uninstallPackageSilently(TEST_SDK_USER_PACKAGE);
         uninstallPackageSilently(TEST_SDK3_PACKAGE);
         uninstallPackageSilently(TEST_SDK2_PACKAGE);
@@ -301,6 +315,9 @@ public class PackageManagerShellCommandTest {
         assertFalse(isAppInstalled(TEST_APP_PACKAGE));
         assertEquals(null, getSplits(TEST_APP_PACKAGE));
 
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+        uninstallPackageSilently(TEST_SUFFICIENT_VERIFIER_PACKAGE);
+
         uninstallPackageSilently(TEST_SDK_USER_PACKAGE);
         uninstallPackageSilently(TEST_SDK3_PACKAGE);
         uninstallPackageSilently(TEST_SDK2_PACKAGE);
@@ -315,12 +332,7 @@ public class PackageManagerShellCommandTest {
         // Set the test override to invalid.
         setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest", "invalid");
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "invalid");
-        setSystemProperty("debug.pm.adb_verifier_override_package", "invalid");
-
-        if (mSecondUser != -1) {
-            stopUser(mSecondUser);
-            removeUser(mSecondUser);
-        }
+        setSystemProperty("debug.pm.adb_verifier_override_packages", "invalid");
     }
 
     private boolean checkIncrementalDeliveryFeature() {
@@ -397,6 +409,26 @@ public class PackageManagerShellCommandTest {
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
         updatePackageStdIn(TEST_APP_PACKAGE, TEST_HW5);
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+    }
+
+    @Test
+    public void testAppUpdateSkipEnable() throws Exception {
+        installPackage(TEST_HW5);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                getPackageManager().getApplicationEnabledSetting(TEST_APP_PACKAGE));
+        disablePackage(TEST_APP_PACKAGE);
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                getPackageManager().getApplicationEnabledSetting(TEST_APP_PACKAGE));
+        updatePackage(TEST_APP_PACKAGE, TEST_HW5);
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                getPackageManager().getApplicationEnabledSetting(TEST_APP_PACKAGE));
+        disablePackage(TEST_APP_PACKAGE);
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                getPackageManager().getApplicationEnabledSetting(TEST_APP_PACKAGE));
+        updatePackageSkipEnable(TEST_APP_PACKAGE, TEST_HW5);
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                getPackageManager().getApplicationEnabledSetting(TEST_APP_PACKAGE));
     }
 
     @Test
@@ -637,6 +669,7 @@ public class PackageManagerShellCommandTest {
             writeFileToSession(session, "hw5_split0", TEST_HW5_SPLIT0);
 
             final CompletableFuture<Boolean> result = new CompletableFuture<>();
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
             session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
                 @Override
                 public void send(int code, Intent intent, String resolvedType,
@@ -645,11 +678,15 @@ public class PackageManagerShellCommandTest {
                     boolean dontKillApp =
                             (session.getInstallFlags() & PackageManager.INSTALL_DONT_KILL_APP) != 0;
                     result.complete(dontKillApp);
+                    status.complete(
+                            intent.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE));
                 }
             }));
 
             // We are adding split. OK to have the flag.
             assertTrue(result.get());
+            // Verify that the return status is set
+            assertEquals(PackageInstaller.STATUS_SUCCESS, (int) status.get());
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
@@ -1244,14 +1281,21 @@ public class PackageManagerShellCommandTest {
 
     private void runPackageVerifierTest(BiConsumer<Context, Intent> onBroadcast)
             throws Exception {
-        runPackageVerifierTest("Success", onBroadcast);
+        runPackageVerifierTest(TEST_HW5, TEST_HW7, "Success", onBroadcast);
     }
 
     private void runPackageVerifierTest(String expectedResultStartsWith,
             BiConsumer<Context, Intent> onBroadcast) throws Exception {
+        runPackageVerifierTest(TEST_HW5, TEST_HW7, expectedResultStartsWith, onBroadcast);
+    }
+
+    private void runPackageVerifierTest(String baseName, String updatedName,
+            String expectedResultStartsWith, BiConsumer<Context, Intent> onBroadcast)
+            throws Exception {
         AtomicReference<Thread> onBroadcastThread = new AtomicReference<>();
 
-        runPackageVerifierTestSync(expectedResultStartsWith, (context, intent) -> {
+        runPackageVerifierTestSync(baseName, updatedName, expectedResultStartsWith,
+                (context, intent) -> {
             Thread thread = new Thread(() -> onBroadcast.accept(context, intent));
             thread.start();
             onBroadcastThread.set(thread);
@@ -1263,10 +1307,11 @@ public class PackageManagerShellCommandTest {
         }
     }
 
-    private void runPackageVerifierTestSync(String expectedResultStartsWith,
-            BiConsumer<Context, Intent> onBroadcast) throws Exception {
+    private void runPackageVerifierTestSync(String baseName, String updatedName,
+            String expectedResultStartsWith, BiConsumer<Context, Intent> onBroadcast)
+            throws Exception {
         // Install a package.
-        installPackage(TEST_HW5);
+        installPackage(baseName);
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
 
         getUiAutomation().adoptShellPermissionIdentity(
@@ -1296,16 +1341,18 @@ public class PackageManagerShellCommandTest {
         // Enable verification.
         executeShellCommand("settings put global verifier_verify_adb_installs 1");
         // Override verifier for updates of debuggable apps.
-        setSystemProperty("debug.pm.adb_verifier_override_package", CTS_PACKAGE_NAME);
+        setSystemProperty("debug.pm.adb_verifier_override_packages",
+                CTS_PACKAGE_NAME + ";" + TEST_VERIFIER_PACKAGE);
 
         // Update the package, should trigger verifier override.
-        installPackage(TEST_HW7, expectedResultStartsWith);
+        installPackage(updatedName, expectedResultStartsWith);
 
         // Wait for broadcast.
         broadcastReceived.get(VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     }
 
     @Test
+    @LargeTest
     public void testPackageVerifierAllow() throws Exception {
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
@@ -1324,6 +1371,29 @@ public class PackageManagerShellCommandTest {
     }
 
     @Test
+    @LargeTest
+    public void testPackageVerifierAllowTwoVerifiers() throws Exception {
+        installPackage(TEST_VERIFIER_ALLOW);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest((context, intent) -> {
+            int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+            assertNotEquals(-1, verificationId);
+
+            dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+            int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+            assertNotEquals(-1, sessionId);
+
+            getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+        });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
     public void testPackageVerifierReject() throws Exception {
         // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
         // to be user 0. So skip the test if it is not user 0.
@@ -1331,7 +1401,7 @@ public class PackageManagerShellCommandTest {
         assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
-        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed]",
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
                 (context, intent) -> {
                     int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
                     assertNotEquals(-1, verificationId);
@@ -1347,10 +1417,129 @@ public class PackageManagerShellCommandTest {
     }
 
     @Test
+    @LargeTest
+    public void testPackageSufficientVerifierReject() throws Exception {
+        // TEST_SUFFICIENT configured to have hellosufficient as sufficient verifier.
+        installPackage(TEST_SUFFICIENT_VERIFIER_REJECT);
+        assertTrue(isAppInstalled(TEST_SUFFICIENT_VERIFIER_PACKAGE));
+
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest(TEST_HW5, TEST_SUFFICIENT,
+                "Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // This is a required verifier. The installation should fail, even though the
+                    // required verifier allows installation.
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    public void testPackageVerifierRejectTwoVerifiersBothReject() throws Exception {
+        installPackage(TEST_VERIFIER_REJECT);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_REJECT);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    public void testPackageVerifierRejectTwoVerifiersOnlyOneRejects() throws Exception {
+        installPackage(TEST_VERIFIER_REJECT);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // This one allows, the other one rejects.
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    public void testPackageVerifierRejectTwoVerifiersOnlyOneDelayedRejects() throws Exception {
+        if (mIncremental) {
+            // Incremental does not allow timeout extension.
+            return;
+        }
+        installPackage(TEST_VERIFIER_DELAYED_REJECT);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // This one allows, the other one rejects.
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
     public void testPackageVerifierRejectAfterTimeout() throws Exception {
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
-        runPackageVerifierTestSync("Success", (context, intent) -> {
+        runPackageVerifierTestSync(TEST_HW5, TEST_HW7, "Success", (context, intent) -> {
             int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
             assertNotEquals(-1, verificationId);
 
@@ -1381,6 +1570,7 @@ public class PackageManagerShellCommandTest {
     }
 
     @Test
+    @LargeTest
     public void testPackageVerifierWithExtensionAndTimeout() throws Exception {
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
@@ -1455,6 +1645,82 @@ public class PackageManagerShellCommandTest {
         } else {
             assertEquals(TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256, checksums.get(0).getType());
         }
+    }
+
+    @Test
+    public void testPackageVerifierWithOneVerifierDisabledAtRunTime() throws Exception {
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        installPackage(TEST_VERIFIER_REJECT);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // This one allows, the other one rejects.
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
+        // We can't disable the test package, but we can disable the second verifier package
+        disablePackage(TEST_VERIFIER_PACKAGE);
+        // Expect the installation to success, even though the second verifier would reject it
+        // if the verifier is enabled
+        runPackageVerifierTest(
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
+    }
+
+    @Test
+    public void testPackageVerifierWithOneVerifierDisabledAtManifest() throws Exception {
+        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
+        // to be user 0. So skip the test if it is not user 0.
+        // TODO(b/232317379) Fix this in proper way
+        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
+        // The second verifier package is disabled in its manifest
+        installPackage(TEST_VERIFIER_REJECT);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+        runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // This one allows, the other one rejects.
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+        // Uninstall the second verifier first to allow for the new verifier installation
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+        installPackage(TEST_VERIFIER_DISABLED);
+        assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
+        // Expect the installation to success, even though the second verifier would reject it
+        // if the verifier is enabled
+        runPackageVerifierTest(
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    getPackageManager().verifyPendingInstall(verificationId, VERIFICATION_ALLOW);
+                });
+
     }
 
     @Test
@@ -1571,10 +1837,12 @@ public class PackageManagerShellCommandTest {
             }
         }
         public void assertBroadcastReceived() throws Exception {
+            executeShellCommand("am wait-for-broadcast-barrier");
             assertTrue(mUserReceivedBroadcast.get(2, TimeUnit.SECONDS));
         }
         public void assertBroadcastNotReceived() throws Exception {
             try {
+                executeShellCommand("am wait-for-broadcast-barrier");
                 assertFalse(mUserReceivedBroadcast.get(2, TimeUnit.SECONDS));
             } catch (TimeoutException ignored) {
                 // expected
@@ -1720,6 +1988,13 @@ public class PackageManagerShellCommandTest {
                 "pm " + mInstall + " -t -p " + packageName + " -g " + file.getPath()));
     }
 
+    private void updatePackageSkipEnable(String packageName, String baseName) throws IOException {
+        File file = new File(createApkPath(baseName));
+        assertEquals("Success\n", executeShellCommand(
+                "pm " + mInstall + " --skip-enable -t -p " + packageName + " -g " + file.getPath()
+        ));
+    }
+
     private void installPackageStdIn(String baseName) throws IOException {
         File file = new File(createApkPath(baseName));
         assertEquals("Success\n",
@@ -1812,34 +2087,18 @@ public class PackageManagerShellCommandTest {
                 "pm uninstall " + packageName + " " + String.join(" ", splitNames)));
     }
 
-    private void setSystemProperty(String name, String value) throws Exception {
+    public static void setSystemProperty(String name, String value) throws Exception {
         assertEquals("", executeShellCommand("setprop " + name + " " + value));
     }
 
-    private int createUser(String name) throws IOException {
-        final String output = executeShellCommand("pm create-user " + name);
-        if (output.startsWith("Success")) {
-            return Integer.parseInt(output.substring(output.lastIndexOf(" ")).trim());
+    private void disablePackage(String packageName) {
+        getUiAutomation().adoptShellPermissionIdentity();
+        try {
+            getPackageManager().setApplicationEnabledSetting(packageName,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
         }
-        throw new IllegalStateException(String.format("Failed to create user: %s", output));
-    }
-
-    private void removeUser(int userId) throws IOException {
-        executeShellCommand("pm remove-user " + userId);
-    }
-
-    private boolean startUser(int userId) throws IOException {
-        String cmd = "am start-user -w " + userId;
-        final String output = executeShellCommand(cmd);
-        if (output.startsWith("Error")) {
-            return false;
-        }
-        String state = executeShellCommand("am get-started-user-state " + userId);
-        return state.contains("RUNNING_UNLOCKED");
-    }
-
-    private void stopUser(int userId) throws IOException {
-        executeShellCommand("am stop-user -w -f " + userId);
     }
 }
 

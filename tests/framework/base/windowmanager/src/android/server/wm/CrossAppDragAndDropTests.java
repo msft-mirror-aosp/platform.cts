@@ -230,6 +230,9 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
                     }).execute();
             moveActivitiesToSplitScreen(sourceComponentName, targetComponentName);
         }
+        if (DROP_TARGET_SDK23.equals(targetComponentName)) {
+            DeprecatedTargetSdkTest.waitAndDismissDeprecatedTargetSdkDialog(mWmState);
+        }
 
         Point p1 = getWindowCenter(sourceComponentName);
         assertNotNull(p1);

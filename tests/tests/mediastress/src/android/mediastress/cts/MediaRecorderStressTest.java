@@ -28,7 +28,7 @@ import android.test.suitebuilder.annotation.LargeTest;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
-import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-@NonMediaMainlineTest
+@NonMainlineTest
 public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<MediaFrameworkTest> {
 
     private static final String TAG = "MediaRecorderStressTest";
@@ -296,9 +296,6 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
 
     //Stress test case for switching camera and video recorder preview.
     @LargeTest
-    @ApiTest(apis = {"android.media.MediaRecorder#setVideoSource",
-             "android.media.MediaRecorder#setVideoEncoder",
-             "android.media.MediaRecorder#setPreviewDisplay"})
     public void testStressCameraSwitchRecorder() throws Exception {
         if (Camera.getNumberOfCameras() < 1) {
             return;
@@ -408,11 +405,6 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
 
     //Stress test case for record a video and play right away.
     @LargeTest
-    @ApiTest(apis = {"android.media.MediaRecorder#setVideoSource",
-             "android.media.MediaRecorder#setVideoEncoder",
-             "android.media.MediaRecorder#setPreviewDisplay",
-             "android.media.MediaPlayer#setDataSource",
-             "android.media.MediaPlayer#setDisplay"})
     public void testStressRecordVideoAndPlayback() throws Exception {
         if (Camera.getNumberOfCameras() < 1) {
             return;

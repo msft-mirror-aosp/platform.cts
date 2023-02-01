@@ -22,6 +22,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.CommandResult;
 
@@ -41,23 +43,27 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
             "content://android.tradefed.contentprovider";
     protected static final String MEDIA_PROVIDER_URL = "content://media";
 
-    public String mCloneUserId;
+    protected static String sCloneUserId;
 
-    private void createAndStartCloneUser() throws Exception {
+    protected static void createAndStartCloneUser() throws Exception {
         // create clone user
-        String output = executeShellCommand(
+        String output = sDevice.executeShellCommand(
                 "pm create-user --profileOf 0 --user-type android.os.usertype.profile.CLONE "
                         + "testUser");
-        mCloneUserId = output.substring(output.lastIndexOf(' ') + 1).replaceAll("[^0-9]",
+        sCloneUserId = output.substring(output.lastIndexOf(' ') + 1).replaceAll("[^0-9]",
                 "");
-        assertThat(mCloneUserId).isNotEmpty();
+        assertThat(sCloneUserId).isNotEmpty();
 
-        CommandResult out = executeShellV2Command("am start-user -w %s", mCloneUserId);
+        CommandResult out = sDevice.executeShellV2Command("am start-user -w " + sCloneUserId);
         assertThat(isSuccessful(out)).isTrue();
     }
 
-    public void baseHostSetup() throws Exception {
-        setDevice();
+    protected static void removeCloneUser() throws Exception {
+        sDevice.executeShellCommand("pm remove-user " + sCloneUserId);
+    }
+
+    public static void baseHostSetup(ITestDevice device) throws Exception {
+        setDevice(device);
 
         assumeTrue("Device doesn't support multiple users", supportsMultipleUsers());
         assumeFalse("Device is in headless system user mode", isHeadlessSystemUserMode());
@@ -67,13 +73,12 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
         createAndStartCloneUser();
     }
 
-    public void baseHostTeardown() throws Exception {
+    public static void baseHostTeardown() throws Exception {
         if (!supportsMultipleUsers() || isHeadlessSystemUserMode() || !isAtLeastS()
                 || usesSdcardFs())
             return;
 
-        // remove the clone user
-        executeShellCommand("pm remove-user %s", mCloneUserId);
+        removeCloneUser();
     }
 
     protected CommandResult runContentProviderCommand(String commandType, String userId,
@@ -83,8 +88,8 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
                 commandType, userId, fullUri, String.join(" ", args));
     }
 
-    protected boolean usesSdcardFs() throws Exception {
-        CommandResult out = executeShellV2Command("cat /proc/mounts");
+    protected static boolean usesSdcardFs() throws Exception {
+        CommandResult out = sDevice.executeShellV2Command("cat /proc/mounts");
         assertThat(isSuccessful(out)).isTrue();
         for (String line : out.getStdout().split("\n")) {
             String[] split = line.split(" ");
@@ -97,8 +102,15 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
 
     protected void runDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId,
             @Nonnull Map<String, String> args) throws Exception {
-        DeviceTestRunOptions deviceTestRunOptions = new DeviceTestRunOptions(APP_A_PACKAGE)
-                .setTestClassName(TEST_CLASS_A)
+
+        runDeviceTestAsUser(APP_A_PACKAGE, TEST_CLASS_A, testMethod, userId, args);
+    }
+
+    protected void runDeviceTestAsUser(@Nonnull String testPackage, @Nonnull String testClass,
+            @Nonnull String testMethod, int userId, @Nonnull Map<String, String> args)
+            throws Exception {
+        DeviceTestRunOptions deviceTestRunOptions = new DeviceTestRunOptions(testPackage)
+                .setTestClassName(testClass)
                 .setTestMethodName(testMethod)
                 .setMaxInstrumentationTimeoutMs(DEFAULT_INSTRUMENTATION_TIMEOUT_MS)
                 .setUserId(userId);
@@ -108,5 +120,18 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
 
         assertWithMessage(testMethod + " failed").that(
                 runDeviceTests(deviceTestRunOptions)).isTrue();
+    }
+
+    /**
+     * Set the feature flag value on device
+     * @param namespace namespace of feature flag
+     * @param flag name of feature flag
+     * @param value to be assigned
+     * @throws DeviceNotAvailableException if connection with device is lost and cannot be
+     * recovered.
+     */
+    protected static void setFeatureFlagValue(String namespace, String flag, String value)
+            throws DeviceNotAvailableException {
+        sDevice.executeShellCommand("device_config put " + namespace + " " + flag + " " + value);
     }
 }

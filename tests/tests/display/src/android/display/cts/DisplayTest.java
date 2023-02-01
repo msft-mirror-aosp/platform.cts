@@ -35,6 +35,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Presentation;
+import android.app.UiAutomation;
 import android.app.UiModeManager;
 import android.content.Context;
 import android.content.Intent;
@@ -50,7 +51,6 @@ import android.hardware.display.DisplayManager.DisplayListener;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemProperties;
@@ -61,7 +61,6 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.Display.HdrCapabilities;
-import android.view.SurfaceControl;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -73,6 +72,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DisplayUtil;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import com.google.common.truth.Truth;
@@ -137,15 +137,18 @@ public class DisplayTest {
     private TestPresentation mPresentation;
 
     private Activity mScreenOnActivity;
+    private UiAutomation mUiAutomation;
 
     private static class DisplayModeState {
         public final int mHeight;
         public final int mWidth;
         public final float mRefreshRate;
+        public final int[] mSupportedHdrTypes;
 
         DisplayModeState(Display display) {
             mHeight = display.getMode().getPhysicalHeight();
             mWidth = display.getMode().getPhysicalWidth();
+            mSupportedHdrTypes = display.getMode().getSupportedHdrTypes();
 
             // Starting Android S the, the platform might throttle down
             // applications frame rate to a divisor of the refresh rate instead if changing the
@@ -167,7 +170,8 @@ public class DisplayTest {
             DisplayModeState other = (DisplayModeState) obj;
             return mHeight == other.mHeight
                 && mWidth == other.mWidth
-                && mRefreshRate == other.mRefreshRate;
+                && mRefreshRate == other.mRefreshRate
+                && Arrays.equals(mSupportedHdrTypes, other.mSupportedHdrTypes);
         }
 
         @Override
@@ -176,6 +180,7 @@ public class DisplayTest {
                     .append("width=").append(mWidth)
                     .append(", height=").append(mHeight)
                     .append(", fps=").append(mRefreshRate)
+                    .append(", supportedHdrTypes=").append(Arrays.toString(mSupportedHdrTypes))
                     .append("}")
                     .toString();
         }
@@ -210,9 +215,14 @@ public class DisplayTest {
 
     @Before
     public void setUp() throws Exception {
+        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        mUiAutomation.executeShellCommand(
+                "settings put global overlay_display_devices 181x161/214|182x162/214");
+
         mScreenOnActivity = launchScreenOnActivity();
         mContext = getInstrumentation().getTargetContext();
-        assertTrue("Physical display is expected.", DisplayUtil.isDisplayConnected(mContext));
+        assertTrue("Physical display is expected.", DisplayUtil.isDisplayConnected(mContext)
+                || MediaUtils.onCuttlefish());
 
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
         mWindowManager = mContext.getSystemService(WindowManager.class);
@@ -220,7 +230,6 @@ public class DisplayTest {
         mDefaultDisplay = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
         mSupportedWideGamuts = mDefaultDisplay.getSupportedWideColorGamut();
         mOriginalHdrSettings = new HdrSettings();
-        cacheAndClearOriginalHdrSettings();
     }
 
     @After
@@ -229,6 +238,7 @@ public class DisplayTest {
         if (mScreenOnActivity != null) {
             mScreenOnActivity.finish();
         }
+        mUiAutomation.executeShellCommand("settings delete global overlay_display_devices");
     }
 
     private void enableAppOps() {
@@ -298,6 +308,18 @@ public class DisplayTest {
     }
 
     /**
+     * Verify that the supported HDR types for each mode match the display's supported HDR types
+     */
+    @Test
+    public void testModeHdrTypesMatchDisplayHdrTypes() {
+        int[] supportedHdrTypes = mDefaultDisplay.getHdrCapabilities().getSupportedHdrTypes();
+
+        for (Display.Mode mode : mDefaultDisplay.getSupportedModes()) {
+            assertArrayEquals(supportedHdrTypes, mode.getSupportedHdrTypes());
+        }
+    }
+
+    /**
      * Verify that the WindowManager returns the default display.
      */
     @Presubmit
@@ -336,6 +358,7 @@ public class DisplayTest {
     public void
             testGetHdrCapabilitiesWhenUserDisabledFormatsAreNotAllowedReturnsFilteredHdrTypes()
                     throws Exception {
+        cacheAndClearOriginalHdrSettings();
         waitUntil(
                 mDefaultDisplay,
                 mDefaultDisplay ->
@@ -376,6 +399,7 @@ public class DisplayTest {
     public void
             testGetHdrCapabilitiesWhenUserDisabledFormatsAreAllowedReturnsNonFilteredHdrTypes()
                     throws Exception {
+        cacheAndClearOriginalHdrSettings();
         waitUntil(
                 mDefaultDisplay,
                 mDefaultDisplay ->
@@ -404,6 +428,7 @@ public class DisplayTest {
      */
     @Test
     public void testSetUserDisabledHdrTypesStoresDisabledFormatsInSettings() throws Exception {
+        cacheAndClearOriginalHdrSettings();
         waitUntil(
                 mDefaultDisplay,
                 mDefaultDisplay ->
@@ -438,17 +463,15 @@ public class DisplayTest {
                 mDisplayManager.areUserDisabledHdrTypesAllowed();
         mOriginalHdrSettings.userDisabledHdrTypes =
                 mDisplayManager.getUserDisabledHdrTypes();
-        final IBinder displayToken = SurfaceControl.getInternalDisplayToken();
-        SurfaceControl.overrideHdrTypes(displayToken, new int[]{
+        mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{
                 HdrCapabilities.HDR_TYPE_DOLBY_VISION, HdrCapabilities.HDR_TYPE_HDR10,
                 HdrCapabilities.HDR_TYPE_HLG, HdrCapabilities.HDR_TYPE_HDR10_PLUS});
         mDisplayManager.setAreUserDisabledHdrTypesAllowed(true);
     }
 
     private void restoreOriginalHdrSettings() {
-        final IBinder displayToken = SurfaceControl.getInternalDisplayToken();
-        SurfaceControl.overrideHdrTypes(displayToken, new int[]{});
         if (mDisplayManager != null) {
+            mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{});
             mDisplayManager.setUserDisabledHdrTypes(
                     mOriginalHdrSettings.userDisabledHdrTypes);
             mDisplayManager.setAreUserDisabledHdrTypesAllowed(
@@ -722,6 +745,7 @@ public class DisplayTest {
         assertEquals(targetMode.getPhysicalHeight(), currentMode.mHeight);
         assertEquals(targetMode.getPhysicalWidth(), currentMode.mWidth);
         assertEquals(targetMode.getRefreshRate(), currentMode.mRefreshRate, REFRESH_RATE_TOLERANCE);
+        assertArrayEquals(targetMode.getSupportedHdrTypes(), currentMode.mSupportedHdrTypes);
 
 
         boolean isResolutionSwitch = initialMode.mHeight != targetMode.getPhysicalHeight()
@@ -899,7 +923,9 @@ public class DisplayTest {
 
             @Override
             public void onDisplayChanged(int displayId) {
-                if (displayId == display.getDisplayId()) {
+                if (displayId == display.getDisplayId()
+                        && display.getMode() != null
+                        && display.getMode().getModeId() == newMode.getModeId()) {
                     changeSignal.countDown();
                 }
             }

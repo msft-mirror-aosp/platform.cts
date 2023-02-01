@@ -18,7 +18,6 @@ package android.server.wm;
 
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
-import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -55,10 +54,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.provider.Settings;
 import android.server.wm.overlay.Components;
 import android.server.wm.overlay.R;
-import android.server.wm.settings.SettingsSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
@@ -79,9 +76,8 @@ import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -117,10 +113,6 @@ public class WindowUntrustedTouchTest {
     private static final int OVERLAY_COLOR = 0xFFFF0000;
     private static final int ACTIVITY_COLOR = 0xFFFFFFFF;
 
-    private static final int FEATURE_MODE_DISABLED = 0;
-    private static final int FEATURE_MODE_PERMISSIVE = 1;
-    private static final int FEATURE_MODE_BLOCK = 2;
-
     private static final String APP_SELF =
             WindowUntrustedTouchTest.class.getPackage().getName() + ".cts";
     private static final String APP_A =
@@ -134,8 +126,6 @@ public class WindowUntrustedTouchTest {
 
     private static final String SETTING_MAXIMUM_OBSCURING_OPACITY =
             "maximum_obscuring_opacity_for_touch";
-
-    private static SettingsSession<String> sImmersiveModeConfirmationSetting;
 
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private final Map<String, FutureConnection<IUntrustedTouchTestService>> mConnections =
@@ -154,10 +144,14 @@ public class WindowUntrustedTouchTest {
     private View mContainer;
     private Toast mToast;
     private float mPreviousTouchOpacity;
-    private int mPreviousMode;
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
     private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+
+    @ClassRule
+    public static ActivityManagerTestBase.DisableImmersiveModeConfirmationRule
+            mDisableImmersiveModeConfirmationRule =
+            new ActivityManagerTestBase.DisableImmersiveModeConfirmationRule();
 
     @Rule
     public TestName testNameRule = new TestName();
@@ -165,21 +159,6 @@ public class WindowUntrustedTouchTest {
     @Rule
     public ActivityScenarioRule<TestActivity> activityRule =
             new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
-
-    @BeforeClass
-    public static void setUpClass() {
-        sImmersiveModeConfirmationSetting = new SettingsSession<>(
-                Settings.Secure.getUriFor(IMMERSIVE_MODE_CONFIRMATIONS),
-                Settings.Secure::getString, Settings.Secure::putString);
-        sImmersiveModeConfirmationSetting.set("confirmed");
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-        if (sImmersiveModeConfirmationSetting != null) {
-            sImmersiveModeConfirmationSetting.close();
-        }
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -205,7 +184,6 @@ public class WindowUntrustedTouchTest {
         mPreviousSawAppOp = AppOpsUtils.getOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW);
         AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, MODE_ALLOWED);
         mPreviousTouchOpacity = setMaximumObscuringOpacityForTouch(MAXIMUM_OBSCURING_OPACITY);
-        mPreviousMode = setBlockUntrustedTouchesMode(FEATURE_MODE_BLOCK);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(false));
 
@@ -227,42 +205,8 @@ public class WindowUntrustedTouchTest {
         }
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(true));
-        setBlockUntrustedTouchesMode(mPreviousMode);
         setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
         AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
-    }
-
-    @Test
-    public void testWhenFeatureInDisabledModeAndActivityWindowAbove_allowsTouch()
-            throws Throwable {
-        setBlockUntrustedTouchesMode(FEATURE_MODE_DISABLED);
-        addActivityOverlay(APP_A, /* opacity */ .9f);
-
-        mTouchHelper.tapOnViewCenter(mContainer);
-
-        assertTouchReceived();
-    }
-
-    @Test
-    public void testWhenFeatureInPermissiveModeAndActivityWindowAbove_allowsTouch()
-            throws Throwable {
-        setBlockUntrustedTouchesMode(FEATURE_MODE_PERMISSIVE);
-        addActivityOverlay(APP_A, /* opacity */ .9f);
-
-        mTouchHelper.tapOnViewCenter(mContainer);
-
-        assertTouchReceived();
-    }
-
-    @Test
-    public void testWhenFeatureInBlockModeAndActivityWindowAbove_blocksTouch()
-            throws Throwable {
-        setBlockUntrustedTouchesMode(FEATURE_MODE_BLOCK);
-        addActivityOverlay(APP_A, /* opacity */ .9f);
-
-        mTouchHelper.tapOnViewCenter(mContainer);
-
-        assertTouchNotReceived();
     }
 
     @Test
@@ -282,17 +226,6 @@ public class WindowUntrustedTouchTest {
         assertEquals(threshold, mInputManager.getMaximumObscuringOpacityForTouch());
     }
 
-    @Test
-    public void testAfterSettingFeatureMode_returnsModeSet()
-            throws Throwable {
-        // Make sure the previous mode is different
-        setBlockUntrustedTouchesMode(FEATURE_MODE_BLOCK);
-        assertEquals(FEATURE_MODE_BLOCK, mInputManager.getBlockUntrustedTouchesMode(mContext));
-        setBlockUntrustedTouchesMode(FEATURE_MODE_PERMISSIVE);
-
-        assertEquals(FEATURE_MODE_PERMISSIVE, mInputManager.getBlockUntrustedTouchesMode(mContext));
-    }
-
     @Test(expected = IllegalArgumentException.class)
     public void testAfterSettingThresholdLessThan0_throws() throws Throwable {
         setMaximumObscuringOpacityForTouch(-.5f);
@@ -301,40 +234,6 @@ public class WindowUntrustedTouchTest {
     @Test(expected = IllegalArgumentException.class)
     public void testAfterSettingThresholdGreaterThan1_throws() throws Throwable {
         setMaximumObscuringOpacityForTouch(1.5f);
-    }
-
-    /** This is testing what happens if setting is overridden manually */
-    @Test
-    public void testAfterSettingThresholdGreaterThan1ViaSettings_previousThresholdIsUsed()
-            throws Throwable {
-        setMaximumObscuringOpacityForTouch(.8f);
-        assertEquals(.8f, mInputManager.getMaximumObscuringOpacityForTouch());
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            Settings.Global.putFloat(mContentResolver, SETTING_MAXIMUM_OBSCURING_OPACITY, 1.5f);
-        });
-        addSawOverlay(APP_A, WINDOW_1, 9.f);
-
-        mTouchHelper.tapOnViewCenter(mContainer);
-
-        // Blocks because it's using previous maximum of .8
-        assertTouchNotReceived();
-    }
-
-    /** This is testing what happens if setting is overridden manually */
-    @Test
-    public void testAfterSettingThresholdLessThan0ViaSettings_previousThresholdIsUsed()
-            throws Throwable {
-        setMaximumObscuringOpacityForTouch(.8f);
-        assertEquals(.8f, mInputManager.getMaximumObscuringOpacityForTouch());
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            Settings.Global.putFloat(mContentResolver, SETTING_MAXIMUM_OBSCURING_OPACITY, -.5f);
-        });
-        addSawOverlay(APP_A, WINDOW_1, .7f);
-
-        mTouchHelper.tapOnViewCenter(mContainer);
-
-        // Allows because it's using previous maximum of .8
-        assertTouchReceived();
     }
 
     /** SAWs */
@@ -1106,14 +1005,6 @@ public class WindowUntrustedTouchTest {
     private void stopPackage(String packageName) {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(packageName));
-    }
-
-    private int setBlockUntrustedTouchesMode(int mode) throws Exception {
-        return SystemUtil.callWithShellPermissionIdentity(() -> {
-            int previous = mInputManager.getBlockUntrustedTouchesMode(mContext);
-            mInputManager.setBlockUntrustedTouchesMode(mContext, mode);
-            return previous;
-        });
     }
 
     private float setMaximumObscuringOpacityForTouch(float opacity) throws Exception {

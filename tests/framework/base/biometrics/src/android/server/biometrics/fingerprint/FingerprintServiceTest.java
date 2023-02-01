@@ -71,7 +71,8 @@ import java.util.List;
 public class FingerprintServiceTest extends ActivityManagerTestBase
         implements TestSessionList.Idler {
     private static final String TAG = "FingerprintServiceTest";
-
+    private static final String DESCRIPTOR =
+            "android.hardware.biometrics.fingerprint.IFingerprint";
     private static final String DUMPSYS_FINGERPRINT = "dumpsys fingerprint --proto --state";
     private static final int FINGERPRINT_ERROR_VENDOR_BASE = 1000;
     private static final long WAIT_MS = 2000;
@@ -252,7 +253,7 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
             // and do not dispatch an acquired event via BiometricPrompt
             final boolean verifyPartial = !hasUdfps();
             if (verifyPartial) {
-                final int aidlSensorId = Utils.getAidlSensorId();
+                final int aidlSensorId = Utils.getAidlFingerprintSensorId();
                 if (aidlSensorId >= 0 && testSessions.first().equals(
                         testSessions.find(aidlSensorId))) {
                     testSessions.first().notifyAcquired(userId, 2 /* AcquiredInfo.PARTIAL */);

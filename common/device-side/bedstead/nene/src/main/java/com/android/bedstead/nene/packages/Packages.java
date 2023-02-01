@@ -44,6 +44,7 @@ import androidx.annotation.CheckResult;
 import androidx.annotation.RequiresApi;
 
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.activities.ActivityReference;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
@@ -332,7 +333,7 @@ public final class Packages {
         }
 
         if (!user.exists() || !user.isUnlocked()) {
-            throw new NeneException("Packages can not be installed in non-started users "
+            throw new NeneException("Packages can not be installed in non-unlocked users "
                     + "(Trying to install into user " + user + ")");
         }
 
@@ -536,6 +537,21 @@ public final class Packages {
     }
 
     /**
+     * Get a reference to a given {@code componentName} activity.
+     *
+     * <p>This does not guarantee that the component exists - nor that it is actually an activity.
+     */
+    @Experimental
+    public ActivityReference activity(ComponentName componentName) {
+        if (componentName == null) {
+            throw new NullPointerException();
+        }
+
+        return new ActivityReference(
+                find(componentName.getPackageName()), componentName.getClassName());
+    }
+
+    /**
      * Get a reference to a given {@code componentName}.
      *
      * <p>This does not guarantee that the component exists.
@@ -563,5 +579,23 @@ public final class Packages {
         } catch (AdbException | AdbParseException e) {
             throw new NeneException("Error parsing package dumpsys", e);
         }
+    }
+
+    /**
+     * System apps installed on the instrumented user.
+     */
+    @Experimental
+    public Set<Package> systemApps() {
+        return systemApps(TestApis.users().instrumented());
+    }
+
+    /**
+     * System apps installed on the given user.
+     */
+    @Experimental
+    public Set<Package> systemApps(UserReference user) {
+        return installedForUser(user).stream()
+                .filter(Package::hasSystemFlag)
+                .collect(Collectors.toSet());
     }
 }

@@ -18,11 +18,14 @@ package android.view.cts;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.server.wm.IgnoreOrientationRequestSession;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.view.AttachedSurfaceControl;
 
@@ -32,6 +35,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -50,7 +55,10 @@ import java.util.function.IntConsumer;
 @RequiresDevice
 public class AttachedSurfaceControlTest {
     private static final String TAG = "AttachedSurfaceControlTest";
+    private static final String FIXED_TO_USER_ROTATION_COMMAND =
+            "cmd window fixed-to-user-rotation";
     private IgnoreOrientationRequestSession mOrientationSession;
+    private WindowManagerStateHelper mWmState;
 
     private static class TransformHintListener implements
             AttachedSurfaceControl.OnBufferTransformHintChangedListener {
@@ -86,8 +94,11 @@ public class AttachedSurfaceControlTest {
                 InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
         boolean supportsRotation = pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT)
                 && pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE);
-        Assume.assumeTrue(supportsRotation);
+        final boolean isFixedToUserRotation =
+                "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_COMMAND).trim());
+        Assume.assumeTrue(supportsRotation && !isFixedToUserRotation);
         mOrientationSession = new IgnoreOrientationRequestSession(false /* enable */);
+        mWmState = new WindowManagerStateHelper();
     }
 
     @After
@@ -106,6 +117,10 @@ public class AttachedSurfaceControlTest {
                      ActivityScenario.launch(HandleConfigurationActivity.class)) {
             scenario.moveToState(Lifecycle.State.RESUMED);
             scenario.onActivity(activity -> {
+                mWmState.computeState();
+                assumeFalse("Skipping test: display area is ignoring orientation request",
+                        mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
+                                activity.getComponentName()));
                 int requestedOrientation = getRequestedOrientation(activity);
                 TransformHintListener listener = new TransformHintListener(activity,
                         requestedOrientation, hint -> transformHintResult[0] = hint);
@@ -170,6 +185,10 @@ public class AttachedSurfaceControlTest {
                      ActivityScenario.launch(HandleConfigurationActivity.class)) {
             scenario.moveToState(Lifecycle.State.RESUMED);
             scenario.onActivity(activity -> {
+                mWmState.computeState();
+                assumeFalse("Skipping test: display area is ignoring orientation request",
+                        mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
+                                activity.getComponentName()));
                 if (activity.getResources().getConfiguration().orientation
                         == ORIENTATION_LANDSCAPE) {
                     return;

@@ -25,6 +25,7 @@
 #include <android/looper.h>
 #include <android/native_window_jni.h>
 #include <android/surface_control.h>
+#include <android/surface_control_jni.h>
 #include <android/sync.h>
 #include <android/trace.h>
 #include <errno.h>
@@ -68,6 +69,13 @@ static void fillRegion(void* data, int32_t left, int32_t top, int32_t right,
     uint32_t* ptr = static_cast<uint32_t*>(data);
 
     ptr += stride * top;
+
+    // Convert color from incoming ARGB format to ABGR
+    uint32_t alpha = (color >> 24);
+    uint32_t red = (color >> 16) & 0xff;
+    uint32_t green = (color >> 8) & 0xff;
+    uint32_t blue = color & 0xff;
+    color = (alpha << 24) | (blue << 16) | (green << 8) | red;
 
     for (uint32_t y = top; y < bottom; y++) {
         for (uint32_t x = left; x < right; x++) {
@@ -178,6 +186,10 @@ void SurfaceTransaction_delete(JNIEnv* /*env*/, jclass, jlong surfaceTransaction
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction));
 }
 
+jlong SurfaceTransaction_fromJava(JNIEnv* env, jclass, jobject transactionObj) {
+    return reinterpret_cast<jlong>(ASurfaceTransaction_fromJava(env, transactionObj));
+}
+
 void SurfaceTransaction_apply(JNIEnv* /*env*/, jclass, jlong surfaceTransaction) {
     ASurfaceTransaction_apply(
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction));
@@ -218,6 +230,10 @@ jlong SurfaceControl_create(JNIEnv* /*env*/, jclass, jlong parentSurfaceControlI
 
 void SurfaceControl_acquire(JNIEnv* /*env*/, jclass, jlong surfaceControl) {
     ASurfaceControl_acquire(reinterpret_cast<ASurfaceControl*>(surfaceControl));
+}
+
+jlong SurfaceControl_fromJava(JNIEnv* env, jclass, jobject surfaceControlObj) {
+    return reinterpret_cast<jlong>(ASurfaceControl_fromJava(env, surfaceControlObj));
 }
 
 void SurfaceControl_release(JNIEnv* /*env*/, jclass, jlong surfaceControl) {
@@ -644,12 +660,16 @@ jobject SurfaceControlTest_getFrameTimelines(JNIEnv* env, jclass) {
 static const JNINativeMethod JNI_METHODS[] = {
         {"nSurfaceTransaction_create", "()J", (void*)SurfaceTransaction_create},
         {"nSurfaceTransaction_delete", "(J)V", (void*)SurfaceTransaction_delete},
+        {"nSurfaceTransaction_fromJava", "(Landroid/view/SurfaceControl$Transaction;)J",
+         (void*)SurfaceTransaction_fromJava},
         {"nSurfaceTransaction_apply", "(J)V", (void*)SurfaceTransaction_apply},
         {"nSurfaceControl_createFromWindow", "(Landroid/view/Surface;)J",
          (void*)SurfaceControl_createFromWindow},
         {"nSurfaceControl_create", "(J)J", (void*)SurfaceControl_create},
         {"nSurfaceControl_acquire", "(J)V", (void*)SurfaceControl_acquire},
         {"nSurfaceControl_release", "(J)V", (void*)SurfaceControl_release},
+        {"nSurfaceControl_fromJava", "(Landroid/view/SurfaceControl;)J",
+         (void*)SurfaceControl_fromJava},
         {"nSurfaceTransaction_setSolidBuffer", "(JJIII)J",
          (void*)SurfaceTransaction_setSolidBuffer},
         {"nSurfaceTransaction_setBuffer", "(JJJ)V", (void*)SurfaceTransaction_setBuffer},

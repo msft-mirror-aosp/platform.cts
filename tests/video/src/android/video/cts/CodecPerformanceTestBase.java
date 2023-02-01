@@ -16,6 +16,10 @@
 
 package android.video.cts;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -27,16 +31,13 @@ import android.os.SystemProperties;
 import android.util.Range;
 import android.view.Surface;
 
+import org.junit.Before;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Before;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 class CodecPerformanceTestBase {
     private static final String LOG_TAG = CodecPerformanceTestBase.class.getSimpleName();
@@ -99,7 +100,8 @@ class CodecPerformanceTestBase {
         // will mean that the tests built in Android S can't be run on Android R and below.
         DEVICE_INITIAL_SDK = SystemProperties.getInt("ro.product.first_api_level", 0);
 
-        VNDK_VERSION = SystemProperties.getInt("ro.vndk.version", 0);
+        VNDK_VERSION = SystemProperties.getInt("ro.vndk.version",
+                Build.VERSION_CODES.CUR_DEVELOPMENT);
 
         // fps tolerance factor is kept quite low for devices with Android R VNDK or lower
         FPS_TOLERANCE_FACTOR = VNDK_VERSION <= Build.VERSION_CODES.R ? 0.67 : 0.95;

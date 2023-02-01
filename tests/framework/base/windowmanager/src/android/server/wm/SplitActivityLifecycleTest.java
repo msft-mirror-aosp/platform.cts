@@ -18,12 +18,14 @@ package android.server.wm;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
-import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static android.server.wm.SplitActivityLifecycleTest.ActivityB.EXTRA_SHOW_WHEN_LOCKED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
+import static android.server.wm.SplitActivityLifecycleTest.SplitTestActivity.EXTRA_SET_RESULT_AND_FINISH;
+import static android.server.wm.SplitActivityLifecycleTest.SplitTestActivity.EXTRA_SHOW_WHEN_LOCKED;
 import static android.server.wm.WindowManagerState.STATE_STARTED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.window.TaskFragmentOrganizer.TASK_FRAGMENT_TRANSIT_CHANGE;
+import static android.window.TaskFragmentOrganizer.TASK_FRAGMENT_TRANSIT_OPEN;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -38,7 +40,6 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.WindowManagerState.Task;
 import android.server.wm.WindowManagerState.TaskFragment;
 import android.window.TaskFragmentCreationParams;
 import android.window.TaskFragmentInfo;
@@ -84,15 +85,15 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     }
 
     /** Launch two Activities in two adjacent TaskFragments side-by-side. */
-    private void initializeSplitActivities(boolean splitInEmbeddedTask) {
-        initializeSplitActivities(splitInEmbeddedTask, false /* showWhenLocked */);
+    private void initializeSplitActivities() {
+        initializeSplitActivities(false /* showWhenLocked */);
     }
 
     /**
      * Launch two Activities in two adjacent TaskFragments side-by-side and support to set the
      * showWhenLocked attribute to Activity B.
      */
-    private void initializeSplitActivities(boolean splitInEmbeddedTask, boolean showWhenLocked) {
+    private void initializeSplitActivities(boolean showWhenLocked) {
         final Rect activityBounds = mOwnerActivity.getWindowManager().getCurrentWindowMetrics()
                 .getBounds();
         activityBounds.splitVertically(mPrimaryBounds, mSideBounds);
@@ -109,9 +110,6 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 .setAdjacentTaskFragments(taskFragTokenA, taskFragTokenB, null /* params */);
 
         final Intent intent = new Intent().setComponent(mActivityB);
-        if (splitInEmbeddedTask) {
-            intent.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK);
-        }
         if (showWhenLocked) {
             intent.putExtra(EXTRA_SHOW_WHEN_LOCKED, true);
         }
@@ -119,7 +117,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 null /* activityOptions */);
 
         mTaskFragmentOrganizer.setAppearedCount(2);
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
+                false /* shouldApplyIndependently */);
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
 
         final TaskFragmentInfo infoA = mTaskFragmentOrganizer.getTaskFragmentInfo(
@@ -136,12 +135,6 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         waitAndAssertResumedActivity(mActivityA, "Activity A must still be resumed.");
         waitAndAssertResumedActivity(mActivityB, "Activity B must still be resumed.");
 
-        if (splitInEmbeddedTask) {
-            TaskFragment taskFragmentB = mWmState.getTaskFragmentByActivity(mActivityB);
-            Task embeddedTask = mWmState.getTaskByActivity(mActivityB);
-            assertWindowHierarchy(taskFragmentB, embeddedTask, mWmState.getActivity(mActivityB));
-        }
-
         mTaskFragmentOrganizer.resetLatch();
     }
 
@@ -157,14 +150,15 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testActivityLaunchInSameSplitTaskFragment() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         final IBinder taskFragTokenA = mTaskFragA.getTaskFragToken();
         final WindowContainerTransaction wct = new WindowContainerTransaction()
                 .startActivityInTaskFragment(taskFragTokenA, mOwnerToken, mIntent,
                         null /* activityOptions */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_OPEN,
+                false /* shouldApplyIndependently */);
 
         final TaskFragmentInfo infoA = mTaskFragmentOrganizer.waitForAndGetTaskFragmentInfo(
                 taskFragTokenA, info -> info.getActivities().size() == 2,
@@ -195,14 +189,15 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testActivityLaunchInAdjacentSplitTaskFragment() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         final IBinder taskFragTokenB = mTaskFragB.getTaskFragToken();
         final WindowContainerTransaction wct = new WindowContainerTransaction()
                 .startActivityInTaskFragment(taskFragTokenB, mOwnerToken, mIntent,
                         null /* activityOptions */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_OPEN,
+                false /* shouldApplyIndependently */);
 
         final TaskFragmentInfo infoB = mTaskFragmentOrganizer.waitForAndGetTaskFragmentInfo(
                 taskFragTokenB, info -> info.getActivities().size() == 2,
@@ -238,7 +233,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testActivityLaunchFromBottomTaskFragment() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         mOwnerActivity.startActivity(mIntent);
 
@@ -267,7 +262,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testSandwichTaskFragmentInAdjacent() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         final IBinder taskFragTokenA = mTaskFragA.getTaskFragToken();
         final TaskFragmentCreationParams paramsC = generateSideTaskFragParams();
@@ -279,7 +274,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                         null /* activityOptions */)
                 .setAdjacentTaskFragments(taskFragTokenA, taskFragTokenC, null /* options */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_OPEN,
+                false /* shouldApplyIndependently */);
         // Wait for the TaskFragment of Activity C to be created.
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
 
@@ -297,7 +293,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testSandwichTaskFragmentInAdjacent_partialOccluding() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         final IBinder taskFragTokenA = mTaskFragA.getTaskFragToken();
         // TaskFragment C is not fully occluding TaskFragment B.
@@ -313,7 +309,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                         null /* activityOptions */)
                 .setAdjacentTaskFragments(taskFragTokenA, taskFragTokenC, null /* options */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_OPEN,
+                false /* shouldApplyIndependently */);
         // Wait for the TaskFragment of Activity C to be created.
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
 
@@ -339,7 +336,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testAdjacentActivityLaunchFromSecondarySplitTaskFragment() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         final IBinder taskFragTokenB = mTaskFragB.getTaskFragToken();
         final TaskFragmentCreationParams paramsC = generateSideTaskFragParams();
@@ -353,7 +350,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                         null /* activityOptions */)
                 .setAdjacentTaskFragments(taskFragTokenB, taskFragTokenC, null /* options */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
+                false /* shouldApplyIndependently */);
         // Wait for the TaskFragment of Activity C to be created.
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
         // Wait for the TaskFragment of Activity B to be changed.
@@ -390,7 +388,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     @Test
     public void testActivityLaunchInExpandedTaskFragment() {
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */);
+        initializeSplitActivities();
 
         testActivityLaunchInExpandedTaskFragmentInternal();
     }
@@ -405,7 +403,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 .startActivityInTaskFragment(taskFragTokenC, mOwnerToken, mIntent,
                         null /* activityOptions */);
 
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_OPEN,
+                false /* shouldApplyIndependently */);
 
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
 
@@ -433,7 +432,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B (with showWhenLocked)
         // side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */, true /* showWhenLocked */);
+        initializeSplitActivities(true /* showWhenLocked */);
 
         lockScreenSession.sleepDevice();
         lockScreenSession.wakeUpDevice();
@@ -455,7 +454,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B side-by-side.
-        initializeSplitActivities(false /* verifyEmbeddedTask */, false /* showWhenLocked */);
+        initializeSplitActivities();
 
         lockScreenSession.sleepDevice();
         lockScreenSession.wakeUpDevice();
@@ -479,7 +478,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B side-by-side.
         mOwnerActivity.setShowWhenLocked(true);
-        initializeSplitActivities(false /* verifyEmbeddedTask */, true /* showWhenLocked */);
+        initializeSplitActivities(true /* showWhenLocked */);
 
         lockScreenSession.sleepDevice();
         lockScreenSession.wakeUpDevice();
@@ -491,6 +490,38 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         mOwnerActivity.startActivity(mIntent);
         waitAndAssertActivityState(mActivityA, STATE_STOPPED, "Activity A must be stopped");
         waitAndAssertActivityState(mActivityC, STATE_STOPPED, "Activity C must be stopped");
+    }
+
+    /**
+     * Verifies the Activity in primary TaskFragment is no longer focused after clear adjacent
+     * TaskFragments.
+     */
+    @Test
+    public void testResetFocusedAppAfterClearAdjacentTaskFragment() {
+        // Initialize test environment by launching Activity A and B side-by-side.
+        initializeSplitActivities();
+
+        // Request the focus on the primary TaskFragment
+        WindowContainerTransaction wct = new WindowContainerTransaction()
+                .requestFocusOnTaskFragment(mTaskFragA.getTaskFragToken());
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
+                false /* shouldApplyIndependently */);
+        waitForActivityFocused(5000, mActivityA);
+        assertThat(mWmState.getFocusedApp()).isEqualTo(mActivityA.flattenToShortString());
+
+        // Expand top TaskFragment and clear the adjacent TaskFragments to have the two
+        // TaskFragment stacked.
+        wct = new WindowContainerTransaction()
+                .setBounds(mTaskFragB.getToken(), new Rect())
+                .setWindowingMode(mTaskFragB.getToken(), WINDOWING_MODE_UNDEFINED)
+                .clearAdjacentTaskFragments(mTaskFragA.getTaskFragToken());
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
+                false /* shouldApplyIndependently */);
+
+        // Ensure the Activity on primary TaskFragment is stopped and no longer focused.
+        waitAndAssertActivityState(mActivityA, STATE_STOPPED, "Activity A must be stopped");
+        assertThat(mWmState.getFocusedApp()).isNotEqualTo(mActivityA.flattenToShortString());
+        assertThat(mWmState.getFocusedWindow()).isEqualTo(mActivityB.flattenToShortString());
     }
 
     /**
@@ -526,12 +557,32 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 .setAdjacentTaskFragments(primaryToken, secondaryToken, null /* params */)
                 .startActivityInTaskFragment(secondaryToken, mOwnerToken, intent,
                         null /* activityOptions */);
-        mTaskFragmentOrganizer.applyTransaction(wct);
+        mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
+                false /* shouldApplyIndependently */);
 
         waitAndAssertResumedActivity(translucentActivity, "TranslucentActivity must be resumed.");
         waitAndAssertResumedActivity(mActivityB, "Activity B must be resumed.");
         waitAndAssertActivityState(mActivityA, STATE_STARTED,
                 "Activity A is not fully occluded and must be visible and started");
+    }
+
+    /**
+     * Verifies starting an Activity on the adjacent TaskFragment and able to get the result.
+     */
+    @Test
+    public void testStartActivityForResultInAdjacentTaskFragment() {
+        // Initialize test environment by launching Activity A and B side-by-side.
+        initializeSplitActivities();
+
+        // Start an Activity on the adjacent TaskFragment for result.
+        final Intent intent = new Intent();
+        intent.setComponent(mActivityC);
+        intent.putExtra(EXTRA_SET_RESULT_AND_FINISH, true);
+        mOwnerActivity.startActivityForResult(intent, 1 /* requestCode */);
+
+        // Waits for the result
+        waitForOrFail("Wait for the result",
+                () -> ((SplitTestActivity) mOwnerActivity).getResultCode() == 100);
     }
 
     private TaskFragmentCreationParams generatePrimaryTaskFragParams() {
@@ -574,12 +625,34 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     public static class TranslucentActivity extends SplitTestActivity {}
     public static class SplitTestActivity extends FocusableActivity {
         public static final String EXTRA_SHOW_WHEN_LOCKED = "showWhenLocked";
+        public static final String EXTRA_SET_RESULT_AND_FINISH = "setResultAndFinish";
+
+        private int mResultCode = -1;
         @Override
         protected void onCreate(Bundle icicle) {
             super.onCreate(icicle);
             if (getIntent().getBooleanExtra(EXTRA_SHOW_WHEN_LOCKED, false)) {
                 setShowWhenLocked(true);
             }
+        }
+
+        @Override
+        protected void onResume() {
+            super.onResume();
+            if (getIntent().getBooleanExtra(EXTRA_SET_RESULT_AND_FINISH, false)) {
+                setResult(100);
+                finish();
+            }
+        }
+
+        @Override
+        protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+            super.onActivityResult(requestCode, resultCode, data);
+            mResultCode = resultCode;
+        }
+
+        public int getResultCode() {
+            return mResultCode;
         }
     }
 }

@@ -124,10 +124,10 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
     private boolean isBubblesFeatureSupported() {
         // These do not support bubbles.
-        return (!mActivityManager.isLowRamDevice() || FeatureUtil.isWatch())
+        return (!mActivityManager.isLowRamDevice() && !FeatureUtil.isWatch()
                 && !FeatureUtil.isAutomotive() && !FeatureUtil.isTV()
                 && mContext.getResources().getBoolean(Resources.getSystem().getIdentifier(
-                        "config_supportsBubble", "bool", "android"));
+                        "config_supportsBubble", "bool", "android")));
     }
 
     private void sleep() {
@@ -264,7 +264,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             }
         };
         IntentFilter filter = new IntentFilter(SendBubbleActivity.BUBBLE_ACTIVITY_OPENED);
-        mContext.registerReceiver(mBubbleBroadcastReceiver, filter);
+        mContext.registerReceiver(mBubbleBroadcastReceiver, filter, Context.RECEIVER_EXPORTED);
 
         // Start & get the activity
         Class clazz = SendBubbleActivity.class;

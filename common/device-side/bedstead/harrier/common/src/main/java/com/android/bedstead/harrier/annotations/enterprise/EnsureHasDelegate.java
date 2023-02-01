@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations.enterprise;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.DO_PO_WEIGHT;
 
 import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
+import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -34,6 +35,8 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+// TODO(b/206441366): Add instant app support
+@RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
 public @interface EnsureHasDelegate {
 
     int ENSURE_HAS_DELEGATE_WEIGHT = DO_PO_WEIGHT + 1; // Should run after setting DO/PO
@@ -56,7 +59,7 @@ public @interface EnsureHasDelegate {
     String[] scopes();
 
     /**
-     * Whether this delegate should be returned by calls to {@code Devicestate#policyManager()}.
+     * Whether this delegate should be returned by calls to {@code DeviceState#dpc()}.
      *
      * <p>Only one policy manager per test should be marked as primary.
      */

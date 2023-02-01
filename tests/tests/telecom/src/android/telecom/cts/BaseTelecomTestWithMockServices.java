@@ -22,7 +22,6 @@ import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 import android.app.AppOpsManager;
@@ -30,22 +29,24 @@ import android.app.UiAutomation;
 import android.app.UiModeManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.os.Process;
+import android.os.RemoteException;
 import android.os.UserHandle;
 import android.provider.CallLog;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
+import android.telecom.CallEndpoint;
 import android.telecom.Conference;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
@@ -56,7 +57,7 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telecom.cts.MockInCallService.InCallServiceCallbacks;
 import android.telecom.cts.carmodetestapp.ICtsCarModeInCallServiceControl;
-import android.telephony.PhoneStateListener;
+import android.telephony.CarrierConfigManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.emergency.EmergencyNumber;
@@ -89,6 +90,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     public static final int FLAG_REGISTER = 0x1;
     public static final int FLAG_ENABLE = 0x2;
     public static final int FLAG_SET_DEFAULT = 0x4;
+    public static final int FLAG_PHONE_ACCOUNT_HANDLES_CONTENT_SCHEME = 0x8;
 
     // Don't accidently use emergency number.
     private static int sCounter = 5553638;
@@ -102,6 +104,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     Context mContext;
     TelecomManager mTelecomManager;
     TelephonyManager mTelephonyManager;
+    CarrierConfigManager mCarrierConfigManager;
+    LocationManager mLocationManager;
     UiModeManager mUiModeManager;
 
     TestUtils.InvokeCounter mOnBringToForegroundCounter;
@@ -119,6 +123,9 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     TestUtils.InvokeCounter mOnHandoverCompleteCounter;
     TestUtils.InvokeCounter mOnHandoverFailedCounter;
     TestUtils.InvokeCounter mOnPhoneAccountChangedCounter;
+    TestUtils.InvokeCounter mOnCallEndpointChangedCounter;
+    TestUtils.InvokeCounter mOnAvailableEndpointsChangedCounter;
+    TestUtils.InvokeCounter mOnMuteStateChangedCounter;
     Bundle mPreviousExtras;
     int mPreviousProperties = -1;
     PhoneAccountHandle mPreviousPhoneAccountHandle = null;
@@ -276,9 +283,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         TestUtils.executeShellCommand(getInstrumentation(), "telecom reset-car-mode");
 
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
-             assertUiMode(Configuration.UI_MODE_TYPE_WATCH);
+            assertUiMode(Configuration.UI_MODE_TYPE_WATCH);
+        } else if (mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
+            assertUiMode(Configuration.UI_MODE_TYPE_CAR);
         } else {
-             assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+            assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
         }
 
         AppOpsManager aom = mContext.getSystemService(AppOpsManager.class);
@@ -288,7 +298,9 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
 
         mTelecomManager = (TelecomManager) mContext.getSystemService(Context.TELECOM_SERVICE);
         mTelephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
-
+        mCarrierConfigManager = (CarrierConfigManager) mContext.getSystemService(
+                Context.CARRIER_CONFIG_SERVICE);
+        mLocationManager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
         mPreviousDefaultDialer = TestUtils.getDefaultDialer(getInstrumentation());
         TestUtils.setDefaultDialer(getInstrumentation(), PACKAGE);
         setupCallbacks();
@@ -321,12 +333,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         if (!mShouldTestTelecom) {
             return;
         }
-
-        mTelephonyManager.unregisterTelephonyCallback(mTestCallStateListener);
-
-        mTelephonyManager.unregisterTelephonyCallback(mTelephonyCallback);
-        mTelephonyCallbackThread.quit();
-
+        unregisterTelephonyCallbacks();
         cleanupCalls();
         if (!TextUtils.isEmpty(mPreviousDefaultDialer)) {
             TestUtils.setDefaultDialer(getInstrumentation(), mPreviousDefaultDialer);
@@ -348,35 +355,60 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 UserHandle.CURRENT);
     }
 
+    public void unregisterTelephonyCallbacks() {
+        if (mTestCallStateListener != null) {
+            mTelephonyManager.unregisterTelephonyCallback(mTestCallStateListener);
+        }
+        if (mTelephonyCallback != null) {
+            mTelephonyManager.unregisterTelephonyCallback(mTelephonyCallback);
+        }
+        if (mTelephonyCallbackThread != null) {
+            mTelephonyCallbackThread.quit();
+        }
+    }
+
     protected PhoneAccount setupConnectionService(MockConnectionService connectionService,
             int flags) throws Exception {
         Log.i(TAG, "Setting up mock connection service");
-        if (connectionService != null) {
-            this.connectionService = connectionService;
-        } else {
-            // Generate a vanilla mock connection service, if not provided.
-            this.connectionService = new MockConnectionService();
-        }
-        CtsConnectionService.setUp(this.connectionService);
+        try {
+            if (connectionService != null) {
+                this.connectionService = connectionService;
+            } else {
+                // Generate a vanilla mock connection service, if not provided.
+                this.connectionService = new MockConnectionService();
+            }
+            CtsConnectionService.setUp(this.connectionService);
 
-        if ((flags & FLAG_REGISTER) != 0) {
-            mTelecomManager.registerPhoneAccount(TestUtils.TEST_PHONE_ACCOUNT);
-        }
-        if ((flags & FLAG_ENABLE) != 0) {
-            TestUtils.enablePhoneAccount(getInstrumentation(), TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
-            // Wait till the adb commands have executed and account is enabled in Telecom database.
-            assertPhoneAccountEnabled(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
-        }
+            if ((flags & FLAG_REGISTER) != 0) {
+                if ((flags & FLAG_PHONE_ACCOUNT_HANDLES_CONTENT_SCHEME) != 0) {
+                    mTelecomManager.registerPhoneAccount(
+                            TestUtils.TEST_PHONE_ACCOUNT_THAT_HANDLES_CONTENT_SCHEME);
+                } else {
+                    mTelecomManager.registerPhoneAccount(TestUtils.TEST_PHONE_ACCOUNT);
+                }
+            }
+            if ((flags & FLAG_ENABLE) != 0) {
+                TestUtils.enablePhoneAccount(getInstrumentation(),
+                        TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+                // Wait till the adb commands have executed and account is enabled in Telecom
+                // database.
+                assertPhoneAccountEnabled(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+            }
 
-        if ((flags & FLAG_SET_DEFAULT) != 0) {
-            mPreviousDefaultOutgoingAccount = mTelecomManager.getUserSelectedOutgoingPhoneAccount();
-            mShouldRestoreDefaultOutgoingAccount = true;
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
-            // Wait till the adb commands have executed and the default has changed.
-            assertPhoneAccountIsDefault(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
-        }
+            if ((flags & FLAG_SET_DEFAULT) != 0) {
+                mPreviousDefaultOutgoingAccount =
+                        mTelecomManager.getUserSelectedOutgoingPhoneAccount();
+                mShouldRestoreDefaultOutgoingAccount = true;
+                TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
+                        TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+                // Wait till the adb commands have executed and the default has changed.
+                assertPhoneAccountIsDefault(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+            }
 
+        } catch (Exception e) {
+            unregisterTelephonyCallbacks();
+            throw e;
+        }
         return TestUtils.TEST_PHONE_ACCOUNT;
     }
 
@@ -546,6 +578,24 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             public void onHandoverFailed(Call call, int reason) {
                 mOnHandoverFailedCounter.invoke(call, reason);
             }
+
+            @Override
+            public void onCallEndpointChanged(CallEndpoint callEndpoint) {
+                Log.i(TAG, "onCallEndpointChanged, callEndpoint: " + callEndpoint);
+                mOnCallEndpointChangedCounter.invoke(callEndpoint);
+            }
+
+            @Override
+            public void onAvailableCallEndpointsChanged(List<CallEndpoint> availableEndpoints) {
+                Log.i(TAG, "onAvailableCallEndpointsChanged");
+                mOnAvailableEndpointsChangedCounter.invoke(availableEndpoints);
+            }
+
+            @Override
+            public void onMuteStateChanged(boolean isMuted) {
+                Log.i(TAG, "onMuteStateChanged, isMuted: " + isMuted);
+                mOnMuteStateChangedCounter.invoke(isMuted);
+            }
         };
 
         MockInCallService.setCallbacks(mInCallCallbacks);
@@ -569,6 +619,10 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnHandoverFailedCounter = new TestUtils.InvokeCounter("mOnHandoverFailedCounter");
         mOnPhoneAccountChangedCounter = new TestUtils.InvokeCounter(
                 "mOnPhoneAccountChangedCounter");
+        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("OnCallEndpointChanged");
+        mOnAvailableEndpointsChangedCounter = new TestUtils.InvokeCounter(
+                "OnAvailableEndpointsChanged");
+        mOnMuteStateChangedCounter = new TestUtils.InvokeCounter("OnMuteStateChanged");
     }
 
     void addAndVerifyNewFailedIncomingCall(Uri incomingHandle, Bundle extras) {
@@ -723,6 +777,29 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     }
 
     /**
+     *  Verifies that a call was not placed
+     */
+    void placeAndVerifyNoCall(Bundle extras) {
+        assertEquals("Lock should have no permits!", 0, mInCallCallbacks.lock.availablePermits());
+        placeNewCallWithPhoneAccount(extras, 0);
+
+        try {
+            if (!mInCallCallbacks.lock.tryAcquire(TestUtils.WAIT_FOR_CALL_ADDED_TIMEOUT_S,
+                    TimeUnit.SECONDS)) {
+            }
+        } catch (InterruptedException e) {
+            Log.i(TAG, "Test interrupted!");
+        }
+
+        // Make sure any procedures to disconnect existing calls (makeRoomForOutgoingCall)
+        // complete successfully
+        TestUtils.waitOnLocalMainLooper(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        TestUtils.waitOnAllHandlers(getInstrumentation());
+
+        assertNull("Service should be null since call should not have been placed",
+                mInCallCallbacks.getService());
+    }
+    /**
      *  Puts Telecom in a state where there is an active call provided by the
      *  {@link CtsConnectionService} which can be tested.
      */
@@ -854,6 +931,21 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             }
         }
         return null;
+    }
+
+    void verifyNoConnectionForOutgoingCall() {
+        try {
+            if (!connectionService.lock.tryAcquire(TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS)) {
+                //fail("No outgoing call connection requested by Telecom");
+            }
+        } catch (InterruptedException e) {
+            Log.i(TAG, "Test interrupted!");
+        }
+
+        assertThat("Telecom should not create outgoing connection for outgoing call",
+                connectionService.outgoingConnections.size(), equalTo(0));
+        return;
     }
 
     MockConnection verifyConnectionForIncomingCall() {
@@ -1164,22 +1256,27 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         return changeLatch;
     }
 
-
-    public void verifyCallLogging(CountDownLatch logLatch, boolean isCallLogged, Uri testNumber) {
-        Cursor logCursor = getLatestCallLogCursorIfMatchesUri(logLatch, isCallLogged, testNumber);
-        if (isCallLogged) {
-            assertNotNull("Call log entry not found for test number", logCursor);
-        }
-    }
-
-    public void verifyCallLogging(Uri testNumber, int expectedLogType) {
+    public void verifyCallLogging(
+            Uri testNumber, int expectedLogType, PhoneAccountHandle handle) {
         CountDownLatch logLatch = getCallLogEntryLatch();
         Cursor logCursor = getLatestCallLogCursorIfMatchesUri(logLatch, true /*isCallLogged*/,
                 testNumber);
         assertNotNull("Call log entry not found for test number", logCursor);
+
         int typeIndex = logCursor.getColumnIndex(CallLog.Calls.TYPE);
         int type = logCursor.getInt(typeIndex);
         assertEquals("recorded type does not match expected", expectedLogType, type);
+
+        int phoneAccountIdIndex = logCursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID);
+        String phoneAccountId = logCursor.getString(phoneAccountIdIndex);
+        assertEquals("recorded account ID does not match expected",
+                handle.getId(), phoneAccountId);
+
+        int phoneAccountComponentNameIndex = logCursor.getColumnIndex(
+                CallLog.Calls.PHONE_ACCOUNT_COMPONENT_NAME);
+        String phoneAccountComponentName = logCursor.getString(phoneAccountComponentNameIndex);
+        assertEquals("recorded account component name does not match expected",
+                handle.getComponentName().flattenToString(), phoneAccountComponentName);
     }
 
     public Cursor getLatestCallLogCursorIfMatchesUri(CountDownLatch latch, boolean newLogExpected,
@@ -1313,7 +1410,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         );
     }
 
-    void assertMuteState(final MockConnection connection, final boolean isMuted) {
+    void assertMuteState(final Connection connection, final boolean isMuted) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
                     @Override
@@ -1329,6 +1426,30 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 },
                 WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
                 "Connection's mute state should be: " + isMuted
+        );
+    }
+
+    /**
+     * Asserts that a call video state is as expected.
+     *
+     * @param call The call.
+     * @param videoState The expected video state.
+     */
+    void assertVideoState(final Call call, final int videoState) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return videoState;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails().getVideoState();
+                    }
+                },
+                TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Call should be in videoState " + videoState
         );
     }
 
@@ -1965,6 +2086,20 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         return (mInCallCallbacks == null) ? null : mInCallCallbacks.getService();
     }
 
+    public void waitOnInCallService() {
+        waitUntilConditionIsTrueOrTimeout(new Condition() {
+            @Override
+            public Object expected() {
+                return true;
+            }
+
+            @Override
+            public Object actual() {
+                return mInCallCallbacks.getService() != null;
+            }
+        }, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, "MockInCallService failed to get Call");
+    }
+
     /**
      * Asserts that the {@link UiModeManager} mode matches the specified mode.
      *
@@ -1985,6 +2120,80 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 },
                 TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
                 "Expected ui mode " + uiMode
+        );
+    }
+    void assertEndpointType(final InCallService incallService, final int type) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return type;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        final CallEndpoint endpoint = incallService.getCurrentCallEndpoint();
+                        return endpoint == null ? null : endpoint.getEndpointType();
+                    }
+                },
+                WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Phone's call endpoint type should be: " + type
+        );
+    }
+
+    void assertEndpointType(final MockConnection connection, final int type) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return type;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        final CallEndpoint endpoint =
+                                ((Connection) connection).getCurrentCallEndpoint();
+                        return endpoint == null ? null : endpoint.getEndpointType();
+                    }
+                },
+                WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Connection's call endpoint type should be: " + type
+        );
+    }
+
+    void assertMuteEndpoint(final MockInCallService incallService, final boolean isMuted) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return isMuted;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return incallService.getEndpointMuteState();
+                    }
+                },
+                WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Phone's mute state should be: " + isMuted
+        );
+    }
+
+    void assertMuteEndpoint(final MockConnection connection, final boolean isMuted) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return isMuted;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return connection.getEndpointMuteState();
+                    }
+                },
+                WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Connection's mute state should be: " + isMuted
         );
     }
 

@@ -1932,18 +1932,10 @@ public class IntentTest extends AndroidTestCase {
         assertEquals("foo/bar", Intent.normalizeMimeType("   foo/bar    "));
     }
 
-    private void roundtrip() {
-        Parcel p = Parcel.obtain();
-        p.writeParcelable(mIntent, 0);
-        p.setDataPosition(0);
-        mIntent = p.readParcelable(getClass().getClassLoader(), Intent.class);
-        mIntent.setExtrasClassLoader(getClass().getClassLoader());
-    }
-
     public void testEncoding() throws URISyntaxException {
         // This doesn't validate setPackage, as it's not possible to have both an explicit package
         // and a selector but the inner selector Intent later on will cover setPackage
-        Intent intent = new Intent("action#base")
+        var intent = new Intent("action#base")
                 .setClassName("com.example.test.app", "com.example.test.app.IntendedActivity")
                 .addCategory("category#base")
                 .setType("type#base")
@@ -1952,12 +1944,12 @@ public class IntentTest extends AndroidTestCase {
                 .putExtra("extraKey#base", "extraValue#base");
 
         // Insert malicious scheme to be encoded to avoid deserialization errors (b/261858325)
-        Uri badUri = Uri.fromParts(new Intent()
+        var badUri = Uri.fromParts(new Intent()
                         .setClassName("com.example.malicious.app",
                                 "com.example.malicious.app.MaliciousActivity")
                         .toUri(Intent.URI_INTENT_SCHEME),
                 "", null);
-        Intent selectorIntent = new Intent().setData(badUri)
+        var selectorIntent = new Intent().setData(badUri)
                 .addCategory("category#selector")
                 .setType("type#selector")
                 .setIdentifier("identifier#selector")
@@ -1967,8 +1959,8 @@ public class IntentTest extends AndroidTestCase {
                 .putExtra("extraKey#selector", "extraValue#selector");
         intent.setSelector(selectorIntent);
 
-        String uriString = intent.toUri(Intent.URI_INTENT_SCHEME);
-        Intent deserialized = Intent.parseUri(uriString, Intent.URI_INTENT_SCHEME);
+        var uriString = intent.toUri(Intent.URI_INTENT_SCHEME);
+        var deserialized = Intent.parseUri(uriString, Intent.URI_INTENT_SCHEME);
 
         assertThat(uriString).isEqualTo(
                 "intent:#Intent;action=action%23base;category=category%23base;type=type%23base;"
@@ -1981,6 +1973,14 @@ public class IntentTest extends AndroidTestCase {
 
         assertThat(deserialized.toInsecureString())
                 .isEqualTo(intent.toInsecureString());
+    }
+
+    private void roundtrip() {
+        Parcel p = Parcel.obtain();
+        p.writeParcelable(mIntent, 0);
+        p.setDataPosition(0);
+        mIntent = p.readParcelable(getClass().getClassLoader(), Intent.class);
+        mIntent.setExtrasClassLoader(getClass().getClassLoader());
     }
 
     private static class TestSerializable implements Serializable {

@@ -191,7 +191,7 @@ public class TelephonyStatsTests extends DeviceTestCase implements IBuildReceive
         Thread.sleep(1_200);
         turnOffAirplaneMode();
         // wait long enough for airplane mode events to propagate.
-        Thread.sleep(1_200);
+        Thread.sleep(3_200);
 
         // Verify that we have at least one atom for enablement and one for disablement.
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
@@ -312,7 +312,8 @@ public class TelephonyStatsTests extends DeviceTestCase implements IBuildReceive
         List<Map<String, String>> slots = getTelephonyDumpEntries("UiccSlot");
         long count = slots.stream().filter(slot ->
                 "true".equals(slot.get("mActive"))
-                        && "CARDSTATE_PRESENT".equals(slot.get("mCardState"))).count();
+                        && slot.get("mCardState") != null
+                        && slot.get("mCardState").contains("CARDSTATE_PRESENT")).count();
         return Math.toIntExact(count);
     }
 
@@ -325,7 +326,8 @@ public class TelephonyStatsTests extends DeviceTestCase implements IBuildReceive
         List<Map<String, String>> slots = getTelephonyDumpEntries("UiccSlot");
         long count = slots.stream().filter(slot ->
                 "true".equals(slot.get("mActive"))
-                        && "CARDSTATE_PRESENT".equals(slot.get("mCardState"))
+                        && slot.get("mCardState") != null
+                        && slot.get("mCardState").contains("CARDSTATE_PRESENT")
                         && "true".equals(slot.get("mIsEuicc"))).count();
         return Math.toIntExact(count);
     }
