@@ -18,15 +18,18 @@ package com.android.cts.appcloning;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.FileUtil;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,18 +68,23 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
      */
     private static final String NONCE = String.valueOf(System.nanoTime());
 
-    private String mCloneUserStoragePath;
+    private static String sCloneUserStoragePath;
 
-    @Before
-    public void setup() throws Exception {
-        super.baseHostSetup();
-        mCloneUserStoragePath = String.format(EXTERNAL_STORAGE_PATH,
-                Integer.parseInt(mCloneUserId));
+    @BeforeClassWithInfo
+    public static void beforeClassWithDevice(TestInformation testInfo) throws Exception {
+        assertThat(testInfo.getDevice()).isNotNull();
+        AppCloningBaseHostTest.baseHostSetup(testInfo.getDevice());
     }
 
-    @After
-    public void tearDown() throws Exception {
-        super.baseHostTeardown();
+    @AfterClass
+    public static void afterClass() throws Exception {
+        AppCloningBaseHostTest.baseHostTeardown();
+    }
+
+    @Before
+    public void setup() {
+        sCloneUserStoragePath = String.format(EXTERNAL_STORAGE_PATH,
+                Integer.parseInt(sCloneUserId));
     }
 
     @Test
@@ -87,24 +95,24 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
         // We retry in all the calls below to overcome the ContentProvider setup issues we sometimes
         // run into. With a retry, the setup usually succeeds.
 
-        Integer mCloneUserIdInt = Integer.parseInt(mCloneUserId);
+        Integer mCloneUserIdInt = Integer.parseInt(sCloneUserId);
         // Check that the clone user directories have been created
-        eventually(() -> mDevice.doesFileExist(mCloneUserStoragePath, mCloneUserIdInt),
+        eventually(() -> sDevice.doesFileExist(sCloneUserStoragePath, mCloneUserIdInt),
                 CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS,
                 CLONE_DIRECTORY_CREATION_FAILURE);
 
         File tmpFile = FileUtil.createTempFile("tmpFileToPush" + NONCE, ".txt");
-        String filePathOnClone = mCloneUserStoragePath + tmpFile.getName();
+        String filePathOnClone = sCloneUserStoragePath + tmpFile.getName();
         try {
-            eventually(() -> mDevice.pushFile(tmpFile, filePathOnClone),
+            eventually(() -> sDevice.pushFile(tmpFile, filePathOnClone),
                     CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS,
                     CLONE_DIRECTORY_CREATION_FAILURE);
 
-            eventually(() -> mDevice.doesFileExist(filePathOnClone, mCloneUserIdInt),
+            eventually(() -> sDevice.doesFileExist(filePathOnClone, mCloneUserIdInt),
                     CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS,
                     CLONE_DIRECTORY_CREATION_FAILURE);
 
-            mDevice.deleteFile(filePathOnClone);
+            sDevice.deleteFile(filePathOnClone);
         } finally {
             tmpFile.delete();
         }
@@ -126,13 +134,13 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
         // Inserting blank image in clone profile
         eventually(() -> {
             assertThat(isSuccessful(
-                    runContentProviderCommand("insert", mCloneUserId,
+                    runContentProviderCommand("insert", sCloneUserId,
                             MEDIA_PROVIDER_URL, MEDIA_PROVIDER_IMAGES_PATH,
                             String.format("--bind _data:s:/storage/emulated/%s/Pictures/%s",
-                                    mCloneUserId, cloneProfileImage),
-                            String.format("--bind _user_id:s:%s", mCloneUserId)))).isTrue();
+                                    sCloneUserId, cloneProfileImage),
+                            String.format("--bind _user_id:s:%s", sCloneUserId)))).isTrue();
             //Querying to see if image was successfully inserted
-            CommandResult queryResult = runContentProviderCommand("query", mCloneUserId,
+            CommandResult queryResult = runContentProviderCommand("query", sCloneUserId,
                     MEDIA_PROVIDER_URL, MEDIA_PROVIDER_IMAGES_PATH,
                     "--projection _id",
                     String.format("--where \"_display_name=\\'%s\\'\"", cloneProfileImage));
@@ -143,7 +151,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
 
         //Removing the clone profile
         eventually(() -> {
-            assertThat(isSuccessful(executeShellV2Command("pm remove-user %s", mCloneUserId)))
+            assertThat(isSuccessful(executeShellV2Command("pm remove-user %s", sCloneUserId)))
                     .isTrue();
         }, CLONE_PROFILE_MEDIA_PROVIDER_OPERATION_TIMEOUT_MS);
 
@@ -164,17 +172,20 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
                     MEDIA_PROVIDER_URL, MEDIA_PROVIDER_IMAGES_PATH,
                     String.format("--where \"_display_name=\\'%s\\'\"", cloneProfileImage));
             throw exception;
+        } finally {
+            // Create a new clone user to replace deleted one. This is required for the next tests
+            createAndStartCloneUser();
         }
     }
 
     @Test
     public void testPrivateAppDataDirectoryForCloneUser() throws Exception {
         // Install the app in clone user space
-        installPackage(APP_A, "--user " + Integer.valueOf(mCloneUserId));
+        installPackage(APP_A, "--user " + Integer.valueOf(sCloneUserId));
 
         eventually(() -> {
             // Wait for finish.
-            assertThat(isPackageInstalled(APP_A_PACKAGE, mCloneUserId)).isTrue();
+            assertThat(isPackageInstalled(APP_A_PACKAGE, sCloneUserId)).isTrue();
         }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
     }
 
@@ -201,13 +212,13 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
         cloneArgs.put(IMAGE_NAME_TO_BE_CREATED_KEY, "clone_profile_image");
 
         runDeviceTestAsUserInPkgA("testMediaStoreManager_writeImageToSharedStorage",
-                Integer.valueOf(mCloneUserId), cloneArgs);
+                Integer.valueOf(sCloneUserId), cloneArgs);
 
         // Run cross user access test
         Map<String, String> args = new HashMap<>();
         args.put(IMAGE_NAME_TO_BE_VERIFIED_IN_OWNER_PROFILE_KEY, "WeirdOwnerProfileImage");
         args.put(IMAGE_NAME_TO_BE_VERIFIED_IN_CLONE_PROFILE_KEY, "WeirdCloneProfileImage");
-        args.put(CLONE_USER_ID, mCloneUserId);
+        args.put(CLONE_USER_ID, sCloneUserId);
 
         // From owner user space
         runDeviceTestAsUserInPkgA(
@@ -216,7 +227,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
         // From clone user space
         runDeviceTestAsUserInPkgA(
                 "testMediaStoreManager_verifyCrossUserImagesInSharedStorage",
-                Integer.valueOf(mCloneUserId), args);
+                Integer.valueOf(sCloneUserId), args);
     }
 
     @Test
@@ -228,8 +239,92 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
         installPackage(APP_A, "--user " + currentUserId);
 
         Map<String, String> args = new HashMap<>();
-        args.put(CLONE_USER_ID, mCloneUserId);
+        args.put(CLONE_USER_ID, sCloneUserId);
         runDeviceTestAsUserInPkgA("testStorageManager_verifyInclusionOfSharedProfileVolumes",
                 currentUserId, args);
+    }
+
+    @Test
+    public void testDeletionOfPrimaryApp_deleteAppWithParentPropertyTrue_deletesCloneApp()
+            throws Exception {
+        assumeTrue(isAtLeastU());
+
+        int currentUserId = getCurrentUserId();
+
+        // Install the app in owner user space
+        installPackage(APP_A, "--user " + currentUserId);
+        eventually(() -> {
+            // Wait for finish.
+            assertThat(isPackageInstalled(APP_A_PACKAGE, String.valueOf(currentUserId))).isTrue();
+        }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+        // Install the app in clone user profile
+        installPackage(APP_A, "--user " + sCloneUserId);
+        eventually(() -> {
+            // Wait for finish.
+            assertThat(isPackageInstalled(APP_A_PACKAGE, sCloneUserId)).isTrue();
+        }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+        eventually(() -> {
+            uninstallPackage(APP_A_PACKAGE, currentUserId);
+        }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+        assertTrue(!getPackageInUser(APP_A_PACKAGE, Integer.parseInt(sCloneUserId))
+                .contains(APP_A_PACKAGE));
+    }
+
+    @Test
+    public void testDeletionOfPrimaryApp_deleteAppWithParentPropertyFalse_doesNotDeleteInChild()
+            throws Exception {
+        assumeTrue(isAtLeastU());
+
+        int currentUserId = getCurrentUserId();
+        // Create test profile
+        CommandResult createUserResult = executeShellV2Command("pm create-user --profileOf "
+                + currentUserId + " --user-type android.os.usertype.profile.TEST test");
+        assertThat(isSuccessful(createUserResult)).isTrue();
+        String testUserOutput = createUserResult.getStdout();
+        String testUserId = testUserOutput.substring(
+                testUserOutput.lastIndexOf(' ') + 1).replaceAll("[^0-9]", "");
+
+        try {
+            // Install the app in owner user space
+            installPackage(APP_A, "--user " + currentUserId);
+            eventually(() -> {
+                // Wait for finish.
+                assertThat(isPackageInstalled(
+                        APP_A_PACKAGE, String.valueOf(currentUserId))).isTrue();
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            // Install the app in test user profile
+            installPackage(APP_A, "--user " + testUserId);
+            eventually(() -> {
+                // Wait for finish.
+                assertThat(isPackageInstalled(APP_A_PACKAGE, testUserId)).isTrue();
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            eventually(() -> {
+                uninstallPackage(APP_A_PACKAGE, currentUserId);
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            assertTrue(getPackageInUser(APP_A_PACKAGE, Integer.parseInt(testUserId))
+                    .contains(APP_A_PACKAGE));
+        } finally {
+            executeShellV2Command("pm remove-user " + testUserId);
+        }
+    }
+
+    private String getPackageInUser(String pkgName, int userId) throws Exception {
+        String command = "pm list packages --user " + userId + " " + pkgName;
+        CommandResult result = executeShellV2Command(command);
+        assertTrue(isSuccessful(result));
+        return result.getStdout();
+    }
+
+    private String uninstallPackage(String pkgName, int userId) throws Exception {
+        String command = "pm uninstall --user " + userId + " " + pkgName;
+        CommandResult result = executeShellV2Command(command);
+        assertTrue(isSuccessful(result));
+        return result.getStdout();
     }
 }

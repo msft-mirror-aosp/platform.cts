@@ -78,7 +78,11 @@ public class BackgroundRestrictedAlarmsTest {
     private ComponentName mAlarmScheduler;
     private AlarmManagerDeviceConfigHelper mConfigHelper = new AlarmManagerDeviceConfigHelper();
     private UiDevice mUiDevice;
-    private DeviceConfigStateHelper mDeviceConfigStateHelper;
+    private DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
+    private DeviceConfigStateHelper mTareDeviceConfigStateHelper =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
+
     private volatile int mAlarmCount;
 
     private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
@@ -97,17 +101,17 @@ public class BackgroundRestrictedAlarmsTest {
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER);
         mAlarmCount = 0;
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(TestAlarmReceiver.ACTION_REPORT_ALARM_EXPIRED);
+        mContext.registerReceiver(mAlarmStateReceiver, intentFilter,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
         updateAlarmManagerConstants();
-        mDeviceConfigStateHelper =
-                new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
-        mDeviceConfigStateHelper.set("bg_auto_restricted_bucket_on_bg_restricted", "false");
+        mActivityManagerDeviceConfigStateHelper
+                .set("bg_auto_restricted_bucket_on_bg_restricted", "false");
         SystemUtil.runWithShellPermissionIdentity(() ->
                 DeviceConfig.setSyncDisabledMode(Settings.Config.SYNC_DISABLED_MODE_UNTIL_REBOOT));
         AppOpsUtils.setOpMode(TEST_APP_PACKAGE, OPSTR_RUN_ANY_IN_BACKGROUND, MODE_IGNORED);
         makeUidIdle();
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(TestAlarmReceiver.ACTION_REPORT_ALARM_EXPIRED);
-        mContext.registerReceiver(mAlarmStateReceiver, intentFilter);
         setAppStandbyBucket("active");
     }
 
@@ -157,6 +161,7 @@ public class BackgroundRestrictedAlarmsTest {
 
     @Test
     public void testRepeatingAlarmAllowedWhenAutoRestrictedBucketFeatureOn() throws Exception {
+        mTareDeviceConfigStateHelper.set("enable_tare", "false"); // Test requires app standby
         final long interval = MIN_REPEATING_INTERVAL;
         final long triggerElapsed = SystemClock.elapsedRealtime() + interval;
         toggleAutoRestrictedBucketOnBgRestricted(false);
@@ -195,7 +200,8 @@ public class BackgroundRestrictedAlarmsTest {
                 DeviceConfig.setSyncDisabledMode(Settings.Config.SYNC_DISABLED_MODE_NONE));
         deleteAlarmManagerConstants();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
-        mDeviceConfigStateHelper.restoreOriginalValues();
+        mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();
+        mTareDeviceConfigStateHelper.restoreOriginalValues();
         // Cancel any leftover alarms
         final Intent cancelAlarmsIntent = new Intent(TestAlarmScheduler.ACTION_CANCEL_ALL_ALARMS);
         cancelAlarmsIntent.setComponent(mAlarmScheduler);
@@ -228,7 +234,7 @@ public class BackgroundRestrictedAlarmsTest {
     }
 
     private void toggleAutoRestrictedBucketOnBgRestricted(boolean enable) {
-        mDeviceConfigStateHelper.set("bg_auto_restricted_bucket_on_bg_restricted",
+        mActivityManagerDeviceConfigStateHelper.set("bg_auto_restricted_bucket_on_bg_restricted",
                 Boolean.toString(enable));
     }
 

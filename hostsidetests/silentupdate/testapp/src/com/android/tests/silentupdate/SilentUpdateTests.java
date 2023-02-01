@@ -154,9 +154,13 @@ public class SilentUpdateTests {
                 .edit()
                 .putLong("lastUpdateTime", lastUpdateTime)
                 .commit();
-        commit(fileSupplier(
+        InstallStatusListener isl = commit(fileSupplier(
                 "/data/local/tmp/silentupdatetest/CtsSilentUpdateTestCases_mdpi-v4.apk"),
                 false /* requireUserAction */, INSTALLER_PACKAGE_NAME);
+        final Intent statusUpdate = isl.getResult();
+        final int result =
+                statusUpdate.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE);
+        Assert.assertEquals(PackageInstaller.STATUS_SUCCESS, result);
     }
 
     @Test
@@ -377,8 +381,9 @@ public class SilentUpdateTests {
         public IntentSender getIntentSender() {
             final Context context = getContext();
             final String action = UUID.randomUUID().toString();
-            context.registerReceiver(this, new IntentFilter(action));
-            Intent intent = new Intent(action);
+            context.registerReceiver(this, new IntentFilter(action),
+                    Context.RECEIVER_EXPORTED_UNAUDITED);
+            Intent intent = new Intent(action).setPackage(context.getPackageName());
             PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent, FLAG_MUTABLE);
             return pending.getIntentSender();
         }

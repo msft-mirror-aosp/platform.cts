@@ -115,6 +115,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         super.setUp();
         mDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
+        mDeviceConfigStateHelper.set("fc_enable_flexibility", "false");
         kTestEnvironment.setUp();
         kTriggerTestEnvironment.setUp();
         mJobScheduler.cancelAll();
@@ -129,6 +130,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     @CallSuper
     @Override
     public void tearDown() throws Exception {
+        SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler monitor-battery off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd battery reset");
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.BATTERY_STATS_CONSTANTS, mInitialBatteryStatsConstants);
@@ -173,8 +175,19 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         }
     }
 
+    /** Returns the current storage-low state, as believed by JobScheduler. */
+    private boolean isJsStorageStateLow() throws Exception {
+        return !Boolean.parseBoolean(
+                SystemUtil.runShellCommand(getInstrumentation(),
+                        "cmd jobscheduler get-storage-not-low").trim());
+    }
+
     // Note we are just using storage state as a way to control when the job gets executed.
     void setStorageStateLow(boolean low) throws Exception {
+        if (isJsStorageStateLow() == low) {
+            // Nothing to do here
+            return;
+        }
         mStorageStateChanged = true;
         String res;
         if (low) {
@@ -195,7 +208,8 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
             if (curSeq == seq) {
                 return;
             }
-        } while ((SystemClock.elapsedRealtime()-startTime) < 1000);
+            Thread.sleep(500);
+        } while ((SystemClock.elapsedRealtime() - startTime) < 10_000);
 
         fail("Timed out waiting for job scheduler: expected seq=" + seq + ", cur=" + curSeq);
     }
@@ -231,6 +245,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     }
 
     void setBatteryState(boolean plugged, int level) throws Exception {
+        SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler monitor-battery on");
         if (plugged) {
             SystemUtil.runShellCommand(getInstrumentation(), "cmd battery set ac 1");
             final int curLevel = Integer.parseInt(SystemUtil.runShellCommand(getInstrumentation(),
@@ -263,9 +278,14 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
 
     /** Asks (not forces) JobScheduler to run the job if constraints are met. */
     void runSatisfiedJob(int jobId) throws Exception {
+        runSatisfiedJob(jobId, null);
+    }
+
+    void runSatisfiedJob(int jobId, String namespace) throws Exception {
         SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler run -s"
                 + " -u " + UserHandle.myUserId()
+                + (namespace == null ? "" : " -n " + namespace)
                 + " " + kJobServiceComponent.getPackageName()
                 + " " + jobId);
     }

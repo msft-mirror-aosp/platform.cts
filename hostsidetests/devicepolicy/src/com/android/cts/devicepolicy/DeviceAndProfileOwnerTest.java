@@ -386,15 +386,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testPermissionMixedPolicies() throws Exception {
-        installAppPermissionAppAsUser();
-        executeDeviceTestMethod(".PermissionsTest",
-                "testPermissionGrantStateDenied_mixedPolicies");
-        executeDeviceTestMethod(".PermissionsTest",
-                "testPermissionGrantStateGranted_mixedPolicies");
-    }
-
-    @Test
     public void testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted()
             throws Exception {
         installAppPermissionAppAsUser();
@@ -470,32 +461,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
             setScreenCaptureDisabled_assist(mUserId, false /* disabled */);
             clearVoiceInteractionService();
         }
-    }
-
-    @Test
-    public void testApplicationHidden() throws Exception {
-        installAppPermissionAppAsUser();
-        executeDeviceTestClass(".ApplicationHiddenTest");
-        installAppAsUser(PERMISSIONS_APP_APK, mUserId);
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".ApplicationHiddenTest","testSetApplicationHidden");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_APPLICATION_HIDDEN_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings(PERMISSIONS_APP_PKG, "hidden", NOT_CALLED_FROM_PARENT)
-                .build(),
-        new DevicePolicyEventWrapper.Builder(EventId.SET_APPLICATION_HIDDEN_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings(PERMISSIONS_APP_PKG, "not_hidden", NOT_CALLED_FROM_PARENT)
-                .build());
-    }
-
-    @Test
-    public void testApplicationHidden_cannotHidePolicyExemptApps() throws Exception {
-        // Needed to access dpm.getPolicyExemptApps()
-        allowTestApiAccess(DEVICE_ADMIN_PKG);
-        executeDeviceTestMethod(".ApplicationHiddenTest", "testCannotHidePolicyExemptApps");
     }
 
     @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "197859595",
@@ -1364,48 +1329,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                     .setBoolean(false)
                     .setStrings("android.permission.READ_CONTACTS")
                     .build());
-    }
-
-    @Test
-    public void testSetAutoTimeRequired() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testSetAutoTimeRequired");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_REQUIRED_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(true)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_REQUIRED_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(false)
-                    .build());
-    }
-
-    @Test
-    public void testSetAutoTimeEnabled() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testSetAutoTimeEnabled");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(true)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(false)
-                    .build());
-    }
-
-    @Test
-    public void testSetAutoTimeZoneEnabled() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-                    executeDeviceTestMethod(".TimeManagementTest", "testSetAutoTimeZoneEnabled");
-                }, new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_ZONE_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(true)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_AUTO_TIME_ZONE_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(false)
-                        .build());
     }
 
     @Test

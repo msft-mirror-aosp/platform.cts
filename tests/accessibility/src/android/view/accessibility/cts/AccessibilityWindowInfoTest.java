@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.os.LocaleList;
 import android.os.Parcel;
 import android.platform.test.annotations.Presubmit;
 import android.text.TextUtils;
@@ -99,6 +100,8 @@ public class AccessibilityWindowInfoTest {
         Region region = new Region();
         w.getRegionInScreen(region);
         assertTrue(region.isEmpty());
+        assertEquals(0, w.getTransitionTimeMillis());
+        assertEquals(w.getLocales(), LocaleList.getEmptyLocaleList());
 
         try {
             w.getChild(0);
@@ -140,6 +143,8 @@ public class AccessibilityWindowInfoTest {
         w1.getRegionInScreen(regions1);
         w2.getRegionInScreen(regions2);
         equality &= regions1.equals(regions2);
+        equality &= w1.getTransitionTimeMillis() == w2.getTransitionTimeMillis();
+        equality &= w1.getLocales().equals(w2.getLocales());
         return equality;
     }
 }

@@ -30,6 +30,10 @@
     the config_preventImeStartupUnlessTextEditor option. -->
     <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
 
+    <queries>
+        <package android:name="com.android.cts.mockime" />
+    </queries>
+
     <application>
 
         <uses-library android:name="android.test.runner"/>
@@ -48,8 +52,10 @@
              android:theme="@style/MyAutofilledHighlight"/>
         <activity android:name=".activities.LoginWithStringsActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillActivity"/>
+        <activity android:name=".activities.ImeOptionActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedActivityContextActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
+        <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
@@ -154,11 +160,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".activities.FadeInActivity"/>
+        <activity android:name=".activities.MultipleStepsSignInActivity"/>
         <activity android:name=".activities.FieldsNoPasswordActivity"/>
         <activity android:name=".activities.AugmentedAuthActivity" />
         <activity android:name=".activities.SimpleAfterLoginActivity"/>
         <activity android:name=".activities.SimpleBeforeLoginActivity"/>
         <activity android:name=".activities.NonAutofillableActivity"/>
+        <activity android:name=".activities.ClientSuggestionsActivity"/>
 
         <receiver android:name=".testcore.SelfDestructReceiver"
              android:exported="true"

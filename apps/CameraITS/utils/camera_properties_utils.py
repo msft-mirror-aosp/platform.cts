@@ -15,11 +15,12 @@
 
 
 import logging
-import unittest
+import math
 from mobly import asserts
 import numpy as np
 import capture_request_utils
 
+FD_CAL_RTOL = 0.20
 LENS_FACING_FRONT = 0
 LENS_FACING_BACK = 1
 LENS_FACING_EXTERNAL = 2
@@ -31,6 +32,8 @@ NUM_POSE_TRANSLATION_PARAMS = 3  # number of terms in poseTranslation
 SKIP_RET_MSG = 'Test skipped'
 SOLID_COLOR_TEST_PATTERN = 1
 COLOR_BARS_TEST_PATTERN = 2
+USE_CASE_STILL_CAPTURE = 2
+DEFAULT_AE_TARGET_FPS_RANGE = (15, 30)
 
 
 def legacy(props):
@@ -428,6 +431,40 @@ def get_max_digital_zoom(props):
   return z_max
 
 
+def get_ae_target_fps_ranges(props):
+  """Returns the AE target FPS ranges supported by the camera device.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    A list of AE target FPS ranges supported by the camera device.
+  """
+  ranges = []  # return empty list instead of Boolean if no FPS range in props
+  if 'android.control.aeAvailableTargetFpsRanges' in props:
+    ranges = props['android.control.aeAvailableTargetFpsRanges']
+  return ranges
+
+
+def get_fps_range_to_test(fps_ranges):
+  """Returns an AE target FPS range to test based on camera device properties.
+
+  Args:
+    fps_ranges: list of AE target FPS ranges supported by camera.
+      e.g. [[7, 30], [24, 30], [30, 30]]
+  Returns:
+    An AE target FPS range for testing.
+  """
+  accepted_range = list(DEFAULT_AE_TARGET_FPS_RANGE)
+  logging.debug('AE target FPS ranges: %s', fps_ranges)
+  for (fps_range_min, fps_range_max) in fps_ranges:
+    if (fps_range_max == accepted_range[1] and
+        fps_range_min < accepted_range[0]):
+      accepted_range[0] = fps_range_min
+  logging.debug('Accepted AE target FPS range: %s', accepted_range)
+  return accepted_range
+
+
 def ae_lock(props):
   """Returns whether a device supports AE lock.
 
@@ -514,7 +551,7 @@ def noise_reduction_mode(props, mode):
     mode: Integer indicating noise reduction mode to check for availability.
 
   Returns:
-    Boolean. Ture if devices supports noise reduction mode(s).
+    Boolean. True if devices supports noise reduction mode(s).
   """
   return ('android.noiseReduction.availableNoiseReductionModes' in props and
           mode in props['android.noiseReduction.availableNoiseReductionModes'])
@@ -649,12 +686,12 @@ def get_intrinsic_calibration(props, debug, fd=None):
     fd_w_pix = pixel_w * fd / sensor_w
     fd_h_pix = pixel_h * fd / sensor_h
 
-    if not np.isclose(fd_w_pix, ical[0], rtol=0.20):
-      raise ValueError('fd_w(pixels): %.2f\tcal[0](pixels): %.2f\tTOL=20%%' % (
-          fd_w_pix, ical[0]))
-    if not np.isclose(fd_h_pix, ical[1], rtol=0.20):
-      raise ValueError('fd_h(pixels): %.2f\tcal[1](pixels): %.2f\tTOL=20%%' % (
-          fd_h_pix, ical[0]))
+    if not math.isclose(fd_w_pix, ical[0], rel_tol=FD_CAL_RTOL):
+      raise ValueError(f'fd_w(pixels): {fd_w_pix:.2f}\tcal[0](pixels): '
+                       f'{ical[0]:.2f}\tTOL=20%')
+    if not math.isclose(fd_h_pix, ical[1], rel_tol=FD_CAL_RTOL):
+      raise ValueError(f'fd_h(pixels): {fd_h_pix:.2f}\tcal[1](pixels): '
+                       f'{ical[1]:.2f}\tTOL=20%')
 
   # generate instrinsic matrix
   k = np.array([[ical[0], ical[4], ical[2]],
@@ -853,8 +890,3 @@ def linear_tonemap(props):
   return ('android.tonemap.availableToneMapModes' in props and
           (0 in props.get('android.tonemap.availableToneMapModes') or
            3 in props.get('android.tonemap.availableToneMapModes')))
-
-
-if __name__ == '__main__':
-  unittest.main()
-

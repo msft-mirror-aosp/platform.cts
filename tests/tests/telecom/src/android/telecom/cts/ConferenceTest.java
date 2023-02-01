@@ -23,6 +23,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import android.net.Uri;
 import android.os.Bundle;
 import android.telecom.Call;
+import android.telecom.CallEndpoint;
 import android.telecom.Conference;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
@@ -490,6 +491,22 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertNull(extras);
     }
 
+    /**
+     * Verifies {@link Conference#getCurrentCallEndpoint()} call endpoint is notified as
+     * {@link #onCallEndpointChanged(CallEndpoint)}.
+     */
+    public void testGetCurrentCallEndpoint() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        final Call conf = mInCallService.getLastConferenceCall();
+        assertCallState(conf, Call.STATE_ACTIVE);
+
+        mOnCallEndpointChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        CallEndpoint endpoint = (CallEndpoint) mOnCallEndpointChangedCounter.getArgs(0)[0];
+        assertEquals(endpoint, mConferenceObject.getCurrentCallEndpoint());
+    }
+
     private void verifyConferenceObject(Conference mConferenceObject, MockConnection connection1,
             MockConnection connection2) {
         assertTrue(mConferenceObject.getConferenceableConnections().isEmpty());
@@ -639,22 +656,5 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
                         "Call should not have child call " + childrenCall
         );
     }
-
-    private void assertVideoState(final Call call, final int videoState) {
-        waitUntilConditionIsTrueOrTimeout(
-                new Condition() {
-                    @Override
-                    public Object expected() {
-                        return videoState;
-                    }
-
-                    @Override
-                    public Object actual() {
-                        return call.getDetails().getVideoState();
-                    }
-                },
-                TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
-                "Call should be in videoState " + videoState
-        );
-    }
 }
+

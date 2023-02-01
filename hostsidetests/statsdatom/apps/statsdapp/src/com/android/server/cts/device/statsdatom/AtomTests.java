@@ -20,12 +20,16 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeNotNull;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AppOpsManager;
 import android.app.GameManager;
+import android.app.GameModeConfiguration;
 import android.app.GameState;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -58,10 +62,12 @@ import android.net.NetworkRequest;
 import android.net.cts.util.CtsNetUtils;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.PerformanceHintManager;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
@@ -79,7 +85,11 @@ import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+
+import libcore.javax.net.ssl.TestSSLContext;
+import libcore.javax.net.ssl.TestSSLSocketPair;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -96,6 +106,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+
+import javax.net.ssl.SSLSocket;
 
 public class AtomTests {
     private static final String TAG = AtomTests.class.getSimpleName();
@@ -225,7 +237,37 @@ public class AtomTests {
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_ESTABLISH_VPN_MANAGER, 118);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_ACCESS_RESTRICTED_SETTINGS, 119);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_RECEIVE_AMBIENT_TRIGGER_AUDIO, 120);
-        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_READ_MEDIA_VISUAL_USER_SELECTED, 121);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_RECEIVE_EXPLICIT_USER_INTERACTION_AUDIO, 121);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_RUN_LONG_JOBS, 122);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_READ_MEDIA_VISUAL_USER_SELECTED, 123);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_APP_STANDBY, 124);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_DISMISSIBLE_NOTIFICATIONS, 125);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_READ_WRITE_HEALTH_DATA, 126);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_FOREGROUND_SERVICE_SPECIAL_USE, 127);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS, 128);
+        APP_OPS_ENUM_MAP.put(
+                AppOpsManager
+                        .OPSTR_SYSTEM_EXEMPT_FROM_FGS_BG_START_WHILE_IN_USE_PERMISSION_RESTRICTION,
+                129);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_FGS_STOP_BUTTON, 130);
+        APP_OPS_ENUM_MAP.put(
+                AppOpsManager.OPSTR_CAPTURE_CONSENTLESS_BUGREPORT_ON_USERDEBUG_BUILD, 131);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_BODY_SENSORS_WRIST_TEMPERATURE, 132);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_USE_FULL_SCREEN_INTENT, 133);
+    }
+
+    @Test
+    public void testTlsHandshake() throws Exception {
+        TestSSLContext context = TestSSLContext.create();
+        SSLSocket[] sockets = TestSSLSocketPair.connect(context, null, null);
+
+        if (sockets.length < 2) {
+            return;
+        }
+        sockets[0].getOutputStream().write(42);
+        Assert.assertEquals(42, sockets[1].getInputStream().read());
+        sockets[0].close();
+        sockets[1].close();
     }
 
     @Test
@@ -737,6 +779,23 @@ public class AtomTests {
     }
 
     @Test
+    public void testScheduledJob_CancelledJob() throws Exception {
+        final ComponentName name = new ComponentName(MY_PACKAGE_NAME,
+                StatsdJobService.class.getName());
+
+        Context context = InstrumentationRegistry.getContext();
+        JobScheduler js = context.getSystemService(JobScheduler.class);
+        assertWithMessage("JobScheduler service not available").that(js).isNotNull();
+
+        JobInfo.Builder builder = new JobInfo.Builder(1, name);
+        builder.setMinimumLatency(60_000L);
+        JobInfo job = builder.build();
+
+        js.schedule(job);
+        js.cancel(1);
+    }
+
+    @Test
     public void testScheduledJobPriority() throws Exception {
         final ComponentName name =
                 new ComponentName(MY_PACKAGE_NAME, StatsdJobService.class.getName());
@@ -837,8 +896,13 @@ public class AtomTests {
     }
 
     @Test
-    public void testWifiLockHighPerf() {
+    public void testWifiLockHighPerf() throws Exception {
         Context context = InstrumentationRegistry.getContext();
+        boolean wifiConnected = isWifiConnected(context);
+        Assert.assertTrue(
+                "Wifi is not connected. The test expects Wifi to be connected before the run",
+                wifiConnected);
+
         WifiManager wm = context.getSystemService(WifiManager.class);
         WifiManager.WifiLock lock =
                 wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "StatsdCTSWifiLock");
@@ -848,14 +912,12 @@ public class AtomTests {
     }
 
     @Test
-    public void testWifiLockLowLatency() {
+    public void testWifiConnected() throws Exception {
         Context context = InstrumentationRegistry.getContext();
-        WifiManager wm = context.getSystemService(WifiManager.class);
-        WifiManager.WifiLock lock =
-                wm.createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "StatsdCTSWifiLock");
-        lock.acquire();
-        sleep(500);
-        lock.release();
+        boolean wifiConnected = isWifiConnected(context);
+        Assert.assertTrue(
+                "Wifi is not connected. The test expects Wifi to be connected before the run",
+                wifiConnected);
     }
 
     @Test
@@ -1164,5 +1226,56 @@ public class AtomTests {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
         gameManager.setGameState(new GameState(true, GameState.MODE_CONTENT, 1, 2));
+    }
+
+    @Test
+    public void testSetGameMode() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        GameManager gameManager = context.getSystemService(GameManager.class);
+        assertNotNull(gameManager);
+        assertNotNull(context.getPackageName());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
+                (gm) -> gm.setGameMode(context.getPackageName(),
+                        GameManager.GAME_MODE_PERFORMANCE), "android.permission.MANAGE_GAME_MODE");
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
+                (gm) -> gm.setGameMode(context.getPackageName(),
+                        GameManager.GAME_MODE_BATTERY), "android.permission.MANAGE_GAME_MODE");
+    }
+
+    @Test
+    public void testUpdateCustomGameModeConfiguration() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        GameManager gameManager = context.getSystemService(GameManager.class);
+        assertNotNull(gameManager);
+        assertNotNull(context.getPackageName());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
+                (gm) -> gm.updateCustomGameModeConfiguration(context.getPackageName(),
+                        new GameModeConfiguration.Builder()
+                                .setScalingFactor(0.5f)
+                                .setFpsOverride(30).build()));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
+                (gm) -> gm.updateCustomGameModeConfiguration(context.getPackageName(),
+                        new GameModeConfiguration.Builder()
+                                .setScalingFactor(0.9f)
+                                .setFpsOverride(60).build()));
+    }
+
+    @Test
+    public void testCreateHintSession() throws Exception {
+        final long targetNs = 16666666L;
+        final int firstApiLevel = PropertyUtil.getFirstApiLevel();
+        Context context = InstrumentationRegistry.getContext();
+        PerformanceHintManager phm = context.getSystemService(PerformanceHintManager.class);
+
+        assertNotNull(phm);
+
+        PerformanceHintManager.Session session =
+                phm.createHintSession(new int[]{Process.myPid()}, targetNs);
+
+        if (firstApiLevel < Build.VERSION_CODES.S) {
+            assumeNotNull(session);
+        } else {
+            assertNotNull(session);
+        }
     }
 }

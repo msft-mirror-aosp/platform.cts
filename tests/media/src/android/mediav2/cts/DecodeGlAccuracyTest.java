@@ -18,11 +18,15 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.CodecDecoderTestBase;
+import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -30,6 +34,7 @@ import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,6 +60,7 @@ import javax.microedition.khronos.opengles.GL10;
 @RunWith(Parameterized.class)
 public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = DecodeGlAccuracyTest.class.getSimpleName();
+    private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 
     // Allowed color tolerance to account for differences in the conversion process
     private static final int ALLOWED_COLOR_DELTA = 8;
@@ -150,25 +156,20 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
     private static final int COLOR_BAR_OFFSET_X = 8;
     private static final int COLOR_BAR_OFFSET_Y = 64;
 
-    private int[][] mColorBars;
-
-    private final String mCompName;
-    private final String mFileName;
-    private int mWidth;
-    private int mHeight;
     private final int mRange;
     private final int mStandard;
     private final int mTransferCurve;
     private final boolean mUseYuvSampling;
 
+    private int[][] mColorBars;
+    private int mWidth;
+    private int mHeight;
     private OutputSurface mEGLWindowOutSurface;
     private int mBadFrames = 0;
 
     public DecodeGlAccuracyTest(String decoder, String mediaType, String fileName, int range,
-            int standard, int transfer, boolean useYuvSampling) {
-        super(null, mediaType, null);
-        mCompName = decoder;
-        mFileName = fileName;
+            int standard, int transfer, boolean useYuvSampling, String allTestParams) {
+        super(decoder, mediaType, MEDIA_DIR + fileName, allTestParams);
         mRange = range;
         mStandard = standard;
         mTransferCurve = transfer;
@@ -190,6 +191,15 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
             }
         } else {
             mColorBars = COLOR_BARS_YUV;
+        }
+    }
+
+    @After
+    public void tearDown() {
+        mSurface = null;
+        if (mEGLWindowOutSurface != null) {
+            mEGLWindowOutSurface.release();
+            mEGLWindowOutSurface = null;
         }
     }
 
@@ -311,7 +321,7 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
         return frameFailed;
     }
 
-    void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+    protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawOutputEOS = true;
         }
@@ -333,15 +343,15 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
 
     /**
      * The test decodes video assets with color bars and outputs frames to OpenGL input surface.
-     * The OpenGL fragment shader reads the frame buffers as externl textures and renders to
+     * The OpenGL fragment shader reads the frame buffers as external textures and renders to
      * a pbuffer. The output RGB values are read and compared against the expected values.
      */
     @ApiTest(apis = {"android.media.MediaCodec#dequeueOutputBuffer",
-                     "android.media.MediaCodec#releaseOutputBuffer",
-                     "android.media.MediaCodec.Callback#onOutputBufferAvailable",
-                     "android.media.MediaFormat#setInteger(KEY_COLOR_RANGE)",
-                     "android.media.MediaFormat#setInteger(KEY_COLOR_STANDARD)",
-                     "android.media.MediaFormat#setInteger(KEY_COLOR_TRANSFER)"})
+            "android.media.MediaCodec#releaseOutputBuffer",
+            "android.media.MediaCodec.Callback#onOutputBufferAvailable",
+            "android.media.MediaFormat#KEY_COLOR_RANGE",
+            "android.media.MediaFormat#KEY_COLOR_STANDARD",
+            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testDecodeGlAccuracyRGB() throws IOException, InterruptedException {
@@ -354,12 +364,12 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
                     FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T);
 
             // TODO (b/219748700): Android software codecs work only with 601LR. Skip for now.
-            assumeTrue("Skipping " + mCompName + " for color range " + mRange
+            assumeTrue("Skipping " + mCodecName + " for color range " + mRange
                             + " and color standard " + mStandard,
-                    isVendorCodec(mCompName));
+                    isVendorCodec(mCodecName));
         }
 
-        MediaFormat format = setUpSource(mFileName);
+        MediaFormat format = setUpSource(mTestFile);
 
         // Set color parameters
         format.setInteger(MediaFormat.KEY_COLOR_RANGE, mRange);
@@ -375,7 +385,8 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
 
         // If device supports HDR editing, then GL_EXT_YUV_target extension support is mandatory
         if (mUseYuvSampling) {
-            String message = "Device doesn't support EXT_YUV_target GL extension";
+            String message = "Device doesn't support EXT_YUV_target GL extension \n" + mTestConfig
+                    + mTestEnv;
             if (IS_AT_LEAST_T && IS_HDR_EDITING_SUPPORTED) {
                 assertTrue(message, mEGLWindowOutSurface.getEXTYuvTargetSupported());
             } else {
@@ -385,7 +396,7 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
 
         mSurface = mEGLWindowOutSurface.getSurface();
 
-        mCodec = MediaCodec.createByCodecName(mCompName);
+        mCodec = MediaCodec.createByCodecName(mCodecName);
         configureCodec(format, true, true, false);
         mOutputBuff = new OutputManager();
         mCodec.start();
@@ -395,10 +406,10 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
         validateColorAspects(mCodec.getOutputFormat(), mRange, mStandard, mTransferCurve);
         mCodec.stop();
         mCodec.release();
-        mEGLWindowOutSurface.release();
+        tearDown();
 
-        assertTrue("color difference exceeds allowed tolerance in " + mBadFrames + " out of " +
-                mOutputCount + " frames", 0 == mBadFrames);
+        assertEquals("color difference exceeds allowed tolerance in " + mBadFrames + " out of "
+                + mOutputCount + " frames \n" + mTestConfig + mTestEnv, 0, mBadFrames);
     }
 }
 

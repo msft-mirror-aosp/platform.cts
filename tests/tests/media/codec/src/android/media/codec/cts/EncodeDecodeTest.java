@@ -16,6 +16,11 @@
 
 package android.media.codec.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import android.graphics.ImageFormat;
 import android.media.Image;
 import android.media.MediaCodec;
@@ -41,6 +46,11 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.MediaUtils;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,16 +60,6 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.microedition.khronos.opengles.GL10;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Generates a series of video frames, encodes them, decodes them, and tests for significant
@@ -84,7 +84,9 @@ public class EncodeDecodeTest {
     private static final boolean VERBOSE = false;           // lots of logging
     private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
     private static final String DEBUG_FILE_NAME_BASE = "/sdcard/test.";
-    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU);
+    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
+    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
+            || ApiLevelUtil.codenameEquals("UpsideDownCake");
 
     // parameters for the encoder
     private static final int FRAME_RATE = 15;               // 15fps
@@ -706,7 +708,7 @@ public class EncodeDecodeTest {
                     if (VERBOSE) Log.d(TAG, "decoder output format changed: " +
                             decoderOutputFormat);
                 } else if (decoderStatus < 0) {
-                    fail("unexpected result from deocder.dequeueOutputBuffer: " + decoderStatus);
+                    fail("unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                 } else {  // decoderStatus >= 0
                     if (!toSurface) {
                         ByteBuffer outputFrame = decoderOutputBuffers[decoderStatus];
@@ -861,7 +863,7 @@ public class EncodeDecodeTest {
                     if (VERBOSE) Log.d(TAG, "decoder output format changed: " +
                             decoderOutputFormat);
                 } else if (decoderStatus < 0) {
-                    fail("unexpected result from deocder.dequeueOutputBuffer: " + decoderStatus);
+                    fail("unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                 } else {  // decoderStatus >= 0
                     if (VERBOSE) Log.d(TAG, "surface decoder given buffer " + decoderStatus +
                             " (size=" + info.size + ")");

@@ -213,7 +213,9 @@ public class ScanResultTest extends WifiJUnit3TestBase {
                     ScanResult.WIFI_STANDARD_LEGACY,
                     ScanResult.WIFI_STANDARD_11N,
                     ScanResult.WIFI_STANDARD_11AC,
-                    ScanResult.WIFI_STANDARD_11AX
+                    ScanResult.WIFI_STANDARD_11AX,
+                    ScanResult.WIFI_STANDARD_11AD,
+                    ScanResult.WIFI_STANDARD_11BE
             );
 
             scanResult.isPasspointNetwork();
@@ -416,6 +418,9 @@ public class ScanResultTest extends WifiJUnit3TestBase {
         assertNull(mloLink.getStaMacAddress());
         assertNull(mloLink.getApMacAddress());
         assertEquals(MloLink.MLO_LINK_STATE_UNASSOCIATED, mloLink.getState());
+        assertEquals(WifiInfo.INVALID_RSSI, mloLink.getRssi());
+        assertEquals(WifiInfo.LINK_SPEED_UNKNOWN, mloLink.getRxLinkSpeedMbps());
+        assertEquals(WifiInfo.LINK_SPEED_UNKNOWN, mloLink.getTxLinkSpeedMbps());
     }
 
     /**

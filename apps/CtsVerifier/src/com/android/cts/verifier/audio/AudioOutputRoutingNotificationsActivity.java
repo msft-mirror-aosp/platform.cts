@@ -147,14 +147,17 @@ public class AudioOutputRoutingNotificationsActivity extends AudioWiredDeviceBas
 
     @Override
     protected void calculatePass() {
-        getPassButton().setEnabled(mRoutingNotificationReceived || !mSupportsWiredPeripheral);
-        if (mRoutingNotificationReceived) {
-            ((TextView) findViewById(R.id.audio_routingnotification_testresult)).setText(
-                    "Test PASSES - Routing notification received");
+        getPassButton().setEnabled(isReportLogOkToPass()
+                && mRoutingNotificationReceived || !mSupportsWiredPeripheral);
+        TextView tv = ((TextView) findViewById(R.id.audio_routingnotification_testresult));
+        if (!isReportLogOkToPass()) {
+            tv.setText(getResources().getString(R.string.audio_general_reportlogtest));
+        } else if (mRoutingNotificationReceived) {
+            tv.setText("Test PASSES - Routing notification received");
         } else if (!mSupportsWiredPeripheral) {
-            ((TextView) findViewById(
-                    R.id.audio_routingnotification_testresult)).setText(
-                    "Test PASSES - No peripheral support");
+            tv.setText("Test PASSES - No peripheral support");
+        } else {
+            tv.setText("");
         }
     }
 
@@ -181,9 +184,9 @@ public class AudioOutputRoutingNotificationsActivity extends AudioWiredDeviceBas
         stopBtn = (Button) findViewById(R.id.audio_routingnotification_playStopBtn);
         stopBtn.setOnClickListener(mBtnClickListener);
 
-        enableTestButtons(false);
-
         mInfoView = (TextView) findViewById(R.id.info_text);
+
+        enableTestButtons(false);
 
         // Setup Player
         //

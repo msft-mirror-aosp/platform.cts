@@ -71,9 +71,6 @@ public class PermissionPolicyTest {
     private static final String MANAGE_COMPANION_DEVICES_PERMISSION
             = "android.permission.MANAGE_COMPANION_DEVICES";
 
-    private static final String SET_UNRESTRICTED_GESTURE_EXCLUSION
-            = "android.permission.SET_UNRESTRICTED_GESTURE_EXCLUSION";
-
     private static final String LOG_TAG = "PermissionProtectionTest";
 
     private static final String PLATFORM_PACKAGE_NAME = "android";
@@ -473,6 +470,9 @@ public class PermissionPolicyTest {
                 case "knownSigner": {
                     protectionLevel |= PermissionInfo.PROTECTION_FLAG_KNOWN_SIGNER;
                 } break;
+                case "module" : {
+                    protectionLevel |= PermissionInfo.PROTECTION_FLAG_MODULE;
+                } break;
             }
         }
         return protectionLevel;
@@ -507,8 +507,6 @@ public class PermissionPolicyTest {
                 return parseDate(SECURITY_PATCH).before(HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PATCH_DATE);
             case MANAGE_COMPANION_DEVICES_PERMISSION:
                 return parseDate(SECURITY_PATCH).before(MANAGE_COMPANION_DEVICES_PATCH_DATE);
-            case SET_UNRESTRICTED_GESTURE_EXCLUSION:
-                return true;
             default:
                 return false;
         }

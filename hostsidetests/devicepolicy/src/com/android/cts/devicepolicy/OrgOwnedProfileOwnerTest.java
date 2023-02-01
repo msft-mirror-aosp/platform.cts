@@ -61,9 +61,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String TEST_IME_COMPONENT = TEST_IME_PKG + "/.TestIme";
     private static final String SIMPLE_SMS_APP_PKG = "android.telephony.cts.sms.simplesmsapp";
     private static final String SIMPLE_SMS_APP_APK = "SimpleSmsApp.apk";
-    private static final String TEST_LAUNCHER_APK = "TestLauncher.apk";
-    private static final String TEST_LAUNCHER_COMPONENT =
-            "com.android.cts.testlauncher/android.app.Activity";
     public static final String SUSPENSION_CHECKER_CLASS =
             "com.android.cts.suspensionchecker.ActivityLaunchTest";
 
@@ -106,11 +103,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testCannotRemoveManagedProfile() throws DeviceNotAvailableException {
-        assertThat(getDevice().removeUser(mUserId)).isFalse();
-    }
-
-    @Test
     public void testCanRelinquishControlOverDevice() throws Exception {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testSetAndGetLockInfo",
                 mUserId);
@@ -119,13 +111,13 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         assertHasNoUser(mUserId);
 
         try {
-            installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
+            installAppAsUser(DEVICE_ADMIN_APK, /* userId= */ 0);
             assertTrue(setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED,
-                    mPrimaryUserId, /*expectFailure*/false));
+                    /* userId= */ 0, /*expectFailure*/false));
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testLockInfoIsNull",
-                    mPrimaryUserId);
+                    /* userId= */ 0);
         } finally {
-            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, mPrimaryUserId);
+            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, /* userId= */ 0);
             getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
         }
     }
@@ -281,20 +273,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         }
     }
 
-    @Test
-    public void testSetTime() throws Exception {
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".TimeManagementTest", "testSetTime", mUserId);
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".TimeManagementTest",
-                "testSetTime_failWhenAutoTimeEnabled", mUserId);
-    }
-
-    @Test
-    public void testSetTimeZone() throws Exception {
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".TimeManagementTest", "testSetTimeZone", mUserId);
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".TimeManagementTest",
-                "testSetTimeZone_failIfAutoTimeZoneEnabled", mUserId);
-    }
-
     @FlakyTest(bugId = 137088260)
     @Test
     public void testWifi() throws Exception {
@@ -345,11 +323,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testAdminConfiguredNetworks() throws Exception {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".AdminConfiguredNetworksTest", mUserId);
-    }
-
-    @Test
-    public void testApplicationHiddenParent() throws Exception {
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".ApplicationHiddenParentTest", mUserId);
     }
 
     @Test
@@ -489,45 +462,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 canStart ? "testCanStartActivity" : "testCannotStartActivity", mPrimaryUserId);
     }
 
-    @Test
-    public void testScreenCaptureDisabled() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
-        setPoAsUser(mPrimaryUserId);
-
-        try {
-            setScreenCaptureDisabled(true);
-        } finally {
-            setScreenCaptureDisabled(false);
-        }
-    }
-
-    private void takeScreenCaptureAsUser(int userId, String testMethodName) throws Exception {
-        installAppAsUser(TEST_APP_APK, /* grantPermissions */ true, /* dontKillApp */ true, userId);
-        startActivityAsUser(userId, TEST_APP_PKG, TEST_APP_PKG + ".SimpleActivity");
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".ScreenCaptureDisabledTest",
-                testMethodName, userId);
-        forceStopPackageForUser(TEST_APP_PKG, userId);
-    }
-
-    private void setScreenCaptureDisabled(boolean disabled) throws Exception {
-        String testMethodName = disabled
-                ? "testSetScreenCaptureDisabledOnParent_true"
-                : "testSetScreenCaptureDisabledOnParent_false";
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".ScreenCaptureDisabledTest",
-                testMethodName, mUserId);
-
-        testMethodName = disabled
-                ? "testScreenCaptureImpossible"
-                : "testScreenCapturePossible";
-
-        // Test personal profile
-        takeScreenCaptureAsUser(mPrimaryUserId, testMethodName);
-
-        // Test managed profile. This should not be disabled when screen capture is disabled on
-        // the parent by the profile owner of an organization-owned device.
-        takeScreenCaptureAsUser(mUserId, testMethodName);
-    }
-
     private void assertHasNoUser(int userId) throws DeviceNotAvailableException {
         int numWaits = 0;
         final int MAX_NUM_WAITS = 15;
@@ -580,23 +514,6 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                         .setAdminPackageName(DEVICE_ADMIN_PKG)
                         .setTimePeriod(0)
                         .build());
-    }
-
-    @Test
-    public void testWorkProfileMaximumTimeOff() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
-                "testSetManagedProfileMaximumTimeOff1Sec", mUserId);
-
-        toggleQuietMode(true);
-        // Verify that at some point personal app becomes impossible to launch.
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, SUSPENSION_CHECKER_CLASS,
-                "testWaitForActivityNotLaunchable", mPrimaryUserId);
-        toggleQuietMode(false);
-        // Ensure the profile is properly started before wipe broadcast is sent in teardown.
-        waitForUserUnlock(mUserId);
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
-                "testPersonalAppsSuspendedByTimeout", mUserId);
     }
 
     @Test

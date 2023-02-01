@@ -16,6 +16,16 @@
 
 package android.media.codec.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.VP9Profile2;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import android.content.Context;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -25,20 +35,11 @@ import android.media.cts.InputSurface;
 import android.media.cts.OutputSurface;
 import android.media.cts.TestArgs;
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 import android.os.Build;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.MediaUtils;
@@ -48,10 +49,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.junit.Assert.fail;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * This test has three steps:
@@ -73,7 +79,9 @@ public class DecodeEditEncodeTest {
     private static final boolean WORK_AROUND_BUGS = false;  // avoid fatal codec bugs
     private static final boolean VERBOSE = false;           // lots of logging
     private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
-    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU);
+    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
+    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
+            || ApiLevelUtil.codenameEquals("UpsideDownCake");
 
     // parameters for the encoder
     private static final int FRAME_RATE = 15;               // 15fps
@@ -122,6 +130,7 @@ public class DecodeEditEncodeTest {
     private final int mHeight;
     // bit rate, in bits per second
     private final int mBitRate;
+    private final boolean mUseHighBitDepth;
 
     // largest color component delta seen (i.e. actual vs. expected)
     private int mLargestColorDelta;
@@ -162,12 +171,55 @@ public class DecodeEditEncodeTest {
         return argsList;
     }
 
+    private static boolean hasSupportForColorFormat(String name, String mediaType,
+            int colorFormat, boolean isEncoder) {
+        MediaCodecList mcl = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        for (MediaCodecInfo codecInfo : mcl.getCodecInfos()) {
+            if (isEncoder != codecInfo.isEncoder()) {
+                continue;
+            }
+            if (!name.equals(codecInfo.getName())) {
+                continue;
+            }
+            MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+            for (int c : cap.colorFormats) {
+                if (c == colorFormat) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Before
     public void shouldSkip() throws IOException {
         MediaFormat format = MediaFormat.createVideoFormat(mMediaType, mWidth, mHeight);
         format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+        if (mUseHighBitDepth) {
+            assumeTrue(mEncoderName + " doesn't support RGBA1010102",
+                    hasSupportForColorFormat(mEncoderName, mMediaType,
+                            COLOR_Format32bitABGR2101010, /* isEncoder */ true));
+
+            switch (mMediaType) {
+                case MediaFormat.MIMETYPE_VIDEO_AVC:
+                    format.setInteger(MediaFormat.KEY_PROFILE, AVCProfileHigh10);
+                    break;
+                case MediaFormat.MIMETYPE_VIDEO_HEVC:
+                    format.setInteger(MediaFormat.KEY_PROFILE, HEVCProfileMain10);
+                    break;
+                case MediaFormat.MIMETYPE_VIDEO_VP9:
+                    format.setInteger(MediaFormat.KEY_PROFILE, VP9Profile2);
+                    break;
+                case MediaFormat.MIMETYPE_VIDEO_AV1:
+                    format.setInteger(MediaFormat.KEY_PROFILE, AV1ProfileMain10);
+                    break;
+                default:
+                    fail("MediaType " + mMediaType + " is not supported for 10-bit testing.");
+                    break;
+            }
+        }
         assumeTrue(MediaUtils.supports(mEncoderName, format));
         assumeTrue(MediaUtils.supports(mDecoderName, format));
         // Few cuttlefish specific color conversion issues were fixed after Android T.
@@ -177,19 +229,35 @@ public class DecodeEditEncodeTest {
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2}_{3}_{4})")
+    @Parameterized.Parameters(name = "{index}({0}_{1}_{2}_{3}_{4}_{5})")
     public static Collection<Object[]> input() {
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
-                // mediaType, width, height, bitrate
-                {MediaFormat.MIMETYPE_VIDEO_AVC, 176, 144, 1000000},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 2000000},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, 6000000},
+        final List<Object[]> baseArgsList = Arrays.asList(new Object[][]{
+                // width, height, bitrate
+                {176, 144, 1000000},
+                {320, 240, 2000000},
+                {1280, 720, 6000000}
         });
+        final String[] mediaTypes = {MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_VP8,
+                MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
+        final boolean[] useHighBitDepthModes = {false, true};
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+        for (boolean useHighBitDepth : useHighBitDepthModes) {
+            for (String mediaType : mediaTypes) {
+                for (Object[] obj : baseArgsList) {
+                    if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8) && useHighBitDepth) {
+                        continue;
+                    }
+                    exhaustiveArgsList.add(
+                            new Object[]{mediaType, obj[0], obj[1], obj[2], useHighBitDepth});
+                }
+            }
+        }
         return prepareParamList(exhaustiveArgsList);
     }
 
     public DecodeEditEncodeTest(String encoder, String decoder, String mimeType, int width,
-            int height, int bitRate) {
+            int height, int bitRate, boolean useHighBitDepth) {
         if ((width % 16) != 0 || (height % 16) != 0) {
             Log.w(TAG, "WARNING: width or height not multiple of 16");
         }
@@ -199,6 +267,7 @@ public class DecodeEditEncodeTest {
         mWidth = width;
         mHeight = height;
         mBitRate = bitRate;
+        mUseHighBitDepth = useHighBitDepth;
     }
 
     @Test
@@ -247,10 +316,7 @@ public class DecodeEditEncodeTest {
             throws IOException {
         VideoChunks sourceChunks = new VideoChunks();
 
-        if (!generateVideoFile(sourceChunks)) {
-            // No AVC codec?  Fail silently.
-            return;
-        }
+        generateVideoFile(sourceChunks);
 
         if (DEBUG_SAVE_FILE) {
             // Save a copy to a file.  We call it ".mp4", but it's actually just an elementary
@@ -276,10 +342,8 @@ public class DecodeEditEncodeTest {
     /**
      * Generates a test video file, saving it as VideoChunks.  We generate frames with GL to
      * avoid having to deal with multiple YUV formats.
-     *
-     * @return true on success, false on "soft" failure
      */
-    private boolean generateVideoFile(VideoChunks output)
+    private void generateVideoFile(VideoChunks output)
             throws IOException {
         if (VERBOSE) Log.d(TAG, "generateVideoFile " + mWidth + "x" + mHeight);
         MediaCodec encoder = null;
@@ -297,9 +361,19 @@ public class DecodeEditEncodeTest {
             format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-            format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED);
-            format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT601_PAL);
-            format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+            if (mUseHighBitDepth) {
+                format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
+                format.setInteger(MediaFormat.KEY_COLOR_STANDARD,
+                        MediaFormat.COLOR_STANDARD_BT2020);
+                format.setInteger(MediaFormat.KEY_COLOR_TRANSFER,
+                        MediaFormat.COLOR_TRANSFER_ST2084);
+            } else {
+                format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED);
+                format.setInteger(MediaFormat.KEY_COLOR_STANDARD,
+                        MediaFormat.COLOR_STANDARD_BT601_PAL);
+                format.setInteger(MediaFormat.KEY_COLOR_TRANSFER,
+                        MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+            }
             if (VERBOSE) Log.d(TAG, "format: " + format);
             output.setMediaFormat(format);
 
@@ -307,7 +381,7 @@ public class DecodeEditEncodeTest {
             // our desired properties.
             encoder = MediaCodec.createByCodecName(mEncoderName);
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-            inputSurface = new InputSurface(encoder.createInputSurface());
+            inputSurface = new InputSurface(encoder.createInputSurface(), mUseHighBitDepth);
             inputSurface.makeCurrent();
             encoder.start();
 
@@ -323,8 +397,6 @@ public class DecodeEditEncodeTest {
                 inputSurface.release();
             }
         }
-
-        return true;
     }
 
     /**
@@ -396,18 +468,15 @@ public class DecodeEditEncodeTest {
                         fail("encoderOutputBuffer " + encoderStatus + " was null");
                     }
 
-                    // Codec config flag must be set iff this is the first chunk of output.  This
-                    // may not hold for all codecs, but it appears to be the case for video/avc.
-                    assertTrue((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0 ||
-                            outputCount != 0);
-
                     if (info.size != 0) {
                         // Adjust the ByteBuffer values to match BufferInfo.
                         encodedData.position(info.offset);
                         encodedData.limit(info.offset + info.size);
 
                         output.addChunk(encodedData, info.flags, info.presentationTimeUs);
-                        outputCount++;
+                        if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                            outputCount++;
+                        }
                     }
 
                     encoder.releaseOutputBuffer(encoderStatus, false);
@@ -419,8 +488,7 @@ public class DecodeEditEncodeTest {
             }
         }
 
-        // One chunk per frame, plus one for the config data.
-        assertEquals("Frame count", NUM_FRAMES + 1, outputCount);
+        assertEquals("Frame count", NUM_FRAMES, outputCount);
     }
 
     /**
@@ -486,17 +554,25 @@ public class DecodeEditEncodeTest {
                     inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE));
             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,
                     inputFormat.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL));
-            outputFormat.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED);
-            outputFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD,
-                    MediaFormat.COLOR_STANDARD_BT601_PAL);
-            outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER,
-                    MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
-
+            if (mUseHighBitDepth) {
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD,
+                        MediaFormat.COLOR_STANDARD_BT2020);
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER,
+                        MediaFormat.COLOR_TRANSFER_ST2084);
+            } else {
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_RANGE,
+                        MediaFormat.COLOR_RANGE_LIMITED);
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD,
+                        MediaFormat.COLOR_STANDARD_BT601_PAL);
+                outputFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER,
+                        MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+            }
             outputData.setMediaFormat(outputFormat);
 
             encoder = MediaCodec.createByCodecName(mEncoderName);
             encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-            inputSurface = new InputSurface(encoder.createInputSurface());
+            inputSurface = new InputSurface(encoder.createInputSurface(), mUseHighBitDepth);
             inputSurface.makeCurrent();
             encoder.start();
 
@@ -851,10 +927,24 @@ public class DecodeEditEncodeTest {
                 y = mHeight / 4;
             }
 
-            GLES20.glReadPixels(x, y, 1, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
-            int r = pixelBuf.get(0) & 0xff;
-            int g = pixelBuf.get(1) & 0xff;
-            int b = pixelBuf.get(2) & 0xff;
+            int r, g, b;
+            if (mUseHighBitDepth) {
+                GLES30.glReadPixels(x, y, 1, 1, GLES20.GL_RGBA,
+                        GLES30.GL_UNSIGNED_INT_2_10_10_10_REV, pixelBuf);
+                r = (pixelBuf.get(1) & 0x03) << 8 | (pixelBuf.get(0) & 0xFF);
+                g = (pixelBuf.get(2) & 0x0F) << 6 | ((pixelBuf.get(1) >> 2) & 0x3F);
+                b = (pixelBuf.get(3) & 0x3F) << 4 | ((pixelBuf.get(2) >> 4) & 0x0F);
+                // Convert the values to 8 bit (using rounding division by 4) as comparisons
+                // later are with 8 bit RGB values
+                r = (r + 2) >> 2;
+                g = (g + 2) >> 2;
+                b = (b + 2) >> 2;
+            } else {
+                GLES20.glReadPixels(x, y, 1, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
+                r = pixelBuf.get(0) & 0xFF;
+                g = pixelBuf.get(1) & 0xFF;
+                b = pixelBuf.get(2) & 0xFF;
+            }
             //Log.d(TAG, "GOT(" + frameIndex + "/" + i + "): r=" + r + " g=" + g + " b=" + b);
 
             int expR, expG, expB;

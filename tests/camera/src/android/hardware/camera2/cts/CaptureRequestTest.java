@@ -926,6 +926,49 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         }
     }
 
+    /**
+     * Test basic auto-framing.
+     */
+    @Test
+    public void testAutoframing() throws Exception {
+        for (String id : mCameraIdsUnderTest) {
+            try {
+                if (!mAllStaticInfo.get(id).isAutoframingSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support auto-framing, skipping");
+                    continue;
+                }
+                openDevice(id);
+                autoframingTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test settings override controls.
+     */
+    @Test
+    public void testSettingsOverrides() throws Exception {
+        for (String id : mCameraIdsUnderTest) {
+            try {
+                StaticMetadata staticInfo = mAllStaticInfo.get(id);
+                if (!staticInfo.isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+                if (!staticInfo.isZoomSettingsOverrideSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support zoom overrides, skipping");
+                    continue;
+                }
+                openDevice(id);
+                settingsOverrideTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
     // TODO: add 3A state machine test.
 
     /**
@@ -3071,6 +3114,102 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                         ratio, listener, NUM_FRAMES_VERIFIED);
             }
         }
+    }
+
+    private void autoframingTestByCamera() throws Exception {
+        // Verify autoframing state, zoom ratio and video stabilizations controls for autoframing
+        // modes ON and OFF
+        int[] autoframingModes = {CameraMetadata.CONTROL_AUTOFRAMING_OFF,
+                CameraMetadata.CONTROL_AUTOFRAMING_ON};
+        final int zoomSteps = 5;
+        final float zoomErrorMargin = 0.05f;
+        Size maxPreviewSize = mOrderedPreviewSizes.get(0); // Max preview size.
+        CaptureRequest.Builder requestBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+        startPreview(requestBuilder, maxPreviewSize, listener);
+
+        for (int mode : autoframingModes) {
+            float expectedZoomRatio = 0.0f;
+            final Range<Float> zoomRatioRange = mStaticInfo.getZoomRatioRangeChecked();
+            for (int i = 0; i < zoomSteps; i++) {
+                float testZoomRatio = zoomRatioRange.getLower() + (zoomRatioRange.getUpper()
+                        - zoomRatioRange.getLower()) * i / zoomSteps;
+                // Zoom ratio 1.0f is a special case. The ZoomRatioMapper in framework maintains the
+                // 1.0f ratio in the CaptureResult
+                if (testZoomRatio == 1.0f) {
+                    continue;
+                }
+                requestBuilder.set(CaptureRequest.CONTROL_AUTOFRAMING, mode);
+                requestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, testZoomRatio);
+                listener = new SimpleCaptureCallback();
+                mSession.setRepeatingRequest(requestBuilder.build(), listener, mHandler);
+                waitForSettingsApplied(listener, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+                CaptureResult result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                Float resultZoomRatio = getValueNotNull(result, CaptureResult.CONTROL_ZOOM_RATIO);
+                int autoframingState = getValueNotNull(result,
+                        CaptureResult.CONTROL_AUTOFRAMING_STATE);
+                int videoStabilizationMode = getValueNotNull(result,
+                        CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
+
+                if (mode == CameraMetadata.CONTROL_AUTOFRAMING_ON) {
+                    if (expectedZoomRatio == 0.0f) {
+                        expectedZoomRatio = resultZoomRatio;
+                    }
+                    assertTrue("Autoframing state should be FRAMING or CONVERGED when AUTOFRAMING"
+                            + "is ON",
+                            autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_FRAMING
+                                    || autoframingState
+                                            == CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED);
+                    assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
+                            videoStabilizationMode
+                                    == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+                } else {
+                    expectedZoomRatio = testZoomRatio;
+                    assertTrue("Autoframing state should be INACTIVE when AUTOFRAMING is OFF",
+                            autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_INACTIVE);
+                }
+
+                verifyCaptureResultForKey(CaptureResult.CONTROL_AUTOFRAMING, mode, listener,
+                        NUM_FRAMES_VERIFIED);
+
+                mCollector.expectTrue(String.format(
+                                "Zoom Ratio in Capture Request does not match the expected zoom"
+                                        + "ratio in Capture Result (expected = %f, actual = %f)",
+                                expectedZoomRatio, resultZoomRatio),
+                        Math.abs(expectedZoomRatio - resultZoomRatio) / expectedZoomRatio
+                                <= zoomErrorMargin);
+            }
+        }
+    }
+
+    private void settingsOverrideTestByCamera() throws Exception {
+        // Verify that settings override is OFF by default
+        Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+        CaptureRequest.Builder requestBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+        startPreview(requestBuilder, maxPreviewSize, listener);
+        waitForSettingsApplied(listener, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+        verifyCaptureResultForKey(CaptureResult.CONTROL_SETTINGS_OVERRIDE,
+                CameraMetadata.CONTROL_SETTINGS_OVERRIDE_OFF, listener, NUM_FRAMES_VERIFIED);
+
+        // Turn settings override to ZOOM, and make sure it's reflected in result
+        requestBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
+                CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
+        SimpleCaptureCallback listenerZoom = new SimpleCaptureCallback();
+        mSession.setRepeatingRequest(requestBuilder.build(), listenerZoom, mHandler);
+        waitForSettingsApplied(listenerZoom, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+        verifyCaptureResultForKey(CaptureResult.CONTROL_SETTINGS_OVERRIDE,
+                CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM, listenerZoom, NUM_FRAMES_VERIFIED);
+
+        // Verify that settings override result is ON if turned on from the beginning
+        listenerZoom = new SimpleCaptureCallback();
+        stopPreviewAndDrain();
+        startPreview(requestBuilder, maxPreviewSize, listenerZoom);
+        waitForSettingsApplied(listenerZoom, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+        verifyCaptureResultForKey(CaptureResult.CONTROL_SETTINGS_OVERRIDE,
+                CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM, listenerZoom, NUM_FRAMES_VERIFIED);
     }
 
     //----------------------------------------------------------------

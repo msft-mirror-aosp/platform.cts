@@ -21,14 +21,13 @@ import subprocess
 import sys
 import tempfile
 import time
-import yaml
 
-import capture_request_utils
 import camera_properties_utils
+import capture_request_utils
 import image_processing_utils
 import its_session_utils
-
 import numpy as np
+import yaml
 
 YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
@@ -45,6 +44,7 @@ RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = {RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED}
+CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
 ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsTestActivity'
 ACTION_ITS_RESULT = 'com.android.cts.verifier.camera.its.ACTION_ITS_RESULT'
 EXTRA_VERSION = 'camera.its.extra.VERSION'
@@ -62,20 +62,21 @@ _INT_STR_DICT = {'11': '1_1', '12': '1_2'}  # recover replaced '_' in scene def
 #   scene*_a/b/... are similar scenes that share one or more tests
 _ALL_SCENES = [
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene3', 'scene4', 'scene5', 'scene6',
-    'sensor_fusion'
+    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene5',
+    'scene6', 'sensor_fusion'
 ]
 
 # Scenes that can be automated through tablet display
 _AUTO_SCENES = [
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene3', 'scene4', 'scene6'
+    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6'
 ]
 
 # Scenes that are logically grouped and can be called as group
 _GROUPED_SCENES = {
         'scene1': ['scene1_1', 'scene1_2'],
-        'scene2': ['scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e']
+        'scene2': ['scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
+                   'scene2_f']
 }
 
 # Scenes that have to be run manually regardless of configuration
@@ -91,6 +92,7 @@ _SCENE_REQ = {
     'scene2_c': 'The picture with 3 faces in tests/scene2_c/scene2_c.png',
     'scene2_d': 'The picture with 3 faces in tests/scene2_d/scene2_d.png',
     'scene2_e': 'The picture with 3 faces in tests/scene2_e/scene2_e.png',
+    'scene2_f': 'The picture with 3 faces in tests/scene2_f/scene2_f.png',
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
@@ -150,6 +152,19 @@ def run(cmd):
   """Replaces os.system call, while hiding stdout+stderr messages."""
   with open(os.devnull, 'wb') as devnull:
     subprocess.check_call(cmd.split(), stdout=devnull, stderr=subprocess.STDOUT)
+
+
+def check_cts_apk_installed(device_id):
+  """Verifies that CtsVerifer.apk is installed on a given device."""
+  verify_cts_cmd = f'adb -s {device_id} shell pm list packages | grep {CTS_VERIFIER_PACKAGE_NAME}'
+  raw_output = subprocess.check_output(
+      verify_cts_cmd, stderr=subprocess.STDOUT, shell=True
+  )
+  output = str(raw_output.decode('utf-8')).strip()
+  if CTS_VERIFIER_PACKAGE_NAME not in output:
+    raise AssertionError(
+        f"{CTS_VERIFIER_PACKAGE_NAME} was not found in {device_id}'s list of packages!"
+    )
 
 
 def report_result(device_id, camera_id, results):
@@ -390,6 +405,9 @@ def main():
   # Enable external storage on DUT to send summary report to CtsVerifier.apk
   enable_external_storage(device_id)
 
+  # Verify that CTS Verifier is installed
+  check_cts_apk_installed(device_id)
+
   config_file_test_key = config_file_contents['TestBeds'][0]['Name'].lower()
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
@@ -458,8 +476,7 @@ def main():
     # A subdir in topdir will be created for each camera_id. All scene test
     # output logs for each camera id will be stored in this subdir.
     # This output log path is a mobly param : LogPath
-    cam_id_string = 'cam_id_%s' % (
-        camera_id.replace(its_session_utils.SUB_CAMERA_SEPARATOR, '_'))
+    cam_id_string = f"cam_id_{camera_id.replace(its_session_utils.SUB_CAMERA_SEPARATOR, '_')}"
     mobly_output_logs_path = os.path.join(topdir, cam_id_string)
     os.mkdir(mobly_output_logs_path)
     tot_pass = 0
@@ -520,14 +537,14 @@ def main():
           cmd = [
               'python3',
               os.path.join(os.environ['CAMERA_ITS_TOP'], test), '-c',
-              '%s' % new_yml_file_name
+              f'{new_yml_file_name}'
           ]
         else:
           cmd = [
               'python3',
               os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', s, test),
               '-c',
-              '%s' % new_yml_file_name
+              f'{new_yml_file_name}'
           ]
         for num_try in range(NUM_TRIES):
           # Handle manual lighting control redirected stdout in test
@@ -589,10 +606,12 @@ def main():
             os.remove(MOBLY_TEST_SUMMARY_TXT_FILE)
         logging.info('%s %s/%s', return_string, s, test)
         test_name = test.split('/')[-1].split('.')[0]
-        results[s]['TEST_STATUS'].append({'test':test_name,'status':return_string.strip()})
+        results[s]['TEST_STATUS'].append({
+            'test': test_name,
+            'status': return_string.strip()})
         if test_mpc_req:
           results[s][METRICS_KEY].append(test_mpc_req)
-        msg_short = '%s %s' % (return_string, test)
+        msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if test in _LIGHTING_CONTROL_TESTS and not testing_flash_with_controller:
           print('Turn lights ON in rig and press <ENTER> to continue.')
@@ -601,13 +620,16 @@ def main():
       scene_end_time = int(round(time.time() * 1000))
       skip_string = ''
       tot_tests = len(scene_test_list)
+      tot_tests_run = tot_tests - num_skip
+      if tot_tests_run != 0:
+        tests_passed_ratio = (num_pass + num_not_mandated_fail) / tot_tests_run
+      else:
+        tests_passed_ratio = (num_pass + num_not_mandated_fail) / 100.0
+      tests_passed_ratio_format = f'{(100 * tests_passed_ratio):.1f}%'
       if num_skip > 0:
         skip_string = f",{num_skip} test{'s' if num_skip > 1 else ''} skipped"
-      test_result = '%d / %d tests passed (%.1f%%)%s' % (
-          num_pass + num_not_mandated_fail, len(scene_test_list) - num_skip,
-          100.0 * float(num_pass + num_not_mandated_fail) /
-          (len(scene_test_list) - num_skip)
-          if len(scene_test_list) != num_skip else 100.0, skip_string)
+      test_result = (f'{num_pass + num_not_mandated_fail} / {tot_tests_run} '
+                     f'tests passed ({tests_passed_ratio_format}){skip_string}')
       logging.info(test_result)
       if num_not_mandated_fail > 0:
         logging.info('(*) %s not_yet_mandated tests failed',

@@ -16,6 +16,8 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
+import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
@@ -24,23 +26,26 @@ import static org.testng.Assert.assertThrows;
 
 import android.content.ComponentName;
 import android.os.Build;
+import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
+import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoProfileOwner;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.testapp.TestApp;
-import com.android.eventlib.premade.EventLibDeviceAdminReceiver;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -60,14 +65,17 @@ public class DevicePolicyTest {
     private static final ComponentName NON_EXISTING_DPC_COMPONENT_NAME =
             new ComponentName("com.a.package", "com.a.package.Receiver");
     private static final ComponentName DPC_COMPONENT_NAME =
-            new ComponentName(DEVICE_ADMIN_TESTAPP_PACKAGE_NAME,
-                    EventLibDeviceAdminReceiver.class.getName());
+            new ComponentName(
+                    DEVICE_ADMIN_TESTAPP_PACKAGE_NAME,
+                    "com.android.bedstead.testapp.DeviceAdminTestApp.DeviceAdminReceiver");
     private static final ComponentName NOT_DPC_COMPONENT_NAME =
             new ComponentName(DEVICE_ADMIN_TESTAPP_PACKAGE_NAME,
                     "incorrect.class.name");
 
     private static final UserReference sUser = TestApis.users().instrumented();
     private static final UserReference NON_EXISTENT_USER = TestApis.users().find(99999);
+
+    private static final String USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL;
 
     private static TestApp sTestApp;
 
@@ -221,10 +229,11 @@ public class DevicePolicyTest {
     @Test
     public void getProfileOwner_nullUser_throwsException() {
         assertThrows(NullPointerException.class,
-                () -> TestApis.devicePolicy().getProfileOwner(null));
+                () -> TestApis.devicePolicy().getProfileOwner((UserReference) null));
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     public void setDeviceOwner_deviceOwnerIsSet() {
@@ -238,6 +247,7 @@ public class DevicePolicyTest {
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasDeviceOwner
     public void setDeviceOwner_deviceOwnerIsAlreadySet_throwsException() {
         assertThrows(NeneException.class,
@@ -336,9 +346,15 @@ public class DevicePolicyTest {
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     public void deviceOwner_autoclose_removesDeviceOwner() {
+        assertThat(
+                        TestApis.packages()
+                                .find("com.android.bedstead.testapp.DeviceAdminTestApp")
+                                .isInstalled())
+                .isTrue();
         try (DeviceOwner deviceOwner = TestApis.devicePolicy().setDeviceOwner(DPC_COMPONENT_NAME)) {
             // We intentionally don't do anything here, just rely on the auto-close behaviour
         }
@@ -347,6 +363,7 @@ public class DevicePolicyTest {
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     public void setDeviceOwner_recentlyUnsetProfileOwner_sets() {
@@ -358,6 +375,7 @@ public class DevicePolicyTest {
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     public void setDeviceOwner_recentlyUnsetDeviceOwner_sets() {
@@ -382,6 +400,7 @@ public class DevicePolicyTest {
     }
 
     @Test
+    @RequireRunOnSystemUser
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     public void setProfileOwner_recentlyUnsetDeviceOwner_sets() {
@@ -392,4 +411,120 @@ public class DevicePolicyTest {
 
         assertThat(TestApis.devicePolicy().getProfileOwner(sUser)).isNotNull();
     }
+
+    @Test
+    public void userRestrictions_withUserHandle_returnsObject() {
+        assertThat(TestApis.devicePolicy().userRestrictions(
+                TestApis.users().instrumented().userHandle())).isNotNull();
+    }
+
+    @Test
+    public void userRestrictions_withUserReference_returnsObject() {
+        assertThat(TestApis.devicePolicy().userRestrictions(
+                TestApis.users().instrumented())).isNotNull();
+    }
+
+//    @Test
+//    public void setUserRestriction_userRestrictionIsSet() {
+//        try (UserRestrictionsContext r =
+//                     TestApis.devicePolicy().userRestrictions().set(USER_RESTRICTION)){
+//            assertThat(
+//            TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
+//        }
+//    }
+//
+//    @Test
+//    public void unsetUserRestriction_userRestrictionIsNotSet() {
+//        try (UserRestrictionsContext r =
+//                     TestApis.devicePolicy().userRestrictions().set(USER_RESTRICTION)){
+//            try (UserRestrictionsContext r2 =
+//                         TestApis.devicePolicy().userRestrictions().unset(USER_RESTRICTION)){
+//                assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION))
+//                        .isFalse();
+//            }
+//        }
+//    }
+
+
+    @Test
+    @EnsureHasProfileOwner(isPrimary = true)
+    public void isSet_userRestrictionIsSet_returnsTrue() {
+        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
+                sDeviceState.dpc().componentName())
+                .getBoolean(USER_RESTRICTION, /*default= */ false);
+        try {
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
+        } finally {
+            if (!originalIsSet) {
+                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            }
+        }
+    }
+
+    @Test
+    @EnsureHasProfileOwner(isPrimary = true)
+    public void isSet_userRestrictionIsNotSet_returnsFalse() {
+        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
+                sDeviceState.dpc().componentName())
+                .getBoolean(USER_RESTRICTION, /*default= */ false);
+        try {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+
+            assertThat(
+                    TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
+        } finally {
+            if (!originalIsSet) {
+                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            }
+        }
+    }
+
+    @Test
+    @EnsureHasAdditionalUser
+    @EnsureHasProfileOwner(isPrimary = true, onUser = ADDITIONAL_USER)
+    public void isSet_userRestrictionIsSet_differentUser_returnsTrue() {
+        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
+                sDeviceState.dpc().componentName()).getBoolean(USER_RESTRICTION,
+                /*default= */ false);
+        try {
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+
+            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+                    .isSet(USER_RESTRICTION)).isTrue();
+        } finally {
+            if (!originalIsSet) {
+                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            }
+        }
+    }
+
+    @Test
+    @EnsureHasAdditionalUser
+    @EnsureHasProfileOwner(isPrimary = true, onUser = ADDITIONAL_USER)
+    public void isSet_userRestrictionIsNotSet_differentUser_returnsFalse() {
+        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
+                sDeviceState.dpc().componentName()).getBoolean(USER_RESTRICTION,
+                /*default= */ false);
+        try {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+
+            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+                    .isSet(USER_RESTRICTION)).isFalse();
+        } finally {
+            if (!originalIsSet) {
+                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            }
+        }
+    }
+
 }

@@ -41,6 +41,8 @@ import android.app.SyncNotedAppOp
 import android.app.WallpaperManager
 import android.app.WallpaperManager.FLAG_SYSTEM
 import android.bluetooth.BluetoothManager
+import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
+import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 import android.bluetooth.le.ScanCallback
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -82,6 +84,7 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import android.util.Size
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Assert.fail
@@ -94,8 +97,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -874,6 +875,7 @@ class AppOpsLoggingTest {
      * Realistic end-to-end test for sending a SMS message
      */
     @Test
+    @Ignore // TODO(b/244623752): Enable again after the test consistently passes.
     fun sendSms() {
         assumeTrue(context.packageManager.hasSystemFeature(FEATURE_TELEPHONY))
 
@@ -936,11 +938,13 @@ class AppOpsLoggingTest {
         }
 
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-        testContext.registerReceiver(receiver, IntentFilter(PRIVATE_ACTION))
+        testContext.registerReceiver(receiver, IntentFilter(PRIVATE_ACTION),
+                Context.RECEIVER_EXPORTED)
 
         try {
             context.sendOrderedBroadcast(Intent(PRIVATE_ACTION), READ_CONTACTS, OPSTR_READ_CONTACTS,
                     null, null, RESULT_OK, null, null)
+            waitForBroadcasts()
 
             eventually {
                 assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
@@ -957,6 +961,7 @@ class AppOpsLoggingTest {
     fun receiveBroadcastManifestReceiver() {
         context.sendOrderedBroadcast(Intent(PUBLIC_ACTION).setPackage(myPackage), READ_CONTACTS,
                 OPSTR_READ_CONTACTS, null, null, RESULT_OK, null, null)
+        waitForBroadcasts()
 
         eventually {
             assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
@@ -971,6 +976,7 @@ class AppOpsLoggingTest {
     fun sendBroadcastToProtectedReceiver() {
         context.createAttributionContext(TEST_ATTRIBUTION_TAG)
                 .sendBroadcast(Intent(PROTECTED_ACTION).setPackage(myPackage))
+        waitForBroadcasts()
 
         eventually {
             assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)

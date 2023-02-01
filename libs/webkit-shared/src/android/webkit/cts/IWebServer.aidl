@@ -19,7 +19,7 @@ package android.webkit.cts;
 import android.webkit.cts.HttpRequest;
 
 interface IWebServer {
-    void start(boolean secure);
+    void start(int sslMode, in @nullable byte[] acceptedIssuerDer);
 
     void shutdown();
 
@@ -31,9 +31,11 @@ interface IWebServer {
 
     String getAssetUrl(String path);
 
+    String getAuthAssetUrl(String path);
+
     String getBinaryUrl(String mimeType, int contentLength);
 
     boolean wasResourceRequested(String url);
 
-    HttpRequest getLastRequest(String url);
+    HttpRequest getLastAssetRequest(String url);
 }

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.content.Context;
@@ -36,6 +37,7 @@ import android.os.Looper;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.Annotation.SimActivationState;
 import android.telephony.BarringInfo;
+import android.telephony.CallState;
 import android.telephony.CellIdentity;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
@@ -51,10 +53,12 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.DataEnabledReason;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -86,6 +90,7 @@ public class TelephonyCallbackTest {
     private boolean mOnCellInfoChangedCalled;
     private boolean mOnServiceStateChangedCalled;
     private boolean mOnPreciseCallStateChangedCalled;
+    private boolean mOnCallStatesChangedCalled;
     private boolean mOnCallDisconnectCauseChangedCalled;
     private boolean mOnImsCallDisconnectCauseChangedCalled;
     private EmergencyNumber mOnOutgoingSmsEmergencyNumberChanged;
@@ -110,10 +115,11 @@ public class TelephonyCallbackTest {
     private BarringInfo mBarringInfo;
     private PreciseDataConnectionState mPreciseDataConnectionState;
     private PreciseCallState mPreciseCallState;
+    private List<CallState> mCallStateList;
     private SignalStrength mSignalStrength;
     private TelephonyManager mTelephonyManager;
     private final Object mLock = new Object();
-    private static final String TAG = "android.telephony.cts.TelephonyCallbackTest";
+    private static final String TAG = "TelephonyCallbackTest";
     private static ConnectivityManager mCm;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -138,22 +144,39 @@ public class TelephonyCallbackTest {
             PreciseCallState.PRECISE_CALL_STATE_WAITING
     );
 
-    private Executor mSimpleExecutor = new Executor() {
-        @Override
-        public void execute(Runnable r) {
-            r.run();
-        }
-    };
+    private static final List<Integer> NETWORK_TYPES = Arrays.asList(
+            TelephonyManager.NETWORK_TYPE_UNKNOWN,
+            TelephonyManager.NETWORK_TYPE_GPRS,
+            TelephonyManager.NETWORK_TYPE_EDGE,
+            TelephonyManager.NETWORK_TYPE_UMTS,
+            TelephonyManager.NETWORK_TYPE_CDMA,
+            TelephonyManager.NETWORK_TYPE_EVDO_0,
+            TelephonyManager.NETWORK_TYPE_EVDO_A,
+            TelephonyManager.NETWORK_TYPE_1xRTT,
+            TelephonyManager.NETWORK_TYPE_HSDPA,
+            TelephonyManager.NETWORK_TYPE_HSUPA,
+            TelephonyManager.NETWORK_TYPE_HSPA,
+            TelephonyManager.NETWORK_TYPE_HSPAP,
+            TelephonyManager.NETWORK_TYPE_LTE,
+            TelephonyManager.NETWORK_TYPE_EHRPD,
+            TelephonyManager.NETWORK_TYPE_GSM,
+            TelephonyManager.NETWORK_TYPE_IWLAN,
+            TelephonyManager.NETWORK_TYPE_NR
+    );
+
+    private final Executor mSimpleExecutor = Runnable::run;
 
     @Before
     public void setUp() throws Exception {
+        mPackageManager = getContext().getPackageManager();
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         mHandlerThread = new HandlerThread("TelephonyCallbackTest");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
-        mPackageManager = getContext().getPackageManager();
     }
 
     @After
@@ -496,10 +519,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPreciseCallStateChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -524,6 +543,52 @@ public class TelephonyCallbackTest {
                 mPreciseCallStateCallback);
     }
 
+    private CallAttributesListener mCallAttributesListener;
+
+    private class CallAttributesListener extends TelephonyCallback
+            implements TelephonyCallback.CallAttributesListener {
+        @Override
+        public void onCallStatesChanged(List<CallState> callStateList) {
+            synchronized (mLock) {
+                mOnCallStatesChangedCalled = true;
+                mCallStateList = callStateList;
+                mLock.notify();
+            }
+        }
+    }
+
+    @Test
+    public void testOnCallStatesChangedByRegisterTelephonyCallback() throws Throwable {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
+            return;
+        }
+        assertThat(mOnCallStatesChangedCalled).isFalse();
+
+        mHandler.post(() -> {
+            mCallAttributesListener = new CallAttributesListener();
+            registerTelephonyCallbackWithPermission(mCallAttributesListener);
+        });
+        synchronized (mLock) {
+            if (!mOnCallStatesChangedCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        Log.d(TAG, "testOnCallStatesChangedByRegisterTelephonyCallback: "
+                + mOnCallStatesChangedCalled);
+
+        assertThat(mOnCallStatesChangedCalled).isTrue();
+        assertNotNull(mCallStateList);
+        if (mCallStateList.size() > 0) {
+            assertThat(mCallStateList.get(0).getCallState()).isIn(PRECISE_CALL_STATE);
+            assertThat(mCallStateList.get(0).getNetworkType()).isIn(NETWORK_TYPES);
+        }
+
+        // Test unregister
+        unRegisterTelephonyCallback(mOnCallStatesChangedCalled,
+                mCallAttributesListener);
+    }
+
     private CallDisconnectCauseListener mCallDisconnectCauseCallback;
 
     private class CallDisconnectCauseListener extends TelephonyCallback
@@ -540,10 +605,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -579,10 +640,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -617,11 +674,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
-    public void testOSrvccStateChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
+    public void testOnSrvccStateChangedByRegisterTelephonyCallback() throws Throwable {
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -634,7 +687,7 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        Log.d(TAG, "testOSrvccStateChangedByRegisterTelephonyCallback");
+        Log.d(TAG, "testOnSrvccStateChangedByRegisterTelephonyCallback");
 
         assertThat(mSrvccStateChangedCalled).isTrue();
 
@@ -658,10 +711,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnRadioPowerStateChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -766,10 +815,6 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnPreciseDataConnectionStateChangedByRegisterTelephonyCallback()
             throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -1363,8 +1408,7 @@ public class TelephonyCallbackTest {
     private class PhysicalChannelConfigListener extends TelephonyCallback
             implements TelephonyCallback.PhysicalChannelConfigListener {
         @Override
-        public void onPhysicalChannelConfigChanged(
-                @NonNull List<PhysicalChannelConfig> configs) {
+        public void onPhysicalChannelConfigChanged(@NonNull List<PhysicalChannelConfig> configs) {
             synchronized (mLock) {
                 mOnPhysicalChannelConfigCalled = true;
                 mLock.notify();
@@ -1374,15 +1418,27 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPhysicalChannelConfigChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
+
+        Pair<Integer, Integer> networkHalVersion =
+                mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
+        // 1.2+ or 1.6 with CAPABILITY_PHYSICAL_CHANNEL_CONFIG_1_6_SUPPORTED or 2.0+
+        boolean physicalChannelConfigSupported;
+        if (networkHalVersion.first == 1 && networkHalVersion.second == 6) {
+            physicalChannelConfigSupported = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, (tm) -> tm.isRadioInterfaceCapabilitySupported(
+                            TelephonyManager.CAPABILITY_PHYSICAL_CHANNEL_CONFIG_1_6_SUPPORTED));
+        } else {
+            physicalChannelConfigSupported =
+                    networkHalVersion.first > 1 || networkHalVersion.second >= 2;
+        }
+        if (!physicalChannelConfigSupported) {
+            Log.d(TAG, "Skipping test because physical channel configs are not available.");
             return;
         }
 
         assertFalse(mOnPhysicalChannelConfigCalled);
         mHandler.post(() -> {
-            mPhysicalChannelConfigCallback =
-                    new PhysicalChannelConfigListener();
+            mPhysicalChannelConfigCallback = new PhysicalChannelConfigListener();
             registerTelephonyCallbackWithPermission(mPhysicalChannelConfigCallback);
         });
 
@@ -1413,11 +1469,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataEnabledChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
-
         assertFalse(mOnDataEnabledChangedCalled);
         mHandler.post(() -> {
             mDataEnabledCallback = new DataEnabledListener();
@@ -1454,25 +1505,29 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnAllowedNetworkTypesChangedByRegisterPhoneStateListener() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         long originalAllowedNetworkTypeUser = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> {
                     return tm.getAllowedNetworkTypesForReason(
                             TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
                 });
         assertFalse(mOnAllowedNetworkTypesChangedCalled);
-
+        long supportedNetworkTypes =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> {
+                        return tm.getSupportedRadioAccessFamily();
+                    });
         mHandler.post(() -> {
             mAllowedNetworkTypesCallback = new AllowedNetworkTypesListener();
             registerTelephonyCallbackWithPermission(mAllowedNetworkTypesCallback);
+            long networkTypesToBeTested =
+                    (supportedNetworkTypes & TelephonyManager.NETWORK_TYPE_BITMASK_NR) == 0
+                            ? TelephonyManager.NETWORK_TYPE_BITMASK_LTE
+                            : TelephonyManager.NETWORK_TYPE_BITMASK_NR;
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     mTelephonyManager,
                     (tm) -> tm.setAllowedNetworkTypesForReason(
                             TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER,
-                            TelephonyManager.NETWORK_TYPE_BITMASK_NR));
+                            networkTypesToBeTested));
         });
 
         synchronized (mLock) {

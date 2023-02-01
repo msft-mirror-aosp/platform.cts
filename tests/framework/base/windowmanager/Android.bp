@@ -45,6 +45,7 @@ android_test {
         "alertwindowservice/src/**/*.java",
         ":cts-wm-components",
         ":CtsVerifierMockVrListenerServiceFiles",
+        "src/**/*.aidl",
     ],
 
     resource_dirs: ["res"],
@@ -62,6 +63,7 @@ android_test {
         "cts-wm-util",
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
+        "CtsAccessibilityCommon",
         "metrics-helper-lib",
         "truth-prebuilt",
         "cts-wm-overlayapp-base",

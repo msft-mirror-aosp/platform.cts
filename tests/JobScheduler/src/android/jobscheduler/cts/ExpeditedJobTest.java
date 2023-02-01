@@ -26,11 +26,10 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
-import android.os.UserHandle;
-import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 
@@ -75,19 +74,19 @@ public class ExpeditedJobTest {
                 TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true,
                 TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true
         ), Collections.emptyMap());
-        forceRunJob();
+        mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
         mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
                 ActivityManager.PROCESS_CAPABILITY_NETWORK,
-                225 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ */);
+                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
     }
 
     /** Test that EJs for the TOP app start immediately and there is no limit on the number. */
     @Test
     public void testTopEJUnlimited() throws Exception {
-        final int standardConcurrency = 16;
-        final int numEjs = 2 * standardConcurrency;
+        final int standardConcurrency = 64;
+        final int numEjs = standardConcurrency + 1;
         mTestAppInterface.startAndKeepTestActivity(true);
         for (int i = 0; i < numEjs; ++i) {
             mTestAppInterface.scheduleJob(
@@ -96,11 +95,5 @@ public class ExpeditedJobTest {
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(i, DEFAULT_WAIT_TIMEOUT_MS));
         }
-    }
-
-    /** Forces JobScheduler to run the job */
-    private void forceRunJob() throws Exception {
-        mUiDevice.executeShellCommand("cmd jobscheduler run -f"
-                + " -u " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE + " " + mTestJobId);
     }
 }

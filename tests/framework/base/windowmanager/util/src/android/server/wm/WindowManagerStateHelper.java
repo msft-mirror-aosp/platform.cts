@@ -25,6 +25,7 @@ import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.StateLogger.logAlways;
 import static android.server.wm.StateLogger.logE;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_INPUT_METHOD_DIALOG;
 import static android.view.WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -190,6 +191,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 "Keyguard showing and occluded");
     }
 
+    void waitAndAssertWindowShown(int windowType, boolean show) {
+        assertTrue(waitFor(state -> {
+            WindowState w = state.findFirstWindowWithType(windowType);
+            return w != null && w.isSurfaceShown() == show;
+        }, "wait for window surface " + (show ? "show" : "hide")));
+    }
+
     public void waitForAodShowing() {
         waitForWithAmState(state -> state.getKeyguardControllerState().aodShowing, "AOD showing");
     }
@@ -316,16 +324,20 @@ public class WindowManagerStateHelper extends WindowManagerState {
                         "keyguard window to dismiss"));
     }
 
+    boolean waitForWindowSurfaceShown(String windowName, boolean shown) {
+        final String message = windowName + "'s isWindowSurfaceShown to return " + shown;
+        return Condition.waitFor(new Condition<>(message, () -> {
+            computeState();
+            return isWindowSurfaceShown(windowName) == shown;
+        }).setRetryIntervalMs(200).setRetryLimit(20));
+    }
+
     void waitForWindowSurfaceDisappeared(String windowName) {
-        waitForWithAmState(state -> {
-            return !state.isWindowSurfaceShown(windowName);
-        }, windowName + "'s surface is disappeared");
+        waitForWindowSurfaceShown(windowName, false);
     }
 
     public void waitAndAssertWindowSurfaceShown(String windowName, boolean shown) {
-        assertTrue(
-                waitForWithAmState(state -> state.isWindowSurfaceShown(windowName) == shown,
-                        windowName + "'s  isWindowSurfaceShown to return " + shown));
+        assertTrue(waitForWindowSurfaceShown(windowName, shown));
     }
 
     /** A variant of waitForWithAmState with different parameter order for better Kotlin interop. */
@@ -699,6 +711,8 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void assertKeyguardShowingAndOccluded() {
         assertTrue("Keyguard is showing",
                 getKeyguardControllerState().keyguardShowing);
+        assertFalse("keygaurd is not going away",
+                getKeyguardControllerState().mKeyguardGoingAway);
         assertTrue("Keyguard is occluded",
                 getKeyguardControllerState().isKeyguardOccluded(DEFAULT_DISPLAY));
     }
@@ -706,6 +720,8 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void assertKeyguardShowingAndNotOccluded() {
         assertTrue("Keyguard is showing",
                 getKeyguardControllerState().keyguardShowing);
+        assertFalse("keygaurd is not going away",
+                getKeyguardControllerState().mKeyguardGoingAway);
         assertFalse("Keyguard is not occluded",
                 getKeyguardControllerState().isKeyguardOccluded(DEFAULT_DISPLAY));
     }
@@ -761,6 +777,16 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void assertWindowDisplayed(final String windowName) {
         waitForValidState(WaitForValidActivityState.forWindow(windowName));
         assertTrue(windowName + " is visible", isWindowSurfaceShown(windowName));
+    }
+
+    public void waitAndAssertImePickerShownOnDisplay(int displayId, String message) {
+        if (!Condition.waitFor(message, () -> {
+            computeState();
+            return getMatchingWindowType(TYPE_INPUT_METHOD_DIALOG).stream().anyMatch(
+                    w -> w.getDisplayId() == displayId && w.isSurfaceShown());
+        })) {
+            fail(message);
+        }
     }
 
     void waitAndAssertImeWindowShownOnDisplay(int displayId) {

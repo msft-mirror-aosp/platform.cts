@@ -42,6 +42,8 @@ import android.server.wm.UiDeviceUtils;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import com.google.common.collect.ObjectArrays;
 
 import org.junit.Test;
@@ -62,6 +64,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
@@ -1151,6 +1154,56 @@ public class CipherTest {
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"javax.crypto.Cipher#init"})
+    public void testKatBasicWithDifferentProviders() throws Exception {
+        List<String> keymasterNonSupportedAlgos = Arrays.asList(new String[]{
+                "RSA/ECB/OAEPWithSHA-224AndMGF1Padding",
+                "RSA/ECB/OAEPWithSHA-256AndMGF1Padding",
+                "RSA/ECB/OAEPWithSHA-384AndMGF1Padding",
+                "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+        });
+        int kmVersion = TestUtils.getFeatureVersionKeystore(getContext());
+        for (String algorithm : EXPECTED_ALGORITHMS) {
+            if (kmVersion < Attestation.KM_VERSION_KEYMINT_1
+                    && keymasterNonSupportedAlgos.contains(algorithm)) {
+                // Skipping algorithms which are not supported in older KeyMaster.
+                // This functionality has to support through software emulation.
+                android.util.Log.d("CipherTest",
+                        " Skipping " + algorithm + " because it is not supported in KM version "
+                                + kmVersion);
+                continue;
+            }
+            ImportedKey key = importDefaultKatKey(algorithm,
+                    KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
+                    false);
+            KatVector testVector = KAT_VECTORS.get(algorithm);
+            Cipher cipher = Cipher.getInstance(algorithm);
+            Key encryptionKey = key.getOriginalEncryptionKey();
+            // Highest-priority provider for algorithm will be selected for original key.
+            cipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
+            // Preserve algorithm parameters used for encryption, same parameters need to use
+            // for decryption.
+            AlgorithmParameters algorithmParameters = cipher.getParameters();
+            byte[] cipherText =
+                    cipher.doFinal(testVector.plaintext);
+            Key decryptionKey = key.getKeystoreBackedDecryptionKey();
+            cipher = Cipher.getInstance(algorithm);
+            // AndroidKeyStore provider will be selected for Android keystore backed key.
+            cipher.init(Cipher.DECRYPT_MODE, decryptionKey, algorithmParameters);
+            byte[] plainText = cipher.doFinal(cipherText);
+            byte[] expectedPlaintext = testVector.plaintext;
+            if ("RSA/ECB/NoPadding".equalsIgnoreCase(algorithm)) {
+                // RSA decryption without padding left-pads resulting plaintext with NUL bytes
+                // to the length of RSA modulus.
+                int modulusLengthBytes = (TestUtils.getKeySizeBits(decryptionKey) + 7) / 8;
+                expectedPlaintext = TestUtils.leftPadWithZeroBytes(
+                        expectedPlaintext, modulusLengthBytes);
+            }
+            assertArrayEquals(plainText, expectedPlaintext);
         }
     }
 

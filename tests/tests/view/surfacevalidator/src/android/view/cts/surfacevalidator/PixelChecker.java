@@ -15,6 +15,7 @@
  */
 package android.view.cts.surfacevalidator;
 
+import android.annotation.ColorInt;
 import android.graphics.Rect;
 import android.media.Image;
 import android.os.Trace;
@@ -32,11 +33,12 @@ public abstract class PixelChecker {
         mPixelColor = new PixelColor();
     }
 
-    public PixelChecker(int color) {
+    public PixelChecker(@ColorInt int color) {
         mPixelColor = new PixelColor(color);
     }
 
-    int getNumMatchingPixels(PixelColor expectedColor, Image.Plane plane, Rect boundsToCheck) {
+    public static int getNumMatchingPixels(PixelColor expectedColor, Image.Plane plane,
+            Rect boundsToCheck) {
         int numMatchingPixels = 0;
         ByteBuffer buffer = plane.getBuffer();
         int rowStride = plane.getRowStride();
@@ -72,7 +74,7 @@ public abstract class PixelChecker {
         return true;
     }
 
-    boolean matchesColor(PixelColor expectedColor, byte[] scanline, int offset) {
+    static boolean matchesColor(PixelColor expectedColor, byte[] scanline, int offset) {
         final int red = scanline[offset + 0] & 0xFF;
         final int green = scanline[offset + 1] & 0xFF;
         final int blue = scanline[offset + 2] & 0xFF;

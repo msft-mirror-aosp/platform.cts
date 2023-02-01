@@ -30,7 +30,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import android.annotation.NonNull;
@@ -53,6 +55,7 @@ import android.net.NetworkRequest;
 import android.net.TetheringManager;
 import android.net.Uri;
 import android.net.wifi.CoexUnsafeChannel;
+import android.net.wifi.QosPolicyParams;
 import android.net.wifi.ScanResult;
 import android.net.wifi.SoftApCapability;
 import android.net.wifi.SoftApConfiguration;
@@ -66,6 +69,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.SubsystemRestartTrackingCallback;
 import android.net.wifi.WifiManager.WifiLock;
 import android.net.wifi.WifiNetworkConnectionStatistics;
+import android.net.wifi.WifiNetworkSelectionConfig;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.WifiSsid;
@@ -76,6 +80,7 @@ import android.net.wifi.hotspot2.ProvisioningCallback;
 import android.net.wifi.hotspot2.pps.Credential;
 import android.net.wifi.hotspot2.pps.HomeSp;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
@@ -214,6 +219,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                             0,
                             new byte[]{ (byte) 170, (byte) 187, (byte) 204, (byte) 221 })
             ));
+    private static final int[] TEST_RSSI2_THRESHOLDS = {-81, -79, -73, -60};
+    private static final int[] TEST_RSSI5_THRESHOLDS = {-80, -77, -71, -55};
+    private static final int[] TEST_RSSI6_THRESHOLDS = {-79, -72, -65, -55};
+    private static final SparseArray<Integer> TEST_FREQUENCY_WEIGHTS = new SparseArray<>();
 
     private IntentFilter mIntentFilter;
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -303,14 +312,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             };
     private static final String TEST_SSID = "TEST SSID";
     private static final String TEST_FRIENDLY_NAME = "Friendly Name";
-    private static final Map<String, String> TEST_FRIENDLY_NAMES =
-            new HashMap<String, String>() {
-                {
-                    put("en", TEST_FRIENDLY_NAME);
-                    put("kr", TEST_FRIENDLY_NAME + 2);
-                    put("jp", TEST_FRIENDLY_NAME + 3);
-                }
-            };
+    private static final Map<String, String> TEST_FRIENDLY_NAMES = new HashMap<>();
+    static {
+        TEST_FRIENDLY_NAMES.put("en", TEST_FRIENDLY_NAME);
+        TEST_FRIENDLY_NAMES.put("kr", TEST_FRIENDLY_NAME + 2);
+        TEST_FRIENDLY_NAMES.put("jp", TEST_FRIENDLY_NAME + 3);
+    }
+
     private static final String TEST_SERVICE_DESCRIPTION = "Dummy Service";
     private static final Uri TEST_SERVER_URI = Uri.parse("https://test.com");
     private static final String TEST_NAI = "test.access.com";
@@ -321,6 +329,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     {
         mHandlerThread.start();
         mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
+    }
+
+    /**
+     * Class which can be used to fetch an object out of a lambda. Fetching an object
+     * out of a local scope with HIDL is a common operation (although usually it can
+     * and should be avoided).
+     *
+     * @param <E> Inner object type.
+     */
+    public static final class Mutable<E> {
+        public E value;
+
+        public Mutable() {
+            value = null;
+        }
+
+        public Mutable(E value) {
+            this.value = value;
+        }
     }
 
     @Override
@@ -1164,6 +1191,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
         mWifiManager.isMakeBeforeBreakWifiSwitchingSupported();
         mWifiManager.isStaBridgedApConcurrencySupported();
+        mWifiManager.isDualBandSimultaneousSupported();
     }
 
     /**
@@ -1183,6 +1211,160 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             fail("Expected security exception for non DO app");
         } catch (SecurityException e) {
         }
+    }
+
+    private WifiNetworkSelectionConfig buildTestNetworkSelectionConfig() {
+        TEST_FREQUENCY_WEIGHTS.put(2400, WifiNetworkSelectionConfig.FREQUENCY_WEIGHT_LOW);
+        TEST_FREQUENCY_WEIGHTS.put(6000, WifiNetworkSelectionConfig.FREQUENCY_WEIGHT_HIGH);
+
+        return new WifiNetworkSelectionConfig.Builder()
+                .setAssociatedNetworkSelectionOverride(
+                        WifiNetworkSelectionConfig.ASSOCIATED_NETWORK_SELECTION_OVERRIDE_ENABLED)
+                .setSufficiencyCheckEnabledWhenScreenOff(false)
+                .setSufficiencyCheckEnabledWhenScreenOn(false)
+                .setUserConnectChoiceOverrideEnabled(false)
+                .setLastSelectionWeightEnabled(false)
+                .setRssiThresholds(ScanResult.WIFI_BAND_24_GHZ, TEST_RSSI2_THRESHOLDS)
+                .setRssiThresholds(ScanResult.WIFI_BAND_5_GHZ, TEST_RSSI5_THRESHOLDS)
+                .setRssiThresholds(ScanResult.WIFI_BAND_6_GHZ, TEST_RSSI6_THRESHOLDS)
+                .setFrequencyWeights(TEST_FREQUENCY_WEIGHTS)
+                .build();
+    }
+
+    /**
+     * Verify the invalid and valid usages of {@code WifiManager#setNetworkSelectionConfig}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testSetNetworkSelectionConfig() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
+        AtomicReference<WifiNetworkSelectionConfig> config = new AtomicReference<>();
+        Consumer<WifiNetworkSelectionConfig> listener = new Consumer<WifiNetworkSelectionConfig>() {
+            @Override
+            public void accept(WifiNetworkSelectionConfig value) {
+                synchronized (mLock) {
+                    config.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+
+        // cache current WifiNetworkSelectionConfig
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+        synchronized (mLock) {
+            mLock.wait(TEST_WAIT_DURATION_MS);
+        }
+        WifiNetworkSelectionConfig currentConfig = config.get();
+
+        try {
+            WifiNetworkSelectionConfig nsConfig = buildTestNetworkSelectionConfig();
+            assertTrue(nsConfig.getAssociatedNetworkSelectionOverride()
+                    == WifiNetworkSelectionConfig.ASSOCIATED_NETWORK_SELECTION_OVERRIDE_ENABLED);
+            assertFalse(nsConfig.isSufficiencyCheckEnabledWhenScreenOff());
+            assertFalse(nsConfig.isSufficiencyCheckEnabledWhenScreenOn());
+            assertFalse(nsConfig.isUserConnectChoiceOverrideEnabled());
+            assertFalse(nsConfig.isLastSelectionWeightEnabled());
+            assertArrayEquals(TEST_RSSI2_THRESHOLDS,
+                    nsConfig.getRssiThresholds(ScanResult.WIFI_BAND_24_GHZ));
+            assertArrayEquals(TEST_RSSI5_THRESHOLDS,
+                    nsConfig.getRssiThresholds(ScanResult.WIFI_BAND_5_GHZ));
+            assertArrayEquals(TEST_RSSI6_THRESHOLDS,
+                    nsConfig.getRssiThresholds(ScanResult.WIFI_BAND_6_GHZ));
+            assertTrue(TEST_FREQUENCY_WEIGHTS.contentEquals(nsConfig.getFrequencyWeights()));
+            assertThrows(SecurityException.class,
+                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setNetworkSelectionConfig(
+                            new WifiNetworkSelectionConfig.Builder().build()));
+        } finally {
+            // restore WifiNetworkSelectionConfig
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setNetworkSelectionConfig(currentConfig));
+        }
+    }
+
+    /**
+     * Verify the invalid and valid usages of {@code WifiManager#getNetworkSelectionConfig}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+    public void testGetNetworkSelectionConfig() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
+        AtomicReference<WifiNetworkSelectionConfig> config = new AtomicReference<>();
+        Consumer<WifiNetworkSelectionConfig> listener = new Consumer<WifiNetworkSelectionConfig>() {
+            @Override
+            public void accept(WifiNetworkSelectionConfig value) {
+                synchronized (mLock) {
+                    config.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+
+        // cache current WifiNetworkSelectionConfig
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+        synchronized (mLock) {
+            mLock.wait(TEST_WAIT_DURATION_MS);
+        }
+        WifiNetworkSelectionConfig currentConfig = config.get();
+
+        try {
+            // Test invalid inputs trigger IllegalArgumentException
+            assertThrows("null executor should trigger exception", NullPointerException.class,
+                    () -> mWifiManager.getNetworkSelectionConfig(null, listener));
+            assertThrows("null listener should trigger exception", NullPointerException.class,
+                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, null));
+
+            // Test caller with no permission triggers SecurityException.
+            assertThrows("No permission should trigger SecurityException", SecurityException.class,
+                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+
+            // Test get/set WifiNetworkSelectionConfig
+            WifiNetworkSelectionConfig nsConfig = buildTestNetworkSelectionConfig();
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            assertTrue(config.get().equals(nsConfig));
+        } finally {
+            // restore WifiNetworkSelectionConfig
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setNetworkSelectionConfig(currentConfig));
+        }
+    }
+
+    /**
+     * Verify setting the screen-on connectivity scan delay.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testSetOneShotScreenOnConnectivityScanDelayMillis() {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+        assertThrows(SecurityException.class,
+                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(100));
+        assertThrows(IllegalArgumentException.class, () -> {
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(-1));
+        });
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(10000));
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(0));
     }
 
     /**
@@ -2541,6 +2723,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void verifySetGetSoftApConfig(SoftApConfiguration targetConfig) {
+        assertTrue(mWifiManager.validateSoftApConfiguration(targetConfig));
         mWifiManager.setSoftApConfiguration(targetConfig);
         // Bssid set dodesn't support for tethered hotspot
         SoftApConfiguration currentConfig = mWifiManager.getSoftApConfiguration();
@@ -2676,6 +2859,59 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
         }
         return testBandsAndChannels;
+    }
+
+    public void testLastConfiguredPassphraseIsKeepInSoftApConfigurationWhenChangingToNone()
+            throws Exception {
+        final SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
+                mWifiManager::getSoftApConfiguration);
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            Mutable<String> lastPassphrase = new Mutable<>();
+            final String testPassphrase = "testPassphrase";
+            mWifiManager.setSoftApConfiguration(
+                    new SoftApConfiguration.Builder(currentConfig)
+                            .setPassphrase(testPassphrase,
+                                    SoftApConfiguration.SECURITY_TYPE_WPA2_PSK).build());
+            mWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
+                    new Consumer<String>() {
+                    @Override
+                    public void accept(String value) {
+                        synchronized (mLock) {
+                            lastPassphrase.value = value;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            assertEquals(lastPassphrase.value, testPassphrase);
+
+            mWifiManager.setSoftApConfiguration(
+                    new SoftApConfiguration.Builder(currentConfig)
+                            .setPassphrase(null,
+                                    SoftApConfiguration.SECURITY_TYPE_OPEN).build());
+            mWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
+                    new Consumer<String>() {
+                    @Override
+                    public void accept(String value) {
+                        synchronized (mLock) {
+                            lastPassphrase.value = value;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            assertEquals(lastPassphrase.value, testPassphrase);
+        } finally {
+            // Restore SoftApConfiguration
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setSoftApConfiguration(currentConfig));
+        }
     }
 
     /**
@@ -4054,11 +4290,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     /**
-     * Test that {@link WifiManager#getCurrentNetwork()} returns a Network obeject consistent
-     * with {@link ConnectivityManager#registerNetworkCallback} when connected to a Wifi network,
-     * and returns null when not connected.
+     * Helper function to test getCurrentNetwork
+     * @param shouldDisableWifi true to disable wifi, false to disconnect
+     * @throws Exception
      */
-    public void testGetCurrentNetwork() throws Exception {
+    private void testGetCurrentNetwork(boolean shouldDisableWifi) throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported
             return;
@@ -4067,10 +4303,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         // ensure Wifi is connected
         ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.reconnect());
         PollingCheck.check(
-                "Wifi not connected - Please ensure there is a saved network in range of this "
-                        + "device",
+                "Connection info network id is invalid - Please ensure there is a " +
+                " saved network in range of this device",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
                 () -> mWifiManager.getConnectionInfo().getNetworkId() != -1);
+        PollingCheck.check(
+                "Wifi current network is null - Please ensure there is a saved network " +
+                        " in range of this device",
+                WIFI_CONNECT_TIMEOUT_MILLIS,
+                () -> ShellIdentityUtils.invokeWithShellPermissions(mWifiManager::getCurrentNetwork)
+                        != null);
 
         String networkKey = mWifiManager.getConnectionInfo().getNetworkKey();
         assertNotNull(networkKey);
@@ -4110,13 +4352,43 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         Network connectivityCurrentNetwork = networkCallbackListener.network;
         assertEquals(connectivityCurrentNetwork, wifiCurrentNetwork);
 
-        setWifiEnabled(false);
+        if (shouldDisableWifi) {
+            setWifiEnabled(false);
+            PollingCheck.check(
+                    "Wifi not disabled!",
+                    20000,
+                    () -> !mWifiManager.isWifiEnabled());
+        } else {
+            ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.disconnect());
+        }
         PollingCheck.check(
-                "Wifi not disconnected!",
+                "Wifi not disconnected! Connection info network id still valid",
                 20000,
                 () -> mWifiManager.getConnectionInfo().getNetworkId() == -1);
 
-        assertNull(ShellIdentityUtils.invokeWithShellPermissions(mWifiManager::getCurrentNetwork));
+        PollingCheck.check(
+                "Wifi not disconnected! Current network is not null",
+                WIFI_CONNECT_TIMEOUT_MILLIS,
+                () -> ShellIdentityUtils.invokeWithShellPermissions(mWifiManager::getCurrentNetwork)
+                        == null);
+    }
+
+    /**
+     * Test that {@link WifiManager#getCurrentNetwork()} returns a Network object consistent
+     * with {@link ConnectivityManager#registerNetworkCallback} when connected to a Wifi network,
+     * and returns null when disconnected.
+     */
+    public void testGetCurrentNetworkWifiDisconnected() throws Exception {
+        testGetCurrentNetwork(false);
+    }
+
+    /**
+     * Test that {@link WifiManager#getCurrentNetwork()} returns a Network object consistent
+     * with {@link ConnectivityManager#registerNetworkCallback} when connected to a Wifi network,
+     * and returns null when wifi disabled.
+     */
+    public void testGetCurrentNetworkWifiDisabled() throws Exception {
+        testGetCurrentNetwork(true);
     }
 
     /**
@@ -5390,6 +5662,54 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     /**
+     * Tests {@link WifiManager#getChannelData(Executor, Consumer<List<Bundle>>)}
+     * does not crash.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testGetChannelData() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
+        List<Bundle> dataList = new ArrayList<>();
+        Consumer<List<Bundle>> listener = new Consumer<List<Bundle>>() {
+            @Override
+            public void accept(List<Bundle> value) {
+                synchronized (mLock) {
+                    dataList.addAll(value);
+                    mLock.notify();
+                }
+            }
+        };
+        // Test invalid inputs trigger IllegalArgumentException
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getChannelData(null, listener));
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getChannelData(mExecutor, null));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            // Start scan and wait for scan results
+            startScan();
+            mWifiManager.getChannelData(mExecutor, listener);
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            if (mWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
+                assertFalse(dataList.isEmpty());
+            }
+        } catch (UnsupportedOperationException ex) {
+            //expected if the device does not support this API
+        } catch (Exception ex) {
+            fail("getChannelData unexpected Exception " + ex);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
      * Validate that the Passpoint feature is enabled on the device.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
@@ -5688,5 +6008,97 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             return;
         }
         mWifiManager.isEasyConnectDppAkmSupported();
+    }
+
+    /**
+     * Tests {@link WifiManager#getMaxNumberOfChannelsPerNetworkSpecifierRequest)} works
+     */
+    public void testGetMaxNumberOfChannelsPerNetworkSpecifierRequest() {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+        assertTrue(mWifiManager.getMaxNumberOfChannelsPerNetworkSpecifierRequest() > 0);
+    }
+
+    /**
+     * Tests {@link WifiManager#isTlsV13Supported)} does not crash.
+     */
+    public void testIsTlsV13Supported() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+        mWifiManager.isTlsV13Supported();
+    }
+
+    /**
+     * Tests {@link WifiManager#isTlsMinimumVersionSupported)} does not crash.
+     */
+    public void testIsTlsMinimumVersionSupported() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+        mWifiManager.isTlsMinimumVersionSupported();
+    }
+
+    /**
+     * Tests that {@link WifiManager#addQosPolicy(QosPolicyParams, Executor, Consumer)},
+     * {@link WifiManager#removeQosPolicy(int)}, and
+     * {@link WifiManager#removeAllQosPolicies()} do not crash.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    public void testAddAndRemoveQosPolicy() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+        final int policyId = 2;
+        final int direction = QosPolicyParams.DIRECTION_DOWNLINK;
+        final int userPriority = QosPolicyParams.USER_PRIORITY_VIDEO_LOW;
+        QosPolicyParams policyParams = new QosPolicyParams.Builder(policyId, direction)
+                .setUserPriority(userPriority)
+                .build();
+
+        Consumer<Integer> listener = new Consumer<Integer>() {
+            @Override
+            public void accept(Integer value) {
+                synchronized (mLock) {
+                    // TODO: Check status code when implemented.
+                    mLock.notify();
+                }
+            }
+        };
+
+        // Test that invalid inputs trigger an IllegalArgumentException.
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> mWifiManager.addQosPolicy(policyParams, null, listener));
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> mWifiManager.addQosPolicy(policyParams, mExecutor, null));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            mWifiManager.addQosPolicy(policyParams, mExecutor, listener);
+
+            // sleep to wait for a response from supplicant
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            mWifiManager.removeQosPolicy(policyId);
+
+            // sleep to wait for a response from supplicant
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            mWifiManager.removeAllQosPolicies();
+        } catch (UnsupportedOperationException ex) {
+            // Expected if the feature is disabled by the feature flag.
+        } catch (Exception e) {
+            fail("addAndRemoveQosPolicy unexpected Exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }

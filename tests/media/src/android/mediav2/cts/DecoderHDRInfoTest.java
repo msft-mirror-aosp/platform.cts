@@ -17,6 +17,7 @@
 package android.mediav2.cts;
 
 import android.media.MediaFormat;
+import android.mediav2.common.cts.HDRDecoderTestBase;
 import android.os.Build;
 
 import androidx.test.filters.SdkSuppress;
@@ -24,41 +25,46 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Test to validate hdr static info in decoders
+ * HDR Metadata is an aid for a display device to show the content in an optimal manner. It
+ * contains the HDR content and mastering device properties that are used by the display device
+ * to map the content according to its own color gamut and peak brightness. This information can
+ * be part of container and/or elementary stream.
+ * <p>
+ * The test checks if the muxer and/or decoder propagates this information from file to application
+ * correctly. Whether this information is used by the device during display is beyond the scope
+ * of this test.
  */
 @RunWith(Parameterized.class)
 // P010 support was added in Android T, hence limit the following tests to Android T and above
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
 public class DecoderHDRInfoTest extends HDRDecoderTestBase {
     private static final String LOG_TAG = DecoderHDRInfoTest.class.getSimpleName();
-
-    private String mHDRStaticInfoStream;
-    private String mHDRStaticInfoContainer;
-    private Map<Integer, String> mHDRDynamicInfoStream;
-    private Map<Integer, String> mHDRDynamicInfoContainer;
+    private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private final String mHDRStaticInfoStream;
+    private final String mHDRStaticInfoContainer;
+    private final Map<Integer, String> mHDRDynamicInfoStream;
+    private final Map<Integer, String> mHDRDynamicInfoContainer;
 
     public DecoderHDRInfoTest(String codecName, String mediaType, String testFile,
-                              String hdrStaticInfoStream, String hdrStaticInfoContainer,
-                              Map<Integer, String> HDRDynamicInfoStream,
-                              Map<Integer, String> HDRDynamicInfoContainer) {
-        super(codecName, mediaType, testFile);
+            String hdrStaticInfoStream, String hdrStaticInfoContainer,
+            Map<Integer, String> hdrDynamicInfoStream, Map<Integer, String> hdrDynamicInfoContainer,
+            String allTestParams) {
+        super(codecName, mediaType, MEDIA_DIR + testFile, allTestParams);
         mHDRStaticInfoStream = hdrStaticInfoStream;
         mHDRStaticInfoContainer = hdrStaticInfoContainer;
-        mHDRDynamicInfoStream = HDRDynamicInfoStream;
-        mHDRDynamicInfoContainer = HDRDynamicInfoContainer;
+        mHDRDynamicInfoStream = hdrDynamicInfoStream;
+        mHDRDynamicInfoContainer = hdrDynamicInfoContainer;
     }
 
     @Parameterized.Parameters(name = "{index}({0}_{1})")
@@ -106,6 +112,9 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 
+    /**
+     * Check description of class {@link DecoderHDRInfoTest}
+     */
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.3.5/C-3-1", "5.3.7/C-4-1", "5.3.9"})

@@ -4097,6 +4097,7 @@ initializeAvailabilityCallbacksNative(
 
     auto rc = ctx->initialize();
     if (rc != ACAMERA_OK) {
+        delete ctx;
         LOG_ERROR(errorString, "Availability context initialization failed: %d", rc);
         return 0;
     }
@@ -4291,6 +4292,7 @@ testStillCaptureNative(
         if (readerListener.onImageAvailableCount() != NUM_TEST_IMAGES) {
             LOG_ERROR(errorString, "Camera %s timeout capturing %d images. Got %d",
                     cameraId, NUM_TEST_IMAGES, readerListener.onImageAvailableCount());
+            testCase.resetWithErrorLog();
             goto cleanup;
         }
 

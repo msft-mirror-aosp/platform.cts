@@ -45,5 +45,6 @@ android_test {
     data: [
         ":CtsInputMethod1",
         ":CtsAccessibilityMultipleServicesApp",
-        ":CtsAccessibilityWidgetProvider"],
+        ":CtsAccessibilityWidgetProvider",
+    ],
 }

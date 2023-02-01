@@ -16,12 +16,9 @@
 
 package android.bluetooth.cts;
 
-import android.app.UiAutomation;
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
 import android.test.AndroidTestCase;
-
-import androidx.test.InstrumentationRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -167,41 +164,65 @@ public class BluetoothCodecsTest extends AndroidTestCase {
                                  BluetoothCodecConfig.CHANNEL_MODE_STEREO,
                                  1000, 2000, 3000, 4000);
 
-    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_A =
-            new ArrayList() {{
-                    add(local_capability1_A);
-                    add(local_capability2_A);
-            }};
+    private static final BluetoothCodecConfig BCC1_CODEC_SPECIFIC_1 =
+            buildBluetoothCodecConfig(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC,
+                                 BluetoothCodecConfig.CODEC_PRIORITY_DEFAULT,
+                                 BluetoothCodecConfig.SAMPLE_RATE_44100,
+                                 BluetoothCodecConfig.BITS_PER_SAMPLE_16,
+                                 BluetoothCodecConfig.CHANNEL_MODE_STEREO,
+                                 BluetoothCodecConfig.CODEC_SPECIFIC_1_LDAC_QUALITY_HIGH,
+                                 2000, 3000, 4004);
 
-    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_B =
-            new ArrayList() {{
-                    add(local_capability1_B);
-                    add(local_capability2_B);
-            }};
+    private static final BluetoothCodecConfig BCC2_CODEC_SPECIFIC_1 =
+            buildBluetoothCodecConfig(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC,
+                                 BluetoothCodecConfig.CODEC_PRIORITY_DEFAULT,
+                                 BluetoothCodecConfig.SAMPLE_RATE_44100,
+                                 BluetoothCodecConfig.BITS_PER_SAMPLE_16,
+                                 BluetoothCodecConfig.CHANNEL_MODE_STEREO,
+                                 BluetoothCodecConfig.CODEC_SPECIFIC_1_LDAC_QUALITY_MID,
+                                 2000, 3000, 4004);
 
-    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_C =
-            new ArrayList() {{
-                    add(local_capability1_C);
-                    add(local_capability2_C);
-            }};
+    private static final BluetoothCodecConfig BCC3_CODEC_SPECIFIC_1 =
+            buildBluetoothCodecConfig(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC,
+                                 BluetoothCodecConfig.CODEC_PRIORITY_DEFAULT,
+                                 BluetoothCodecConfig.SAMPLE_RATE_44100,
+                                 BluetoothCodecConfig.BITS_PER_SAMPLE_16,
+                                 BluetoothCodecConfig.CHANNEL_MODE_STEREO,
+                                 BluetoothCodecConfig.CODEC_SPECIFIC_1_LDAC_QUALITY_LOW,
+                                 2000, 3000, 4004);
 
-    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_A =
-            new ArrayList() {{
-                    add(selectable_capability1_A);
-                    add(selectable_capability2_A);
-            }};
+    private static final BluetoothCodecConfig BCC4_CODEC_SPECIFIC_1 =
+            buildBluetoothCodecConfig(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC,
+                                 BluetoothCodecConfig.CODEC_PRIORITY_DEFAULT,
+                                 BluetoothCodecConfig.SAMPLE_RATE_44100,
+                                 BluetoothCodecConfig.BITS_PER_SAMPLE_16,
+                                 BluetoothCodecConfig.CHANNEL_MODE_STEREO,
+                                 BluetoothCodecConfig.CODEC_SPECIFIC_1_LDAC_QUALITY_ADAPTIVE,
+                                 2000, 3000, 4004);
 
-    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_B =
-            new ArrayList() {{
-                    add(selectable_capability1_B);
-                    add(selectable_capability2_B);
-            }};
+    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_A = List.of(
+            local_capability1_A,
+            local_capability2_A);
 
-    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_C =
-            new ArrayList() {{
-                    add(selectable_capability1_C);
-                    add(selectable_capability2_C);
-            }};
+    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_B = List.of(
+            local_capability1_B,
+            local_capability2_B);
+
+    private static final List<BluetoothCodecConfig> LOCAL_CAPABILITY_C = List.of(
+            local_capability1_C,
+            local_capability2_C);
+
+    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_A = List.of(
+            selectable_capability1_A,
+            selectable_capability2_A);
+
+    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_B = List.of(
+            selectable_capability1_B,
+            selectable_capability2_B);
+
+    private static final List<BluetoothCodecConfig> SELECTABLE_CAPABILITY_C = List.of(
+            selectable_capability1_C,
+            selectable_capability2_C);
 
     private static final BluetoothCodecStatus bcs_A =
             new BluetoothCodecStatus.Builder()
@@ -282,6 +303,12 @@ public class BluetoothCodecsTest extends AndroidTestCase {
         assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability1_B));
         assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability2_A));
         assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability2_B));
+    }
+
+    public void test_CodecConfigSpecific1() {
+        assertFalse(BCC1_CODEC_SPECIFIC_1.equals(BCC2_CODEC_SPECIFIC_1));
+        assertFalse(BCC1_CODEC_SPECIFIC_1.equals(BCC3_CODEC_SPECIFIC_1));
+        assertFalse(BCC1_CODEC_SPECIFIC_1.equals(BCC4_CODEC_SPECIFIC_1));
     }
 
     private static BluetoothCodecConfig buildBluetoothCodecConfig(int sourceCodecType,

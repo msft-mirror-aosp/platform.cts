@@ -25,6 +25,7 @@ android_test {
     min_sdk_version: "30",
     srcs: [
         "src/**/*.kt",
+        ":CtsProviderTestUtils",
     ],
     static_libs: [
         "kotlin-stdlib",
@@ -33,6 +34,8 @@ android_test {
         "ctstestrunner-axt",
         "bluetooth-test-util-lib",
         "modules-utils-build_system",
+        "androidx.test.core",
+        "permission-test-util-lib",
     ],
     data: [
         ":CtsPermissionPolicyApp25",
@@ -61,11 +64,13 @@ android_test {
         ":CtsCreateNotificationChannelsApp33",
         ":CtsMediaPermissionApp33WithStorage",
         ":CtsDifferentPkgNameApp",
+        ":CtsUsePermissionAppImplicitUserSelectStorage",
     ],
     test_suites: [
         "cts",
         "general-tests",
         "mts-permission",
-        "gts",
+        "automotive-tests",
+        "automotive-general-tests",
     ],
 }

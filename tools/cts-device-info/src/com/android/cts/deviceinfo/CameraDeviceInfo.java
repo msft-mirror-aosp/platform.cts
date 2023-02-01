@@ -17,22 +17,20 @@ package com.android.cts.deviceinfo;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.BlackLevelPattern;
 import android.hardware.camera2.params.ColorSpaceTransform;
-import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.params.MultiResolutionStreamConfigurationMap;
 import android.hardware.camera2.params.MultiResolutionStreamInfo;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
-import android.os.Build;
 import android.util.Log;
+import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
 import android.util.SizeF;
-import android.util.Range;
 
 import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.DeviceInfoStore;
@@ -635,6 +633,8 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.CONTROL_POST_RAW_SENSITIVITY_BOOST_RANGE.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_CAPABILITIES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE.getName());
+        charsKeyNames.add(CameraCharacteristics.CONTROL_AVAILABLE_SETTINGS_OVERRIDES.getName());
+        charsKeyNames.add(CameraCharacteristics.CONTROL_AUTOFRAMING_AVAILABLE.getName());
         charsKeyNames.add(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_AVAILABLE.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL.getName());
@@ -662,6 +662,7 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES.getName());
         charsKeyNames.add(CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES.getName());
         charsKeyNames.add(CameraCharacteristics.REQUEST_RECOMMENDED_TEN_BIT_DYNAMIC_RANGE_PROFILE.getName());
+        charsKeyNames.add(CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES.getName());
         charsKeyNames.add(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM.getName());
         charsKeyNames.add(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP.getName());
         charsKeyNames.add(CameraCharacteristics.SCALER_CROPPING_TYPE.getName());
@@ -689,6 +690,7 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.SENSOR_ORIENTATION.getName());
         charsKeyNames.add(CameraCharacteristics.SENSOR_AVAILABLE_TEST_PATTERN_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.SENSOR_OPTICAL_BLACK_REGIONS.getName());
+        charsKeyNames.add(CameraCharacteristics.SENSOR_READOUT_TIMESTAMP.getName());
         charsKeyNames.add(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE.getName());
         charsKeyNames.add(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE.getName());
         charsKeyNames.add(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT.getName());

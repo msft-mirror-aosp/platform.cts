@@ -62,18 +62,37 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "DOWNSCALE_90",
             "DO_NOT_DOWNSCALE_TO_1080P_ON_TV",
             "FGS_BG_START_RESTRICTION_CHANGE_ID",
+            "FGS_TYPE_DATA_SYNC_DEPRECATION_CHANGE_ID",
+            "FGS_TYPE_DATA_SYNC_DISABLED_CHANGE_ID",
+            "FGS_TYPE_NONE_DEPRECATION_CHANGE_ID",
+            "FGS_TYPE_NONE_DISABLED_CHANGE_ID",
+            "FGS_TYPE_PERMISSION_CHANGE_ID",
             "FORCE_NON_RESIZE_APP",
             "FORCE_RESIZE_APP",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP_DEFAULTS",
             "OVERRIDE_CAMERA_RESIZABLE_AND_SDK_CHECK",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP",
+            "OVERRIDE_CAMERA_LANDSCAPE_TO_PORTRAIT",
             "IGNORE_ALLOW_BACKUP_IN_D2D",
             "IGNORE_FULL_BACKUP_CONTENT_IN_D2D",
             "NEVER_SANDBOX_DISPLAY_APIS",
             "OVERRIDE_MIN_ASPECT_RATIO",
+            "OVERRIDE_MIN_ASPECT_RATIO_EXCLUDE_PORTRAIT_FULLSCREEN",
             "OVERRIDE_MIN_ASPECT_RATIO_PORTRAIT_ONLY",
             "OVERRIDE_MIN_ASPECT_RATIO_LARGE",
-            "OVERRIDE_MIN_ASPECT_RATIO_MEDIUM"
+            "OVERRIDE_MIN_ASPECT_RATIO_MEDIUM",
+            "OVERRIDE_MIN_ASPECT_RATIO_TO_ALIGN_WITH_SPLIT_SCREEN",
+            "IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS",
+            "BLOCK_MUTABLE_IMPLICIT_PENDING_INTENT",
+            "OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS",
+            "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
+            "OVERRIDE_ORIENTATION_ONLY_FOR_CAMERA",
+            "OVERRIDE_CAMERA_COMPAT_DISABLE_FORCE_ROTATION",
+            "OVERRIDE_CAMERA_COMPAT_DISABLE_REFRESH",
+            "OVERRIDE_CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE",
+            "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
+            "DEFAULT_RESCIND_BAL_FG_PRIVILEGES_BOUND_SERVICE",
+            "DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER"
     );
 
     /**
@@ -84,6 +103,18 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             if (!OVERRIDES_ALLOWLIST.contains(c.changeName) && !c.overridable) {
                 assertWithMessage("Change should not have overrides: " + c)
                         .that(c.hasOverrides).isFalse();
+            }
+        }
+    }
+
+    /**
+     * Check that only approved changes are overridable.
+     */
+    public void testOnlyAllowedlistedChangesAreOverridable() throws Exception {
+        for (Change c : getOnDeviceCompatConfig()) {
+            if (c.overridable) {
+                assertWithMessage("Please contact compat-team@google.com for approval")
+                        .that(OVERRIDABLE_CHANGES).contains(c.changeName);
             }
         }
     }

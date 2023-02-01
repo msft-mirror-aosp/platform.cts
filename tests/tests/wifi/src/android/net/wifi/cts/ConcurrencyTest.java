@@ -16,7 +16,10 @@
 
 package android.net.wifi.cts;
 
+import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
+
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
@@ -40,6 +43,7 @@ import android.net.wifi.p2p.WifiP2pGroupList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.ExternalApproverRequestListener;
+import android.net.wifi.p2p.WifiP2pWfdInfo;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pUpnpServiceInfo;
 import android.os.Build;
@@ -426,6 +430,25 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
         return true;
     }
 
+    private void assertFirstConnectedEvent() {
+        // The first network state might be IDLE due to
+        // lazy initialization or DISCONNECTED due to previous
+        // group removal, but not CONNECTED.
+        for (int i = 0; i < 2; i++) {
+            assertTrue(waitForBroadcasts(MySync.NETWORK_INFO));
+            assertNotNull(mMySync.expectedNetworkInfo);
+            NetworkInfo.DetailedState state = mMySync.expectedNetworkInfo.getDetailedState();
+            if (NetworkInfo.DetailedState.CONNECTED == state) {
+                break;
+            }
+
+            assertTrue(NetworkInfo.DetailedState.IDLE == state
+                    || NetworkInfo.DetailedState.DISCONNECTED == state);
+        }
+        assertEquals(NetworkInfo.DetailedState.CONNECTED,
+                mMySync.expectedNetworkInfo.getDetailedState());
+    }
+
     public void testConcurrency() {
         if (!setupWifiP2p()) {
             return;
@@ -532,6 +555,7 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
         mWifiP2pManager.createGroup(mWifiP2pChannel, mActionListener);
         assertTrue(waitForServiceResponse(mMyResponse));
         assertTrue(mMyResponse.success);
+
         assertTrue(waitForConnectedNetworkState());
 
         resetResponse(mMyResponse);
@@ -670,6 +694,7 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
         mWifiP2pManager.createGroup(mWifiP2pChannel, mActionListener);
         assertTrue(waitForServiceResponse(mMyResponse));
         assertTrue(mMyResponse.success);
+
         assertTrue(waitForConnectedNetworkState());
 
         resetResponse(mMyResponse);
@@ -805,6 +830,7 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
         mWifiP2pManager.createGroup(mWifiP2pChannel, mActionListener);
         assertTrue(waitForServiceResponse(mMyResponse));
         assertTrue(mMyResponse.success);
+
         assertTrue(waitForConnectedNetworkState());
 
         resetResponse(mMyResponse);
@@ -938,6 +964,21 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
         mWifiP2pManager.stopPeerDiscovery(mWifiP2pChannel, null);
     }
 
+    @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.S_V2)
+    public void testP2pConnectThrowsExceptionWhenIPv6LinkLocalIsNotSupported() {
+        if (!setupWifiP2p()) {
+            return;
+        }
+
+        resetResponse(mMyResponse);
+        assertThrows(UnsupportedOperationException.class, () ->
+                new WifiP2pConfig.Builder()
+                        .setDeviceAddress(MacAddress.fromString("aa:bb:cc:dd:ee:ff"))
+                        .setGroupClientIpProvisioningMode(
+                                GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL)
+                        .build());
+    }
+
     public void testP2pSetVendorElements() {
         if (!setupWifiP2p()) {
             return;
@@ -1052,5 +1093,24 @@ public class ConcurrencyTest extends WifiJUnit3TestBase {
             uiAutomation.dropShellPermissionIdentity();
         }
 
+    }
+
+    /** Test setWfdInfo() API. */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    public void testP2pSetWfdInfo() {
+        if (!setupWifiP2p()) {
+            return;
+        }
+
+        WifiP2pWfdInfo info = new WifiP2pWfdInfo();
+        info.setEnabled(true);
+        info.setDeviceType(WifiP2pWfdInfo.DEVICE_TYPE_WFD_SOURCE);
+        info.setSessionAvailable(true);
+        resetResponse(mMyResponse);
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            mWifiP2pManager.setWfdInfo(mWifiP2pChannel, info, mActionListener);
+            assertTrue(waitForServiceResponse(mMyResponse));
+            assertTrue(mMyResponse.success);
+        });
     }
 }

@@ -197,6 +197,24 @@ public class MotionEventTest {
     }
 
     @Test
+    public void testObtainWithClassification() {
+        PointerCoordsBuilder coordsBuilder =
+                withCoords(X_3F, Y_4F).withPressure(PRESSURE_1F).withSize(SIZE_1F)
+                        .withTool(1.2f, 1.4f).withGenericAxis1(2.6f);
+        PointerPropertiesBuilder propertiesBuilder =
+                withProperties(0, MotionEvent.TOOL_TYPE_FINGER);
+
+        mMotionEventDynamic = MotionEvent.obtain(mDownTime, mEventTime,
+                MotionEvent.ACTION_MOVE, 1,
+                new PointerProperties[] { propertiesBuilder.build() },
+                new PointerCoords[] { coordsBuilder.build() },
+                META_STATE, 0, X_PRECISION_3F, Y_PRECISION_4F, DEVICE_ID_1, EDGE_FLAGS,
+                InputDevice.SOURCE_TOUCHSCREEN, 0, 0, MotionEvent.CLASSIFICATION_DEEP_PRESS);
+        assertEquals(MotionEvent.CLASSIFICATION_DEEP_PRESS,
+                mMotionEventDynamic.getClassification());
+    }
+
+    @Test
     public void testObtainNoHistory() {
         // Add two batch to one of our events
         mMotionEvent2.addBatch(mEventTime + 10, X_3F + 5.0f, Y_4F + 5.0f, 0.5f, 0.5f, 0);
@@ -312,6 +330,7 @@ public class MotionEventTest {
         }
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     @Test
     public void testToString() {
         // make sure this method never throw exception.
@@ -924,7 +943,12 @@ public class MotionEventTest {
                 MotionEvent.AXIS_GENERIC_13,
                 MotionEvent.AXIS_GENERIC_14,
                 MotionEvent.AXIS_GENERIC_15,
-                MotionEvent.AXIS_GENERIC_16
+                MotionEvent.AXIS_GENERIC_16,
+                MotionEvent.AXIS_GESTURE_X_OFFSET,
+                MotionEvent.AXIS_GESTURE_Y_OFFSET,
+                MotionEvent.AXIS_GESTURE_SCROLL_X_DISTANCE,
+                MotionEvent.AXIS_GESTURE_SCROLL_Y_DISTANCE,
+                MotionEvent.AXIS_GESTURE_PINCH_SCALE_FACTOR,
         };
 
         // There is no hard guarantee on the actual return result on any specific axis

@@ -101,7 +101,7 @@ static bool cpuHasAESInstructions(void) {
 }
 
 // CDD 9.9.3/C-1-5: must use AES-256-XTS or Adiantum contents encryption.
-// CDD 9.9.3/C-1-6: must use AES-256-CTS or Adiantum filenames encryption.
+// CDD 9.9.3/C-1-6: must use AES-256-CTS, AES-256-HCTR2, or Adiantum filenames encryption.
 // CDD 9.9.3/C-1-12: mustn't use Adiantum if the CPU has AES instructions.
 static void validateEncryptionModes(int contents_mode, int filenames_mode,
                                     bool allow_legacy_modes) {
@@ -129,6 +129,7 @@ static void validateEncryptionModes(int contents_mode, int filenames_mode,
     allowed = false;
     switch (filenames_mode) {
         case FSCRYPT_MODE_AES_256_CTS:
+        case FSCRYPT_MODE_AES_256_HCTR2:
         case FSCRYPT_MODE_ADIANTUM:
             allowed = true;
             break;
@@ -233,6 +234,8 @@ static void validateAdoptableStorageSettings(int first_api_level) {
 // fileencryption= option for the userdata partition and that the ro.crypto
 // system properties have been set to the correct values.  See
 // https://source.android.com/security/encryption/file-based.html
+//
+// @CddTest = 9.9.2/C-0-3|9.9.3/C-1-5,C-1-6,C-1-12,C-1-13,C-1-14,C-1-15
 TEST(FileBasedEncryptionPolicyTest, allowedPolicy) {
     int first_api_level = getFirstApiLevel();
     int vendor_api_level = getVendorApiLevel();

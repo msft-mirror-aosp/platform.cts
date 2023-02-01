@@ -103,11 +103,20 @@ public class ValidateTestsAbi {
         BINARY_EXCEPTIONS.add("sepolicy-analyze");
         BINARY_EXCEPTIONS.add("avbtool");
         BINARY_EXCEPTIONS.add("img2simg");
+        BINARY_EXCEPTIONS.add("initrd_bootconfig");
         BINARY_EXCEPTIONS.add("lpmake");
         BINARY_EXCEPTIONS.add("lpunpack");
         BINARY_EXCEPTIONS.add("mk_payload");
         BINARY_EXCEPTIONS.add("sign_virt_apex");
         BINARY_EXCEPTIONS.add("simg2img");
+
+        /**
+         * These binaries are testing components with no 32-bit variant, which
+         * means their dependent libraries by default will not have 32-bit
+         * variants on the device, and which gain no additional testing coverage
+         * by forcing those variants to be available.
+         */
+        BINARY_EXCEPTIONS.add("CtsInitTestCases");
     }
 
     private static final String BINARY_EXCEPTIONS_REGEX [] = {

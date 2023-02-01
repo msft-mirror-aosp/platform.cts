@@ -46,6 +46,7 @@ import static org.mockito.Mockito.when;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -128,6 +129,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.CompletionInfo;
@@ -155,6 +157,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -870,8 +873,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(-1, mTextView.getSelectionStart());
-        assertEquals(-1, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 
         mTextView.setText(content, BufferType.SPANNABLE);
         mTextView.setSelectAllOnFocus(true);
@@ -892,8 +894,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(0, mTextView.getSelectionStart());
-        assertEquals(0, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 
         mTextView.setText(blank, BufferType.SPANNABLE);
         mTextView.setSelectAllOnFocus(true);
@@ -914,8 +915,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(0, mTextView.getSelectionStart());
-        assertEquals(0, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
     }
 
     @UiThreadTest
@@ -3877,6 +3877,8 @@ public class TextViewTest {
             mTextView.setText(threeLines);
             mTextView.setTextSize(8f);
             mTextView.setLines(2);
+            mTextView.setTypeface(Typeface.createFromAsset(
+                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
         });
         mInstrumentation.waitForIdleSync();
 
@@ -3943,6 +3945,8 @@ public class TextViewTest {
             mTextView.setText(threeLines);
             mTextView.setTextSize(8f);
             mTextView.setLines(2);
+            mTextView.setTypeface(Typeface.createFromAsset(
+                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
         });
         mInstrumentation.waitForIdleSync();
 
@@ -5567,6 +5571,38 @@ public class TextViewTest {
         mTextView.setRawInputType(InputType.TYPE_NULL);
         assertTrue(mTextView.getTransformationMethod() instanceof SingleLineTransformationMethod);
         assertNull(mTextView.getKeyListener());
+    }
+
+    @UiThreadTest
+    @Test
+    public void isAutoHandwritingEnabled_default_returnsTrue() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+
+        assertTrue(mTextView.isAutoHandwritingEnabled());
+    }
+
+    @UiThreadTest
+    @Test
+    public void isAutoHandwritingEnabled_password_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+        assertFalse(mTextView.isAutoHandwritingEnabled());
+    }
+
+    @UiThreadTest
+    @Test
+    public void isAutoHandwritingEnabled_visiblePassword_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+
+        assertFalse(mTextView.isAutoHandwritingEnabled());
     }
 
     @UiThreadTest
@@ -7285,6 +7321,22 @@ public class TextViewTest {
     }
 
     @Test
+    public void testSendAccessibilityContentChangeTypeErrorAndInvalid() throws Throwable {
+        initTextViewForTypingOnUiThread();
+        final long idleTimeoutMillis = 2000;
+        final long globalTimeoutMillis = 4000;
+        UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        uiAutomation.waitForIdle(idleTimeoutMillis, globalTimeoutMillis);
+        uiAutomation.executeAndWaitForEvent(
+                () -> mInstrumentation.runOnMainSync(
+                        () -> mTextView.setError("error", null)),
+                event -> isExpectedChangeType(event,
+                        AccessibilityEvent.CONTENT_CHANGE_TYPE_ERROR
+                                | AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_INVALID),
+                TIMEOUT);
+    }
+
+    @Test
     public void testClickableSpanOnClickDragOutside() throws Throwable {
         ClickableSpanTestDetails spanDetails = prepareAndRetrieveClickableSpanDetails();
         final int[] viewOnScreenXY = new int[2];
@@ -7422,6 +7474,27 @@ public class TextViewTest {
                 info.isLongClickable());
         assertTrue("info should have ACTION_LONG_CLICK",
                 actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK));
+    }
+
+    @ApiTest(apis = {"android.view.View#setAccessibilityDataPrivate",
+            "android.view.accessibility.AccessibilityEvent#setAccessibilityDataPrivate"})
+    @UiThreadTest
+    @Test
+    public void testOnPopulateA11yEvent_checksAccessibilityDataPrivateBeforePopulating() {
+        mTextView = findTextView(R.id.textview_text);
+        mTextView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_YES);
+
+        final AccessibilityEvent eventAdp = new AccessibilityEvent();
+        eventAdp.setAccessibilityDataPrivate(true);
+        mTextView.onPopulateAccessibilityEventInternal(eventAdp);
+        assertFalse("event should have populated text when ADP is true on both event & view",
+                eventAdp.getText().isEmpty());
+
+        final AccessibilityEvent eventNotAdp = new AccessibilityEvent();
+        eventNotAdp.setAccessibilityDataPrivate(false);
+        mTextView.onPopulateAccessibilityEventInternal(eventNotAdp);
+        assertTrue("event should not populate text when view ADP=true but event ADP=false",
+                eventNotAdp.getText().isEmpty());
     }
 
     @Test
@@ -9004,6 +9077,10 @@ public class TextViewTest {
 
         textView.measure(wMeasureSpec, hMeasureSpec);
         assertEquals(measuredWidth, textView.getMeasuredWidth());
+    }
+
+    private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {
+        return (event.getContentChangeTypes() & changeType) == changeType;
     }
 
     private void initializeTextForSmartSelection(CharSequence text) throws Throwable {

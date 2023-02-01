@@ -16,48 +16,40 @@
 
 package android.mediav2.cts;
 
-import android.media.MediaCodec;
-import android.media.MediaCodecList;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+
+import static org.junit.Assert.assertNotNull;
+
 import android.media.MediaFormat;
-import android.media.MediaMuxer;
+import android.mediav2.common.cts.EncoderConfigParams;
+import android.mediav2.common.cts.HDREncoderTestBase;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import java.util.Objects;
 
 /**
- * HDR10 Metadata is an aid for a display device to show the content in an optimal manner. It
+ * Test to validate hdr static and dynamic metadata in encoders.
+ * HDR Metadata is an aid for a display device to show the content in an optimal manner. It
  * contains the HDR content and mastering device properties that are used by the display device
- * to map the content according to its own color gamut and peak brightness. This information is
- * part of the elementary stream. Generally this information is placed at scene change intervals
- * or even at every frame level. If the encoder is configured with hdr info, then it is
- * expected to place this information in the elementary stream as-is. This test validates the
- * same. The test feeds per-frame or per-scene info at various points and expects the encoder
- * to place the hdr info in the elementary stream at exactly those points
- *
- * Restrict hdr info test for Android T and above
+ * to map the content according to its own color gamut and peak brightness. This information can
+ * be part of container and/or elementary stream. If the encoder is configured with hdr metadata,
+ * then it is expected to place this information in the elementary stream as-is. If a muxer is
+ * configured with hdr metadata then it is expected to place this information in container as-is.
+ * This test validates these requirements.
  */
 @RunWith(Parameterized.class)
 // P010 support was added in Android T, hence limit the following tests to Android T and above
@@ -65,44 +57,78 @@ import static org.junit.Assert.assertTrue;
 public class EncoderHDRInfoTest extends HDREncoderTestBase {
     private static final String LOG_TAG = EncoderHDRInfoTest.class.getSimpleName();
 
-    private String mHDRStaticInfo;
-    private Map<Integer, String> mHDRDynamicInfo;
+    private final String mHDRStaticInfo;
+    private final Map<Integer, String> mHDRDynamicInfo;
 
-    public EncoderHDRInfoTest(String encoderName, String mediaType, int bitrate,
-                              int width, int height, String HDRStaticInfo,
-                              Map<Integer, String> HDRDynamicInfo) {
-        super(encoderName, mediaType, bitrate, width, height);
-        mHDRStaticInfo = HDRStaticInfo;
-        mHDRDynamicInfo = HDRDynamicInfo;
+    public EncoderHDRInfoTest(String encoderName, String mediaType,
+            EncoderConfigParams encCfgParams, @SuppressWarnings("unused") String testLabel,
+            String hdrStaticInfo, Map<Integer, String> hdrDynamicInfo, String allTestParams) {
+        super(encoderName, mediaType, encCfgParams, allTestParams);
+        mHDRStaticInfo = hdrStaticInfo;
+        mHDRDynamicInfo = hdrDynamicInfo;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1})")
+    private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int profile,
+             int maxBframe) {
+        return new EncoderConfigParams.Builder(mediaType)
+                .setBitRate(512000)
+                .setWidth(352)
+                .setHeight(288)
+                .setMaxBFrames(maxBframe)
+                .setColorFormat(COLOR_FormatYUVP010)
+                .setProfile(profile)
+                .setRange(MediaFormat.COLOR_RANGE_LIMITED)
+                .setStandard(MediaFormat.COLOR_STANDARD_BT2020)
+                .setTransfer(MediaFormat.COLOR_TRANSFER_ST2084)
+                .build();
+    }
+
+    @Parameterized.Parameters(name = "{index}({0}_{1}_{3})")
     public static Collection<Object[]> input() {
         final boolean isEncoder = true;
         final boolean needAudio = false;
         final boolean needVideo = true;
-        final String[] mediaTypes = new String[]{
+        final String[] HDRMediaTypes = new String[]{
                 MediaFormat.MIMETYPE_VIDEO_AV1,
                 MediaFormat.MIMETYPE_VIDEO_HEVC,
                 MediaFormat.MIMETYPE_VIDEO_VP9
         };
+        final int[] maxBFrames = {0, 2};
 
         final List<Object[]> exhaustiveArgsList = new ArrayList<>();
-        for (String mediaType : mediaTypes) {
-            // mediaType, bitrate, width, height, hdrStaticInfo, hdrDynamicInfo
-            exhaustiveArgsList.add(new Object[]{mediaType, 512000, 352, 288, HDR_STATIC_INFO,
-                    null});
-            exhaustiveArgsList.add(new Object[]{mediaType, 512000, 352, 288, null,
-                    HDR_DYNAMIC_INFO});
-        }
+        for (String mediaType : HDRMediaTypes) {
+            for (int maxBFrame : maxBFrames) {
+                // mediaType, bitrate, width, height, maxBFrames, hdrStaticInfo, hdrDynamicInfo
+                if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC) && maxBFrame != 0) {
+                    continue;
+                }
+                int profile = Objects.requireNonNull(PROFILE_HDR10_MAP.get(mediaType),
+                        "mediaType : " + mediaType + " has no profile supporting HDR10")[0];
+                exhaustiveArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
+                        profile, maxBFrame), String.format("%dkbps_%dx%d_%s_%s_%d-bframes", 512,
+                        352, 288, "yuvp010", "hdrstaticinfo", maxBFrame), HDR_STATIC_INFO, null});
 
+                profile = Objects.requireNonNull(PROFILE_HDR10_PLUS_MAP.get(mediaType),
+                        "mediaType : " + mediaType + " has no profile supporting HDR10+")[0];
+                exhaustiveArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
+                        profile, maxBFrame), String.format("%dkbps_%dx%d_%s_%s_%d-bframes", 512,
+                        352, 288, "yuvp010", "hdrdynamicinfo", maxBFrame), null, HDR_DYNAMIC_INFO});
+            }
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 
+    /**
+     * Check description of class {@link EncoderHDRInfoTest}
+     */
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.12/C-6-4"})
     public void testHDRInfo() throws IOException, InterruptedException {
+        mActiveEncCfg = mEncCfgParams[0];
+        mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
+        assertNotNull("no raw resource found for testing config : " + mActiveEncCfg + mTestConfig
+                + mTestEnv, mActiveRawRes);
         validateHDRInfo(mHDRStaticInfo, mHDRDynamicInfo);
     }
 }

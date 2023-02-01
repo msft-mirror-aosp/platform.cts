@@ -33,7 +33,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -51,6 +50,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Instrumentation;
 import android.graphics.Insets;
+import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowInsetsAnimationTestBase.TestActivity;
@@ -105,7 +105,7 @@ import java.util.stream.Collectors;
 @RunWith(Parameterized.class)
 public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase {
 
-    TestActivity mActivity;
+    ControllerTestActivity mActivity;
     View mRootView;
     ControlListener mListener;
     CancellationSignal mCancellationSignal = new CancellationSignal();
@@ -139,12 +139,24 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
         };
     }
 
+    public static class ControllerTestActivity extends TestActivity {
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            // Ensure to set animation callback to null before starting a test. Otherwise, launching
+            // this activity might trigger some inset animation accidentally.
+            mView.setWindowInsetsAnimationCallback(null);
+        }
+    }
+
     @Before
     public void setUpWindowInsetsAnimationControllerTests() throws Throwable {
         assumeFalse(
                 "In Automotive, auxiliary inset changes can happen when IME inset changes, so "
                         + "allow Automotive skip IME inset animation tests.",
                 isCar() && mType == ime());
+        assertEquals("Test precondition failed: ValueAnimator.getDurationScale()",
+                1f, ValueAnimator.getDurationScale(), 0.001);
 
         final ImeEventStream mockImeEventStream;
         if (mType == ime()) {
@@ -152,7 +164,8 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
             assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                     nullValue());
 
-            // For the best test stability MockIme should be selected before launching TestActivity.
+            // For the best test stability MockIme should be selected before launching
+            // ControllerTestActivity.
             mMockImeSession = MockImeSession.create(
                     instrumentation.getContext(), instrumentation.getUiAutomation(),
                     new ImeSettings.Builder());
@@ -161,14 +174,15 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
             mockImeEventStream = null;
         }
 
-        mActivity = startActivityInWindowingMode(TestActivity.class, WINDOWING_MODE_FULLSCREEN);
+        mActivity = startActivityInWindowingMode(ControllerTestActivity.class,
+                WINDOWING_MODE_FULLSCREEN);
         mRootView = mActivity.getWindow().getDecorView();
         mListener = new ControlListener(mErrorCollector);
         assumeTestCompatibility();
 
         if (mockImeEventStream != null) {
-            // TestActivity has a focused EditText. Hence MockIme should receive onStartInput() for
-            // that EditText within a reasonable time.
+            // ControllerTestActivity has a focused EditText. Hence MockIme should receive
+            // onStartInput() for that EditText within a reasonable time.
             expectEvent(mockImeEventStream,
                     editorMatcher("onStartInput", mActivity.getEditTextMarker()),
                     TimeUnit.SECONDS.toMillis(10));
@@ -635,6 +649,7 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
         WindowInsetsAnimationController mController = null;
         int mTypes = -1;
         RuntimeException mCancelledStack = null;
+        RuntimeException mFinishedStack = null;
 
         ControlListener(ErrorCollector errorCollector) {
             mErrorCollector = errorCollector;
@@ -672,6 +687,7 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
             mErrorCollector.checkThat("isReady", controller.isReady(), is(false));
             mErrorCollector.checkThat("isFinished", controller.isFinished(), is(true));
             mErrorCollector.checkThat("isCancelled", controller.isCancelled(), is(false));
+            mFinishedStack = new RuntimeException("onFinished called here");
             report(FINISHED);
         }
 
@@ -702,7 +718,14 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
                                 "expected " + event + " but instead got " + CANCELLED,
                                 mCancelledStack);
                     }
-                    fail("Timeout waiting for " + event + "; reported events: " + reportedEvents());
+                    Throwable unexpectedStack = null;
+                    if (event == CANCELLED) {
+                        unexpectedStack = mFinishedStack;
+                    } else if (event == FINISHED) {
+                        unexpectedStack = mCancelledStack;
+                    }
+                    throw new AssertionError("Timeout waiting for " + event +
+                            "; reported events: " + reportedEvents(), unexpectedStack);
                 }
             } catch (InterruptedException e) {
                 throw new AssertionError("Interrupted", e);

@@ -73,8 +73,7 @@ public class WindowInsetsLayoutTests extends WindowManagerTestBase {
 
         testSetFitInsetsTypesInner(Type.statusBars(), activity, mainWindowRoot);
         testSetFitInsetsTypesInner(Type.navigationBars(), activity, mainWindowRoot);
-        testSetFitInsetsTypesInner(Type.systemBars() & ~Type.captionBar(), activity,
-                mainWindowRoot);
+        testSetFitInsetsTypesInner(Type.systemBars(), activity, mainWindowRoot);
     }
 
     private void testSetFitInsetsTypesInner(
@@ -124,7 +123,7 @@ public class WindowInsetsLayoutTests extends WindowManagerTestBase {
 
     private void testSetFitInsetsSidesInner(
             int sides, TestActivity activity, View mainWindowRoot) {
-        final int types = Type.systemBars() & ~Type.captionBar();
+        final int types = Type.systemBars();
         getInstrumentation().runOnMainSync(() -> {
             activity.addChildWindow(types, sides, false);
         });

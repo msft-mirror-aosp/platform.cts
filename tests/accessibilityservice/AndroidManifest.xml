@@ -69,6 +69,14 @@
                   android:name=".activities.NonDefaultDisplayActivity"
                   android:screenOrientation="locked"/>
 
+        <activity android:label="@string/proxy_display_activity"
+                  android:name=".activities.ProxyDisplayActivity"
+                  android:screenOrientation="locked"/>
+
+        <activity android:label="@string/proxy_concurrent_activity"
+                  android:name=".activities.ProxyConcurrentActivity"
+                  android:screenOrientation="locked"/>
+
         <activity android:label="Full screen activity for gesture dispatch testing"
              android:name=".AccessibilityGestureDispatchTest$GestureDispatchActivity"
              android:theme="@style/Theme_NoSwipeDismiss"
@@ -251,6 +259,28 @@
 
             <meta-data android:name="android.accessibilityservice"
                 android:resource="@xml/stub_non_ime_accessibility_service"/>
+        </service>
+
+        <service android:name=".StubMotionInterceptingAccessibilityService"
+             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accessibilityservice"
+                 android:resource="@xml/stub_motion_intercepting_accessibility_service"/>
+        </service>
+        <service android:name=".StubProxyConcurrentAccessibilityService"
+                 android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+                <category android:name="android.accessibilityservice.category.FEEDBACK_GENERIC"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accessibilityservice"
+                       android:resource="@xml/stub_proxy_concurrent_service"/>
         </service>
     </application>
 

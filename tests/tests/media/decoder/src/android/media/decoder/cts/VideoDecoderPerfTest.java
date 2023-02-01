@@ -27,7 +27,6 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
-import android.media.cts.Preconditions;
 import android.media.cts.TestArgs;
 import android.media.cts.TestUtils;
 import android.os.Bundle;
@@ -37,21 +36,20 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.MediaPerfUtils;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.Preconditions;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -211,7 +209,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         }
 
         // allow improvements in mainline-updated google-supplied software codecs.
-        boolean fasterIsOk = mUpdatedSwCodec & name.startsWith("c2.android.");
+        boolean fasterIsOk = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
         String error =
             MediaPerfUtils.verifyAchievableFrameRates(name, mime, width, height,
                            fasterIsOk,  measuredFps);

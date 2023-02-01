@@ -17,7 +17,6 @@
 package com.android.bedstead.nene.packages;
 
 import static android.Manifest.permission.FORCE_STOP_PACKAGES;
-import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.QUERY_ALL_PACKAGES;
 import static android.content.pm.ApplicationInfo.FLAG_STOPPED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
@@ -30,13 +29,21 @@ import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
+import static com.android.bedstead.nene.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
+import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+
 import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assert.fail;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.role.RoleManager;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.CrossProfileApps;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
@@ -56,11 +63,13 @@ import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.permissions.Permissions;
+import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.BlockingCallback.DefaultBlockingCallback;
 
 import java.io.File;
 import java.util.Arrays;
@@ -78,6 +87,8 @@ public final class Package {
     private static final int PIDS_PER_USER_ID = 100000;
     private static final PackageManager sPackageManager =
             TestApis.context().instrumentedContext().getPackageManager();
+    private static final RoleManager sRoleManager = TestApis.context().instrumentedContext()
+            .getSystemService(RoleManager.class);
 
     private final String mPackageName;
 
@@ -722,11 +733,19 @@ public final class Package {
     }
 
     /**
-     * Interact with AppOps for the given package.
+     * Interact with AppOps on the instrumented user for the given package.
      */
     @Experimental
     public AppOps appOps() {
-        return new AppOps(this);
+        return appOps(TestApis.users().instrumented());
+    }
+
+    /**
+     * Interact with AppOps on the given user for the given package.
+     */
+    @Experimental
+    public AppOps appOps(UserReference user) {
+        return new AppOps(this, user);
     }
 
     /**
@@ -777,6 +796,16 @@ public final class Package {
         stringBuilder.append("packageName=" + mPackageName);
         stringBuilder.append("}");
         return stringBuilder.toString();
+    }
+
+    /** {@code true} if the package exists on any user on the device as is not uninstalled. */
+    @TargetApi(S)
+    public boolean isInstalled() {
+        Versions.requireMinimumVersion(S);
+
+        try (PermissionContext p = TestApis.permissions().withPermission(QUERY_ALL_PACKAGES)) {
+            return packageInfoFromAnyUser(0) != null;
+        }
     }
 
     /** {@code true} if the package exists on the device. */
@@ -839,6 +868,43 @@ public final class Package {
         return packageInfo.sharedUserId;
     }
 
+    /**
+     * See {@link PackageManager#setSyntheticAppDetailsActivityEnabled(String, boolean)}.
+     */
+    @Experimental
+    public void setSyntheticAppDetailsActivityEnabled(UserReference user, boolean enabled) {
+        try (PermissionContext p = TestApis.permissions()
+                .withPermission(CHANGE_COMPONENT_ENABLED_STATE)) {
+            TestApis.context().androidContextAsUser(user).getPackageManager()
+                    .setSyntheticAppDetailsActivityEnabled(packageName(), enabled);
+        }
+    }
+
+    /**
+     * See {@link PackageManager#setSyntheticAppDetailsActivityEnabled(String, boolean)}.
+     */
+    @Experimental
+    public void setSyntheticAppDetailsActivityEnabled(boolean enabled) {
+        setSyntheticAppDetailsActivityEnabled(TestApis.users().instrumented(), enabled);
+    }
+
+    /**
+     * See {@link PackageManager#getSyntheticAppDetailsActivityEnabled(String)}.
+     */
+    @Experimental
+    public boolean syntheticAppDetailsActivityEnabled(UserReference user) {
+        return TestApis.context().androidContextAsUser(user).getPackageManager()
+                .getSyntheticAppDetailsActivityEnabled(packageName());
+    }
+
+    /**
+     * See {@link PackageManager#getSyntheticAppDetailsActivityEnabled(String)}.
+     */
+    @Experimental
+    public boolean syntheticAppDetailsActivityEnabled() {
+        return syntheticAppDetailsActivityEnabled(TestApis.users().instrumented());
+    }
+
     private static final class ProcessInfo {
         final String mPackageName;
         final int mPid;
@@ -860,5 +926,96 @@ public final class Package {
             return "ProcessInfo{packageName=" + mPackageName + ", pid="
                     + mPid + ", uid=" + mUid + ", userId=" + mUserId + "}";
         }
+    }
+
+    /**
+     * Set this package as filling the given role on the instrumented user.
+     */
+    @Experimental
+    public RoleContext setAsRoleHolder(String role) {
+        return setAsRoleHolder(role, TestApis.users().instrumented());
+    }
+
+    /**
+     * Set this package as filling the given role.
+     */
+    @Experimental
+    public RoleContext setAsRoleHolder(String role, UserReference user) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                MANAGE_ROLE_HOLDERS, INTERACT_ACROSS_USERS_FULL)) {
+            DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
+
+            sRoleManager.addRoleHolderAsUser(
+                    role,
+                    mPackageName,
+                    /* flags= */ 0,
+                    user.userHandle(),
+                    TestApis.context().instrumentedContext().getMainExecutor(),
+                    blockingCallback::triggerCallback);
+
+            boolean success = blockingCallback.await();
+            if (!success) {
+                fail("Could not set role holder of " + role + ".");
+            }
+
+            return new RoleContext(role, this, user);
+        } catch (InterruptedException e) {
+            throw new NeneException("Error waiting for setting role holder callback " + role, e);
+        }
+    }
+
+    /**
+     * Remove this package from the given role on the instrumented user.
+     */
+    @Experimental
+    public void removeAsRoleHolder(String role) {
+        removeAsRoleHolder(role, TestApis.users().instrumented());
+    }
+
+    /**
+     * Remove this package from the given role.
+     */
+    @Experimental
+    public void removeAsRoleHolder(String role, UserReference user) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                MANAGE_ROLE_HOLDERS)) {
+            DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
+            sRoleManager.removeRoleHolderAsUser(
+                    role,
+                    mPackageName,
+                    /* flags= */ 0,
+                    user.userHandle(),
+                    TestApis.context().instrumentedContext().getMainExecutor(),
+                    blockingCallback::triggerCallback);
+            TestApis.roles().setBypassingRoleQualification(false);
+
+            boolean success = blockingCallback.await();
+            if (!success) {
+                fail("Failed to clear the role holder of "
+                        + role + ".");
+            }
+        } catch (InterruptedException e) {
+            throw new NeneException("Error while clearing role holder " + role, e);
+        }
+    }
+
+    /**
+     * True if the given package on the instrumented user can have its ability to interact across
+     * profiles configured by the user.
+     */
+    @Experimental
+    public boolean canConfigureInteractAcrossProfiles() {
+        return canConfigureInteractAcrossProfiles(TestApis.users().instrumented());
+    }
+
+    /**
+     * True if the given package can have its ability to interact across profiles configured
+     * by the user.
+     */
+    @Experimental
+    public boolean canConfigureInteractAcrossProfiles(UserReference user) {
+        return TestApis.context().androidContextAsUser(user)
+                .getSystemService(CrossProfileApps.class)
+                .canConfigureInteractAcrossProfiles(packageName());
     }
 }

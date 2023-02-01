@@ -14,11 +14,14 @@
 """Utility functions to create custom capture requests."""
 
 
+import logging
 import math
-import unittest
 
-COMMON_IMG_ARS = (1.333, 1.778)
+COMMON_IMG_ARS = (4/3, 16/9)
 COMMON_IMG_ARS_ATOL = 0.01
+MAX_YUV_SIZE = (1920, 1080)
+MIN_YUV_SIZE = (640, 360)
+VGA_W, VGA_H = 640, 360
 
 
 def is_common_aspect_ratio(size):
@@ -36,13 +39,14 @@ def is_common_aspect_ratio(size):
   return False
 
 
-def auto_capture_request(linear_tonemap=False, props=None):
+def auto_capture_request(linear_tonemap=False, props=None, do_af=True):
   """Returns a capture request with everything set to auto.
 
   Args:
    linear_tonemap: [Optional] boolean whether linear tonemap should be used.
    props: [Optional] object from its_session_utils.get_camera_properties().
           Must present when linear_tonemap is True.
+   do_af: [Optional] boolean whether af mode should be active.
 
   Returns:
     Auto capture request, ready to be passed to the
@@ -52,17 +56,21 @@ def auto_capture_request(linear_tonemap=False, props=None):
       'android.control.mode': 1,
       'android.control.aeMode': 1,
       'android.control.awbMode': 1,
-      'android.control.afMode': 1,
+      'android.control.afMode': 1 if do_af else 0,
       'android.colorCorrection.mode': 1,
+      'android.shading.mode': 1,
       'android.tonemap.mode': 1,
       'android.lens.opticalStabilizationMode': 0,
       'android.control.videoStabilizationMode': 0
   }
+  if not do_af:
+    req['android.lens.focusDistance'] = 0.0
   if linear_tonemap:
     if props is None:
       raise AssertionError('props is None with linear_tonemap.')
     # CONTRAST_CURVE mode
     if 0 in props['android.tonemap.availableToneMapModes']:
+      logging.debug('CONTRAST_CURVE tonemap mode')
       req['android.tonemap.mode'] = 0
       req['android.tonemap.curve'] = {
           'red': [0.0, 0.0, 1.0, 1.0],  # coordinate pairs: x0, y0, x1, y1
@@ -71,6 +79,7 @@ def auto_capture_request(linear_tonemap=False, props=None):
       }
     # GAMMA_VALUE mode
     elif 3 in props['android.tonemap.availableToneMapModes']:
+      logging.debug('GAMMA_VALUE tonemap mode')
       req['android.tonemap.mode'] = 3
       req['android.tonemap.gamma'] = 1.0
     else:
@@ -126,6 +135,7 @@ def manual_capture_request(sensitivity,
       raise AssertionError('props is None.')
     # CONTRAST_CURVE mode
     if 0 in props['android.tonemap.availableToneMapModes']:
+      logging.debug('CONTRAST_CURVE tonemap mode')
       req['android.tonemap.mode'] = 0
       req['android.tonemap.curve'] = {
           'red': [0.0, 0.0, 1.0, 1.0],
@@ -134,6 +144,7 @@ def manual_capture_request(sensitivity,
       }
     # GAMMA_VALUE mode
     elif 3 in props['android.tonemap.availableToneMapModes']:
+      logging.debug('GAMMA_VALUE tonemap mode')
       req['android.tonemap.mode'] = 3
       req['android.tonemap.gamma'] = 1.0
     else:
@@ -384,6 +395,30 @@ def get_smallest_yuv_format(props, match_ar=None):
   return fmt
 
 
+def get_near_vga_yuv_format(props, match_ar=None):
+  """Return a capture request and format spec for the smallest yuv size.
+
+  Args:
+    props: object returned from camera_properties_utils.get_camera_properties().
+    match_ar: (Optional) a (w, h) tuple. Aspect ratio to match during search.
+
+  Returns:
+    fmt: an output format specification for the smallest possible yuv format
+           for this device.
+  """
+  size = get_available_output_sizes('yuv', props, match_ar_size=match_ar)[-1]
+  fmt = {'format': 'yuv', 'width': size[0], 'height': size[1]}
+  fmt_area = fmt['width'] * fmt['height']
+
+  if ((fmt['width'] / fmt['height']) not in COMMON_IMG_ARS or
+      fmt_area < MIN_YUV_SIZE[1] * MIN_YUV_SIZE[0] or
+      fmt_area > MAX_YUV_SIZE[1] * MAX_YUV_SIZE[0]):
+    fmt['width'], fmt['height'] = VGA_W, VGA_H
+
+  logging.debug('YUV format selected: %s', fmt)
+  return fmt
+
+
 def get_largest_jpeg_format(props, match_ar=None):
   """Return a capture request and format spec for the largest jpeg size.
 
@@ -416,38 +451,3 @@ def get_max_digital_zoom(props):
     max_z = props['android.scaler.availableMaxDigitalZoom']
 
   return max_z
-
-
-class CaptureRequestUtilsTest(unittest.TestCase):
-  """Unit tests for this module.
-
-  Ensures rational number conversion dicts are created properly.
-  """
-  _FLOAT_HALF = 0.5
-  # No immutable container: frozendict requires package install on partner host
-  _RATIONAL_HALF = {'numerator': 32, 'denominator': 64}
-
-  def test_float_to_rational(self):
-    """Unit test for float_to_rational."""
-    self.assertEqual(
-        float_to_rational(self._FLOAT_HALF, 64), self._RATIONAL_HALF)
-
-  def test_rational_to_float(self):
-    """Unit test for rational_to_float."""
-    self.assertTrue(
-        math.isclose(rational_to_float(self._RATIONAL_HALF),
-                     self._FLOAT_HALF, abs_tol=0.0001))
-
-  def test_int_to_rational(self):
-    """Unit test for int_to_rational."""
-    rational_10 = {'numerator': 10, 'denominator': 1}
-    rational_1 = {'numerator': 1, 'denominator': 1}
-    rational_2 = {'numerator': 2, 'denominator': 1}
-    # Simple test
-    self.assertEqual(int_to_rational(10), rational_10)
-    # Handle list entries
-    self.assertEqual(
-        int_to_rational([1, 2]), [rational_1, rational_2])
-
-if __name__ == '__main__':
-  unittest.main()

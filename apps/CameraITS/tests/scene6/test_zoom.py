@@ -17,10 +17,11 @@
 import logging
 import math
 import os.path
+
+import cv2
 from mobly import test_runner
 import numpy as np
 
-import cv2
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
@@ -28,24 +29,24 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-CIRCLE_COLOR = 0  # [0: black, 255: white]
-CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
-CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
-LINE_COLOR = (255, 0, 0)  # red
-LINE_THICKNESS = 5
-MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
-MIN_CIRCLE_PTS = 25
-MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
-NAME = os.path.splitext(os.path.basename(__file__))[0]
-NUM_STEPS = 10
-OFFSET_LOW_VAL = 10  # number of pixels
-OFFSET_RTOL = 0.15
-OFFSET_RTOL_LOW_OFFSET = 0.20
-OFFSET_RTOL_MIN_FD = 0.30
-RADIUS_RTOL = 0.10
-RADIUS_RTOL_MIN_FD = 0.15
-ZOOM_MAX_THRESH = 10.0
-ZOOM_MIN_THRESH = 2.0
+_CIRCLE_COLOR = 0  # [0: black, 255: white]
+_CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
+_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_LINE_COLOR = (255, 0, 0)  # red
+_LINE_THICKNESS = 5
+_MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
+_MIN_CIRCLE_PTS = 25
+_MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
+_NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_STEPS = 10
+_OFFSET_LOW_VAL = 10  # number of pixels
+_OFFSET_RTOL = 0.15
+_OFFSET_RTOL_LOW_OFFSET = 0.20
+_OFFSET_RTOL_MIN_FD = 0.30
+_RADIUS_RTOL = 0.10
+_RADIUS_RTOL_MIN_FD = 0.15
+_ZOOM_MAX_THRESH = 10.0
+_ZOOM_MIN_THRESH = 2.0
 
 
 def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
@@ -89,10 +90,10 @@ def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
     for fl in physical_props[i]['android.lens.info.availableFocalLengths']:
       logging.debug('cam[%s] min_fd: %.3f (diopters), fl: %.2f', i, min_fd, fl)
       if (math.isclose(min_fd, 0.0, rel_tol=1E-6) or  # fixed focus
-          (1.0/min_fd < chart_distance_m*MIN_FOCUS_DIST_TOL)):
-        test_tols[fl] = (RADIUS_RTOL, OFFSET_RTOL)
+          (1.0/min_fd < chart_distance_m*_MIN_FOCUS_DIST_TOL)):
+        test_tols[fl] = (_RADIUS_RTOL, _OFFSET_RTOL)
       else:
-        test_tols[fl] = (RADIUS_RTOL_MIN_FD, OFFSET_RTOL_MIN_FD)
+        test_tols[fl] = (_RADIUS_RTOL_MIN_FD, _OFFSET_RTOL_MIN_FD)
         logging.debug('loosening RTOL for cam[%s]: '
                       'min focus distance too large.', i)
   # find intersection of formats for max common format
@@ -163,15 +164,15 @@ def find_center_circle(img, img_name, color, min_area, debug):
   img_ctr = [gray.shape[1] // 2, gray.shape[0] // 2]
   for contour in contours:
     area = cv2.contourArea(contour)
-    if area > min_area and len(contour) >= MIN_CIRCLE_PTS:
+    if area > min_area and len(contour) >= _MIN_CIRCLE_PTS:
       shape = opencv_processing_utils.component_shape(contour)
       radius = (shape['width'] + shape['height']) / 4
       colour = img_bw[shape['cty']][shape['ctx']]
       circlish = round((math.pi * radius**2) / area, 4)
       if (colour == color and
-          (1 - CIRCLISH_RTOL <= circlish <= 1 + CIRCLISH_RTOL) and
+          (1 - _CIRCLISH_RTOL <= circlish <= 1 + _CIRCLISH_RTOL) and
           math.isclose(shape['width'], shape['height'],
-                       rel_tol=CIRCLE_AR_RTOL)):
+                       rel_tol=_CIRCLE_AR_RTOL)):
         circles.append([shape['ctx'], shape['cty'], radius, circlish, area])
 
   if not circles:
@@ -188,14 +189,14 @@ def find_center_circle(img, img_name, color, min_area, debug):
   # mark image center
   size = gray.shape
   m_x, m_y = size[1] // 2, size[0] // 2
-  marker_size = LINE_THICKNESS * 10
-  cv2.drawMarker(img, (m_x, m_y), LINE_COLOR, markerType=cv2.MARKER_CROSS,
-                 markerSize=marker_size, thickness=LINE_THICKNESS)
+  marker_size = _LINE_THICKNESS * 10
+  cv2.drawMarker(img, (m_x, m_y), _LINE_COLOR, markerType=cv2.MARKER_CROSS,
+                 markerSize=marker_size, thickness=_LINE_THICKNESS)
 
   # add circle to saved image
   center_i = (int(round(circle[0], 0)), int(round(circle[1], 0)))
   radius_i = int(round(circle[2], 0))
-  cv2.circle(img, center_i, radius_i, LINE_COLOR, LINE_THICKNESS)
+  cv2.circle(img, center_i, radius_i, _LINE_COLOR, _LINE_THICKNESS)
   image_processing_utils.write_image(img / 255.0, img_name)
 
   return [circle[0], circle[1], circle[2]]
@@ -225,8 +226,8 @@ class ZoomTest(its_base_test.ItsBaseTest):
       debug = self.debug_mode
 
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * ZOOM_MIN_THRESH)
-      z_list = np.arange(z_min, z_max, float(z_max - z_min) / (NUM_STEPS - 1))
+      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      z_list = np.arange(z_min, z_max, float(z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
 
       # set TOLs based on camera and test rig params
@@ -237,24 +238,23 @@ class ZoomTest(its_base_test.ItsBaseTest):
         test_tols = {}
         fls = props['android.lens.info.availableFocalLengths']
         for fl in fls:
-          test_tols[fl] = (RADIUS_RTOL, OFFSET_RTOL)
+          test_tols[fl] = (_RADIUS_RTOL, _OFFSET_RTOL)
         yuv_size = capture_request_utils.get_largest_yuv_format(props)
         size = [yuv_size['width'], yuv_size['height']]
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
       # do captures over zoom range and find circles with cv2
-      cam.do_3a()
       req = capture_request_utils.auto_capture_request()
       for i, z in enumerate(z_list):
         logging.debug('zoom ratio: %.2f', z)
         req['android.control.zoomRatio'] = z
+        cam.do_3a()
         cap = cam.do_capture(
             req, {'format': 'yuv', 'width': size[0], 'height': size[1]})
         img = image_processing_utils.convert_capture_to_rgb_image(
             cap, props=props)
-        img_name = '%s_%s.jpg' % (os.path.join(self.log_path,
-                                               NAME), round(z, 2))
+        img_name = f'{os.path.join(self.log_path, _NAME)}_{round(z, 2)}.jpg'
         image_processing_utils.write_image(img, img_name)
 
         # determine radius tolerance of capture
@@ -268,26 +268,26 @@ class ZoomTest(its_base_test.ItsBaseTest):
         # Find the center circle in img
         try:
           circle = find_center_circle(
-              img, img_name, CIRCLE_COLOR,
-              min_area=MIN_AREA_RATIO * size[0] * size[1] * z * z,
+              img, img_name, _CIRCLE_COLOR,
+              min_area=_MIN_AREA_RATIO * size[0] * size[1] * z * z,
               debug=debug)
           if circle_cropped(circle, size):
             logging.debug('zoom %.2f is too large! Skip further captures', z)
             break
         except AssertionError as e:
-          if z/z_list[0] >= ZOOM_MAX_THRESH:
+          if z/z_list[0] >= _ZOOM_MAX_THRESH:
             break
           else:
             raise AssertionError(
-                f'No circle was detected for zoom ratio <= {ZOOM_MAX_THRESH}. '
+                f'No circle was detected for zoom ratio <= {_ZOOM_MAX_THRESH}. '
                 'Take pictures according to instructions carefully!') from e
         test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
                         'o_tol': offset_tol, 'fl': cap_fl}
 
     # assert some range is tested before circles get too big
-    zoom_max_thresh = ZOOM_MAX_THRESH
+    zoom_max_thresh = _ZOOM_MAX_THRESH
     z_max_ratio = z_max / z_min
-    if z_max_ratio < ZOOM_MAX_THRESH:
+    if z_max_ratio < _ZOOM_MAX_THRESH:
       zoom_max_thresh = z_max_ratio
     test_data_max_z = (test_data[max(test_data.keys())]['z'] /
                        test_data[min(test_data.keys())]['z'])
@@ -327,9 +327,9 @@ class ZoomTest(its_base_test.ItsBaseTest):
                       distance(offset_init[0], offset_init[1]))
         logging.debug('offset_rel: %.3f', offset_rel)
         rel_tol = data['o_tol']
-        if (np.linalg.norm(offset_init) < OFFSET_LOW_VAL and
-            rel_tol == OFFSET_RTOL):
-          rel_tol = OFFSET_RTOL_LOW_OFFSET
+        if (np.linalg.norm(offset_init) < _OFFSET_LOW_VAL and
+            rel_tol == _OFFSET_RTOL):
+          rel_tol = _OFFSET_RTOL_LOW_OFFSET
         if not math.isclose(offset_rel, 1.0, rel_tol=rel_tol):
           raise AssertionError(f"zoom: {data['z']:.2f}, offset(rel to 1): "
                                f'{offset_rel:.4f}, RTOL: {rel_tol}')

@@ -28,6 +28,8 @@ import android.view.accessibility.AccessibilityEvent;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +39,7 @@ import org.junit.runner.RunWith;
  */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
 public class AccessibilityServiceInfoTest {
 
     @Rule
@@ -146,6 +149,7 @@ public class AccessibilityServiceInfoTest {
         };
         sentInfo.setInteractiveUiTimeoutMillis(2000);
         sentInfo.setNonInteractiveUiTimeoutMillis(4000);
+        sentInfo.setAccessibilityTool(true);
     }
 
     /**
@@ -172,5 +176,7 @@ public class AccessibilityServiceInfoTest {
         assertEquals("nonInteractiveUiTimeout not marshalled properly",
                 sentInfo.getNonInteractiveUiTimeoutMillis(),
                 receivedInfo.getNonInteractiveUiTimeoutMillis());
+        assertEquals("isAccessibilityTool not marshalled properly",
+                sentInfo.isAccessibilityTool(), receivedInfo.isAccessibilityTool());
     }
 }

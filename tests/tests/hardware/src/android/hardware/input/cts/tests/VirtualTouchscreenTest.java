@@ -16,8 +16,12 @@
 
 package android.hardware.input.cts.tests;
 
+import static org.junit.Assert.assertThrows;
+
+import android.graphics.Point;
 import android.hardware.input.VirtualTouchEvent;
 import android.hardware.input.VirtualTouchscreen;
+import android.hardware.input.VirtualTouchscreenConfig;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 
@@ -39,8 +43,16 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
 
     @Override
     void onSetUpVirtualInputDevice() {
-        mVirtualTouchscreen = mVirtualDevice.createVirtualTouchscreen(mVirtualDisplay, DEVICE_NAME,
-                /* vendorId= */ 1, /* productId= */ 1);
+        final Point size = new Point();
+        mVirtualDisplay.getDisplay().getSize(size);
+        final VirtualTouchscreenConfig touchscreenConfig =
+                new VirtualTouchscreenConfig.Builder(size.x, size.y)
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setInputDeviceName(DEVICE_NAME)
+                        .setAssociatedDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
+                        .build();
+        mVirtualTouchscreen = mVirtualDevice.createVirtualTouchscreen(touchscreenConfig);
     }
 
     @Override
@@ -73,6 +85,7 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                 .build());
         // Convert the input axis size to its equivalent fraction of the total screen.
         final float computedSize = inputSize / (DISPLAY_WIDTH - 1f);
+
         // There's an extraneous ACTION_HOVER_ENTER event in builds before T QPR1. We fixed the
         // related bug (b/244744917) so the hover event is not generated anymore. In order to make
         // the test permissive to existing and new behaviors we only verify the first 2 events here.
@@ -82,6 +95,60 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                         /* pressure= */ 1f, /* size= */ computedSize, /* axisSize= */ inputSize),
                 createMotionEvent(MotionEvent.ACTION_UP, /* x= */ x, /* y= */ y,
                         /* pressure= */ 1f, /* size= */ computedSize, /* axisSize= */ inputSize)));
+    }
+
+    @Test
+    public void sendHoverEvents() {
+        final float x0 = 50f, y0 = 50f;
+        final float x1 = 60f, y1 = 60f;
+
+        sendHoverEvent(VirtualTouchEvent.ACTION_DOWN, x0, y0);
+        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, x0, y1);
+        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, x1, y1);
+        sendHoverEvent(VirtualTouchEvent.ACTION_UP, x1, y1);
+
+        verifyEvents(Arrays.asList(
+                createMotionEvent(MotionEvent.ACTION_HOVER_ENTER, x0, y0),
+                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x0, y0),
+                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x0, y1),
+                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x1, y1),
+                createMotionEvent(MotionEvent.ACTION_HOVER_EXIT, x1, y1)));
+    }
+
+    @Test
+    public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        final float inputSize = 1f;
+        final float x = 50f;
+        final float y = 50f;
+
+        try (DropShellPermissionsTemporarily drop = new DropShellPermissionsTemporarily()) {
+            assertThrows(SecurityException.class,
+                    () -> mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
+                            .setAction(VirtualTouchEvent.ACTION_DOWN)
+                            .setPointerId(1)
+                            .setX(x)
+                            .setY(y)
+                            .setPressure(255f)
+                            .setMajorAxisSize(inputSize)
+                            .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
+                            .build()));
+        }
+    }
+
+    private void sendHoverEvent(int action, float x, float y) {
+        mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
+                .setAction(action)
+                .setPointerId(1)
+                .setX(x)
+                .setY(y)
+                .setPressure(0f)
+                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
+                .build());
+    }
+
+    private MotionEvent createMotionEvent(int action, float x, float y) {
+        return createMotionEvent(action, x, y, /* pressure= */ 0f, /* size= */ 0f,
+                /* axisSize= */ 0f);
     }
 
     private MotionEvent createMotionEvent(int action, float x, float y, float pressure, float size,

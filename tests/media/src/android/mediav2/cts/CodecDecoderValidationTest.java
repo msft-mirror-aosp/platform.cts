@@ -16,12 +16,24 @@
 
 package android.mediav2.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.CodecDecoderTestBase;
+import android.mediav2.common.cts.OutputManager;
 
 import androidx.test.filters.LargeTest;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -34,17 +46,34 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import static android.mediav2.cts.CodecTestBase.SupportClass.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 /**
- * The following test validates decoder for the given input clip. For audio components, we check
- * if the output buffers timestamp is strictly increasing. If possible the decoded output rms is
- * compared against a reference value and the error is expected to be within a tolerance of 5%. For
- * video components, we check if the output buffers timestamp is identical to the sorted input pts
- * list. Also for video standard post mpeg4, the decoded output checksum is compared against
- * reference checksum.
+ * The tests accepts multiple test vectors packaged in different way. For instance, Avc elementary
+ * stream can be packed in mp4, avi, mkv, ts, 3gp, webm and so on. These clips when decoded, are
+ * expected to yield same output. Similarly for Vpx, av1, no-show frame can be packaged in to
+ * separate access units or can be combined with a display frame in to one access unit. Both these
+ * scenarios are expected to give same output.
+ * <p>
+ * The test extracts and decodes the stream from all of its listed containers and verifies that
+ * they produce the same output. In short, the tests validate extractors, codecs together.
+ * <p>
+ * Additionally, as the test runs mediacodec in byte buffer mode,
+ * <ul>
+ *     <li>For normative video media types, the test expects the decoded output to be identical to
+ *     reference decoded output. The reference decoded output is represented by its CRC32
+ *     checksum and is sent to the test as a parameter along with the test clip.</li>
+ *     <li>For non normative media types, the decoded output is checked for consistency.</li>
+ *     <li>For lossless audio media types, the test verifies if the rms error between input and
+ *     output is 0.</li>
+ *     <li>For lossy audio media types, the test verifies if the rms error is within 5% of
+ *     reference rms error. The reference value is computed using reference decoder and is sent
+ *     to the test as a parameter along with the test clip.</li>
+ *     <li>For all video components, the test expects the output timestamp list to be identical to
+ *     input timestamp list.</li>
+ *     <li>For all audio components, the test expects the output timestamps to be strictly
+ *     increasing.</li>
+ *     <li>The test also checks correctness of essential keys of output format returned by
+ *     mediacodec.</li>
+ * </ul>
  */
 @RunWith(Parameterized.class)
 public class CodecDecoderValidationTest extends CodecDecoderTestBase {
@@ -63,6 +92,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
     private static final String MEDIA_TYPE_HEVC = MediaFormat.MIMETYPE_VIDEO_HEVC;
     private static final String MEDIA_TYPE_VP9 = MediaFormat.MIMETYPE_VIDEO_VP9;
     private static final String MEDIA_TYPE_AV1 = MediaFormat.MIMETYPE_VIDEO_AV1;
+    private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private final String[] mSrcFiles;
     private final String mRefFile;
     private final float mRmsError;
@@ -73,12 +103,12 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
     private final int mHeight;
     private final SupportClass mSupportRequirements;
 
-    public CodecDecoderValidationTest(String decoder, String mime, String[] srcFiles,
+    public CodecDecoderValidationTest(String decoder, String mediaType, String[] srcFiles,
             String refFile, float rmsError, long refCRC, int sampleRate, int channelCount,
-            int width, int height, SupportClass supportRequirements) {
-        super(decoder, mime, null);
+            int width, int height, SupportClass supportRequirements, String allTestParams) {
+        super(decoder, mediaType, null, allTestParams);
         mSrcFiles = srcFiles;
-        mRefFile = refFile;
+        mRefFile = MEDIA_DIR + refFile;
         mRmsError = rmsError;
         mRefCRC = refCRC;
         mSampleRate = sampleRate;
@@ -96,7 +126,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
         // mediaType, array list of test files (underlying elementary stream is same, except they
         // are placed in different containers), ref file, rms error, checksum, sample rate,
         // channel count, width, height, SupportClass
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 // vp9 test vectors with no-show frames signalled in alternate ways
                 {MEDIA_TYPE_VP9, new String[]{"bbb_340x280_768kbps_30fps_vp9.webm",
                         "bbb_340x280_768kbps_30fps_split_non_display_frame_vp9.webm"},
@@ -106,7 +136,8 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, 1201859039L, -1, -1, 520, 390, CODEC_ALL},
 
                 // mpeg2 test vectors with interlaced fields signalled in alternate ways
-                {MEDIA_TYPE_MPEG2, new String[]{"bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_1field.ts",
+                {MEDIA_TYPE_MPEG2, new String[]{
+                        "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_1field.ts",
                         "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_2fields.mp4"},
                         null, -1.0f, -1L, -1, -1, 512, 288, CODEC_ALL},
 
@@ -317,8 +348,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         "audio/highres_2ch_192kHz_s16le_5s.raw", 0.0f, -1L, 192000, 2, -1, -1,
                         CODEC_ALL},
                 {MEDIA_TYPE_FLAC, new String[]{"audio/sd_2ch_48kHz_lvl4_flac.mka"},
-                        "audio/sd_2ch_48kHz_f32le.raw", 3.446394f, -1L, 48000, 2, -1, -1,
-                        CODEC_ALL},
+                        "audio/sd_2ch_48kHz_s16le.raw", 1.0f, -1L, 48000, 2, -1, -1, CODEC_ALL},
 
                 // raw
                 {MEDIA_TYPE_RAW, new String[]{"audio/bbb_1ch_8kHz.wav"},
@@ -354,6 +384,14 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         CODEC_ALL},
                 {MEDIA_TYPE_RAW, new String[]{"audio/highres_2ch_96kHz.wav"},
                         "audio/highres_2ch_96kHz_s16le_5s.raw", 0.0f, -1L, 96000, 2, -1, -1,
+                        CODEC_ALL},
+                {MEDIA_TYPE_RAW, new String[]{"audio/sd_2ch_48kHz.wav"},
+                        "audio/sd_2ch_48kHz_s16le.raw", 1.0f, -1L, 48000, 2, -1, -1, CODEC_ALL},
+                {MEDIA_TYPE_RAW, new String[]{"audio/bellezza_2ch_48kHz_s32le.wav"},
+                        "audio/bellezza_2ch_48kHz_s16le.raw", 1.0f, -1L, 48000, 2, -1, -1,
+                        CODEC_ALL},
+                {MEDIA_TYPE_RAW, new String[]{"audio/bellezza_2ch_48kHz_s24le.wav"},
+                        "audio/bellezza_2ch_48kHz_s16le.raw", 1.0f, -1L, 48000, 2, -1, -1,
                         CODEC_ALL},
 
                 // aac-lc
@@ -573,34 +611,54 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, 44100, 2, -1, -1, CODEC_DEFAULT},
                 {MEDIA_TYPE_AAC, new String[]{"audio/bbb_2ch_48kHz_usac.m4a"},
                         null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_DEFAULT},
-        });
+        }));
+        if (IS_AT_LEAST_U) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    // Support for 176kHz and 192kHz for c2.android.raw.decoder was added in
+                    // Android U
+                    {MEDIA_TYPE_RAW, new String[]{"audio/highres_1ch_176kHz.wav"},
+                            "audio/highres_1ch_176kHz_s16le_5s.raw", 0.0f, -1L, 176400, 1, -1, -1,
+                            CODEC_ALL},
+                    {MEDIA_TYPE_RAW, new String[]{"audio/highres_1ch_192kHz.wav"},
+                            "audio/highres_1ch_192kHz_s16le_5s.raw", 0.0f, -1L, 192000, 1, -1, -1,
+                            CODEC_ALL},
+                    {MEDIA_TYPE_RAW, new String[]{"audio/highres_2ch_176kHz.wav"},
+                            "audio/highres_2ch_176kHz_s16le_5s.raw", 0.0f, -1L, 176400, 2, -1, -1,
+                            CODEC_ALL},
+                    {MEDIA_TYPE_RAW, new String[]{"audio/highres_2ch_192kHz.wav"},
+                            "audio/highres_2ch_192kHz_s16le_5s.raw", 0.0f, -1L, 192000, 2, -1, -1,
+                            CODEC_ALL},
+            }));
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 
     /**
-     * Test decodes and compares decoded output of two files.
+     * Extract, Decode and Validate. Check description of class {@link CodecDecoderValidationTest}
      */
+    @ApiTest(apis = {"MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
+            "MediaCodecInfo.CodecCapabilities#COLOR_FormatYUVP010",
+            "android.media.AudioFormat#ENCODING_PCM_16BIT"})
+    @CddTest(requirements = "5.1.3")
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testDecodeAndValidate() throws IOException, InterruptedException {
         ArrayList<MediaFormat> formats = new ArrayList<>();
         for (String file : mSrcFiles) {
-            formats.add(setUpSource(file));
+            formats.add(setUpSource(MEDIA_DIR + file));
             mExtractor.release();
         }
-        checkFormatSupport(mCodecName, mMime, false, formats, null, mSupportRequirements);
+        checkFormatSupport(mCodecName, mMediaType, false, formats, null, mSupportRequirements);
         {
-            OutputManager ref = null;
+            OutputManager ref = new OutputManager();
+            OutputManager test = new OutputManager(ref.getSharedErrorLogs());
             mSaveToMem = true;
-            int audioEncoding = AudioFormat.ENCODING_INVALID;
+            int loopCounter = 0;
             for (String file : mSrcFiles) {
-                mOutputBuff = new OutputManager();
+                mOutputBuff = loopCounter == 0 ? ref : test;
+                mOutputBuff.reset();
                 mCodec = MediaCodec.createByCodecName(mCodecName);
-                MediaFormat format = setUpSource(file);
-                if (mIsAudio) {
-                    audioEncoding = format.getInteger(MediaFormat.KEY_PCM_ENCODING,
-                            AudioFormat.ENCODING_PCM_16BIT);
-                }
+                MediaFormat format = setUpSource(MEDIA_DIR + file);
                 configureCodec(format, false, true, false);
                 mCodec.start();
                 mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -608,40 +666,31 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                 queueEOS();
                 waitForAllOutputs();
                 mOutFormat = mCodec.getOutputFormat();
-                if (mIsAudio) {
-                    assertEquals(mOutFormat.getInteger(MediaFormat.KEY_PCM_ENCODING,
-                            AudioFormat.ENCODING_PCM_16BIT), audioEncoding);
-                }
                 mCodec.stop();
                 mCodec.release();
                 mExtractor.release();
-                String log = String.format("codec: %s, test file: %s:: ", mCodecName, file);
-                assertTrue(log + " unexpected error", !mAsyncHandle.hasSeenError());
-                assertTrue(log + "no input sent", 0 != mInputCount);
-                assertTrue(log + "output received", 0 != mOutputCount);
-                if (ref == null) ref = mOutputBuff;
-                if (mIsAudio) {
-                    assertTrue("reference output pts is not strictly increasing",
-                            mOutputBuff.isPtsStrictlyIncreasing(mPrevOutputPts));
-                } else if (!mIsInterlaced) {
-                    assertTrue("input pts list and output pts list are not identical",
-                            mOutputBuff.isOutPtsListIdenticalToInpPtsList(false));
+                if (!(mIsInterlaced ? ref.equalsInterlaced(mOutputBuff) :
+                        ref.equals(mOutputBuff))) {
+                    fail("Decoder output received for file " + mSrcFiles[0]
+                            + " is not identical to the output received for file " + file + "\n"
+                            + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
                 }
-                if (mIsInterlaced) {
-                    assertTrue(log + "decoder outputs are not identical",
-                            ref.equalsInterlaced(mOutputBuff));
-                } else {
-                    assertEquals(log + "decoder outputs are not identical", ref, mOutputBuff);
-                }
-                assertEquals("sample rate mismatch", mSampleRate,
+                assertEquals("Output sample rate is different from configured sample rate \n"
+                                + mTestConfig + mTestEnv, mSampleRate,
                         mOutFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1));
-                assertEquals("channel count mismatch", mChannelCount,
+                assertEquals("Output channel count is different from configured channel count \n"
+                                + mTestConfig + mTestEnv, mChannelCount,
                         mOutFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1));
-                assertEquals("width mismatch", mWidth, getWidth(mOutFormat));
-                assertEquals("height mismatch", mHeight, getHeight(mOutFormat));
+                assertEquals("Output width is different from configured width \n" + mTestConfig
+                        + mTestEnv, mWidth, getWidth(mOutFormat));
+                assertEquals("Output height is different from configured height \n" + mTestConfig
+                        + mTestEnv, mHeight, getHeight(mOutFormat));
+                loopCounter++;
             }
-            Assume.assumeFalse("skip checksum due to tonemapping", mSkipChecksumVerification);
-            CodecDecoderTest.verify(ref, mRefFile, mRmsError, audioEncoding, mRefCRC);
+            Assume.assumeFalse("skip checksum verification due to tone mapping",
+                    mSkipChecksumVerification);
+            CodecDecoderTest.verify(ref, mRefFile, mRmsError, AudioFormat.ENCODING_PCM_16BIT,
+                    mRefCRC, mTestConfig.toString() + mTestEnv.toString());
         }
     }
 }

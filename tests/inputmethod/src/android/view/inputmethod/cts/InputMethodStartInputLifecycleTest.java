@@ -26,6 +26,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -529,12 +530,12 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             }
 
             if (expectNativeInvalidateInput) {
-                // If InputMethodManager#interruptInput() is expected to be natively supported,
+                // If InputMethodManager#invalidateInput() is expected to be natively supported,
                 // additional View#onCreateInputConnection() must not happen.
                 assertThat(onCreateConnectionCount.get()).isEqualTo(
                         prevOnCreateInputConnectionCount);
             } else {
-                // InputMethodManager#interruptInput() is expected to be falling back into
+                // InputMethodManager#invalidateInput() is expected to be falling back into
                 // InputMethodManager#restartInput(), which triggers View#onCreateInputConnection()
                 // as a consequence.
                 assertThat(onCreateConnectionCount.get()).isGreaterThan(
@@ -546,7 +547,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             assertThat(forkedStream.findFirst(onFinishInputMatcher()).isPresent()).isFalse();
 
             // Make sure that InputMethodManager#updateSelection() will be ignored when there is
-            // no change from the last call of InputMethodManager#interruptInput().
+            // no change from the last call of InputMethodManager#invalidateInput().
             TestUtils.runOnMainSync(() -> {
                 Selection.setSelection(myEditor.mEditable, newSelStart, newSelEnd);
                 final InputMethodManager imm = myEditor.getContext().getSystemService(
@@ -560,6 +561,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     }
 
     private static Predicate<ImeEvent> onFinishInputMatcher() {
-        return event -> TextUtils.equals("onFinishInput", event.getEventName());
+        return withDescription("onFinishInput()",
+                event -> TextUtils.equals("onFinishInput", event.getEventName()));
     }
 }

@@ -628,6 +628,8 @@ public class RemoteViewsTest {
 
         mRemoteViews.setBitmap(R.id.remoteView_absolute, "setImageBitmap", bitmap);
         assertThrowsOnReapply(ActionException.class);
+
+        assertEquals(bitmap.getAllocationByteCount(), mRemoteViews.estimateMemoryUsage());
     }
 
     @Test
@@ -839,7 +841,8 @@ public class RemoteViewsTest {
     public void testSetOnCheckedChangeResponse() throws Throwable {
         String action = "my-checked-change-action";
         MockBroadcastReceiver receiver =  new MockBroadcastReceiver();
-        mContext.registerReceiver(receiver, new IntentFilter(action));
+        mContext.registerReceiver(receiver, new IntentFilter(action),
+                Context.RECEIVER_EXPORTED_UNAUDITED);
 
         Intent intent = new Intent(action).setPackage(mContext.getPackageName());
         PendingIntent pendingIntent =

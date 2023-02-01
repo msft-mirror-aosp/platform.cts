@@ -191,6 +191,34 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    public void testAdjustNotification_proposedImportanceKey() throws Exception {
+        setUpListeners();
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        mNotificationManager.allowAssistantAdjustment(Adjustment.KEY_IMPORTANCE_PROPOSAL);
+        mUi.dropShellPermissionIdentity();
+
+        sendNotification(1, ICON_ID);
+        StatusBarNotification sbn = getFirstNotificationFromPackage(TestNotificationListener.PKG);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationManager.IMPORTANCE_UNSPECIFIED, out.getProposedImportance());
+
+        Bundle signals = new Bundle();
+        signals.putInt(Adjustment.KEY_IMPORTANCE_PROPOSAL, NotificationManager.IMPORTANCE_HIGH);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+
+        mNotificationAssistantService.adjustNotification(adjustment);
+        Thread.sleep(SLEEP_TIME); // wait for adjustment to be processed
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, out.getProposedImportance());
+    }
+
+    @Test
     public void testAdjustNotification_importanceKey() throws Exception {
         setUpListeners();
 
@@ -668,6 +696,7 @@ public class NotificationAssistantServiceTest {
         if (isTelevision()) {
             return;
         }
+        assumeFalse("Status bar service not supported", isWatch());
 
         setUpListeners();
         turnScreenOn();
@@ -689,11 +718,12 @@ public class NotificationAssistantServiceTest {
 
         mStatusBarManager.collapsePanels();
         mUi.dropShellPermissionIdentity();
-
     }
 
     @Test
     public void testOnNotificationFeedbackReceived() throws Exception {
+        assumeFalse("Status bar service not supported", isWatch());
+
         setUpListeners(); // also enables assistant
         mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE", "android.permission.EXPAND_STATUS_BAR");
 

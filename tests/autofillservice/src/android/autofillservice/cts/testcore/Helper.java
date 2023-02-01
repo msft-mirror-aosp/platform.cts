@@ -39,7 +39,7 @@ import android.app.assist.AssistStructure;
 import android.app.assist.AssistStructure.ViewNode;
 import android.app.assist.AssistStructure.WindowNode;
 import android.autofillservice.cts.R;
-import android.autofillservice.cts.activities.LoginActivity;
+import android.autofillservice.cts.activities.AbstractAutoFillActivity;
 import android.content.AutofillOptions;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -66,6 +66,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStructure.HtmlInfo;
 import android.view.WindowInsets;
+import android.view.autofill.AutofillFeatureFlags;
 import android.view.autofill.AutofillId;
 import android.view.autofill.AutofillManager;
 import android.view.autofill.AutofillManager.AutofillCallback;
@@ -121,6 +122,8 @@ public final class Helper {
     public static final String ID_STATIC_TEXT = "static_text";
     public static final String ID_EMPTY = "empty";
     public static final String ID_CANCEL_FILL = "cancel_fill";
+    public static final String ID_IMEACTION_TEXT = "ime_option_text";
+    public static final String ID_IMEACTION_LABEL = "ime_option_text_label";
 
     public static final String NULL_DATASET_ID = null;
 
@@ -829,36 +832,16 @@ public final class Helper {
      * Creates an array of {@link AutofillId} mapped from the {@code structure} nodes with the given
      * {@code resourceIds}.
      */
-    public static AutofillId[] getAutofillIds(Function<String, ViewNode> nodeResolver,
+    public static AutofillId[] getAutofillIds(Function<String, AutofillId> autofillIdResolver,
             String[] resourceIds) {
         if (resourceIds == null) return null;
 
         final AutofillId[] requiredIds = new AutofillId[resourceIds.length];
         for (int i = 0; i < resourceIds.length; i++) {
             final String resourceId = resourceIds[i];
-            final ViewNode node = nodeResolver.apply(resourceId);
-            if (node == null) {
-                throw new AssertionError("No node with resourceId " + resourceId);
-            }
-            requiredIds[i] = node.getAutofillId();
-
+            requiredIds[i] = autofillIdResolver.apply(resourceId);
         }
         return requiredIds;
-    }
-
-    /**
-     * Get an {@link AutofillId} mapped from the {@code structure} node with the given
-     * {@code resourceId}.
-     */
-    public static AutofillId getAutofillId(Function<String, ViewNode> nodeResolver,
-            String resourceId) {
-        if (resourceId == null) return null;
-
-        final ViewNode node = nodeResolver.apply(resourceId);
-        if (node == null) {
-            throw new AssertionError("No node with resourceId " + resourceId);
-        }
-        return node.getAutofillId();
     }
 
     /**
@@ -1254,12 +1237,12 @@ public final class Helper {
      * @param event event to be asserted
      * @param key the only key expected in the client state bundle
      * @param value the only value expected in the client state bundle
-     * @param expectedPresentation the exptected ui presentation type
+     * @param uiType the expected ui presentation type
      */
     public static void assertFillEventForDatasetShown(@NonNull FillEventHistory.Event event,
-            @NonNull String key, @NonNull String value, int expectedPresentation) {
+            @NonNull String key, @NonNull String value, int uiType) {
         assertFillEvent(event, TYPE_DATASETS_SHOWN, NULL_DATASET_ID, key, value, null);
-        assertFillEventPresentationType(event, expectedPresentation);
+        assertFillEventPresentationType(event, uiType);
     }
 
     /**
@@ -1269,9 +1252,9 @@ public final class Helper {
      * @param event event to be asserted
      */
     public static void assertFillEventForDatasetShown(@NonNull FillEventHistory.Event event,
-            int expectedPresentation) {
+            int uiType) {
         assertFillEvent(event, TYPE_DATASETS_SHOWN, NULL_DATASET_ID, null, null, null);
-        assertFillEventPresentationType(event, expectedPresentation);
+        assertFillEventPresentationType(event, uiType);
     }
 
     /**
@@ -1283,11 +1266,13 @@ public final class Helper {
      * @param datasetId dataset set id expected in the event
      * @param key the only key expected in the client state bundle
      * @param value the only value expected in the client state bundle
+     * @param uiType the expected ui presentation type
      */
     public static void assertFillEventForDatasetAuthenticationSelected(
             @NonNull FillEventHistory.Event event,
-            @Nullable String datasetId, @NonNull String key, @NonNull String value) {
+            @Nullable String datasetId, @NonNull String key, @NonNull String value, int uiType) {
         assertFillEvent(event, TYPE_DATASET_AUTHENTICATION_SELECTED, datasetId, key, value, null);
+        assertFillEventPresentationType(event, uiType);
     }
 
     /**
@@ -1298,11 +1283,13 @@ public final class Helper {
      * @param datasetId dataset set id expected in the event
      * @param key the only key expected in the client state bundle
      * @param value the only value expected in the client state bundle
+     * @param uiType the expected ui presentation type
      */
     public static void assertFillEventForAuthenticationSelected(
             @NonNull FillEventHistory.Event event,
-            @Nullable String datasetId, @NonNull String key, @NonNull String value) {
+            @Nullable String datasetId, @NonNull String key, @NonNull String value, int uiType) {
         assertFillEvent(event, TYPE_AUTHENTICATION_SELECTED, datasetId, key, value, null);
+        assertFillEventPresentationType(event, uiType);
     }
 
     public static void assertFillEventForFieldsClassification(@NonNull FillEventHistory.Event event,
@@ -1657,12 +1644,46 @@ public final class Helper {
     }
 
     /**
+     * Enable the main credential manager feature.
+     * If this is off, any underlying changes for autofill-credentialManager integrations are off.
+     */
+    public static void enableCredentialManagerFeature(@NonNull Context context) {
+        setCredentialManagerFeature(context, true);
+    }
+
+    /**
+     * Enable ignoring credential manager important views for autofill feature
+     */
+    public static void ignoreCredentialManagerViews(@NonNull Context context) {
+        setDeviceConfig(context,
+                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_IGNORE_VIEWS, true);
+    }
+
+    /**
+     * Enable Credential Manager related autofill changes
+     */
+    public static void setCredentialManagerFeature(@NonNull Context context, boolean enabled) {
+        setDeviceConfig(context,
+                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_ENABLED, enabled);
+    }
+
+    /**
+     * Set device config to set flag values.
+     */
+    public static void setDeviceConfig(
+            @NonNull Context context, @NonNull String feature, boolean value) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL, feature);
+        setDeviceConfig(deviceConfigStateManager, String.valueOf(value));
+    }
+
+    /**
      * Enable fill dialog feature
      */
     public static void enableFillDialogFeature(@NonNull Context context) {
         DeviceConfigStateManager deviceConfigStateManager =
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
-                        AutofillManager.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED);
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED);
         setDeviceConfig(deviceConfigStateManager, "true");
     }
 
@@ -1701,7 +1722,7 @@ public final class Helper {
     /**
      * Asserts whether mock IME is showing
      */
-    public static void assertMockImeStatus(LoginActivity activity,
+    public static void assertMockImeStatus(AbstractAutoFillActivity activity,
             boolean expectedImeShow) throws Exception {
         Timeouts.MOCK_IME_TIMEOUT.run("assertMockImeStatus(" + expectedImeShow + ")",
                 () -> {

@@ -52,6 +52,7 @@ import static android.server.wm.app.Components.TURN_SCREEN_ON_WITH_RELAYOUT_ACTI
 import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_FROM_TRANSLUCENT;
 import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_TO_TRANSLUCENT;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -195,11 +196,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
-        assumeTrue(supportsLockScreen());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        final boolean notSupportsInsecureLock = !supportsInsecureLock();
-        if (notSupportsInsecureLock) {
+        if (!supportsInsecureLock()) {
             lockScreenSession.setLockCredential();
         }
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
@@ -207,16 +206,36 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 true /* useWindowFlags */);
         testTurnScreenOnActivity(lockScreenSession, activityClient,
                 false /* useWindowFlags */);
-        if (notSupportsInsecureLock) {
-            // In the platform without InsecureLock, we just test if the display is on with
-            // TurnScreenOnActivity.
-            mObjectTracker.close(lockScreenSession);
+
+        // Start TURN_SCREEN_ON_ACTIVITY
+        launchActivity(TURN_SCREEN_ON_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
+        assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
+
+        // Start another activity on top and put device to sleep
+        final ActivitySession activity = activityClient.startActivity(
+                getLaunchActivityBuilder().setUseInstrumentation()
+                        .setWaitForLaunched(false).setTargetActivity(TOP_ACTIVITY));
+        if (supportsLockScreen()) {
+            // top activity is hidden behind lock screen
+            waitAndAssertActivityState(TOP_ACTIVITY, STATE_STOPPED,
+                    "Top activity must be stopped.");
+        } else {
+            waitAndAssertActivityState(TOP_ACTIVITY, STATE_RESUMED,
+                    "Top activity must be resumed.");
         }
+        lockScreenSession.sleepDevice();
+
+        // Finish the top activity and make sure the device still in sleep
+        activity.finish();
+        waitAndAssertActivityState(TURN_SCREEN_ON_ACTIVITY, STATE_STOPPED,
+                "Activity must be stopped");
+        mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, false);
+        assertFalse("Display must remain OFF", isDisplayOn(DEFAULT_DISPLAY));
     }
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-        assumeTrue(supportsLockScreen());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
@@ -348,16 +367,16 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         if (!hasHomeScreen()) {
             return;
         }
+        mWmState.computeState();
+        final int homeTaskDisplayAreaFeatureId =
+                mWmState.getTaskDisplayAreaFeatureId(mWmState.getHomeActivityName());
+
         // Start LaunchingActivity and BroadcastReceiverActivity in two separate tasks.
         getLaunchActivityBuilder().setTargetActivity(BROADCAST_RECEIVER_ACTIVITY)
                 .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
                 .setIntentFlags(FLAG_ACTIVITY_NEW_TASK).execute();
         waitAndAssertResumedActivity(BROADCAST_RECEIVER_ACTIVITY,"Activity must be resumed");
-        // Home activity can still be visible if the BROADCAST_RECEIVER_ACTIVITY is not in the
-        // same TaskDisplayArea.
-        assumeTrue("Should launch on same TaskDisplayArea" ,
-                mWmState.getTaskDisplayArea(BROADCAST_RECEIVER_ACTIVITY) ==
-                        mWmState.getTaskDisplayArea(mWmState.getHomeActivityName()));
         final int taskId = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).mTaskId;
 
         try {
@@ -366,6 +385,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                     .setUseInstrumentation()
                     .setTargetActivity(BROADCAST_RECEIVER_ACTIVITY)
                     .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
                     .setIntentFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_TASK_ON_HOME).execute();
             mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
         } finally {
@@ -395,21 +415,25 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
             mWmState.assertHomeActivityVisible(true /* visible */);
         }
 
+        // If home activity is present we will launch the activities into the same TDA as the home,
+        // otherwise we will launch the second activity into the same TDA as the first one.
+        int launchTaskDisplayAreaFeatureId = hasHomeScreen()
+                ? mWmState.getTaskDisplayAreaFeatureId(mWmState.getHomeActivityName())
+                : FEATURE_UNDEFINED;
+
         // Launch an activity that calls "moveTaskToBack" to finish itself.
-        launchActivity(MOVE_TASK_TO_BACK_ACTIVITY, extraString(EXTRA_FINISH_POINT, finishPoint));
+        launchActivityOnTaskDisplayArea(MOVE_TASK_TO_BACK_ACTIVITY, WINDOWING_MODE_FULLSCREEN,
+                launchTaskDisplayAreaFeatureId, DEFAULT_DISPLAY,
+                extraString(EXTRA_FINISH_POINT, finishPoint));
+
         mWmState.assertVisibility(MOVE_TASK_TO_BACK_ACTIVITY, true);
 
-        // Launch a different activity on top.
-        launchActivity(BROADCAST_RECEIVER_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        // Launch a different activity on top into the same TaskDisplayArea.
+        launchTaskDisplayAreaFeatureId =
+                mWmState.getTaskDisplayAreaFeatureId(MOVE_TASK_TO_BACK_ACTIVITY);
+        launchActivityOnTaskDisplayArea(BROADCAST_RECEIVER_ACTIVITY, WINDOWING_MODE_FULLSCREEN,
+                launchTaskDisplayAreaFeatureId, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
-        // Assert activity state and visibility only if both tasks were launched
-        // in the same task display area.
-        WindowManagerState.DisplayArea firstTaskTda = mWmState
-                .getTaskDisplayArea(MOVE_TASK_TO_BACK_ACTIVITY);
-        WindowManagerState.DisplayArea secondTaskTda = mWmState
-                .getTaskDisplayArea(BROADCAST_RECEIVER_ACTIVITY);
-        assumeTrue("Tasks were not launched in the same display area ",
-                firstTaskTda == secondTaskTda);
         mWmState.waitForActivityState(MOVE_TASK_TO_BACK_ACTIVITY,STATE_STOPPED);
         final boolean shouldBeVisible =
                 !mWmState.isBehindOpaqueActivities(MOVE_TASK_TO_BACK_ACTIVITY);
@@ -495,7 +519,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         // Bring launching activity back to the foreground
         launchActivityNoWait(LAUNCHING_ACTIVITY);
         // Wait for the most front activity of the task.
-        mWmState.waitForValidState(ALT_LAUNCHING_ACTIVITY);
+        mWmState.waitForFocusedActivity("Waiting for Alt Launching Activity to be focused",
+                ALT_LAUNCHING_ACTIVITY);
 
         // Ensure the alternate launching activity is still in focus.
         mWmState.assertFocusedActivity("Alt Launching Activity must be focused",
@@ -504,7 +529,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         pressBackButton();
 
         // Wait for the bottom activity back to the foreground.
-        mWmState.waitForValidState(LAUNCHING_ACTIVITY);
+        mWmState.waitForFocusedActivity("Waiting for Launching Activity to be focused",
+                LAUNCHING_ACTIVITY);
 
         // Ensure launching activity was brought forward.
         mWmState.assertFocusedActivity("Launching Activity must be focused",

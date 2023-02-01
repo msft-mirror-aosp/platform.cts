@@ -31,6 +31,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothAudioPolicy;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothStatusCodes;
@@ -76,7 +77,6 @@ public class BluetoothDeviceTest extends AndroidTestCase {
     public void tearDown() throws Exception {
         super.tearDown();
         if (mHasBluetooth && mHasCompanionDevice) {
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
             mAdapter = null;
             mUiAutomation.dropShellPermissionIdentity();
         }
@@ -142,8 +142,24 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         }
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
-        assertThrows("No BLUETOOTH_PRIVILEGED permission",
-                SecurityException.class, () -> mFakeDevice.getIdentityAddress());
+        assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
+                () -> mFakeDevice.getIdentityAddress());
+    }
+
+    public void test_getConnectionHandle() {
+        if (!mHasBluetooth || !mHasCompanionDevice) {
+            // Skip the test if bluetooth or companion device are not present.
+            return;
+        }
+
+        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
+        assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
+                () -> mFakeDevice.getConnectionHandle(TRANSPORT_LE));
+
+        // but it should work after we get the permission
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        var handle = mFakeDevice.getConnectionHandle(TRANSPORT_LE);
+        assertEquals(handle, BluetoothDevice.ERROR);
     }
 
     public void test_getAnonymizedAddress() {
@@ -152,7 +168,7 @@ public class BluetoothDeviceTest extends AndroidTestCase {
             return;
         }
 
-        assertEquals(mFakeDevice.getAnonymizedAddress(), "XX:XX:XX:AA:BB:CC");
+        assertEquals("XX:XX:XX:XX:BB:CC", mFakeDevice.getAnonymizedAddress());
     }
 
     public void test_getBatteryLevel() {
@@ -447,6 +463,53 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(ACCESS_ALLOWED, mFakeDevice.getSimAccessPermission());
         assertTrue(mFakeDevice.setSimAccessPermission(ACCESS_REJECTED));
         assertEquals(ACCESS_REJECTED, mFakeDevice.getSimAccessPermission());
+    }
+
+    public void test_getAudioPolicyRemoteSupported() {
+        if (!mHasBluetooth || !mHasCompanionDevice) {
+            // Skip the test if bluetooth or companion device are not present.
+            return;
+        }
+
+        assertThrows(SecurityException.class, () -> mFakeDevice.getAudioPolicyRemoteSupported());
+
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        assertEquals(BluetoothAudioPolicy.FEATURE_UNCONFIGURED_BY_REMOTE,
+                mFakeDevice.getAudioPolicyRemoteSupported());
+    }
+
+    public void test_setGetAudioPolicy() {
+        if (!mHasBluetooth || !mHasCompanionDevice) {
+            // Skip the test if bluetooth or companion device are not present.
+            return;
+        }
+
+        BluetoothAudioPolicy demoAudioPolicy = new BluetoothAudioPolicy.Builder().build();
+
+        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
+        assertThrows(SecurityException.class, () -> mFakeDevice.setAudioPolicy(demoAudioPolicy));
+        assertThrows(SecurityException.class, () -> mFakeDevice.getAudioPolicy());
+
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        assertEquals(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED,
+                mFakeDevice.setAudioPolicy(demoAudioPolicy));
+        assertNull(mFakeDevice.getAudioPolicy());
+
+        BluetoothAudioPolicy newPolicy = new BluetoothAudioPolicy.Builder(demoAudioPolicy)
+                .setCallEstablishPolicy(BluetoothAudioPolicy.POLICY_ALLOWED)
+                .setConnectingTimePolicy(BluetoothAudioPolicy.POLICY_NOT_ALLOWED)
+                .setInBandRingtonePolicy(BluetoothAudioPolicy.POLICY_ALLOWED)
+                .build();
+
+        assertEquals(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED,
+                mFakeDevice.setAudioPolicy(newPolicy));
+        assertNull(mFakeDevice.getAudioPolicy());
+
+        assertEquals(BluetoothAudioPolicy.POLICY_ALLOWED, newPolicy.getCallEstablishPolicy());
+        assertEquals(BluetoothAudioPolicy.POLICY_NOT_ALLOWED, newPolicy.getConnectingTimePolicy());
+        assertEquals(BluetoothAudioPolicy.POLICY_ALLOWED, newPolicy.getInBandRingtonePolicy());
     }
 
     private byte[] convertPinToBytes(String pin) {
