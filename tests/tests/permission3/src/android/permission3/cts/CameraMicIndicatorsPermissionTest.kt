@@ -48,6 +48,7 @@ import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.modules.utils.build.SdkLevel
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import org.junit.After
 import org.junit.Assert
@@ -225,8 +226,10 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         testCameraAndMicIndicator(useMic = true, useCamera = false)
     }
 
+    // TODO b/269687722: remove once mainline presubmit uses a more recent S build
     @Test
     @AsbSecurityTest(cveBugId = [258672042])
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
     fun testMicIndicatorWithManualFinishOpStillShows() {
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = true, useCamera = false, finishEarly = true)
@@ -239,6 +242,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     fun testChainUsageWithOtherUsage() {
         // TV has only the mic icon
         assumeFalse(isTv)
@@ -367,7 +371,12 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         } else if (isCar) {
             assertCarIndicatorsShown(useMic, useCamera, useHotword, chainUsage)
         } else {
-            assertPrivacyChipAndIndicatorsPresent(useMic || useHotword, useCamera, chainUsage,
+            val micInUse = if (SdkLevel.isAtLeastU()) {
+                useMic || useHotword
+            } else {
+                useMic
+            }
+            assertPrivacyChipAndIndicatorsPresent(micInUse, useCamera, chainUsage,
                 safetyCenterEnabled)
         }
     }

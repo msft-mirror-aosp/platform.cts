@@ -467,7 +467,7 @@
 
         <activity android:name="android.server.wm.ActivityTransitionTests$TransitionActivity"/>
 
-        <activity android:name="android.server.wm.ActivityTransitionTests$OverridePendingTransitionActivity"/>
+        <activity android:name="android.server.wm.ActivityTransitionTests$CustomBackgroundTransitionActivity"/>
 
         <activity android:name="android.server.wm.ActivityTransitionTests$TransitionActivityWithWhiteBackground"
             android:theme="@style/Theme.WhiteBackground"
@@ -627,6 +627,15 @@
         <activity android:name="android.server.wm.SurfaceControlViewHostTests$TestActivity"
                   android:exported="true"
                   android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+
+        <activity android:name="android.server.wm.MoveAnimationTests$FloatingActivity"
+                  android:exported="true"
+                  android:noHistory="true"
+                  android:theme="@style/Floating"/>
+        <activity android:name="android.server.wm.MoveAnimationTests$FloatingActivity$NoMove"
+                  android:exported="true"
+                  android:noHistory="true"
+                  android:theme="@style/Floating.NoMove"/>
 
         <service android:name="android.server.wm.scvh.EmbeddedSCVHService"
             android:process="com.android.server.wm.scvh.embedded_process" />

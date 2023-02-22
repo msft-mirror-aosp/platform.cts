@@ -54,6 +54,7 @@ import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 
 private const val BROADCAST_TIMEOUT_MS = 60000L
 
@@ -205,6 +206,10 @@ inline fun <T> withUnusedThresholdMs(threshold: Long, action: () -> T): T {
 }
 
 inline fun <T> withSafetyCenterEnabled(action: () -> T): T {
+    assumeFalse("This test is only supported on phones",
+        hasFeatureWatch() || hasFeatureTV() || hasFeatureAutomotive()
+    )
+
     return withDeviceConfig(
         DeviceConfig.NAMESPACE_PRIVACY, PROPERTY_SAFETY_CENTER_ENABLED,
         true.toString(), action)
@@ -247,8 +252,22 @@ fun openUnusedAppsNotification() {
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.text("Open")).click()
     } else {
-        runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
-        waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT).click()
+        val permissionPkg: String = InstrumentationRegistry.getTargetContext()
+            .packageManager.permissionControllerPackageName
+        eventually({
+            // Eventually clause because clicking is sometimes inconsistent if the screen is
+            // scrolling
+            runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
+            waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT).click()
+            wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
+                assertTrue(
+                    "Unused apps page did not open after tapping notification.",
+                    UiAutomatorUtils.getUiDevice().wait(
+                        Until.hasObject(By.pkg(permissionPkg).depth(0)), VIEW_WAIT_TIMEOUT
+                    )
+                )
+            }
+        }, NOTIF_FIND_TIMEOUT)
     }
 }
 
@@ -262,6 +281,11 @@ fun hasFeatureTV(): Boolean {
             PackageManager.FEATURE_LEANBACK) ||
             InstrumentationRegistry.getTargetContext().packageManager.hasSystemFeature(
                     PackageManager.FEATURE_TELEVISION)
+}
+
+fun hasFeatureAutomotive(): Boolean {
+    return InstrumentationRegistry.getTargetContext().packageManager.hasSystemFeature(
+        PackageManager.FEATURE_AUTOMOTIVE)
 }
 
 private fun expandNotificationsWatch(uiDevice: UiDevice) {

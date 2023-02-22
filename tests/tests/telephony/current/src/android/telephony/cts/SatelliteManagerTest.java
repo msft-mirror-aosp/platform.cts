@@ -26,10 +26,15 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.OutcomeReceiver;
+import android.telephony.satellite.ISatelliteDatagramReceiverAck;
 import android.telephony.satellite.PointingInfo;
-import android.telephony.satellite.SatelliteCallback;
 import android.telephony.satellite.SatelliteCapabilities;
+import android.telephony.satellite.SatelliteDatagram;
+import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.SatellitePositionUpdateCallback;
+import android.telephony.satellite.SatelliteProvisionStateCallback;
+import android.telephony.satellite.SatelliteStateCallback;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -37,7 +42,6 @@ import androidx.test.InstrumentationRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -60,8 +64,7 @@ public class SatelliteManagerTest {
     @Test
     public void testSatellitePositionUpdates() {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        SatellitePositionUpdateListenerTest callback =
-                new SatellitePositionUpdateListenerTest();
+        SatellitePositionUpdateCallbackTest callback = new SatellitePositionUpdateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
@@ -70,7 +73,7 @@ public class SatelliteManagerTest {
     }
 
     @Test
-    public void testRequestMaxCharactersPerSatelliteTextMessage() {
+    public void testRequestMaxSizePerSendingDatagram() {
         final AtomicReference<Integer> maxCharacters = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
@@ -88,7 +91,7 @@ public class SatelliteManagerTest {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> mSatelliteManager.requestMaxCharactersPerSatelliteTextMessage(
+                () -> mSatelliteManager.requestMaxSizePerSendingDatagram(
                         getContext().getMainExecutor(), receiver));
     }
 
@@ -103,16 +106,24 @@ public class SatelliteManagerTest {
     }
 
     @Test
-    public void testRegisterForSatelliteProvisionStateChanged() {
+    public void testDeprovisionSatelliteService() {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        SatelliteProvisionStateListenerTest satelliteProvisionStateListener =
-                new SatelliteProvisionStateListenerTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> mSatelliteManager.deprovisionSatelliteService(
+                        "", getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
+    public void testRegisterForSatelliteProvisionStateChanged() {
+        SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
+                new SatelliteProvisionStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> mSatelliteManager.registerForSatelliteProvisionStateChanged(
-                        getContext().getMainExecutor(), error::offer,
-                        satelliteProvisionStateListener));
+                        getContext().getMainExecutor(), satelliteProvisionStateCallback));
     }
 
     @Test
@@ -139,13 +150,13 @@ public class SatelliteManagerTest {
     }
 
     @Test
-    public void testSetSatelliteEnabled() {
+    public void testRequestSatelliteEnabled() {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, () -> mSatelliteManager.setSatelliteEnabled(
+        assertThrows(SecurityException.class, () -> mSatelliteManager.requestSatelliteEnabled(
                 true, getContext().getMainExecutor(), error::offer));
-        assertThrows(SecurityException.class, () -> mSatelliteManager.setSatelliteEnabled(
+        assertThrows(SecurityException.class, () -> mSatelliteManager.requestSatelliteEnabled(
                 false, getContext().getMainExecutor(), error::offer));
     }
 
@@ -226,6 +237,116 @@ public class SatelliteManagerTest {
                 getContext().getMainExecutor(), receiver));
     }
 
+    @Test
+    public void testSatelliteModemStateChanged() throws Exception {
+        SatelliteStateCallbackTest callback = new SatelliteStateCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, ()-> mSatelliteManager
+                .registerForSatelliteModemStateChanged(getContext().getMainExecutor(), callback));
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, ()-> mSatelliteManager
+                .unregisterForSatelliteModemStateChanged(callback));
+    }
+
+    @Test
+    public void testSatelliteDatagramCallback() throws Exception {
+        SatelliteDatagramCallbackTest callback = new SatelliteDatagramCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, ()-> mSatelliteManager
+                .registerForSatelliteDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                        getContext().getMainExecutor(), callback));
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, ()-> mSatelliteManager
+                .unregisterForSatelliteDatagram(callback));
+    }
+
+    @Test
+    public void testPollPendingSatelliteDatagrams() throws Exception {
+        LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                ()-> mSatelliteManager.pollPendingSatelliteDatagrams(
+                        getContext().getMainExecutor(), resultListener::offer));
+    }
+
+    @Test
+    public void testSendSatelliteDatagram() {
+        final AtomicReference<Long> datagramId = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Long, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Long result) {
+                        datagramId.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+
+        String mText = "This is a test datagram message";
+        SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                ()-> mSatelliteManager.sendSatelliteDatagram(0,
+                        SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram,
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRequestIsSatelliteCommunicationAllowedForCurrentLocation() {
+        final AtomicReference<Boolean> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, () -> mSatelliteManager.requestIsSatelliteEnabled(
+                getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRequestTimeForNextSatelliteVisibility() {
+        final AtomicReference<Integer> nextVisibilityDuration = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        nextVisibilityDuration.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> mSatelliteManager.requestTimeForNextSatelliteVisibility(
+                        getContext().getMainExecutor(), receiver));
+    }
+
     private Context getContext() {
         return InstrumentationRegistry.getContext();
     }
@@ -235,26 +356,48 @@ public class SatelliteManagerTest {
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION);
     }
 
-    private static class SatellitePositionUpdateListenerTest extends SatelliteCallback
-            implements SatelliteCallback.SatellitePositionUpdateListener {
+    private static class SatellitePositionUpdateCallbackTest extends
+            SatellitePositionUpdateCallback {
         @Override
-        public void onSatellitePositionUpdate(PointingInfo pointingInfo) {
-            Log.d(TAG, "onSatellitePositionUpdate: pointingInfo=" + pointingInfo);
+        public void onSatellitePositionChanged(PointingInfo pointingInfo) {
+            Log.d(TAG, "onSatellitePositionChanged: pointingInfo=" + pointingInfo);
         }
 
         @Override
-        public void onMessageTransferStateUpdate(int state) {
-            Log.d(TAG, "onMessageTransferStateUpdate: state=" + state);
+        public void onDatagramTransferStateChanged(int state, int sendPendingCount,
+                int receivePendingCount, int errorCode) {
+            Log.d(TAG, "onSatellitePositionChanged: state=" + state + ", sendPendingCount="
+                    + sendPendingCount + ", receivePendingCount=" + receivePendingCount
+                    + ", errorCode=" + errorCode);
         }
     }
 
-    private static class SatelliteProvisionStateListenerTest extends SatelliteCallback
-            implements SatelliteCallback.SatelliteProvisionStateListener {
+    private static class SatelliteProvisionStateCallbackTest extends
+            SatelliteProvisionStateCallback {
         @Override
-        public void onSatelliteProvisionStateChanged(int[] features,
-                boolean provisioned) {
-            Log.d(TAG, "onSatelliteProvisionStateChanged: features="
-                    + Arrays.toString(features) + ", provisioned=" + provisioned);
+        public void onSatelliteProvisionStateChanged(boolean provisioned) {
+            Log.d(TAG, "onSatelliteProvisionStateChanged: provisioned=" + provisioned);
+        }
+    }
+
+    private static class SatelliteStateCallbackTest extends SatelliteStateCallback {
+        @Override
+        public void onSatelliteModemStateChanged(int state) {
+            Log.d(TAG, "onSatelliteModemStateChanged: state=" + state);
+        }
+
+        @Override
+        public void onPendingDatagramCount(int count) {
+            Log.d(TAG, "onPendingDatagramCount: count=" + count);
+        }
+    }
+
+    private static class SatelliteDatagramCallbackTest extends SatelliteDatagramCallback {
+        @Override
+        public void onSatelliteDatagramReceived(long datagramId, SatelliteDatagram datagram,
+                int pendingCount, ISatelliteDatagramReceiverAck callback) {
+            Log.d(TAG, "onSatelliteDatagramReceived: datagramId=" + datagramId + ", datagram="
+                    + datagram + ", pendingCount=" + pendingCount);
         }
     }
 }

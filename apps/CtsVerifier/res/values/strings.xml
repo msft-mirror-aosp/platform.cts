@@ -2359,10 +2359,6 @@
         press the send button.</string>
     <string name="shortcut_reset_check_result">Check ShortcutManager rate-limit has been reset.</string>
 
-    <string name="attention_test">Notification Attention Management Test</string>
-    <string name="attention_info">This test checks that the NotificationManagerService is
-        respecting user preferences about notification ranking and filtering.
-    </string>
     <string name="ringer_mode_tests">Ringer Mode Tests</string>
     <string name="ringer_mode_info">This test checks that Audio manager functionality that requires
         particular ringer mode states works properly.
@@ -2485,11 +2481,10 @@
         handled on the insecure and secure lockscreen.
     </string>
     <string name="msg_extras_preserved">Check that Message extras Bundle was preserved.</string>
-    <string name="conversation_section_ordering">If this device supports conversation notifications,
-        and groups them into a separate section from alerting and silent non-conversation
-        notifications, fully expand the notification display and verify that the \"Person A\"
-        notification appears before the "\Non-Person Notification\".
-        If this device does not support conversation notifications or does not group them together, press Pass.</string>
+    <string name="conversation_section_ordering">Fully expand the notification display and verify
+        that the \"Person A\" notification appears before the "\Non-Person Notification\".
+        If this is not a 'handheld' device and does not support conversation notifications or does
+        not group them together, press Pass.</string>
     <string name="hun_display">If this device supports heads-up notifications,
         verify that a notification just peeked on screen, displaying all of the following: small
         icon, large icon, notification title, notification text, and two action buttons.
@@ -2603,7 +2598,10 @@ When the buttons are enabled, pass this test if the information in the dialog wa
     <string name="nls_change_type_filter">Click this button to launch the settings page for this app\'s notification listener in settings. Note what types were checked and which were disabled before you make any changes. View the list of apps and note any that are not allowed. Change the filter types to allow everything except ongoing and silent notifications, and then return to this screen</string>
     <string name="nls_original_filter_verification">Were only alerting and silent notifications allowed? Was the Settings app not allowed? Was the ongoing option disabled? Are all only conversations and alerting notification types allowed now?</string>
     <string name="nls_filter_test">Checking that an alerting notification is received and a silent one is not</string>
-    <string name="nls_reset_type_filter">Go to settings and allow all notification types, and then return here.</string>
+    <string name="nls_reset_type_add_app_filter">Go to settings and allow all possible notification types, then turn off \"CTS Verifier\" in the app filter, and then return here.</string>
+    <string name="nls_reset_app_filter">Go to settings and allow this listener to see notifications from all apps, and then return here.</string>
+    <string name="nls_confirm_filter_selection">Confirm that the type and app filters are updated</string>
+    <string name="nls_confirm_notification_not_visible">Checking visibility of notification from CTSVerifier</string>
     <string name="nas_note_missed_enqueued">Check that notification was not enqueued.</string>
     <string name="cp_test">Condition Provider test</string>
     <string name="cp_service_name">Condition Provider for CTS Verifier</string>
@@ -5411,14 +5409,33 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="midi_test">MIDI Test</string>
     <string name="midi_java_test">Java MIDI Test</string>
     <string name="midi_native_test">Native MIDI Test</string>
+
     <string name="midi_info">
-       For the USB MIDI interface test, connect a supported USB Audio Peripheral device that has
-       standard MIDI 5-pin, DIN (round) connectors and a standard MIDI cable. The cable must be
-       connected to the MIDI input and output plugs on the peripheral.
-       \nFor the USB Bluetooth test it is required that you connect a Yamaha MD-BT01 to the
-       correct MIDI plugs on the USB peripheral, the BT01 output jack to the USB interface
-       input jack and BT01 input plug to the USB interface output jack.
-       \nThe Virtual MIDI test does not require any MIDI interface hardware.
+        Tests for basic MIDI functionality.
+        \n\n1. Test Setup - USB MIDI:
+        \nConnect a supported USB Audio Peripheral device that has standard MIDI 5-pin, DIN (round)
+        connectors and a standard MIDI cable. The cable must be connected to the MIDI input and
+        output jacks on the peripheral.
+        \n\n2. Test Setup - Bluetooth MIDI:
+        \na. Download and install the "MIDI+BTLE" app from the Play Store.
+        \nb. Connect a supported USB Audio Peripheral device that has standard MIDI 5-pin, DIN (round)
+        connectors and connect the MIDI ports to a Bluetooth MIDI adapter (such as the Yamaha
+        MD-BT01). Be sure to connect the MD-BT01 so that the arrow on the MD-BT01 plug points away
+        from the Output jack on the USB peripheral. The other plug should have an arrow pointing
+        towards the Input jack.
+        \nc. Run the \"MIDI+BTLE\" app, click on "Bluetooth Scan" and select the Bluetooth MIDI adapter
+        connected to the USB Audio Peripheral. Note that the \"Test Bluetooth MIDI Interface\"
+        button will be enabled.
+        \n\n2. Test Setup - Virtual MIDI:
+        \nThe Virtual MIDI test does not require any MIDI interface hardware.
+        \n\nTest Process:
+        \n1. Follow instructions for \"Test Setup - USB MIDI\"
+        \n2. Press the \"Test US MIDI Interface\" button. Note test results.
+        \n3. Press the \"Test Virtual MIDI Interface\" button. Note test results.
+        \n4. Follow instructions for \"Test Setup - Bluetooth MIDI\"
+        \n5. Press the \"Test Bluetooth MIDI Interface\" button. Note test results.
+        \n\nTest Criteria:
+        \nAll sub-tests must pass for this test to pass.
     </string>
     <string name="analog_headset_test_info_tv">This test tests the following functionality with respect to wired analog headsets.\n
         1. Correct audio playback.\n
@@ -5435,7 +5452,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usb_midi_audio_info">
        Connect a supported USB Audio Peripheral device that has standard MIDI 5-pin, DIN (round)
        connectors and a standard MIDI cable. The cable must be connected to the MIDI input and
-       output plugs on the peripheral.
+       output jacks on the peripheral.
        \nPlease attach a wired headset with a 3.5mm jack to the audio output of this peripheral.
        \nTest the USB MIDI interface first. Then, press the PLAY to button test audio. Verify
        that a tone is correctly played.
@@ -6732,6 +6749,8 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="stop_advertising_presence">Stop Advertising</string>
     <string name="device_id_info_presence">You are advertising with deviceId: %1$d</string>
     <string name="device_found_presence">Reference device found. %1$d of %2$d samples collected</string>
+    <string name="dut_test_result_info_presence">Tx RSSI median: %1$d. Rx RSSI median received from reference device: %2$d</string>
+    <string name="ref_test_result_info_presence">Rx RSSI median computed: %1$d.</string>
     <string name="reference_device_id_input_presence">Enter the device ID displayed on the advertising device</string>
 
     <!-- Strings for BLE RSSI Precision Test -->
@@ -6742,6 +6761,19 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n1. Ensure that the reference device is already advertising.
         \n2. Input the device ID of the reference device (displayed on the reference device) into the provided field and click "Start Test"
         \n3. The test is automatically stopped and passed (or failed )when all the required data is collected
+        \nReference device instructions
+        \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
+    </string>
+
+    <!-- Strings for BLE Rx/Tx Offset Precision Test -->
+    <string name="ble_rx_tx_offset_precision_name">BLE Rx/Tx Offset Precision Test</string>
+    <string name="ble_rx_tx_offset_precision_test_instructions">
+        Place the device under test (DUT) at 1m from the reference device (advertising device) in line of sight environment
+        \nDUT instructions
+        \n1. Ensure that the test is already started on the reference device.
+        \n2. Input the device ID of the reference device (displayed on the reference device) into the provided field and click "Start Test"
+        \n3. The test is automatically stopped and passed (or failed) when all the required data is collected
+        \n4. The test is passed if the median RSSI from both DUT and reference device is between -45dBm and 65dBm.
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>

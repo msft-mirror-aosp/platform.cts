@@ -24,6 +24,7 @@ import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -31,6 +32,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.pm.PackageManager;
@@ -43,7 +45,9 @@ import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.service.voice.AlwaysOnHotwordDetector;
+import android.service.voice.DetectorFailure;
 import android.service.voice.HotwordDetectionService;
+import android.service.voice.HotwordDetectionServiceFailure;
 import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordDetector.IllegalDetectorStateException;
 import android.service.voice.HotwordRejectedResult;
@@ -70,6 +74,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for {@link HotwordDetectionService}.
@@ -82,6 +88,18 @@ public class HotwordDetectionServiceBasicTest {
     // The VoiceInteractionService used by this test
     private static final String SERVICE_COMPONENT =
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
+
+    private final CountDownLatch mLatch = new CountDownLatch(1);
+    private final AppOpsManager mAppOpsManager = sInstrumentation.getContext()
+            .getSystemService(AppOpsManager.class);
+
+    private final AppOpsManager.OnOpNotedListener mOnOpNotedListener =
+            (op, uid, pkgName, attributionTag, flags, result) -> {
+                Log.d(TAG, "Get OnOpNotedListener callback op = " + op);
+                if (AppOpsManager.OPSTR_RECORD_AUDIO.equals(op)) {
+                    mLatch.countDown();
+                }
+            };
 
     private CtsBasicVoiceInteractionService mService;
 
@@ -208,7 +226,8 @@ public class HotwordDetectionServiceBasicTest {
         assumeTrue("Not support multiple hotword detectors", enableMultipleHotwordDetectors);
 
         // Create first AlwaysOnHotwordDetector, it's fine.
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
 
         // Create second AlwaysOnHotwordDetector, it will get the IllegalStateException due to
         // the previous AlwaysOnHotwordDetector is not destroy.
@@ -245,7 +264,8 @@ public class HotwordDetectionServiceBasicTest {
             throws Throwable {
         mService.initDetectRejectLatch();
         alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(
-                /* status= */ 0, /* soundModelHandle= */ 100, /* captureAvailable= */ true,
+                /* status= */ 0, /* soundModelHandle= */ 100,
+                /* halEventReceivedMillis */ 12345, /* captureAvailable= */ true,
                 /* captureSession= */ 101, /* captureDelayMs= */ 1000,
                 /* capturePreambleMs= */ 1001, /* triggerInData= */ true,
                 Helper.createFakeAudioFormat(), new byte[1024],
@@ -262,7 +282,10 @@ public class HotwordDetectionServiceBasicTest {
     @Test
     public void testHotwordDetectionService_processDied_triggerOnError() throws Throwable {
         // Create first AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
+
+        mService.initOnErrorLatch();
 
         // Use AlwaysOnHotwordDetector to test process died of HotwordDetectionService
         runWithShellPermissionIdentity(() -> {
@@ -273,6 +296,45 @@ public class HotwordDetectionServiceBasicTest {
                     persistableBundle,
                     Helper.createFakeSharedMemoryData());
         }, MANAGE_HOTWORD_DETECTION);
+
+        mService.waitOnErrorCalled();
+
+        // ActivityManager will schedule a timer to restart the HotwordDetectionService due to
+        // we crash the service in this test case. It may impact the other test cases when
+        // ActivityManager restarts the HotwordDetectionService again. Add the sleep time to wait
+        // ActivityManager to restart the HotwordDetectionService, so that the service can be
+        // destroyed after finishing this test case.
+        Thread.sleep(5000);
+
+        alwaysOnHotwordDetector.destroy();
+    }
+
+    @Test
+    public void testHotwordDetectionService_processDied_triggerOnFailure() throws Throwable {
+        // Create alwaysOnHotwordDetector with onFailure callback
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ true);
+
+        mService.initOnFailureLatch();
+
+        // Use AlwaysOnHotwordDetector to test process died of HotwordDetectionService
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle persistableBundle = new PersistableBundle();
+            persistableBundle.putInt(Helper.KEY_TEST_SCENARIO,
+                    Helper.EXTRA_HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH);
+            alwaysOnHotwordDetector.updateState(
+                    persistableBundle,
+                    Helper.createFakeSharedMemoryData());
+        }, MANAGE_HOTWORD_DETECTION);
+
+        mService.waitOnFailureCalled();
+
+        DetectorFailure detectorFailure = mService.getDetectorFailure();
+
+        assertThat(detectorFailure).isNotNull();
+        assertThat(detectorFailure).isInstanceOf(HotwordDetectionServiceFailure.class);
+        assertThat(((HotwordDetectionServiceFailure) detectorFailure).getErrorCode()).isEqualTo(
+                HotwordDetectionServiceFailure.ERROR_CODE_BINDING_DIED);
 
         // ActivityManager will schedule a timer to restart the HotwordDetectionService due to
         // we crash the service in this test case. It may impact the other test cases when
@@ -294,13 +356,15 @@ public class HotwordDetectionServiceBasicTest {
         softwareHotwordDetector.destroy();
 
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        startWatchingNoted();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         try {
             adoptShellPermissionIdentityForHotword();
 
             verifyOnDetectFromDspSuccess(alwaysOnHotwordDetector);
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ true);
+            // Verify RECORD_AUDIO noted
+            verifyRecordAudioNote(/* shouldNote= */ true);
 
             // destroy detector
             alwaysOnHotwordDetector.destroy();
@@ -308,20 +372,23 @@ public class HotwordDetectionServiceBasicTest {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+            stopWatchingNoted();
         }
     }
 
     @Test
     @RequiresDevice
     public void testHotwordDetectionService_onDetectFromDsp_success() throws Throwable {
+        startWatchingNoted();
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         try {
             adoptShellPermissionIdentityForHotword();
 
             verifyOnDetectFromDspSuccess(alwaysOnHotwordDetector);
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ true);
+            // Verify RECORD_AUDIO noted
+            verifyRecordAudioNote(/* shouldNote= */ true);
 
             // destroy detector
             alwaysOnHotwordDetector.destroy();
@@ -329,20 +396,24 @@ public class HotwordDetectionServiceBasicTest {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+            stopWatchingNoted();
         }
     }
 
     @Test
     @RequiresDevice
     public void testHotwordDetectionService_onDetectFromDsp_rejection() throws Throwable {
+        startWatchingNoted();
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         try {
             mService.initDetectRejectLatch();
             runWithShellPermissionIdentity(() -> {
                 // pass null data parameter
                 alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(
-                        /* status= */ 0, /* soundModelHandle= */ 100, /* captureAvailable= */ true,
+                        /* status= */ 0, /* soundModelHandle= */ 100,
+                        /* halEventReceivedMillis */ 12345, /* captureAvailable= */ true,
                         /* captureSession= */ 101, /* captureDelayMs= */ 1000,
                         /* capturePreambleMs= */ 1001, /* triggerInData= */ true,
                         Helper.createFakeAudioFormat(), null,
@@ -355,19 +426,22 @@ public class HotwordDetectionServiceBasicTest {
 
             assertThat(rejectedResult).isEqualTo(Helper.REJECTED_RESULT);
 
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ false);
+            // Verify RECORD_AUDIO does not note
+            verifyRecordAudioNote(/* shouldNote= */ false);
         } finally {
             // destroy detector
             alwaysOnHotwordDetector.destroy();
+            stopWatchingNoted();
         }
     }
 
     @Test
     @RequiresDevice
     public void testHotwordDetectionService_onDetectFromDsp_timeout() throws Throwable {
+        startWatchingNoted();
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         // Update HotwordDetectionService options to delay detection, to cause a timeout
         runWithShellPermissionIdentity(() -> {
             PersistableBundle options = Helper.createFakePersistableBundleData();
@@ -380,7 +454,8 @@ public class HotwordDetectionServiceBasicTest {
 
             mService.initOnErrorLatch();
             alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(
-                    /* status= */ 0, /* soundModelHandle= */ 100, /* captureAvailable= */ true,
+                    /* status= */ 0, /* soundModelHandle= */ 100,
+                    /* halEventReceivedMillis */ 12345, /* captureAvailable= */ true,
                     /* captureSession= */ 101, /* captureDelayMs= */ 1000,
                     /* capturePreambleMs= */ 1001, /* triggerInData= */ true,
                     Helper.createFakeAudioFormat(), new byte[1024],
@@ -389,8 +464,8 @@ public class HotwordDetectionServiceBasicTest {
             // wait onError() called and verify the result
             mService.waitOnErrorCalled();
 
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ false);
+            // Verify RECORD_AUDIO does not note
+            verifyRecordAudioNote(/* shouldNote= */ false);
 
             // destroy detector
             alwaysOnHotwordDetector.destroy();
@@ -398,6 +473,7 @@ public class HotwordDetectionServiceBasicTest {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+            stopWatchingNoted();
         }
     }
 
@@ -405,7 +481,8 @@ public class HotwordDetectionServiceBasicTest {
     public void testHotwordDetectionService_destroyDspDetector_activeDetectorRemoved()
             throws Throwable {
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         // destroy detector
         alwaysOnHotwordDetector.destroy();
         try {
@@ -414,7 +491,8 @@ public class HotwordDetectionServiceBasicTest {
             assertThrows(IllegalStateException.class, () -> {
                 // Can no longer use the detector because it is in an invalid state
                 alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(
-                        /* status= */ 0, /* soundModelHandle= */ 100, /* captureAvailable= */ true,
+                        /* status= */ 0, /* soundModelHandle= */ 100,
+                        /* halEventReceivedMillis */ 12345, /* captureAvailable= */ true,
                         /* captureSession= */ 101, /* captureDelayMs= */ 1000,
                         /* capturePreambleMs= */ 1001, /* triggerInData= */ true,
                         Helper.createFakeAudioFormat(), new byte[1024],
@@ -429,8 +507,10 @@ public class HotwordDetectionServiceBasicTest {
 
     @Test
     public void testHotwordDetectionService_onDetectFromExternalSource_success() throws Throwable {
+        startWatchingNoted();
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
         try {
             adoptShellPermissionIdentityForHotword();
 
@@ -447,8 +527,8 @@ public class HotwordDetectionServiceBasicTest {
 
             Helper.verifyDetectedResult(detectResult, Helper.DETECTED_RESULT);
 
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ true);
+            // Verify RECORD_AUDIO noted
+            verifyRecordAudioNote(/* shouldNote= */ true);
 
             // destroy detector
             alwaysOnHotwordDetector.destroy();
@@ -456,12 +536,14 @@ public class HotwordDetectionServiceBasicTest {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+            stopWatchingNoted();
         }
     }
 
     @Test
     @RequiresDevice
     public void testHotwordDetectionService_onDetectFromMic_success() throws Throwable {
+        startWatchingNoted();
         // Create SoftwareHotwordDetector
         HotwordDetector softwareHotwordDetector = createSoftwareHotwordDetector();
         try {
@@ -477,14 +559,15 @@ public class HotwordDetectionServiceBasicTest {
 
             Helper.verifyDetectedResult(detectResult, Helper.DETECTED_RESULT);
 
-            // Verify microphone indicator
-            verifyMicrophoneChip(/* shouldBePresent= */ true);
+            // Verify RECORD_AUDIO noted
+            verifyRecordAudioNote(/* shouldNote= */ true);
 
             softwareHotwordDetector.destroy();
         } finally {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+            stopWatchingNoted();
         }
     }
 
@@ -585,7 +668,8 @@ public class HotwordDetectionServiceBasicTest {
                 Helper.isEnableMultipleDetectors());
 
         // Create AlwaysOnHotwordDetector
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector = createAlwaysOnHotwordDetector();
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
 
         // Create SoftwareHotwordDetector
         HotwordDetector softwareHotwordDetector = createSoftwareHotwordDetector();
@@ -607,6 +691,23 @@ public class HotwordDetectionServiceBasicTest {
 
         // Destroy the software detector
         softwareHotwordDetector.destroy();
+    }
+
+    @Test
+    public void testHotwordDetectionService_onHotwordDetectionServiceRestarted() throws Throwable {
+        // Create AlwaysOnHotwordDetector
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetector(/* useOnFailure= */ false);
+
+        mService.initOnHotwordDetectionServiceRestartedLatch();
+        // force re-start by shell command
+        runShellCommand("cmd voiceinteraction restart-detection");
+
+        // wait onHotwordDetectionServiceRestarted() called
+        mService.waitOnHotwordDetectionServiceRestartedCalled();
+
+        // Destroy the always on detector
+        alwaysOnHotwordDetector.destroy();
     }
 
     private void verifySoftwareDetectorDetectSuccess(HotwordDetector softwareHotwordDetector)
@@ -642,9 +743,15 @@ public class HotwordDetectionServiceBasicTest {
     /**
      * Create AlwaysOnHotwordDetector and wait for ready
      */
-    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetector() throws Throwable {
+    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetector(boolean useOnFailure)
+            throws Throwable {
         // Create AlwaysOnHotwordDetector and wait ready.
-        mService.createAlwaysOnHotwordDetector();
+        if (useOnFailure) {
+            mService.createAlwaysOnHotwordDetectorWithOnFailureCallback(/* useExecutor= */
+                    false, /* runOnMainThread= */ false);
+        } else {
+            mService.createAlwaysOnHotwordDetector();
+        }
 
         mService.waitSandboxedDetectionServiceInitializedCalledOrException();
 
@@ -665,7 +772,24 @@ public class HotwordDetectionServiceBasicTest {
         uiAutomation.adoptShellPermissionIdentity(RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD);
     }
 
-    private void verifyMicrophoneChip(boolean shouldBePresent) throws Exception {
+    private void startWatchingNoted() {
+        runWithShellPermissionIdentity(() -> {
+            if (mAppOpsManager != null) {
+                mAppOpsManager.startWatchingNoted(new String[]{AppOpsManager.OPSTR_RECORD_AUDIO},
+                        mOnOpNotedListener);
+            }
+        });
+    }
+
+    private void stopWatchingNoted() {
+        runWithShellPermissionIdentity(() -> {
+            if (mAppOpsManager != null) {
+                mAppOpsManager.stopWatchingNoted(mOnOpNotedListener);
+            }
+        });
+    }
+
+    private void verifyRecordAudioNote(boolean shouldNote) throws Exception {
         if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // TODO: test TV indicator
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
@@ -673,7 +797,8 @@ public class HotwordDetectionServiceBasicTest {
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             // The privacy chips/indicators are not implemented on Wear
         } else {
-            Helper.verifyMicrophoneChipHandheld(shouldBePresent);
+            boolean isNoted = mLatch.await(Helper.CLEAR_CHIP_MS, TimeUnit.MILLISECONDS);
+            assertThat(isNoted).isEqualTo(shouldNote);
         }
     }
 }

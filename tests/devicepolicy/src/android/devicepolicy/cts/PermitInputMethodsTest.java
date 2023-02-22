@@ -30,11 +30,13 @@ import android.util.Log;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.harrier.annotations.LocalPresubmit;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.SetPermittedInputMethods;
+import com.android.bedstead.harrier.policies.PermittedInputMethods;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
 import com.android.bedstead.nene.packages.Package;
@@ -87,8 +89,9 @@ public final class PermitInputMethodsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = SetPermittedInputMethods.class)
+    @PolicyAppliesTest(policy = PermittedInputMethods.class)
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
+    @LocalPresubmit
     public void setPermittedInputMethods_allPermitted() {
         assertThat(sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
                 sDeviceState.dpc().componentName(), /* packageNames= */ null)).isTrue();
@@ -100,8 +103,18 @@ public final class PermitInputMethodsTest {
     }
 
     @Postsubmit(reason = "New test")
+    @CanSetPolicyTest(
+            policy = PermittedInputMethods.class)
+    @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
+    @LocalPresubmit
+    public void setPermittedInputMethods_doesNotThrowException() {
+        sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
+                sDeviceState.dpc().componentName(), /* packageNames= */ null);
+    }
+
+    @Postsubmit(reason = "New test")
     @CannotSetPolicyTest(
-            policy = SetPermittedInputMethods.class, includeNonDeviceAdminStates = false)
+            policy = PermittedInputMethods.class, includeNonDeviceAdminStates = false)
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_canNotSet_throwsException() {
         assertThrows(SecurityException.class, () -> {
@@ -111,7 +124,7 @@ public final class PermitInputMethodsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyDoesNotApplyTest(policy = SetPermittedInputMethods.class)
+    @PolicyDoesNotApplyTest(policy = PermittedInputMethods.class)
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_policyDoesNotApply_isNotSet() {
         assumeFalse("A system input method is required",
@@ -131,7 +144,7 @@ public final class PermitInputMethodsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = SetPermittedInputMethods.class)
+    @PolicyAppliesTest(policy = PermittedInputMethods.class)
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_includesSetPlusSystem() {
         assumeFalse("A system input method is required",

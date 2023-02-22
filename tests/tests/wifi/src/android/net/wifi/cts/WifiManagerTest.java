@@ -18,6 +18,7 @@ package android.net.wifi.cts;
 
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
+import static android.net.wifi.SoftApCapability.SOFTAP_FEATURE_ACS_OFFLOAD;
 import static android.net.wifi.WifiAvailableChannel.OP_MODE_SAP;
 import static android.net.wifi.WifiAvailableChannel.OP_MODE_STA;
 import static android.net.wifi.WifiAvailableChannel.OP_MODE_WIFI_DIRECT_GO;
@@ -35,6 +36,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.NonNull;
 import android.app.UiAutomation;
@@ -113,6 +115,8 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.net.module.util.MacAddressUtils;
+
+import com.google.common.collect.Range;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -215,6 +219,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     private static final String TEST_DOM_SUBJECT_MATCH = "domSubjectMatch";
     private static final int TEST_SUB_ID = 2;
     private static final int EID_VSA = 221; // Copied from ScanResult.InformationElement
+
+    private static final int TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS = 1000;
     private static final List<ScanResult.InformationElement> TEST_VENDOR_ELEMENTS =
             new ArrayList<>(Arrays.asList(
                     new ScanResult.InformationElement(221, 0, new byte[]{ 1, 2, 3, 4 }),
@@ -1201,6 +1207,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         mWifiManager.isMakeBeforeBreakWifiSwitchingSupported();
         mWifiManager.isStaBridgedApConcurrencySupported();
         mWifiManager.isDualBandSimultaneousSupported();
+        mWifiManager.isTidToLinkMappingNegotiationSupported();
     }
 
     /**
@@ -2989,6 +2996,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     () -> mWifiManager.isWifiEnabled() == true);
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 verifyRegisterSoftApCallback(executor, callback);
+                if (!callback.getCurrentSoftApCapability()
+                        .areFeaturesSupported(SOFTAP_FEATURE_ACS_OFFLOAD)) {
+                    return;
+                }
                 int[] testBands = {SoftApConfiguration.BAND_2GHZ,
                         SoftApConfiguration.BAND_5GHZ};
                 int[] expectedBands = {SoftApConfiguration.BAND_2GHZ,
@@ -6372,5 +6383,151 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    /**
+     * Verifies when the link layer stats polling interval is overridden by
+     * {@link WifiManager#setLinkLayerStatsPollingInterval(int)},
+     * the new interval is set correctly by checking
+     * {@link WifiManager#getLinkLayerStatsPollingInterval(Executor, Consumer)}
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testSetAndGetLinkLayerStatsPollingInterval() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
+        AtomicInteger currentInterval = new AtomicInteger(-1);
+        Consumer<Integer> listener = new Consumer<Integer>() {
+            @Override
+            public void accept(Integer value) {
+                synchronized (mLock) {
+                    currentInterval.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+
+        // SecurityException
+        assertThrows(SecurityException.class,
+                () -> mWifiManager.setLinkLayerStatsPollingInterval(
+                        TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS));
+        assertThrows(SecurityException.class,
+                () -> mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener));
+        // null executor
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getLinkLayerStatsPollingInterval(null, listener));
+        // null listener
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, null));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThrows(IllegalArgumentException.class,
+                    () -> mWifiManager.setLinkLayerStatsPollingInterval(
+                            -TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS));
+            mWifiManager.setLinkLayerStatsPollingInterval(
+                    TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS);
+            mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener);
+            synchronized (mLock) {
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            assertEquals(TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS, currentInterval.get());
+            // set the interval to automatic handling after the test
+            mWifiManager.setLinkLayerStatsPollingInterval(0);
+        } catch (UnsupportedOperationException ex) {
+            // Expected if the device does not support this API
+        } catch (Exception e) {
+            fail("setLinkLayerStatsPollingInterval / getLinkLayerStatsPollingInterval "
+                    + "unexpected Exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#setLinkMode} and {@link WifiManager#getLinkMode} works
+     */
+    public void testMloMode() {
+        // Skip the test if Wifi is not supported.
+        if (!WifiFeature.isWifiSupported(getContext())) return;
+        // Need elevated permission.
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+        // Get listener.
+        AtomicInteger getMode = new AtomicInteger();
+        Consumer<Integer> getListener = new Consumer<Integer>() {
+            @Override
+            public void accept(Integer value) {
+                synchronized (mLock) {
+                    getMode.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+        // Set listener.
+        AtomicBoolean setStatus = new AtomicBoolean();
+        Consumer<Boolean> setListener = new Consumer<Boolean>() {
+            @Override
+            public void accept(Boolean value) {
+                synchronized (mLock) {
+                    setStatus.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+        // Test that invalid inputs trigger an exception.
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, null, setListener));
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, null));
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getMloMode(null, getListener));
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> mWifiManager.getMloMode(mExecutor, null));
+
+        // Test that invalid inputs trigger an IllegalArgumentException.
+        assertThrows("Invalid mode", IllegalArgumentException.class,
+                () -> mWifiManager.setMloMode(-1, mExecutor, setListener));
+        assertThrows("Invalid mode", IllegalArgumentException.class,
+                () -> mWifiManager.setMloMode(1000, mExecutor, setListener));
+        // Test set if supported.
+        try {
+            // Check getMloMode() returns values in range.
+            mWifiManager.getMloMode(mExecutor, getListener);
+            assertThat(getMode.get()).isIn(Range.closed(WifiManager.MLO_MODE_DEFAULT,
+                    WifiManager.MLO_MODE_LOW_POWER));
+            // Try to set default MLO mode and get.
+            mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, setListener);
+            if (setStatus.get()) {
+                mWifiManager.getMloMode(mExecutor, getListener);
+                assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
+            }
+            // Try to set low latency MLO mode and get.
+            mWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_LATENCY, mExecutor, setListener);
+            if (setStatus.get()) {
+                mWifiManager.getMloMode(mExecutor, getListener);
+                assertTrue(getMode.get() == WifiManager.MLO_MODE_LOW_LATENCY);
+            }
+            // Try to set high throughput MLO mode and get.
+            mWifiManager.setMloMode(WifiManager.MLO_MODE_HIGH_THROUGHPUT, mExecutor, setListener);
+            if (setStatus.get()) {
+                mWifiManager.getMloMode(mExecutor, getListener);
+                assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
+            }
+            // Try to set low power MLO mode and get.
+            mWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_POWER, mExecutor, setListener);
+            if (setStatus.get()) {
+                mWifiManager.getMloMode(mExecutor, getListener);
+                assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
+            }
+        } catch (UnsupportedOperationException e) {
+            // Skip the set method if not supported.
+        }
+        // Drop the permission.
+        uiAutomation.dropShellPermissionIdentity();
     }
 }

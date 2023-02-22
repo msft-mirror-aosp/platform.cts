@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -236,22 +237,18 @@ public class AtomTests {
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_RECEIVE_EXPLICIT_USER_INTERACTION_AUDIO, 121);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_RUN_USER_INITIATED_JOBS, 122);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_READ_MEDIA_VISUAL_USER_SELECTED, 123);
-        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_APP_STANDBY, 124);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION, 124);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_DISMISSIBLE_NOTIFICATIONS, 125);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_READ_WRITE_HEALTH_DATA, 126);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_FOREGROUND_SERVICE_SPECIAL_USE, 127);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS, 128);
-        APP_OPS_ENUM_MAP.put(
-                AppOpsManager
-                        .OPSTR_SYSTEM_EXEMPT_FROM_FGS_BG_START_WHILE_IN_USE_PERMISSION_RESTRICTION,
-                129);
+        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_HIBERNATION, 129);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
                 130);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_CAPTURE_CONSENTLESS_BUGREPORT_ON_USERDEBUG_BUILD,
                 131);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_BODY_SENSORS_WRIST_TEMPERATURE, 132);
         APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_USE_FULL_SCREEN_INTENT, 133);
-        APP_OPS_ENUM_MAP.put(AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_HIBERNATION, 134);
     }
 
     @Test
@@ -1247,6 +1244,12 @@ public class AtomTests {
         PerformanceHintManager phm = context.getSystemService(PerformanceHintManager.class);
 
         assertNotNull(phm);
+
+        // If the device does not support ADPF hint session,
+        // getPreferredUpdateRateNanos() returns -1.
+        // We only test the devices supporting it and will check
+        // if assumption fails in PerformanceHintManagerStatsTests#testCreateHintSessionStatsd
+        assumeTrue(phm.getPreferredUpdateRateNanos() != -1);
 
         PerformanceHintManager.Session session =
                 phm.createHintSession(new int[]{Process.myPid()}, targetNs);
