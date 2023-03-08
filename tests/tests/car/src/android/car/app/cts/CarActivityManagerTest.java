@@ -25,6 +25,8 @@ import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.car.Car;
@@ -33,16 +35,26 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.Display;
 
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RunWith(JUnit4.class)
 public class CarActivityManagerTest {
@@ -74,7 +86,8 @@ public class CarActivityManagerTest {
         mUiAutomation.adoptShellPermissionIdentity(
                 Car.PERMISSION_CONTROL_CAR_APP_LAUNCH,  // for CAM.setPersistentActivity
                 // to launch an Activity in the virtual display
-                Manifest.permission.ACTIVITY_EMBEDDING);
+                Manifest.permission.ACTIVITY_EMBEDDING,
+                Manifest.permission.MANAGE_ACTIVITY_TASKS /* for CAM.getVisibleTasks */);
         mCarActivityManager =
             (CarActivityManager) car.getCarManager(Car.CAR_ACTIVITY_SERVICE);
         assertThat(mCarActivityManager).isNotNull();
@@ -106,7 +119,8 @@ public class CarActivityManagerTest {
             // launch the activity
             Intent startIntent = Intent.makeMainActivity(mTestActivity)
                     .addFlags(FLAG_ACTIVITY_NEW_TASK);
-            Activity activity = mInstrumentation.startActivitySync(startIntent, /* option */ null);
+            TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
+                    startIntent, /* option */ null);
 
             // assert the activity is launched into the virtual display
             assertThat(activity.getDisplay().getDisplayId()).isEqualTo(secondaryDisplayId);
@@ -115,15 +129,15 @@ public class CarActivityManagerTest {
             activity.finishAndRemoveTask();
 
             // Wait for the Activity is completely removed.
-            mInstrumentation.getUiAutomation().waitForIdle(
-                    QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TOTAL_TIME_TO_WAIT_FOR_IDLE_STATE);
+            assertThat(activity.waitForDestroyed()).isTrue();
 
             ret = mCarActivityManager.setPersistentActivity(mTestActivity,
                     secondaryDisplayId, FEATURE_UNDEFINED);
             assertThat(ret).isEqualTo(CarActivityManager.RESULT_SUCCESS);
 
             // re-launch again and assert that it is not launched in the secondaryDisplay
-            activity = mInstrumentation.startActivitySync(startIntent, /* option */ null);
+            activity = (TestActivity) mInstrumentation.startActivitySync(
+                    startIntent, /* option */ null);
             assertThat(activity.getDisplay().getDisplayId()).isEqualTo(DEFAULT_DISPLAY);
 
             // tear down
@@ -157,6 +171,101 @@ public class CarActivityManagerTest {
                         mFakedTestActivity, Display.DEFAULT_DISPLAY, FEATURE_UNDEFINED));
     }
 
+    @Test
+    @ApiTest(apis = {"android.car.app.CarActivityManager#moveRootTaskToDisplay(int,int)",
+            "android.car.builtin.app.ActivityManagerHelper#moveRootTaskToDisplay(int,int)"})
+    public void testMoveRootTaskToDisplay() throws Exception {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
+            // create a secondary virtual display
+            Display secondaryDisplay = session.createDisplay(mContext,
+                    /* width= */ 400, /* height= */ 300, /* density= */ 120, /* private= */ true);
+            assertThat(secondaryDisplay).isNotNull();
+            int secondaryDisplayId = secondaryDisplay.getDisplayId();
+
+            // launch the activity
+            Intent startIntent = Intent.makeMainActivity(mTestActivity)
+                    .addFlags(FLAG_ACTIVITY_NEW_TASK);
+            TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
+                    startIntent, /* option */ null);
+
+            // assert the activity is launched into the default display
+            assertThat(activity.getDisplay().getDisplayId()).isEqualTo(DEFAULT_DISPLAY);
+
+            mCarActivityManager.moveRootTaskToDisplay(activity.getTaskId(), secondaryDisplayId);
+
+            // The activity will be recreated since the moved display has the different geometry.
+            assertThat(activity.waitForDestroyed()).isTrue();
+
+            // Wait for the new Activity is created.
+            PollingCheck.waitFor(() -> TestActivity.sInstance != null
+                    && activity != TestActivity.sInstance);
+
+            assertThat(TestActivity.sInstance.getDisplay().getDisplayId())
+                    .isEqualTo(secondaryDisplayId);
+        }
+    }
+
+    @ApiTest(apis = {"android.car.app.CarActivityManager#getVisibleTasks()"})
+    @Test
+    public void testGetVisibleTasks() throws Exception {
+        // launch the activity
+        Intent startIntent = Intent.makeMainActivity(mTestActivity)
+                .addFlags(FLAG_ACTIVITY_NEW_TASK);
+        TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
+                startIntent, /* option */ null);
+
+        List<RunningTaskInfo> tasks = mCarActivityManager.getVisibleTasks();
+        List<RunningTaskInfo> filteredTasks = tasks.stream()
+                .filter(t -> t.topActivity.getClassName().equals(TestActivity.class.getName()))
+                .collect(Collectors.toList());
+        assertThat(filteredTasks).hasSize(1);
+        assertThat(filteredTasks.get(0).isVisible()).isTrue();
+        assertThat(filteredTasks.get(0).getDisplayId()).isEqualTo(0);
+    }
+
+    @ApiTest(apis = {"android.car.app.CarActivityManager#getVisibleTasks(int)"})
+    @Test
+    public void testGetVisibleTasksByDisplayId() throws Exception {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
+            // create a secondary virtual display
+            Display virtualDisplay = session.createDisplay(mContext,
+                    /* width= */ 400, /* height= */ 300, /* density= */ 120, /* private= */ true);
+            assertThat(virtualDisplay).isNotNull();
+            int displayId = virtualDisplay.getDisplayId();
+
+            // launch the activity
+            Intent startIntent = Intent.makeMainActivity(mTestActivity)
+                    .addFlags(FLAG_ACTIVITY_NEW_TASK);
+            ActivityOptions options = ActivityOptions.makeBasic().setLaunchDisplayId(displayId);
+            TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
+                    startIntent, options.toBundle());
+
+            List<RunningTaskInfo> tasks = mCarActivityManager.getVisibleTasks(displayId);
+            assertThat(tasks).hasSize(1);
+            assertThat(tasks.get(0).isVisible()).isTrue();
+            assertThat(tasks.get(0).getDisplayId()).isEqualTo(displayId);
+        }
+    }
+
     public static final class TestActivity extends Activity {
+        private static TestActivity sInstance;
+        private final CountDownLatch mDestroyed = new CountDownLatch(1);
+
+        @Override
+        protected void onCreate(@Nullable Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            sInstance = this;
+        }
+
+        @Override
+        protected void onDestroy() {
+            super.onDestroy();
+            mDestroyed.countDown();
+            sInstance = null;
+        }
+
+        private boolean waitForDestroyed() throws InterruptedException {
+            return mDestroyed.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+        }
     }
 }

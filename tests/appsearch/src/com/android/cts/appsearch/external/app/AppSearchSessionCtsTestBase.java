@@ -570,6 +570,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .setJoinableValueType(
                                                 StringPropertyConfig
                                                         .JOINABLE_VALUE_TYPE_QUALIFIED_ID)
+                                        .setDeletionPropagation(true)
                                         .build())
                         .build();
 
@@ -1599,6 +1600,137 @@ public abstract class AppSearchSessionCtsTestBase {
         // check all document presents
         assertThat(documents).containsExactlyElementsIn(emailSet);
         assertThat(pageNumber).isEqualTo(6); // 5 (upper(31/7)) + 1 (final empty page)
+    }
+
+    @Test
+    public void testQueryIndexableLongProperty_numericSearchEnabledSucceeds() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.NUMERIC_SEARCH));
+
+        // Schema registration
+        AppSearchSchema transactionSchema =
+                new AppSearchSchema.Builder("transaction")
+                        .addProperty(
+                                new LongPropertyConfig.Builder("price")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(LongPropertyConfig.INDEXING_TYPE_RANGE)
+                                        .build())
+                        .addProperty(
+                                new LongPropertyConfig.Builder("cost")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(LongPropertyConfig.INDEXING_TYPE_RANGE)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(transactionSchema).build())
+                .get();
+
+        // Index some documents
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "transaction")
+                        .setPropertyLong("price", 10)
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "transaction")
+                        .setPropertyLong("price", 25)
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        GenericDocument doc3 =
+                new GenericDocument.Builder<>("namespace", "id3", "transaction")
+                        .setPropertyLong("cost", 2)
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc1, doc2, doc3)
+                                .build()));
+
+        // Query for the document
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "price < 20",
+                        new SearchSpec.Builder().setNumericSearchEnabled(true).build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).hasSize(1);
+        assertThat(documents.get(0)).isEqualTo(doc1);
+
+        searchResults =
+                mDb1.search(
+                        "price == 25",
+                        new SearchSpec.Builder().setNumericSearchEnabled(true).build());
+        documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).hasSize(1);
+        assertThat(documents.get(0)).isEqualTo(doc2);
+
+        searchResults =
+                mDb1.search(
+                        "cost > 2", new SearchSpec.Builder().setNumericSearchEnabled(true).build());
+        documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).isEmpty();
+
+        searchResults =
+                mDb1.search(
+                        "cost >= 2",
+                        new SearchSpec.Builder().setNumericSearchEnabled(true).build());
+        documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).hasSize(1);
+        assertThat(documents.get(0)).isEqualTo(doc3);
+
+        searchResults =
+                mDb1.search(
+                        "price <= 25",
+                        new SearchSpec.Builder().setNumericSearchEnabled(true).build());
+        documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).hasSize(2);
+        assertThat(documents.get(0)).isEqualTo(doc2);
+        assertThat(documents.get(1)).isEqualTo(doc1);
+    }
+
+    @Test
+    public void testQueryIndexableLongProperty_numericSearchNotEnabled() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.NUMERIC_SEARCH));
+
+        // Schema registration
+        AppSearchSchema transactionSchema =
+                new AppSearchSchema.Builder("transaction")
+                        .addProperty(
+                                new LongPropertyConfig.Builder("price")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(LongPropertyConfig.INDEXING_TYPE_RANGE)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(transactionSchema).build())
+                .get();
+
+        // Index some documents
+        GenericDocument doc =
+                new GenericDocument.Builder<>("namespace", "id1", "transaction")
+                        .setPropertyLong("price", 10)
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc).build()));
+
+        // TODO(b/208654892); Remove setListFilterQueryLanguageEnabled once advanced query is fully
+        //  supported.
+        // Query for the document
+        // Use advanced query but disable NUMERIC_SEARCH in the SearchSpec.
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "price < 20",
+                        new SearchSpec.Builder()
+                                .setListFilterQueryLanguageEnabled(true)
+                                .setNumericSearchEnabled(false)
+                                .build());
+
+        Throwable failResult =
+                assertThrows(ExecutionException.class, () -> searchResults.getNextPageAsync().get())
+                        .getCause();
+        assertThat(failResult).isInstanceOf(AppSearchException.class);
+        AppSearchException exception = (AppSearchException) failResult;
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Attempted use of unenabled feature");
+        assertThat(exception).hasMessageThat().contains(Features.NUMERIC_SEARCH);
     }
 
     @Test
@@ -4319,6 +4451,93 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    public void testQuery_verbatimSearch() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.VERBATIM_SEARCH));
+        AppSearchSchema verbatimSchema =
+                new AppSearchSchema.Builder("VerbatimSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("verbatimProp")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .setForceOverride(true)
+                                .addSchemas(verbatimSchema)
+                                .build())
+                .get();
+
+        GenericDocument email =
+                new GenericDocument.Builder<>("namespace1", "id1", "VerbatimSchema")
+                        .setPropertyString("verbatimProp", "Hello, world!")
+                        .build();
+        mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(email).build()).get();
+
+        SearchResultsShim sr =
+                mDb1.search(
+                        "\"Hello, world!\"",
+                        new SearchSpec.Builder().setVerbatimSearchEnabled(true).build());
+        List<SearchResult> page = sr.getNextPageAsync().get();
+
+        // Verbatim tokenization would produce one token 'Hello, world!'.
+        assertThat(page).hasSize(1);
+        assertThat(page.get(0).getGenericDocument().getId()).isEqualTo("id1");
+    }
+
+    @Test
+    public void testQuery_verbatimSearchWithoutEnablingFeatureFails() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.VERBATIM_SEARCH));
+        AppSearchSchema verbatimSchema =
+                new AppSearchSchema.Builder("VerbatimSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("verbatimProp")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .setForceOverride(true)
+                                .addSchemas(verbatimSchema)
+                                .build())
+                .get();
+
+        GenericDocument email =
+                new GenericDocument.Builder<>("namespace1", "id1", "VerbatimSchema")
+                        .setPropertyString("verbatimProp", "Hello, world!")
+                        .build();
+        mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(email).build()).get();
+
+        // TODO(b/208654892) Disable ListFilterQueryLanguage once EXPERIMENTAL_ICING_ADVANCED_QUERY
+        //  is fully supported.
+        // ListFilterQueryLanguage is enabled so that EXPERIMENTAL_ICING_ADVANCED_QUERY gets enabled
+        // in IcingLib.
+        // Disable VERBATIM_SEARCH in the SearchSpec.
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "\"Hello, world!\"",
+                        new SearchSpec.Builder()
+                                .setListFilterQueryLanguageEnabled(true)
+                                .setVerbatimSearchEnabled(false)
+                                .build());
+        Throwable throwable =
+                assertThrows(ExecutionException.class, () -> searchResults.getNextPageAsync().get())
+                        .getCause();
+        assertThat(throwable).isInstanceOf(AppSearchException.class);
+        AppSearchException exception = (AppSearchException) throwable;
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Attempted use of unenabled feature");
+        assertThat(exception).hasMessageThat().contains(Features.VERBATIM_SEARCH);
+    }
+
+    @Test
     public void testQuery_propertyWeights() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SEARCH_SPEC_PROPERTY_WEIGHTS));
 
@@ -4610,7 +4829,7 @@ public abstract class AppSearchSessionCtsTestBase {
 
         // A full example of how join might be used
         AppSearchSchema actionSchema =
-                new AppSearchSchema.Builder("BookmarkAction")
+                new AppSearchSchema.Builder("ViewAction")
                         .addProperty(
                                 new StringPropertyConfig.Builder("entityId")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
@@ -4662,23 +4881,35 @@ public abstract class AppSearchSessionCtsTestBase {
         String qualifiedId =
                 DocumentIdUtil.createQualifiedId(
                         mContext.getPackageName(), DB_NAME_1, "namespace", "id1");
-        GenericDocument join =
-                new GenericDocument.Builder<>("NS", "id3", "BookmarkAction")
+        GenericDocument viewAction1 =
+                new GenericDocument.Builder<>("NS", "id3", "ViewAction")
+                        .setScore(1)
                         .setPropertyString("entityId", qualifiedId)
-                        .setPropertyString("note", "Hi this is a joined doc")
+                        .setPropertyString("note", "Viewed email on Monday")
+                        .build();
+        GenericDocument viewAction2 =
+                new GenericDocument.Builder<>("NS", "id4", "ViewAction")
+                        .setScore(2)
+                        .setPropertyString("entityId", qualifiedId)
+                        .setPropertyString("note", "Viewed email on Tuesday")
                         .build();
         checkIsBatchResultSuccess(
                 mDb1.putAsync(
                         new PutDocumentsRequest.Builder()
-                                .addGenericDocuments(inEmail, inEmail2, join)
+                                .addGenericDocuments(inEmail, inEmail2, viewAction1, viewAction2)
                                 .build()));
 
-        SearchSpec nestedSearchSpec = new SearchSpec.Builder().build();
+        SearchSpec nestedSearchSpec =
+                new SearchSpec.Builder()
+                        .setRankingStrategy(SearchSpec.RANKING_STRATEGY_DOCUMENT_SCORE)
+                        .setOrder(SearchSpec.ORDER_ASCENDING)
+                        .build();
 
         JoinSpec js =
                 new JoinSpec.Builder("entityId")
                         .setNestedSearch("", nestedSearchSpec)
                         .setAggregationScoringStrategy(JoinSpec.AGGREGATION_SCORING_RESULT_COUNT)
+                        .setMaxJoinedResultCount(1)
                         .build();
 
         SearchResultsShim searchResults =
@@ -4698,7 +4929,7 @@ public abstract class AppSearchSessionCtsTestBase {
 
         assertThat(sr.get(0).getGenericDocument().getId()).isEqualTo("id1");
         assertThat(sr.get(0).getJoinedResults()).hasSize(1);
-        assertThat(sr.get(0).getJoinedResults().get(0).getGenericDocument()).isEqualTo(join);
+        assertThat(sr.get(0).getJoinedResults().get(0).getGenericDocument()).isEqualTo(viewAction1);
         assertThat(sr.get(0).getRankingSignal()).isEqualTo(1.0);
 
         assertThat(sr.get(1).getGenericDocument().getId()).isEqualTo("id2");
@@ -4707,29 +4938,24 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    public void testJoinWithoutSupport() throws Exception {
+    public void testJoin_unsupportedFeature_throwsException() throws Exception {
         assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
 
         SearchSpec nestedSearchSpec = new SearchSpec.Builder().build();
         JoinSpec js =
                 new JoinSpec.Builder("entityId").setNestedSearch("", nestedSearchSpec).build();
-        SearchResultsShim searchResults =
-                mDb1.search(
-                        "",
-                        new SearchSpec.Builder()
-                                .setJoinSpec(js)
-                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
-                                .build());
-
         Exception e =
                 assertThrows(
                         UnsupportedOperationException.class,
-                        () -> searchResults.getNextPageAsync().get());
-        assertThat(e).isInstanceOf(UnsupportedOperationException.class);
+                        () ->
+                                mDb1.search(
+                                        /*queryExpression */ "",
+                                        new SearchSpec.Builder()
+                                                .setJoinSpec(js)
+                                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                                .build()));
         assertThat(e.getMessage())
-                .isEqualTo(
-                        "Searching with a SearchSpec containing a JoinSpec "
-                                + "is not supported on this AppSearch implementation.");
+                .isEqualTo("JoinSpec is not available on this AppSearch " + "implementation.");
     }
 
     @Test

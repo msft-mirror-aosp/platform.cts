@@ -42,6 +42,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -92,6 +93,10 @@ public class ImsServiceTestOnMockModem {
             sSupportsImsHal = true;
         }
 
+        if (!sSupportsImsHal) {
+            return;
+        }
+
         enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
@@ -108,14 +113,12 @@ public class ImsServiceTestOnMockModem {
 
         sTestSub = ImsUtils.getPreferredActiveSubId();
 
-        int[] subs = SubscriptionManager.getSubId(sTestSlot);
-        for (int sub : subs) {
+        int sub = SubscriptionManager.getSubscriptionId(sTestSlot);
+        if (SubscriptionManager.isValidSubscriptionId(sub)) {
             if (VDBG) Log.i(LOG_TAG, "beforeAllTests sub=" + sub);
-            if (SubscriptionManager.isValidSubscriptionId(sub)) {
-                sTestSub = sub;
-                break;
-            }
+            sTestSub = sub;
         }
+
         if (VDBG) Log.i(LOG_TAG, "sTestSub=" + sTestSub);
 
         sServiceConnector = new ImsServiceConnector(InstrumentationRegistry.getInstrumentation());
@@ -127,6 +130,10 @@ public class ImsServiceTestOnMockModem {
     @AfterClass
     public static void afterAllTests() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "afterAllTests");
+
+        if (!sSupportsImsHal) {
+            return;
+        }
 
         // Restore all ImsService configurations that existed before the test.
         if (sServiceConnector != null) {
@@ -143,9 +150,25 @@ public class ImsServiceTestOnMockModem {
         }
     }
 
+    @Before
+    public void beforeTest() throws Exception {
+        if (VDBG) Log.d(LOG_TAG, "beforeTest");
+
+        assumeTrue(ImsUtils.shouldTestImsService());
+        assumeTrue(sSupportsImsHal);
+    }
+
     @After
     public void afterTest() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "afterTest");
+
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        if (!sSupportsImsHal) {
+            return;
+        }
 
         // Unbind the ImsService after the test completes.
         if (sServiceConnector != null) {

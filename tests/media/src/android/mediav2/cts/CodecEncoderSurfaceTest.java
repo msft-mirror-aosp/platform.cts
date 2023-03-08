@@ -36,7 +36,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
-import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
@@ -53,6 +52,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -101,18 +101,19 @@ public class CodecEncoderSurfaceTest {
 
     private final String mEncoderName;
     private final String mEncMediaType;
+    private final String mDecoderName;
+    private final String mTestFileMediaType;
     private final String mTestFile;
     private final EncoderConfigParams mEncCfgParams;
     private final int mColorFormat;
     private final boolean mTestToneMap;
+    private final boolean mUsePersistentSurface;
     private final String mTestArgs;
 
     private MediaExtractor mExtractor;
-    private String mTestFileMediaType;
     private MediaCodec mEncoder;
     private MediaFormat mEncoderFormat;
     private final CodecAsyncHandler mAsyncHandleEncoder = new CodecAsyncHandler();
-    private String mDecoderName;
     private MediaCodec mDecoder;
     private MediaFormat mDecoderFormat;
     private final CodecAsyncHandler mAsyncHandleDecoder = new CodecAsyncHandler();
@@ -145,15 +146,19 @@ public class CodecEncoderSurfaceTest {
         CodecTestBase.mediaTypeSelKeys = args.getString(CodecTestBase.MEDIA_TYPE_SEL_KEY);
     }
 
-    public CodecEncoderSurfaceTest(String encoder, String mediaType, String testFile,
-            EncoderConfigParams encCfgParams, int colorFormat, boolean testToneMap,
+    public CodecEncoderSurfaceTest(String encoder, String mediaType, String decoder,
+            String testFileMediaType, String testFile, EncoderConfigParams encCfgParams,
+            int colorFormat, boolean testToneMap, boolean usePersistentSurface,
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
         mEncoderName = encoder;
         mEncMediaType = mediaType;
+        mDecoderName = decoder;
+        mTestFileMediaType = testFileMediaType;
         mTestFile = MEDIA_DIR + testFile;
         mEncCfgParams = encCfgParams;
         mColorFormat = colorFormat;
         mTestToneMap = testToneMap;
+        mUsePersistentSurface = usePersistentSurface;
         mTestArgs = allTestParams;
         mLatency = mEncCfgParams.mMaxBFrames;
         mReviseLatency = false;
@@ -168,25 +173,23 @@ public class CodecEncoderSurfaceTest {
         mTestConfig.append("\n##################       Test Details        ####################\n");
         mTestConfig.append("Test Name :- ").append(mTestName.getMethodName()).append("\n");
         mTestConfig.append("Test Parameters :- ").append(mTestArgs).append("\n");
-        if (mEncoderName.startsWith(CodecTestBase.INVALID_CODEC)) {
+        if (mEncoderName.startsWith(CodecTestBase.INVALID_CODEC) || mDecoderName.startsWith(
+                CodecTestBase.INVALID_CODEC)) {
             fail("no valid component available for current test. \n" + mTestConfig);
         }
         mDecoderFormat = setUpSource(mTestFile);
         ArrayList<MediaFormat> decoderFormatList = new ArrayList<>();
         decoderFormatList.add(mDecoderFormat);
-        String decoderMediaType = mDecoderFormat.getString(MediaFormat.KEY_MIME);
-        if (CodecTestBase.doesAnyFormatHaveHDRProfile(decoderMediaType, decoderFormatList) ||
-                mTestFile.contains("10bit")) {
+        Assume.assumeTrue("Decoder: " + mDecoderName + " doesn't support format: " + mDecoderFormat,
+                CodecTestBase.areFormatsSupported(mDecoderName, mTestFileMediaType,
+                        decoderFormatList));
+        if (CodecTestBase.doesAnyFormatHaveHDRProfile(mTestFileMediaType, decoderFormatList)
+                || mTestFile.contains("10bit")) {
             // Check if encoder is capable of supporting HDR profiles.
             // Previous check doesn't verify this as profile isn't set in the format
             Assume.assumeTrue(mEncoderName + " doesn't support HDR encoding",
                     CodecTestBase.doesCodecSupportHDRProfile(mEncoderName, mEncMediaType));
         }
-
-        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        mDecoderName = codecList.findDecoderForFormat(mDecoderFormat);
-        Assume.assumeNotNull(mDecoderFormat.toString() + " not supported by any decoder.",
-                mDecoderName);
 
         if (mColorFormat == COLOR_FormatSurface) {
             // TODO(b/253492870) Remove the following assumption check once this is supported
@@ -198,7 +201,7 @@ public class CodecEncoderSurfaceTest {
             // supporting the color format set in mDecoderFormat. Following check will
             // skip the test if decoder doesn't support the color format that is set.
             boolean decoderSupportsColorFormat =
-                    hasSupportForColorFormat(mDecoderName, decoderMediaType, mColorFormat);
+                    hasSupportForColorFormat(mDecoderName, mTestFileMediaType, mColorFormat);
             if (mColorFormat == COLOR_FormatYUVP010) {
                 assumeTrue(mDecoderName + " doesn't support P010 output.",
                         decoderSupportsColorFormat);
@@ -248,70 +251,77 @@ public class CodecEncoderSurfaceTest {
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{6})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{9}")
     public static Collection<Object[]> input() {
         final boolean isEncoder = true;
         final boolean needAudio = false;
         final boolean needVideo = true;
         final List<Object[]> exhaustiveArgsList = new ArrayList<>();
         final List<Object[]> args = new ArrayList<>(Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp", 128000, 15,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_128x96_64kbps_12fps_mpeg4.mp4", 64000, 12,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30,
-                        false},
+                // mediaType, testFileMediaType, testFile, bitRate, frameRate, toneMap
+                {MediaFormat.MIMETYPE_VIDEO_H263, MediaFormat.MIMETYPE_VIDEO_H263,
+                        "bbb_176x144_128kbps_15fps_h263.3gp", 128000, 15, false},
+                {MediaFormat.MIMETYPE_VIDEO_MPEG4, MediaFormat.MIMETYPE_VIDEO_MPEG4,
+                        "bbb_128x96_64kbps_12fps_mpeg4.mp4", 64000, 12, false},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "bbb_cif_768kbps_30fps_avc.mp4", 512000, 30, false},
         }));
 
         final List<Object[]> argsHighBitDepth = new ArrayList<>(Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_520x390_24fps_crf22_avc_10bit.mkv",
-                        512000, 30, false},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_520x390_24fps_crf22_avc_10bit.mkv",
-                        512000, 30, true},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_520x390_24fps_crf22_hevc_10bit.mkv",
-                        512000, 30, false},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_520x390_24fps_crf22_hevc_10bit.mkv",
-                        512000, 30, true},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv",
-                        512000, 30, false},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv",
-                        512000, 30, true},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
-                        512000, 30, false},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
-                        512000, 30, true},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "cosmat_520x390_24fps_crf22_avc_10bit.mkv", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_AVC,
+                        "cosmat_520x390_24fps_crf22_avc_10bit.mkv", 512000, 30, true},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                        "cosmat_520x390_24fps_crf22_hevc_10bit.mkv", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                        "cosmat_520x390_24fps_crf22_hevc_10bit.mkv", 512000, 30, true},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_VP9,
+                        "cosmat_520x390_24fps_crf22_vp9_10bit.mkv", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_VP9,
+                        "cosmat_520x390_24fps_crf22_vp9_10bit.mkv", 512000, 30, true},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, MediaFormat.MIMETYPE_VIDEO_AV1,
+                        "cosmat_520x390_24fps_768kbps_av1_10bit.mkv", 512000, 30, false},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, MediaFormat.MIMETYPE_VIDEO_AV1,
+                        "cosmat_520x390_24fps_768kbps_av1_10bit.mkv", 512000, 30, true},
         }));
 
         int[] colorFormats = {COLOR_FormatSurface, COLOR_FormatYUV420Flexible};
         int[] maxBFrames = {0, 2};
+        boolean[] boolStates = {true, false};
         for (Object[] arg : args) {
             final String mediaType = (String) arg[0];
-            final int br = (int) arg[2];
-            final int fps = (int) arg[3];
+            final int br = (int) arg[3];
+            final int fps = (int) arg[4];
             for (int colorFormat : colorFormats) {
-                for (int maxBFrame : maxBFrames) {
-                    if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                            && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                            && maxBFrame != 0) {
-                        continue;
+                for (boolean usePersistentSurface : boolStates) {
+                    for (int maxBFrame : maxBFrames) {
+                        if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                                && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                                && maxBFrame != 0) {
+                            continue;
+                        }
+                        Object[] testArgs = new Object[8];
+                        testArgs[0] = arg[0];   // encoder mediaType
+                        testArgs[1] = arg[1];   // test file mediaType
+                        testArgs[2] = arg[2];   // test file
+                        testArgs[3] = getVideoEncoderCfgParams(mediaType, br, fps, 8, maxBFrame);
+                        testArgs[4] = colorFormat;  // color format
+                        testArgs[5] = arg[5];   // tone map
+                        testArgs[6] = usePersistentSurface;
+                        testArgs[7] = String.format("%dkbps_%dfps_%s_%s", br / 1000, fps,
+                                colorFormatToString(colorFormat, 8),
+                                usePersistentSurface ? "persistentsurface" : "surface");
+                        exhaustiveArgsList.add(testArgs);
                     }
-                    Object[] testArgs = new Object[6];
-                    testArgs[0] = arg[0];
-                    testArgs[1] = arg[1];
-                    testArgs[2] = getVideoEncoderCfgParams(mediaType, br, fps, 8, maxBFrame);
-                    testArgs[3] = colorFormat;
-                    testArgs[4] = arg[4];
-                    testArgs[5] = String.format("%dkbps_%dfps_%s", br / 1000, fps,
-                            colorFormatToString(colorFormat, 8));
-                    exhaustiveArgsList.add(testArgs);
                 }
             }
         }
@@ -321,33 +331,54 @@ public class CodecEncoderSurfaceTest {
             int[] colorFormatsHbd = {COLOR_FormatSurface, COLOR_FormatYUVP010};
             for (Object[] arg : argsHighBitDepth) {
                 final String mediaType = (String) arg[0];
-                final int br = (int) arg[2];
-                final int fps = (int) arg[3];
-                final boolean toneMap = (boolean) arg[4];
+                final int br = (int) arg[3];
+                final int fps = (int) arg[4];
+                final boolean toneMap = (boolean) arg[5];
                 for (int colorFormat : colorFormatsHbd) {
-                    for (int maxBFrame : maxBFrames) {
-                        if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                                && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                                && maxBFrame != 0) {
-                            continue;
+                    for (boolean usePersistentSurface : boolStates) {
+                        for (int maxBFrame : maxBFrames) {
+                            if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                                    && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                                    && maxBFrame != 0) {
+                                continue;
+                            }
+                            Object[] testArgs = new Object[8];
+                            testArgs[0] = arg[0];   // encoder mediaType
+                            testArgs[1] = arg[1];   // test file mediaType
+                            testArgs[2] = arg[2];   // test file
+                            testArgs[3] =
+                                    getVideoEncoderCfgParams(mediaType, br, fps, toneMap ? 8 : 10,
+                                            maxBFrame);
+                            testArgs[4] = colorFormat;  // color format
+                            testArgs[5] = arg[5];   // tone map
+                            testArgs[6] = usePersistentSurface;
+                            testArgs[7] = String.format("%dkbps_%dfps_%s_%s_%s", br / 1000, fps,
+                                    colorFormatToString(colorFormat, 10),
+                                    toneMap ? "tonemapyes" : "tonemapno",
+                                    usePersistentSurface ? "persistentsurface" : "surface");
+                            exhaustiveArgsList.add(testArgs);
                         }
-                        Object[] testArgs = new Object[6];
-                        testArgs[0] = arg[0];
-                        testArgs[1] = arg[1];
-                        testArgs[2] = getVideoEncoderCfgParams(mediaType, br, fps, toneMap ? 8 : 10,
-                                maxBFrame);
-                        testArgs[3] = colorFormat;
-                        testArgs[4] = arg[4];
-                        testArgs[5] = String.format("%dkbps_%dfps_%s_%s", br / 1000, fps,
-                                colorFormatToString(colorFormat, 10),
-                                toneMap ? "tonemapyes" : "tonemapno");
-                        exhaustiveArgsList.add(testArgs);
                     }
                 }
             }
         }
-        return CodecTestBase.prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                true);
+        final List<Object[]> argsList = new ArrayList<>();
+        for (Object[] arg : exhaustiveArgsList) {
+            ArrayList<String> decoderList =
+                    CodecTestBase.selectCodecs((String) arg[1], null, null, false);
+            if (decoderList.size() == 0) {
+                decoderList.add(CodecTestBase.INVALID_CODEC + arg[1]);
+            }
+            for (String decoderName : decoderList) {
+                int argLength = exhaustiveArgsList.get(0).length;
+                Object[] testArg = new Object[argLength + 1];
+                testArg[0] = arg[0];  // encoder mediaType
+                testArg[1] = decoderName;  // decoder name
+                System.arraycopy(arg, 1, testArg, 2, argLength - 1);
+                argsList.add(testArg);
+            }
+        }
+        return CodecTestBase.prepareParamList(argsList, isEncoder, needAudio, needVideo, true);
     }
 
     private boolean hasSeenError() {
@@ -361,8 +392,7 @@ public class CodecEncoderSurfaceTest {
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
             String mediaType = format.getString(MediaFormat.KEY_MIME);
-            if (mediaType.startsWith("video/")) {
-                mTestFileMediaType = mediaType;
+            if (mediaType.equals(mTestFileMediaType)) {
                 mExtractor.selectTrack(trackID);
                 format.setInteger(MediaFormat.KEY_COLOR_FORMAT, mColorFormat);
                 if (mTestToneMap) {
@@ -399,7 +429,12 @@ public class CodecEncoderSurfaceTest {
             mReviseLatency = true;
             mLatency = mEncoder.getInputFormat().getInteger(MediaFormat.KEY_LATENCY);
         }
-        mSurface = mEncoder.createInputSurface();
+        if (mUsePersistentSurface) {
+            mSurface = MediaCodec.createPersistentInputSurface();
+            mEncoder.setInputSurface(mSurface);
+        } else {
+            mSurface = mEncoder.createInputSurface();
+        }
         assertTrue("Surface is not valid", mSurface.isValid());
         mAsyncHandleDecoder.setCallBack(mDecoder, isAsync);
         mDecoder.configure(decFormat, mSurface, null, 0);
@@ -682,6 +717,7 @@ public class CodecEncoderSurfaceTest {
      * output in all runs. The output is written to a file using muxer. This file is validated
      * for PSNR to check if the encoding happened successfully with out any obvious artifacts.
      */
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2"})
     @ApiTest(apis = {"MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -803,12 +839,13 @@ public class CodecEncoderSurfaceTest {
     }
 
     private native boolean nativeTestSimpleEncode(String encoder, String decoder, String mediaType,
-            String testFile, String muxFile, int colorFormat, String cfgParams, String separator,
-            StringBuilder retMsg);
+            String testFile, String muxFile, int colorFormat, boolean usePersistentSurface,
+            String cfgParams, String separator, StringBuilder retMsg);
 
     /**
      * Test is similar to {@link #testSimpleEncodeFromSurface()} but uses ndk api
      */
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2"})
     @ApiTest(apis = {"MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -820,7 +857,7 @@ public class CodecEncoderSurfaceTest {
         }
         int colorFormat = mDecoderFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT, -1);
         boolean isPass = nativeTestSimpleEncode(mEncoderName, mDecoderName, mEncMediaType,
-                mTestFile, tmpPath, colorFormat,
+                mTestFile, tmpPath, colorFormat, mUsePersistentSurface,
                 EncoderConfigParams.serializeMediaFormat(mEncoderFormat),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);

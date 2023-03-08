@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -48,7 +47,6 @@ import android.webkit.cts.WebViewSyncLoader.WaitForProgressClient;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -76,7 +74,7 @@ import java.util.regex.Pattern;
 @AppModeFull
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-public class WebSettingsTest {
+public class WebSettingsTest extends SharedWebViewTest {
     private static final String LOG_TAG = "WebSettingsTest";
 
     private final String EMPTY_IMAGE_HEIGHT = "0";
@@ -96,23 +94,18 @@ public class WebSettingsTest {
             new ActivityScenarioRule(WebViewCtsActivity.class);
 
     private WebSettings mSettings;
-    private CtsTestServer mWebServer;
+    private SharedSdkWebServer mWebServer;
     private WebViewOnUiThread mOnUiThread;
     private Context mContext;
 
     @Before
     public void setUp() throws Exception {
-        Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-
-        mActivityScenarioRule.getScenario().onActivity(activity -> {
-            WebViewCtsActivity webviewCtsActivity = (WebViewCtsActivity) activity;
-            WebView webview = webviewCtsActivity.getWebView();
-            if (webview != null) {
-                mOnUiThread = new WebViewOnUiThread(webview);
-            }
-        });
+        WebView webview = getTestEnvironment().getWebView();
+        if (webview != null) {
+            mOnUiThread = new WebViewOnUiThread(webview);
+        }
         mSettings = mOnUiThread.getSettings();
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mContext = getTestEnvironment().getContext();
     }
 
 
@@ -124,6 +117,28 @@ public class WebSettingsTest {
         if (mOnUiThread != null) {
             mOnUiThread.cleanUp();
         }
+    }
+
+    @Override
+    protected SharedWebViewTestEnvironment createTestEnvironment() {
+        Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
+
+        SharedWebViewTestEnvironment.Builder builder = new SharedWebViewTestEnvironment.Builder();
+
+        mActivityScenarioRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            WebView webView = ((WebViewCtsActivity) activity).getWebView();
+                            builder.setHostAppInvoker(
+                                            SharedWebViewTestEnvironment.createHostAppInvoker(
+                                                    activity))
+                                    .setContext(activity)
+                                    .setWebView(webView)
+                                    .setRootLayout(((WebViewCtsActivity) activity).getRootLayout());
+                        });
+
+        return builder.build();
     }
 
     /**
@@ -219,7 +234,7 @@ public class WebSettingsTest {
 
     @Test
     public void testAccessUserAgentString() throws Exception {
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getUserAgentUrl();
 
         String defaultUserAgent = mSettings.getUserAgentString();
@@ -292,7 +307,7 @@ public class WebSettingsTest {
             String dbPath = mContext.getFilesDir().toString() + "/icons";
             iconDb.open(dbPath);
         });
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        getTestEnvironment().waitForIdleSync();
         Thread.sleep(100); // Wait for open to be received on the icon db thread.
     }
 
@@ -301,7 +316,7 @@ public class WebSettingsTest {
         openIconDatabase();
         final IconListenerClient iconListener = new IconListenerClient();
         mOnUiThread.setWebChromeClient(iconListener);
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         mSettings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         assertEquals(WebSettings.LOAD_CACHE_ELSE_NETWORK, mSettings.getCacheMode());
@@ -324,7 +339,7 @@ public class WebSettingsTest {
         openIconDatabase();
         final IconListenerClient iconListener = new IconListenerClient();
         mOnUiThread.setWebChromeClient(iconListener);
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         mSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         assertEquals(WebSettings.LOAD_NO_CACHE, mSettings.getCacheMode());
@@ -347,7 +362,7 @@ public class WebSettingsTest {
         openIconDatabase();
         final IconListenerClient iconListener = new IconListenerClient();
         mOnUiThread.setWebChromeClient(iconListener);
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         // As a precondition, get the icon in the cache.
         mSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
@@ -474,7 +489,7 @@ public class WebSettingsTest {
     public void testAccessJavaScriptCanOpenWindowsAutomatically() throws Exception {
         mSettings.setJavaScriptEnabled(true);
         mSettings.setSupportMultipleWindows(true);
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         final WebView childWebView = mOnUiThread.createWebView();
         final SettableFuture<Void> createWindowFuture = SettableFuture.create();
@@ -678,7 +693,7 @@ public class WebSettingsTest {
     public void testAppCacheDisabled() throws Throwable {
         // Test that when AppCache is disabled, we don't get any AppCache
         // callbacks.
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final String url = mWebServer.getAppCacheUrl();
         mSettings.setJavaScriptEnabled(true);
 
@@ -702,7 +717,7 @@ public class WebSettingsTest {
 
         // Test that when AppCache is enabled but no valid path is provided,
         // we don't get any AppCache callbacks.
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final String url = mWebServer.getAppCacheUrl();
         mSettings.setAppCacheEnabled(true);
         mSettings.setJavaScriptEnabled(true);
@@ -736,7 +751,7 @@ public class WebSettingsTest {
     @Test
     public void testDatabaseDisabled() throws Throwable {
         // Verify that websql database does not work when disabled.
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         mOnUiThread.setWebChromeClient(new WebViewSyncLoader.WaitForProgressClient(mOnUiThread) {
             @Override
@@ -776,7 +791,7 @@ public class WebSettingsTest {
 
     @Test
     public void testLoadsImagesAutomatically_httpImagesLoaded() throws Throwable {
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
         mSettings.setLoadsImagesAutomatically(true);
 
@@ -786,7 +801,7 @@ public class WebSettingsTest {
 
     @Test
     public void testLoadsImagesAutomatically_dataUriImagesLoaded() throws Throwable {
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
         mSettings.setLoadsImagesAutomatically(true);
 
@@ -796,7 +811,7 @@ public class WebSettingsTest {
 
     @Test
     public void testLoadsImagesAutomatically_blockLoadingImages() throws Throwable {
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
         mSettings.setLoadsImagesAutomatically(false);
 
@@ -810,7 +825,7 @@ public class WebSettingsTest {
 
     @Test
     public void testLoadsImagesAutomatically_loadImagesWithoutReload() throws Throwable {
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
         mSettings.setLoadsImagesAutomatically(false);
 
@@ -834,7 +849,7 @@ public class WebSettingsTest {
     public void testBlockNetworkImage() throws Throwable {
         assertFalse(mSettings.getBlockNetworkImage());
 
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
 
         // Check that by default network and data url images are loaded.
@@ -864,7 +879,7 @@ public class WebSettingsTest {
     public void testBlockNetworkLoads() throws Throwable {
         assertFalse(mSettings.getBlockNetworkLoads());
 
-        startWebServer(false);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mSettings.setJavaScriptEnabled(true);
 
         // Check that by default network resources and data url images are loaded.
@@ -1047,7 +1062,7 @@ public class WebSettingsTest {
         mOnUiThread.setWebViewClient(interceptClient);
         mSettings.setJavaScriptEnabled(true);
 
-        startWebServer(true);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         String secureUrl = mWebServer.setResponse(SECURE_URL, SECURE_HTML, null);
         mOnUiThread.clearSslPreferences();
 
@@ -1098,17 +1113,6 @@ public class WebSettingsTest {
     }
 
     /**
-     * Starts the internal web server. The server will be shut down automatically
-     * during tearDown().
-     *
-     * @throws Exception
-     */
-    private void startWebServer(boolean secure) throws Exception {
-        assertNull(mWebServer);
-        mWebServer = new CtsTestServer(mContext, secure ? SslMode.NO_CLIENT_AUTH : SslMode.INSECURE);
-    }
-
-    /**
      * Load the given asset from the internal web server. Starts the server if
      * it is not already running.
      *
@@ -1117,7 +1121,7 @@ public class WebSettingsTest {
      */
     private void loadAssetUrl(String asset) throws Exception {
         if (mWebServer == null) {
-            startWebServer(false);
+            mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         }
         String url = mWebServer.getAssetUrl(asset);
         mOnUiThread.loadUrlAndWaitForCompletion(url);

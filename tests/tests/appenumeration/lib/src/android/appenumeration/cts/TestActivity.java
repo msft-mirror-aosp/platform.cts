@@ -24,6 +24,7 @@ import static android.appenumeration.cts.Constants.ACTION_GET_PACKAGES_FOR_UID;
 import static android.appenumeration.cts.Constants.ACTION_GET_PACKAGE_INFO;
 import static android.appenumeration.cts.Constants.ACTION_HAS_SIGNING_CERTIFICATE;
 import static android.appenumeration.cts.Constants.ACTION_JUST_FINISH;
+import static android.appenumeration.cts.Constants.ACTION_MANIFEST_SERVICE;
 import static android.appenumeration.cts.Constants.ACTION_MEDIA_SESSION_MANAGER_IS_TRUSTED_FOR_MEDIA_CONTROL;
 import static android.appenumeration.cts.Constants.ACTION_QUERY_ACTIVITIES;
 import static android.appenumeration.cts.Constants.ACTION_QUERY_PROVIDERS;
@@ -298,7 +299,8 @@ public class TestActivity extends Activity {
                         .getParcelable(EXTRA_ACCOUNT, Account.class);
                 final String authority = intent.getBundleExtra(EXTRA_DATA)
                         .getString(EXTRA_AUTHORITY);
-                requestPeriodicSync(remoteCallback, account, authority);
+                awaitRequestPeriodicSync(remoteCallback, account, authority,
+                        TimeUnit.SECONDS.toMillis(15));
             } else if (Constants.ACTION_SET_SYNC_AUTOMATICALLY.equals(action)) {
                 final Account account = intent.getBundleExtra(EXTRA_DATA)
                         .getParcelable(EXTRA_ACCOUNT, Account.class);
@@ -356,7 +358,8 @@ public class TestActivity extends Activity {
                         targetUid);
             } else if (Constants.ACTION_TAKE_PERSISTABLE_URI_PERMISSION.equals(action)) {
                 final Uri uri = intent.getData();
-                final int modeFlags = intent.getFlags();
+                final int modeFlags = intent.getFlags() & (Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 if (uri != null) {
                     getContentResolver().takePersistableUriPermission(uri, modeFlags);
                 }
@@ -696,7 +699,9 @@ public class TestActivity extends Activity {
     private void sendError(RemoteCallback remoteCallback, Exception failure) {
         Bundle result = new Bundle();
         result.putSerializable(EXTRA_ERROR, failure);
-        remoteCallback.sendResult(result);
+        if (remoteCallback != null) {
+            remoteCallback.sendResult(result);
+        }
         finish();
     }
 
@@ -856,12 +861,34 @@ public class TestActivity extends Activity {
         finish();
     }
 
-    private void requestPeriodicSync(RemoteCallback remoteCallback, Account account,
-            String authority) {
+    private void awaitRequestPeriodicSync(RemoteCallback remoteCallback, Account account,
+            String authority, long timeoutMs) {
         ContentResolver.addPeriodicSync(account, authority, Bundle.EMPTY,
                 TimeUnit.HOURS.toSeconds(1));
-        remoteCallback.sendResult(null);
-        finish();
+        final Object token = new Object();
+        final Bundle result = new Bundle();
+        final Runnable pollingPeriodicSync = new Runnable() {
+            @Override
+            public void run() {
+                if (!ContentResolver.getPeriodicSyncs(account, authority).stream()
+                        .anyMatch(sync -> sync.authority.equals(authority))) {
+                    mainHandler.postDelayed(this, 100 /* delayMillis */);
+                    return;
+                }
+                mainHandler.removeCallbacksAndMessages(token);
+                result.putBoolean(EXTRA_RETURN_RESULT, true);
+                remoteCallback.sendResult(result);
+                finish();
+            }
+        };
+
+        mainHandler.post(pollingPeriodicSync);
+        mainHandler.postDelayed(() -> {
+            mainHandler.removeCallbacks(pollingPeriodicSync);
+            result.putBoolean(EXTRA_RETURN_RESULT, false);
+            remoteCallback.sendResult(result);
+            finish();
+        }, token, timeoutMs);
     }
 
     private void setSyncAutomatically(RemoteCallback remoteCallback, Account account,
@@ -1193,7 +1220,7 @@ public class TestActivity extends Activity {
     }
 
     private void bindService(RemoteCallback remoteCallback, String packageName) {
-        final Intent intent = new Intent();
+        final Intent intent = new Intent(ACTION_MANIFEST_SERVICE);
         intent.setClassName(packageName, SERVICE_CLASS_DUMMY_SERVICE);
         final ServiceConnection serviceConnection = new ServiceConnection() {
             @Override

@@ -28,6 +28,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.BroadcastReceiver;
@@ -340,6 +341,17 @@ public class BluetoothAdapterTest extends AndroidTestCase {
         }
         assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN,
                 mAdapter.isLeAudioBroadcastAssistantSupported());
+    }
+
+    public void test_isDistanceMeasurementSupported() throws IOException {
+        if (!mHasBluetooth) {
+            // Skip the test if bluetooth is not present.
+            return;
+        }
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN,
+                mAdapter.isDistanceMeasurementSupported());
+        TestUtils.dropPermissionAsShellUid();
     }
 
     public void test_getMaxConnectedAudioDevices() {
@@ -730,7 +742,54 @@ public class BluetoothAdapterTest extends AndroidTestCase {
                 mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
     }
 
-    public void test_notifyPreferredAudioProfileChangeApplied() {
+    public void test_bluetoothQualityReportReadyCallbacks() {
+        if (!mHasBluetooth) {
+            // Skip the test if bluetooth or companion device are not present.
+            return;
+        }
+        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        String deviceAddress = "00:11:22:AA:BB:CC";
+        BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
+
+        Executor executor = mContext.getMainExecutor();
+        BluetoothAdapter.BluetoothQualityReportReadyCallback callback =
+                new BluetoothAdapter.BluetoothQualityReportReadyCallback() {
+            @Override
+            public void onBluetoothQualityReportReady(
+                    @androidx.annotation.NonNull BluetoothDevice device,
+                    @androidx.annotation.NonNull BluetoothQualityReport bluetoothQualityReport,
+                    int status) {}
+        };
+
+        BluetoothQualityReport bqr =
+                BluetoothQualityReportTest.getBqr(BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
+
+        callback.onBluetoothQualityReportReady(device, bqr,
+                BluetoothStatusCodes.SUCCESS);
+
+        assertThrows(NullPointerException.class, () ->
+                mAdapter.registerBluetoothQualityReportReadyCallback(null, callback));
+        assertThrows(NullPointerException.class, () ->
+                mAdapter.registerBluetoothQualityReportReadyCallback(executor, null));
+        assertThrows(NullPointerException.class, () ->
+                mAdapter.unregisterBluetoothQualityReportReadyCallback(null));
+
+        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
+        assertThrows(SecurityException.class, () ->
+                mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback));
+        assertThrows(IllegalArgumentException.class, () ->
+                mAdapter.unregisterBluetoothQualityReportReadyCallback(callback));
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        // Try the happy path
+        assertEquals(BluetoothStatusCodes.SUCCESS,
+                mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback));
+        assertEquals(BluetoothStatusCodes.SUCCESS,
+                mAdapter.unregisterBluetoothQualityReportReadyCallback(callback));
+    }
+
+    public void test_notifyActiveDeviceChangeApplied() {
         if (!mHasBluetooth) {
             // Skip the test if bluetooth or companion device are not present.
             return;
@@ -740,10 +799,10 @@ public class BluetoothAdapterTest extends AndroidTestCase {
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
         assertThrows(NullPointerException.class, () ->
-                mAdapter.notifyPreferredAudioProfileChangeApplied(null));
+                mAdapter.notifyActiveDeviceChangeApplied(null));
 
         assertEquals(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ALLOWED,
-                mAdapter.notifyPreferredAudioProfileChangeApplied(device));
+                mAdapter.notifyActiveDeviceChangeApplied(device));
     }
 
     private static void sleep(long t) {

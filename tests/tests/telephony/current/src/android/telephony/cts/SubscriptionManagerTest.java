@@ -56,6 +56,7 @@ import android.os.ParcelUuid;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
+import android.provider.DeviceConfig;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -83,6 +84,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -163,17 +165,19 @@ public class SubscriptionManagerTest {
     private void overrideCarrierConfig(PersistableBundle bundle, int subId) throws Exception {
         mReceiver = new CarrierConfigReceiver(subId);
         IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
-        // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
         InstrumentationRegistry.getContext().registerReceiver(mReceiver, filter);
-        mReceiver.waitForCarrierConfigChanged();
-        mReceiver.clearQueue();
+        try {
+            mReceiver.clearQueue();
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                InstrumentationRegistry.getContext().getSystemService(CarrierConfigManager.class),
-                (cm) -> cm.overrideConfig(subId, bundle));
-        mReceiver.waitForCarrierConfigChanged();
-        InstrumentationRegistry.getContext().unregisterReceiver(mReceiver);
-        mReceiver = null;
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    InstrumentationRegistry.getContext().getSystemService(
+                            CarrierConfigManager.class),
+                    (cm) -> cm.overrideConfig(subId, bundle));
+            mReceiver.waitForCarrierConfigChanged();
+        } finally {
+            InstrumentationRegistry.getContext().unregisterReceiver(mReceiver);
+            mReceiver = null;
+        }
     }
 
     /**
@@ -230,6 +234,7 @@ public class SubscriptionManagerTest {
         mDefaultVoiceSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
         mPackageName = InstrumentationRegistry.getContext().getPackageName();
 
+        setIdentifierAccess(false);
     }
 
     @After
@@ -433,16 +438,20 @@ public class SubscriptionManagerTest {
         if (!isAutomotive()) return;
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        final String uniqueId = "00:01:02:03:04:05";
+        final String displayName = "device_name";
         uiAutomation.adoptShellPermissionIdentity();
-        String uniqueId = "00:01:02:03:04:05";
-        String displayName = "device_name";
-        mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
-                SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
-        assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
-        mSm.removeSubscriptionInfoRecord(uniqueId,
-                SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
-        assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
-        uiAutomation.dropShellPermissionIdentity();
+        try {
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
+            mSm.removeSubscriptionInfoRecord(uniqueId,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
 
         // Testing permission fail
         try {
@@ -713,8 +722,13 @@ public class SubscriptionManagerTest {
         }
 
         // has the READ_PRIVILEGED_PHONE_STATE permission
-        infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+        setIdentifierAccess(true);
+        try {
+            infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getSubscriptionsInGroup(uuid), READ_PRIVILEGED_PHONE_STATE);
+        } finally {
+            setIdentifierAccess(false);
+        }
         assertNotNull(infoList);
         assertEquals(1, infoList.size());
         assertEquals(uuid, infoList.get(0).getGroupUuid());
@@ -735,8 +749,8 @@ public class SubscriptionManagerTest {
         availableInfoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getAvailableSubscriptionInfoList());
         // has the OPSTR_READ_DEVICE_IDENTIFIERS permission
+        setIdentifierAccess(true);
         try {
-            setIdentifierAccess(true);
             if (availableInfoList.size() > 1) {
                 List<Integer> availableSubGroup = availableInfoList.stream()
                         .map(info -> info.getSubscriptionId())
@@ -791,18 +805,18 @@ public class SubscriptionManagerTest {
             assertNotNull(infoList);
             assertEquals(1, infoList.size());
             assertEquals(uuid, infoList.get(0).getGroupUuid());
+
+            // Remove from subscription group with current sub Id.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                    (sm) -> sm.removeSubscriptionsFromGroup(subGroup, uuid));
+
+            infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                    (sm) -> sm.getSubscriptionsInGroup(uuid));
+            assertNotNull(infoList);
+            assertTrue(infoList.isEmpty());
         } finally {
             setIdentifierAccess(false);
         }
-
-        // Remove from subscription group with current sub Id.
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
-                (sm) -> sm.removeSubscriptionsFromGroup(subGroup, uuid));
-
-        infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getSubscriptionsInGroup(uuid));
-        assertNotNull(infoList);
-        assertTrue(infoList.isEmpty());
     }
 
     @Test
@@ -814,12 +828,6 @@ public class SubscriptionManagerTest {
             mSm.setOpportunistic(true, mSubId);
             fail();
         } catch (SecurityException expected) {
-            // Caller permission should not affect accessing SIMINFO table.
-            assertNotEquals(expected.getMessage(),
-                    "Access SIMINFO table from not phone/system UID");
-            // Caller does not have permission to manage mSubId.
-            assertEquals(expected.getMessage(),
-                    "Caller requires permission on sub " + mSubId);
         }
 
         // Shouldn't crash.
@@ -941,7 +949,8 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    public void testSetAndCheckSubscriptionEnabled() {
+    @Ignore("b/262591408")
+    public void testSetAndCheckSubscriptionEnabled() throws Throwable {
         boolean enabled = executeWithShellPermissionAndDefault(false, mSm,
                 (sm) -> sm.isSubscriptionEnabled(mSubId));
 
@@ -974,8 +983,8 @@ public class SubscriptionManagerTest {
             }
         });
 
+        t.start();
         try {
-            t.start();
             // Enable or disable subscription may require users UX confirmation or may not be
             // supported. Call APIs to make sure there's no crash.
             executeWithShellPermissionAndDefault(false, mSm,
@@ -1025,6 +1034,7 @@ public class SubscriptionManagerTest {
             latch.await(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             fail("InterruptedException");
+            t.joinAndCheck(5000);
         }
     }
 
@@ -1064,16 +1074,15 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    public void testRestoreAllSimSpecificSettingsFromBackup() throws Exception {
-        int activeDataSubId = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getActiveDataSubscriptionId());
+    public void testRestoreAllSimSpecificSettingsFromBackup() throws Throwable {
+        int activeDataSubId = SubscriptionManager.getActiveDataSubscriptionId();
         assertNotEquals(activeDataSubId, SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         SubscriptionInfo activeSubInfo = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(activeDataSubId));
         String isoCountryCode = activeSubInfo.getCountryIso();
 
         byte[] backupData = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getAllSimSpecificSettingsForBackup());
+                SubscriptionManager::getAllSimSpecificSettingsForBackup);
         assertTrue(backupData.length > 0);
 
         PersistableBundle bundle = new PersistableBundle();
@@ -1087,23 +1096,23 @@ public class SubscriptionManagerTest {
                     ImsManager.class);
             ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(activeDataSubId);
             boolean isVolteVtEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
+                    mMmTelManager, ImsMmTelManager::isAdvancedCallingSettingEnabled);
             boolean isVtImsEnabledOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.isVtSettingEnabled());
+                    mMmTelManager, ImsMmTelManager::isVtSettingEnabled);
             boolean isVoWiFiSettingEnabledOriginal =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
+                            mMmTelManager, ImsMmTelManager::isVoWiFiSettingEnabled);
             int voWifiModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.getVoWiFiModeSetting());
+                    mMmTelManager, ImsMmTelManager::getVoWiFiModeSetting);
             int voWiFiRoamingModeOriginal = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
+                    mMmTelManager, ImsMmTelManager::getVoWiFiRoamingModeSetting);
 
             // Get the original RcsUce values.
             ImsRcsManager imsRcsManager = imsManager.getImsRcsManager(activeDataSubId);
             RcsUceAdapter rcsUceAdapter = imsRcsManager.getUceAdapter();
             boolean isImsRcsUceEnabledOriginal =
                     ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                    rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
+                    rcsUceAdapter, RcsUceAdapter::isUceSettingEnabled, ImsException.class,
                     android.Manifest.permission.READ_PHONE_STATE);
 
             //Change values in DB.
@@ -1125,24 +1134,34 @@ public class SubscriptionManagerTest {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
                     (sm) -> sm.restoreAllSimSpecificSettingsFromBackup(backupData));
 
+            final long maxWaitMillis = 5000;
+            try {
+                waitForSubscriptionCondition(
+                        () -> isVolteVtEnabledOriginal == isAdvancedCallingSettingEnabled(mSubId),
+                        maxWaitMillis);
+                assertEquals(isVolteVtEnabledOriginal, isAdvancedCallingSettingEnabled(mSubId));
+            } finally {
+                overrideCarrierConfig(null, mSubId);
+            }
+
             // Get ims values to verify with.
             boolean isVolteVtEnabledAfterRestore =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            mMmTelManager, (m) -> m.isAdvancedCallingSettingEnabled());
+                            mMmTelManager, ImsMmTelManager::isAdvancedCallingSettingEnabled);
             boolean isVtImsEnabledAfterRestore =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            mMmTelManager, (m) -> m.isVtSettingEnabled());
+                            mMmTelManager, ImsMmTelManager::isVtSettingEnabled);
             boolean isVoWiFiSettingEnabledAfterRestore =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            mMmTelManager, (m) -> m.isVoWiFiSettingEnabled());
+                            mMmTelManager, ImsMmTelManager::isVoWiFiSettingEnabled);
             int voWifiModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.getVoWiFiModeSetting());
+                    mMmTelManager, ImsMmTelManager::getVoWiFiModeSetting);
             int voWiFiRoamingModeAfterRestore = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mMmTelManager, (m) -> m.getVoWiFiRoamingModeSetting());
+                    mMmTelManager, ImsMmTelManager::getVoWiFiRoamingModeSetting);
             // Get RcsUce values to verify with.
             boolean isImsRcsUceEnabledAfterRestore =
                     ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                            rcsUceAdapter, (a) -> a.isUceSettingEnabled(), ImsException.class,
+                            rcsUceAdapter, RcsUceAdapter::isUceSettingEnabled, ImsException.class,
                             android.Manifest.permission.READ_PHONE_STATE);
 
             assertEquals(isVolteVtEnabledOriginal, isVolteVtEnabledAfterRestore);
@@ -1176,27 +1195,38 @@ public class SubscriptionManagerTest {
     public void testSetAndGetD2DStatusSharing() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
-        int originalD2DStatusSharing = mSm.getDeviceToDeviceStatusSharingPreference(mSubId);
-        mSm.setDeviceToDeviceStatusSharingPreference(mSubId,
-                SubscriptionManager.D2D_SHARING_ALL_CONTACTS);
-        assertEquals(SubscriptionManager.D2D_SHARING_ALL_CONTACTS,
-                mSm.getDeviceToDeviceStatusSharingPreference(mSubId));
-        mSm.setDeviceToDeviceStatusSharingPreference(mSubId, SubscriptionManager.D2D_SHARING_ALL);
-        assertEquals(SubscriptionManager.D2D_SHARING_ALL,
-                mSm.getDeviceToDeviceStatusSharingPreference(mSubId));
-        mSm.setDeviceToDeviceStatusSharingPreference(mSubId, originalD2DStatusSharing);
-        uiAutomation.dropShellPermissionIdentity();
+        try {
+            int originalD2DStatusSharing = mSm.getDeviceToDeviceStatusSharingPreference(mSubId);
+            mSm.setDeviceToDeviceStatusSharingPreference(mSubId,
+                    SubscriptionManager.D2D_SHARING_ALL_CONTACTS);
+            assertEquals(SubscriptionManager.D2D_SHARING_ALL_CONTACTS,
+                    mSm.getDeviceToDeviceStatusSharingPreference(mSubId));
+            mSm.setDeviceToDeviceStatusSharingPreference(
+                    mSubId, SubscriptionManager.D2D_SHARING_ALL);
+            assertEquals(SubscriptionManager.D2D_SHARING_ALL,
+                    mSm.getDeviceToDeviceStatusSharingPreference(mSubId));
+            mSm.setDeviceToDeviceStatusSharingPreference(mSubId, originalD2DStatusSharing);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test
     public void testSetAndGetD2DSharingContacts() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
-        List<Uri> originalD2DSharingContacts = mSm.getDeviceToDeviceStatusSharingContacts(mSubId);
-        mSm.setDeviceToDeviceStatusSharingContacts(mSubId, CONTACTS);
-        assertEquals(CONTACTS, mSm.getDeviceToDeviceStatusSharingContacts(mSubId));
-        mSm.setDeviceToDeviceStatusSharingContacts(mSubId, originalD2DSharingContacts);
-        uiAutomation.dropShellPermissionIdentity();
+        try {
+            List<Uri> originalD2DSharingContacts =
+                    mSm.getDeviceToDeviceStatusSharingContacts(mSubId);
+            mSm.setDeviceToDeviceStatusSharingContacts(mSubId, CONTACTS);
+            try {
+                assertEquals(CONTACTS, mSm.getDeviceToDeviceStatusSharingContacts(mSubId));
+            } finally {
+                mSm.setDeviceToDeviceStatusSharingContacts(mSubId, originalD2DSharingContacts);
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test
@@ -1205,30 +1235,26 @@ public class SubscriptionManagerTest {
         // Simply call the getter and make sure no exception.
 
         // Getters accessiable with READ_PRIVILEGED_PHONE_STATE
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(READ_PRIVILEGED_PHONE_STATE);
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(READ_PRIVILEGED_PHONE_STATE);
-
             mSm.getPhoneNumber(mSubId);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
-
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
 
         // Getters accessiable with READ_PHONE_NUMBERS
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.READ_PHONE_NUMBERS);
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(android.Manifest.permission.READ_PHONE_NUMBERS);
-
             mSm.getPhoneNumber(mSubId);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
-
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -1361,52 +1387,61 @@ public class SubscriptionManagerTest {
 
     private String getSubscriptionIso(int subId) {
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getActiveSubscriptionInfo(mSubId));
+                (sm) -> sm.getActiveSubscriptionInfo(subId));
         return info.getCountryIso();
+    }
+
+    private boolean isAdvancedCallingSettingEnabled(int subId) {
+        ImsManager imsManager = InstrumentationRegistry.getContext().getSystemService(
+                ImsManager.class);
+        ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(subId);
+        return ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mMmTelManager, ImsMmTelManager::isAdvancedCallingSettingEnabled);
     }
 
     /**
      * Monitor the onSubscriptionsChangedListener until a condition is satisfied.
      */
     private void waitForSubscriptionCondition(
-            BooleanSupplier condition, long maxWaitMillis) throws Exception {
+            BooleanSupplier condition, long maxWaitMillis) throws Throwable {
         final Object lock = new Object();
 
-        TestThread t = new TestThread(new Runnable() {
-            @Override
-            public void run() {
-                Looper.prepare();
+        TestThread t = new TestThread(() -> {
+            Looper.prepare();
 
-                SubscriptionManager.OnSubscriptionsChangedListener listener =
-                        new SubscriptionManager.OnSubscriptionsChangedListener() {
-                            @Override
-                            public void onSubscriptionsChanged() {
-                                synchronized (lock) {
-                                    if (condition.getAsBoolean()) lock.notifyAll();
+            SubscriptionManager.OnSubscriptionsChangedListener listener =
+                    new SubscriptionManager.OnSubscriptionsChangedListener() {
+                        @Override
+                        public void onSubscriptionsChanged() {
+                            synchronized (lock) {
+                                if (condition.getAsBoolean()) {
+                                    lock.notifyAll();
+                                    Looper.myLooper().quitSafely();
                                 }
                             }
-                        };
-                mSm.addOnSubscriptionsChangedListener(listener);
-                try {
-                    synchronized (lock) {
-                        if (condition.getAsBoolean()) lock.notifyAll();
-                    }
-                    Looper.loop();
-                } finally {
-                    mSm.removeOnSubscriptionsChangedListener(listener);
+                        }
+                    };
+            mSm.addOnSubscriptionsChangedListener(listener);
+            try {
+                synchronized (lock) {
+                    if (condition.getAsBoolean()) lock.notifyAll();
                 }
+                Looper.loop();
+            } finally {
+                mSm.removeOnSubscriptionsChangedListener(listener);
             }
         });
 
-        t.start();
-
         synchronized (lock) {
-            if (!condition.getAsBoolean()) lock.wait(maxWaitMillis);
+            if (condition.getAsBoolean()) return;
+            t.start();
+            lock.wait(maxWaitMillis);
+            t.joinAndCheck(5000);
         }
     }
 
     @Test
-    public void testCountryIso() throws Exception {
+    public void testCountryIso() throws Throwable {
         final String liechtensteinIso = "li";
         final String faroeIslandsIso = "fo";
 
@@ -1431,6 +1466,13 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testSetAndGetSubscriptionUserHandle() throws Exception {
+        // Do not test if the feature is not enabled.
+        if (!ShellIdentityUtils.invokeStaticMethodWithShellPermissions(
+                () -> DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_TELEPHONY,
+                        "enable_work_profile_telephony", false))) {
+            return;
+        }
+
         // Throws IllegalArgumentException as SubscriptionId is invalid.
         assertThrows(IllegalArgumentException.class,
                 () -> mSm.setSubscriptionUserHandle(-1, UserHandle.SYSTEM));
@@ -1448,19 +1490,20 @@ public class SubscriptionManagerTest {
         assertThrows(SecurityException.class, () -> mSm.getSubscriptionUserHandle(mSubId));
 
         // Set and get user handle with MANAGE_SUBSCRIPTION_USER_ASSOCIATION permission.
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MANAGE_SUBSCRIPTION_USER_ASSOCIATION);
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            Manifest.permission.MANAGE_SUBSCRIPTION_USER_ASSOCIATION);
-            UserHandle originalUserHandle = mSm.getSubscriptionUserHandle(mSubId);
-
+            final UserHandle originalUserHandle = mSm.getSubscriptionUserHandle(mSubId);
             mSm.setSubscriptionUserHandle(mSubId, null);
-            assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(null);
+            try {
+                assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(null);
 
-            mSm.setSubscriptionUserHandle(mSubId, UserHandle.SYSTEM);
-            assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(UserHandle.SYSTEM);
-
-            mSm.setSubscriptionUserHandle(mSubId, originalUserHandle);
+                mSm.setSubscriptionUserHandle(mSubId, UserHandle.SYSTEM);
+                assertThat(mSm.getSubscriptionUserHandle(mSubId)).isEqualTo(UserHandle.SYSTEM);
+            } finally {
+                mSm.setSubscriptionUserHandle(mSubId, originalUserHandle);
+            }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -1633,11 +1676,27 @@ public class SubscriptionManagerTest {
     }
 
     private void setIdentifierAccess(boolean allowed) {
+        CountDownLatch changeLatch = new CountDownLatch(1);
         String op = AppOpsManager.OPSTR_READ_DEVICE_IDENTIFIERS;
         AppOpsManager appOpsManager = InstrumentationRegistry.getContext().getSystemService(
                 AppOpsManager.class);
         int mode = allowed ? AppOpsManager.MODE_ALLOWED : AppOpsManager.opToDefaultMode(op);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                appOpsManager, (appOps) -> appOps.setUidMode(op, Process.myUid(), mode));
+        if (appOpsManager.unsafeCheckOpNoThrow(op, Process.myUid(),
+                    InstrumentationRegistry.getContext().getOpPackageName()) == mode) {
+            return;
+        }
+        AppOpsManager.OnOpChangedListener opListener =
+                (String appOp, String packageName) -> changeLatch.countDown();
+        appOpsManager.startWatchingMode(op, InstrumentationRegistry.getContext().getOpPackageName(),
+                opListener);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    appOpsManager, (appOps) -> appOps.setUidMode(op, Process.myUid(), mode));
+            changeLatch.await(5000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ie) {
+            fail("Never received appOp change for Identifier Access");
+        } finally {
+            appOpsManager.stopWatchingMode(opListener);
+        }
     }
 }

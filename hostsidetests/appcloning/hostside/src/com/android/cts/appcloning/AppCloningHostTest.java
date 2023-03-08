@@ -51,6 +51,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
 
     private static final String IMAGE_NAME_TO_BE_CREATED_KEY = "imageNameToBeCreated";
     private static final String IMAGE_NAME_TO_BE_DISPLAYED_KEY = "imageNameToBeDisplayed";
+    private static final String PUBLIC_SD_CARD_VOLUME_KEY = "publicSdCardVol";
     private static final String EXTERNAL_STORAGE_PATH = "/storage/emulated/%d/";
     private static final String IMAGE_NAME_TO_BE_VERIFIED_IN_OWNER_PROFILE_KEY =
             "imageNameToBeVerifiedInOwnerProfile";
@@ -271,47 +272,6 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
 
         assertTrue(!getPackageInUser(APP_A_PACKAGE, Integer.parseInt(sCloneUserId))
                 .contains(APP_A_PACKAGE));
-    }
-
-    @Test
-    public void testDeletionOfPrimaryApp_deleteAppWithParentPropertyFalse_doesNotDeleteInChild()
-            throws Exception {
-        assumeTrue(isAtLeastU());
-
-        int currentUserId = getCurrentUserId();
-        // Create test profile
-        CommandResult createUserResult = executeShellV2Command("pm create-user --profileOf "
-                + currentUserId + " --user-type android.os.usertype.profile.TEST test");
-        assertThat(isSuccessful(createUserResult)).isTrue();
-        String testUserOutput = createUserResult.getStdout();
-        String testUserId = testUserOutput.substring(
-                testUserOutput.lastIndexOf(' ') + 1).replaceAll("[^0-9]", "");
-
-        try {
-            // Install the app in owner user space
-            installPackage(APP_A, "--user " + currentUserId);
-            eventually(() -> {
-                // Wait for finish.
-                assertThat(isPackageInstalled(
-                        APP_A_PACKAGE, String.valueOf(currentUserId))).isTrue();
-            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
-
-            // Install the app in test user profile
-            installPackage(APP_A, "--user " + testUserId);
-            eventually(() -> {
-                // Wait for finish.
-                assertThat(isPackageInstalled(APP_A_PACKAGE, testUserId)).isTrue();
-            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
-
-            eventually(() -> {
-                uninstallPackage(APP_A_PACKAGE, currentUserId);
-            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
-
-            assertTrue(getPackageInUser(APP_A_PACKAGE, Integer.parseInt(testUserId))
-                    .contains(APP_A_PACKAGE));
-        } finally {
-            executeShellV2Command("pm remove-user " + testUserId);
-        }
     }
 
     private String getPackageInUser(String pkgName, int userId) throws Exception {

@@ -99,12 +99,17 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
 
     private static void addParams(int width, int height, int frameRate) {
         final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC};
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
         final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
         final int[] maxBFramesPerSubGop = new int[]{0, 1};
         final int[] intraIntervals = new int[]{0, 1};
         for (String mediaType : mediaTypes) {
             for (int maxBFrames : maxBFramesPerSubGop) {
+                if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                        && !mediaType.equals((MediaFormat.MIMETYPE_VIDEO_HEVC))
+                        && maxBFrames != 0) {
+                    continue;
+                }
                 for (int bitRateMode : bitRateModes) {
                     for (int intraInterval : intraIntervals) {
                         // mediaType, cfg, res, label
@@ -121,7 +126,7 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() {
         addParams(1080, 1920, 30);
         addParams(720, 1280, 30);
@@ -170,7 +175,8 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
     }
 
     @ApiTest(apis = {"android.media.MediaFormat#KEY_WIDTH",
-            "android.media.MediaFormat#KEY_HEIGHT"})
+            "android.media.MediaFormat#KEY_HEIGHT",
+            "android.media.MediaFormat#KEY_FRAME_RATE"})
     @Test
     public void testMultiRes() throws IOException, InterruptedException {
         MediaFormat format = mEncCfgParams[0].getFormat();

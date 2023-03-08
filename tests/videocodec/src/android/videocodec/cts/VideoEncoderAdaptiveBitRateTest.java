@@ -31,6 +31,7 @@ import android.mediav2.common.cts.RawResource;
 import android.os.Bundle;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -97,7 +98,7 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
     private static void addParams(int width, int height, int[] segmentBitRates,
             CompressedResource res) {
         final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC};
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
         final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
         for (String mediaType : mediaTypes) {
             for (int bitRateMode : bitRateModes) {
@@ -111,7 +112,7 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{5})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{5}")
     public static Collection<Object[]> input() {
         addParams(1920, 1080, SEGMENT_BITRATES_FULLHD, BIRTHDAY_FULLHD_LANDSCAPE);
         addParams(1080, 1920, SEGMENT_BITRATES_FULLHD, SELFIEGROUP_FULLHD_PORTRAIT);
@@ -182,6 +183,7 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
         assertTrue(msg + mTestConfig + mTestEnv, mSegmentSizes[segB] / mSegmentSizes[segA] >= 1.15);
     }
 
+    @CddTest(requirements = "5.2/C-2-1")
     @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_VIDEO_BITRATE")
     @Test
     public void testAdaptiveBitRate() throws IOException, InterruptedException,

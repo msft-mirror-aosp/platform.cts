@@ -16,6 +16,7 @@
 
 package android.appenumeration.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.appenumeration.cts.Constants.ACTIVITY_CLASS_TEST;
 import static android.appenumeration.cts.Constants.EXTRA_DATA;
 import static android.appenumeration.cts.Constants.EXTRA_ERROR;
@@ -33,6 +34,7 @@ import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -130,7 +132,9 @@ public class AppEnumerationTestsBase {
             AmUtils.waitForBroadcastIdle();
             startAndWaitForCommandReady(intent);
         } else {
-            sContext.startActivity(intent);
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+            sContext.startActivity(intent, options.toBundle());
         }
         return () -> {
             if (!latch.block(DEFAULT_TIMEOUT_MS)) {
@@ -150,7 +154,9 @@ public class AppEnumerationTestsBase {
         final RemoteCallback readyCallback = new RemoteCallback(bundle -> latchForReady.open(),
                 sResponseHandler);
         intent.putExtra(EXTRA_REMOTE_READY_CALLBACK, readyCallback);
-        sContext.startActivity(intent);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        sContext.startActivity(intent, options.toBundle());
         if (!latchForReady.block(DEFAULT_TIMEOUT_MS)) {
             throw new TimeoutException(
                     "Latch timed out while awaiting a response from command " + intent.getAction());

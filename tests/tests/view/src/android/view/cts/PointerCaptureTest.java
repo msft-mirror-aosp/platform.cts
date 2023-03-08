@@ -154,15 +154,20 @@ public class PointerCaptureTest {
                 eq(view), argThat(new PositionMatcher(action, x, y)));
     }
 
-    private void verifyHoverDispatch() {
+    private void verifyHoverDispatch(boolean sendEnter) {
         View.OnHoverListener listenerOuter = installHoverListener(mOuter);
         View.OnHoverListener listenerInner = installHoverListener(mInner);
         View.OnHoverListener listenerTarget = installHoverListener(mTarget);
         View.OnHoverListener listenerTarget2 = installHoverListener(mTarget2);
 
-        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mInner, 0, 0));
-        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mTarget, 0, 0));
-        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mTarget2, 0, 0));
+        // Use a 1 pixel offset for input injection to work around
+        // rounding issues when using non-integer scale factors.
+        if (sendEnter) {
+            injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_ENTER, mInner, 1, 1));
+        }
+        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mInner, 1, 1));
+        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mTarget, 1, 1));
+        injectMotionEvent(obtainMouseEvent(MotionEvent.ACTION_HOVER_MOVE, mTarget2, 1, 1));
 
         clearHoverListener(mOuter);
         clearHoverListener(mInner);
@@ -237,7 +242,7 @@ public class PointerCaptureTest {
         // TODO(kaznacheev) replace the below line with a call to showContextMenu once b/65487689
         // is fixed. Meanwhile, emulate a long press which takes long enough time to avoid the race
         // condition.
-        CtsTouchUtils.emulateLongPressOnView(mInstrumentation, mActivityRule, mTarget, 0, 0);
+        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTarget, 0);
         PollingCheck.waitFor(TIMEOUT_DELTA, () -> !mOuter.hasWindowFocus());
         PollingCheck.waitFor(TIMEOUT_DELTA,
                 () -> !mTarget.hasPointerCapture() && !mActivity.hasPointerCapture());
@@ -263,7 +268,7 @@ public class PointerCaptureTest {
 
     @Test
     public void testEventDispatch() throws Throwable {
-        verifyHoverDispatch();
+        verifyHoverDispatch(/*sendEnter=*/true);
 
         View.OnCapturedPointerListener listenerInner = installCapturedPointerListener(mInner);
         View.OnCapturedPointerListener listenerTarget = installCapturedPointerListener(mTarget);
@@ -317,7 +322,7 @@ public class PointerCaptureTest {
         inOrder.verifyNoMoreInteractions();
 
         // Check the regular dispatch again.
-        verifyHoverDispatch();
+        verifyHoverDispatch(/*sendEnter=*/false);
     }
 
     @Test

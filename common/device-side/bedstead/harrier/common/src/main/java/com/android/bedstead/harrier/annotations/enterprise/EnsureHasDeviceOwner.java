@@ -23,7 +23,10 @@ import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
+import com.android.bedstead.harrier.annotations.RequireNotWatch;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
+import com.android.queryable.annotations.Query;
+import com.android.queryable.annotations.StringQuery;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -50,12 +53,20 @@ import java.lang.annotation.Target;
 @RequireFeature(FEATURE_DEVICE_ADMIN)
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
+@RequireNotWatch(reason = "b/270121483 Watches get marked as paired which means we can't change Device Owner")
 public @interface EnsureHasDeviceOwner {
 
     int DO_PO_WEIGHT = MIDDLE;
 
     /** Behaviour if the device owner cannot be set. */
     FailureMode failureMode() default FailureMode.FAIL;
+
+    /**
+     * Requirements for the DPC
+     */
+    // Default to latest version
+    Query dpc() default @Query(
+            packageName = @StringQuery(isEqualTo = "com.android.cts.RemoteDPC"));
 
     /**
      * Whether this DPC should be returned by calls to {@code Devicestate#dpc()}.

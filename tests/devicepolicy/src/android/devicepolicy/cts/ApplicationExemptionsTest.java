@@ -16,12 +16,12 @@
 
 package android.devicepolicy.cts;
 
-import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_APP_STANDBY;
+import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_SUSPENSION;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_APP_STANDBY;
+import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
 import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -73,10 +73,10 @@ public class ApplicationExemptionsTest {
             new ArrayMap<>();
     static {
         APPLICATION_EXEMPTION_CONSTANTS_TO_APP_OPS.put(
-                EXEMPT_FROM_APP_STANDBY, OPSTR_SYSTEM_EXEMPT_FROM_APP_STANDBY);
+                EXEMPT_FROM_SUSPENSION, OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION);
     }
 
-    @IntTestParameter({EXEMPT_FROM_APP_STANDBY })
+    @IntTestParameter({EXEMPT_FROM_SUSPENSION })
     @Retention(RetentionPolicy.RUNTIME)
     private @interface ApplicationExemptionConstants {}
 
@@ -84,7 +84,7 @@ public class ApplicationExemptionsTest {
     @EnsureDoesNotHavePermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
     @Postsubmit(reason = "new test")
     public void setApplicationExemptions_noPermission_throwsSecurityException() {
-        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_APP_STANDBY);
+        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_SUSPENSION);
         try (TestAppInstance testApp = sTestApp.install()) {
             assertThrows(SecurityException.class, () ->
                     sLocalDevicePolicyManager.setApplicationExemptions(
@@ -146,7 +146,7 @@ public class ApplicationExemptionsTest {
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
     @Postsubmit(reason = "new test")
     public void setApplicationExemptions_invalidPackage_throwsNameNotFoundException() {
-        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_APP_STANDBY);
+        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_SUSPENSION);
         assertThrows(NameNotFoundException.class, () ->
                 sLocalDevicePolicyManager.setApplicationExemptions(
                         INVALID_PACKAGE_NAME, exemptionSet));
@@ -192,7 +192,7 @@ public class ApplicationExemptionsTest {
     @Postsubmit(reason = "new test")
     public void setApplicationExemptions_reinstallApplication_exemptionAppOpsReset()
             throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_APP_STANDBY));
+        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_SUSPENSION));
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(),
@@ -201,7 +201,7 @@ public class ApplicationExemptionsTest {
 
         try (TestAppInstance testApp = sTestApp.install()) {
             assertThat(sTestApp.pkg().appOps()
-                    .get(APPLICATION_EXEMPTION_CONSTANTS_TO_APP_OPS.get(EXEMPT_FROM_APP_STANDBY)))
+                    .get(APPLICATION_EXEMPTION_CONSTANTS_TO_APP_OPS.get(EXEMPT_FROM_SUSPENSION)))
                     .isEqualTo(DEFAULT);
         }
     }

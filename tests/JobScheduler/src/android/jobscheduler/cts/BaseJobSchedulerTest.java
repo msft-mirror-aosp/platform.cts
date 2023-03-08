@@ -15,6 +15,8 @@
  */
 package android.jobscheduler.cts;
 
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
+
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
 import android.annotation.CallSuper;
@@ -27,14 +29,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.jobscheduler.MockJobService;
+import android.jobscheduler.TestActivity;
 import android.jobscheduler.TriggerContentJobService;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.server.wm.WindowManagerStateHelper;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
@@ -76,6 +81,10 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     ClipData mSecondClipData;
 
     boolean mStorageStateChanged;
+    boolean mActivityStarted;
+
+    private boolean mDeviceIdleEnabled;
+    private boolean mDeviceLightIdleEnabled;
 
     private String mInitialBatteryStatsConstants;
 
@@ -120,6 +129,13 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         kTriggerTestEnvironment.setUp();
         mJobScheduler.cancelAll();
 
+        mDeviceIdleEnabled = isDeviceIdleEnabled();
+        mDeviceLightIdleEnabled = isDeviceLightIdleEnabled();
+        if (mDeviceIdleEnabled || mDeviceLightIdleEnabled) {
+            // Make sure the device isn't dozing since it will affect execution of regular jobs
+            setDeviceIdleState(false);
+        }
+
         mInitialBatteryStatsConstants = Settings.Global.getString(mContext.getContentResolver(),
                 Settings.Global.BATTERY_STATS_CONSTANTS);
         // Make sure ACTION_CHARGING is sent immediately.
@@ -143,6 +159,14 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                 "cmd jobscheduler reset-execution-quota -u current "
                         + kJobServiceComponent.getPackageName());
         mDeviceConfigStateHelper.restoreOriginalValues();
+
+        if (mActivityStarted) {
+            closeActivity();
+        }
+
+        if (mDeviceIdleEnabled || mDeviceLightIdleEnabled) {
+            resetDeviceIdleState();
+        }
 
         // The super method should be called at the end.
         super.tearDown();
@@ -173,6 +197,20 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                 fail("Timed out waiting for permission revoke");
             }
         }
+    }
+
+    boolean isDeviceIdleFeatureEnabled() throws Exception {
+        return mDeviceIdleEnabled || mDeviceLightIdleEnabled;
+    }
+
+    static boolean isDeviceIdleEnabled() throws Exception {
+        final String output = SystemUtil.runShellCommand("cmd deviceidle enabled deep").trim();
+        return Integer.parseInt(output) != 0;
+    }
+
+    static boolean isDeviceLightIdleEnabled() throws Exception {
+        final String output = SystemUtil.runShellCommand("cmd deviceidle enabled light").trim();
+        return Integer.parseInt(output) != 0;
     }
 
     /** Returns the current storage-low state, as believed by JobScheduler. */
@@ -214,6 +252,21 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         fail("Timed out waiting for job scheduler: expected seq=" + seq + ", cur=" + curSeq);
     }
 
+    void startAndKeepTestActivity() {
+        final Intent testActivity = new Intent();
+        testActivity.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ComponentName testComponentName = new ComponentName(mContext, TestActivity.class);
+        testActivity.setComponent(testComponentName);
+        mContext.startActivity(testActivity);
+        new WindowManagerStateHelper().waitForActivityState(testComponentName, STATE_RESUMED);
+        mActivityStarted = true;
+    }
+
+    void closeActivity() {
+        mContext.sendBroadcast(new Intent(TestActivity.ACTION_FINISH_ACTIVITY));
+        mActivityStarted = false;
+    }
+
     String getJobState(int jobId) throws Exception {
         return SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler get-job-state --user cur "
@@ -242,6 +295,10 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         BatteryUtils.turnOnScreen(screenon);
         // Wait a little bit for the broadcasts to be processed.
         Thread.sleep(2_000);
+    }
+
+    void resetDeviceIdleState() throws Exception {
+        SystemUtil.runShellCommand("cmd deviceidle unforce");
     }
 
     void setBatteryState(boolean plugged, int level) throws Exception {
@@ -273,6 +330,28 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                             SystemUtil.runShellCommand(getInstrumentation(),
                                     "cmd jobscheduler get-battery-charging").trim());
                     return curSeq >= seq && curCharging == plugged;
+                });
+    }
+
+    void setDeviceIdleState(final boolean idle) throws Exception {
+        final String changeCommand;
+        if (idle) {
+            changeCommand = "force-idle " + (mDeviceIdleEnabled ? "deep" : "light");
+        } else {
+            changeCommand = "force-active";
+        }
+        SystemUtil.runShellCommand("cmd deviceidle " + changeCommand);
+        waitUntil("Could not change device idle state to " + idle, 15 /* seconds */,
+                () -> {
+                    PowerManager powerManager = getContext().getSystemService(PowerManager.class);
+                    if (idle) {
+                        return mDeviceIdleEnabled
+                                ? powerManager.isDeviceIdleMode()
+                                : powerManager.isDeviceLightIdleMode();
+                    } else {
+                        return !powerManager.isDeviceIdleMode()
+                                && !powerManager.isDeviceLightIdleMode();
+                    }
                 });
     }
 

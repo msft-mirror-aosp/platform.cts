@@ -32,6 +32,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -47,6 +48,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Rect;
 import android.hardware.input.InputManager;
+import android.hardware.input.InputSettings;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.Handler;
@@ -71,8 +73,10 @@ import android.widget.Toast;
 import androidx.annotation.AnimRes;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -671,6 +675,7 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
+    @FlakyTest(bugId = 260666647)
     public void testWhenExitAnimationAboveThresholdFromSameUid_allowsTouch() {
         addExitAnimationActivity(APP_SELF);
         sendFinishToExitAnimationActivity(APP_SELF,
@@ -704,6 +709,7 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenTextToastWindow_allowsTouch() throws Throwable {
+        assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
         addToastOverlay(APP_A, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
@@ -1010,7 +1016,7 @@ public class WindowUntrustedTouchTest {
     private float setMaximumObscuringOpacityForTouch(float opacity) throws Exception {
         return SystemUtil.callWithShellPermissionIdentity(() -> {
             float previous = mInputManager.getMaximumObscuringOpacityForTouch();
-            mInputManager.setMaximumObscuringOpacityForTouch(opacity);
+            InputSettings.setMaximumObscuringOpacityForTouch(mContext, opacity);
             return previous;
         });
     }

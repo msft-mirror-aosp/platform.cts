@@ -463,7 +463,7 @@ public class WebViewSslTest extends SharedWebViewTest {
             mOnUiThread.cleanUp();
         }
         if (mWebServer != null) {
-            stopWebServer();
+            stopWebServer(mWebServer);
         }
         mActivity = null;
     }
@@ -505,25 +505,15 @@ public class WebViewSslTest extends SharedWebViewTest {
         return environment;
     }
 
-    private void startWebServer(@SslMode int sslMode) throws Exception {
-        startWebServer(new SharedSdkWebServer.Config().setSslMode(sslMode));
-    }
-
-    private void startWebServer(SharedSdkWebServer.Config config) throws Exception {
-        assertNull(mWebServer);
-        mWebServer = getTestEnvironment().getWebServer();
-        mWebServer.start(config);
-    }
-
-    private void stopWebServer() throws Exception {
-        assertNotNull(mWebServer);
+    private void stopWebServer(SharedSdkWebServer webServer) throws Exception {
+        assertNotNull(webServer);
         ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
         ThreadPolicy tmpPolicy = new ThreadPolicy.Builder(oldPolicy)
                 .permitNetwork()
                 .build();
         StrictMode.setThreadPolicy(tmpPolicy);
-        mWebServer.shutdown();
-        mWebServer = null;
+        webServer.shutdown();
+        webServer = null;
         StrictMode.setThreadPolicy(oldPolicy);
     }
 
@@ -539,7 +529,7 @@ public class WebViewSslTest extends SharedWebViewTest {
             }
         }
 
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         mOnUiThread.setWebViewClient(new MockWebViewClient());
         mOnUiThread.loadUrlAndWaitForCompletion(
                 mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
@@ -547,9 +537,9 @@ public class WebViewSslTest extends SharedWebViewTest {
         assertNotNull(cert);
         assertEquals("Android", cert.getIssuedTo().getUName());
 
-        stopWebServer();
+        stopWebServer(mWebServer);
 
-        startWebServer(SslMode.INSECURE);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         mOnUiThread.loadUrlAndWaitForCompletion(
                 mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
         assertNull(mOnUiThread.getCertificate());
@@ -557,6 +547,8 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testSecureSiteSetsCertificate() throws Throwable {
+        SharedWebViewTestEnvironment testEnvironment = getTestEnvironment();
+
         final class MockWebViewClient extends WaitForLoadedClient {
             public MockWebViewClient() {
                 super(mOnUiThread);
@@ -567,14 +559,14 @@ public class WebViewSslTest extends SharedWebViewTest {
             }
         }
 
-        startWebServer(SslMode.INSECURE);
+        mWebServer = testEnvironment.getSetupWebServer(SslMode.INSECURE);
         mOnUiThread.loadUrlAndWaitForCompletion(
                 mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
         assertNull(mOnUiThread.getCertificate());
 
-        stopWebServer();
+        stopWebServer(mWebServer);
 
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = testEnvironment.getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         mOnUiThread.setWebViewClient(new MockWebViewClient());
         mOnUiThread.loadUrlAndWaitForCompletion(
                 mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
@@ -588,7 +580,7 @@ public class WebViewSslTest extends SharedWebViewTest {
         // Load the first page. We expect a call to
         // WebViewClient.onReceivedSslError().
         final SslErrorWebViewClient webViewClient = new SslErrorWebViewClient(mOnUiThread);
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.setWebViewClient(webViewClient);
         mOnUiThread.clearSslPreferences();
@@ -637,7 +629,7 @@ public class WebViewSslTest extends SharedWebViewTest {
             }
         }
 
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String errorUrl = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
@@ -660,7 +652,7 @@ public class WebViewSslTest extends SharedWebViewTest {
             }
         }
 
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.setWebViewClient(new MockWebViewClient());
         mOnUiThread.loadUrlAndWaitForCompletion(url);
@@ -679,7 +671,7 @@ public class WebViewSslTest extends SharedWebViewTest {
             }
         }
 
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.setWebViewClient(new MockWebViewClient());
         mOnUiThread.clearSslPreferences();
@@ -692,7 +684,7 @@ public class WebViewSslTest extends SharedWebViewTest {
         // Load the first page. We expect a call to
         // WebViewClient.onReceivedSslError().
         final SslErrorWebViewClient webViewClient = new SslErrorWebViewClient(mOnUiThread);
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String firstUrl = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
         mOnUiThread.setWebViewClient(webViewClient);
         mOnUiThread.clearSslPreferences();
@@ -715,7 +707,7 @@ public class WebViewSslTest extends SharedWebViewTest {
         // Load the first page. We expect a call to
         // WebViewClient.onReceivedSslError().
         final SslErrorWebViewClient webViewClient = new SslErrorWebViewClient(mOnUiThread);
-        startWebServer(SslMode.NO_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NO_CLIENT_AUTH);
         final String firstUrl = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
         mOnUiThread.setWebViewClient(webViewClient);
         mOnUiThread.clearSslPreferences();
@@ -738,7 +730,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testSecureServerRequestingClientCertDoesNotCancelRequest() throws Throwable {
-        startWebServer(SslMode.WANTS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.WANTS_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final SslErrorWebViewClient webViewClient = new SslErrorWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);
@@ -753,7 +745,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testSecureServerRequiringClientCertDoesCancelRequest() throws Throwable {
-        startWebServer(SslMode.NEEDS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final SslErrorWebViewClient webViewClient = new SslErrorWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);
@@ -779,7 +771,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testProceedClientCertRequest() throws Throwable {
-        startWebServer(SslMode.NEEDS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final ClientCertWebViewClient webViewClient = new ClientCertWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);
@@ -807,7 +799,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testProceedClientCertRequestKeyWithAndroidKeystoreKey() throws Throwable {
-        startWebServer(SslMode.NEEDS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final ClientCertWebViewClient webViewClient = new ClientCertWebViewClient(
                 mOnUiThread,
@@ -858,7 +850,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testIgnoreClientCertRequest() throws Throwable {
-        startWebServer(SslMode.NEEDS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final ClientCertWebViewClient webViewClient = new ClientCertWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);
@@ -892,7 +884,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testCancelClientCertRequest() throws Throwable {
-        startWebServer(SslMode.NEEDS_CLIENT_AUTH);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final ClientCertWebViewClient webViewClient = new ClientCertWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);
@@ -917,10 +909,8 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testClientCertIssuersReceivedCorrectly() throws Throwable {
-
-        startWebServer(new SharedSdkWebServer.Config()
-                .setSslMode(SslMode.NEEDS_CLIENT_AUTH)
-                .setAcceptedIssuer(FAKE_RSA_CA_1));
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.NEEDS_CLIENT_AUTH,
+            FAKE_RSA_CA_1, 0, 0);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         final ClientCertWebViewClient webViewClient = new ClientCertWebViewClient(mOnUiThread);
         mOnUiThread.setWebViewClient(webViewClient);

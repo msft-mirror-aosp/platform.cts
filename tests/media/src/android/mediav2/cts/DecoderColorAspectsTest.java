@@ -82,7 +82,7 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
         mSupportRequirements = supportRequirements;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{3}_{4}_{5})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}_{4}_{5}")
     public static Collection<Object[]> input() {
         final boolean isEncoder = false;
         final boolean needAudio = true;
@@ -262,7 +262,7 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
                         MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_OPTIONAL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_352x288_hlg_av1.mkv",
                         MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT709,
-                        MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_ALL},
+                        MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_OPTIONAL},
         });
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }

@@ -17,6 +17,7 @@
 package android.accessibilityservice.cts;
 
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
+import android.app.UiAutomation;
 import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.NonNull;
@@ -28,26 +29,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@link android.view.accessibility.AccessibilityDisplayProxy} is registered.
  */
 public class StubProxyConcurrentAccessibilityService extends InstrumentedAccessibilityService {
-    private AccessibilityEvent mUnwantedEvent;
-    AtomicBoolean mReceivedUnwantedEvent = new AtomicBoolean();
+    AtomicBoolean mReceivedEvent = new AtomicBoolean();
     Object mWaitObject = new Object();
+    UiAutomation.AccessibilityEventFilter mEventFilter;
 
     @Override
     public void onAccessibilityEvent(@NonNull AccessibilityEvent event) {
-        if (mUnwantedEvent != null) {
-            if (event.getEventType() == mUnwantedEvent.getEventType()
-                    && event.getClassName().equals(mUnwantedEvent.getClassName())
-                    && event.getDisplayId() == mUnwantedEvent.getDisplayId()
-                    && event.getText().equals(mUnwantedEvent.getText())) {
+        if (mEventFilter != null) {
+            if (mEventFilter.accept(event)) {
                 synchronized (mWaitObject) {
-                    mReceivedUnwantedEvent.set(true);
+                    mReceivedEvent.set(true);
                     mWaitObject.notifyAll();
                 }
             }
         }
     }
 
-    public void setUnwantedEvent(@NonNull AccessibilityEvent event) {
-        mUnwantedEvent = event;
+    public void setEventFilter(@NonNull UiAutomation.AccessibilityEventFilter filter) {
+        mEventFilter = filter;
     }
+
 }

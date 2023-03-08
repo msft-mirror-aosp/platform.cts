@@ -16,14 +16,12 @@
 package android.app.cts.shortfgstest;
 
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.ACTIVITY;
-import static android.app.cts.shortfgstesthelper.ShortFgsHelper.ALL_SERVICES;
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.FGS0;
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.FGS1;
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.FGS2;
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.HELPER_PACKAGE;
 import static android.app.cts.shortfgstesthelper.ShortFgsHelper.TAG;
 import static android.app.nano.AppProtoEnums.PROCESS_STATE_FOREGROUND_SERVICE;
-import static android.app.nano.AppProtoEnums.PROCESS_STATE_IMPORTANT_FOREGROUND;
 import static android.app.nano.AppProtoEnums.PROCESS_STATE_LAST_ACTIVITY;
 import static android.app.nano.AppProtoEnums.PROCESS_STATE_TOP;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
@@ -35,6 +33,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Service;
+import android.app.StartForegroundCalledOnStoppedServiceException;
 import android.app.cts.shortfgstest.DumpProtoUtils.ProcStateInfo;
 import android.app.cts.shortfgstesthelper.ShortFgsHelper;
 import android.app.cts.shortfgstesthelper.ShortFgsMessage;
@@ -52,6 +51,7 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.am.nano.ServiceRecordProto;
 
 import org.junit.After;
@@ -149,28 +149,23 @@ public class ActivityManagerShortFgsTest {
         updateDeviceConfig("service_start_foreground_timeout_ms",
                 SHORTENED_START_SERVICE_TIMEOUT, /* verify= */ true);
 
-        stopAllServices();
+        forceStopHelperApp();
 
         // We update the start time here, to drop any messages sent before this line.
         // (we drop stale messages in waitForNextMessage()).
         // Before this, the helper app's receiver won't receive messages either.
         sLastTestStartUptime = SystemClock.uptimeMillis();
 
-        killHelperApp();
-
-        // stopAllServices() and killHelperApp() may send back messages, so we clear the queue
-        // after running them.
-        CallProvider.clearMessageQueue();
-
         Log.d(TAG, "setUp() done");
     }
 
     @After
     public void tearDown() throws Exception {
-        Log.d(TAG, "tearDown() started");
         sLastTestEndUptime = SystemClock.uptimeMillis();
 
-        stopAllServices();
+        Log.d(TAG, "tearDown() started");
+
+        forceStopHelperApp();
 
         Log.d(TAG, "tearDown() done");
     }
@@ -205,8 +200,27 @@ public class ActivityManagerShortFgsTest {
         }
     }
 
+    private static void ensureHelperAppNotRunning() throws Exception {
+        // Wait until the process is actually gone.
+        // We need it because 1) kill is async and 2) the ack is sent before the kill anyway
+        waitUntil("Process still running",
+                () -> !DumpProtoUtils.processExists(FGS0.getPackageName()));
+
+    }
+
+    /**
+     * Force-stop the helper app.
+     */
+    private static void forceStopHelperApp() throws Exception {
+        SystemUtil.runShellCommand("am force-stop " + FGS0.getPackageName());
+        ensureHelperAppNotRunning();
+    }
+
     /**
      * Send a "kill self" command to the helper, and wait for the process to go away.
+     *
+     * This is needed when "force-stop"'s side effects are not ideal. (e.g. force-stop will
+     * prevent STICKY FGS from restarting)
      */
     private static void killHelperApp() throws Exception {
         // If we do it outside of a test, the helper app would just ignore the message,
@@ -221,29 +235,7 @@ public class ActivityManagerShortFgsTest {
 
         waitForAckMessage();
 
-        // Wait until the process is actually gone.
-        // We need it because 1) kill is async and 2) the ack is sent before the kill anyway
-        waitUntil("Process still running",
-                () -> !DumpProtoUtils.processExists(FGS0.getPackageName()));
-
-    }
-
-    private static void stopAllServices() throws Exception {
-        // Stop all the services inside the helper app.
-        for (ComponentName cn : ALL_SERVICES) {
-            if (DumpProtoUtils.findServiceRecord(cn) == null) {
-                continue;
-            }
-            Log.w(TAG, "stopAllServices: Stopping " + cn);
-            try {
-                sContext.stopService(new Intent().setComponent(cn));
-            } catch (Throwable th) {
-                // Ignore.
-            }
-
-            waitUntil("Service " + cn + " still running",
-                    () -> DumpProtoUtils.findServiceRecord(cn) == null);
-        }
+        ensureHelperAppNotRunning();
     }
 
     /**
@@ -364,7 +356,7 @@ public class ActivityManagerShortFgsTest {
         // Short service's procstat is IMP-FG, and when it starts. It's not started from TOP,
         // so the oom-adj will be 225 + 1.
         // If it was started from TOP, it'd be 50 + 1.
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Stop the service.
         sContext.stopService(new Intent().setComponent(FGS0));
@@ -402,7 +394,7 @@ public class ActivityManagerShortFgsTest {
         // Short service's procstat is IMP-FG, and when it starts. It's not started from TOP,
         // so the oom-adj will be 225 + 1.
         // If it was started from TOP, it'd be 50 + 1.
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Stop the service, using Service.stopSelf().
         ShortFgsMessageReceiver.sendMessage(
@@ -444,7 +436,7 @@ public class ActivityManagerShortFgsTest {
         // Short service's procstat is IMP-FG, and when it starts. It's not started from TOP,
         // so the oom-adj will be 225 + 1.
         // If it was started from TOP, it'd be 50 + 1.
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Wait for onTimeout()
         Thread.sleep(SHORTENED_TIMEOUT);
@@ -459,7 +451,7 @@ public class ActivityManagerShortFgsTest {
         }
 
         // At this point, the procstate should still be the same.
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         assertServiceRunning(FGS0);
 
@@ -669,7 +661,7 @@ public class ActivityManagerShortFgsTest {
             ShortFgsMessage m = waitForException();
 
             assertThat(m.getActualExceptionClasss())
-                    .isEqualTo(IllegalStateException.class.getName());
+                    .isEqualTo(StartForegroundCalledOnStoppedServiceException.class.getName());
 
             assertThat(m.getActualExceptionMessage())
                     .contains("called on a service that's not started.");
@@ -702,7 +694,7 @@ public class ActivityManagerShortFgsTest {
         assertServiceRunning(FGS0);
 
         // The procstate should be of the SHORT_FGS.
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Stop the service.
         sContext.stopService(new Intent().setComponent(FGS0));
@@ -729,7 +721,7 @@ public class ActivityManagerShortFgsTest {
         waitForMethodCall(FGS0, "onStartCommand");
         assertServiceRunning(FGS0);
 
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Because of the first Context.startForegroundService() for FGS0, the helper
         // app is temp-allowlisted for this duration, so another
@@ -774,7 +766,7 @@ public class ActivityManagerShortFgsTest {
         waitForMethodCall(FGS0, "onStartCommand");
         assertServiceRunning(FGS0);
 
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 225 + 1);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 225 + 1);
 
         // Start another FGS, that's not a SHORT_SERVICE.
         startForegroundService(FGS1, FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
@@ -840,7 +832,7 @@ public class ActivityManagerShortFgsTest {
         // The service is still running, and the procstate should now be IMP_FG, but
         // the OOM-adjustment should be boosted.
         assertServiceRunning(FGS0);
-        assertHelperPackageProcState(PROCESS_STATE_IMPORTANT_FOREGROUND, 51);
+        assertHelperPackageProcState(PROCESS_STATE_FOREGROUND_SERVICE, 51);
 
         // TODO(short-service) We don't run an oomj after TOP_TO_FGS_GRACE_PERIOD, so this part
         // won't pass.

@@ -18,7 +18,10 @@
     package="android.car.cts">
     <uses-feature android:name="android.hardware.type.automotive" />
     <uses-permission android:name="android.car.permission.ACCESS_PRIVATE_DISPLAY_ID" />
+    <uses-permission android:name="android.car.permission.CAR_POWER" />
     <uses-permission android:name="android.car.permission.CAR_TEST_SERVICE" />
+    <!-- for CarRemoteDeviceManagerTest -->
+    <uses-permission android:name="android.car.permission.MANAGE_REMOTE_DEVICE" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
     <uses-permission android:name="android.car.permission.USE_CAR_TELEMETRY_SERVICE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -41,6 +44,7 @@
             <meta-data android:name="distractionOptimized" android:value="false"/>
         </activity>
         <activity android:name=".CarDisplayInputLockTest$TestActivity" />
+        <activity android:name=".CarInputTest$TestActivity" />
         <activity android:name="android.car.app.cts.CarActivityManagerTest$TestActivity"
             android:allowEmbedded="true" />
 
@@ -58,4 +62,3 @@
             android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 </manifest>
-

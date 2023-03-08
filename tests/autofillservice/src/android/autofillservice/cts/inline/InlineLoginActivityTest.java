@@ -20,11 +20,14 @@ import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONS
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.assertTextIsSanitized;
+import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
+import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResourceId;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.autofillservice.cts.testcore.Timeouts.MOCK_IME_TIMEOUT_MS;
+import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
@@ -42,6 +45,7 @@ import android.autofillservice.cts.activities.UsernameOnlyActivity;
 import android.autofillservice.cts.commontests.LoginActivityCommonTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
+import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.content.Intent;
@@ -51,10 +55,10 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.FillContext;
-import android.support.test.uiautomator.Direction;
 import android.view.accessibility.AccessibilityManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.Direction;
 
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
@@ -625,6 +629,67 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         // .RemoteInlineSuggestionUi} to timeout.
         SystemClock.sleep(500);
         Helper.assertActiveViewCountFromInlineSuggestionRenderService(0);
+    }
+
+    @Test
+    public void testAutofill_pccDatasets() throws Exception {
+        // Set service.
+        enableService();
+        enablePccDetectionFeature(sContext, "username");
+        sReplier.setIdMode(IdMode.PCC_ID);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(ID_USERNAME, "user1")
+                        .setField(ID_PASSWORD, "pass1")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Trigger auto-fill.
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdleSync();
+
+        final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
+        assertThat(request.hints.size()).isEqualTo(1);
+        assertThat(request.hints.get(0)).isEqualTo("username");
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
+    }
+
+    @Test
+    public void autofillPccDatasetTest_setForAllHints() throws Exception {
+        // Set service.
+        enableService();
+        enablePccDetectionFeature(sContext, "username", "password", "new_password");
+        sReplier.setIdMode(IdMode.PCC_ID);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(AUTOFILL_HINT_USERNAME, "dude")
+                        .setField("allField1")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField("allField2")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Trigger auto-fill.
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdleSync();
+
+        final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
+        assertThat(request.hints.size()).isEqualTo(3);
+
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
     }
 
     private void enableTouchExploration() throws InterruptedException {

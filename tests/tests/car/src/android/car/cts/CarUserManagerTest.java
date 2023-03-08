@@ -18,6 +18,7 @@ package android.car.cts;
 
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
+import static android.Manifest.permission.MANAGE_USERS;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_CREATED;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_INVISIBLE;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_REMOVED;
@@ -29,7 +30,6 @@ import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_UNLOCKED
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_UNLOCKING;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_VISIBLE;
 import static android.car.user.CarUserManager.UserLifecycleEvent;
-import static android.car.user.CarUserManager.UserLifecycleListener;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -39,11 +39,15 @@ import static org.junit.Assert.assertThrows;
 import static java.lang.Math.max;
 
 import android.app.ActivityManager;
+import android.car.CarOccupantZoneManager;
 import android.car.test.ApiCheckerRule;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.car.test.util.AndroidHelper;
+import android.car.test.util.UserTestingHelper;
 import android.car.testapi.BlockingUserLifecycleListener;
 import android.car.user.CarUserManager;
+import android.car.user.UserStartRequest;
+import android.car.user.UserStopRequest;
 import android.os.Bundle;
 import android.os.NewUserRequest;
 import android.os.NewUserResponse;
@@ -60,24 +64,26 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public final class CarUserManagerTest extends AbstractCarTestCase {
     private static final String TAG = AbstractCarTestCase.class.getSimpleName();
     private static final String NEW_USER_NAME_PREFIX = "CarCTSTest.";
     private static final int START_TIMEOUT_MS = 20_000;
+    private static final int NO_EVENTS_TIMEOUT_MS = 5_000;
 
     private final List<UserHandle> mUsersToRemove = new ArrayList<>();
     private CarUserManager mCarUserManager;
+    private CarOccupantZoneManager mOccupantZoneManager;
     private UserManager mUserManager;
 
     @Before
     public void setUp() {
         mUserManager = mContext.getSystemService(UserManager.class);
         mCarUserManager = getCar().getCarManager(CarUserManager.class);
+        mOccupantZoneManager = getCar().getCarManager(CarOccupantZoneManager.class);
     }
 
     @After
@@ -99,10 +105,117 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(apis = {
+            "android.car.user.CarUserManager#startUser(UserStartRequest, Executor, ResultCallback)",
+            "android.car.user.CarUserManager#stopUser(UserStopRequest, Executor, ResultCallback)"})
+    @EnsureHasPermission({CREATE_USERS, MANAGE_USERS, INTERACT_ACROSS_USERS})
+    public void testStartUserOnDisplayAndStopUser() throws Exception {
+
+        // Check if the device supports MUMD. If not, skip the test.
+        UserTestingHelper.requireMumd(mContext);
+
+        int displayId = UserTestingHelper
+                .getDisplayForStartingBackgroundUser(mContext, mOccupantZoneManager);
+
+        BlockingUserLifecycleListener listenerForVisible = null;
+        BlockingUserLifecycleListener listenerForInvisible = null;
+        UserHandle newUser = null;
+        boolean isAdded = false;
+        try {
+            newUser = createUser("newUser", /* isGuest= */ false);
+            int userId = newUser.getIdentifier();
+            listenerForVisible = BlockingUserLifecycleListener
+                    .forSpecificEvents()
+                    .forUser(userId)
+                    .setTimeout(START_TIMEOUT_MS)
+                    .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_VISIBLE)
+                    .build();
+            listenerForInvisible = BlockingUserLifecycleListener
+                    .forSpecificEvents()
+                    .forUser(userId)
+                    .setTimeout(START_TIMEOUT_MS)
+                    .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_INVISIBLE)
+                    .build();
+
+            Log.d(TAG, "Registering listeners.");
+            mCarUserManager.addListener(Runnable::run, listenerForVisible);
+            mCarUserManager.addListener(Runnable::run, listenerForInvisible);
+            Log.d(TAG, "Registered listeners.");
+            isAdded = true;
+
+            // Start the new user on a display.
+            UserStartRequest startRequest = new UserStartRequest.Builder(newUser)
+                    .setDisplayId(displayId).build();
+            mCarUserManager.startUser(startRequest, Runnable::run,
+                    response ->
+                            assertWithMessage("startUser success for user %s on display %s",
+                                    userId, displayId).that(response.isSuccess()).isTrue());
+
+            List<UserLifecycleEvent> visibleEvents = listenerForVisible.waitForEvents();
+            assertWithMessage("events").that(visibleEvents).hasSize(1);
+            UserLifecycleEvent visibleEvent = visibleEvents.get(0);
+            assertWithMessage("Type of the event").that(visibleEvent.getEventType())
+                    .isEqualTo(USER_LIFECYCLE_EVENT_TYPE_VISIBLE);
+            assertWithMessage("UserId of the event").that(visibleEvent.getUserHandle())
+                    .isEqualTo(newUser);
+            assertWithMessage("Visible users").that(mUserManager.getVisibleUsers())
+                    .contains(newUser);
+            // By the time USER_VISIBLE event is received the user should have been assigned to
+            // the display.
+            assertWithMessage("User assigned to display %s", displayId)
+                    .that(mOccupantZoneManager.getUserForDisplayId(displayId))
+                    .isEqualTo(userId);
+            CarOccupantZoneManager.OccupantZoneInfo zone =
+                    mOccupantZoneManager.getOccupantZoneForUser(newUser);
+            assertWithMessage("The display assigned to the started user %s", newUser)
+                    .that(mOccupantZoneManager.getDisplayForOccupant(
+                            zone, CarOccupantZoneManager.DISPLAY_TYPE_MAIN).getDisplayId())
+                    .isEqualTo(displayId);
+
+            // Stop the user.
+            UserStopRequest stopRequest = new UserStopRequest.Builder(newUser).setForce().build();
+            mCarUserManager.stopUser(stopRequest, Runnable::run,
+                    response ->
+                            assertWithMessage("stopUser success for user %s on display %s",
+                                    userId, displayId).that(response.isSuccess()).isTrue());
+
+            List<UserLifecycleEvent> invisibleEvents = listenerForInvisible.waitForEvents();
+            assertWithMessage("events").that(invisibleEvents).hasSize(1);
+            UserLifecycleEvent invisibleEvent = invisibleEvents.get(0);
+            assertWithMessage("Type of the event").that(invisibleEvent.getEventType())
+                    .isEqualTo(USER_LIFECYCLE_EVENT_TYPE_INVISIBLE);
+            assertWithMessage("UserId of the event").that(invisibleEvent.getUserHandle())
+                    .isEqualTo(newUser);
+            assertWithMessage("Visible users").that(mUserManager.getVisibleUsers())
+                    .doesNotContain(newUser);
+            // By the time USER_INVISIBLE event is received, the user should have been unassigned
+            // from the display.
+            assertWithMessage("User assigned to display %s", displayId)
+                    .that(mOccupantZoneManager.getUserForDisplayId(displayId))
+                            .isEqualTo(CarOccupantZoneManager.INVALID_USER_ID);
+            assertWithMessage("The occupant zone assigned to the stopped user %s", newUser)
+                    .that(mOccupantZoneManager.getOccupantZoneForUser(newUser))
+                    .isNull();
+        } finally {
+            Log.d(TAG, "Unregistering the listeners.");
+            if (isAdded) {
+                mCarUserManager.removeListener(listenerForVisible);
+                mCarUserManager.removeListener(listenerForInvisible);
+            }
+            Log.d(TAG, "Unregistered listeners.");
+
+            if (newUser != null) {
+                removeUser(newUser);
+            }
+            Log.d(TAG, "Removed the user." + newUser);
+        }
+    }
+
+    @Test
     @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_CREATED"})
     @ApiCheckerRule.SupportedVersionTest(unsupportedVersionTest =
             "testLifecycleUserCreatedListener_unsupportedVersion")
-    @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testLifecycleUserCreatedListener_supportedVersion() throws Exception {
 
         BlockingUserLifecycleListener listener = BlockingUserLifecycleListener
@@ -112,9 +225,12 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                 .build();
 
         UserHandle newUser = null;
+        boolean isAdded = false;
         try {
             Log.d(TAG, "registering listener: " + listener);
             mCarUserManager.addListener(Runnable::run, listener);
+            // If adding the listener fails, an exception will be thrown.
+            isAdded = true;
             Log.v(TAG, "ok");
 
             newUser = createUser("TestUserToCreate", false);
@@ -130,7 +246,9 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                     .isEqualTo(newUser.getIdentifier());
         } finally {
             Log.d(TAG, "unregistering listener: " + listener);
-            mCarUserManager.removeListener(listener);
+            if (isAdded) {
+                mCarUserManager.removeListener(listener);
+            }
             Log.v(TAG, "ok");
 
             if (newUser != null) {
@@ -144,24 +262,40 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
     @ApiCheckerRule.UnsupportedVersionTest(behavior =
             ApiCheckerRule.UnsupportedVersionTest.Behavior.EXPECT_PASS,
             supportedVersionTest = "testLifecycleUserCreatedListener_supportedVersion")
-    @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testLifecycleUserCreatedListener_unsupportedVersion() throws Exception {
 
-        LifecycleListener listener = new LifecycleListener();
+        BlockingUserLifecycleListener listener = BlockingUserLifecycleListener
+                .forNoExpectedEvent()
+                .setTimeout(NO_EVENTS_TIMEOUT_MS)
+                .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_CREATED)
+                .build();
 
         UserHandle newUser = null;
+        boolean isAdded = false;
         try {
+            Log.d(TAG, "registering listener: " + listener);
             mCarUserManager.addListener(Runnable::run, listener);
+            // If adding the listener fails, an exception will be thrown.
+            isAdded = true;
             Log.v(TAG, "ok");
 
             newUser = createUser("TestUserToCreate", false);
 
             Log.d(TAG, "Waiting for events");
-            listener.assertEventNotReceived(
-                    newUser.getIdentifier(), CarUserManager.USER_LIFECYCLE_EVENT_TYPE_CREATED);
+            List<UserLifecycleEvent> events = listener.waitForEvents();
+            Log.d(TAG, "events: " + events);
+
+            for (UserLifecycleEvent event : events) {
+                assertWithMessage("user id on %s", event).that(
+                        event.getUserHandle().getIdentifier()).isNotEqualTo(
+                        newUser.getIdentifier());
+            }
         } finally {
             Log.d(TAG, "unregistering listener: " + listener);
-            mCarUserManager.removeListener(listener);
+            if (isAdded) {
+                mCarUserManager.removeListener(listener);
+            }
             Log.v(TAG, "ok");
 
             if (newUser != null) {
@@ -174,7 +308,7 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
     @ApiCheckerRule.SupportedVersionTest(unsupportedVersionTest =
             "testLifecycleUserRemovedListener_unsupportedVersion")
     @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_REMOVED"})
-    @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testLifecycleUserRemovedListener_supportedVersion() throws Exception {
 
         UserHandle newUser = createUser("TestUserToRemove", false);
@@ -186,9 +320,12 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                 .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_REMOVED)
                 .build();
 
+        boolean isAdded = false;
         try {
             Log.d(TAG, "registering listener: " + listener);
+            // If adding the listener fails, an exception will be thrown.
             mCarUserManager.addListener(Runnable::run, listener);
+            isAdded = true;
             Log.v(TAG, "ok");
 
             removeUser(newUser);
@@ -204,7 +341,9 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                     .isEqualTo(newUser.getIdentifier());
         } finally {
             Log.d(TAG, "unregistering listener: " + listener);
-            mCarUserManager.removeListener(listener);
+            if (isAdded) {
+                mCarUserManager.removeListener(listener);
+            }
             Log.v(TAG, "ok");
         }
     }
@@ -214,25 +353,41 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
     @ApiCheckerRule.UnsupportedVersionTest(behavior =
             ApiCheckerRule.UnsupportedVersionTest.Behavior.EXPECT_PASS,
             supportedVersionTest = "testLifecycleUserRemovedListener_supportedVersion")
-    @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testLifecycleUserRemovedListener_unsupportedVersion() throws Exception {
         UserHandle newUser = createUser("TestUserToRemove", false);
 
-        LifecycleListener listener = new LifecycleListener();
+        BlockingUserLifecycleListener listener = BlockingUserLifecycleListener
+                .forNoExpectedEvent()
+                .forUser(newUser.getIdentifier())
+                .setTimeout(NO_EVENTS_TIMEOUT_MS)
+                .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_REMOVED)
+                .build();
 
+        boolean isAdded = false;
         try {
             Log.d(TAG, "registering listener: " + listener);
+            // If adding the listener fails, an exception will be thrown.
             mCarUserManager.addListener(Runnable::run, listener);
+            isAdded = true;
             Log.v(TAG, "ok");
 
             removeUser(newUser);
 
             Log.d(TAG, "Waiting for events");
-            listener.assertEventNotReceived(
-                    newUser.getIdentifier(), CarUserManager.USER_LIFECYCLE_EVENT_TYPE_CREATED);
+            List<UserLifecycleEvent> events = listener.waitForEvents();
+            Log.d(TAG, "events: " + events);
+
+            for (UserLifecycleEvent event : events) {
+                assertWithMessage("user id on %s", event).that(
+                        event.getUserHandle().getIdentifier()).isNotEqualTo(
+                        newUser.getIdentifier());
+            }
         } finally {
             Log.d(TAG, "unregistering listener: " + listener);
-            mCarUserManager.removeListener(listener);
+            if (isAdded) {
+                mCarUserManager.removeListener(listener);
+            }
             Log.v(TAG, "ok");
         }
     }
@@ -301,14 +456,12 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
         return user;
     }
 
-    protected void removeUser(UserHandle userHandle) {
+    protected void removeUser(UserHandle userHandle) throws IOException {
         Log.d(TAG, "Removing user " + userHandle.getIdentifier());
 
-        // TODO(b/235994008): Update this to use CarUserManager.createUser when it is unhidden.
-        boolean result = mUserManager.removeUser(userHandle);
-
-        assertWithMessage("User %s removed. Result: %s", userHandle.getIdentifier(), result)
-                .that(result).isTrue();
+        assertWithMessage("User removed").that(
+                executeShellCommand("pm remove-user --wait %d",
+                        userHandle.getIdentifier())).contains("Success: removed user");
 
         mUsersToRemove.remove(userHandle);
     }
@@ -348,52 +501,5 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
         }
 
         return UserHandle.of(++newUserId);
-    }
-
-    // TODO(b/244594590): Clean this listener up once BlockingUserLifecycleListener supports
-    // no events received.
-    private static final class LifecycleListener implements UserLifecycleListener {
-        private static final int TIMEOUT_MS = 60_000;
-
-        private final List<UserLifecycleEvent> mEvents = new ArrayList<>();
-
-        private final Object mLock = new Object();
-
-        private final CountDownLatch mLatch = new CountDownLatch(1);
-
-        @Override
-        public void onEvent(UserLifecycleEvent event) {
-            Log.d(TAG, "Event received: " + event);
-            synchronized (mLock) {
-                mEvents.add(event);
-            }
-        }
-
-        public void assertEventNotReceived(int userId, int eventType)
-                throws InterruptedException {
-            if (!mLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                String errorMessage = "Interrupted while While waiting for " + eventType;
-                Log.e(TAG, errorMessage);
-                throw new IllegalStateException(errorMessage);
-            }
-
-            boolean result = checkEvent(userId, eventType);
-            if (result) {
-                fail("Event" + eventType
-                        + " was not expected but was received within timeoutMs: " + TIMEOUT_MS);
-            }
-        }
-
-        private boolean checkEvent(int userId, int eventType) {
-            synchronized (mLock) {
-                for (UserLifecycleEvent event : mEvents) {
-                    if (event.getUserHandle().getIdentifier() == userId
-                            && event.getEventType() == eventType) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
     }
 }

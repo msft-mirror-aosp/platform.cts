@@ -48,26 +48,17 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.os.SystemClock;
 import android.service.autofill.SaveInfo;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.Configurator;
-import android.support.test.uiautomator.Direction;
-import android.support.test.uiautomator.SearchCondition;
-import android.support.test.uiautomator.StaleObjectException;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
-import android.support.test.uiautomator.Until;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.style.URLSpan;
 import android.util.Log;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityEvent;
@@ -77,6 +68,18 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.Configurator;
+import androidx.test.uiautomator.Direction;
+import androidx.test.uiautomator.SearchCondition;
+import androidx.test.uiautomator.StaleObjectException;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.RetryableException;
 import com.android.compatibility.common.util.Timeout;
@@ -163,11 +166,18 @@ public class UiBot {
 
     private static final int MAX_UIOBJECT_RETRY_COUNT = 3;
 
-    /** Pass to {@link #setScreenOrientation(int)} to change the display to portrait mode */
-    public static int PORTRAIT = 0;
+    /**
+     * Pass to {@link #setScreenOrientation(int)} to change the display to portrait mode.
+     * This is an alias of Surface.ROTATION_0 though it's named as PORTRAIT for historical reasons.
+     */
+    public static final int PORTRAIT = Surface.ROTATION_0;
 
-    /** Pass to {@link #setScreenOrientation(int)} to change the display to landscape mode */
-    public static int LANDSCAPE = 1;
+    /**
+     * Pass to {@link #setScreenOrientation(int)} to change the display to landscape mode.
+     * This is an alias of Surface.ROTATION_90 though it's named as LANDSCAPE for historical
+     * reasons.
+     */
+    public static final int LANDSCAPE = Surface.ROTATION_90;
 
     private final UiDevice mDevice;
     private final Context mContext;
@@ -1141,18 +1151,29 @@ public class UiBot {
     }
 
     /**
-     * Sets the the screen orientation.
+     * Sets the screen orientation.
      *
      * @param orientation typically {@link #LANDSCAPE} or {@link #PORTRAIT}.
      *
      * @throws RetryableException if value didn't change.
      */
     public void setScreenOrientation(int orientation) throws Exception {
+        // Use the platform API instead of mDevice.getDisplayRotation(), which is slow due to
+        // waitForIdle(). waitForIdle() is not needed here because in AutoFillServiceTestCase we
+        // always use UiBot#setScreenOrientation() to change the screen rotation, which blocks until
+        // new rotation is reflected on the device.
+        final int currentRotation = InstrumentationRegistry.getInstrumentation().getContext()
+                .getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY)
+                .getRotation();
         mAutoman.setRotation(orientation);
 
-        UI_SCREEN_ORIENTATION_TIMEOUT.run("setScreenOrientation(" + orientation + ")", () -> {
-            return getScreenOrientation() == orientation ? Boolean.TRUE : null;
-        });
+        if (orientation == currentRotation) {
+            // Just need to freeze the rotation.
+            return;
+        }
+
+        UI_SCREEN_ORIENTATION_TIMEOUT.run("setScreenOrientation(" + orientation + ")", () ->
+                mDevice.getDisplayRotation() == orientation ? Boolean.TRUE : null);
     }
 
     /**

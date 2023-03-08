@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -112,11 +113,6 @@ abstract class BaseBroadcastTest {
                 mAm.isModernBroadcastQueueEnabled());
     }
 
-    protected boolean isAppFreezerEnabled() throws Exception {
-        final ActivityManager am = mContext.getSystemService(ActivityManager.class);
-        return am.getService().isAppFreezerEnabled();
-    }
-
     protected void waitForProcessFreeze(int pid, long timeoutMs) {
         // TODO: Add a listener to monitor freezer state changes.
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -173,6 +169,31 @@ abstract class BaseBroadcastTest {
             List<Intent> expectedBroadcasts, boolean matchExact,
             BroadcastReceiptVerifier verifier) throws Exception {
         AmUtils.waitForBroadcastBarrier();
+
+        // wait-for-barrier gives us a signal that the broadcast has been dispatched to the app
+        // but it doesn't always meant that the receiver had a chance to handle the broadcast yet.
+        // So, when verifying the received broadcasts, retry a few times before failing.
+        final int retryAttempts = 10;
+        int attempt = 0;
+        do {
+            attempt++;
+            try {
+                assertReceivedBroadcasts(actualBroadcastsSupplier, expectedBroadcasts,
+                        matchExact, verifier);
+                return;
+            } catch (Error e) {
+                Log.d(TAG, "Broadcasts are not delivered as expected after attempt#" + attempt, e);
+            }
+            if (attempt <= retryAttempts) SystemClock.sleep(100);
+        } while (attempt <= retryAttempts);
+        assertReceivedBroadcasts(actualBroadcastsSupplier, expectedBroadcasts,
+                matchExact, verifier);
+    }
+
+    private void assertReceivedBroadcasts(
+            ThrowingSupplier<List<BroadcastReceipt>> actualBroadcastsSupplier,
+            List<Intent> expectedBroadcasts, boolean matchExact,
+            BroadcastReceiptVerifier verifier) throws Exception {
         final List<BroadcastReceipt> actualBroadcasts = actualBroadcastsSupplier.get();
         final String errorMsg = "Expected: " + toString(expectedBroadcasts)
                 + "; Actual: " + toString(actualBroadcasts);

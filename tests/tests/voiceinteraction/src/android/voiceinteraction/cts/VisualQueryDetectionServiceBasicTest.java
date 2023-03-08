@@ -19,7 +19,7 @@ package android.voiceinteraction.cts;
 
 import static android.Manifest.permission.CAMERA;
 import static android.Manifest.permission.RECORD_AUDIO;
-import static android.service.voice.SandboxedDetectionServiceBase.INITIALIZATION_STATUS_SUCCESS;
+import static android.service.voice.SandboxedDetectionInitializer.INITIALIZATION_STATUS_SUCCESS;
 import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -40,6 +40,7 @@ import android.platform.test.annotations.RequiresDevice;
 import android.service.voice.HotwordDetector;
 import android.service.voice.VisualQueryDetector;
 import android.util.Log;
+import android.voiceinteraction.cts.services.BaseVoiceInteractionService;
 import android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService;
 import android.voiceinteraction.cts.testcore.Helper;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
@@ -99,7 +100,7 @@ public class VisualQueryDetectionServiceBasicTest {
     public void setup() {
         // VoiceInteractionServiceConnectedRule handles the service connected,
         // the test should be able to get service
-        mService = (CtsBasicVoiceInteractionService) CtsBasicVoiceInteractionService.getService();
+        mService = (CtsBasicVoiceInteractionService) BaseVoiceInteractionService.getService();
         // Check the test can get the service
         Objects.requireNonNull(mService);
 
@@ -123,6 +124,19 @@ public class VisualQueryDetectionServiceBasicTest {
         // Assertion is done in the private method.
         VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
         visualQueryDetector.destroy();
+    }
+
+    @Test
+    public void testVoiceInteractionService_withoutManageHotwordDetectionPermission_triggerFailure()
+            throws Throwable {
+        // Create VisualQueryDetector and wait result
+        mService.createVisualQueryDetectorWithoutManageHotwordDetectionPermission();
+
+        // Wait the result and verify expected result
+        mService.waitSandboxedDetectionServiceInitializedCalledOrException();
+
+        // Verify IllegalStateException throws
+        assertThat(mService.isCreateDetectorSecurityExceptionThrow()).isTrue();
     }
 
     @Test
@@ -161,10 +175,10 @@ public class VisualQueryDetectionServiceBasicTest {
     @Test
     public void testVisualQueryDetectionService_destroyVisualQueryDetector_activeDetectorRemoved()
             throws Throwable {
-        // Create SoftwareHotwordDetector
+        // Create VisualQueryDetector
         VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
 
-        // Destroy SoftwareHotwordDetector
+        // Destroy VisualQueryDetector
         visualQueryDetector.destroy();
 
         try {
@@ -425,7 +439,7 @@ public class VisualQueryDetectionServiceBasicTest {
         assertThat(mService.getSandboxedDetectionServiceInitializedResult()).isEqualTo(
                 INITIALIZATION_STATUS_SUCCESS);
 
-        // The AlwaysOnHotwordDetector should be created correctly
+        // The VisualQueryDetector should be created correctly
         VisualQueryDetector visualQueryDetector = mService.getVisualQueryDetector();
         Objects.requireNonNull(visualQueryDetector);
 

@@ -141,6 +141,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     private static final Set<Integer> ALL_MIXER_BEHAVIORS = Set.of(
             AudioMixerAttributes.MIXER_BEHAVIOR_DEFAULT,
             AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT);
+    private static final int[] PUBLIC_STREAM_TYPES = { STREAM_VOICE_CALL,
+            STREAM_SYSTEM, STREAM_RING, STREAM_MUSIC,
+            STREAM_ALARM, STREAM_NOTIFICATION,
+            STREAM_DTMF,  STREAM_ACCESSIBILITY };
 
     private static final int INVALID_DIRECT_PLAYBACK_MODE = -1;
     private AudioManager mAudioManager;
@@ -421,6 +425,28 @@ public class AudioManagerTest extends InstrumentationTestCase {
         public Intent getIntent() {
             synchronized (mLock) {
                 return mIntent;
+            }
+        }
+    }
+
+    private static final class MyBlockingRunnableListener {
+        private final SafeWaitObject mLock = new SafeWaitObject();
+        @GuardedBy("mLock")
+        private boolean mEventReceived = false;
+
+        public void onSomeEventThatsExpected() {
+            synchronized (mLock) {
+                mEventReceived = true;
+                mLock.notify();
+            }
+        }
+
+        public boolean waitForExpectedEvent(long timeOutMs) {
+            synchronized (mLock) {
+                try {
+                    mLock.waitFor(timeOutMs, () -> mEventReceived);
+                } catch (InterruptedException e) { }
+                return mEventReceived;
             }
         }
     }
@@ -1655,11 +1681,6 @@ public class AudioManagerTest extends InstrumentationTestCase {
         mAudioManager.adjustVolume(37, 0);
     }
 
-    private final int[] PUBLIC_STREAM_TYPES = { STREAM_VOICE_CALL,
-            STREAM_SYSTEM, STREAM_RING, STREAM_MUSIC,
-            STREAM_ALARM, STREAM_NOTIFICATION,
-            STREAM_DTMF,  STREAM_ACCESSIBILITY };
-
     public void testGetStreamVolumeDbWithIllegalArguments() throws Exception {
         Exception ex = null;
         // invalid stream type
@@ -2109,6 +2130,107 @@ public class AudioManagerTest extends InstrumentationTestCase {
         }
     }
 
+    @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
+    public void testIndependentStreamTypes() throws Exception {
+        Log.i(TAG, "starting testIndependentStreamTypes");
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        try {
+            final List<Integer> independentStreamTypes = mAudioManager.getIndependentStreamTypes();
+            assertNotNull("Null list of independent stream types", independentStreamTypes);
+            final boolean usesGroups = mAudioManager.isVolumeControlUsingVolumeGroups();
+            Log.i(TAG, "testIndependentStreamTypes: usesGroups:" + usesGroups
+                    + " independentTypes" + independentStreamTypes);
+            if (usesGroups) {
+                assertTrue("Empty list of independent stream types with volume groups",
+                        independentStreamTypes.size() > 0);
+                return;
+            }
+            assertTrue("Unexpected number of independent stream types "
+                    + independentStreamTypes.size(), independentStreamTypes.size() > 0);
+            // verify independent streams are not aliased
+            for (int indepStream : independentStreamTypes) {
+                final int alias = mAudioManager.getStreamTypeAlias(indepStream);
+                assertEquals("Independent stream " + indepStream + " has alias " + alias,
+                        indepStream, alias);
+            }
+            // verify aliased streams are not independent, and non-aliased streams are
+            for (int stream : PUBLIC_STREAM_TYPES) {
+                final int alias = mAudioManager.getStreamTypeAlias(stream);
+                if (alias != stream) {
+                    assertFalse("Stream" + stream + " aliased to " + alias
+                            + " but marked independent", independentStreamTypes.contains(stream));
+                } else {
+                    // independent stream
+                    assertTrue("Stream " + stream
+                            + " has no alias but is not marked as independent",
+                            independentStreamTypes.contains(stream));
+                }
+            }
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
+    public void testStreamTypeAliasChange() throws Exception {
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            Log.i(TAG, "skipping testStreamTypeAliasChange, not a phone");
+            return;
+        }
+        Log.i(TAG, "starting testStreamTypeAliasChange");
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+
+        // get initial state
+        final int notifAliasAtStart = mAudioManager.getStreamTypeAlias(STREAM_NOTIFICATION);
+        if (notifAliasAtStart != STREAM_NOTIFICATION && notifAliasAtStart != STREAM_RING) {
+            // skipping test because it can't take advantage of the test API to modify
+            // the notification alias
+            Log.i(TAG, "skipping testStreamTypeAliasChange: NOTIFICATION aliased to stream "
+                    + notifAliasAtStart);
+            return;
+        }
+        boolean notifAliasedToRingAtStart = (notifAliasAtStart == STREAM_RING);
+        final MyBlockingRunnableListener streamAliasCb = new MyBlockingRunnableListener();
+        Runnable onStreamAliasChanged = () -> streamAliasCb.onSomeEventThatsExpected();
+        try {
+            if (!notifAliasedToRingAtStart) {
+                // if notif and ring are not aliased, they should each be independent streams
+                final List<Integer> indies = mAudioManager.getIndependentStreamTypes();
+                assertTrue("NOTIFICATION not in independent streams " + indies,
+                        indies.contains(STREAM_NOTIFICATION));
+                assertTrue("RING not in independent streams " + indies,
+                        indies.contains(STREAM_RING));
+            }
+            mAudioManager.addOnStreamAliasingChangedListener(
+                    Executors.newSingleThreadExecutor(),
+                    onStreamAliasChanged);
+            mAudioManager.setNotifAliasRingForTest(!notifAliasedToRingAtStart);
+            final String aliasing = notifAliasedToRingAtStart ? "unaliasing" : "aliasing";
+            assertTrue(aliasing + " RING and NOTIFICATION didn't trigger callback",
+                    streamAliasCb.waitForExpectedEvent(TIME_TO_WAIT_CALLBACK_MS));
+            final int expectedNotifAlias = notifAliasedToRingAtStart ? STREAM_NOTIFICATION
+                    : STREAM_RING;
+            assertEquals("After " + aliasing + " alias incorrect",
+                    expectedNotifAlias, mAudioManager.getStreamTypeAlias(STREAM_NOTIFICATION));
+            if (notifAliasedToRingAtStart) {
+                // if notif and ring were aliased, they should now be independent streams
+                final List<Integer> indies = mAudioManager.getIndependentStreamTypes();
+                assertTrue("After alias change, NOTIFICATION not in independent streams "
+                                + indies,
+                        indies.contains(STREAM_NOTIFICATION));
+                assertTrue("After alias change, RING not in independent streams " + indies,
+                        indies.contains(STREAM_RING));
+            }
+
+        } finally {
+            mAudioManager.setNotifAliasRingForTest(notifAliasedToRingAtStart);
+            mAudioManager.removeOnStreamAliasingChangedListener(onStreamAliasChanged);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
     public void testAssistantUidRouting() {
         try {
             mAudioManager.addAssistantServicesUids(new int[0]);
@@ -2229,7 +2351,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
 
     public void testAdjustVolumeGroupVolume() {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.MODIFY_AUDIO_SYSTEM_SETTINGS,
+                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
                 Manifest.permission.MODIFY_AUDIO_ROUTING,
                 Manifest.permission.QUERY_AUDIO_STATE,
                 Manifest.permission.MODIFY_PHONE_STATE);
@@ -2327,7 +2449,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                             + volumeGroupId, readIndex, index);
 
                     lastAudibleIndex =
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId);
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId);
                     assertEquals(lastAudibleIndex, index);
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
@@ -2341,7 +2463,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals("Failed to mute volume for group id "
                             + volumeGroupId, readIndex, indexMin);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertTrue(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Unmute
@@ -2354,7 +2476,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals("Failed to unmute volume for group id "
                             + volumeGroupId, readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Toggle Mute (from unmuted)
@@ -2367,7 +2489,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals("Failed to mute volume for group id "
                             + volumeGroupId, readIndex, indexMin);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertTrue(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Toggle Mute (from muted)
@@ -2380,7 +2502,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals("Failed to unmute volume for group id "
                             + volumeGroupId, readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
                 } else {
                     int lastAudibleIndex;
@@ -2393,7 +2515,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals(readIndex, index);
 
                     lastAudibleIndex =
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId);
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId);
                     assertEquals(lastAudibleIndex, index);
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
@@ -2407,7 +2529,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     assertEquals("Unexpected volume mute for group id " + volumeGroupId
                             + " readIndex=" + readIndex, readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Unmute
@@ -2419,7 +2541,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     readIndex = mAudioManager.getVolumeGroupVolumeIndex(volumeGroupId);
                     assertEquals(readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Toggle Mute (from unmuted)
@@ -2431,7 +2553,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     readIndex = mAudioManager.getVolumeGroupVolumeIndex(volumeGroupId);
                     assertEquals(readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
 
                     // Toggle Mute (from muted)
@@ -2443,7 +2565,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     readIndex = mAudioManager.getVolumeGroupVolumeIndex(volumeGroupId);
                     assertEquals(readIndex, lastAudibleIndex);
                     assertEquals(lastAudibleIndex,
-                            mAudioManager.getLastAudibleVolumeGroupVolume(volumeGroupId));
+                            mAudioManager.getLastAudibleVolumeForVolumeGroup(volumeGroupId));
                     assertFalse(mAudioManager.isVolumeGroupMuted(volumeGroupId));
                 }
             }

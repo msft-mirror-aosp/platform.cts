@@ -30,6 +30,8 @@ import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.util.RunInterruptedException;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -510,7 +512,7 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                     "startSwitchToOtherProfileIntent", mProfileUserId);
 
             // TODO(b/223178698): Investigate potential increase in latency
-            Thread.sleep(30000);
+            RunUtil.getDefault().sleep(30000);
 
             assertResolverActivityInForeground(mProfileUserId);
         } finally {
@@ -553,7 +555,7 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
                     "startSwitchToOtherProfileIntent_chooser", mProfileUserId);
 
-            Thread.sleep(30000);
+            RunUtil.getDefault().sleep(30000);
 
             assertChooserActivityInForeground(mProfileUserId);
         } finally {
@@ -597,8 +599,8 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                 return;
             }
             try {
-                Thread.sleep(100);
-            } catch (InterruptedException e){
+                RunUtil.getDefault().sleep(100);
+            } catch (RunInterruptedException e){
                 e.printStackTrace();
                 Thread.currentThread().interrupt();
             }

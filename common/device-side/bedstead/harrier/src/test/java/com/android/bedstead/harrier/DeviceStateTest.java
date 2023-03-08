@@ -52,6 +52,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
+import android.view.contentcapture.ContentCaptureManager;
 
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
@@ -88,6 +89,8 @@ import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
+import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.OtherUser;
 import com.android.bedstead.harrier.annotations.RequireAospBuild;
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild;
@@ -117,6 +120,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
+import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
@@ -142,6 +146,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfil
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -155,6 +160,8 @@ import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
+import com.android.queryable.annotations.IntegerQuery;
+import com.android.queryable.annotations.Query;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -481,6 +488,14 @@ public class DeviceStateTest {
     }
 
     @Test
+    @EnsureHasDeviceOwner
+    public void ensureHasDeviceOwnerAnnotation_noQuerySpecified_setsDefaultRemoteDpc() {
+        DeviceOwner deviceOwner = TestApis.devicePolicy().getDeviceOwner();
+        assertThat(deviceOwner.pkg().packageName())
+                .isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX);
+    }
+
+    @Test
     @EnsureHasNoDeviceOwner
     public void ensureHasNoDeviceOwnerAnnotation_deviceOwnerIsNotSet() {
         assertThat(TestApis.devicePolicy().getDeviceOwner()).isNull();
@@ -490,6 +505,46 @@ public class DeviceStateTest {
     @EnsureHasDeviceOwner
     public void deviceOwner_deviceOwnerIsSet_returnsDeviceOwner() {
         assertThat(sDeviceState.deviceOwner()).isNotNull();
+    }
+
+    @Test
+    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28)))
+    public void ensureHasDeviceOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+        RemoteDpc remoteDpc =
+                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getDeviceOwner());
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28);
+    }
+
+    @Test
+    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = 30)))
+    public void ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
+        RemoteDpc remoteDpc =
+                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getDeviceOwner());
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30);
+    }
+
+    @Test
+    @EnsureHasProfileOwner
+    public void ensureHasProfileOwnerAnnotation_noQuerySpecified_setsDefaultRemoteDpc() {
+        ProfileOwner profileOwner = TestApis.devicePolicy().getProfileOwner();
+        assertThat(profileOwner.pkg().packageName())
+                .isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX);
+    }
+
+    @Test
+    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28)))
+    public void ensureHasProfileOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+        RemoteDpc remoteDpc =
+                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getProfileOwner());
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28);
+    }
+
+    @Test
+    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = 30)))
+    public void ensureHasProfileOwnerAnnotation_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
+        RemoteDpc remoteDpc =
+                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getProfileOwner());
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30);
     }
 
     @Test
@@ -1391,5 +1446,24 @@ public class DeviceStateTest {
     @Test
     public void ensureDoesNotHaveUserRestrictionAnnotation_differentUser_userRestrictionIsNotSet() {
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
+    }
+
+    @EnsureWifiEnabled
+    @Test
+    public void ensureWifiEnabledAnnotation_wifiIsEnabled() {
+        assertThat(TestApis.wifi().isEnabled()).isTrue();
+    }
+
+    @EnsureWifiDisabled
+    @Test
+    public void ensureWifiDisabledAnnotation_wifiIsNotEnabled() {
+        assertThat(TestApis.wifi().isEnabled()).isFalse();
+    }
+
+    @RequireSystemServiceAvailable(ContentCaptureManager.class)
+    @Test
+    public void requireSystemServiceAvailable_systemServiceIsAvailable() {
+        assertThat(TestApis.context().instrumentedContext()
+                .getSystemService(ContentCaptureManager.class)).isNotNull();
     }
 }

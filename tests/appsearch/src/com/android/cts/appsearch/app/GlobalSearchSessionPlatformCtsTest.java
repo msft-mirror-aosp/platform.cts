@@ -31,6 +31,7 @@ import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
+import android.app.appsearch.JoinSpec;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.ReportSystemUsageRequest;
@@ -44,7 +45,9 @@ import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
+import android.app.appsearch.testutil.SystemUtil;
 import android.app.appsearch.testutil.TestObserverCallback;
+import android.app.appsearch.util.DocumentIdUtil;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -56,7 +59,6 @@ import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.appsearch.ICommandReceiver;
 
 import com.google.common.collect.ImmutableSet;
@@ -68,7 +70,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -519,7 +520,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                                             .build()).get();
 
                     assertThat(nonExistent.isSuccess()).isFalse();
-                    assertThat(nonExistent.getSuccesses()).hasSize(0);
+                    assertThat(nonExistent.getSuccesses()).isEmpty();
                 },
                 READ_GLOBAL_APP_SEARCH_DATA);
     }
@@ -541,7 +542,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                                             .addIds("id1")
                                             .build()).get();
                     assertThat(result.isSuccess()).isFalse();
-                    assertThat(result.getSuccesses()).hasSize(0);
+                    assertThat(result.getSuccesses()).isEmpty();
                     assertThat(result.getFailures()).containsKey("id1");
                 },
                 READ_GLOBAL_APP_SEARCH_DATA);
@@ -565,7 +566,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                                             .addIds("id1")
                                             .build()).get();
                     assertThat(nonExistentResult.isSuccess()).isFalse();
-                    assertThat(nonExistentResult.getSuccesses()).hasSize(0);
+                    assertThat(nonExistentResult.getSuccesses()).isEmpty();
                     assertThat(nonExistentResult.getFailures()).containsKey("id1");
                     errorMessageNonExistent.set(
                             nonExistentResult.getFailures().get("id1").getErrorMessage());
@@ -587,7 +588,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                                             .addIds("id1")
                                             .build()).get();
                     assertThat(unAuthResult.isSuccess()).isFalse();
-                    assertThat(unAuthResult.getSuccesses()).hasSize(0);
+                    assertThat(unAuthResult.getSuccesses()).isEmpty();
                     assertThat(unAuthResult.getFailures()).containsKey("id1");
                     errorMessageUnauth.set(
                             unAuthResult.getFailures().get("id1").getErrorMessage());
@@ -609,7 +610,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                                 .addIds("id1")
                                 .build()).get();
         assertThat(noGlobalResult.isSuccess()).isFalse();
-        assertThat(noGlobalResult.getSuccesses()).hasSize(0);
+        assertThat(noGlobalResult.getSuccesses()).isEmpty();
         assertThat(noGlobalResult.getFailures()).containsKey("id1");
 
         // compare error messages
@@ -639,7 +640,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                     List<SearchResult> page = searchResults.getNextPageAsync().get();
                     assertThat(page).hasSize(2);
 
-                    Set<String> actualPackageNames =
+                    ImmutableSet<String> actualPackageNames =
                             ImmutableSet.of(
                                     page.get(0).getPackageName(), page.get(1).getPackageName());
                     assertThat(actualPackageNames).containsExactly(PKG_A, PKG_B);
@@ -716,6 +717,204 @@ public class GlobalSearchSessionPlatformCtsTest {
                                 .build());
         List<SearchResult> page = searchResults.getNextPageAsync().get();
         assertThat(page).isEmpty();
+    }
+
+    @Test
+    public void testGlobalSearch_withJoin() throws Exception {
+        indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "idb");
+        indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
+
+        // In pkg B, we report an action on the document in pkg A. When we retrieve the pkg A
+        // document using a joinspec, the action in pkg B should be joined.
+        String qualifiedId =
+                DocumentIdUtil.createQualifiedId(
+                        PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
+
+        indexActionDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "actionId", qualifiedId,
+                /*globallySearchable*/true);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
+
+                    SearchSpec nestedSearchSpec = new SearchSpec.Builder()
+                            .addFilterPackageNames(PKG_A, PKG_B)
+                            .build();
+                    JoinSpec js = new JoinSpec.Builder("songId")
+                            .setNestedSearch("", nestedSearchSpec)
+                            .build();
+
+                    // Here, we rank based on document creation timestamp. Since it's ascending,
+                    // the document in package B should be first.
+                    SearchResultsShim searchResults =
+                            mGlobalSearchSession.search(
+                                    /*queryExpression=*/ "",
+                                    new SearchSpec.Builder()
+                                            .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                            .setRankingStrategy(SearchSpec
+                                                    .RANKING_STRATEGY_CREATION_TIMESTAMP)
+                                            .setOrder(SearchSpec.ORDER_ASCENDING)
+                                            .addFilterPackageNames(PKG_A, PKG_B)
+                                            .addFilterSchemas(AppSearchEmail.SCHEMA_TYPE)
+                                            .setJoinSpec(js)
+                                            .build());
+
+                    List<SearchResult> page = searchResults.getNextPageAsync().get();
+                    assertThat(page).hasSize(2);
+
+                    assertThat(page.get(0).getGenericDocument().getId()).isEqualTo("idb");
+
+                    assertThat(page.get(1).getJoinedResults()).hasSize(1);
+                    assertThat(page.get(1).getGenericDocument().getId()).isEqualTo("ida");
+
+                    SearchResult joined = page.get(1).getJoinedResults().get(0);
+                    assertThat(joined.getGenericDocument().getId()).isEqualTo("actionId");
+
+                    // Here, we rank based on the number of joined documents a parent document has.
+                    // The results should be in a different order this time.
+                    js = new JoinSpec.Builder("songId")
+                            .setNestedSearch("", nestedSearchSpec)
+                            .setAggregationScoringStrategy(JoinSpec
+                                    .AGGREGATION_SCORING_RESULT_COUNT)
+                            .build();
+
+                    searchResults = mGlobalSearchSession.search(
+                            /*queryExpression=*/ "",
+                            new SearchSpec.Builder()
+                                    .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                    .setRankingStrategy(SearchSpec
+                                            .RANKING_STRATEGY_JOIN_AGGREGATE_SCORE)
+                                    .addFilterPackageNames(PKG_A, PKG_B)
+                                    .addFilterSchemas(AppSearchEmail.SCHEMA_TYPE)
+                                    .setJoinSpec(js)
+                                    .build());
+
+                    page = searchResults.getNextPageAsync().get();
+                    assertThat(page).hasSize(2);
+
+                    assertThat(page.get(0).getJoinedResults()).hasSize(1);
+                    assertThat(page.get(0).getGenericDocument().getId()).isEqualTo("ida");
+
+                    joined = page.get(0).getJoinedResults().get(0);
+                    assertThat(joined.getGenericDocument().getId()).isEqualTo("actionId");
+
+                    assertThat(page.get(1).getGenericDocument().getId()).isEqualTo("idb");
+                },
+                READ_GLOBAL_APP_SEARCH_DATA);
+    }
+
+    @Test
+    public void testGlobalSearch_withJoin_partialAccess() throws Exception {
+
+        indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
+
+        String qualifiedId =
+                DocumentIdUtil.createQualifiedId(
+                        PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
+        // Reporting an action on a globally searchable document, but the action itself isn't
+        // globally searchable. Searching with joinspec shouldn't return the action document.
+
+        // In pkg B, we report an action on the document in pkg A. When we retrieve the pkg A
+        // document using a joinspec, the action in pkg B should be joined.
+
+        // here, we index an action document inaccessible from the querier
+        indexActionDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "actionId", qualifiedId,
+                /*globallySearchable*/false);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
+
+                    SearchSpec nestedSearchSpec = new SearchSpec.Builder()
+                            .addFilterPackageNames(PKG_A, PKG_B)
+                            .build();
+                    JoinSpec js =
+                            new JoinSpec.Builder("songId")
+                                    .setNestedSearch("", nestedSearchSpec)
+                                    .setAggregationScoringStrategy(JoinSpec
+                                            .AGGREGATION_SCORING_RESULT_COUNT)
+                                    .build();
+
+                    SearchResultsShim searchResults =
+                            mGlobalSearchSession.search(
+                                    /*queryExpression=*/ "",
+                                    new SearchSpec.Builder()
+                                            .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                            .setRankingStrategy(SearchSpec
+                                                    .RANKING_STRATEGY_JOIN_AGGREGATE_SCORE)
+                                            .addFilterPackageNames(PKG_A, PKG_B)
+                                            .addFilterSchemas(AppSearchEmail.SCHEMA_TYPE)
+                                            .setJoinSpec(js)
+                                            .build());
+
+                    List<SearchResult> page = searchResults.getNextPageAsync().get();
+                    assertThat(page).hasSize(1);
+
+                    assertThat(page.get(0).getJoinedResults()).hasSize(0);
+                    assertThat(page.get(0).getGenericDocument().getId()).isEqualTo("ida");
+                },
+                READ_GLOBAL_APP_SEARCH_DATA);
+    }
+
+    @Test
+    public void testGlobalSearch_withJoin_withoutAccess() throws Exception {
+
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                        .get();
+
+        // Insert schema
+        mDb.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        // Insert two docs
+        GenericDocument document1 =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", AppSearchEmail.SCHEMA_TYPE)
+                        .build();
+        mDb.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(document1).build())
+                .get();
+
+        String qualifiedId =
+                DocumentIdUtil.createQualifiedId(
+                        PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
+        indexActionDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "actionId", qualifiedId,
+                /*globallySearchable*/true);
+
+        // Query the data
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
+
+        SearchSpec nestedSearchSpec = new SearchSpec.Builder()
+                .addFilterPackageNames(PKG_A, PKG_B)
+                .build();
+        JoinSpec js =
+                new JoinSpec.Builder("songId")
+                        .setNestedSearch("", nestedSearchSpec)
+                        .setAggregationScoringStrategy(JoinSpec
+                                .AGGREGATION_SCORING_RESULT_COUNT)
+                        .build();
+
+        SearchSpec searchSpec = new SearchSpec.Builder()
+                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                .setRankingStrategy(SearchSpec
+                        .RANKING_STRATEGY_JOIN_AGGREGATE_SCORE)
+                .addFilterSchemas(AppSearchEmail.SCHEMA_TYPE)
+                .setJoinSpec(js)
+                .build();
+
+        SearchResultsShim results = mDb.search("", searchSpec);
+        List<SearchResult> page = results.getNextPageAsync().get();
+        assertThat(page).hasSize(1);
+
+        assertThat(page.get(0).getJoinedResults()).hasSize(0);
+        assertThat(page.get(0).getGenericDocument().getId()).isEqualTo("id1");
     }
 
     @Test
@@ -821,7 +1020,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                 () -> {
                     mGlobalSearchSession =
                             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
-                                mContext).get();
+                                    mContext).get();
 
                     // 2. The schema for PKG_A should be retrievable, but PKG_B should not be.
                     GetSchemaResponse response =
@@ -845,7 +1044,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                 () -> {
                     mGlobalSearchSession =
                             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
-                                mContext).get();
+                                    mContext).get();
 
                     // 2. The schema for both PKG_A and PKG_B should be retrievable.
                     GetSchemaResponse response =
@@ -878,19 +1077,19 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         // Report some usages. id1 has 2 app and 1 system usage, id2 has 1 app and 2 system usage.
         mDb.reportUsageAsync(
-                new ReportUsageRequest.Builder(NAMESPACE_NAME, "id1")
-                        .setUsageTimestampMillis(10)
-                        .build())
+                        new ReportUsageRequest.Builder(NAMESPACE_NAME, "id1")
+                                .setUsageTimestampMillis(10)
+                                .build())
                 .get();
         mDb.reportUsageAsync(
-                new ReportUsageRequest.Builder(NAMESPACE_NAME, "id1")
-                        .setUsageTimestampMillis(20)
-                        .build())
+                        new ReportUsageRequest.Builder(NAMESPACE_NAME, "id1")
+                                .setUsageTimestampMillis(20)
+                                .build())
                 .get();
         mDb.reportUsageAsync(
-                new ReportUsageRequest.Builder(NAMESPACE_NAME, "id2")
-                        .setUsageTimestampMillis(100)
-                        .build())
+                        new ReportUsageRequest.Builder(NAMESPACE_NAME, "id2")
+                                .setUsageTimestampMillis(100)
+                                .build())
                 .get();
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -1099,7 +1298,7 @@ public class GlobalSearchSessionPlatformCtsTest {
 
     private void indexGloballySearchableDocument(String pkg, String databaseName, String namespace,
             String id) throws Exception {
-        indexGloballySearchableDocument(pkg, databaseName, namespace, id, Collections.emptySet());
+        indexGloballySearchableDocument(pkg, databaseName, namespace, id, ImmutableSet.of());
     }
 
     private void indexGloballySearchableDocument(String pkg, String databaseName, String namespace,
@@ -1131,6 +1330,23 @@ public class GlobalSearchSessionPlatformCtsTest {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
             assertThat(commandReceiver
                     .indexNotGloballySearchableDocument(databaseName, namespace, id)).isTrue();
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    private void indexActionDocument(
+            String pkg, String databaseName, String namespace, String id, String entityId,
+            boolean globallySearchable)
+            throws Exception {
+
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            assertThat(commandReceiver
+                    .indexAction(databaseName, namespace, id, entityId, globallySearchable))
+                    .isTrue();
         } finally {
             serviceConnection.unbind();
         }
@@ -1175,8 +1391,7 @@ public class GlobalSearchSessionPlatformCtsTest {
         }
 
         private IBinder getService() throws Exception {
-            IBinder service = mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC, TimeUnit.SECONDS);
-            return service;
+            return mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC, TimeUnit.SECONDS);
         }
 
         public ICommandReceiver getCommandReceiver() throws Exception {

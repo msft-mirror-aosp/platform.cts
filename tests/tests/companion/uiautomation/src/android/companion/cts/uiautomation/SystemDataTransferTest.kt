@@ -16,6 +16,7 @@
 
 package android.companion.cts.uiautomation
 
+import android.annotation.CallSuper
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.companion.AssociationInfo
@@ -41,6 +42,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import libcore.util.EmptyArray
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,8 +56,19 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SystemDataTransferTest : UiAutomationTestBase(null, null) {
     companion object {
-        private const val SYSTEM_DATA_TRANSFER_RESPONSE_DELAY = 5_000L // Wait 5 seconds
         private const val SYSTEM_DATA_TRANSFER_TIMEOUT = 10_000L // 10 seconds
+    }
+
+    @CallSuper
+    override fun setUp() {
+        super.setUp()
+        cdm.enableSecureTransport(false)
+    }
+
+    @CallSuper
+    override fun tearDown() {
+        cdm.enableSecureTransport(true)
+        super.tearDown()
     }
 
     @Test
@@ -203,7 +216,7 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
      */
     private fun associate(): AssociationInfo {
         sendRequestAndLaunchConfirmation()
-        callback.assertInvokedByActions {
+        callback.assertInvokedByActions(3.seconds) {
             confirmationUi.waitAndClickOnFirstFoundDevice()
         }
         // Wait until the Confirmation UI goes away.

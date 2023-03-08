@@ -53,13 +53,40 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
         assertThat(VehiclePropertyIds.toString(
                 VehiclePropertyIds.EMERGENCY_LANE_KEEP_ASSIST_ENABLED))
                 .isEqualTo("EMERGENCY_LANE_KEEP_ASSIST_ENABLED");
-        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_ENABLED))
-                .isEqualTo("ADAPTIVE_CRUISE_CONTROL_ENABLED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.EMERGENCY_LANE_KEEP_ASSIST_STATE))
+                .isEqualTo("EMERGENCY_LANE_KEEP_ASSIST_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_ENABLED))
+                .isEqualTo("CRUISE_CONTROL_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_TYPE))
+                .isEqualTo("CRUISE_CONTROL_TYPE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_STATE))
+                .isEqualTo("CRUISE_CONTROL_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_COMMAND))
+                .isEqualTo("CRUISE_CONTROL_COMMAND");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_TARGET_SPEED))
+                .isEqualTo("CRUISE_CONTROL_TARGET_SPEED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP))
+                .isEqualTo("ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE))
+                .isEqualTo("ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED))
                 .isEqualTo("HANDS_ON_DETECTION_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_DRIVER_STATE))
+                .isEqualTo("HANDS_ON_DETECTION_DRIVER_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_WARNING))
+                .isEqualTo("HANDS_ON_DETECTION_WARNING");
         assertThat(
                 VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_ENABLED))
                 .isEqualTo("DRIVER_ATTENTION_MONITORING_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_STATE))
+                .isEqualTo("DRIVER_ATTENTION_MONITORING_STATE");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_WARNING))
+                .isEqualTo("DRIVER_ATTENTION_MONITORING_WARNING");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.IGNITION_STATE))
                 .isEqualTo("IGNITION_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_DRIVER_SEAT))
@@ -88,6 +115,10 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("INFO_MULTI_EV_PORT_LOCATIONS");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_VIN))
                 .isEqualTo("INFO_VIN");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.EPOCH_TIME))
+                .isEqualTo("EPOCH_TIME");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LOCATION_CHARACTERIZATION))
+                .isEqualTo("LOCATION_CHARACTERIZATION");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.PERF_ODOMETER))
                 .isEqualTo("PERF_ODOMETER");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.PERF_REAR_STEERING_ANGLE))
@@ -256,6 +287,10 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("MIRROR_AUTO_FOLD_ENABLED");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.MIRROR_AUTO_TILT_ENABLED))
                 .isEqualTo("MIRROR_AUTO_TILT_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.GLOVE_BOX_DOOR_POS))
+                .isEqualTo("GLOVE_BOX_DOOR_POS");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.GLOVE_BOX_LOCKED))
+                .isEqualTo("GLOVE_BOX_LOCKED");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.SEAT_BACKREST_ANGLE_1_MOVE))
                 .isEqualTo("SEAT_BACKREST_ANGLE_1_MOVE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.SEAT_BACKREST_ANGLE_1_POS))
@@ -338,6 +373,12 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("WINDOW_MOVE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.WINDOW_POS))
                 .isEqualTo("WINDOW_POS");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.WINDSHIELD_WIPERS_PERIOD))
+                .isEqualTo("WINDSHIELD_WIPERS_PERIOD");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.WINDSHIELD_WIPERS_STATE))
+                .isEqualTo("WINDSHIELD_WIPERS_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.WINDSHIELD_WIPERS_SWITCH))
+                .isEqualTo("WINDSHIELD_WIPERS_SWITCH");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.STEERING_WHEEL_DEPTH_MOVE))
                 .isEqualTo("STEERING_WHEEL_DEPTH_MOVE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.STEERING_WHEEL_DEPTH_POS))
@@ -417,10 +458,18 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("BLIND_SPOT_WARNING_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_DEPARTURE_WARNING_ENABLED))
                 .isEqualTo("LANE_DEPARTURE_WARNING_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_DEPARTURE_WARNING_STATE))
+                .isEqualTo("LANE_DEPARTURE_WARNING_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_KEEP_ASSIST_ENABLED))
                 .isEqualTo("LANE_KEEP_ASSIST_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_KEEP_ASSIST_STATE))
+                .isEqualTo("LANE_KEEP_ASSIST_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_CENTERING_ASSIST_ENABLED))
                 .isEqualTo("LANE_CENTERING_ASSIST_ENABLED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_CENTERING_ASSIST_COMMAND))
+                .isEqualTo("LANE_CENTERING_ASSIST_COMMAND");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_CENTERING_ASSIST_STATE))
+                .isEqualTo("LANE_CENTERING_ASSIST_STATE");
         assertThat(VehiclePropertyIds.toString(3)).isEqualTo("0x3");
         assertThat(VehiclePropertyIds.toString(12)).isEqualTo("0xc");
     }

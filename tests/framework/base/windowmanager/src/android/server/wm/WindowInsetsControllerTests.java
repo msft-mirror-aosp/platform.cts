@@ -17,7 +17,6 @@
 package android.server.wm;
 
 import static android.graphics.PixelFormat.TRANSLUCENT;
-import static android.server.wm.ActivityManagerTestBase.isTablet;
 import static android.view.KeyEvent.ACTION_DOWN;
 import static android.view.KeyEvent.KEYCODE_BACK;
 import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
@@ -403,9 +402,6 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         final int[] targetSysUiVis = new int[1];
         final View nonControlTarget = new View(mTargetContext);
         final int[] nonTargetSysUiVis = new int[1];
-        if (isTablet()) {
-            return;
-        }
         final WindowManager.LayoutParams nonTargetAttrs =
                 new WindowManager.LayoutParams(TYPE_APPLICATION);
         nonTargetAttrs.flags = FLAG_NOT_FOCUSABLE;
@@ -453,6 +449,11 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     public void testSystemUiVisibilityCallbackCausedByAppearance() {
         final TestActivity activity = startActivity(TestActivity.class);
         final View controlTarget = activity.getWindow().getDecorView();
+
+        // Assume we have at least one visible system bar.
+        assumeTrue(controlTarget.getRootWindowInsets().isVisible(statusBars()) ||
+                controlTarget.getRootWindowInsets().isVisible(navigationBars()));
+
         final int[] targetSysUiVis = new int[1];
         getInstrumentation().runOnMainSync(() -> {
             controlTarget.setOnSystemUiVisibilityChangeListener(

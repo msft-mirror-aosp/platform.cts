@@ -758,6 +758,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         new ImmutableMap.Builder<String, ImmutableSet<String>>()
             .put("/apex/com.android.btservices/app/Bluetooth/Bluetooth.apk",
                 BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
+            .put("/apex/com.android.btservices/app/BluetoothArc/BluetoothArc.apk",
+                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
                 BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.bluetooth/app/BluetoothGoogle/BluetoothGoogle.apk",
@@ -877,7 +879,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testBootclasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         assertThat(getDuplicateClasses(sBootclasspathJars)).isEmpty();
     }
 
@@ -886,7 +888,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testSystemServerClasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         ImmutableSet<String> overlapBurndownList;
         if (hasFeature(FEATURE_AUTOMOTIVE)) {
             overlapBurndownList = ImmutableSet.copyOf(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST);
@@ -908,7 +910,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testBootClasspathAndSystemServerClasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         ImmutableList.Builder<String> jars = ImmutableList.builder();
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSystemserverclasspathJars);

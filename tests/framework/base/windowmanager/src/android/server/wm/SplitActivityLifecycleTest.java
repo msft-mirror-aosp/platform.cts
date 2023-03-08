@@ -19,11 +19,15 @@ package android.server.wm;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
+import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.SplitActivityLifecycleTest.SplitTestActivity.EXTRA_SET_RESULT_AND_FINISH;
 import static android.server.wm.SplitActivityLifecycleTest.SplitTestActivity.EXTRA_SHOW_WHEN_LOCKED;
 import static android.server.wm.WindowManagerState.STATE_STARTED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.Surface.ROTATION_0;
+import static android.view.Surface.ROTATION_90;
 import static android.window.TaskFragmentOrganizer.TASK_FRAGMENT_TRANSIT_CHANGE;
 import static android.window.TaskFragmentOrganizer.TASK_FRAGMENT_TRANSIT_OPEN;
 
@@ -36,15 +40,20 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.SystemProperties;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerState.TaskFragment;
+import android.view.WindowManager;
 import android.window.TaskFragmentCreationParams;
 import android.window.TaskFragmentInfo;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
+
+import androidx.annotation.NonNull;
 
 import org.junit.Test;
 
@@ -61,8 +70,12 @@ import org.junit.Test;
  */
 @Presubmit
 public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
+    /** The bounds should only be updated through {@link #updateSplitBounds(Rect)}. */
     private final Rect mPrimaryBounds = new Rect();
+    private final Rect mPrimaryRelativeBounds = new Rect();
     private final Rect mSideBounds = new Rect();
+    private final Rect mSideRelativeBounds = new Rect();
+
     private TaskFragmentRecord mTaskFragA;
     private TaskFragmentRecord mTaskFragB;
     private final ComponentName mActivityA = new ComponentName(mContext, ActivityA.class);
@@ -96,7 +109,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     private void initializeSplitActivities(boolean showWhenLocked) {
         final Rect activityBounds = mOwnerActivity.getWindowManager().getCurrentWindowMetrics()
                 .getBounds();
-        activityBounds.splitVertically(mPrimaryBounds, mSideBounds);
+        updateSplitBounds(activityBounds);
 
         final TaskFragmentCreationParams paramsA = generatePrimaryTaskFragParams();
         final TaskFragmentCreationParams paramsB = generateSideTaskFragParams();
@@ -136,6 +149,20 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         waitAndAssertResumedActivity(mActivityB, "Activity B must still be resumed.");
 
         mTaskFragmentOrganizer.resetLatch();
+    }
+
+    /**
+     * Splits the {@code parentBounds} vertically to {@link #mPrimaryBounds} and
+     * {@link #mSideBounds}. {@link #mPrimaryRelativeBounds} and {@link #mSideRelativeBounds} will
+     * also be updated to the corresponding relative bounds in parent coordinate.
+     */
+    private void updateSplitBounds(@NonNull Rect parentBounds) {
+        parentBounds.splitVertically(mPrimaryBounds, mSideBounds);
+        mPrimaryRelativeBounds.set(mPrimaryBounds);
+        mPrimaryRelativeBounds.offsetTo(0, 0);
+        mSideRelativeBounds.set(mSideBounds);
+        mSideRelativeBounds.offsetTo(mSideBounds.left - mPrimaryBounds.left,
+                mSideBounds.top - mPrimaryBounds.top);
     }
 
     /**
@@ -297,10 +324,10 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
 
         final IBinder taskFragTokenA = mTaskFragA.getTaskFragToken();
         // TaskFragment C is not fully occluding TaskFragment B.
-        final Rect partialOccludingSideBounds = new Rect(mSideBounds);
-        partialOccludingSideBounds.left += 50;
+        final Rect partialOccludingRelativeSideBounds = new Rect(mSideRelativeBounds);
+        partialOccludingRelativeSideBounds.left += 50;
         final TaskFragmentCreationParams paramsC = mTaskFragmentOrganizer.generateTaskFragParams(
-                mOwnerToken, partialOccludingSideBounds, WINDOWING_MODE_MULTI_WINDOW);
+                mOwnerToken, partialOccludingRelativeSideBounds, WINDOWING_MODE_MULTI_WINDOW);
         final IBinder taskFragTokenC = paramsC.getFragmentToken();
         final WindowContainerTransaction wct = new WindowContainerTransaction()
                 // Create the side TaskFragment for C and launch
@@ -343,7 +370,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         final IBinder taskFragTokenC = paramsC.getFragmentToken();
         final WindowContainerTransaction wct = new WindowContainerTransaction()
                 // Move TaskFragment B to the primaryBounds
-                .setBounds(mTaskFragB.getToken(), mPrimaryBounds)
+                .setRelativeBounds(mTaskFragB.getToken(), mPrimaryRelativeBounds)
                 // Create the side TaskFragment for C and launch
                 .createTaskFragment(paramsC)
                 .startActivityInTaskFragment(taskFragTokenC, mOwnerToken, mIntent,
@@ -512,7 +539,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         // Expand top TaskFragment and clear the adjacent TaskFragments to have the two
         // TaskFragment stacked.
         wct = new WindowContainerTransaction()
-                .setBounds(mTaskFragB.getToken(), new Rect())
+                .setRelativeBounds(mTaskFragB.getToken(), new Rect())
                 .setWindowingMode(mTaskFragB.getToken(), WINDOWING_MODE_UNDEFINED)
                 .clearAdjacentTaskFragments(mTaskFragA.getTaskFragToken());
         mTaskFragmentOrganizer.applyTransaction(wct, TASK_FRAGMENT_TRANSIT_CHANGE,
@@ -540,8 +567,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
 
         // Create two adjacent TaskFragments, making ActivityB and TranslucentActivity
         // displayed side-by-side (ActivityB|TranslucentActivity).
-        mOwnerActivity.getWindowManager().getCurrentWindowMetrics().getBounds()
-                .splitVertically(mPrimaryBounds, mSideBounds);
+        updateSplitBounds(mOwnerActivity.getWindowManager().getCurrentWindowMetrics().getBounds());
         final TaskFragmentCreationParams primaryParams = generatePrimaryTaskFragParams();
         final TaskFragmentCreationParams secondaryParams = generateSideTaskFragParams();
         IBinder primaryToken = primaryParams.getFragmentToken();
@@ -566,6 +592,44 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 "Activity A is not fully occluded and must be visible and started");
     }
 
+    @Test
+    public void testIgnoreOrientationRequestForActivityEmbeddingSplits() {
+        // Skip the test on devices without WM extensions.
+        assumeTrue(SystemProperties.getBoolean("persist.wm.extensions.enabled", false));
+
+        // Skip the test if this is not a large screen device
+        assumeTrue(getDisplayConfiguration().smallestScreenWidthDp
+                >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP);
+
+        // Rotate the device to landscape
+        final RotationSession rotationSession = createManagedRotationSession();
+        final int[] rotations = { ROTATION_0, ROTATION_90 };
+        for (final int rotation : rotations) {
+            if (getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE) {
+                break;
+            }
+            rotationSession.set(rotation);
+        }
+        assumeTrue(getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE);
+
+        // Launch a fixed-portrait activity
+        Activity activity = startActivityInWindowingModeFullScreen(PortraitActivity.class);
+
+        // The activity should be displayed in portrait while the display is remained in landscape.
+        assertWithMessage("The activity should be displayed in portrait")
+                .that(activity.getResources().getConfiguration().orientation)
+                .isEqualTo(ORIENTATION_PORTRAIT);
+        assertWithMessage("The display should be remained in landscape")
+                .that(getDisplayConfiguration().orientation)
+                .isEqualTo(ORIENTATION_LANDSCAPE);
+    }
+
+    private Configuration getDisplayConfiguration() {
+        mWmState.computeState();
+        WindowManagerState.DisplayContent display = mWmState.getDisplay(DEFAULT_DISPLAY);
+        return display.mFullConfiguration;
+    }
+
     /**
      * Verifies starting an Activity on the adjacent TaskFragment and able to get the result.
      */
@@ -586,12 +650,12 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     }
 
     private TaskFragmentCreationParams generatePrimaryTaskFragParams() {
-        return mTaskFragmentOrganizer.generateTaskFragParams(mOwnerToken, mPrimaryBounds,
+        return mTaskFragmentOrganizer.generateTaskFragParams(mOwnerToken, mPrimaryRelativeBounds,
                 WINDOWING_MODE_MULTI_WINDOW);
     }
 
     private TaskFragmentCreationParams generateSideTaskFragParams() {
-        return mTaskFragmentOrganizer.generateTaskFragParams(mOwnerToken, mSideBounds,
+        return mTaskFragmentOrganizer.generateTaskFragParams(mOwnerToken, mSideRelativeBounds,
                 WINDOWING_MODE_MULTI_WINDOW);
     }
 
@@ -622,6 +686,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     public static class ActivityA extends SplitTestActivity {}
     public static class ActivityB extends SplitTestActivity {}
     public static class ActivityC extends SplitTestActivity {}
+    public static class PortraitActivity extends SplitTestActivity {}
     public static class TranslucentActivity extends SplitTestActivity {}
     public static class SplitTestActivity extends FocusableActivity {
         public static final String EXTRA_SHOW_WHEN_LOCKED = "showWhenLocked";

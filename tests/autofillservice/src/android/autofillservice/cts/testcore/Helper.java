@@ -26,6 +26,8 @@ import static android.service.autofill.FillEventHistory.Event.TYPE_DATASETS_SHOW
 import static android.service.autofill.FillEventHistory.Event.TYPE_DATASET_AUTHENTICATION_SELECTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_DATASET_SELECTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_SAVE_SHOWN;
+import static android.service.autofill.FillEventHistory.Event.TYPE_VIEW_REQUESTED_AUTOFILL;
+
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
@@ -1016,6 +1018,23 @@ public final class Helper {
     }
 
     /**
+     * Sets the pcc detection service temporarily for 300 seconds.
+     */
+    public static void setAutofillDetectionService(String service) {
+        Log.d(TAG, "setAutofillDetectionService");
+        runShellCommand("cmd autofill set temporary-detection-service 0 %s 30000",
+                service);
+    }
+
+    /**
+     * Reset the pcc detection service
+     */
+    public static void resetAutofillDetectionService() {
+        Log.d(TAG, "resetAutofillDetectionService");
+        runShellCommand("cmd autofill set temporary-detection-service 0");
+    }
+
+    /**
      * Gets the instrumentation context.
      */
     public static Context getContext() {
@@ -1187,6 +1206,14 @@ public final class Helper {
             @Nullable String datasetId, int uiType) {
         assertFillEvent(event, TYPE_DATASET_SELECTED, datasetId, null, null, null);
         assertFillEventPresentationType(event, uiType);
+    }
+
+    /**
+     * Asserts that {@android.service.autofill.FillEventHistory.Event#TYPE_VIEW_REQUESTED_AUTOFILL}
+     * is present in the FillEventHistory
+     */
+    public static void assertFillEventForViewEntered(@NonNull FillEventHistory.Event event) {
+        assertFillEvent(event, TYPE_VIEW_REQUESTED_AUTOFILL, null, null, null, null);
     }
 
     /**
@@ -1685,6 +1712,31 @@ public final class Helper {
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
                         AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED);
         setDeviceConfig(deviceConfigStateManager, "true");
+    }
+
+    /**
+     * Enable PCC Detection Feature Hints
+     */
+    public static void enablePccDetectionFeature(@NonNull Context context, String...types) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_FEATURE_PROVIDER_HINTS);
+        setDeviceConfig(deviceConfigStateManager, TextUtils.join(",", types));
+
+        DeviceConfigStateManager deviceConfigStateManager2 =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED);
+        setDeviceConfig(deviceConfigStateManager2, "true");
+    }
+
+    /**
+     * Disable PCC Detection Feature
+     */
+    public static void disablePccDetectionFeature(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager2 =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED);
+        setDeviceConfig(deviceConfigStateManager2, "false");
     }
 
     /**

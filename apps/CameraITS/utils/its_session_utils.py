@@ -472,6 +472,21 @@ class ItsSession(object):
     self.sock.settimeout(self.SOCK_TIMEOUT)
     return data[_OBJ_VALUE_STR]
 
+  def get_camera_ids(self):
+    """Returns the list of all camera_ids.
+
+    Returns:
+      List of camera ids on the device.
+    """
+    cmd = {'cmdName': 'getCameraIds'}
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'cameraIds':
+      raise error_util.CameraItsError('Invalid command response')
+    return data['objValue']
+
   def get_unavailable_physical_cameras(self, camera_id):
     """Get the unavailable physical cameras ids.
 
@@ -678,6 +693,32 @@ class ItsSession(object):
     if not data[_STR_VALUE]:
       raise error_util.CameraItsError('No supported preview sizes')
     return data[_STR_VALUE].split(';')
+
+  def get_supported_extensions(self, camera_id):
+    """Get all supported camera extensions for this camera device.
+
+    ie. [EXTENSION_AUTOMATIC, EXTENSION_BOKEH,
+         EXTENSION_FACE_RETOUCH, EXTENSION_HDR, EXTENSION_NIGHT]
+    where EXTENSION_AUTOMATIC is 0, EXTENSION_BOKEH is 1, etc.
+
+    Args:
+      camera_id: int; device ID
+    Returns:
+      List of all supported extensions (as int) in ascending order.
+    """
+    cmd = {
+        'cmdName': 'getSupportedExtensions',
+        'cameraId': camera_id
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'supportedExtensions':
+      raise error_util.CameraItsError('Invalid command response')
+    if not data['strValue']:
+      raise error_util.CameraItsError('No supported extensions')
+    return [int(x) for x in str(data['strValue'][1:-1]).split(', ') if x]
 
   def get_display_size(self):
     """ Get the display size of the screen.

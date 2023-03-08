@@ -21,7 +21,7 @@ import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
 import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
 import static android.Manifest.permission.READ_CLIPBOARD_IN_BACKGROUND;
 import static android.Manifest.permission.WAKE_LOCK;
-import static android.companion.virtual.VirtualDeviceManager.DEVICE_ID_DEFAULT;
+import static android.content.Context.DEVICE_ID_DEFAULT;
 import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
 import static android.virtualdevice.cts.util.VirtualDeviceTestUtils.createActivityOptions;
 
@@ -53,8 +53,8 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.virtualdevice.cts.common.FakeAssociationRule;
 import android.virtualdevice.cts.util.EmptyActivity;
-import android.virtualdevice.cts.util.FakeAssociationRule;
 import android.virtualdevice.cts.util.TestAppHelper;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;

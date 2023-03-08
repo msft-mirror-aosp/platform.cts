@@ -21,6 +21,8 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.ComponentName
 import android.content.Intent
+import android.content.Intent.ACTION_REVIEW_APP_DATA_SHARING_UPDATES
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -87,12 +89,12 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val OTHER_APP_PACKAGE_NAME = "android.permission3.cts.usepermissionother"
         const val TEST_INSTALLER_PACKAGE_NAME = "android.permission3.cts"
 
-        const val ALLOW_ALL_PHOTOS_BUTTON =
-            "com.android.permissioncontroller:id/permission_allow_all_photos_button"
-        const val SELECT_PHOTOS_BUTTON =
-            "com.android.permissioncontroller:id/permission_allow_selected_photos_button"
-        const val SELECT_MORE_PHOTOS_BUTTON =
-            "com.android.permissioncontroller:id/permission_allow_more_selected_photos_button"
+        const val ALLOW_ALL_BUTTON =
+            "com.android.permissioncontroller:id/permission_allow_all_button"
+        const val SELECT_BUTTON =
+            "com.android.permissioncontroller:id/permission_allow_selected_button"
+        const val SELECT_MORE_BUTTON =
+            "com.android.permissioncontroller:id/permission_allow_more_selected_button"
         const val ALLOW_BUTTON =
                 "com.android.permissioncontroller:id/permission_allow_button"
         const val ALLOW_FOREGROUND_BUTTON =
@@ -155,6 +157,26 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
 
         const val REQUEST_LOCATION_MESSAGE = "permgrouprequest_location"
 
+        const val DATA_SHARING_UPDATES = "Data sharing updates for location"
+        const val DATA_SHARING_UPDATES_SUBTITLE =
+                "These apps have changed the way they may share your location data. They may not" +
+                        " have shared it before, or may now share it for advertising or marketing" +
+                        " purposes."
+        const val DATA_SHARING_NO_UPDATES_MESSAGE = "No updates at this time"
+        const val UPDATES_IN_LAST_30_DAYS = "Updated within 30 days"
+        const val DATA_SHARING_UPDATES_FOOTER_MESSAGE =
+                "The developers of these apps provided info about their data sharing practices" +
+                        " to an app store. They may update it over time.\n\nData sharing" +
+                        " practices may vary based on your app version, use, region, and age."
+        const val LEARN_ABOUT_DATA_SHARING = "Learn about data sharing"
+        const val LOCATION_PERMISSION = "Location permission"
+        const val PERMISSION_MANAGER = "Permission manager"
+        const val APP_PACKAGE_NAME_SUBSTRING = "android.permission3"
+        const val PROPERTY_DATA_SHARING_UPDATE_PERIOD_MILLIS =
+                "data_sharing_update_period_millis"
+        const val PROPERTY_MAX_SAFETY_LABELS_PERSISTED_PER_APP =
+                "max_safety_labels_persisted_per_app"
+
         // The highest SDK for which the system will show a "low SDK" warning when launching the app
         const val MAX_SDK_FOR_SDK_WARNING = 27
 
@@ -182,7 +204,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         @JvmStatic
         protected fun isPhotoPickerPermissionPromptEnabled(): Boolean {
             return SystemUtil.callWithShellPermissionIdentity { DeviceConfig.getBoolean(
-                DeviceConfig.NAMESPACE_PRIVACY, PICKER_ENABLED_SETTING, false)
+                DeviceConfig.NAMESPACE_PRIVACY, PICKER_ENABLED_SETTING, true)
             }
         }
     }
@@ -521,7 +543,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     }
 
     protected fun clickPermissionRequestAllowAllPhotosButton(timeoutMillis: Long = 20000) {
-        click(By.res(ALLOW_ALL_PHOTOS_BUTTON), timeoutMillis)
+        click(By.res(ALLOW_ALL_BUTTON), timeoutMillis)
     }
 
     /**
@@ -609,6 +631,9 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByViewId(
                         "com.android.permissioncontroller:id/detail_message"
                 )[0]
+            }
+            if (!node.isVisibleToUser) {
+                scrollToBottom()
             }
             assertTrue(node.isVisibleToUser)
             val text = node.text as Spanned
@@ -746,6 +771,16 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         }
     }
 
+    /** Starts activity with intent [ACTION_REVIEW_APP_DATA_SHARING_UPDATES]. */
+    fun startAppDataSharingUpdatesActivity() {
+        runWithShellPermissionIdentity {
+            context.startActivity(
+                    Intent(ACTION_REVIEW_APP_DATA_SHARING_UPDATES).apply {
+                        addFlags(FLAG_ACTIVITY_NEW_TASK)
+                    })
+        }
+    }
+
     private fun setAppPermissionState(
         vararg permissions: String,
         state: PermissionState,
@@ -812,9 +847,6 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                             if (showsForegroundOnlyButton(permission)) {
                                 By.text(getPermissionControllerString(
                                         "app_permission_button_allow_foreground"))
-                            } else if (showsAllowPhotosButton(permission)) {
-                                By.text(getPermissionControllerString(
-                                        "app_permission_button_allow_all_photos"))
                             } else {
                                 By.text(getPermissionControllerString(
                                     "app_permission_button_allow"))

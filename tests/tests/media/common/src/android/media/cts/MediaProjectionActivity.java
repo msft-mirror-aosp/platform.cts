@@ -57,7 +57,7 @@ public class MediaProjectionActivity extends Activity {
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            startActivityForResult(mProjectionManager.createScreenCaptureIntent(), PERMISSION_CODE);
+            startActivityForResult(getScreenCaptureIntent(), PERMISSION_CODE);
             dismissPermissionDialog();
             mProjectionServiceBound = true;
         }
@@ -67,7 +67,6 @@ public class MediaProjectionActivity extends Activity {
             mProjectionServiceBound = false;
         }
     };
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +85,10 @@ public class MediaProjectionActivity extends Activity {
             unbindService(mConnection);
             mProjectionServiceBound = false;
         }
+    }
+
+    protected Intent getScreenCaptureIntent() {
+        return mProjectionManager.createScreenCaptureIntent();
     }
 
     private void bindMediaProjectionService() {
@@ -108,7 +111,7 @@ public class MediaProjectionActivity extends Activity {
     }
 
     public MediaProjection waitForMediaProjection() throws InterruptedException {
-        final long timeOutMs = 125000;
+        final long timeOutMs = 5000;
         final int retryCount = 2;
         int count = 0;
         // Sometimes system decides to rotate the permission activity to another orientation

@@ -266,6 +266,19 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         launchActivity(activityName, WINDOWING_MODE_FULLSCREEN);
         final SizeInfo initialFullscreenSizes = getLastReportedSizesForActivity(activityName);
 
+        // Ensure the orientation configuration is different while moving the activity into split
+        // primary task later if we expected activity to be launched.
+        if (relaunch) {
+            mTaskOrganizer.registerOrganizerIfNeeded();
+            Rect primaryTaskBounds = mTaskOrganizer.getPrimaryTaskBounds();
+            if (initialFullscreenSizes.displayHeight > initialFullscreenSizes.displayWidth) {
+                primaryTaskBounds.bottom = primaryTaskBounds.width() / 2;
+            } else {
+                primaryTaskBounds.right = primaryTaskBounds.height() / 2;
+            }
+            mTaskOrganizer.setRootPrimaryTaskBounds(primaryTaskBounds);
+        }
+
         // Move the task to the primary split task.
         separateTestJournal();
         putActivityInPrimarySplit(activityName);
@@ -486,7 +499,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         // Start a portrait activity first to ensure that the orientation will change.
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
-        mWmState.waitForLastOrientation(SCREEN_ORIENTATION_PORTRAIT);
+        mWmState.waitForDisplayOrientation(ORIENTATION_PORTRAIT);
         final int prevRotation = mWmState.getRotation();
 
         getLaunchActivityBuilder()
@@ -496,7 +509,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 // rotated but the activity is rotated.
                 .setIntentExtra(bundle -> bundle.putBoolean(EXTRA_CONFIG_INFO_IN_ON_CREATE, true))
                 .execute();
-        mWmState.waitForLastOrientation(SCREEN_ORIENTATION_LANDSCAPE);
+        mWmState.waitForDisplayOrientation(ORIENTATION_LANDSCAPE);
 
         final SizeInfo reportedSizes =
                 getLastReportedSizesForActivity(LANDSCAPE_ORIENTATION_ACTIVITY);

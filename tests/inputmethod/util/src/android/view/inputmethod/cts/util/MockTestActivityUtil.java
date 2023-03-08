@@ -78,6 +78,12 @@ public final class MockTestActivityUtil {
      */
     public static final String EXTRA_SHOW_SOFT_INPUT = "extra_show_soft_input";
 
+    /**
+     * Can be passed to {@link #sendBroadcastAction(String)} to declare editor as
+     * {@link android.view.View#setIsHandwritingDelegate(boolean) handwriting delegator}.
+     */
+    public static final String EXTRA_HANDWRITING_DELEGATE = "extra_handwriting_delegator";
+
     @NonNull
     private static Uri formatStringIntentParam(@NonNull Uri uri, Map<String, String> extras) {
         if (extras == null) {
@@ -119,8 +125,8 @@ public final class MockTestActivityUtil {
             commandBuilder.append(String.format("am start -a %s -c %s --activity-clear-task %s",
                     Intent.ACTION_VIEW, Intent.CATEGORY_BROWSABLE, uri.toString()));
         } else {
-            commandBuilder.append("am start --activity-clear-task -n ")
-                    .append(TEST_ACTIVITY.flattenToShortString());
+            commandBuilder.append(String.format("am start -a %s -n %s --activity-clear-task",
+                    Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString()));
             if (extras != null) {
                 extras.forEach((key, value) -> commandBuilder.append(" --es ")
                         .append(key).append(" ").append(value));

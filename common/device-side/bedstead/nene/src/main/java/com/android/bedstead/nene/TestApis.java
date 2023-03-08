@@ -29,14 +29,17 @@ import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.inputmethods.InputMethods;
 import com.android.bedstead.nene.instrumentation.Instrumentation;
 import com.android.bedstead.nene.location.Locations;
+import com.android.bedstead.nene.logcat.Logcat;
 import com.android.bedstead.nene.notifications.Notifications;
 import com.android.bedstead.nene.packages.Packages;
 import com.android.bedstead.nene.permissions.Permissions;
+import com.android.bedstead.nene.resources.Resources;
 import com.android.bedstead.nene.roles.Roles;
 import com.android.bedstead.nene.settings.Settings;
 import com.android.bedstead.nene.systemproperties.SystemProperties;
 import com.android.bedstead.nene.ui.Ui;
 import com.android.bedstead.nene.users.Users;
+import com.android.bedstead.nene.wifi.Wifi;
 
 /**
  * Entry point to Nene Test APIs.
@@ -112,6 +115,11 @@ public final class TestApis {
         return Bluetooth.sInstance;
     }
 
+    /** Access Test APIs related to wifi. */
+    public static Wifi wifi() {
+        return Wifi.sInstance;
+    }
+
     /** Access Test APIs related to input methods. */
     @Experimental
     public static InputMethods inputMethods() {
@@ -147,15 +155,26 @@ public final class TestApis {
         return Flags.sInstance;
     }
 
+    /** Access Test APIs related to resources. */
+    public static Resources resources() {
+        return Resources.sInstance;
+    }
+
     /** Access Test APIs related to broadcasts. */
     public static Broadcasts broadcasts() {
         return Broadcasts.sInstance;
     }
 
-    /** Access Test  APIs related to telecom */
+    /** Access Test APIs related to telecom */
     @Experimental
     public static Telecom telecom() {
         return Telecom.sInstance;
+    }
+
+    /** Access Test APIs related to logcat */
+    @Experimental
+    public static Logcat logcat() {
+        return Logcat.sInstance;
     }
 
     /** @deprecated Use statically */

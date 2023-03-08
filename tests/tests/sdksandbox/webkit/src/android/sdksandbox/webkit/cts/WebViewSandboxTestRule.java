@@ -24,6 +24,12 @@ import android.webkit.cts.SharedWebViewTestEnvironment;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.compatibility.common.util.NullWebViewUtils;
+
+import org.junit.Assume;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 /**
  * This rule is used to invoke webview tests inside a test sdk.
  * This rule is a wrapper for using the
@@ -34,10 +40,11 @@ import androidx.test.core.app.ApplicationProvider;
 public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
 
     public WebViewSandboxTestRule(String webViewTestClassName) {
-        super("com.android.cts.sdk.webviewsandboxtest",
+        super(
+                "com.android.cts.sdk.webviewsandboxtest",
                 getSetupParams(webViewTestClassName),
                 SharedWebViewTestEnvironment.createHostAppInvoker(
-                        ApplicationProvider.getApplicationContext()),
+                        ApplicationProvider.getApplicationContext(), true),
                 ENABLE_LIFE_CYCLE_ANNOTATIONS);
     }
 
@@ -45,5 +52,12 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
         Bundle params = new Bundle();
         params.putString(SharedWebViewTest.WEB_VIEW_TEST_CLASS_NAME, webViewTestClassName);
         return params;
+    }
+
+    @Override
+    public Statement apply(final Statement base, final Description description) {
+        // This will prevent shared webview tests from running if a WebView provider does not exist.
+        Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
+        return super.apply(base, description);
     }
 }

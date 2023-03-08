@@ -29,14 +29,17 @@ import static android.autofillservice.cts.testcore.Helper.assertHasFlags;
 import static android.autofillservice.cts.testcore.Helper.assertMockImeStatus;
 import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClientState;
 import static android.autofillservice.cts.testcore.Helper.assertNoFlags;
+import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.enableCredentialManagerFeature;
 import static android.autofillservice.cts.testcore.Helper.enableFillDialogFeature;
+import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.ignoreCredentialManagerViews;
 import static android.autofillservice.cts.testcore.Helper.isImeShowing;
 import static android.autofillservice.cts.testcore.Helper.setCredentialManagerFeature;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
 import static android.service.autofill.FillEventHistory.Event.UI_TYPE_DIALOG;
 import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
+import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -48,12 +51,14 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
 import android.autofillservice.cts.testcore.Helper;
+import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.content.Intent;
 import android.service.autofill.FillEventHistory;
-import android.support.test.uiautomator.UiObject2;
 import android.view.View;
+
+import androidx.test.uiautomator.UiObject2;
 
 import org.junit.Test;
 
@@ -64,6 +69,73 @@ import java.util.List;
  * This is the test cases for the fill dialog UI.
  */
 public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLaunch {
+
+    @Test
+    public void testPccRequest() throws Exception {
+        // Enable feature and test service
+        enableService();
+        enablePccDetectionFeature(sContext, "username");
+        enableFillDialogFeature(sContext);
+        sReplier.setIdMode(IdMode.PCC_ID);
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setSaveTypes(~0); // indicate to trigger SaveDialog on all fields
+
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Check onFillRequest has the flag: FLAG_SEND_ALL_USER_DATA
+        final FillRequest request = sReplier.getNextFillRequest();
+        assertThat(request.hints.size()).isEqualTo(1);
+        assertThat(request.hints.get(0)).isEqualTo("username");
+        mUiBot.waitForIdleSync();
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
+    }
+
+    @Test
+    public void testPccRequest_setForAllHints() throws Exception {
+        // Set service.
+        enableService();
+        enablePccDetectionFeature(sContext, "username", "password", "new_password");
+        enableFillDialogFeature(sContext);
+        sReplier.setIdMode(IdMode.PCC_ID);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(AUTOFILL_HINT_USERNAME, "dude")
+                        .setField("allField1")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedDataset.Builder()
+                        .setField("allField2")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Check onFillRequest has the flag: FLAG_SEND_ALL_USER_DATA
+        final FillRequest request = sReplier.getNextFillRequest();
+        assertThat(request.hints.size()).isEqualTo(3);
+        assertThat(request.hints.get(0)).isEqualTo("username");
+        mUiBot.waitForIdleSync();
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
+    }
 
     // This test cannot assert if the icon has changed programitically.
     // Need to manually check that the icon has changed.

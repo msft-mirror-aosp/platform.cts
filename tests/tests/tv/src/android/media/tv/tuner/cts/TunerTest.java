@@ -93,6 +93,8 @@ import android.media.tv.tuner.frontend.FrontendSettings;
 import android.media.tv.tuner.frontend.FrontendStatus;
 import android.media.tv.tuner.frontend.FrontendStatus.Atsc3PlpTuningInfo;
 import android.media.tv.tuner.frontend.FrontendStatusReadiness;
+import android.media.tv.tuner.frontend.IptvFrontendCapabilities;
+import android.media.tv.tuner.frontend.IptvFrontendSettings;
 import android.media.tv.tuner.frontend.Isdbs3FrontendCapabilities;
 import android.media.tv.tuner.frontend.Isdbs3FrontendSettings;
 import android.media.tv.tuner.frontend.IsdbsFrontendCapabilities;
@@ -2076,13 +2078,8 @@ public class TunerTest {
         mTuner.close();
         mTuner = null;
 
-        // check the sharee is also closed
-        // tune() would have failed even before close() but still..
-        // TODO: fix this once callback sharing is implemented
-        res = sharee.applyFrontend(info);
-        assertEquals(Tuner.RESULT_UNAVAILABLE, res);
-        res = sharee.tune(feSettings);
-        assertEquals(Tuner.RESULT_UNAVAILABLE, res);
+        // check the frontend of sharee is also released
+        assertNull(sharee.getFrontendInfo());
 
         sharee.close();
 
@@ -2104,7 +2101,6 @@ public class TunerTest {
         assertNotNull(statusCapabilities);
         FrontendStatus status = mTuner.getFrontendStatus(statusCapabilities);
         assertNotNull(status);
-
     }
 
     @Test
@@ -3339,6 +3335,16 @@ public class TunerTest {
                                     .setTimeInterleaveMode(timeInterleaveMode)
                                     .build();
                     settings.setEndFrequencyLong(maxFreq);
+                    return settings;
+                }
+                case FrontendSettings.TYPE_IPTV: {
+                    IptvFrontendCapabilities iptvCaps = (IptvFrontendCapabilities) caps;
+                    int protocol = getFirstCapable(iptvCaps.getProtocolCapability());
+                    IptvFrontendSettings settings =
+                            new IptvFrontendSettings
+                                    .Builder()
+                                    .setProtocol(protocol)
+                                    .build();
                     return settings;
                 }
                 default:

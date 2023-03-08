@@ -39,6 +39,9 @@
                  android:requestLegacyExternalStorage="true"
                  android:enableOnBackInvokedCallback="false"
                  android:testOnly="true">
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+            android:value="true"/>
         <uses-library android:name="android.test.runner"/>
         <uses-library android:name="androidx.window.extensions"
             android:required="false" />
@@ -334,6 +337,7 @@
              android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.LocationInWindowTests$TestActivity"/>
         <activity android:name="android.server.wm.EnsureBarContrastTest$TestActivity"
+             android:screenOrientation="locked"
              android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.WindowFocusTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.WindowFocusTests$SecondaryActivity"
@@ -404,19 +408,9 @@
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
             </intent-filter>
         </activity>
-        <activity android:name="android.server.wm.SurfaceViewCtsActivity"
-             android:screenOrientation="locked"
-             android:turnScreenOn="true"
-             android:showWhenLocked="true"
-             android:label="SurfaceViewCtsActivity"
-             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
-            </intent-filter>
-        </activity>
         <activity android:name="android.view.cts.surfacevalidator.CapturedActivity"
              android:screenOrientation="locked"
+             android:turnScreenOn="true"
              android:theme="@style/WhiteBackgroundTheme"
              android:exported="true">
             <intent-filter>
@@ -464,7 +458,7 @@
 
         <activity android:name="android.server.wm.ActivityTransitionTests$TransitionActivity"/>
 
-        <activity android:name="android.server.wm.ActivityTransitionTests$OverridePendingTransitionActivity"/>
+        <activity android:name="android.server.wm.ActivityTransitionTests$CustomBackgroundTransitionActivity"/>
 
         <activity android:name="android.server.wm.ActivityTransitionTests$TransitionActivityWithWhiteBackground"
             android:theme="@style/Theme.WhiteBackground"
@@ -554,6 +548,10 @@
         <activity android:name="android.server.wm.SplitActivityLifecycleTest$ActivityC"
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
+        <activity android:name="android.server.wm.SplitActivityLifecycleTest$PortraitActivity"
+                  android:exported="true"
+                  android:screenOrientation="portrait"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
         <activity android:name="android.server.wm.SplitActivityLifecycleTest$TranslucentActivity"
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
@@ -620,6 +618,15 @@
         <activity android:name="android.server.wm.SurfaceControlViewHostTests$TestActivity"
                   android:exported="true"
                   android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+
+        <activity android:name="android.server.wm.MoveAnimationTests$FloatingActivity"
+                  android:exported="true"
+                  android:noHistory="true"
+                  android:theme="@style/Floating"/>
+        <activity android:name="android.server.wm.MoveAnimationTests$FloatingActivity$NoMove"
+                  android:exported="true"
+                  android:noHistory="true"
+                  android:theme="@style/Floating.NoMove"/>
 
         <service android:name="android.server.wm.scvh.EmbeddedSCVHService"
             android:process="com.android.server.wm.scvh.embedded_process" />

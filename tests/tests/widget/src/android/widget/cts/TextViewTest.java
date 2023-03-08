@@ -206,8 +206,6 @@ public class TextViewTest {
         }
     };
     private static final int CLICK_TIMEOUT = ViewConfiguration.getDoubleTapTimeout() + 50;
-    private static final int BOLD_TEXT_ADJUSTMENT =
-            FontStyle.FONT_WEIGHT_BOLD - FontStyle.FONT_WEIGHT_NORMAL;
 
     private CharSequence mTransformedText;
 
@@ -333,26 +331,32 @@ public class TextViewTest {
     @Test
     public void testFontWeightAdjustment_forceBoldTextEnabled_textIsBolded() throws Throwable {
         mActivityRule.runOnUiThread(() -> mTextView = findTextView(R.id.textview_text));
+        final int defaultFontWeight = mTextView.getTypeface().getWeight();
         mInstrumentation.waitForIdleSync();
 
-        assertEquals(FontStyle.FONT_WEIGHT_NORMAL, mTextView.getTypeface().getWeight());
-
         Configuration cf = new Configuration();
-        cf.fontWeightAdjustment = BOLD_TEXT_ADJUSTMENT;
+        final int fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - defaultFontWeight;
+        cf.fontWeightAdjustment =
+            fontWeightAdjustment <= 0 ? FontStyle.FONT_WEIGHT_MAX : fontWeightAdjustment;
         mActivityRule.runOnUiThread(() -> mTextView.dispatchConfigurationChanged(cf));
         mInstrumentation.waitForIdleSync();
 
         Typeface forceBoldedPaintTf = mTextView.getPaint().getTypeface();
         assertEquals(FontStyle.FONT_WEIGHT_BOLD, forceBoldedPaintTf.getWeight());
-        assertEquals(FontStyle.FONT_WEIGHT_NORMAL, mTextView.getTypeface().getWeight());
+        assertEquals(defaultFontWeight, mTextView.getTypeface().getWeight());
     }
 
     @Test
     public void testFontWeightAdjustment_forceBoldTextDisabled_textIsUnbolded() throws Throwable {
+        mActivityRule.runOnUiThread(() -> mTextView = findTextView(R.id.textview_text));
+        final int defaultFontWeight = mTextView.getTypeface().getWeight();
+
         Configuration cf = new Configuration();
-        cf.fontWeightAdjustment = BOLD_TEXT_ADJUSTMENT;
+        final int fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - defaultFontWeight;
+        cf.fontWeightAdjustment =
+            fontWeightAdjustment <= 0 ? FontStyle.FONT_WEIGHT_MAX : fontWeightAdjustment;
+
         mActivityRule.runOnUiThread(() -> {
-            mTextView = findTextView(R.id.textview_text);
             mTextView.dispatchConfigurationChanged(cf);
             cf.fontWeightAdjustment = 0;
             mTextView.dispatchConfigurationChanged(cf);
@@ -360,8 +364,8 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         Typeface forceUnboldedPaintTf = mTextView.getPaint().getTypeface();
-        assertEquals(FontStyle.FONT_WEIGHT_NORMAL, forceUnboldedPaintTf.getWeight());
-        assertEquals(FontStyle.FONT_WEIGHT_NORMAL, mTextView.getTypeface().getWeight());
+        assertEquals(defaultFontWeight, forceUnboldedPaintTf.getWeight());
+        assertEquals(defaultFontWeight, mTextView.getTypeface().getWeight());
     }
 
     @Test
@@ -370,7 +374,7 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> {
             mTextView = findTextView(R.id.textview_text);
             Configuration cf = new Configuration();
-            cf.fontWeightAdjustment = BOLD_TEXT_ADJUSTMENT;
+            cf.fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - FontStyle.FONT_WEIGHT_NORMAL;
             mTextView.dispatchConfigurationChanged(cf);
             mTextView.setTypeface(Typeface.MONOSPACE);
         });
@@ -383,7 +387,6 @@ public class TextViewTest {
         assertEquals(Typeface.create(Typeface.MONOSPACE,
                 FontStyle.FONT_WEIGHT_BOLD, false), forceBoldedPaintTf);
     }
-
 
     @Test
     public void testFontWeightAdjustment_forceBoldTextDisabled_originalTypefaceIsKept()
@@ -408,7 +411,7 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> {
             mTextView = findTextView(R.id.textview_text);
             Configuration cf = new Configuration();
-            cf.fontWeightAdjustment = BOLD_TEXT_ADJUSTMENT;
+            cf.fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - FontStyle.FONT_WEIGHT_NORMAL;
             mTextView.dispatchConfigurationChanged(cf);
             mTextView.setTypeface(originalTypeface);
         });
@@ -7476,25 +7479,25 @@ public class TextViewTest {
                 actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK));
     }
 
-    @ApiTest(apis = {"android.view.View#setAccessibilityDataPrivate",
-            "android.view.accessibility.AccessibilityEvent#setAccessibilityDataPrivate"})
+    @ApiTest(apis = {"android.view.View#setAccessibilityDataSensitive",
+            "android.view.accessibility.AccessibilityEvent#setAccessibilityDataSensitive"})
     @UiThreadTest
     @Test
-    public void testOnPopulateA11yEvent_checksAccessibilityDataPrivateBeforePopulating() {
+    public void testOnPopulateA11yEvent_checksAccessibilityDataSensitiveBeforePopulating() {
         mTextView = findTextView(R.id.textview_text);
-        mTextView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_YES);
+        mTextView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_YES);
 
-        final AccessibilityEvent eventAdp = new AccessibilityEvent();
-        eventAdp.setAccessibilityDataPrivate(true);
-        mTextView.onPopulateAccessibilityEventInternal(eventAdp);
-        assertFalse("event should have populated text when ADP is true on both event & view",
-                eventAdp.getText().isEmpty());
+        final AccessibilityEvent eventAds = new AccessibilityEvent();
+        eventAds.setAccessibilityDataSensitive(true);
+        mTextView.onPopulateAccessibilityEventInternal(eventAds);
+        assertFalse("event should have populated text when ADS is true on both event & view",
+                eventAds.getText().isEmpty());
 
-        final AccessibilityEvent eventNotAdp = new AccessibilityEvent();
-        eventNotAdp.setAccessibilityDataPrivate(false);
-        mTextView.onPopulateAccessibilityEventInternal(eventNotAdp);
-        assertTrue("event should not populate text when view ADP=true but event ADP=false",
-                eventNotAdp.getText().isEmpty());
+        final AccessibilityEvent eventNotAds = new AccessibilityEvent();
+        eventNotAds.setAccessibilityDataSensitive(false);
+        mTextView.onPopulateAccessibilityEventInternal(eventNotAds);
+        assertTrue("event should not populate text when view ADS=true but event ADS=false",
+                eventNotAds.getText().isEmpty());
     }
 
     @Test

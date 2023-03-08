@@ -21,13 +21,15 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application android:description="@string/app_description">
         <uses-library android:name="android.test.runner" />
 
         <activity android:name="android.car.cts.builtin.activity.SimpleActivity" />
 
-        <activity android:name="android.car.cts.builtin.activity.VirtualDisplayIdTestActivity" />
+        <activity android:name="android.car.cts.builtin.activity.VirtualDisplayIdTestActivity"
+                  android:exported="true"/>
 
         <activity android:name="android.car.cts.builtin.activity.TaskInfoTestActivity"
                   android:label="@string/task_info_test_activity"

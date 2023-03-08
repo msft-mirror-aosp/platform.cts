@@ -47,10 +47,11 @@ import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.media.ImageReader;
 import android.os.ResultReceiver;
 import android.platform.test.annotations.AppModeFull;
-import android.virtualdevice.cts.util.FakeAssociationRule;
+import android.virtualdevice.cts.common.FakeAssociationRule;
 import android.virtualdevice.cts.util.TestAppHelper;
 import android.virtualdevice.cts.util.VirtualDeviceTestUtils.OnReceiveResultListener;
 
@@ -67,12 +68,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.List;
+import java.util.Set;
 
 /** Tests for blocking of activities that should not be shown on the virtual device. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class RestrictActivityTest {
+
+    private static final String DISPLAY_NAME = "RestrictActivityTest";
+
     @Rule
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
@@ -146,7 +150,7 @@ public class RestrictActivityTest {
     @Test
     public void restrictedActivity_nonRestrictedActivityOnRestrictedDevice_shouldFail() {
         VirtualDisplay virtualDisplay =
-                createVirtualDisplay(List.of("automotive"));
+                createVirtualDisplay(Set.of("automotive"));
         Intent intent =
                 TestAppHelper.createActivityLaunchedReceiverIntent(mResultReceiver)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -160,7 +164,7 @@ public class RestrictActivityTest {
     @Test
     public void restrictedActivity_differentCategory_shouldFail() {
         VirtualDisplay virtualDisplay =
-                createVirtualDisplay(List.of("abc"));
+                createVirtualDisplay(Set.of("abc"));
         launchRestrictedAutomotiveActivity(virtualDisplay);
 
         verify(mOnReceiveResultListener, after(3000).never()).onReceiveResult(anyInt(), any());
@@ -169,7 +173,7 @@ public class RestrictActivityTest {
     @Test
     public void restrictedActivity_containCategories_shouldSucceed() {
         VirtualDisplay virtualDisplay =
-                createVirtualDisplay(List.of("automotive"));
+                createVirtualDisplay(Set.of("automotive"));
         launchRestrictedAutomotiveActivity(virtualDisplay);
 
         verify(mOnReceiveResultListener, timeout(3000))
@@ -205,29 +209,19 @@ public class RestrictActivityTest {
                 .startActivity(intent, createActivityOptions(display));
     }
 
-    private VirtualDisplay createVirtualDisplay(@Nullable List<String> displayCategories) {
+    private VirtualDisplay createVirtualDisplay(@Nullable Set<String> displayCategories) {
         mVirtualDevice =
                 mVirtualDeviceManager.createVirtualDevice(
                         mFakeAssociationRule.getAssociationInfo().getId(),
                         new VirtualDeviceParams.Builder().build());
+        VirtualDisplayConfig.Builder builder =
+                new VirtualDisplayConfig.Builder(DISPLAY_NAME, 100, 100, 240)
+                        .setSurface(mReader.getSurface())
+                        .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
         if (displayCategories != null) {
-            return mVirtualDevice.createVirtualDisplay(
-                    /* width= */ 100,
-                    /* height= */ 100,
-                    /* densityDpi= */ 240,
-                    displayCategories,
-                    mReader.getSurface(),
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED,
-                    Runnable::run,
-                    mVirtualDisplayCallback);
+            builder = builder.setDisplayCategories(displayCategories);
         }
         return mVirtualDevice.createVirtualDisplay(
-                /* width= */ 100,
-                /* height= */ 100,
-                /* densityDpi= */ 240,
-                mReader.getSurface(),
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED,
-                Runnable::run,
-                mVirtualDisplayCallback);
+                builder.build(), Runnable::run, mVirtualDisplayCallback);
     }
 }

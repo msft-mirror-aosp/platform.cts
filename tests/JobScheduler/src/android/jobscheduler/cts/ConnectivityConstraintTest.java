@@ -19,8 +19,6 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 
-import static com.android.compatibility.common.util.TestUtils.waitUntil;
-
 import static org.junit.Assert.assertNotEquals;
 
 import android.annotation.TargetApi;
@@ -28,12 +26,12 @@ import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
-import android.os.PowerManager;
 import android.platform.test.annotations.RequiresDevice;
 import android.provider.Settings;
 import android.util.Log;
@@ -41,6 +39,8 @@ import android.util.Log;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.SystemUtil;
+
+import java.util.Map;
 
 /**
  * Schedules jobs with the {@link android.app.job.JobScheduler} that have network connectivity
@@ -106,10 +106,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mJobScheduler.cancel(CONNECTIVITY_JOB_ID);
 
         BatteryUtils.runDumpsysBatteryReset();
-
-        if (isDeviceIdleFeatureEnabled()) {
-            toggleDozeState(false);
-        }
 
         // Restore initial restricted bucket setting.
         Settings.Global.putString(mContext.getContentResolver(),
@@ -251,6 +247,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         disconnectWifiToConnectToMobile();
 
         kTestEnvironment.setExpectedExecutions(1);
+        kTestEnvironment.setContinueAfterStart();
         kTestEnvironment.setExpectedStopped();
         kTestEnvironment.setExpectedNetworkChange();
         mJobScheduler.schedule(
@@ -442,32 +439,14 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             // Test requires device idle feature
             return;
         }
-        if (!BatteryUtils.isBatterySaverSupported()) {
-            Log.d(TAG, "Skipping test that requires battery saver support");
-            return;
-        }
-        if (hasEthernetConnection()) {
-            // We need to temporarily disable all networks, and can't do that when there's an
-            // ethernet connection.
-            return;
-        }
-        if (!mHasWifi && !checkDeviceSupportsMobileData()) {
-            Log.d(TAG, "Skipping test that requires a metered network.");
-            return;
-        }
 
         mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
 
-        mNetworkingHelper.setAllNetworksEnabled(false);
-        mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
-
+        mNetworkingHelper.setAllNetworksEnabled(true);
         toggleScreenOn(false);
-        toggleDozeState(true);
-        if (mHasWifi) {
-            setWifiMeteredState(true);
-        } else if (checkDeviceSupportsMobileData()) {
-            disconnectWifiToConnectToMobile();
-        }
+        setDeviceIdleState(true);
+
+        mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
 
         mTestAppInterface.runSatisfiedJob();
         assertTrue("UI job requiring connectivity did not fire with Doze on.",
@@ -555,18 +534,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "Skipping test that requires battery saver support");
             return;
         }
-        if (hasEthernetConnection()) {
-            // We need to use a metered network but can't control the ethernet connection.
-            return;
-        }
-        if (mHasWifi) {
-            setWifiMeteredState(true);
-        } else if (checkDeviceSupportsMobileData()) {
-            disconnectWifiToConnectToMobile();
-        } else {
-            Log.d(TAG, "Skipping test that requires a metered network.");
-            return;
-        }
 
         BatteryUtils.runDumpsysBatteryUnplug();
         BatteryUtils.enableBatterySaver(true);
@@ -576,6 +543,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.startAndKeepTestActivity();
         toggleScreenOn(true);
 
+        mNetworkingHelper.setAllNetworksEnabled(true);
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, false, true);
 
         mTestAppInterface.runSatisfiedJob();
@@ -592,39 +560,28 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             // Test requires device idle feature
             return;
         }
-        if (!BatteryUtils.isBatterySaverSupported()) {
-            Log.d(TAG, "Skipping test that requires battery saver support");
-            return;
-        }
-        if (hasEthernetConnection()) {
-            // We need to temporarily disable all networks, and can't do that when there's an
-            // ethernet connection.
-            return;
-        }
-        if (!mHasWifi && !checkDeviceSupportsMobileData()) {
-            Log.d(TAG, "Skipping test that requires a metered network.");
-            return;
-        }
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
-        // Put app in a valid state to schedule a UI job.
-        mTestAppInterface.startAndKeepTestActivity();
-        toggleScreenOn(true);
+        try (TestNotificationListener.NotificationHelper notificationHelper =
+                     new TestNotificationListener.NotificationHelper(
+                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            // Put app in a valid state to schedule a UI job.
+            mNetworkingHelper.setAllNetworksEnabled(true);
+            toggleScreenOn(false);
+            setDeviceIdleState(true);
+            mTestAppInterface.postUiInitiatingNotification(
+                    Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
 
-        mNetworkingHelper.setAllNetworksEnabled(false);
-        mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, false, true);
+            notificationHelper.clickNotification();
 
-        toggleScreenOn(false);
-        toggleDozeState(true);
-        if (mHasWifi) {
-            setWifiMeteredState(true);
-        } else if (checkDeviceSupportsMobileData()) {
-            disconnectWifiToConnectToMobile();
+            assertTrue("UI job requiring connectivity did not fire with Doze on.",
+                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
         }
-
-        mTestAppInterface.runSatisfiedJob();
-        assertTrue("UI job requiring connectivity did not fire with Doze on.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
     // --------------------------------------------------------------------------------------------
@@ -1002,20 +959,5 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      */
     private void setDataSaverEnabled(boolean enabled) throws Exception {
         mNetworkingHelper.setDataSaverEnabled(enabled);
-    }
-
-    private static boolean isDeviceIdleFeatureEnabled() throws Exception {
-        final String output = SystemUtil.runShellCommand("cmd deviceidle enabled deep").trim();
-        return Integer.parseInt(output) != 0;
-    }
-
-    private void toggleDozeState(final boolean idle) throws Exception {
-        SystemUtil.runShellCommand("cmd deviceidle " + (idle ? "force-idle" : "unforce"));
-        if (!idle) {
-            // Make sure the device doesn't stay idle, even after unforcing.
-            SystemUtil.runShellCommand("cmd deviceidle motion");
-        }
-        waitUntil("Could not change device idle state to " + idle, 15 /* seconds */,
-                () -> getContext().getSystemService(PowerManager.class).isDeviceIdleMode() == idle);
     }
 }

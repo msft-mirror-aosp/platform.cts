@@ -29,6 +29,7 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.RawResource;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -105,13 +106,18 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
 
     private static void addParams(int width, int height, CompressedResource res) {
         final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC};
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
         final int[] bitRates = new int[]{5000000, 8000000, 10000000};
         final int[] maxBFramesPerSubGop = new int[]{0, 1};
         final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
         for (String mediaType : mediaTypes) {
             for (int bitRate : bitRates) {
                 for (int maxBFrames : maxBFramesPerSubGop) {
+                    if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                            && !mediaType.equals((MediaFormat.MIMETYPE_VIDEO_HEVC))
+                            && maxBFrames != 0) {
+                        continue;
+                    }
                     for (int bitRateMode : bitRateModes) {
                         // mediaType, cfg, resource file, test label
                         String label = String.format("%dkbps_%dx%d_maxb-%d_%s", bitRate / 1000,
@@ -125,7 +131,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() {
         addParams(1920, 1080, BIRTHDAY_FULLHD_LANDSCAPE);
         addParams(1080, 1920, SELFIEGROUP_FULLHD_PORTRAIT);
@@ -165,6 +171,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
         }
     }
 
+    @CddTest(requirements = {"5.2/C-5-2", "5.2/C-6-1"})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE_MODE"})
     @Test
     public void testEncoderBitRateModeSupport() throws IOException, InterruptedException {

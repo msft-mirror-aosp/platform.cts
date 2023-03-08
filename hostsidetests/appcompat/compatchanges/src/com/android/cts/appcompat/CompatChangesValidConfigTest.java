@@ -29,6 +29,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +37,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCase {
+
+    private static final long RESTRICT_STORAGE_ACCESS_FRAMEWORK = 141600225L;
+    private static final String FEATURE_WATCH = "android.hardware.type.watch";
 
     private static final Set<String> OVERRIDES_ALLOWLIST = ImmutableSet.of(
         // This change id will sometimes remain enabled if an instrumentation test fails.
@@ -85,14 +89,21 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS",
             "BLOCK_MUTABLE_IMPLICIT_PENDING_INTENT",
             "OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS",
+            "OVERRIDE_UNDEFINED_ORIENTATION_TO_PORTRAIT",
+            "OVERRIDE_UNDEFINED_ORIENTATION_TO_NOSENSOR",
+            "OVERRIDE_LANDSCAPE_ORIENTATION_TO_REVERSE_LANDSCAPE",
+            "OVERRIDE_ANY_ORIENTATION",
+            "OVERRIDE_USE_DISPLAY_LANDSCAPE_NATURAL_ORIENTATION",
             "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
             "OVERRIDE_ORIENTATION_ONLY_FOR_CAMERA",
             "OVERRIDE_CAMERA_COMPAT_DISABLE_FORCE_ROTATION",
             "OVERRIDE_CAMERA_COMPAT_DISABLE_REFRESH",
             "OVERRIDE_CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE",
             "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
+            "OVERRIDE_RESPECT_REQUESTED_ORIENTATION",
             "DEFAULT_RESCIND_BAL_FG_PRIVILEGES_BOUND_SERVICE",
-            "DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER"
+            "DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER",
+            "RETURN_DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY"
     );
 
     /**
@@ -143,6 +154,15 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             // Exclude logging only changes from the expected config. See b/155264388.
             if (!change.loggingOnly) {
                 changes.add(change);
+            }
+        }
+
+        // RESTRICT_STORAGE_ACCESS_FRAMEWORK not supported on wear
+        if (getDevice().hasFeature(FEATURE_WATCH)) {
+            for (Iterator<Change> it = changes.iterator(); it.hasNext();) {
+                if (it.next().changeId == RESTRICT_STORAGE_ACCESS_FRAMEWORK) {
+                    it.remove();
+                }
             }
         }
         return changes;

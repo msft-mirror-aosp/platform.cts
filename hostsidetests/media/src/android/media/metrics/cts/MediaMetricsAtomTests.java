@@ -16,6 +16,9 @@
 
 package android.media.metrics.cts;
 
+import com.android.tradefed.util.RunUtil;
+import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -79,7 +82,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
     @After
@@ -101,7 +104,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testPlaybackStateEvent_default",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -120,7 +123,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testPlaybackStateEvent",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -141,7 +144,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testBundleSessionPlaybackStateEvent",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -161,7 +164,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testPlaybackErrorEvent_default",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -185,7 +188,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testPlaybackErrorEvent",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -210,7 +213,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testTrackChangeEvent_default",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -241,7 +244,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testTrackChangeEvent_text",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -270,7 +273,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testTrackChangeEvent_audio",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -301,7 +304,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testTrackChangeEvent_video",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -333,7 +336,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testNetworkEvent_default",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -353,7 +356,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testNetworkEvent",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -374,7 +377,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testPlaybackMetrics_default",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         int appUid = DeviceUtils.getAppUid(getDevice(), TEST_PKG);
@@ -410,7 +413,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testPlaybackMetrics",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         int appUid = DeviceUtils.getAppUid(getDevice(), TEST_PKG);
@@ -448,7 +451,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testSessionId",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).isEmpty();
@@ -461,7 +464,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testRecordingSession",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).isEmpty();
@@ -474,7 +477,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testEditingSession",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).isEmpty();
@@ -487,7 +490,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testTranscodingSession",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).isEmpty();
@@ -500,7 +503,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testBundleSession",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).isEmpty();
@@ -515,7 +518,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testAppBlocklist",
                 listener);
         String logSessionId = listener.getLogSessionId();
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         assertWithMessage("log session id").that(logSessionId).isNotEmpty();
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
@@ -536,7 +539,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "testAttributionBlocklist",
                 listener);
         String logSessionId = listener.getLogSessionId();
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertWithMessage("log session id").that(logSessionId).isNotEmpty();
@@ -575,7 +578,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testAppAllowlist",
                 listener);
         String logSessionId = listener.getLogSessionId();
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertWithMessage("log session id").that(logSessionId).isNotEmpty();
@@ -601,7 +604,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 "testAttributionAllowlist",
                 listener);
         String logSessionId = listener.getLogSessionId();
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertWithMessage("log session id").that(logSessionId).isNotEmpty();
@@ -631,13 +634,12 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(result.getNetworkTransferDurationMillis()).isEqualTo(6000);
     }
 
-    private void validateAAudioStreamAtom(int direction) throws Exception {
-        Set<Integer> directionSet = new HashSet<>(Arrays.asList(direction));
-        List<Set<Integer>> directionList = Arrays.asList(directionSet);
-
+    private void validateAAudioStreamAtom(String direction) throws Exception {
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        AtomTestUtils.assertStatesOccurredInOrder(directionList, data, 0,
-                atom -> atom.getMediametricsAaudiostreamReported().getDirection().getNumber());
+
+        assertThat(data).isNotEmpty();
+
+        int appUid = DeviceUtils.getAppUid(getDevice(), TEST_PKG);
 
         for (StatsLog.EventMetricData event : data) {
             AtomsProto.MediametricsAAudioStreamReported atom =
@@ -648,10 +650,12 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
             assertThat(atom.getBufferSize()).isAtMost(atom.getBufferCapacity());
             assertThat(atom.getFramesPerBurst()).isGreaterThan(0);
             assertThat(atom.getFramesPerBurst()).isLessThan(atom.getBufferCapacity());
+            assertThat(atom.getUid()).isEqualTo(appUid);
+            assertThat(atom.getDirection().toString()).isEqualTo(direction);
         }
     }
 
-    private void runAAudioTestAndValidate(String requiredFeature, int direction,
+    private void runAAudioTestAndValidate(String requiredFeature, String direction,
             String testFunctionName) throws Exception {
         if (!DeviceUtils.hasFeature(getDevice(), requiredFeature)) {
             return;
@@ -662,7 +666,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", testFunctionName,
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         validateAAudioStreamAtom(direction);
     }
@@ -676,7 +680,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     @Test
     public void testAAudioLowLatencyInputStream() throws Exception {
         runAAudioTestAndValidate(FEATURE_MICROPHONE,
-                AtomsProto.MediametricsAAudioStreamReported.Direction.DIRECTION_INPUT_VALUE,
+                "DIRECTION_INPUT",
                 "testAAudioLowLatencyInputStream");
     }
 
@@ -689,7 +693,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     @Test
     public void testAAudioLowLatencyOutputStream() throws Exception {
         runAAudioTestAndValidate(FEATURE_AUDIO_OUTPUT,
-                AtomsProto.MediametricsAAudioStreamReported.Direction.DIRECTION_OUTPUT_VALUE,
+                "DIRECTION_OUTPUT",
                 "testAAudioLowLatencyOutputStream");
     }
 
@@ -702,7 +706,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     @Test
     public void testAAudioLegacyInputStream() throws Exception {
         runAAudioTestAndValidate(FEATURE_MICROPHONE,
-                AtomsProto.MediametricsAAudioStreamReported.Direction.DIRECTION_INPUT_VALUE,
+                "DIRECTION_INPUT",
                 "testAAudioLegacyInputStream");
     }
 
@@ -715,7 +719,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     @Test
     public void testAAudioLegacyOutputStream() throws Exception {
         runAAudioTestAndValidate(FEATURE_AUDIO_OUTPUT,
-                AtomsProto.MediametricsAAudioStreamReported.Direction.DIRECTION_OUTPUT_VALUE,
+                "DIRECTION_OUTPUT",
                 "testAAudioLegacyOutputStream");
     }
 
@@ -736,7 +740,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testMidiMetrics",
                 new LogSessionIdListener());
-        Thread.sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         List<AtomsProto.MediametricsMidiDeviceCloseReported> eventList = toMyAtoms(data,
@@ -783,8 +787,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         public void testEnded(TestDescription test, long endTime,
                 HashMap<String, MetricMeasurement.Metric> testMetrics) {
             LogUtil.CLog.i("testEnded  MetricMeasurement.Metric " + testMetrics);
-            // TODO(b/265311058): use a common constant for metrics keys.
-            MetricMeasurement.Metric metric = testMetrics.get("log_session_id");
+            MetricMeasurement.Metric metric = testMetrics.get(LOG_SESSION_ID_KEY);
             mLogSessionId = metric == null ? null : metric.getMeasurements().getSingleString();
         }
     }

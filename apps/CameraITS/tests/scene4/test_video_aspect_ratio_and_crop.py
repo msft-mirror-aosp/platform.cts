@@ -14,6 +14,7 @@
 """Validate video aspect ratio, crop and FoV vs format."""
 
 import logging
+import math
 import os.path
 
 from mobly import test_runner
@@ -32,6 +33,7 @@ _VIDEO_RECORDING_DURATION_SECONDS = 3
 _FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
 _AR_CHECKED_PRE_API_30 = ('4:3', '16:9', '18:9')
 _AR_DIFF_ATOL = 0.01
+_AR_FOR_JPEG_REFERENCE = (4/3, 16/9)
 _MAX_8BIT_IMGS = 255
 _MAX_10BIT_IMGS = 1023
 
@@ -138,9 +140,9 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       name_with_log_path = os.path.join(self.log_path, _NAME)
 
       # Check SKIP conditions.
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
-          vendor_api_level >= its_session_utils.ANDROID13_API_LEVEL)
+          first_api_level >= its_session_utils.ANDROID13_API_LEVEL)
 
       # Load scene.
       its_session_utils.load_scene(cam, props, self.scene,
@@ -158,19 +160,32 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       cam.do_3a()
       req = capture_request_utils.auto_capture_request()
 
-      if raw_avlb and (fls_physical == fls_logical):
-        logging.debug('RAW')
+      # For main camera: if RAW available, use it as ground truth, else JPEG
+      # For physical sub-camera: if RAW available, only use if not 4:3 or 16:9
+      if raw_avlb:
+        pixel_array_w = props['android.sensor.info.pixelArraySize']['width']
+        pixel_array_h = props['android.sensor.info.pixelArraySize']['height']
+        logging.debug('Pixel array size: %dx%d', pixel_array_w, pixel_array_h)
+        raw_aspect_ratio = pixel_array_w / pixel_array_h
+        if (fls_physical == fls_logical or not
+            any(math.isclose(raw_aspect_ratio, jpeg_ar, abs_tol=_AR_DIFF_ATOL)
+                for jpeg_ar in _AR_FOR_JPEG_REFERENCE)):
+          logging.debug('RAW')
+          use_raw_fov = True
+        else:
+          logging.debug('RAW available, but using JPEG as ground truth')
+          use_raw_fov = False
       else:
         logging.debug('JPEG')
+        use_raw_fov = False
 
       ref_fov, cc_ct_gt, aspect_ratio_gt = image_fov_utils.find_fov_reference(
-          cam, req, props, raw_avlb, name_with_log_path)
+          cam, req, props, use_raw_fov, name_with_log_path)
 
       run_crop_test = full_or_better and raw_avlb
 
-      # Get ffmpeg version being used.
-      ffmpeg_version = video_processing_utils.get_ffmpeg_version()
-      logging.debug('ffmpeg_version: %s', ffmpeg_version)
+      # Log ffmpeg version being used.
+      video_processing_utils.log_ffmpeg_version()
 
       for quality_profile_id_pair in supported_video_qualities:
         quality = quality_profile_id_pair.split(':')[0]

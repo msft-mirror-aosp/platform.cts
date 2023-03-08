@@ -30,6 +30,7 @@ import android.server.wm.jetpack.utils.ExtensionUtil;
 import android.server.wm.jetpack.utils.SidecarUtil;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 import android.view.Display;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
@@ -47,7 +48,8 @@ import java.util.Arrays;
 
 /**
  * Tests for devices implementations include an Android-compatible display(s)
- * that has a minimum screen dimension greater than or equal to 600dp and support multi window.
+ * that has a minimum screen dimension greater than or equal to
+ * {@link WindowManager#LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP} and support multi window.
  *
  * Build/Install/Run:
  * atest CtsWindowManagerJetpackTestCases:SdkAvailabilityTest
@@ -57,24 +59,25 @@ import java.util.Arrays;
 @CddTest(requirements = {"7.1.1.1/C-2-1,C-2-2"})
 public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
 
-    private static final int DISPLAY_MIN_WIDTH = 600;
-
     @Before
     @Override
     public void setUp() {
         super.setUp();
-        assumeSmallestScreenWidthAtLeast600dp();
+        assumeHasLargeScreenDisplayOrExtensionEnabled();
         assumeMultiWindowSupported();
     }
 
     /**
      * MUST implement the latest available stable version of the extensions API
-     * to be used by Window Manager Jetpack library.
+     * to be used by Window Manager Jetpack library, and declares the window extension
+     * is enabled.
      */
     @Test
     public void testWindowExtensionsAvailability() {
         assertTrue("WindowExtension version is not latest",
                 ExtensionUtil.isExtensionVersionLatest());
+        assertTrue("Device must declared that the WindowExtension is enabled",
+                WindowManager.hasWindowExtensionsEnabled());
     }
 
     /**
@@ -100,13 +103,14 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
         assertTrue("Sidecar is not available", SidecarUtil.isSidecarVersionValid());
     }
 
-    private void assumeSmallestScreenWidthAtLeast600dp() {
+    private void assumeHasLargeScreenDisplayOrExtensionEnabled() {
         final DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
-        boolean hasDisplayScreenWidth600dp = Arrays.stream(displayManager.getDisplays())
+        boolean hasLargeScreenDisplay = Arrays.stream(displayManager.getDisplays())
                 .filter(display -> display.getType() == Display.TYPE_INTERNAL)
-                .anyMatch(this::isSmallestScreenWidthAtLeast600dp);
-        assumeTrue("Device does not has a minimum screen dimension greater than or equal to 600dp",
-                hasDisplayScreenWidth600dp);
+                .anyMatch(this::isLargeScreenDisplay);
+        assumeTrue("Device does not has a minimum screen dimension greater than or equal to "
+                        + WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP + "dp",
+                hasLargeScreenDisplay || WindowManager.hasWindowExtensionsEnabled());
     }
 
     private void assumeMultiWindowSupported() {
@@ -114,7 +118,7 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
                 ActivityTaskManager.supportsMultiWindow(mContext));
     }
 
-    private boolean isSmallestScreenWidthAtLeast600dp(@NonNull Display display) {
+    private boolean isLargeScreenDisplay(@NonNull Display display) {
         // Use WindowContext with type application overlay to prevent the metrics overridden by
         // activity bounds. Note that process configuration may still be overridden by
         // foreground Activity.
@@ -122,6 +126,6 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
         final Context windowContext = appContext.createWindowContext(display,
                 TYPE_APPLICATION_OVERLAY, null /* options */);
         return windowContext.getResources().getConfiguration().smallestScreenWidthDp
-                >= DISPLAY_MIN_WIDTH;
+                >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP;
     }
 }

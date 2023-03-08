@@ -28,6 +28,8 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
+import com.android.tradefed.util.RunInterruptedException;
+import com.android.tradefed.util.RunUtil;
 
 import com.google.common.truth.Truth;
 
@@ -101,7 +103,7 @@ public class StorageHostTest extends BaseHostJUnit4Test {
         }
 
         // for fuse file system
-        Thread.sleep(10000);
+        RunUtil.getDefault().sleep(10000);
 
         // TODO: remove this once 34723223 is fixed
         getDevice().executeShellCommand("sync");
@@ -263,7 +265,7 @@ public class StorageHostTest extends BaseHostJUnit4Test {
         // Try getting all pending events flushed out
         for (int i = 0; i < 4; i++) {
             getDevice().executeShellCommand("am wait-for-broadcast-idle");
-            Thread.sleep(500);
+            RunUtil.getDefault().sleep(500);
         }
     }
 
@@ -341,8 +343,8 @@ public class StorageHostTest extends BaseHostJUnit4Test {
             } catch (Throwable e) {
                 if (System.currentTimeMillis() - start < timeoutMillis) {
                     try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ignored) {
+                        RunUtil.getDefault().sleep(100);
+                    } catch (RunInterruptedException ignored) {
                         throw new RuntimeException(e);
                     }
                 } else {

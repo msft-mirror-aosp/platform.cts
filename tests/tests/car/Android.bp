@@ -22,6 +22,7 @@ android_test {
     static_libs: [
         "android.car.test.utils",
         "android.car.testapi",
+        "androidx.test.core",
         "androidx.test.rules",
         "android-support-v4",
         "compatibility-device-util-axt",
@@ -29,7 +30,7 @@ android_test {
         "ctstestrunner-axt",
         "libprotobuf-java-lite",
         "framework-annotations-lib",
-        "Harrier",
+        "hamcrest-library",
     ],
     libs: [
         "android.test.base",

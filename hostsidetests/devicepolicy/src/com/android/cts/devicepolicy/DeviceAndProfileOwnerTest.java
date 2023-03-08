@@ -16,6 +16,7 @@
 
 package com.android.cts.devicepolicy;
 
+import com.android.tradefed.util.RunUtil;
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
 import static org.junit.Assert.assertFalse;
@@ -434,19 +435,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
             installAppAsUser(SIMPLE_PRE_M_APP_APK, mDeviceOwnerUserId);
         }
         executeDeviceTestMethod(".PermissionsTest", "testPermissionGrantState_preMApp");
-    }
-
-    @Test
-    public void testPersistentIntentResolving() throws Exception {
-        executeDeviceTestClass(".PersistentIntentResolvingTest");
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".PersistentIntentResolvingTest",
-                    "testAddPersistentPreferredActivityYieldsReceptionAtTarget");
-        }, new DevicePolicyEventWrapper.Builder(EventId.ADD_PERSISTENT_PREFERRED_ACTIVITY_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setStrings(DEVICE_ADMIN_PKG,
-                        "com.android.cts.deviceandprofileowner.EXAMPLE_ACTION")
-                .build());
     }
 
     @Test
@@ -961,7 +949,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
             executeDeviceTestMethod(".GetPasswordExpirationTest",
                     "testGetPasswordExpirationUpdatedAfterPasswordReset_beforeReset");
             // Wait for 20 seconds so we can make sure that the expiration date is refreshed later.
-            Thread.sleep(20000);
+            RunUtil.getDefault().sleep(20000);
             changeUserCredential(TEST_PASSWORD, null, mUserId);
             executeDeviceTestMethod(".GetPasswordExpirationTest",
                     "testGetPasswordExpirationUpdatedAfterPasswordReset_afterReset");

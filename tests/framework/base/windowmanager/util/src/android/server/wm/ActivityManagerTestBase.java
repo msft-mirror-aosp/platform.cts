@@ -23,6 +23,7 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.ACTION_MAIN;
 import static android.content.Intent.CATEGORY_HOME;
@@ -117,8 +118,6 @@ import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -132,6 +131,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.ActivityTaskManager;
+import android.app.DreamManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.app.WallpaperManager;
@@ -369,6 +369,11 @@ public abstract class ActivityManagerTestBase {
                 extras);
     }
 
+    protected static String getAmStartCmdWithWindowingMode(
+            final ComponentName activityName, int windowingMode) {
+        return getAmStartCmdInNewTask(activityName) + " --windowingMode " + windowingMode;
+    }
+
     protected WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     protected TouchHelper mTouchHelper = new TouchHelper(mInstrumentation, mWmState);
     // Initialized in setUp to execute with proper permission, such as MANAGE_ACTIVITY_TASKS
@@ -393,20 +398,7 @@ public abstract class ActivityManagerTestBase {
         return getActivityName(componentName).equals(mWmState.getFocusedActivity());
     }
 
-    /** Asserts the activity is focused before timeout. */
-    protected void assertActivityFocused(int timeoutMs, ComponentName componentName) {
-        waitForActivityResumed(timeoutMs, componentName);
-        assertThat(mWmState.getFocusedActivity()).isEqualTo(getActivityName(componentName));
-    }
-
-    /** Asserts the activity is not focused until timeout. */
-    protected void assertActivityNotFocused(int timeoutMs, ComponentName componentName) {
-        waitForActivityResumed(timeoutMs, componentName);
-        assertThat(mWmState.getFocusedActivity())
-                .isNotEqualTo(getActivityName(componentName));
-    }
-
-    private void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
+    protected void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
@@ -686,11 +678,14 @@ public abstract class ActivityManagerTestBase {
     public static void wakeUpAndUnlock(Context context) {
         final KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
         final PowerManager powerManager = context.getSystemService(PowerManager.class);
+        final DreamManager dreamManager = context.getSystemService(DreamManager.class);
         if (keyguardManager == null || powerManager == null) {
             return;
         }
 
-        if (keyguardManager.isKeyguardLocked() || !powerManager.isInteractive()) {
+        if (keyguardManager.isKeyguardLocked() || !powerManager.isInteractive()
+                || (dreamManager != null
+                && SystemUtil.runWithShellPermissionIdentity(dreamManager::isDreaming))) {
             pressWakeupButton();
             pressUnlockButton();
         }
@@ -930,6 +925,12 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityWithNoUserAction(final ComponentName activityName,
             final CliIntentExtra... extras) {
         executeShellCommand(getAmStartCmdWithNoUserAction(activityName, extras));
+        mWmState.waitForValidState(activityName);
+    }
+
+    protected void launchActivityInFullscreen(final ComponentName activityName) {
+        executeShellCommand(
+                getAmStartCmdWithWindowingMode(activityName, WINDOWING_MODE_FULLSCREEN));
         mWmState.waitForValidState(activityName);
     }
 
@@ -1242,8 +1243,8 @@ public abstract class ActivityManagerTestBase {
                     .getDisplay(DEFAULT_DISPLAY);
             final Context windowContext = appContext.createWindowContext(defaultDisplay,
                     TYPE_APPLICATION_OVERLAY, null /* options */);
-            sIsTablet = windowContext.getResources()
-                    .getConfiguration().smallestScreenWidthDp >= 600;
+            sIsTablet = windowContext.getResources().getConfiguration().smallestScreenWidthDp
+                    >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP;
         }
         return sIsTablet;
     }

@@ -32,6 +32,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.ScreenUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,6 +71,9 @@ public class ExpeditedJobTest {
 
     @Test
     public void testJobUidState() throws Exception {
+        // Turn screen off so any lingering activity close processing from previous tests
+        // don't affect this one.
+        ScreenUtils.setScreenOn(false);
         mTestAppInterface.scheduleJob(Map.of(
                 TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true,
                 TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true
@@ -78,7 +82,7 @@ public class ExpeditedJobTest {
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
         mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                ActivityManager.PROCESS_CAPABILITY_NETWORK,
+                ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK,
                 227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
     }
 
@@ -87,11 +91,14 @@ public class ExpeditedJobTest {
     public void testTopEJUnlimited() throws Exception {
         final int standardConcurrency = 64;
         final int numEjs = standardConcurrency + 1;
+        ScreenUtils.setScreenOn(true);
         mTestAppInterface.startAndKeepTestActivity(true);
         for (int i = 0; i < numEjs; ++i) {
             mTestAppInterface.scheduleJob(
                     Map.of(TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true),
                     Map.of(TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, i));
+        }
+        for (int i = 0; i < numEjs; ++i) {
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(i, DEFAULT_WAIT_TIMEOUT_MS));
         }

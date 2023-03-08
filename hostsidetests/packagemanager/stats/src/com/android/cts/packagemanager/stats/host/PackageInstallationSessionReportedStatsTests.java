@@ -27,6 +27,7 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,22 +48,31 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     private static final String GET_USER_TYPES_HELPER_METHOD = "getUserTypeIntegers";
     private static final String GET_USER_TYPES_HELPER_ARG_USER_IDS = "userIds";
     private static final String GET_USER_TYPES_HELPER_ARG_USER_TYPES = "userTypes";
+    private static final String TEST_INSTALL_STATIC_SHARED_LIB_V1_APK =
+            "CtsStatsdAtomStaticSharedLibProviderV1.apk";
+    private static final String TEST_INSTALL_STATIC_SHARED_LIB_V2_APK =
+            "CtsStatsdAtomStaticSharedLibProviderV2.apk";
+    private static final String TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE =
+            "com.android.cts.packagemanager.stats.emptystaticsharedlib";
+    private static final String TEST_INSTALL_STATIC_SHARED_LIB_NAME = "test.stats.lib";
+
 
     @Override
     protected void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
+        getDevice().uninstallPackage(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
         super.tearDown();
     }
 
     public void testPackageInstallationSessionReportedForApkSuccessWithReplace() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
-        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
         installPackageUsingIncremental(new String[]{TEST_INSTALL_APK_V2});
-        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageInstallationSessionReported()) {
@@ -75,15 +85,15 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         final long expectedApksSizeBytes = getTestFileSize(TEST_INSTALL_APK);
         // TODO(b/249294752): check installer in the report
         checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
-                Collections.emptyList(), 1 /* success */,
+                Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
                 1 /* versionCode */, expectedApksSizeBytes, 0 /* dataLoaderType */,
                 0 /* expectedUserActionRequiredType */, false,
                 false, false, false, false, false, false);
         checkDurationResult(reports.get(0));
 
         checkReportResult(reports.get(1), expectedUid, Collections.singletonList(expectedUser),
-                Collections.singletonList(expectedUser), 1 /* success */, 2 /* versionCode */,
-                getTestFileSize(TEST_INSTALL_APK_V2), 2 /* dataLoaderType */,
+                Collections.singletonList(expectedUser), 1 /* success */, 0 /* internalErrorCode */,
+                2 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 2 /* dataLoaderType */,
                 0 /* expectedUserActionRequiredType */, false,
                 true, false, false, false, false, false);
         checkDurationResult(reports.get(1));
@@ -114,6 +124,7 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     private void checkReportResult(AtomsProto.PackageInstallationSessionReported report,
             int expectedUid, List<Integer> expectedUserIds,
             List<Integer> expectedOriginalUserIds, int expectedPublicReturnCode,
+            int expectedInternalErrorCode,
             long expectedVersionCode, long expectedApksSizeBytes, int expectedDataLoaderType,
             int expectedUserActionRequiredType,
             boolean expectedIsInstant, boolean expectedIsReplace, boolean expectedIsSystem,
@@ -127,6 +138,7 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         assertThat(report.getOriginalUserIdsList()).containsAtLeastElementsIn(
                 expectedOriginalUserIds);
         assertThat(report.getPublicReturnCode()).isEqualTo(expectedPublicReturnCode);
+        assertThat(report.getInternalErrorCode()).isEqualTo(expectedInternalErrorCode);
         assertThat(report.getVersionCode()).isEqualTo(expectedVersionCode);
         assertThat(report.getApksSizeBytes()).isEqualTo(expectedApksSizeBytes);
         assertThat(report.getOriginalInstallerPackageUid()).isEqualTo(-1);
@@ -168,7 +180,7 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     public void testPackageUninstalledReported() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_UNINSTALLATION_REPORTED_FIELD_NUMBER);
-        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
@@ -176,7 +188,7 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         DeviceUtils.uninstallTestApp(getDevice(), TEST_INSTALL_PACKAGE);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isFalse();
-        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         List<AtomsProto.PackageUninstallationReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageUninstallationReported()) {
@@ -187,8 +199,8 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         AtomsProto.PackageUninstallationReported report = reports.get(0);
         assertThat(report.getUid()).isEqualTo(expectedUid);
         final List<Integer> users = Collections.singletonList(getDevice().getCurrentUser());
-        assertThat(report.getUserIdsList()).isEqualTo(users);
-        assertThat(report.getOriginalUserIdsList()).isEqualTo(users);
+        assertThat(report.getUserIdsList()).containsAtLeastElementsIn(users);
+        assertThat(report.getOriginalUserIdsList()).containsAtLeastElementsIn(users);
         assertThat(report.getUninstallFlags()).isEqualTo(2 /* DELETE_ALL_USERS */);
         assertThat(report.getReturnCode()).isEqualTo(1);
         assertThat(report.getIsSystem()).isFalse();
@@ -198,7 +210,7 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     public void testPackageInstallationFailedVersionDowngradeReported() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
-        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK_V2, TEST_INSTALL_PACKAGE,
                 mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
@@ -206,6 +218,46 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         // Second install should fail because of version downgrade
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
         final String result = getDevice().installPackage(buildHelper.getTestFile(TEST_INSTALL_APK),
+                /*reinstall=*/true, /*grantPermissions=*/true);
+        assertThat(result).isNotNull();
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
+        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
+            if (data.getAtom().hasPackageInstallationSessionReported()) {
+                reports.add(data.getAtom().getPackageInstallationSessionReported());
+            }
+        }
+        assertThat(reports.size()).isEqualTo(2);
+        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
+        final int expectedUser = getDevice().getCurrentUser();
+        checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
+                Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
+                2 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */, false,
+                false, false, false, false, false, false);
+        checkDurationResult(reports.get(0));
+        checkReportResult(
+                reports.get(1), -1 /* uid */, Collections.emptyList(), Collections.emptyList(),
+                -25 /* INSTALL_FAILED_VERSION_DOWNGRADE */, 0 /* internalErrorCode */,
+                0 /* versionCode */, 0, 0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */, false,
+                false, false, false, false, false, false);
+    }
+
+    public void testPackageInstallationFailedInternalErrorReported() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
+        Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
+        String result = getDevice().installPackage(buildHelper.getTestFile(
+                TEST_INSTALL_STATIC_SHARED_LIB_V1_APK),
+                /*reinstall=*/true, /*grantPermissions=*/true);
+        assertThat(result).isNull();
+        assertThat(isLibraryInstalled(TEST_INSTALL_STATIC_SHARED_LIB_NAME)).isTrue();
+        // Second install should fail because of static shared lib version order mismatch
+        result = getDevice().installPackage(buildHelper.getTestFile(
+                TEST_INSTALL_STATIC_SHARED_LIB_V2_APK),
                 /*reinstall=*/true, /*grantPermissions=*/true);
         assertThat(result).isNotNull();
 
@@ -217,16 +269,19 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
             }
         }
         assertThat(reports.size()).isEqualTo(2);
-        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
+        final int expectedUid = getAppUid(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
         checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
-                Collections.emptyList(), 1 /* success */,
-                2 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 0 /* dataLoaderType */,
+                Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
+                1 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 0 /* dataLoaderType */,
                 0 /* expectedUserActionRequiredType */, false,
                 false, false, false, false, false, false);
         checkDurationResult(reports.get(0));
-        checkReportResult(reports.get(1), -1 /* uid */, new ArrayList<>(), new ArrayList<>(),
-                -25 /* INSTALL_FAILED_VERSION_DOWNGRADE */, 0 /* versionCode */,
+        checkReportResult(
+                reports.get(1), -1 /* uid */, Collections.emptyList(), Collections.emptyList(),
+                -110 /* INSTALL_FAILED_INTERNAL_ERROR */,
+                -14 /* INTERNAL_ERROR_STATIC_SHARED_LIB_VERSION_CODES_ORDER */,
+                0 /* versionCode */,
                 0, 0 /* dataLoaderType */,
                 0 /* expectedUserActionRequiredType */, false,
                 false, false, false, false, false, false);

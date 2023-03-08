@@ -23,10 +23,7 @@ import android.platform.test.annotations.Presubmit;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
-import com.android.compatibility.common.util.NullWebViewUtils;
-
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,10 +33,10 @@ import org.junit.runner.RunWith;
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class SdkSandboxWebViewTest {
-    // TODO(b/260196711): We are not able to inject input events
-    // from the SDK Runtime.SdkSandbox
+    // TODO(b/230340812): IME does not currently work correctly in the SDK RUntime. We should enable
+    // impacted tests once this is fixed.
     // This prevents some tests from running.
-    private static final boolean CAN_INJECT_INPUT_EVENTS = false;
+    private static final boolean CAN_INJECT_KEY_EVENTS = false;
 
     @ClassRule
     public static final KeepSdkSandboxAliveRule sSdkTestSuiteSetup =
@@ -48,11 +45,6 @@ public class SdkSandboxWebViewTest {
     @Rule
     public final WebViewSandboxTestRule sdkTester =
             new WebViewSandboxTestRule("android.webkit.cts.WebViewTest");
-
-    @Before
-    public void setUp() {
-        Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-    }
 
     @Test
     public void testConstructor() throws Exception {
@@ -394,19 +386,18 @@ public class SdkSandboxWebViewTest {
 
     @Test
     public void testRequestFocusNodeHref() throws Exception {
-        Assume.assumeTrue(CAN_INJECT_INPUT_EVENTS);
+        Assume.assumeTrue(CAN_INJECT_KEY_EVENTS);
         sdkTester.assertSdkTestRunPasses("testRequestFocusNodeHref");
     }
 
     @Test
     public void testRequestImageRef() throws Exception {
-        Assume.assumeTrue(CAN_INJECT_INPUT_EVENTS);
         sdkTester.assertSdkTestRunPasses("testRequestImageRef");
     }
 
     @Test
     public void testGetHitTestResult() throws Exception {
-        Assume.assumeTrue(CAN_INJECT_INPUT_EVENTS);
+        Assume.assumeTrue(CAN_INJECT_KEY_EVENTS);
         sdkTester.assertSdkTestRunPasses("testGetHitTestResult");
     }
 }

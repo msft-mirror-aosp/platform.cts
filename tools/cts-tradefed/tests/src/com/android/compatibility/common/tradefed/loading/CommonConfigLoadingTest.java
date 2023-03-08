@@ -83,6 +83,7 @@ public class CommonConfigLoadingTest {
             "com.android.tradefed.testtype.HostTest",
             "com.android.tradefed.testtype.GTest",
             "com.android.tradefed.testtype.mobly.MoblyBinaryHostTest",
+            "com.android.tradefed.testtype.pandora.PtsBotTest",
             // VTS specific runners
             "com.android.tradefed.testtype.binary.KernelTargetTest",
             "com.android.tradefed.testtype.python.PythonBinaryHostTest",
@@ -107,8 +108,15 @@ public class CommonConfigLoadingTest {
         RUNNER_EXCEPTION.add("repackaged.android.test.InstrumentationTestRunner");
         // Used by a UiRendering scenario where an activity is persisted between tests
         RUNNER_EXCEPTION.add("android.uirendering.cts.runner.UiRenderingRunner");
+        // Used to avoid crashing runner on -eng build due to Log.wtf() - b/216648699
+        RUNNER_EXCEPTION.add("com.android.server.uwb.CustomTestRunner");
+        RUNNER_EXCEPTION.add("com.android.server.wifi.CustomTestRunner");
+        // HealthConnect APK use Hilt for dependency injection. For test setup it needs
+        // to replace the main Application class with Test Application so Hilt can swap
+        // dependencies for testing.
+        RUNNER_EXCEPTION.add("com.android.healthconnect.controller.tests.HiltTestRunner");
     }
-    
+
     /**
      * Test that configuration shipped in Tradefed can be parsed.
      * -> Exclude deprecated ApkInstaller.

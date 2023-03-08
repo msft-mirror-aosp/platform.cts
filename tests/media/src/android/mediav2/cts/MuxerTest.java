@@ -425,7 +425,7 @@ public class MuxerTest {
             new File(mOutPath).delete();
         }
 
-        @Parameterized.Parameters(name = "{index}({3})")
+        @Parameterized.Parameters(name = "{index}_{3}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     {MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4, "bbb_cif_768kbps_30fps_avc.mp4",
@@ -731,7 +731,7 @@ public class MuxerTest {
             new File(mOutPath).delete();
         }
 
-        @Parameterized.Parameters(name = "{index}({3})")
+        @Parameterized.Parameters(name = "{index}_{3}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     // audio, video are 3 sec
@@ -865,7 +865,7 @@ public class MuxerTest {
             new File(mOutPath).delete();
         }
 
-        @Parameterized.Parameters(name = "{index}({3})")
+        @Parameterized.Parameters(name = "{index}_{3}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     {MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
@@ -978,7 +978,7 @@ public class MuxerTest {
             new File(mOutPath).delete();
         }
 
-        @Parameterized.Parameters(name = "{index}({3})")
+        @Parameterized.Parameters(name = "{index}_{3}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     {MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
@@ -1077,21 +1077,20 @@ public class MuxerTest {
             new File(mOutPath).delete();
         }
 
-        private boolean doesCodecRequireCSD(String aMediaType) {
-            return (aMediaType == MediaFormat.MIMETYPE_VIDEO_AVC
-                    || aMediaType == MediaFormat.MIMETYPE_VIDEO_HEVC
-                    || aMediaType == MediaFormat.MIMETYPE_VIDEO_MPEG4
-                    || aMediaType == MediaFormat.MIMETYPE_AUDIO_AAC);
-
+        private boolean doesCodecRequireCSD(String mediaType) {
+            return (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                    || mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                    || mediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                    || mediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC));
         }
 
         private native boolean nativeTestSimpleMux(String srcPath, String outPath, String mediaType,
                 String selector);
 
         private native boolean nativeTestSimpleAppend(String srcPath, String outPath,
-                                                      String mediaType, String selector);
+                String mediaType, String selector);
 
-        @Parameterized.Parameters(name = "{index}({2})")
+        @Parameterized.Parameters(name = "{index}_{2}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     // Video Codecs
@@ -1251,7 +1250,7 @@ public class MuxerTest {
             return result;
         }
 
-        @Parameterized.Parameters(name = "{index}({0})")
+        @Parameterized.Parameters(name = "{index}_{0}")
         public static Collection<Object[]> input() {
             return Arrays.asList(new Object[][]{
                     // Video

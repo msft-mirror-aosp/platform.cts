@@ -238,7 +238,7 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
         return newParamList;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() throws CloneNotSupportedException {
         addParams(1280, 720, BIRTHDAY_FULLHD_LANDSCAPE);
         return updateParamList(prepareParamList(exhaustiveArgsList, true, false, true, false,
@@ -270,7 +270,7 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
         RawResource res = RES_YUV_MAP.getOrDefault(mCRes.uniqueLabel(), null);
         assertNotNull("no raw resource found for testing config : " + mEncCfgParams[0]
                 + mTestConfig + mTestEnv, res);
-        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, true, true);
+        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, false, true);
         CompareStreams cs = null;
         StringBuilder msg = new StringBuilder();
         boolean isOk = true;

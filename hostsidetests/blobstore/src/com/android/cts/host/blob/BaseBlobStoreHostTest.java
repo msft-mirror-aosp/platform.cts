@@ -23,6 +23,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.Pair;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,6 +56,9 @@ abstract class BaseBlobStoreHostTest extends BaseHostJUnit4Test {
 
     private static final long REBOOT_TIMEOUT_MS = 3 * 60 * 1000;
     private static final long ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
+
+    private static final String PROPERTY_USERSPACE_REBOOT_IS_SUPPORTED =
+            "init.userspace_reboot.is_supported";
 
     protected void runDeviceTest(String testPkg, String testClass, String testMethod)
             throws Exception {
@@ -95,13 +99,16 @@ abstract class BaseBlobStoreHostTest extends BaseHostJUnit4Test {
     }
 
     protected void rebootAndWaitUntilReady() throws Exception {
-        // TODO: use rebootUserspace()
         TestDeviceOptions options = getDevice().getOptions();
         final long prevRebootTimeoutMs = options.getRebootTimeout();
         final long prevOnlineTimeoutMs = options.getOnlineTimeout();
         updateDeviceOptions(options, REBOOT_TIMEOUT_MS, ONLINE_TIMEOUT_MS);
         try {
-            getDevice().reboot(); // reboot() waits for device available
+            if (getDevice().getBooleanProperty(PROPERTY_USERSPACE_REBOOT_IS_SUPPORTED, false)) {
+                getDevice().rebootUserspace();
+            } else {
+                getDevice().reboot(); // reboot() waits for device to be available
+            }
         } finally {
             updateDeviceOptions(options, prevRebootTimeoutMs, prevOnlineTimeoutMs);
         }
@@ -161,7 +168,7 @@ abstract class BaseBlobStoreHostTest extends BaseHostJUnit4Test {
                 break;
             }
             // Wait and try again.
-            Thread.sleep(5000);
+            RunUtil.getDefault().sleep(5000);
         }
     }
 

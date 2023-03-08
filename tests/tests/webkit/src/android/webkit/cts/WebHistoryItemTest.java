@@ -78,8 +78,7 @@ public class WebHistoryItemTest extends SharedWebViewTest {
             mOnUiThread = new WebViewOnUiThread(webview);
         }
         mContext = getTestEnvironment().getContext();
-        mWebServer = getTestEnvironment().getWebServer();
-        mWebServer.start(SslMode.INSECURE);
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
     }
 
     @After
@@ -87,7 +86,9 @@ public class WebHistoryItemTest extends SharedWebViewTest {
         if (mOnUiThread != null) {
             mOnUiThread.cleanUp();
         }
-        mWebServer.shutdown();
+        if (mWebServer != null) {
+            mWebServer.shutdown();
+        }
         if (mIconDb != null) {
             mIconDb.removeAllIcons();
             mIconDb.close();

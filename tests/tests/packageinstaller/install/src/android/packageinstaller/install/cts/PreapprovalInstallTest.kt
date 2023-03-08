@@ -16,18 +16,44 @@
 
 package android.packageinstaller.install.cts
 
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageInstaller
+import android.icu.util.ULocale
 import android.platform.test.annotations.AppModeFull
 import androidx.test.runner.AndroidJUnit4
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
 class PreapprovalInstallTest : PackageInstallerTestBase() {
+
+    companion object {
+        const val TEST_APK_NAME_PL = "CtsEmptyTestApp_pl.apk"
+        const val TEST_APK_NAME_V2 = "CtsEmptyTestAppV2.apk"
+        const val TEST_APP_LABEL = "Empty Test App"
+        const val TEST_APP_LABEL_PL = "Empty Test App Polish"
+        const val TEST_APP_LABEL_V2 = "Empty Test App V2"
+        const val TEST_FAKE_APP_LABEL = "Fake Test App"
+    }
+
+    private val apkFile_pl = File(context.filesDir, TEST_APK_NAME_PL)
+    private val apkFile_v2 = File(context.filesDir, TEST_APK_NAME_V2)
+
+    @Before
+    fun copyOtherTestApks() {
+        File(TEST_APK_LOCATION, TEST_APK_NAME_PL).copyTo(target = apkFile_pl, overwrite = true)
+        File(TEST_APK_LOCATION, TEST_APK_NAME_V2).copyTo(target = apkFile_v2, overwrite = true)
+    }
 
     /**
      * Clean up all sessions created by this test.
@@ -95,6 +121,61 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
     }
 
     /**
+     * Check that we cannot commit a session that has been declined by the user when
+     * requesting user preapproval.
+     */
+    @Test
+    fun requestUserPreapproval_userCancel_cannotCommitAgain() {
+        val (sessionId, session) = createSession(0 /* flags */, false /* isMultiPackage */,
+                null /* packageSource */)
+        startRequestUserPreapproval(session, preparePreapprovalDetails())
+        clickInstallerUIButton(CANCEL_BUTTON_ID)
+
+        getInstallSessionResult()
+        try {
+            commitSession(session)
+            fail("Cannot commit an rejected session again")
+        } catch (expected: SecurityException) {
+        }
+    }
+
+    /**
+     * Request a user pre-approval, but don't resolve it.
+     * Check that we can install via commit this session later.
+     */
+    @Test
+    fun requestUserPreapproval_doNothingAndCommitLater_installSuccessfully() {
+        val (sessionId, session) = createSession(0 /* flags */, false /* isMultiPackage */,
+                null /* packageSource */)
+
+        val dummyReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                // Do nothing
+            }
+        }
+
+        try {
+            val action = "PreapprovalInstallTest.install_cb"
+            context.registerReceiver(dummyReceiver, IntentFilter(action),
+                    Context.RECEIVER_EXPORTED)
+
+            val pendingIntent = PendingIntent.getBroadcast(context, 0 /* requestCode */,
+                    Intent(action).setPackage(context.packageName),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+            session.requestUserPreapproval(preparePreapprovalDetails(), pendingIntent.intentSender)
+
+            writeAndCommitSession(TEST_APK_NAME, session)
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            val result = getInstallSessionResult()
+            assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
+            assertInstalled()
+        } finally {
+            context.unregisterReceiver(dummyReceiver)
+        }
+    }
+
+    /**
      * Check that we can install an app without prompt after getting pre-approval from users.
      */
     @Test
@@ -148,13 +229,37 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
 
         val (sessionId, session) = createSession(0 /* flags */, false /* isMultiPackage */,
                 null /* packageSource */)
+        startRequestUserPreapproval(session, preparePreapprovalDetailsV2())
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // request should have succeeded
+        getInstallSessionResult()
+
+        writeSession(session, TEST_APK_NAME_V2)
+        startInstallationViaPreapprovalSession(session)
+        // No need to click installer UI here.
+        val result = getInstallSessionResult()
+        assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
+    }
+
+    /**
+     * Check that we can update an app with current app label even if the given label is
+     * different from the label from the APK file.
+     */
+    @Test
+    fun commitPreapprovalSession_updateUsingCurrentLabel_success() {
+        installTestPackage()
+        assertInstalled()
+
+        val (sessionId, session) = createSession(0 /* flags */, false /* isMultiPackage */,
+                null /* packageSource */)
         startRequestUserPreapproval(session, preparePreapprovalDetails())
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // request should have succeeded
         getInstallSessionResult()
 
-        writeSession(session, TEST_APK_NAME)
+        writeSession(session, TEST_APK_NAME_V2)
         startInstallationViaPreapprovalSession(session)
         // No need to click installer UI here.
         val result = getInstallSessionResult()
@@ -246,6 +351,9 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
         assertInstalled()
     }
 
+    /**
+     * Check that we receive the expected status when requesting user pre-approval isn't available.
+     */
     @Test
     fun requestUserPreapproval_featureDisabled_statusFailureBlocked() {
         val config = getDeviceProperty(PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE)
@@ -264,6 +372,10 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
         }
     }
 
+    /**
+     * Request a user pre-approval, but this feature is currently not available.
+     * Check that we can still install via commit this session.
+     */
     @Test
     fun requestUserPreapproval_featureDisabled_couldUseCommitInstead() {
         val config = getDeviceProperty(PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE)
@@ -293,5 +405,33 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
         } finally {
             setDeviceProperty(PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE, config)
         }
+    }
+
+    private fun preparePreapprovalDetails(): PackageInstaller.PreapprovalDetails {
+        return preparePreapprovalDetails(TEST_APP_LABEL, ULocale.US, TEST_APK_PACKAGE_NAME)
+    }
+
+    private fun preparePreapprovalDetailsV2(): PackageInstaller.PreapprovalDetails {
+        return preparePreapprovalDetails(TEST_APP_LABEL_V2, ULocale.US, TEST_APK_PACKAGE_NAME)
+    }
+
+    private fun preparePreapprovalDetailsInPl(): PackageInstaller.PreapprovalDetails {
+        return preparePreapprovalDetails(TEST_APP_LABEL_PL, ULocale("pl"), TEST_APK_PACKAGE_NAME)
+    }
+
+    private fun prepareWrongPreapprovalDetails(): PackageInstaller.PreapprovalDetails {
+        return preparePreapprovalDetails(TEST_FAKE_APP_LABEL, ULocale.US, TEST_APK_PACKAGE_NAME)
+    }
+
+    private fun preparePreapprovalDetails(
+            appLabel: String,
+            locale: ULocale,
+            appPackageName: String
+    ): PackageInstaller.PreapprovalDetails {
+        return PackageInstaller.PreapprovalDetails.Builder()
+                .setLabel(appLabel)
+                .setLocale(locale)
+                .setPackageName(appPackageName)
+                .build()
     }
 }

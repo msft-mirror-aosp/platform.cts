@@ -309,6 +309,24 @@ public class TestAppInstanceTest {
     }
 
     @Test
+    public void testApi_canCall() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            // Arbitrary call which does not require specific permissions to confirm no crash
+            testAppInstance.devicePolicyManager()
+                    .isFactoryResetProtectionPolicySupported();
+        }
+    }
+
+    @Test
+    public void systemApi_canCall() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            // Arbitrary call which does not require specific permissions to confirm no crash
+            testAppInstance.devicePolicyManager()
+                    .createProvisioningIntentFromNfcIntent(new Intent());
+        }
+    }
+
+    @Test
     @RequireSdkVersion(min = S, reason = "isSafeOperation only available on S+")
     public void devicePolicyManager_returnsUsableInstance() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
@@ -499,6 +517,13 @@ public class TestAppInstanceTest {
                 assertThrows(NullPointerException.class,
                         () -> testApp.devicePolicyManager().hasGrantedPolicy(null, 0));
             }
+        }
+    }
+
+    @Test
+    public void telecomManager_returnsUsableInstance() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            testAppInstance.telecomManager().getSystemDialerPackage();
         }
     }
 }

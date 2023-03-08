@@ -55,7 +55,6 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -88,8 +87,9 @@ public class CtsSharesheetDeviceTest {
             "android.sharesheet.cts.CHOOSER_CUSTOM_ACTION_BROADCAST_ACTION";
     private static final String CHOOSER_REFINEMENT_BROADCAST_ACTION =
             "android.sharesheet.cts.CHOOSER_REFINEMENT_BROADCAST_ACTION";
-    static final String CTS_DATA_TYPE = "test/cts"; // Special CTS mime type
-    static final String CATEGORY_CTS_TEST = "CATEGORY_CTS_TEST";
+    private static final String CTS_DATA_TYPE = "test/cts"; // Special CTS mime type
+    private static final String CTS_ALTERNATE_DATA_TYPE = "test/cts_alternate";
+    private static final String CATEGORY_CTS_TEST = "CATEGORY_CTS_TEST";
 
     private Context mContext;
     private Instrumentation mInstrumentation;
@@ -229,9 +229,12 @@ public class CtsSharesheetDeviceTest {
             showsAppAndIntentFilterLabel();
             isChooserTargetServiceDirectShareDisabled();
 
+            CountDownLatch appStartedLatch = prepareAppStartedEvaluation();
+
             // Must be run last, partial completion closes the Sharesheet
             firesIntentSenderWithExtraChosenComponent();
 
+            appStartedLatch.await(1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             // No-op
         } finally {
@@ -284,12 +287,17 @@ public class CtsSharesheetDeviceTest {
         }
     }
 
+    // Launch the chooser with an EXTRA_INTENT of type "test/cts" and EXTRA_ALTERNATE_INTENTS with
+    // one of "test/cts_alternate". Both of these will match CtsSharesheetDeviceActivity. Choose
+    // that target, then in the refinement process, select the "test/cts_alternate" option and
+    // then verify that the alternate type is seen by the activity in the end.
     @Test
     public void testRefinementIntentSender() throws InterruptedException {
         if (!mMeetsResolutionRequirements) return; // Skip test if resolution is too low
 
         final CountDownLatch broadcastInvoked = new CountDownLatch(1);
         final CountDownLatch chooserCallbackInvoked = new CountDownLatch(1);
+        final CountDownLatch appStarted = new CountDownLatch(1);
 
         BroadcastReceiver refinementReceiver = new BroadcastReceiver() {
             @Override
@@ -298,9 +306,18 @@ public class CtsSharesheetDeviceTest {
                 // Call back the sharesheet to complete the share.
                 ResultReceiver resultReceiver = intent.getParcelableExtra(
                         Intent.EXTRA_RESULT_RECEIVER, ResultReceiver.class);
+
+                Intent mainIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+                assertEquals(CTS_DATA_TYPE, mainIntent.getType());
+
+                Intent[] alternates = intent.getParcelableArrayExtra(
+                        Intent.EXTRA_ALTERNATE_INTENTS, Intent.class);
+                assertEquals(1, alternates.length);
+                assertEquals(CTS_ALTERNATE_DATA_TYPE, alternates[0].getType());
+
                 Bundle bundle = new Bundle();
-                bundle.putParcelable(Intent.EXTRA_INTENT,
-                        intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class));
+                bundle.putParcelable(Intent.EXTRA_INTENT, alternates[0]);
+
                 resultReceiver.send(Activity.RESULT_OK, bundle);
                 broadcastInvoked.countDown();
             }
@@ -312,6 +329,13 @@ public class CtsSharesheetDeviceTest {
                 chooserCallbackInvoked.countDown();
             }
         };
+
+        CtsSharesheetDeviceActivity.setOnIntentReceivedConsumer(intent -> {
+            // Ensure that the app was started with the alternate type chosen by refinement.
+            assertEquals(CTS_ALTERNATE_DATA_TYPE, intent.getType());
+            appStarted.countDown();
+        });
+
         mContext.registerReceiver(chooserCallbackReceiver,
                 new IntentFilter(ACTION_INTENT_SENDER_FIRED_ON_CLICK),
                 Context.RECEIVER_EXPORTED);
@@ -319,13 +343,17 @@ public class CtsSharesheetDeviceTest {
         PendingIntent refinement = PendingIntent.getBroadcast(
                 mContext,
                 1,
-                new Intent(CHOOSER_REFINEMENT_BROADCAST_ACTION),
+                new Intent(CHOOSER_REFINEMENT_BROADCAST_ACTION)
+                        .setPackage(mContext.getPackageName()),
                 PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT);
 
         try {
             Intent shareIntent = createShareIntent(false, 0, 0, null);
             shareIntent.putExtra(Intent.EXTRA_CHOOSER_REFINEMENT_INTENT_SENDER,
                     refinement.getIntentSender());
+            Intent alternateIntent = new Intent(Intent.ACTION_SEND);
+            alternateIntent.setType(CTS_ALTERNATE_DATA_TYPE);
+            shareIntent.putExtra(Intent.EXTRA_ALTERNATE_INTENTS, new Intent[] {alternateIntent});
             mContext.registerReceiver(
                     refinementReceiver, new IntentFilter(CHOOSER_REFINEMENT_BROADCAST_ACTION),
                     Context.RECEIVER_EXPORTED);
@@ -333,6 +361,7 @@ public class CtsSharesheetDeviceTest {
             findTextContains(mAppLabel).click();
             assertTrue(broadcastInvoked.await(1000, TimeUnit.MILLISECONDS));
             assertTrue(chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(appStarted.await(1000, TimeUnit.MILLISECONDS));
         } finally {
             mContext.unregisterReceiver(refinementReceiver);
             mContext.unregisterReceiver(chooserCallbackReceiver);
@@ -340,7 +369,47 @@ public class CtsSharesheetDeviceTest {
         }
     }
 
-    @Ignore("b/262587046")
+    // Launch the chooser with an EXTRA_INTENT of type "test/cts" and EXTRA_ALTERNATE_INTENTS with
+    // one of "test/cts_alternate". Ensure that the "alternate type" app, which only accepts
+    // "test/cts_alternate" shows up and can be chosen.
+    @Test
+    public void testAlternateTargetsShown() throws InterruptedException {
+        if (!mMeetsResolutionRequirements) return; // Skip test if resolution is too low
+
+        final CountDownLatch chooserCallbackInvoked = new CountDownLatch(1);
+
+        BroadcastReceiver chooserCallbackReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                ComponentName chosenComponent = intent.getParcelableExtra(
+                        Intent.EXTRA_CHOSEN_COMPONENT, ComponentName.class);
+                assertEquals("android.sharesheet.cts.packages.alternatetype",
+                        chosenComponent.getPackageName());
+                assertEquals("android.sharesheet.cts.packages.LabelTestActivity",
+                        chosenComponent.getClassName());
+                chooserCallbackInvoked.countDown();
+            }
+        };
+
+        mContext.registerReceiver(chooserCallbackReceiver,
+                new IntentFilter(ACTION_INTENT_SENDER_FIRED_ON_CLICK),
+                Context.RECEIVER_EXPORTED);
+
+
+        try {
+            Intent shareIntent = createShareIntent(false, 0, 0, null);
+            Intent alternateIntent = new Intent(Intent.ACTION_SEND);
+            alternateIntent.setType(CTS_ALTERNATE_DATA_TYPE);
+            shareIntent.putExtra(Intent.EXTRA_ALTERNATE_INTENTS, new Intent[] {alternateIntent});
+            launchSharesheet(shareIntent);
+            findTextContains(mContext.getString(R.string.test_alternate_app_label)).click();
+            assertTrue(chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS));
+        } finally {
+            mContext.unregisterReceiver(chooserCallbackReceiver);
+            closeSharesheet();
+        }
+    }
+
     @Test
     @ApiTest(apis = "android.content.Intent#EXTRA_CHOOSER_CUSTOM_ACTIONS")
     public void testCustomAction() {
@@ -388,7 +457,7 @@ public class CtsSharesheetDeviceTest {
      *
      * Requires content loaded with permission: android.permission.QUERY_ALL_PACKAGES
      */
-    public void doesExcludeComponents() {
+    private void doesExcludeComponents() {
         // The excluded component should not be found on screen
         waitAndAssertNoTextContains(mBlacklistLabel);
     }
@@ -396,7 +465,7 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API behavior compliance for security to always show application label
      */
-    public void showsApplicationLabel() {
+    private void showsApplicationLabel() {
         // For each app target the providing app's application manifest label should be shown
         waitAndAssertTextContains(mAppLabel);
     }
@@ -404,7 +473,7 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API behavior compliance to show application and activity label when available
      */
-    public void showsAppAndActivityLabel() {
+    private void showsAppAndActivityLabel() {
         waitAndAssertTextContains(mActivityTesterAppLabel);
         waitAndAssertTextContains(mActivityTesterActivityLabel);
     }
@@ -412,7 +481,7 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API behavior compliance to show application and intent filter label when available
      */
-    public void showsAppAndIntentFilterLabel() {
+    private void showsAppAndIntentFilterLabel() {
         // NOTE: it is not necessary to show any set Activity label if an IntentFilter label is set
         waitAndAssertTextContains(mIntentFilterTesterAppLabel);
         waitAndAssertTextContains(mIntentFilterTesterIntentFilterLabel);
@@ -421,7 +490,7 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API compliance for Intent.EXTRA_INITIAL_INTENTS
      */
-    public void showsExtraInitialIntents() {
+    private void showsExtraInitialIntents() {
         // Should show extra initial intents but must limit them, can't test limit here
         waitAndAssertTextContains(mExtraInitialIntentsLabelBase);
     }
@@ -429,7 +498,7 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API compliance for Intent.EXTRA_CHOOSER_TARGETS
      */
-    public void showsExtraChooserTargets() {
+    private void showsExtraChooserTargets() {
         // Should show chooser targets but must limit them, can't test limit here
         if (mActivityManager.isLowRamDevice()) {
             // The direct share row and EXTRA_CHOOSER_TARGETS should be hidden on low-ram devices
@@ -442,22 +511,37 @@ public class CtsSharesheetDeviceTest {
     /**
      * Tests API behavior compliance for Intent.EXTRA_TITLE
      */
-    public void showsContentPreviewTitle() {
+    private void showsContentPreviewTitle() {
         waitAndAssertTextContains(mPreviewTitle);
     }
 
     /**
      * Tests API behavior compliance for Intent.EXTRA_TEXT
      */
-    public void showsContentPreviewText() {
+    private void showsContentPreviewText() {
         waitAndAssertTextContains(mPreviewText);
+    }
+
+    /**
+     * Set the listener for the activity that will receive the Intent.
+     *
+     * @return a CountDownLatch to await to ensure that the assertions have been completed.
+     */
+    private CountDownLatch prepareAppStartedEvaluation() {
+        CountDownLatch appStartedLatch = new CountDownLatch(1);
+        CtsSharesheetDeviceActivity.setOnIntentReceivedConsumer(intent -> {
+            assertEquals(CTS_DATA_TYPE, intent.getType());
+            assertEquals(Intent.ACTION_SEND, intent.getAction());
+            appStartedLatch.countDown();
+        });
+        return appStartedLatch;
     }
 
     /**
      * Tests API compliance for Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER and related APIs
      * UI assumption: target labels are clickable, clicking opens target
      */
-    public void firesIntentSenderWithExtraChosenComponent() throws Exception {
+    private void firesIntentSenderWithExtraChosenComponent() throws Exception {
         // To receive the extra chosen component a target must be clicked. Clicking the target
         // will close the Sharesheet. Run this last in any sequence of tests.
 

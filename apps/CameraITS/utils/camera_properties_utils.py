@@ -385,6 +385,12 @@ def jpeg_quality(props):
       'android.jpeg.quality' in props['camera.characteristics.requestKeys'])
 
 
+def jpeg_orientation(props):
+  """Returns whether a device supports JPEG orientation."""
+  return ('camera.characteristics.requestKeys' in props) and (
+      'android.jpeg.orientation' in props['camera.characteristics.requestKeys'])
+
+
 def zoom_ratio_range(props):
   """Returns whether a device supports zoom capabilities.
 
@@ -592,6 +598,20 @@ def edge_mode(props, mode):
   """
   return 'android.edge.availableEdgeModes' in props and mode in props[
       'android.edge.availableEdgeModes']
+
+
+def tonemap_mode(props, mode):
+    """Returns whether a device supports the tonemap mode.
+
+    Args:
+        props: Camera properties object.
+        mode: Integer, indicating the tonemap mode to check for availability.
+
+    Return:
+        Boolean.
+    """
+    return 'android.edge.availableToneMapModes' in props and mode in props[
+        'android.tonemap.availableToneMapModes']
 
 
 def yuv_reprocess(props):
@@ -890,3 +910,20 @@ def linear_tonemap(props):
   return ('android.tonemap.availableToneMapModes' in props and
           (0 in props.get('android.tonemap.availableToneMapModes') or
            3 in props.get('android.tonemap.availableToneMapModes')))
+
+
+def get_reprocess_formats(props):
+  """Retrieve the list of supported reprocess formats.
+
+  Args:
+    props: The camera properties.
+
+  Returns:
+    A list of supported reprocess formats.
+  """
+  reprocess_formats = []
+  if yuv_reprocess(props):
+    reprocess_formats.append('yuv')
+  if private_reprocess(props):
+    reprocess_formats.append('private')
+  return reprocess_formats

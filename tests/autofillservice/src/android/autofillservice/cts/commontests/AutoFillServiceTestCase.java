@@ -326,6 +326,18 @@ public final class AutoFillServiceTestCase {
                         Boolean.toString(true)))
 
                 //
+                // PCC Detection should be off by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED,
+                        Boolean.toString(false)))
+
+                //
+                // PCC Detection Hints should be empty by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_FEATURE_PROVIDER_HINTS,
+                        ""))
+
+                //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
 
@@ -432,9 +444,6 @@ public final class AutoFillServiceTestCase {
             // Set orientation as portrait, otherwise some tests might fail due to elements not
             // fitting in, IME orientation, etc...
             mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-
-            // Wait until device is idle to avoid flakiness
-            mUiBot.waitForIdle();
 
             // Clear Clipboard
             // TODO(b/117768051): remove try/catch once fixed
