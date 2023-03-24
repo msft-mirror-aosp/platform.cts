@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -55,12 +56,12 @@ import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.RecommendedStreamConfigurationMap;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.cts.helpers.CameraUtils;
-import android.mediapc.cts.common.Requirement;
-import android.mediapc.cts.common.RequiredMeasurement;
-import android.mediapc.cts.common.RequirementConstants;
-import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.media.CamcorderProfile;
 import android.media.ImageReader;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.RequiredMeasurement;
+import android.mediapc.cts.common.Requirement;
+import android.mediapc.cts.common.RequirementConstants;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.ArraySet;
@@ -2787,6 +2788,13 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     @CddTest(requirement = "7.5.5/C-1-1")
     @Test
     public void testCameraOrientationAlignedWithDevice() {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            // CDD 7.5.5/C-1-1 does not apply to automotive devices as the display and camera
+            // are often separate components with independent orientations.
+            Log.i(TAG, "CDD 7.5.5/C-1-1 does not apply to automotive, skipping"
+                    + " testCameraOrientationAlignedWithDevice");
+            return;
+        }
         if (CameraUtils.isDeviceFoldable(mContext)) {
             // CDD 7.5.5/C-1-1 does not apply to devices with folding displays as the display aspect
             // ratios might change with the device's folding state.
