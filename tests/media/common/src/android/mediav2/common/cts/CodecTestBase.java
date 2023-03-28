@@ -715,7 +715,7 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected static String paramToString(Object[] param) {
+    public static String paramToString(Object[] param) {
         StringBuilder paramStr = new StringBuilder("[  ");
         for (int j = 0; j < param.length - 1; j++) {
             Object o = param[j];
