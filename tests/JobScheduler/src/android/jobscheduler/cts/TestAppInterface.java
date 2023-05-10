@@ -32,6 +32,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.AppOpsManager;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
@@ -40,6 +41,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
+import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -47,6 +49,8 @@ import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -60,6 +64,7 @@ class TestAppInterface implements AutoCloseable {
 
     static final String TEST_APP_PACKAGE = "android.jobscheduler.cts.jobtestapp";
     private static final String TEST_APP_ACTIVITY = TEST_APP_PACKAGE + ".TestActivity";
+    private static final String TEST_APP_FGS = TEST_APP_PACKAGE + ".TestFgsService";
     static final String TEST_APP_RECEIVER = TEST_APP_PACKAGE + ".TestJobSchedulerReceiver";
 
     private final Context mContext;
@@ -77,20 +82,32 @@ class TestAppInterface implements AutoCloseable {
         intentFilter.addAction(ACTION_JOB_STOPPED);
         intentFilter.addAction(ACTION_JOB_SCHEDULE_RESULT);
         mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED_UNAUDITED);
+        if (AppStandbyUtils.isAppStandbyEnabled()) {
+            // Disable the bucket elevation so that we put the app in lower buckets.
+            SystemUtil.runShellCommand(
+                    "am compat enable --no-kill SCHEDULE_EXACT_ALARM_DOES_NOT_ELEVATE_BUCKET "
+                            + TEST_APP_PACKAGE);
+            // Force the test app out of the never bucket.
+            SystemUtil.runShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE + " rare");
+        }
     }
 
-    void cleanup() {
+    void cleanup() throws Exception {
         final Intent cancelJobsIntent = new Intent(TestJobSchedulerReceiver.ACTION_CANCEL_JOBS);
         cancelJobsIntent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
         cancelJobsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.sendBroadcast(cancelJobsIntent);
         closeActivity();
+        stopFgs();
         mContext.unregisterReceiver(mReceiver);
+        AppOpsUtils.reset(TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("am compat --reset-all" + TEST_APP_PACKAGE);
         mTestJobStates.clear();
+        forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
         cleanup();
     }
 
@@ -148,6 +165,20 @@ class TestAppInterface implements AutoCloseable {
                 15 /* 15 seconds */);
     }
 
+    void postFgsStartingAlarm() throws Exception {
+        AppOpsUtils.setOpMode(TEST_APP_PACKAGE,
+                AppOpsManager.OPSTR_SCHEDULE_EXACT_ALARM, AppOpsManager.MODE_ALLOWED);
+        final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_SCHEDULE_FGS_START_ALARM);
+        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
+
+        final CallbackAsserter resultBroadcastAsserter = CallbackAsserter.forBroadcast(
+                new IntentFilter(TestJobSchedulerReceiver.ACTION_ALARM_SCHEDULED));
+        mContext.sendBroadcast(intent);
+        resultBroadcastAsserter.assertCalled("Didn't get alarm scheduled broadcast",
+                15 /* 15 seconds */);
+    }
+
     /** Asks (not forces) JobScheduler to run the job if constraints are met. */
     void runSatisfiedJob() throws Exception {
         SystemUtil.runShellCommand("cmd jobscheduler run -s"
@@ -170,6 +201,11 @@ class TestAppInterface implements AutoCloseable {
     void forceStopApp() {
         SystemUtil.runShellCommand("am force-stop"
                 + " --user " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE);
+    }
+
+    void cancelJob() throws Exception {
+        SystemUtil.runShellCommand("cmd jobscheduler cancel"
+                + " -u " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE + " " + mJobId);
     }
 
     void startAndKeepTestActivity() {
@@ -198,6 +234,22 @@ class TestAppInterface implements AutoCloseable {
                     new ComponentName(TEST_APP_PACKAGE, TEST_APP_ACTIVITY);
             new WindowManagerStateHelper().waitForActivityRemoved(testComponentName);
         }
+    }
+
+    void startFgs() throws Exception {
+        final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_START_FGS);
+        intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
+
+        final CallbackAsserter resultBroadcastAsserter =
+                CallbackAsserter.forBroadcast(new IntentFilter(TestFgsService.ACTION_FGS_STARTED));
+        mContext.sendBroadcast(intent);
+        resultBroadcastAsserter.assertCalled("Didn't get FGS started broadcast",
+                15 /* 15 seconds */);
+    }
+
+    void stopFgs() {
+        final Intent testFgs = new Intent(TestFgsService.ACTION_STOP_FOREGROUND);
+        mContext.sendBroadcast(testFgs);
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -292,9 +344,13 @@ class TestAppInterface implements AutoCloseable {
     }
 
     boolean awaitJobScheduleResult(long maxWaitMs, int jobResult) throws Exception {
+        return awaitJobScheduleResult(mJobId, maxWaitMs, jobResult);
+    }
+
+    boolean awaitJobScheduleResult(int jobId, long maxWaitMs, int jobResult) throws Exception {
         return waitUntilTrue(maxWaitMs, () -> {
             synchronized (mTestJobStates) {
-                TestJobState jobState = mTestJobStates.get(mJobId);
+                TestJobState jobState = mTestJobStates.get(jobId);
                 return jobState != null && jobState.scheduleResult == jobResult;
             }
         });

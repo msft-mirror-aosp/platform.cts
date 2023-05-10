@@ -17,12 +17,8 @@
 package com.android.bedstead.harrier.annotations.enterprise;
 
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.DO_PO_WEIGHT;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 
 import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 
 import java.lang.annotation.ElementType;
@@ -33,7 +29,7 @@ import java.lang.annotation.Target;
 /**
  * Mark that a test requires that the given admin delegates the given scope to a test app.
  *
- * <p>You should use {@code Devicestate} to ensure that the device enters
+ * <p>You should use {@code DeviceState} to ensure that the device enters
  * the correct state for the method. You can use {@code Devicestate#delegate()} to interact with
  * the delegate.
  */
@@ -41,15 +37,19 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
-@EnsureFeatureFlagNotEnabled(
-        namespace = NAMESPACE_DEVICE_POLICY_MANAGER,
-        key = ENABLE_DEVICE_POLICY_ENGINE_FLAG
-)
-@EnsureFeatureFlagNotEnabled(
-        namespace = NAMESPACE_DEVICE_POLICY_MANAGER,
-        key = PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG
-)
+// TODO(b/219750042): If we leave over appops and permissions then the delegate will have them
 public @interface EnsureHasDelegate {
+
+    /** The default key used for the testapp installed as delegate */
+    String DELEGATE_KEY = "delegate";
+
+    // TODO(276740719): Add support for customisable delegates
+//    /**
+//     * The key used to identify this delegate.
+//     *
+//     * <p>This can be used with {@link AdditionalQueryParameters} to modify the requirements for
+//     * the delegate. */
+//    String key() default DELEGATE_KEY;
 
     int ENSURE_HAS_DELEGATE_WEIGHT = DO_PO_WEIGHT + 1; // Should run after setting DO/PO
 
@@ -58,6 +58,8 @@ public @interface EnsureHasDelegate {
         PROFILE_OWNER,
         PRIMARY
     }
+
+    // TODO(276740719): Add support for querying for the delegate
 
     /**
      * The admin that should delegate this scope.

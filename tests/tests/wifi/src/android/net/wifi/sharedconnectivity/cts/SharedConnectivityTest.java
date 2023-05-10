@@ -20,7 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.sharedconnectivity.app.HotspotNetwork;
 import android.net.wifi.sharedconnectivity.app.HotspotNetworkConnectionStatus;
@@ -53,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  * Testing is done on these classes in their bound state.
  */
 @RunWith(AndroidJUnit4.class)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @NonMainlineTest
 public class SharedConnectivityTest {
     private static final String TAG = "SharedConnectivityTest";
@@ -63,11 +65,11 @@ public class SharedConnectivityTest {
             "android.net.wifi.sharedconnectivity.service.cts.TestSharedConnectivityService.BIND";
 
     // Time between checks for state we expect.
-    private static final long CHECK_DELAY_MILLIS = 250;
+    private static final long CHECK_DELAY_MILLIS = 500;
     // Number of times to check before failing.
     private static final long CHECK_RETRIES = 8;
     // Time to wait for callback's CountDownLatch.
-    private static final long LATCH_TIMEOUT_SECS = 2;
+    private static final long LATCH_TIMEOUT_SECS = 10;
 
     private static final HotspotNetwork TEST_HOTSPOT_NETWORK_1 = new HotspotNetwork.Builder()
             .setDeviceId(1)
@@ -117,12 +119,6 @@ public class SharedConnectivityTest {
                     .build())
             .build();
 
-    private static final SharedConnectivitySettingsState TEST_SETTINGS_STATE =
-            new SharedConnectivitySettingsState.Builder()
-                    .setInstantTetherEnabled(true)
-                    .setExtras(Bundle.EMPTY)
-                    .build();
-
     private static final HotspotNetworkConnectionStatus TEST_HOTSPOT_NETWORK_CONNECTION_STATUS =
             new HotspotNetworkConnectionStatus.Builder()
                     .setStatus(HotspotNetworkConnectionStatus.CONNECTION_STATUS_ENABLING_HOTSPOT)
@@ -140,14 +136,22 @@ public class SharedConnectivityTest {
     @Test
     public void registerCallback_withoutPermission_throwsSecurityException() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        dropPermission();
+        grantPermission();
         SharedConnectivityManager manager = getManager(context);
-        TestSharedConnectivityService service = getService();
         TestSharedConnectivityClientCallback callback =
                 new TestSharedConnectivityClientCallback();
+        // Registrations done before the service is connected are cached and executed in the
+        // background. Need to wait for the service to be connected to test.
+        manager.registerCallback(Runnable::run, callback);
+        TestSharedConnectivityService service = getService();
+        assertServiceConnected(callback);
 
+        dropPermission();
+
+        TestSharedConnectivityClientCallback callback2 =
+                new TestSharedConnectivityClientCallback();
         assertThrows(SecurityException.class,
-                () -> manager.registerCallback(Runnable::run, callback));
+                () -> manager.registerCallback(Runnable::run, callback2));
     }
 
     @Test
@@ -157,37 +161,15 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
-
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
 
             assertServiceConnected(callback);
         } finally {
             dropPermission();
         }
-    }
-
-    @Test
-    public void unregisterCallback_withoutPermission_throwsSecurityException() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        SharedConnectivityManager manager;
-        TestSharedConnectivityService service;
-        TestSharedConnectivityClientCallback callback;
-        grantPermission();
-        try {
-            manager = getManager(context);
-            service = getService();
-            callback = new TestSharedConnectivityClientCallback();
-            // Need to successfully register callback before testing unregister method.
-            manager.registerCallback(Runnable::run, callback);
-            assertServiceConnected(callback);
-        } finally {
-            dropPermission();
-        }
-
-        assertThrows(SecurityException.class, () -> manager.unregisterCallback(callback));
     }
 
     @Test
@@ -196,7 +178,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
 
@@ -212,7 +193,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -225,10 +205,11 @@ public class SharedConnectivityTest {
                     };
             // Need to successfully register callback before testing unregister method.
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
 
             assertThat(manager.unregisterCallback(callback)).isTrue();
             // Try to use callback and validate that manager was not updated.
-            service.setSettingsState(TEST_SETTINGS_STATE);
+            service.setSettingsState(buildSettingsState());
             assertThat(callbackLatch.await(LATCH_TIMEOUT_SECS, TimeUnit.SECONDS)).isFalse();
             assertThat(callback.getSharedConnectivitySettingsState()).isNull();
         } finally {
@@ -237,59 +218,11 @@ public class SharedConnectivityTest {
     }
 
     @Test
-    public void connectHotspotNetwork_withoutPermission_throwsSecurityException() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        dropPermission();
-        SharedConnectivityManager manager = getManager(context);
-        TestSharedConnectivityService service = getService();
-
-        assertThrows(SecurityException.class,
-                () -> manager.connectHotspotNetwork(TEST_HOTSPOT_NETWORK_1));
-    }
-
-    @Test
-    public void disconnectHotspotNetwork_withoutPermission_throwsSecurityException()
-            throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        dropPermission();
-        SharedConnectivityManager manager = getManager(context);
-        TestSharedConnectivityService service = getService();
-
-        assertThrows(SecurityException.class,
-                () -> manager.disconnectHotspotNetwork(TEST_HOTSPOT_NETWORK_1));
-    }
-
-    @Test
-    public void connectKnownNetwork_withoutPermission_throwsSecurityException() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        dropPermission();
-        SharedConnectivityManager manager = getManager(context);
-        TestSharedConnectivityService service = getService();
-
-        assertThrows(SecurityException.class,
-                () -> manager.connectKnownNetwork(TEST_KNOWN_NETWORK_1));
-    }
-
-    @Test
-    public void forgetKnownNetwork_withoutPermission_throwsSecurityException() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        dropPermission();
-        SharedConnectivityManager manager = getManager(context);
-        TestSharedConnectivityService service = getService();
-        TestSharedConnectivityClientCallback callback =
-                new TestSharedConnectivityClientCallback();
-
-        assertThrows(SecurityException.class,
-                () -> manager.forgetKnownNetwork(TEST_KNOWN_NETWORK_1));
-    }
-
-    @Test
     public void setHotspotNetworks_managerCallbackReceivedWithCorrectData() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -300,6 +233,7 @@ public class SharedConnectivityTest {
                         }
                     };
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             List<HotspotNetwork> networks = Arrays.asList(TEST_HOTSPOT_NETWORK_1,
@@ -319,7 +253,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -330,6 +263,7 @@ public class SharedConnectivityTest {
                         }
                     };
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             List<KnownNetwork> networks = Arrays.asList(TEST_KNOWN_NETWORK_1, TEST_KNOWN_NETWORK_2);
@@ -348,7 +282,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -360,13 +293,14 @@ public class SharedConnectivityTest {
                         }
                     };
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
-            service.setSettingsState(TEST_SETTINGS_STATE);
+            service.setSettingsState(buildSettingsState());
 
             assertThat(callbackLatch.await(LATCH_TIMEOUT_SECS, TimeUnit.SECONDS)).isTrue();
             assertThat(callback.getSharedConnectivitySettingsState()).isEqualTo(
-                    TEST_SETTINGS_STATE);
+                    buildSettingsState());
         } finally {
             dropPermission();
         }
@@ -379,7 +313,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -391,6 +324,7 @@ public class SharedConnectivityTest {
                         }
                     };
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             service.updateHotspotNetworkConnectionStatus(TEST_HOTSPOT_NETWORK_CONNECTION_STATUS);
@@ -410,7 +344,6 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             CountDownLatch callbackLatch = new CountDownLatch(1);
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback() {
@@ -422,6 +355,7 @@ public class SharedConnectivityTest {
                         }
                     };
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             service.updateKnownNetworkConnectionStatus(TEST_KNOWN_NETWORK_CONNECTION_STATUS);
@@ -440,13 +374,13 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
-            manager.connectHotspotNetwork(TEST_HOTSPOT_NETWORK_1);
+            assertThat(manager.connectHotspotNetwork(TEST_HOTSPOT_NETWORK_1)).isTrue();
 
             for (int i = 0; service.getConnectHotspotNetwork() == null && i < CHECK_RETRIES; i++) {
                 Thread.sleep(CHECK_DELAY_MILLIS);
@@ -464,10 +398,10 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             manager.disconnectHotspotNetwork(TEST_HOTSPOT_NETWORK_1);
@@ -489,10 +423,10 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             manager.connectKnownNetwork(TEST_KNOWN_NETWORK_1);
@@ -513,10 +447,10 @@ public class SharedConnectivityTest {
         grantPermission();
         try {
             SharedConnectivityManager manager = getManager(context);
-            TestSharedConnectivityService service = getService();
             TestSharedConnectivityClientCallback callback =
                     new TestSharedConnectivityClientCallback();
             manager.registerCallback(Runnable::run, callback);
+            TestSharedConnectivityService service = getService();
             assertServiceConnected(callback);
 
             manager.forgetKnownNetwork(TEST_KNOWN_NETWORK_1);
@@ -560,5 +494,16 @@ public class SharedConnectivityTest {
             throws InterruptedException {
         assertThat(callback.getServiceConnectedLatch().await(LATCH_TIMEOUT_SECS,
                 TimeUnit.SECONDS)).isTrue();
+    }
+
+    private SharedConnectivitySettingsState buildSettingsState() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        return new SharedConnectivitySettingsState.Builder()
+                        .setInstantTetherEnabled(true)
+                        .setInstantTetherSettingsPendingIntent(
+                                PendingIntent.getActivity(context, 0, new Intent(),
+                                        PendingIntent.FLAG_IMMUTABLE))
+                        .setExtras(Bundle.EMPTY)
+                        .build();
     }
 }

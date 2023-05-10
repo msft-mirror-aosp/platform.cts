@@ -24,9 +24,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_ACTIVE;
+import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
-import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INVISIBLE;
-import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_VISIBLE;
 
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
@@ -98,8 +97,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
 
     private static final List<@WindowAreaComponent.WindowAreaSessionState Integer>
             SESSION_LIFECYCLE_VALUES = new ArrayList<>(
-            Arrays.asList(SESSION_STATE_ACTIVE, SESSION_STATE_VISIBLE,
-                    SESSION_STATE_INVISIBLE, SESSION_STATE_INACTIVE));
+            Arrays.asList(SESSION_STATE_ACTIVE, SESSION_STATE_CONTENT_VISIBLE,
+                    SESSION_STATE_ACTIVE, SESSION_STATE_INACTIVE));
 
     private TestRearDisplayActivity mActivity;
     private int[] mFoldedDeviceStates;
@@ -273,7 +272,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWindowAreaComponent.endRearDisplayPresentationSession();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);
@@ -327,7 +326,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressHomeButton();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);
@@ -381,7 +380,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressSleepButton();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);

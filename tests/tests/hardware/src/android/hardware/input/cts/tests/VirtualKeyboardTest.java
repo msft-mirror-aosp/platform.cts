@@ -38,6 +38,7 @@ import java.util.Arrays;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class VirtualKeyboardTest extends VirtualDeviceTestCase {
+    private static final String TAG = "VirtualKeyboardTest";
 
     private static final String DEVICE_NAME = "CtsVirtualKeyboardTestDevice";
     private VirtualKeyboard mVirtualKeyboard;
@@ -115,6 +116,11 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
                                     .setAction(VirtualKeyEvent.ACTION_DOWN)
                                     .build()));
         }
+    }
+
+    @Test
+    public void keyEvent_nullEvent_throwsNpe() {
+        assertThrows(NullPointerException.class, () -> mVirtualKeyboard.sendKeyEvent(null));
     }
 
     @Test

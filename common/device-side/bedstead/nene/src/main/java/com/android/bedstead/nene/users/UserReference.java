@@ -24,12 +24,15 @@ import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.S;
+import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
 import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.nene.permissions.CommonPermissions.MODIFY_QUIET_MODE;
+import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_USERS;
 import static com.android.bedstead.nene.users.Users.users;
 
 import android.annotation.TargetApi;
+import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.Intent;
@@ -38,6 +41,7 @@ import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.annotation.Nullable;
 
@@ -50,6 +54,7 @@ import com.android.bedstead.nene.exceptions.PollValueFailedException;
 import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
+import com.android.bedstead.nene.utils.ShellCommand.Builder;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
@@ -118,6 +123,13 @@ public final class UserReference implements AutoCloseable {
     }
 
     /**
+     * See {@link UserManager#isAdminUser()}.
+     */
+    public boolean isAdmin() {
+        return userInfo().isAdmin();
+    }
+
+    /**
      * {@code true} if this is a test user which should not include any user data.
      */
     public boolean isForTesting() {
@@ -137,13 +149,21 @@ public final class UserReference implements AutoCloseable {
     /**
      * Remove the user from the device.
      *
-     * <p>If the user does not exist, or the removal fails for any other reason, a
-     * {@link NeneException} will be thrown.
+     * <p>If the user does not exist then nothing will happen. If the removal fails for any other
+     * reason, a {@link NeneException} will be thrown.
      */
     public void remove() {
+        if (!exists()) {
+            return;
+        }
+
         ProfileOwner profileOwner = TestApis.devicePolicy().getProfileOwner(this);
         if (profileOwner != null && profileOwner.isOrganizationOwned()) {
             profileOwner.remove();
+        }
+
+        if (TestApis.users().instrumented().equals(this)) {
+            throw new NeneException("Cannot remove instrumented user");
         }
 
         try {
@@ -160,25 +180,85 @@ public final class UserReference implements AutoCloseable {
                     .errorOnFail()
                     .await();
         } catch (AdbException e) {
-            throw new NeneException("Could not remove user " + this, e);
+            throw new NeneException("Could not remove user " + this + ". Logcat: "
+                    + TestApis.logcat().dump((l) -> l.contains("UserManagerService")), e);
         }
     }
 
     /**
-     * Start the user.
+     * Remove the user from device when it is next possible.
      *
-     * <p>After calling this command, the user will be running unlocked.
+     * <p>If the user is the current foreground user, removal is deferred until the user is switched
+     * away. Otherwise, it'll be removed immediately.
+     *
+     * <p>If the user does not exist, or setting the user ephemeral fails for any other reason, a
+     * {@link NeneException} will be thrown.
+     */
+    @Experimental
+    public void removeWhenPossible() {
+        try {
+            // Expected success strings are:
+            // ("Success: user %d removed\n", userId)
+            // ("Success: user %d set as ephemeral\n", userId)
+            // ("Success: user %d is already being removed\n", userId)
+            ShellCommand.builder("pm remove-user")
+                    .addOperand("--set-ephemeral-if-in-use")
+                    .addOperand(mId)
+                    .validate(ShellCommandUtils::startsWithSuccess)
+                    .execute();
+        } catch (AdbException e) {
+            throw new NeneException("Could not remove or mark ephemeral user " + this, e);
+        }
+    }
+
+    /**
+     * Starts the user in the background.
+     *
+     * <p>After calling this command, the user will be running unlocked, but not
+     * {@link #isVisible() visible}.
      *
      * <p>If the user does not exist, or the start fails for any other reason, a
      * {@link NeneException} will be thrown.
      */
-    //TODO(scottjonathan): Deal with users who won't unlock
     public UserReference start() {
+        Log.i(LOG_TAG, "Starting user " + mId);
+        return startUser(Display.INVALID_DISPLAY);
+    }
+
+    /**
+     * Starts the user in the background, {@link #isVisible() visible} in the given
+     * display.
+     *
+     * <p>After calling this command, the user will be running unlocked.
+     *
+     * @throws UnsupportedOperationException if the device doesn't
+     *   {@link UserManager#isVisibleBackgroundUsersOnDefaultDisplaySupported() support visible
+     *   background users}
+     *
+     * @throws NeneException if the user does not exist or the start fails for any other reason
+     */
+    public UserReference startVisibleOnDisplay(int displayId) {
+        if (!TestApis.users().isVisibleBackgroundUsersSupported()) {
+            throw new UnsupportedOperationException("Cannot start user " + mId + " on display "
+                    + displayId + " as device doesn't support that");
+        }
+        Log.i(LOG_TAG, "Starting user " + mId + " visible on display " + displayId);
+        return startUser(displayId);
+    }
+
+    //TODO(scottjonathan): Deal with users who won't unlock
+    private UserReference startUser(int displayId) {
+        boolean visibleOnDisplay = displayId != Display.INVALID_DISPLAY;
+
         try {
             // Expected success string is "Success: user started"
-            ShellCommand.builder("am start-user")
-                    .addOperand(mId)
-                    .addOperand("-w")
+            Builder builder = ShellCommand.builder("am start-user")
+                    .addOperand("-w");
+            if (visibleOnDisplay) {
+                builder.addOperand("--display").addOperand(displayId);
+            }
+            builder
+                    .addOperand(mId) // NOTE: id MUST be the last argument
                     .validate(ShellCommandUtils::startsWithSuccess)
                     .execute();
 
@@ -192,8 +272,20 @@ public final class UserReference implements AutoCloseable {
                     .errorOnFail()
                     .timeout(Duration.ofMinutes(1))
                     .await();
+            if (visibleOnDisplay) {
+                Poll.forValue("User visible", this::isVisible)
+                        .toBeEqualTo(true)
+                        .errorOnFail()
+                        .timeout(Duration.ofMinutes(1))
+                        .await();
+            }
         } catch (AdbException | PollValueFailedException e) {
-            throw new NeneException("Could not start user " + this, e);
+            if (!userInfo().isEnabled()) {
+                throw new NeneException("Could not start user " + this + ". User is not enabled.");
+            }
+
+            throw new NeneException("Could not start user " + this + ". Relevant logcat: "
+                    + TestApis.logcat().dump(l -> l.contains("ActivityManager")), e);
         }
 
         return this;
@@ -208,8 +300,10 @@ public final class UserReference implements AutoCloseable {
         try {
             // Expects no output on success or failure - stderr output on failure
             ShellCommand.builder("am stop-user")
+//                    .addOperand("-w") // Wait for it to stop
                     .addOperand("-f") // Force stop
                     .addOperand(mId)
+//                    .withTimeout(Duration.ofMinutes(1))
                     .allowEmptyOutput(true)
                     .validate(String::isEmpty)
                     .execute();
@@ -262,20 +356,47 @@ public final class UserReference implements AutoCloseable {
                 }
             }
 
-            // Expects no output on success or failure
-            ShellCommand.builder("am switch-user")
-                    .addOperand(mId)
-                    .allowEmptyOutput(true)
-                    .validate(String::isEmpty)
-                    .execute();
+            ActivityManager am = TestApis.context().instrumentedContext().getSystemService(
+                    ActivityManager.class);
+
+            boolean switched = false;
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                switched = am.switchUser(userHandle());
+            }
+
+            if (!switched) {
+                String error = getSwitchToUserError();
+                if (error != null) {
+                    throw new NeneException(error);
+                }
+
+                if (!exists()) {
+                    throw new NeneException("Tried to switch to user " + this + " but does not exist");
+                }
+
+                // TODO(273229540): It might take a while to fail - we should stream from the
+                // start of the call
+                throw new NeneException("Error switching user to " + this +
+                        ". Relevant logcat: " + TestApis.logcat().dump(
+                                (line) -> line.contains("Cannot switch")));
+            }
 
             if (Versions.meetsMinimumSdkVersionRequirement(R)) {
                 broadcastReceiver.awaitForBroadcast();
+
+                Poll.forValue("current user", () -> TestApis.users().current())
+                        .toBeEqualTo(this)
+                        .await();
+
+                if (!TestApis.users().current().equals(this)) {
+                    throw new NeneException("Error switching user to " + this
+                            + " (current user is " + TestApis.users().current() + "). Relevant logcat: " + TestApis.logcat().dump(
+                            (line) -> line.contains("ActivityManager")));
+                }
             } else {
                 Thread.sleep(20000);
             }
-        } catch (AdbException e) {
-            throw new NeneException("Could not switch to user", e);
+
         } catch (InterruptedException e) {
             Log.e(LOG_TAG, "Interrupted while switching user", e);
         } finally {
@@ -343,6 +464,46 @@ public final class UserReference implements AutoCloseable {
         }
     }
 
+    /** Is the user {@link UserManager#isUserVisible() visible}? */
+    public boolean isVisible() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
+            // Best effort to define visible as "current user or a profile of the current user"
+            UserReference currentUser = TestApis.users().current();
+            boolean isIt = currentUser.equals(this)
+                    || (isProfile() && currentUser.equals(parent()));
+            Log.d(LOG_TAG, "isUserVisible(" + this + "): returning " + isIt + " as best approach");
+            return isIt;
+        }
+        try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
+            boolean isIt = mUserManager.isUserVisible();
+            Log.d(LOG_TAG, "isUserVisible(" + this + "): " + isIt);
+            return isIt;
+        }
+    }
+
+    /** Is the user running in the foreground? */
+    public boolean isForeground() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
+            // Best effort to define foreground as "current user"
+            boolean isIt = TestApis.users().current().equals(this);
+            Log.d(LOG_TAG, "isForeground(" + this + "): returning " + isIt + " as best effort");
+            return isIt;
+        }
+        try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
+            boolean isIt = mUserManager.isUserForeground();
+            Log.d(LOG_TAG, "isUserForeground(" + this + "): " + isIt);
+            return isIt;
+        }
+    }
+
+    /**
+     * Is the user a non-{@link #isProfile() profile} that is running {@link #isVisible()} in the
+     * background?
+     */
+    public boolean isVisibleBagroundNonProfileUser() {
+        return isVisible() && !isForeground() && !isProfile();
+    }
+
     /** Is the user unlocked? */
     public boolean isUnlocked() {
         if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
@@ -367,7 +528,8 @@ public final class UserReference implements AutoCloseable {
             if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
                 mUserType = adbUser().type();
             } else {
-                try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                try (PermissionContext p = TestApis.permissions()
+                        .withPermission(CREATE_USERS, QUERY_USERS)) {
                     String userTypeName = mUserManager.getUserType();
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
@@ -415,7 +577,8 @@ public final class UserReference implements AutoCloseable {
             } else {
                 try (PermissionContext p =
                              TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
-                    UserHandle parentHandle = mUserManager.getProfileParent(userHandle());
+                    UserHandle u = userHandle();
+                    UserHandle parentHandle = mUserManager.getProfileParent(u);
                     if (parentHandle == null) {
                         if (!exists()) {
                             throw new NeneException("User does not exist " + this);
@@ -580,6 +743,7 @@ public final class UserReference implements AutoCloseable {
      * Clear the lock credential for the user.
      */
     private void clearLockCredential(String lockCredential, String lockType) {
+        if (lockCredential == null || lockCredential.length() == 0) return;
         if (!lockType.equals(mLockType) && mLockType != null) {
             String lockTypeSentenceCase = Character.toUpperCase(lockType.charAt(0))
                     + lockType.substring(1);
@@ -747,6 +911,41 @@ public final class UserReference implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "User{id=" + id() + "}";
+        return "User{id=" + id() + ", name=" + name() + "}";
+    }
+
+    /**
+     * {@code true} if this user can be switched to.
+     */
+    public boolean canBeSwitchedTo() {
+        return getSwitchToUserError() == null;
+    }
+
+    /**
+     * {@code true} if this user can show activities.
+     */
+    @Experimental
+    public boolean canShowActivities() {
+        if (!isForeground() && (!isProfile() || !parent().isForeground())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the reason this user cannot be switched to. Null if none.
+     */
+    public String getSwitchToUserError() {
+        if (TestApis.users().isHeadlessSystemUserMode() && equals(TestApis.users().system())) {
+            return "Cannot switch to system user on HSUM devices";
+        }
+
+        UserInfo userInfo = userInfo();
+        if (!userInfo.supportsSwitchTo()) {
+            return "supportsSwitchTo=false(partial=" + userInfo.partial + ", isEnabled=" + userInfo.isEnabled() + ", preCreated=" + userInfo.preCreated + ", isFull=" + userInfo.isFull() + ")";
+        }
+
+        return null;
     }
 }

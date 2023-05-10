@@ -51,7 +51,6 @@ import android.provider.Settings;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.RequiresDevice;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AppOpsUtils;
@@ -409,7 +408,6 @@ public class ExactAlarmsTest {
     }
 
     @Test
-    @RequiresDevice // b/270672228: Need motion-sensor to be present for idle-until alarm.
     public void setExactAwiCallbackQuota() throws Exception {
         assumeTrue(isDeviceIdleEnabled());
         putDeviceToIdle();
@@ -496,7 +494,6 @@ public class ExactAlarmsTest {
     }
 
     @Test
-    @RequiresDevice // b/270672228: Need motion-sensor to be present for idle-until alarm.
     public void setExactAwiWithPermissionWithoutWhitelist() throws Exception {
         assumeTrue(isDeviceIdleEnabled());
         putDeviceToIdle();
@@ -526,9 +523,9 @@ public class ExactAlarmsTest {
     }
 
     private static void assertTempWhitelistState(boolean whitelisted) {
-        final String selfUid = String.valueOf(Process.myUid());
+        final String selfAppId = String.valueOf(UserHandle.getAppId(Process.myUid()));
         SystemUtil.runShellCommand("cmd deviceidle tempwhitelist",
-                output -> (output.contains(selfUid) == whitelisted));
+                output -> (output.contains(selfAppId) == whitelisted));
     }
 
     @Test

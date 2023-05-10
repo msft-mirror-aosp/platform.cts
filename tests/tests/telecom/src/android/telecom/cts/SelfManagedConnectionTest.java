@@ -52,6 +52,9 @@ import android.telecom.cts.thirdptyincallservice.CtsThirdPartyInCallServiceContr
 import android.telecom.cts.thirdptyincallservice.ICtsThirdPartyInCallServiceControl;
 import android.util.Log;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -165,41 +168,46 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void setUp() throws Exception {
+        mContext = getInstrumentation().getContext();
         if (!mShouldTestTelecom) {
+            mShouldTestTelecom = false;
             return;
         }
         super.setUp();
         NewOutgoingCallBroadcastReceiver.reset();
-        mContext = getInstrumentation().getContext();
         mUiAutomation = getInstrumentation().getUiAutomation();
         if (mShouldTestTelecom) {
             mRoleManager = mContext.getSystemService(RoleManager.class);
             setupConnectionService(null, FLAG_ENABLE | FLAG_REGISTER);
             mTelecomManager.registerPhoneAccount(TestUtils.TEST_SELF_MANAGED_PHONE_ACCOUNT_4);
-            mDefaultDialer = getDefaultDialer();
+            if(mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                mDefaultDialer = getDefaultDialer();
+            }
         }
     }
 
     @Override
     protected void tearDown() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
+        if (mShouldTestTelecom) {
+            disableAndVerifyCarMode(mCarModeIncallServiceControlOne,
+                    Configuration.UI_MODE_TYPE_NORMAL);
+            disableAndVerifyCarMode(mCarModeIncallServiceControlTwo,
+                    Configuration.UI_MODE_TYPE_NORMAL);
+
+            disconnectAllCallsAndVerify(mCarModeIncallServiceControlOne);
+            disconnectAllCallsAndVerify(mCarModeIncallServiceControlTwo);
+
+            CtsSelfManagedConnectionService connectionService =
+                    CtsSelfManagedConnectionService.getConnectionService();
+            if (connectionService != null) {
+                connectionService.tearDown();
+                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_4);
+                if(mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                    assertTrue(setDefaultDialer(mDefaultDialer));
+                }
+            }
         }
         super.tearDown();
-
-        disableAndVerifyCarMode(mCarModeIncallServiceControlOne, Configuration.UI_MODE_TYPE_NORMAL);
-        disableAndVerifyCarMode(mCarModeIncallServiceControlTwo, Configuration.UI_MODE_TYPE_NORMAL);
-
-        disconnectAllCallsAndVerify(mCarModeIncallServiceControlOne);
-        disconnectAllCallsAndVerify(mCarModeIncallServiceControlTwo);
-
-        CtsSelfManagedConnectionService connectionService =
-                CtsSelfManagedConnectionService.getConnectionService();
-        if (connectionService != null) {
-            connectionService.tearDown();
-            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_4);
-            assertTrue(setDefaultDialer(mDefaultDialer));
-        }
     }
 
     /**
@@ -233,7 +241,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * mode
      */
     public void testBindToSupportDefaultDialerNoCarMode() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(THIRD_PTY_CONTROL,
@@ -260,7 +268,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * in car mode
      */
     public void testNoBindToUnsupportDefaultDialerNoCarMode() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(THIRD_PTY_CONTROL,
@@ -306,6 +314,8 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * Test {@link TelecomManager#getOwnSelfManagedPhoneAccounts} works on packages with only the
      * {@link android.Manifest.permission#MANAGE_OWN_CALLS} permission.
      */
+    @CddTest(requirements = "7.4.1.2/C-12-1,7.4.1.2/C-12-2")
+    @ApiTest(apis = {"android.telecom.TelecomManager#getOwnSelfManagedPhoneAccounts"})
     public void testTelecomManagerGetSelfManagedPhoneAccountsForPackage() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -368,6 +378,8 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * Test ensures that Incoming video call received with Audio only when
      * car mode with phone account only audio is supported.
      */
+    @CddTest(requirements = "7.4.1.2/C-12-1,7.4.1.2/C-12-2")
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingVideoCallWithNoVideoSupportInCarMode() throws Exception {
         if (!mShouldTestTelecom) {
             return;

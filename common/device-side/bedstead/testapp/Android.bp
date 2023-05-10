@@ -49,7 +49,8 @@ android_library {
         "androidx.annotation_annotation",
         "TestApp_TestApps",
         "TestApp_JavaProtos",
-        "QueryableCommonAndroid"
+        "QueryableCommonAndroid",
+        "auto_value_annotations"
     ],
     manifest: "src/library/main/AndroidManifest.xml",
     min_sdk_version: "29",
@@ -57,6 +58,7 @@ android_library {
     plugins: [
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
+        "auto_annotation_plugin"
     ],
 }
 
@@ -109,6 +111,7 @@ java_genrule {
         ":TestOnlyDeviceAdminTestApp",
         ":LockTaskApp",
         ":DelegateTestApp",
+        ":ContentTestApp",
         ":DevicePolicyManagementRoleHolderTestApp",
         ":RemoteDPCTestApp",
         ":RemoteDPCTestAppTargetingV23",
@@ -120,7 +123,7 @@ java_genrule {
         ":AccountManagementApp",
         ":RemoteAccountAuthenticatorApp",
         ":MLCTestApp",
-        ":MultipleActivitiesTestApp"
+        ":MultipleActivitiesTestApp",
     ],
     out: ["TestApp_Apps.res.zip"],
     tools: [
@@ -135,6 +138,7 @@ java_genrule {
         " && cp $(location :TestOnlyDeviceAdminTestApp) $(genDir)/res/raw" +
         " && cp $(location :LockTaskApp) $(genDir)/res/raw" +
         " && cp $(location :DelegateTestApp) $(genDir)/res/raw" +
+        " && cp $(location :ContentTestApp) $(genDir)/res/raw" +
         " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/res/raw" +
         " && cp $(location :RemoteDPCTestApp) $(genDir)/res/raw" +
         " && cp $(location :RemoteDPCTestAppTargetingV23) $(genDir)/res/raw" +
@@ -156,6 +160,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/EmptyTestAppManifest.xml",
     min_sdk_version: "29",
     sdk_version: "test_current",
@@ -166,6 +171,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/NotEmptyTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -177,6 +183,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/DeviceAdminManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -189,6 +196,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/TestOnlyDeviceAdminManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -201,6 +209,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/LockTaskAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -212,7 +221,20 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/DelegateManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+    sdk_version: "test_current",
+}
+
+android_test_helper_app {
+    name: "ContentTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    defaults: ["mts-target-sdk-version-current"],
+    manifest: "manifests/ContentAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
     sdk_version: "test_current",
@@ -223,6 +245,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/DevicePolicyManagementRoleHolderManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -234,6 +257,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/RemoteDPCManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -302,6 +326,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/DialerAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -313,6 +338,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/SmsAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -324,6 +350,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/accountmanagement"],
     manifest: "manifests/AccountManagementManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -336,6 +363,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/MLCTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
@@ -347,6 +375,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/accountmanagement"],
     manifest: "manifests/RemoteAccountAuthenticatorManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -359,6 +388,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/MultipleActivitiesTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",

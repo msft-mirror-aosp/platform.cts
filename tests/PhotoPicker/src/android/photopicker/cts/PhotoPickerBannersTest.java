@@ -16,16 +16,25 @@
 
 package android.photopicker.cts;
 
+import static android.photopicker.cts.PhotoPickerCloudUtils.disableCloudMediaAndClearAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig;
+import static android.photopicker.cts.PhotoPickerCloudUtils.isCloudMediaEnabled;
 import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImage;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.TIMEOUT;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findBannerActionButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findBannerDismissButton;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findBannerPrimaryText;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findSettingsOverflowMenuItem;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getBannerPrimaryText;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.isPhotoPickerVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsActivityIsVisible;
 import static android.provider.MediaStore.ACTION_PICK_IMAGES;
+import static android.provider.MediaStore.EXTRA_PICK_IMAGES_MAX;
+import static android.provider.MediaStore.getPickImagesMaxLimit;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -35,6 +44,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.photopicker.cts.cloudproviders.CloudProviderPrimary;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.uiautomator.UiObject;
 
@@ -52,23 +62,30 @@ import org.junit.Test;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class PhotoPickerBannersTest extends PhotoPickerBaseTest {
 
+    private static boolean sCloudMediaPreviouslyEnabled;
     private static String sPreviouslyAllowedCloudProviders;
     private Uri mLocalMediaFileUri;
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        // Store the current allowed cloud providers for reset at the end of tests.
-        sPreviouslyAllowedCloudProviders = PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig();
+        // Store the current CMP configs, so that we can reset them at the end of the test.
+        sCloudMediaPreviouslyEnabled = isCloudMediaEnabled();
+        if (sCloudMediaPreviouslyEnabled) {
+            sPreviouslyAllowedCloudProviders = getAllowedProvidersDeviceConfig();
+        }
 
         // Override the allowed cloud providers config to enable the banners.
-        final String allowedCloudProviders = CloudProviderPrimary.AUTHORITY;
-        PhotoPickerCloudUtils.setAllowedProvidersDeviceConfig(allowedCloudProviders);
+        enableCloudMediaAndSetAllowedCloudProviders(sTargetPackageName);
     }
 
     @AfterClass
     public static void tearDownClass() {
-        // Reset the allowed cloud providers device config.
-        PhotoPickerCloudUtils.setAllowedProvidersDeviceConfig(sPreviouslyAllowedCloudProviders);
+        // Reset CloudMedia configs.
+        if (sCloudMediaPreviouslyEnabled) {
+            enableCloudMediaAndSetAllowedCloudProviders(sPreviouslyAllowedCloudProviders);
+        } else {
+            disableCloudMediaAndClearAllowedCloudProviders();
+        }
     }
 
     @Before
@@ -84,6 +101,11 @@ public class PhotoPickerBannersTest extends PhotoPickerBaseTest {
 
     @After
     public void tearDown() throws Exception {
+        if (!isHardwareSupported()) {
+            // No-op, skip tear down if hardware is not supported.
+            return;
+        }
+
         if (mActivity != null) {
             mActivity.finish();
         }
@@ -107,12 +129,13 @@ public class PhotoPickerBannersTest extends PhotoPickerBaseTest {
 
         // 4. Assert that the Banner disappeared while the Picker is still visible.
         assertWithMessage("Timed out waiting for the banner to disappear")
-                .that(dismissButton.waitUntilGone(SHORT_TIMEOUT))
+                .that(dismissButton.waitUntilGone(TIMEOUT))
                 .isTrue();
         assertThatPhotoPickerActivityIsVisible();
     }
 
     @Test
+    @FlakyTest(bugId = 274840171)
     public void testChooseAppBannerOnActionButtonClick() throws Exception {
         // 1. Setting up the 'Choose App' banner.
         setCloudMediaInfoForChooseAppBanner();
@@ -128,19 +151,32 @@ public class PhotoPickerBannersTest extends PhotoPickerBaseTest {
         sDevice.pressBack();
     }
 
-    private void setCloudMediaInfoForChooseAppBanner() {
+    private void setCloudMediaInfoForChooseAppBanner() throws Exception {
         // 1. Set a non-null cloud provider and launch the photo picker.
         setCloudProvider(mContext, CloudProviderPrimary.AUTHORITY);
         launchPickerActivity();
-        // 2. Close the photo picker.
-        mActivity.finish();
-        // 3. Set the cloud provider as None and launch the photo picker.
+
+        // 2. Wait for the banner controller construction.
+        findBannerPrimaryText().waitForExists(TIMEOUT);
+
+        // 3. Set the cloud provider to None and reset the banner data in the same picker session.
+
+        // 3a. Launch the settings activity.
+        final UiObject settingsMenuItem = findSettingsOverflowMenuItem(sDevice);
+        clickAndWait(sDevice, settingsMenuItem);
+        verifySettingsActivityIsVisible();
+
+        // 3b. Set the cloud provider to None.
         setCloudProvider(mContext, /* authority */ null);
-        launchPickerActivity();
+
+        // 3c. Go back to the picker.
+        sDevice.pressBack();
+        assertThatPhotoPickerActivityIsVisible();
     }
 
     private void launchPickerActivity() {
         final Intent intent = new Intent(ACTION_PICK_IMAGES);
+        intent.putExtra(EXTRA_PICK_IMAGES_MAX, getPickImagesMaxLimit());
         mActivity.startActivity(intent);
         assertThatPhotoPickerActivityIsVisible();
     }

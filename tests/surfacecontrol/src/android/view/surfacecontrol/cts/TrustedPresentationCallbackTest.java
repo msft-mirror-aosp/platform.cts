@@ -17,6 +17,7 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.cts.util.ASurfaceControlTestUtils.getSolidBuffer;
 
 import static org.junit.Assert.assertFalse;
@@ -38,8 +39,10 @@ import android.view.SurfaceControl.TrustedPresentationThresholds;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 
+import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -60,19 +63,24 @@ public class TrustedPresentationCallbackTest {
 
     private static final String TAG = "TrustedPresentationListenerTest";
     private static final int STABILITY_REQUIREMENT_MS = 500;
-    private static final int WAIT_TIME_MS = 2000;
+    private static final long WAIT_TIME_MS = HW_TIMEOUT_MULTIPLIER * 2000L;
 
     @Rule
     public ActivityScenarioRule<TestActivity> mActivityRule =
             createFullscreenActivityScenarioRule(TestActivity.class);
 
     private TestActivity mActivity;
-    private final boolean[] mResult = new boolean[1];
+    private final Object mResultsLock = new Object();
+    @GuardedBy("mResultsLock")
+    private boolean mResult;
+    @GuardedBy("mResultsLock")
+    private boolean mReceivedResults;
 
     @Before
     public void setup() {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mResult[0] = false;
+        mResult = false;
+        mReceivedResults = false;
     }
 
     private void registerTrustedPresentationCallback(SurfaceControl sc) {
@@ -81,11 +89,12 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl.Transaction t = new SurfaceControl.Transaction();
         t.setTrustedPresentationCallback(sc, thresholds, mActivity.mExecutor,
                 inTrustedPresentationState -> {
-                    synchronized (mResult) {
+                    synchronized (mResultsLock) {
                         Log.d(TAG,
                                 "onTrustedPresentationChanged " + inTrustedPresentationState);
-                        mResult[0] = inTrustedPresentationState;
-                        mResult.notify();
+                        mResult = inTrustedPresentationState;
+                        mReceivedResults = true;
+                        mResultsLock.notify();
                     }
                 }).apply();
     }
@@ -117,16 +126,20 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            // Make sure we received the results and not just timed out
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().setVisibility(sc, false).apply();
-            mResult.wait(WAIT_TIME_MS);
-            assertFalse(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
     }
 
@@ -138,23 +151,25 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(5000);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             CountDownLatch countDownLatch = new CountDownLatch(1);
             mActivity.runOnUiThread(() -> {
                 mActivity.mSurfaceView.setVisibility(View.INVISIBLE);
                 countDownLatch.countDown();
             });
             countDownLatch.await(WAIT_TIME_MS, TimeUnit.MILLISECONDS);
-            mResult.wait(WAIT_TIME_MS);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
-
-        assertFalse(mResult[0]);
     }
 
     @Test
@@ -163,16 +178,19 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().setAlpha(sc, .5f).apply();
-            mResult.wait(WAIT_TIME_MS);
-            assertFalse(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
     }
 
@@ -182,18 +200,21 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().setCrop(sc,
                     new Rect(0, 0, mActivity.mSvSize.getWidth() / 2,
                             mActivity.mSvSize.getHeight() / 2)).apply();
-            mResult.wait(WAIT_TIME_MS);
-            assertFalse(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
     }
 
@@ -205,19 +226,22 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc2 = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc1);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc1, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
         // Make Second SC visible
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             // Only cover half, but because we're looking for all pixels visible, it will still
             // cause the tpc to exit
             setBuffer(sc2, mActivity.mSvSize.getWidth() / 2, mActivity.mSvSize.getHeight() / 2);
-            mResult.wait(WAIT_TIME_MS);
-            assertFalse(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
     }
 
@@ -227,24 +251,29 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().setCrop(sc,
                     new Rect(0, 0, mActivity.mSvSize.getWidth() / 2,
                             mActivity.mSvSize.getHeight() / 2)).apply();
-            mResult.wait(WAIT_TIME_MS);
-            assertFalse(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertFalse(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().setCrop(sc, null).apply();
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
     }
 
@@ -286,22 +315,23 @@ public class TrustedPresentationCallbackTest {
         SurfaceControl sc = createChildSc(rootSc);
         registerTrustedPresentationCallback(sc);
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
             new SurfaceControl.Transaction().clearTrustedPresentationCallback(sc)
                     .setVisibility(sc, false).apply();
-            long startTime = System.currentTimeMillis();
-            mResult.wait(WAIT_TIME_MS);
+            mResultsLock.wait(WAIT_TIME_MS);
             // Ensure we waited the full time and never received a notify on the result from the
             // callback.
-            assertTrue(System.currentTimeMillis() - startTime >= WAIT_TIME_MS);
+            assertFalse("Should never have received a callback", mReceivedResults);
             // results shouldn't have changed.
-            assertTrue(mResult[0]);
+            assertTrue(mResult);
         }
     }
 
@@ -323,7 +353,7 @@ public class TrustedPresentationCallbackTest {
         t.setTrustedPresentationCallback(sc, thresholds, mActivity.mExecutor,
                 inTrustedPresentationState -> {
                     latch2.countDown();
-                    mResult[0] = inTrustedPresentationState;
+                    mResult = inTrustedPresentationState;
                 }).apply();
 
         setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
@@ -333,7 +363,7 @@ public class TrustedPresentationCallbackTest {
         assertFalse(latch1.await(WAIT_TIME_MS, TimeUnit.MILLISECONDS));
         assertTrue(latch2.await(WAIT_TIME_MS, TimeUnit.MILLISECONDS));
 
-        assertTrue(mResult[0]);
+        assertTrue(mResult);
     }
 
     @Test
@@ -343,22 +373,25 @@ public class TrustedPresentationCallbackTest {
         registerTrustedPresentationCallback(sc);
 
         // Ensure received tpc callback so we know it's ready.
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
         // Register a new trusted presentation listener to make sure we get a callback if we
         // registered after already in the trusted presented state. We'll need to wait the full
         // time again.
-        synchronized (mResult) {
-            mResult[0] = false;
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
+            mResult = false;
             registerTrustedPresentationCallback(sc);
             long startTime = System.currentTimeMillis();
-            mResult.wait(WAIT_TIME_MS);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
             assertTrue(System.currentTimeMillis() - startTime >= STABILITY_REQUIREMENT_MS);
-            assertTrue(mResult[0]);
+            assertTrue(mResult);
         }
     }
 
@@ -369,40 +402,45 @@ public class TrustedPresentationCallbackTest {
         registerTrustedPresentationCallback(sc);
 
         // Ensure received tpc callback so we know it's ready.
-        synchronized (mResult) {
+        synchronized (mResultsLock) {
             setBuffer(sc, mActivity.mSvSize.getWidth(), mActivity.mSvSize.getHeight());
-            mResult.wait(WAIT_TIME_MS);
-            assertTrue(mResult[0]);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
+            assertTrue(mResult);
         }
 
 
         // Register a new trusted presentation listener to make sure we get a callback if we
         // registered after already in the trusted presented state. We'll need to wait the full
         // time again.
-        synchronized (mResult) {
-            mResult[0] = false;
+        synchronized (mResultsLock) {
+            mReceivedResults = false;
+            mResult = false;
             // Use a long stability requirement so we don't accidentally trigger it too early.
             TrustedPresentationThresholds thresholds = new TrustedPresentationThresholds(
-                    1 /* minAlpha */, 1 /* minFractionRendered */, 20000);
+                    1 /* minAlpha */, 1 /* minFractionRendered */, HW_TIMEOUT_MULTIPLIER * 20000);
             SurfaceControl.Transaction t = new SurfaceControl.Transaction();
             t.setTrustedPresentationCallback(sc, thresholds, mActivity.mExecutor,
                     inTrustedPresentationState -> {
-                        synchronized (mResult) {
-                            mResult[0] = inTrustedPresentationState;
-                            mResult.notify();
+                        synchronized (mResultsLock) {
+                            mResult = inTrustedPresentationState;
+                            mReceivedResults = true;
+                            mResultsLock.notify();
                         }
                     }).apply();
         }
 
 
         new SurfaceControl.Transaction().clearTrustedPresentationCallback(sc).apply();
-        synchronized (mResult) {
-            assertFalse(mResult[0]);
+        synchronized (mResultsLock) {
+            assertFalse(mResult);
+            assertFalse(mReceivedResults);
             registerTrustedPresentationCallback(sc);
             long startTime = System.currentTimeMillis();
-            mResult.wait(WAIT_TIME_MS);
+            mResultsLock.wait(WAIT_TIME_MS);
+            assertTrue("Timed out waiting for results ", mReceivedResults);
             assertTrue(System.currentTimeMillis() - startTime >= STABILITY_REQUIREMENT_MS);
-            assertTrue(mResult[0]);
+            assertTrue(mResult);
         }
     }
 
@@ -417,20 +455,27 @@ public class TrustedPresentationCallbackTest {
         private final ArraySet<SurfaceControl> mSurfaceControls = new ArraySet<>();
         private final ArraySet<HardwareBuffer> mBuffers = new ArraySet<>();
 
-        private final Size mSvSize = new Size(500, 500);
+        private Size mSvSize;
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
-            FrameLayout content = new FrameLayout(this);
             super.onCreate(savedInstanceState);
+            WindowManager wm = getSystemService(WindowManager.class);
+            Rect bounds = wm.getCurrentWindowMetrics().getBounds();
+            // Make sure the content rendering is smaller than the display and not getting cut off
+            // by the edges.
+            mSvSize = new Size(bounds.width() / 2, bounds.height() / 2);
+
+            FrameLayout content = new FrameLayout(this);
             mSurfaceView = new SurfaceView(this);
-            content.addView(mSurfaceView, new FrameLayout.LayoutParams(
-                    mSvSize.getWidth(), mSvSize.getHeight(),
-                    Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+            content.addView(mSurfaceView,
+                    new FrameLayout.LayoutParams(mSvSize.getWidth(), mSvSize.getHeight(),
+                            Gravity.CENTER));
             setContentView(content);
 
             mSurfaceView.setZOrderOnTop(true);
             mSurfaceView.getHolder().addCallback(this);
+
         }
 
         @Override

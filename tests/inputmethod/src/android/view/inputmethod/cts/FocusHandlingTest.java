@@ -90,7 +90,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -172,7 +171,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
             // Emulate tap event
-            CtsTouchUtils.emulateTapOnViewCenter(
+            mCtsTouchUtils.emulateTapOnViewCenter(
                     InstrumentationRegistry.getInstrumentation(), null, editText);
 
             // Wait until "onStartInput" gets called for the EditText.
@@ -453,7 +452,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Expect showSoftInput called when the editor is focused.
             instrumentation.runOnMainSync(editTextRef.get()::requestFocus);
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editTextRef.get());
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editTextRef.get());
             assertTrue(TestUtils.getOnMainSync(() -> editTextRef.get().hasFocus()
                     && editTextRef.get().hasWindowFocus()));
             expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
@@ -692,7 +691,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             // Emulate tap event
-            CtsTouchUtils.emulateTapOnViewCenter(
+            mCtsTouchUtils.emulateTapOnViewCenter(
                     InstrumentationRegistry.getInstrumentation(), null, editText);
 
             // "showSoftInput" must not happen when setShowSoftInputOnFocus(false) is called.
@@ -720,7 +719,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
             // Emulate tap event
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             TestUtils.waitOnMainUntil(editTextHasWindowFocus::get, TIMEOUT);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -742,7 +741,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             });
             TestUtils.waitOnMainUntil(popupTextHasViewFocus::get, TIMEOUT);
 
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, popupTextView);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, popupTextView);
             TestUtils.waitOnMainUntil(() -> popupTextHasWindowFocus.get()
                             && !editTextHasWindowFocus.get(), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
@@ -750,7 +749,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Emulate tap event for editText again, verify soft keyboard and window focus will
             // come back.
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             TestUtils.waitOnMainUntil(() -> editTextHasWindowFocus.get()
                     && !popupTextHasWindowFocus.get(), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -793,7 +792,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Emulate tap event, expect there is no "onStartInput", and "showSoftInput" happened.
             final EditText editText = editTextRef.get();
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
             notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
                     NOT_EXPECT_TIMEOUT);
@@ -810,7 +809,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                     testActivity.getWindow().getAttributes().flags), TIMEOUT);
 
             // Emulate tap event again.
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             assertTrue(TestUtils.getOnMainSync(() -> editText.hasFocus()
                     && editText.hasWindowFocus()));
 
@@ -838,7 +837,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                     != serviceSession.getService().getMainLooper());
 
             // Emulate tap event
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, popupTextView);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, popupTextView);
 
             // Wait until the UI thread countDownLatch reach to 0 or timeout
             assertTrue(uiThreadSignal.await(EXPECT_TIMEOUT, TimeUnit.MILLISECONDS));
@@ -878,7 +877,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Emulate tap event
             final EditText editText = editTextRef.get();
-            CtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
 
             // "onStartInput" and "showSoftInput" gets called for the EditText.
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -1083,6 +1082,37 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         });
 
         assertTrue(getOnMainSync(() -> imm.get().isActive(secondEditorRef.get())));
+    }
+
+    @AppModeFull(reason = "Instant apps cannot start TranslucentActivity from existing activity.")
+    @Test
+    public void testClearCurRootViewWhenDifferentProcessBecomesActive() throws Exception {
+        final var editorRef = new AtomicReference<EditText>();
+        final var imm = new AtomicReference<InputMethodManager>();
+
+        final var testActivity = TestActivity.startSync(activity -> {
+            final var layout = new LinearLayout(activity);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            final var editText = new EditText(activity);
+            editText.requestFocus();
+            editorRef.set(editText);
+            layout.addView(editText);
+            imm.set(activity.getSystemService(InputMethodManager.class));
+            return layout;
+        });
+
+        waitOnMainUntil(() -> imm.get().isActive(editorRef.get()), TIMEOUT);
+
+        // launch activity in a different package.
+        final var intent = new Intent(Intent.ACTION_MAIN);
+        intent.setComponent(new ComponentName(
+                "android.view.inputmethod.ctstestapp",
+                "android.view.inputmethod.ctstestapp.TranslucentActivity"));
+        runOnMainSync(() -> testActivity.startActivity(intent));
+
+        waitOnMainUntil(() -> !imm.get().isCurrentRootView(editorRef.get()), TIMEOUT,
+                "Initial activity did not lose IME connection after second activity started.");
     }
 
     /**

@@ -50,8 +50,6 @@ import android.view.WindowManager;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
 
-import androidx.test.filters.FlakyTest;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -260,7 +258,6 @@ public class MultiWindowTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 269538773)
     public void testLaunchToSideAndBringToFront() {
         launchActivitiesInSplitScreen(
                 getLaunchActivityBuilder().setTargetActivity(LAUNCHING_ACTIVITY),
@@ -268,6 +265,9 @@ public class MultiWindowTests extends ActivityManagerTestBase {
 
         mWmState.assertFocusedActivity("Launched to side activity must be in front.",
                 TEST_ACTIVITY);
+
+        // Set secondary split as launch root
+        mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
 
         // Launch another activity to side to cover first one.
         launchActivityInSecondarySplit(NO_RELAUNCH_ACTIVITY);
@@ -452,20 +452,16 @@ public class MultiWindowTests extends ActivityManagerTestBase {
                     mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE);
 
             // Verify specifying non-fullscreen windowing mode will fail.
-            boolean exceptionThrown = false;
-            try {
-                runWithShellPermission(() -> {
-                    final WindowContainerTransaction wct = new WindowContainerTransaction()
-                            .setWindowingMode(
-                                    mTaskOrganizer.getTaskInfo(task.mTaskId).getToken(),
-                                    WINDOWING_MODE_MULTI_WINDOW);
-                    mTaskOrganizer.applyTransaction(wct);
-                });
-            } catch (UnsupportedOperationException e) {
-                exceptionThrown = true;
-            }
-            assertTrue("Not allowed to specify windowing mode while in locked task mode.",
-                    exceptionThrown);
+            runWithShellPermission(() -> {
+                final WindowContainerTransaction wct = new WindowContainerTransaction()
+                        .setWindowingMode(
+                                mTaskOrganizer.getTaskInfo(task.mTaskId).getToken(),
+                                WINDOWING_MODE_MULTI_WINDOW);
+                mTaskOrganizer.applyTransaction(wct);
+            });
+            mWmState.computeState(TEST_ACTIVITY);
+            assertEquals(WINDOWING_MODE_FULLSCREEN,
+                    mWmState.getWindowState(TEST_ACTIVITY).getWindowingMode());
         } finally {
             runWithShellPermission(() -> {
                 mAtm.stopSystemLockTaskMode();

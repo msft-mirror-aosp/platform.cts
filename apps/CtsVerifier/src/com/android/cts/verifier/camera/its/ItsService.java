@@ -30,6 +30,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -54,6 +55,7 @@ import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.cts.PerformanceTest;
+import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.ExtensionSessionConfiguration;
 import android.hardware.camera2.params.InputConfiguration;
@@ -78,7 +80,9 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Vibrator;
 import android.util.Log;
 import android.util.Pair;
@@ -156,6 +160,7 @@ public class ItsService extends Service implements SensorEventListener {
     // Timeouts, in seconds.
     private static final int TIMEOUT_CALLBACK = 20;
     private static final int TIMEOUT_3A = 10;
+    private static final int TIMEOUT_AUTOFRAMING = 10;
 
     // Time given for background requests to warm up pipeline
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
@@ -192,6 +197,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String EVCOMP_KEY = "evComp";
     public static final String AUTO_FLASH_KEY = "autoFlash";
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
+    public static final String AUTOFRAMING_KEY = "autoframing";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
     public static final int AVAILABILITY_TIMEOUT_MS = 10;
 
@@ -217,7 +223,7 @@ public class ItsService extends Service implements SensorEventListener {
     private CameraManager mCameraManager = null;
     private HandlerThread mCameraThread = null;
     private Handler mCameraHandler = null;
-    private BlockingCameraManager mBlockingCameraManager = null;
+    private ItsService.BlockingCameraManager mBlockingCameraManager = null;
     private BlockingStateCallback mCameraListener = null;
     private CameraDevice mCamera = null;
     private CameraCaptureSession mSession = null;
@@ -271,6 +277,7 @@ public class ItsService extends Service implements SensorEventListener {
     private CaptureRequest.Builder mCaptureRequestBuilder;
 
     private volatile ConditionVariable mInterlock3A = new ConditionVariable(true);
+    private volatile ConditionVariable mInterlockAutoframing = new ConditionVariable(true);
 
     final Object m3AStateLock = new Object();
     private volatile boolean mConvergedAE = false;
@@ -289,6 +296,8 @@ public class ItsService extends Service implements SensorEventListener {
                 new LinkedBlockingQueue<>();
     private Set<String> mUnavailablePhysicalCameras;
 
+    final Object mAutoframingStateLock = new Object();
+    private volatile boolean mConvergedAutoframing = false;
 
     class MySensorEvent {
         public Sensor sensor;
@@ -398,7 +407,7 @@ public class ItsService extends Service implements SensorEventListener {
             if (mCameraManager == null) {
                 throw new ItsException("Failed to connect to camera manager");
             }
-            mBlockingCameraManager = new BlockingCameraManager(mCameraManager);
+            mBlockingCameraManager = new ItsService.BlockingCameraManager(mCameraManager);
             mCameraListener = new BlockingStateCallback();
 
             // Register for motion events.
@@ -509,7 +518,39 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    public void openCameraDevice(String cameraId) throws ItsException {
+    private static class BlockingCameraManager
+            extends com.android.ex.camera2.blocking.BlockingCameraManager {
+
+        BlockingCameraManager(CameraManager manager) {
+            super(manager);
+        }
+
+        public CameraDevice openCamera(String cameraId, boolean overrideToPortrait,
+                CameraDevice.StateCallback listener, Handler handler)
+                throws CameraAccessException, BlockingOpenException {
+            if (handler == null) {
+                throw new IllegalArgumentException("handler must not be null");
+            } else if (handler.getLooper() == Looper.myLooper()) {
+                throw new IllegalArgumentException(
+                        "handler's looper must not be the current looper");
+            }
+
+            return (new OpenListener(mManager, cameraId, overrideToPortrait, listener, handler))
+                    .blockUntilOpen();
+        }
+
+        protected class OpenListener
+                extends com.android.ex.camera2.blocking.BlockingCameraManager.OpenListener {
+            OpenListener(CameraManager manager, String cameraId, boolean overrideToPortrait,
+                    CameraDevice.StateCallback listener, Handler handler)
+                    throws CameraAccessException {
+                super(cameraId, listener);
+                manager.openCamera(cameraId, overrideToPortrait, handler, this);
+            }
+        }
+    }
+
+    public void openCameraDevice(String cameraId, JSONObject cmdObj) throws ItsException {
         Logt.i(TAG, String.format("Opening camera %s", cameraId));
 
         // Get initial physical unavailable callbacks without opening camera
@@ -543,7 +584,13 @@ public class ItsService extends Service implements SensorEventListener {
             mUnavailablePhysicalCameras = getUnavailablePhysicalCameras(
                     unavailablePhysicalCamEventQueue, cameraId);
             Log.i(TAG, "Unavailable cameras:" + Arrays.asList(mUnavailablePhysicalCameras.toString()));
-            mCamera = mBlockingCameraManager.openCamera(cameraId, mCameraListener, mCameraHandler);
+            if (cmdObj.has("overrideToPortrait")) {
+                mCamera = mBlockingCameraManager.openCamera(cameraId,
+                        cmdObj.getBoolean("overrideToPortrait"), mCameraListener, mCameraHandler);
+            } else {
+                mCamera = mBlockingCameraManager.openCamera(cameraId, mCameraListener,
+                        mCameraHandler);
+            }
             mCameraCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
             mCameraExtensionCharacteristics = mCameraManager.getCameraExtensionCharacteristics(
                     cameraId);
@@ -566,6 +613,8 @@ public class ItsService extends Service implements SensorEventListener {
             throw new ItsException("Failed to open camera", e);
         } catch (BlockingOpenException e) {
             throw new ItsException("Failed to open camera (after blocking)", e);
+        } catch (org.json.JSONException e) {
+            throw new ItsException("Failed to read open camera command", e);
         } catch (Exception e) {
             throw new ItsException("Failed to get unavailable physical cameras", e);
         }
@@ -841,7 +890,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, "Start processing command" + cmdObj.getString("cmdName"));
                 if ("open".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
-                    openCameraDevice(cameraId);
+                    openCameraDevice(cameraId, cmdObj);
                 } else if ("close".equals(cmdObj.getString("cmdName"))) {
                     closeCameraDevice();
                 } else if ("getCameraProperties".equals(cmdObj.getString("cmdName"))) {
@@ -856,6 +905,8 @@ public class ItsService extends Service implements SensorEventListener {
                     doGetSensorEvents();
                 } else if ("do3A".equals(cmdObj.getString("cmdName"))) {
                     do3A(cmdObj);
+                } else if ("doAutoframing".equals(cmdObj.getString("cmdName"))) {
+                    doAutoframing(cmdObj);
                 } else if ("doCapture".equals(cmdObj.getString("cmdName"))) {
                     doCapture(cmdObj);
                 } else if ("doVibrate".equals(cmdObj.getString("cmdName"))) {
@@ -919,6 +970,11 @@ public class ItsService extends Service implements SensorEventListener {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
                     doCheckHLG10Support(cameraId, profileId);
+                } else if ("isP3Supported".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    doCheckP3Support(cameraId);
+                } else if ("isLandscapeToPortraitEnabled".equals(cmdObj.getString("cmdName"))) {
+                    doCheckLandscapeToPortraitEnabled();
                 } else if ("doCaptureWithFlash".equals(cmdObj.getString("cmdName"))) {
                     doCaptureWithFlash(cmdObj);
                 } else if ("doGetUnavailablePhysicalCameras".equals(cmdObj.getString("cmdName"))) {
@@ -1101,6 +1157,10 @@ public class ItsService extends Service implements SensorEventListener {
                         jsonSurface.put("format", "raw12");
                     } else if (format == ImageFormat.JPEG) {
                         jsonSurface.put("format", "jpeg");
+                    } else if (format == ImageFormat.JPEG_R) {
+                        jsonSurface.put("format", "jpeg_r");
+                    } else if (format == ImageFormat.PRIVATE) {
+                        jsonSurface.put("format", "priv");
                     } else if (format == ImageFormat.YUV_420_888) {
                         jsonSurface.put("format", "yuv");
                     } else if (format == ImageFormat.Y8) {
@@ -1219,8 +1279,13 @@ public class ItsService extends Service implements SensorEventListener {
 
         try {
             String cameraId = params.getString("cameraId");
-            CameraCharacteristics characteristics =
-                    mCameraManager.getCameraCharacteristics(cameraId);
+            CameraCharacteristics characteristics = null;
+            if (params.has("overrideToPortrait")) {
+                characteristics = mCameraManager.getCameraCharacteristics(cameraId,
+                        params.getBoolean("overrideToPortrait"));
+            } else {
+                characteristics = mCameraManager.getCameraCharacteristics(cameraId);
+            }
             mSocketRunnableObj.sendResponse(characteristics);
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
@@ -1518,6 +1583,45 @@ public class ItsService extends Service implements SensorEventListener {
                 codecSupported && cameraHLG10OutputSupported ? "true" : "false");
     }
 
+    private void doCheckP3Support(String cameraId) throws ItsException {
+        if (mItsCameraIdList == null) {
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+        }
+        if (mItsCameraIdList.mCameraIds.size() == 0) {
+            throw new ItsException("No camera devices");
+        }
+        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
+            throw new ItsException("Invalid cameraId " + cameraId);
+        }
+        boolean cameraP3OutputSupported = false;
+        try {
+            CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
+            int[] caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            boolean colorSpaceProfilesSupported = IntStream.of(caps).anyMatch(x -> x
+                    == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (colorSpaceProfilesSupported) {
+                ColorSpaceProfiles colorSpaceProfiles = c.get(
+                        CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+                Set<ColorSpace.Named> colorSpaces =
+                        colorSpaceProfiles.getSupportedColorSpaces(ImageFormat.UNKNOWN);
+                if (colorSpaces.contains(ColorSpace.Named.DISPLAY_P3)) {
+                    cameraP3OutputSupported = true;
+                }
+            }
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to get camera characteristics", e);
+        }
+
+        mSocketRunnableObj.sendResponse("p3Response", cameraP3OutputSupported ? "true" : "false");
+    }
+
+    private void doCheckLandscapeToPortraitEnabled() throws ItsException {
+        boolean enabled = SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP,
+                false);
+        mSocketRunnableObj.sendResponse("landscapeToPortraitEnabledResponse",
+                enabled ? "true" : "false");
+    }
+
     private void doCheckPerformanceClass() throws ItsException {
         boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_R);
 
@@ -1762,7 +1866,7 @@ public class ItsService extends Service implements SensorEventListener {
 
                 synchronized(m3AStateLock) {
                     // If not converged yet, issue another capture request.
-                    if (       (mDoAE && (!triggeredAE || !mConvergedAE))
+                    if ((mDoAE && (!triggeredAE || !mConvergedAE))
                             || !mConvergedAWB
                             || (mDoAF && (!triggeredAF || !mConvergedAF))
                             || (mDoAE && mNeedsLockedAE && !mLockedAE)
@@ -1863,6 +1967,87 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    private void doAutoframing(JSONObject params) throws ItsException {
+        AutoframingResultListener autoframingListener = new AutoframingResultListener();
+        try {
+            CameraCharacteristics c = mCameraCharacteristics;
+            Size[] sizes = ItsUtils.getYuvOutputSizes(c);
+            int[] outputFormats = new int[1];
+            outputFormats[0] = ImageFormat.YUV_420_888;
+            Size[] outputSizes = new Size[1];
+            outputSizes[0] = sizes[0];
+            int width = outputSizes[0].getWidth();
+            int height = outputSizes[0].getHeight();
+
+            prepareImageReaders(outputSizes, outputFormats, /*inputSize*/null, /*inputFormat*/0,
+                    /*maxInputBuffers*/0);
+
+            List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>(1);
+            OutputConfiguration config =
+                    new OutputConfiguration(mOutputImageReaders[0].getSurface());
+            outputConfigs.add(config);
+            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
+            mCamera.createCaptureSessionByOutputConfigurations(
+                    outputConfigs, sessionListener, mCameraHandler);
+            mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+
+            // Add a listener that just recycles buffers; they aren't saved anywhere.
+            ImageReader.OnImageAvailableListener readerListener =
+                    createAvailableListenerDropper();
+            mOutputImageReaders[0].setOnImageAvailableListener(readerListener, mSaveHandlers[0]);
+
+            double zoomRatio = params.optDouble(ZOOM_RATIO_KEY);
+
+            mInterlockAutoframing.open();
+            synchronized (mAutoframingStateLock) {
+                mConvergedAutoframing = false;
+            }
+
+            long tstart = System.currentTimeMillis();
+
+            // Keep issuing capture requests until autoframing has converged.
+            while (true) {
+                // Block until the next autoframing frame.
+                if (!mInterlockAutoframing.block(TIMEOUT_AUTOFRAMING * 1000)
+                        || System.currentTimeMillis() - tstart > TIMEOUT_AUTOFRAMING * 1000) {
+                    throw new ItsException(
+                            "Autoframing failed to converge after " + TIMEOUT_AUTOFRAMING
+                                    + " seconds.\n"
+                                    + "Autoframing converge state: " + mConvergedAutoframing + ".");
+                }
+                mInterlockAutoframing.close();
+
+                synchronized (mAutoframingStateLock) {
+                    if (!mConvergedAutoframing) {
+                        CaptureRequest.Builder req = mCamera.createCaptureRequest(
+                                CameraDevice.TEMPLATE_PREVIEW);
+                        req.set(CaptureRequest.CONTROL_AUTOFRAMING,
+                                CaptureRequest.CONTROL_AUTOFRAMING_ON);
+                        if (!Double.isNaN(zoomRatio)) {
+                            req.set(CaptureRequest.CONTROL_ZOOM_RATIO, (float) zoomRatio);
+                        }
+                        req.addTarget(mOutputImageReaders[0].getSurface());
+
+                        mSession.setRepeatingRequest(req.build(), autoframingListener,
+                                mResultHandler);
+                    } else {
+                        mSocketRunnableObj.sendResponse("autoframingConverged", "");
+                        Logt.i(TAG, "Autoframing converged");
+                        break;
+                    }
+                }
+            }
+        } catch (android.hardware.camera2.CameraAccessException e) {
+            throw new ItsException("Access error: ", e);
+        } finally {
+            mSocketRunnableObj.sendResponse("autoframingDone", "");
+            autoframingListener.stop();
+            if (mSession != null) {
+                mSession.close();
+            }
+        }
+    }
+
     private void doVibrate(JSONObject params) throws ItsException {
         try {
             if (mVibrator == null) {
@@ -1909,14 +2094,16 @@ public class ItsService extends Service implements SensorEventListener {
      * image readers for the parsed output surface sizes, output formats, and the given input
      * size and format.
      */
-    private void prepareImageReadersWithOutputSpecs(JSONArray jsonOutputSpecs, Size inputSize,
-            int inputFormat, int maxInputBuffers, boolean backgroundRequest) throws ItsException {
+    private boolean prepareImageReadersWithOutputSpecs(JSONArray jsonOutputSpecs,
+            Size inputSize, int inputFormat, int maxInputBuffers,
+            boolean backgroundRequest) throws ItsException {
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
         mPhysicalStreamMap.clear();
         mStreamUseCaseMap.clear();
 
+        boolean is10bitOutputPresent = false;
         if (jsonOutputSpecs != null) {
             try {
                 numSurfaces = jsonOutputSpecs.length();
@@ -1953,6 +2140,13 @@ public class ItsService extends Service implements SensorEventListener {
                         sizes = ItsUtils.getYuvOutputSizes(cameraCharacteristics);
                     } else if ("jpg".equals(sformat) || "jpeg".equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG;
+                        sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
+                    } else if ("jpeg_r".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.JPEG_R;
+                        sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
+                        is10bitOutputPresent = true;
+                    } else if ("priv".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
                     } else if ("raw".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
@@ -2030,6 +2224,8 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         prepareImageReaders(outputSizes, outputFormats, inputSize, inputFormat, maxInputBuffers);
+
+        return is10bitOutputPresent;
     }
 
     /**
@@ -2809,8 +3005,9 @@ public class ItsService extends Service implements SensorEventListener {
 
                 JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
 
-                prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                        /*inputFormat*/0, /*maxInputBuffers*/0, backgroundRequest);
+                boolean is10bitOutputPresent = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                        /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                        backgroundRequest);
                 numSurfaces = mOutputImageReaders.length;
                 numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0);
 
@@ -2824,6 +3021,20 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                     if (mStreamUseCaseMap.get(i) != null) {
                         config.setStreamUseCase(mStreamUseCaseMap.get(i));
+                    }
+                    if (jsonOutputSpecs != null) {
+                        if (i < jsonOutputSpecs.length()) {
+                            JSONObject surfaceObj = jsonOutputSpecs.getJSONObject(i);
+                            int colorSpaceInt = surfaceObj.optInt(
+                                "colorSpace", ColorSpaceProfiles.UNSPECIFIED);
+                            if (colorSpaceInt != ColorSpaceProfiles.UNSPECIFIED) {
+                                config.setColorSpace(ColorSpace.Named.values()[colorSpaceInt]);
+                            }
+                        }
+                    }
+                    if (is10bitOutputPresent) {
+                        // HLG10 is mandatory for all 10-bit output capable devices
+                        config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
                     }
                     outputConfigs.add(config);
                 }
@@ -2850,6 +3061,8 @@ public class ItsService extends Service implements SensorEventListener {
 
             } catch (CameraAccessException e) {
                 throw new ItsException("Error configuring outputs", e);
+            } catch (org.json.JSONException e) {
+                throw new ItsException("Error parsing params", e);
             }
 
             // Start background requests and let it warm up pipeline
@@ -3101,7 +3314,20 @@ public class ItsService extends Service implements SensorEventListener {
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     int count = mCountJpg.getAndIncrement();
-                    mSocketRunnableObj.sendResponseCaptureBuffer("jpegImage"+physicalCameraId, buf);
+                    mSocketRunnableObj.sendResponseCaptureBuffer("jpegImage" + physicalCameraId,
+                            buf);
+                } else if (format == ImageFormat.JPEG_R) {
+                    Logt.i(TAG, "Received JPEG/R capture");
+                    byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
+                    ByteBuffer buf = ByteBuffer.wrap(img);
+                    int count = mCountJpg.getAndIncrement();
+                    mSocketRunnableObj.sendResponseCaptureBuffer("jpeg_rImage"+physicalCameraId,
+                            buf);
+                } else if (format == ImageFormat.PRIVATE) {
+                    Logt.i(TAG, "Received PRIVATE capture");
+                    // Private images have client opaque buffers
+                    mSocketRunnableObj.sendResponseCaptureBuffer("privImage"+physicalCameraId,
+                            null);
                 } else if (format == ImageFormat.YUV_420_888) {
                     Logt.i(TAG, "Received YUV capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
@@ -3438,6 +3664,51 @@ public class ItsService extends Service implements SensorEventListener {
 
         public void stop() {
             stopped = true;
+        }
+    }
+
+    private class AutoframingResultListener extends CaptureResultListener {
+        private volatile boolean mStopped = false;
+
+        @Override
+        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
+                long timestamp, long frameNumber) {
+        }
+
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
+                TotalCaptureResult result) {
+            try {
+                if (mStopped) {
+                    return;
+                }
+
+                if (request == null || result == null) {
+                    throw new ItsException("Request/Result is invalid");
+                }
+
+                Logt.i(TAG, buildLogString(result));
+
+                synchronized (mAutoframingStateLock) {
+                    if (result.get(CaptureResult.CONTROL_AUTOFRAMING_STATE) != null) {
+                        mConvergedAutoframing = result.get(CaptureResult.CONTROL_AUTOFRAMING_STATE)
+                                == CaptureResult.CONTROL_AUTOFRAMING_STATE_CONVERGED;
+                    }
+                }
+                mInterlockAutoframing.open();
+            } catch (ItsException e) {
+                Logt.e(TAG, "Script error: ", e);
+            }
+        }
+
+        @Override
+        public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
+                CaptureFailure failure) {
+            Logt.e(TAG, "Script error: capture failed");
+        }
+
+        public void stop() {
+            mStopped = true;
         }
     }
 

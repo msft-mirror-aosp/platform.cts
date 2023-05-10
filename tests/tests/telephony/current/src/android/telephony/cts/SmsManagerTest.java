@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -154,10 +155,8 @@ public class SmsManagerTest {
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
         mContext = getContext();
-        mTelephonyManager =
-            (TelephonyManager) getContext().getSystemService(
-                    Context.TELEPHONY_SERVICE);
-        mSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
+        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
+        mSubscriptionManager = mContext.getSystemService(SubscriptionManager.class);
         mDestAddr = mTelephonyManager.getLine1Number();
         mText = "This is a test message";
 
@@ -276,6 +275,11 @@ public class SmsManagerTest {
                 TextUtils.isEmpty(mDestAddr));
 
         String mccmnc = mTelephonyManager.getSimOperator();
+        int carrierId = mTelephonyManager.getSimCarrierId();
+        assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+                        + "loop back messages. Use another carrier.",
+                CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+
         init();
 
         CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
@@ -397,6 +401,10 @@ public class SmsManagerTest {
                 TextUtils.isEmpty(mDestAddr));
 
         String mccmnc = mTelephonyManager.getSimOperator();
+        int carrierId = mTelephonyManager.getSimCarrierId();
+        assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+                        + "loop back messages. Use another carrier.",
+                CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 
         // send/receive single text sms with and without messageId
         sendAndReceiveSms(/* addMessageId= */ true, defaultSmsApp);
@@ -560,62 +568,6 @@ public class SmsManagerTest {
                         setModeForOps(ctsPackageName,
                                 finalOriginalWriteSmsMode, AppOpsManager.OPSTR_WRITE_SMS));
             }
-        }
-    }
-
-    @Test
-    public void testSmsBlocking_userNotAllowed() throws Exception {
-        // Do not test if the feature is not enabled.
-        if (!ShellIdentityUtils.invokeStaticMethodWithShellPermissions(
-                () -> DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_TELEPHONY,
-                        "enable_work_profile_telephony", false))) {
-            return;
-        }
-
-        assertFalse("[RERUN] SIM card does not provide phone number. "
-                        + "Use a suitable SIM Card.", TextUtils.isEmpty(mDestAddr));
-
-        // disable suppressing blocking.
-        TelephonyUtils.endBlockSuppression(getInstrumentation());
-        setDefaultSmsApp(true);
-
-        int defaultSmsSubId = SubscriptionManager.getDefaultSmsSubscriptionId();
-
-        try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            android.Manifest.permission.MANAGE_SUBSCRIPTION_USER_ASSOCIATION);
-            UserHandle originalUserHandle = mSubscriptionManager.getSubscriptionUserHandle(
-                    defaultSmsSubId);
-
-            // Change user handle of default sms subscription.
-            UserHandle testUserHandle = UserHandle.of(100);
-            mSubscriptionManager.setSubscriptionUserHandle(defaultSmsSubId, testUserHandle);
-            assertThat(mSubscriptionManager.getSubscriptionUserHandle(defaultSmsSubId))
-                    .isEqualTo(testUserHandle);
-
-            // Send SMS.
-            init();
-            sendTextMessage(mDestAddr, String.valueOf(SystemClock.elapsedRealtimeNanos()),
-                    mSentIntent, mDeliveredIntent);
-            assertTrue("[RERUN] Could not send SMS. Check signal.",
-                    mSendReceiver.waitForCalls(1, TIME_OUT));
-            assertTrue("Expected no messages to be received as user is not allowed to "
-                            + "send sms.",
-                    mSmsReceivedReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
-            assertTrue("Expected no messages to be delivered as user is not allowed to "
-                            + "send sms.",
-                    mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
-
-            // CTS tests run in USER_SYSTEM. RESULT_USER_NOT_ALLOWED should be returned as
-            // default sms subscription is not associated with USER_SYSTEM.
-            assertThat(mSendReceiver.getPendingResult().getResultCode())
-                    .isEqualTo(SmsManager.RESULT_USER_NOT_ALLOWED);
-
-            mSubscriptionManager.setSubscriptionUserHandle(defaultSmsSubId, originalUserHandle);
-        } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
         }
     }
 
@@ -925,20 +877,30 @@ public class SmsManagerTest {
     }
 
     /**
-     * Verify the API will not throw any exception when READ_PRIVILEGED_PHONE_STATE is granted
+     * Verify the API will not throw any exception when READ_PRIVILEGED_PHONE_STATE is granted.
      */
     @Test
     public void testGetSmscIdentity() {
+        try {
+            mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
+        } catch (IllegalStateException e) {
+            assumeNoException("Skipping test because Telephony service is null", e);
+        }
         SmsManager smsManager = getSmsManager();
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(smsManager,
-                sm -> sm.getSmscIdentity(), Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                SmsManager::getSmscIdentity, Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
     }
 
     /**
-     * verify the API will throw the SecurityException or not when no permissions are granted.
+     * Verify the API will throw the SecurityException or not when no permissions are granted.
      */
     @Test
     public void testGetSmscIdentity_Exception() {
+        try {
+            mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
+        } catch (IllegalStateException e) {
+            assumeNoException("Skipping test because Telephony service is null", e);
+        }
         dropShellIdentity();
         try {
             getSmsManager().getSmscIdentity();

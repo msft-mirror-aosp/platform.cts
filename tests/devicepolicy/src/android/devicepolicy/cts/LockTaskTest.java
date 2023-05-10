@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.app.ActivityManager.LOCK_TASK_MODE_LOCKED;
 import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_BLOCK_ACTIVITY_START_IN_TASK;
 import static android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS;
 import static android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_HOME;
@@ -38,6 +39,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.app.ActivityOptions;
@@ -57,8 +59,6 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.ForceCoexistenceFlagsOff;
-import com.android.bedstead.harrier.annotations.enterprise.ForceCoexistenceFlagsOn;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.enterprise.RequireHasPolicyExemptApps;
@@ -91,6 +91,15 @@ public final class LockTaskTest {
     private static final String PACKAGE_NAME = "com.android.package.test";
     private static final DevicePolicyManager sLocalDevicePolicyManager =
             TestApis.context().instrumentedContext().getSystemService(DevicePolicyManager.class);
+
+    /**
+     * Option to launch activities in fullscreen. This is needed to properly use lock task mode on
+     * freeform windowing devices. See b/273644378 for more context.
+     */
+    private static final ActivityOptions LAUNCH_FULLSCREEN_OPTIONS = ActivityOptions.makeBasic();
+    static {
+        LAUNCH_FULLSCREEN_OPTIONS.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+    }
 
     @IntTestParameter({
             LOCK_TASK_FEATURE_SYSTEM_INFO,
@@ -146,9 +155,13 @@ public final class LockTaskTest {
         }
     }
 
+    // b/278061827 This currently fails for permission based access
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startLockTask_recordsMetric() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -164,7 +177,7 @@ public final class LockTaskTest {
 
                 assertThat(metrics.query()
                         .whereType().isEqualTo(EventId.SET_LOCKTASK_MODE_ENABLED_VALUE)
-                        .whereAdminPackageName().isEqualTo(sDeviceState.dpc().componentName().getPackageName())
+                        .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
                         .whereBoolean().isTrue()
                         .whereStrings().contains(sTestApp.packageName())
                 ).wasLogged();
@@ -441,6 +454,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startLockTask_includedInLockTaskPackages_taskIsLocked() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -468,6 +484,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startLockTask_notIncludedInLockTaskPackages_taskIsNotLocked() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -494,6 +513,9 @@ public final class LockTaskTest {
 
     @PolicyDoesNotApplyTest(policy = LockTaskFinance.class)
     public void startLockTask_includedInLockTaskPackages_policyShouldNotApply_taskIsNotLocked() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -521,6 +543,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void finish_isLocked_doesNotFinish() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -551,6 +576,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void finish_hasStoppedLockTask_doesFinish() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -575,6 +603,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void setLockTaskPackages_removingCurrentlyLockedTask_taskFinishes() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -599,6 +630,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void setLockTaskPackages_removingCurrentlyLockedTask_otherLockedTasksRemainLocked() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -607,9 +641,11 @@ public final class LockTaskTest {
                         new String[]{sTestApp.packageName(), sSecondTestApp.packageName()});
         try (TestAppInstance testApp = sTestApp.install();
              TestAppInstance testApp2 = sSecondTestApp.install()) {
-            Activity<TestAppActivity> activity = testApp.activities().any().start();
+            Activity<TestAppActivity> activity =
+                    testApp.activities().any().start(LAUNCH_FULLSCREEN_OPTIONS.toBundle());
             activity.startLockTask();
-            Activity<TestAppActivity> activity2 = testApp2.activities().any().start();
+            Activity<TestAppActivity> activity2 =
+                    testApp2.activities().any().start(LAUNCH_FULLSCREEN_OPTIONS.toBundle());
             activity2.startLockTask();
 
             try {
@@ -634,6 +670,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_withinSameTask_startsActivity() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -662,6 +701,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTask.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_withinSameTask_blockStartInTask_doesNotStart() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -702,6 +744,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTask.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_inNewTask_blockStartInTask_doesNotStart() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager()
                         .getLockTaskPackages(sDeviceState.dpc().componentName());
@@ -743,6 +788,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_fromPermittedPackage_newTask_starts() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -772,6 +820,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_fromNonPermittedPackage_newTask_doesNotStart() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -801,6 +852,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_lockTaskEnabledOption_startsInLockTaskMode() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -851,6 +905,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_ifWhitelistedActivity_startsInLockTaskMode() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -880,6 +937,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void startActivity_ifWhitelistedActivity_notWhitelisted_startsNotInLockTaskMode() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -909,6 +969,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void finish_ifWhitelistedActivity_doesNotFinish() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -942,6 +1005,9 @@ public final class LockTaskTest {
     @PolicyAppliesTest(policy = LockTaskFinance.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void setLockTaskPackages_removingExistingIfWhitelistedActivity_stopsTask() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
 
@@ -1008,6 +1074,9 @@ public final class LockTaskTest {
     @RequireFeature(FEATURE_TELEPHONY)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void launchEmergencyDialerInLockTaskMode_notWhitelisted_noKeyguardFeature_doesNotLaunch() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
         int originalLockTaskFeatures =
@@ -1047,6 +1116,9 @@ public final class LockTaskTest {
     @RequireFeature(FEATURE_TELEPHONY)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void launchEmergencyDialerInLockTaskMode_notWhitelisted_keyguardFeature_launches() {
+        assumeTrue("Test requires showing activities",
+                TestApis.users().instrumented().canShowActivities());
+
         String[] originalLockTaskPackages =
                 sDeviceState.dpc().devicePolicyManager().getLockTaskPackages(sDeviceState.dpc().componentName());
         int originalLockTaskFeatures =
@@ -1074,10 +1146,10 @@ public final class LockTaskTest {
                 activity.stopLockTask();
             }
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setLockTaskPackages(
-                    sDeviceState.dpc().componentName(), originalLockTaskPackages);
             sDeviceState.dpc().devicePolicyManager().setLockTaskFeatures(
                     sDeviceState.dpc().componentName(), originalLockTaskFeatures);
+            sDeviceState.dpc().devicePolicyManager().setLockTaskPackages(
+                    sDeviceState.dpc().componentName(), originalLockTaskPackages);
         }
     }
 

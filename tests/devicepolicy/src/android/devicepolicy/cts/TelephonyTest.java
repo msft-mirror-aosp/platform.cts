@@ -16,6 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
+import static android.app.admin.TargetUser.GLOBAL_USER_ID;
+
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CELLULAR_2G;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_CELL_BROADCASTS;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_MOBILE_NETWORKS;
@@ -26,7 +29,16 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
+
+import android.app.admin.PolicyUpdateResult;
+import android.content.Context;
+import android.devicepolicy.cts.utils.PolicySetResultUtils;
+import android.os.Bundle;
+import android.os.UserManager;
+import android.telephony.TelephonyManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -57,6 +69,8 @@ public final class TelephonyTest {
 
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    private static final Context sContext = TestApis.context().instrumentedContext();
 
     @CannotSetPolicyTest(policy = DisallowConfigCellBroadcasts.class, includeNonDeviceAdminStates = false)
     @Postsubmit(reason = "new test")
@@ -372,6 +386,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CELLULAR_2G")
     public void setUserRestriction_disallowCellular2g_isSet() {
         try {
+            assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
+
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
 
@@ -388,11 +404,54 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CELLULAR_2G")
     public void setUserRestriction_disallowCellular2g_isNotSet() {
         try {
+            assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
+
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CELLULAR_2G))
                     .isFalse();
+        } finally {
+
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+        }
+    }
+
+    @PolicyAppliesTest(policy = DisallowCellular2g.class)
+    // PolicySetResult broadcasts depend on the coexistence feature
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_CELLULAR_2G")
+    public void addDisallowCellular2g_notTelephonyCapable_sendHardwareUnsupportedToAdmin() {
+        try {
+            assumeFalse(isTelephonyCapableOfSettingNetworkTypes());
+
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), UserManager.DISALLOW_CELLULAR_2G);
+
+            PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
+                    getIdentifierForUserRestriction(UserManager.DISALLOW_CELLULAR_2G),
+                    PolicyUpdateResult.RESULT_FAILURE_HARDWARE_LIMITATION, GLOBAL_USER_ID,
+                    new Bundle());
+        } finally {
+
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+        }
+    }
+
+    @PolicyAppliesTest(policy = DisallowCellular2g.class)
+    // PolicySetResult broadcasts depend on the coexistence feature
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_CELLULAR_2G")
+    public void addDisallowCellular2g_telephonyCapable_sendSuccessToAdmin() {
+        try {
+            assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
+
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), UserManager.DISALLOW_CELLULAR_2G);
+
+            PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
+                    getIdentifierForUserRestriction(UserManager.DISALLOW_CELLULAR_2G),
+                    PolicyUpdateResult.RESULT_POLICY_SET, GLOBAL_USER_ID, new Bundle());
         } finally {
 
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
@@ -478,4 +537,14 @@ public final class TelephonyTest {
         // TODO: Test
     }
 
+    private boolean isTelephonyCapableOfSettingNetworkTypes() {
+        TelephonyManager tm = sContext.getSystemService(TelephonyManager.class);
+        try {
+            return (tm != null && tm.isRadioInterfaceCapabilitySupported(
+                    TelephonyManager.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK));
+
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
 }

@@ -25,8 +25,9 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.policies.StatusBarDisabled;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
@@ -103,7 +104,7 @@ public final class StatusBarTest {
     }
 
     @Postsubmit(reason = "new test")
-    @CannotSetPolicyTest(policy = StatusBarDisabled.class)
+    @CannotSetPolicyTest(policy = StatusBarDisabled.class, includeNonDeviceAdminStates = false)
     public void setStatusBarDisabled_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException.class, () -> {
             sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
@@ -112,7 +113,7 @@ public final class StatusBarTest {
     }
 
     @Postsubmit(reason = "new test")
-    @CannotSetPolicyTest(policy = StatusBarDisabled.class)
+    @CannotSetPolicyTest(policy = StatusBarDisabled.class, includeNonDeviceAdminStates = false)
     public void isStatusBarDisabled_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException.class, () -> {
             sDeviceState.dpc().devicePolicyManager().isStatusBarDisabled();
@@ -120,7 +121,7 @@ public final class StatusBarTest {
     }
 
     @Postsubmit(reason = "new test")
-    @PolicyAppliesTest(policy = StatusBarDisabled.class)
+    @CanSetPolicyTest(policy = StatusBarDisabled.class)
     public void setStatusBarDisabled_true_isStatusBarDisabledIsTrue() {
         try {
             sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
@@ -134,7 +135,7 @@ public final class StatusBarTest {
     }
 
     @Postsubmit(reason = "new test")
-    @PolicyAppliesTest(policy = StatusBarDisabled.class)
+    @CanSetPolicyTest(policy = StatusBarDisabled.class)
     public void setStatusBarDisabled_false_isStatusBarDisabledIsFalse() {
         sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
                 sDeviceState.dpc().componentName(), /* disabled= */ false);

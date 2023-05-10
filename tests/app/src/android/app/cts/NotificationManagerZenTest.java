@@ -71,10 +71,10 @@ import android.service.notification.Condition;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.service.notification.ZenPolicy;
-import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
@@ -1758,28 +1758,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertFalse(isCharlieIntercepted);
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
-    }
-
-    public void testDefaultOrder() throws Exception {
-        insertSingleContact(ALICE, ALICE_PHONE, ALICE_EMAIL, true);
-        insertSingleContact(BOB, BOB_PHONE, BOB_EMAIL, false);
-        // Not Charlie
-
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
-        sendNotifications(MODE_URI, false, false);
-
-        List<String> orderedKeys = new ArrayList<>(
-                Arrays.asList(mListener.mRankingMap.getOrderedKeys()));
-        int rankA = findTagInKeys(ALICE, orderedKeys);
-        int rankB = findTagInKeys(BOB, orderedKeys);
-        int rankC = findTagInKeys(CHARLIE, orderedKeys);
-        // ordered by time: C, B, A
-        if (rankC < rankB && rankB < rankA) {
-            // yay
-        } else {
-            fail("Notifications out of order. Actual order: Alice: " + rankA + " Bob: " + rankB
-                    + " Charlie: " + rankC);
-        }
     }
 
     @CddTest(requirements = {"2.2.3/3.8.4/H-1-1"})

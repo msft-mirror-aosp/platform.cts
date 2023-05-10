@@ -41,6 +41,15 @@ LOAD_SCENE_DELAY_SEC = 3
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
+DEFAULT_TABLET_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
+ELEVEN_BIT_TABLET_BRIGHTNESS = 1536
+ELEVEN_BIT_TABLET_NAMES = ('nabu',)
+LEGACY_TABLET_BRIGHTNESS = 96
+LEGACY_TABLET_NAME = 'dragon'
+TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
+BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
+                        f'{TABLET_REQUIREMENTS_URL} in the config file')
+
 _VALIDATE_LIGHTING_PATCH_H = 0.05
 _VALIDATE_LIGHTING_PATCH_W = 0.05
 _VALIDATE_LIGHTING_REGIONS = {
@@ -56,6 +65,27 @@ _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE = 'strValue'
 _TAG_STR = 'tag'
 _CAMERA_ID_STR = 'cameraId'
+_USE_CASE_CROPPED_RAW = 6
+
+def validate_tablet_brightness(tablet_name, brightness):
+  """Ensures tablet brightness is set according to documentation.
+
+  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
+  Args:
+    tablet_name: tablet product name specified by `ro.build.product`.
+    brightness: brightness specified by config file.
+  """
+  name_to_brightness = {
+      LEGACY_TABLET_NAME: LEGACY_TABLET_BRIGHTNESS,
+  }
+  for name in ELEVEN_BIT_TABLET_NAMES:
+    name_to_brightness[name] = ELEVEN_BIT_TABLET_BRIGHTNESS
+  if tablet_name in name_to_brightness:
+    if brightness != name_to_brightness[tablet_name]:
+      raise AssertionError(BRIGHTNESS_ERROR_MSG)
+  else:
+    if brightness != DEFAULT_TABLET_BRIGHTNESS:
+      raise AssertionError(BRIGHTNESS_ERROR_MSG)
 
 
 class ItsSession(object):
@@ -114,16 +144,17 @@ class ItsSession(object):
 
   IMAGE_FORMAT_LIST_1 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'dngImage', 'y8Image'
+      'dngImage', 'y8Image', 'jpeg_rImage'
   ]
 
   IMAGE_FORMAT_LIST_2 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'yuvImage'
+      'yuvImage', 'jpeg_rImage'
   ]
 
   CAP_JPEG = {'format': 'jpeg'}
   CAP_RAW = {'format': 'raw'}
+  CAP_CROPPED_RAW = {'format': 'raw', 'useCase': _USE_CASE_CROPPED_RAW}
   CAP_YUV = {'format': 'yuv'}
   CAP_RAW_YUV = [{'format': 'raw'}, {'format': 'yuv'}]
 
@@ -255,10 +286,12 @@ class ItsSession(object):
     proc.kill()
     proc.communicate()
 
-  def __init__(self, device_id=None, camera_id=None, hidden_physical_id=None):
+  def __init__(self, device_id=None, camera_id=None, hidden_physical_id=None,
+               override_to_portrait=None):
     self._camera_id = camera_id
     self._device_id = device_id
     self._hidden_physical_id = hidden_physical_id
+    self._override_to_portrait = override_to_portrait
 
     # Initialize device id and adb command.
     self.adb = 'adb -s ' + self._device_id
@@ -316,11 +349,12 @@ class ItsSession(object):
     self.props = data[_OBJ_VALUE_STR]['cameraProperties']
     return data[_OBJ_VALUE_STR]['cameraProperties']
 
-  def get_camera_properties_by_id(self, camera_id):
+  def get_camera_properties_by_id(self, camera_id, override_to_portrait=None):
     """Get the camera properties object for device with camera_id.
 
     Args:
      camera_id: The ID string of the camera
+     override_to_portrait: Optional value for overrideToPortrait
 
     Returns:
      The Python dictionary object for the CameraProperties object. Empty
@@ -329,6 +363,8 @@ class ItsSession(object):
     cmd = {}
     cmd[_CMD_NAME_STR] = 'getCameraPropertiesById'
     cmd[_CAMERA_ID_STR] = camera_id
+    if override_to_portrait is not None:
+      cmd['overrideToPortrait'] = override_to_portrait
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'cameraProperties':
@@ -385,6 +421,8 @@ class ItsSession(object):
 
     logging.debug('Opening camera: %s', self._camera_id)
     cmd = {_CMD_NAME_STR: 'open', _CAMERA_ID_STR: self._camera_id}
+    if self._override_to_portrait is not None:
+      cmd['overrideToPortrait'] = self._override_to_portrait
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'cameraOpened':
@@ -523,6 +561,40 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'hlg10Response':
       raise error_util.CameraItsError('Failed to query HLG10 support')
+    return data[_STR_VALUE] == 'true'
+
+  def is_p3_capture_supported(self):
+    """Query whether the camera device supports P3 image capture.
+
+    Returns:
+      Boolean: True, if device supports P3 image capture, False in
+      all other cases.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isP3Supported'
+    cmd[_CAMERA_ID_STR] = self._camera_id
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'p3Response':
+      raise error_util.CameraItsError('Failed to query P3 support')
+    return data[_STR_VALUE] == 'true'
+
+  def is_landscape_to_portrait_enabled(self):
+    """Query whether the device has enabled the landscape to portrait property.
+
+    Returns:
+      Boolean: True, if the device has the system property enabled. False
+      otherwise.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isLandscapeToPortraitEnabled'
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'landscapeToPortraitEnabledResponse':
+      raise error_util.CameraItsError(
+          'Failed to query landscape to portrait system property')
     return data[_STR_VALUE] == 'true'
 
   def do_basic_recording(self, profile_id, quality, duration,
@@ -1201,6 +1273,7 @@ class ItsSession(object):
             'rawStats': [],
             'dng': [],
             'jpeg': [],
+            'jpeg_r': [],
             'y8': []
         }
 
@@ -1297,6 +1370,10 @@ class ItsSession(object):
         fmt = json_obj[_TAG_STR][:-5]
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
+      elif json_obj[_TAG_STR] == 'privImage':
+        # The private image format buffers are opaque to camera clients
+        # and cannot be accessed.
+        nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
         buf_size = numpy.product(buf.shape)
         yuv_bufs[self._camera_id][buf_size].append(buf)
@@ -1349,7 +1426,7 @@ class ItsSession(object):
         if fmt == 'yuv':
           buf_size = (widths[j] * heights[j] * 3) // 2
           obj['data'] = yuv_bufs[cam_id][buf_size][i]
-        else:
+        elif fmt != 'priv':
           obj['data'] = bufs[cam_id][fmt][i]
         objs.append(obj)
       rets.append(objs if ncap > 1 else objs[0])
@@ -1516,6 +1593,34 @@ class ItsSession(object):
       raise error_util.CameraItsError('3A failed to converge')
     return ae_sens, ae_exp, awb_gains, awb_transform, af_dist
 
+  def do_autoframing(self, zoom_ratio=None):
+    """Perform autoframing on the device.
+
+    Args:
+      zoom_ratio: Zoom ratio. None if default zoom.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'doAutoframing'
+    if zoom_ratio:
+      if self.zoom_ratio_within_range(zoom_ratio):
+        cmd['zoomRatio'] = zoom_ratio
+      else:
+        raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
+    converged = False
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    while True:
+      data, _ = self.__read_response_from_socket()
+      if data[_TAG_STR] == 'autoframingConverged':
+        converged = True
+      elif data[_TAG_STR] == 'autoframingDone':
+        break
+      else:
+        raise error_util.CameraItsError('Invalid command response')
+
+    if not converged:
+      raise error_util.CameraItsError('Autoframing failed to converge')
+
   def calc_camera_fov(self, props):
     """Determine the camera field of view from internal params.
 
@@ -1571,7 +1676,7 @@ class ItsSession(object):
         chart_scaling,
         opencv_processing_utils.SCALE_TELE25_IN_RFOV_BOX,
         abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE25_IN_RFOV_BOX}s_scaled.png'
+      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE25_IN_RFOV_BOX}x_scaled.png'
     elif math.isclose(
         chart_scaling,
         opencv_processing_utils.SCALE_TELE40_IN_RFOV_BOX,

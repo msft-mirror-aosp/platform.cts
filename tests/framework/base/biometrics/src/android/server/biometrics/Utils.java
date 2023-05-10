@@ -39,9 +39,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -308,20 +311,37 @@ public class Utils {
         return getAidlSensorId("dumpsys fingerprint", ", provider: FingerprintProvider");
     }
 
+    /** Find all of the sensor ids of the AIDL fingerprint HALs */
+    public static List<Integer> getAidlFingerprintSensorIds() {
+        return getAidlSensorIds("dumpsys fingerprint", ", provider: FingerprintProvider");
+    }
+
     /** Find the sensor id of the AIDL face HAL, or -1 if not present. */
     public static int getAidlFaceSensorId() {
         return getAidlSensorId("dumpsys face", ", provider: FaceProvider");
     }
 
     private static int getAidlSensorId(String adbCommand, String providerRegex) {
+        List<Integer> ids = getAidlSensorIds(adbCommand, providerRegex);
+
+        if (ids.isEmpty()) {
+            return -1;
+        }
+
+        return ids.get(0);
+    }
+
+    private static List<Integer> getAidlSensorIds(String adbCommand, String providerRegex) {
         final byte[] dump = executeShellCommand(adbCommand);
         final String fpsDumpSys = new String(dump, StandardCharsets.UTF_8);
-        final int indexOfAidlProvider = fpsDumpSys.indexOf(providerRegex);
+        final Matcher matcher =
+                Pattern.compile("sensorId: (\\d+)" + providerRegex).matcher(fpsDumpSys);
 
-        if (indexOfAidlProvider > 0) {
-            return Integer.parseInt(
-                    fpsDumpSys.substring(indexOfAidlProvider - 1, indexOfAidlProvider));
+        final List<Integer> ids = new ArrayList<>();
+        while (matcher.find()) {
+            ids.add(Integer.parseInt(matcher.group(1)));
         }
-        return indexOfAidlProvider /* -1 No AIDL HAL */;
+
+        return ids;
     }
 }

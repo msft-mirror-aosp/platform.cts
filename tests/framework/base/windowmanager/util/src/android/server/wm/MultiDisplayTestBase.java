@@ -18,6 +18,7 @@ package android.server.wm;
 
 import static android.content.pm.ActivityInfo.CONFIG_SCREEN_SIZE;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
@@ -32,6 +33,7 @@ import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_PRESEN
 import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_PUBLIC_DISPLAY;
 import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_RESIZE_DISPLAY;
 import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SHOW_SYSTEM_DECORATIONS;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SUPPORTS_TOUCH;
 import static android.server.wm.app.Components.VirtualDisplayActivity.VIRTUAL_DISPLAY_PREFIX;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.INVALID_DISPLAY;
@@ -48,6 +50,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -215,6 +218,7 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         private int mDisplayImePolicy = DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
         private boolean mPresentationDisplay = false;
         private boolean mSimulateDisplay = false;
+        private boolean mSupportsTouch = false;
         private boolean mMustBeCreated = true;
         private Size mSimulationDisplaySize = new Size(1024 /* width */, 768 /* height */);
 
@@ -255,6 +259,12 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
             mOwnContentOnly = ownContentOnly;
             return this;
         }
+
+        VirtualDisplaySession setSupportsTouch(boolean supportsTouch) {
+            mSupportsTouch = supportsTouch;
+            return this;
+        }
+
 
         /**
          * Sets the policy for how the display should show the ime.
@@ -403,7 +413,8 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
                     .append(" --ez " + KEY_RESIZE_DISPLAY + " ").append(mResizeDisplay)
                     .append(" --ez " + KEY_SHOW_SYSTEM_DECORATIONS + " ")
                     .append(mShowSystemDecorations)
-                    .append(" --ez " + KEY_PRESENTATION_DISPLAY + " ").append(mPresentationDisplay);
+                    .append(" --ez " + KEY_PRESENTATION_DISPLAY + " ").append(mPresentationDisplay)
+                    .append(" --ez " + KEY_SUPPORTS_TOUCH + " ").append(mSupportsTouch);
             executeShellCommand(createVirtualDisplayCommand.toString());
             mVirtualDisplayCreated = true;
 
@@ -652,9 +663,14 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         return hasDeviceFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS);
     }
 
-    /** Checks if the device supports wallpaper for multi-display. */
+    /** Checks if the device supports live wallpaper for multi-display. */
     protected boolean supportsLiveWallpaper() {
         return hasDeviceFeature(PackageManager.FEATURE_LIVE_WALLPAPER);
+    }
+
+    /** Checks if the device supports wallpaper. */
+    protected boolean supportsWallpaper() {
+        return WallpaperManager.getInstance(mContext).isWallpaperSupported();
     }
 
     /** @see ObjectTracker#manage(AutoCloseable) */

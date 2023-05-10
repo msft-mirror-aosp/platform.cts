@@ -24,6 +24,7 @@ import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
+import static android.app.Notification.FLAG_USER_INITIATED_JOB;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
@@ -76,7 +77,6 @@ import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
-import android.support.test.uiautomator.UiDevice;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -84,6 +84,7 @@ import android.widget.RemoteViews;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -426,8 +427,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         }
     }
 
-    public void testCanSendFullScreenIntent_modeDefault_returnsTrue() throws Exception {
-        verifyCanUseFullScreenIntent(MODE_DEFAULT, /*canSend=*/ true);
+    public void testCanSendFullScreenIntent_modeDefault_returnsIsPermissionGranted()
+            throws Exception {
+        final boolean isPermissionGranted = PermissionUtils.isPermissionGranted(STUB_PACKAGE_NAME,
+                Manifest.permission.USE_FULL_SCREEN_INTENT);
+        verifyCanUseFullScreenIntent(MODE_DEFAULT, /*canSend=*/ isPermissionGranted);
     }
 
     public void testCanSendFullScreenIntent_modeAllowed_returnsTrue() throws Exception {
@@ -2529,6 +2533,58 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 .getParcelable(Notification.EXTRA_MEDIA_REMOTE_INTENT));
     }
 
+    public void testCustomMediaStyleRemotePlayback_noPermission() throws Exception {
+        int id = 99;
+        final String deviceName = "device name";
+        final int deviceIcon = 123;
+        final PendingIntent deviceIntent = getPendingIntent();
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setStyle(new Notification.DecoratedMediaCustomViewStyle()
+                                .setRemotePlaybackInfo(deviceName, deviceIcon, deviceIntent))
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn = mNotificationHelper.findPostedNotification(
+                null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_DEVICE));
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_ICON));
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_INTENT));
+    }
+
+    public void testCustomMediaStyleRemotePlayback_hasPermission() throws Exception {
+        int id = 99;
+        final String deviceName = "device name";
+        final int deviceIcon = 123;
+        final PendingIntent deviceIntent = getPendingIntent();
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setStyle(new Notification.DecoratedMediaCustomViewStyle()
+                                .setRemotePlaybackInfo(deviceName, deviceIcon, deviceIntent))
+                        .build();
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            mNotificationManager.notify(id, notification);
+        }, android.Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        StatusBarNotification sbn = mNotificationHelper.findPostedNotification(
+                null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+        assertEquals(deviceName, sbn.getNotification().extras
+                .getString(Notification.EXTRA_MEDIA_REMOTE_DEVICE));
+        assertEquals(deviceIcon, sbn.getNotification().extras
+                .getInt(Notification.EXTRA_MEDIA_REMOTE_ICON));
+        assertEquals(deviceIntent, sbn.getNotification().extras
+                .getParcelable(Notification.EXTRA_MEDIA_REMOTE_INTENT));
+    }
+
     public void testNoPermission() throws Exception {
         int id = 7;
         SystemUtil.runWithShellPermissionIdentity(
@@ -2607,6 +2663,26 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 "testFlagForegroundServiceNeedsRealFgs", 1, SEARCH_TYPE.POSTED);
 
         assertEquals(0, (sbn.getNotification().flags & FLAG_FOREGROUND_SERVICE));
+    }
+
+    public void testFlagUserInitiatedJobNeedsRealUij() throws Exception {
+        toggleListenerAccess(true);
+        Thread.sleep(500); // wait for listener to be allowed
+
+        mListener = TestNotificationListener.getInstance();
+        assertNotNull(mListener);
+
+        final Notification n =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setFlag(FLAG_USER_INITIATED_JOB, true)
+                        .build();
+        mNotificationManager.notify("testFlagUserInitiatedJobNeedsRealUij", 1, n);
+
+        StatusBarNotification sbn = mNotificationHelper.findPostedNotification(
+                "testFlagUserInitiatedJobNeedsRealUij", 1, SEARCH_TYPE.POSTED);
+
+        assertFalse(sbn.getNotification().isUserInitiatedJob());
     }
 
     private static class EventCallback extends Handler {

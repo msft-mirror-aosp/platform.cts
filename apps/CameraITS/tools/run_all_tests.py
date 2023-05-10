@@ -64,14 +64,16 @@ _FRONT_CAMERA_ID = '1'
 _ALL_SCENES = [
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene5',
-    'scene6', os.path.join('scene_extensions', 'scene_hdr'), 'sensor_fusion'
+    'scene6', os.path.join('scene_extensions', 'scene_hdr'),
+    os.path.join('scene_extensions', 'scene_night'), 'sensor_fusion'
 ]
 
 # Scenes that can be automated through tablet display
 _AUTO_SCENES = [
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6',
-    os.path.join('scene_extensions', 'scene_hdr')
+    os.path.join('scene_extensions', 'scene_hdr'),
+    os.path.join('scene_extensions', 'scene_night')
 ]
 
 # Scenes that are logically grouped and can be called as group
@@ -99,7 +101,8 @@ _SCENE_REQ = {
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
     'scene5': 'Capture images with a diffuser attached to the camera. '
-              'See CameraITS.pdf section 2.3.4 for more details',
+              'See source.android.com/docs/compatibility/cts/camera-its-tests#scene5/diffuser '
+              'for more details',
     'scene6': 'A grid of black circles on a white background. '
               'See tests/scene6/scene6.png',
     # Use os.path to avoid confusion on other platforms
@@ -107,6 +110,11 @@ _SCENE_REQ = {
         'A tablet displayed scene with a face on the left '
         'and a low-contrast QR code on the right. '
         'See tests/scene_extensions/scene_hdr/scene_hdr.png'
+    ),
+    os.path.join('scene_extensions', 'scene_night'): (
+        'A tablet displayed scene with a white circle '
+        'and four smaller circles inside of it. '
+        'See tests/scene_extensions/scene_night/scene_night.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
@@ -499,6 +507,13 @@ def main():
   config_file_test_key = config_file_contents['TestBeds'][0]['Name'].lower()
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
+    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.build.product'
+    raw_output = subprocess.check_output(
+        tablet_name_cmd, stderr=subprocess.STDOUT, shell=True)
+    tablet_name = str(raw_output.decode('utf-8')).strip()
+    logging.debug('Tablet name: %s', tablet_name)
+    brightness = test_params_content['brightness']
+    its_session_utils.validate_tablet_brightness(tablet_name, brightness)
   else:
     tablet_id = None
 

@@ -36,6 +36,8 @@ public class PhotoPickerBaseTest {
     public static int REQUEST_CODE = 42;
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
+    protected static final String sTargetPackageName =
+            sInstrumentation.getTargetContext().getPackageName();
     protected static final UiDevice sDevice = UiDevice.getInstance(sInstrumentation);
 
     protected GetResultActivity mActivity;
@@ -64,7 +66,7 @@ public class PhotoPickerBaseTest {
         sDevice.waitForIdle();
     }
 
-    private static boolean isHardwareSupported() {
+    static boolean isHardwareSupported() {
         // These UI tests are not optimised for Watches, TVs, Auto;
         // IoT devices do not have a UI to run these UI tests
         PackageManager pm = sInstrumentation.getContext().getPackageManager();

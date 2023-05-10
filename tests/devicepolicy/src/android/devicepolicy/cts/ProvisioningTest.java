@@ -43,7 +43,6 @@ import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.nfc.NfcAdapter.ACTION_NDEF_DISCOVERED;
 import static android.nfc.NfcAdapter.EXTRA_NDEF_MESSAGES;
 
-import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
@@ -195,8 +194,11 @@ public final class ProvisioningTest {
     private static final Account ACCOUNT_WITH_EXISTING_TYPE =
             new Account("user0", EXISTING_ACCOUNT_TYPE);
 
-    private static final TestApp sDpcTestApp = sDeviceState.testApps().query()
-            .whereIsDeviceAdmin().isTrue().get();
+    private static final TestApp sNoHeadlessSupportTestApp =
+            sDeviceState.testApps().query()
+                    .wherePackageName().isEqualTo("com.android.bedstead.testapp.DeviceAdminTestApp")
+                    .get();
+
 
     @Test
     public void provisioningException_constructor_works() {
@@ -503,10 +505,7 @@ public final class ProvisioningTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#provisionFullyManagedDevice")
     public void provisionFullyManagedDevice_headless_dpcDoesNotDeclareHeadlessCompatibility_throwsException()
             throws Exception {
-
-        TestApp noHeadlessSupportTestApp = sDeviceState.testApps().query().wherePackageName().isEqualTo("com.android.bedstead.testapp.DeviceAdminTestApp").get();
-
-        try (TestAppInstance testApp = noHeadlessSupportTestApp.install()) {
+        try (TestAppInstance testApp = sNoHeadlessSupportTestApp.install()) {
             FullyManagedDeviceProvisioningParams params =
                     new FullyManagedDeviceProvisioningParams.Builder(
                             new ComponentName(testApp.packageName(), testApp.packageName() + ".DeviceAdminReceiver"),
@@ -699,6 +698,7 @@ public final class ProvisioningTest {
     }
 
     @EnsureHasAdditionalUser
+    @RequireFeature(FEATURE_DEVICE_ADMIN)
     @EnsureDoesNotHavePermission({MANAGE_USERS, INTERACT_ACROSS_USERS})
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @Test
@@ -988,6 +988,7 @@ public final class ProvisioningTest {
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @EnsureHasWorkProfile
+    @EnsureHasNoProfileOwner
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#checkProvisioningPrecondition")
     public void checkProvisioningPreCondition_actionPO_withWorkProfile_returnsCanNotAddManagedProfile() {
         assertThat(
@@ -1090,7 +1091,6 @@ public final class ProvisioningTest {
     @RequireNotHeadlessSystemUserMode(reason = "TODO(b/242189747): Remove or give reason")
     @RequireFeature(FEATURE_DEVICE_ADMIN)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#checkProvisioningPrecondition")
-    // TODO: Think about this on headles... i think maybe "Main user" is fine?
     public void checkProvisioningPreCondition_actionDO_onNonSystemUser_returnsNotSystemUser() {
         boolean setupComplete = TestApis.users().current().getSetupComplete();
         TestApis.users().current().setSetupComplete(false);
@@ -1425,9 +1425,15 @@ public final class ProvisioningTest {
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @EnsureHasNoProfileOwner
+    @EnsureHasNoDeviceOwner
     @EnsureHasWorkProfile
     public void finalizeWorkProfileProvisioning_valid_sendsBroadcast() {
-        try (TestAppInstance personalInstance = sDpcTestApp.install()) {
+        try (TestAppInstance personalInstance = RemoteDpc.forDevicePolicyController(
+                TestApis.devicePolicy().getProfileOwner(
+                        sDeviceState.workProfile())).testApp().install()) {
+            // We know that RemoteDPC is the Profile Owner - we need the same package on the
+            // personal side to receive the broadcast
             personalInstance.registerReceiver(new IntentFilter(ACTION_MANAGED_PROFILE_PROVISIONED));
             sDevicePolicyManager.finalizeWorkProfileProvisioning(
                     /* managedProfileUser= */ sDeviceState.workProfile().userHandle(),
@@ -1445,9 +1451,15 @@ public final class ProvisioningTest {
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @EnsureHasNoProfileOwner
+    @EnsureHasNoDeviceOwner
     @EnsureHasWorkProfile
     public void finalizeWorkProfileProvisioning_withAccount_broadcastIncludesAccount() {
-        try (TestAppInstance personalInstance = sDpcTestApp.install()) {
+        try (TestAppInstance personalInstance = RemoteDpc.forDevicePolicyController(
+                TestApis.devicePolicy().getProfileOwner(
+                        sDeviceState.workProfile())).testApp().install()) {
+            // We know that RemoteDPC is the Profile Owner - we need the same package on the
+            // personal side to receive the broadcast
             personalInstance.registerReceiver(new IntentFilter(ACTION_MANAGED_PROFILE_PROVISIONED));
 
             sDevicePolicyManager.finalizeWorkProfileProvisioning(

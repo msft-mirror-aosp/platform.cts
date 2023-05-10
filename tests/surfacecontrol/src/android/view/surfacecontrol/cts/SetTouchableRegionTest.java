@@ -16,19 +16,22 @@
 
 package android.view.surfacecontrol.cts;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Region;
-import android.view.AttachedSurfaceControl;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupWindow;
+
+import androidx.test.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 
@@ -37,14 +40,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.LargeTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
-
 @RunWith(AndroidJUnit4.class)
 public class SetTouchableRegionTest {
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
     private Activity mActivity;
     @Rule
     public ActivityTestRule<CtsActivity> mActivityRule =
@@ -80,6 +79,7 @@ public class SetTouchableRegionTest {
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
     }
 
@@ -87,7 +87,8 @@ public class SetTouchableRegionTest {
         mInstrumentation.waitForIdleSync();
         assertFalse(mMotionRecordingView.gotEvent());
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mMotionRecordingView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule,
+                mMotionRecordingView);
         mInstrumentation.waitForIdleSync();
     }
 

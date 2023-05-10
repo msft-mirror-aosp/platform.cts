@@ -16,22 +16,27 @@
 
 package android.voiceinteraction.cts.services;
 
+import static android.voiceinteraction.cts.testcore.Helper.KEYPHRASE_LOCALE;
+import static android.voiceinteraction.cts.testcore.Helper.KEYPHRASE_TEXT;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_TIMEOUT_IN_MS;
 
+import android.hardware.soundtrigger.SoundTrigger.KeyphraseSoundModel;
+import android.media.voice.KeyphraseModelManager;
 import android.os.Bundle;
 import android.os.Looper;
+import android.os.PersistableBundle;
 import android.service.voice.AlwaysOnHotwordDetector;
-import android.service.voice.DetectorFailure;
 import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
+import android.service.voice.VisualQueryDetectionServiceFailure;
 import android.service.voice.VisualQueryDetector;
 import android.service.voice.VoiceInteractionService;
 import android.util.Log;
 import android.voiceinteraction.cts.testcore.Helper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -43,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class BaseVoiceInteractionService extends VoiceInteractionService {
 
     private final String mTag = getClass().getSimpleName();
-    public static final int STATUS_NO_CALLBACK_CALLED = -1;
+    public static final int STATUS_NO_CALLBACK_CALLED = -100;
 
     // The service instance
     public static VoiceInteractionService sService;
@@ -60,21 +65,63 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
     // TODO: rename to mHotwordDetectionServiceInitializedLatch, keep this name until the
     //  refactor done. The original tests use trigger in many places. To make the mapping asier,
     //  keep the current name now.
-    public CountDownLatch mServiceTriggerLatch;
+    public CountDownLatch mServiceTriggerLatch = null;
 
     VisualQueryDetector mVisualQueryDetector = null;
     HotwordDetector mSoftwareHotwordDetector = null;
     // The AlwaysOnHotwordDetector created by createAlwaysOnHotwordDetector() API
     AlwaysOnHotwordDetector mAlwaysOnHotwordDetector = null;
     // Throws IllegalStateException when calling createAlwaysOnHotwordDetector() API
-    private boolean mIsCreateDetectorIllegalStateExceptionThrow;
+    private boolean mIsCreateDetectorIllegalStateExceptionThrow = false;
     // Whether the callback of the detector is running on main thread or not
     private boolean mIsDetectorCallbackRunningOnMainThread = false;
     // Throws SecurityException when calling createAlwaysOnHotwordDetector() API
-    private boolean mIsCreateDetectorSecurityExceptionThrow;
+    private boolean mIsCreateDetectorSecurityExceptionThrow = false;
     private Bundle mPrepareToShowSessionArgs = new Bundle();
     private Bundle mShowSessionFailedArgs = new Bundle();
     private int mPrepareToShowSessionFlags = -1;
+    // the status of onHotwordDetectionServiceInitialized()
+    int mInitializedStatus = STATUS_NO_CALLBACK_CALLED;
+
+    int mAvailabilityStatus = STATUS_NO_CALLBACK_CALLED;
+
+
+    final HotwordDetector.Callback mNoOpSoftwareDetectorCallback = new HotwordDetector.Callback() {
+        @Override
+        public void onDetected(AlwaysOnHotwordDetector.EventPayload eventPayload) {
+            // no-op
+        }
+
+        @Override
+        public void onError() {
+            // no-op
+        }
+
+        @Override
+        public void onRecognitionPaused() {
+            // no-op
+        }
+
+        @Override
+        public void onRecognitionResumed() {
+            // no-op
+        }
+
+        @Override
+        public void onRejected(HotwordRejectedResult result) {
+            // no-op
+        }
+
+        @Override
+        public void onHotwordDetectionServiceInitialized(int status) {
+            // no-op
+        }
+
+        @Override
+        public void onHotwordDetectionServiceRestarted() {
+            // no-op
+        }
+    };
 
     // An AlwaysOnHotwordDetector.Callback no nothing on callback methods
     final AlwaysOnHotwordDetector.Callback mNoOpHotwordDetectorCallback =
@@ -122,42 +169,44 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
 
     // A VisualQueryDetector.Callback no nothing on callback methods
     final VisualQueryDetector.Callback mNoOpVisualQueryDetectorCallback =
-                new VisualQueryDetector.Callback() {
-        @Override
-        public void onQueryDetected(@NonNull String partialQuery) {
-            //No-op
-        }
+            new VisualQueryDetector.Callback() {
+                @Override
+                public void onQueryDetected(@NonNull String partialQuery) {
+                    //No-op
+                }
 
-        @Override
-        public void onQueryRejected() {
-            //No-op
-        }
+                @Override
+                public void onQueryRejected() {
+                    //No-op
+                }
 
-        @Override
-        public void onQueryFinished() {
-            //No-op
-        }
+                @Override
+                public void onQueryFinished() {
+                    //No-op
+                }
 
-        @Override
-        public void onVisualQueryDetectionServiceInitialized(int status) {
-            Log.i(mTag, "onVisualQueryDetectionServiceInitialized status = " + status);
-        }
+                @Override
+                public void onVisualQueryDetectionServiceInitialized(int status) {
+                    Log.i(mTag, "onVisualQueryDetectionServiceInitialized status = " + status);
+                }
 
-        @Override
-        public void onVisualQueryDetectionServiceRestarted() {
-            //No-op
-        }
+                @Override
+                public void onVisualQueryDetectionServiceRestarted() {
+                    //No-op
+                }
 
-        @Override
-        public void onFailure(@NonNull DetectorFailure detectorFailure) {
-            //No-op
-        }
-    };
+                @Override
+                public void onFailure(
+                        VisualQueryDetectionServiceFailure visualQueryDetectionServiceFailure) {
+                    //No-op
+                }
 
-    // the status of onHotwordDetectionServiceInitialized()
-    int mInitializedStatus = STATUS_NO_CALLBACK_CALLED;
+                @Override
+                public void onUnknownFailure(String errorMessage) {
+                    //No-op
+                }
+            };
 
-    int mAvailabilityStatus = STATUS_NO_CALLBACK_CALLED;
 
     @Override
     public void onReady() {
@@ -195,6 +244,24 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
             sShowSessionFailedLatch.countDown();
         }
         mShowSessionFailedArgs = args;
+    }
+
+    /**
+     * Clear the non-static state of this class
+     */
+    public void resetState() {
+        mServiceTriggerLatch = null;
+        mVisualQueryDetector = null;
+        mSoftwareHotwordDetector = null;
+        mAlwaysOnHotwordDetector = null;
+        mIsCreateDetectorIllegalStateExceptionThrow = false;
+        mIsDetectorCallbackRunningOnMainThread = false;
+        mIsCreateDetectorSecurityExceptionThrow = false;
+        mPrepareToShowSessionArgs = new Bundle();
+        mShowSessionFailedArgs = new Bundle();
+        mPrepareToShowSessionFlags = -1;
+        mInitializedStatus = STATUS_NO_CALLBACK_CALLED;
+        mAvailabilityStatus = STATUS_NO_CALLBACK_CALLED;
     }
 
     /**
@@ -390,7 +457,7 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
         mServiceTriggerLatch = null;
     }
 
-    private void resetValues() {
+    private void resetDetectorCreationExceptions() {
         mIsCreateDetectorIllegalStateExceptionThrow = false;
         mIsCreateDetectorSecurityExceptionThrow = false;
     }
@@ -429,33 +496,54 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
         return mInitializedStatus;
     }
 
+
+    /**
+     * Enable override the model enrollment database one which has a specific mode registered.
+     * Need to have "android.permission.MANAGE_VOICE_KEYPHRASES" permission.
+     *
+     * @see #disableOverrideRegisterModel()
+     */
+    public void enableOverrideRegisterModel(KeyphraseSoundModel model) {
+        final KeyphraseModelManager manager = createKeyphraseModelManager();
+        manager.setModelDatabaseForTestEnabled(/* enabled= */ true);
+        manager.updateKeyphraseSoundModel(model);
+    }
+
+    /**
+     * Disable model override started in
+     * {@link #enableOverrideRegisterModel(KeyphraseSoundModel)}
+     */
+    public void disableOverrideRegisterModel() {
+        createKeyphraseModelManager().setModelDatabaseForTestEnabled(/* enabled= */ false);
+    }
+
     AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetectorNoHotwordDetectionService(
             AlwaysOnHotwordDetector.Callback callback, boolean useExecutor) {
         Log.i(mTag,
                 "callCreateAlwaysOnHotwordDetectorNoHotwordDetectionService() useExecutor = "
                         + useExecutor);
         try {
-            resetValues();
-            final Locale locale = Locale.forLanguageTag("en-US");
+            setTestModuleForAlwaysOnHotwordDetectorEnabled(true);
+            resetDetectorCreationExceptions();
             if (useExecutor) {
-                return createAlwaysOnHotwordDetector(/* keyphrase */ "Hello Android",
-                        locale,
+                return createAlwaysOnHotwordDetector(KEYPHRASE_TEXT,
+                        KEYPHRASE_LOCALE,
                         getDetectorCallbackExecutor(),
                         callback);
             }
-            return createAlwaysOnHotwordDetector(/* keyphrase */ "Hello Android",
-                    locale,
-                    callback);
+            return createAlwaysOnHotwordDetector(KEYPHRASE_TEXT, KEYPHRASE_LOCALE, callback);
         } catch (IllegalStateException | SecurityException e) {
             if (e instanceof IllegalStateException) {
                 mIsCreateDetectorIllegalStateExceptionThrow = true;
             } else {
                 mIsCreateDetectorSecurityExceptionThrow = true;
             }
-            Log.w(mTag, "callCreateAlwaysOnHotwordDetector() exception: " + e);
+            Log.w(mTag, "callCreateAlwaysOnHotwordDetector() exception: ", e);
             if (mServiceTriggerLatch != null) {
                 mServiceTriggerLatch.countDown();
             }
+        } finally {
+            setTestModuleForAlwaysOnHotwordDetectorEnabled(false);
         }
         return null;
     }
@@ -467,21 +555,29 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
 
     AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetector(
             AlwaysOnHotwordDetector.Callback callback, boolean useExecutor) {
-        Log.i(mTag, "callCreateAlwaysOnHotwordDetector() useExecutor = " + useExecutor);
+        return callCreateAlwaysOnHotwordDetector(callback, useExecutor, /* options= */ null);
+    }
+
+    AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetector(
+            AlwaysOnHotwordDetector.Callback callback, boolean useExecutor,
+            @Nullable PersistableBundle options) {
+        Log.i(mTag,
+                "callCreateAlwaysOnHotwordDetector() useExecutor = " + useExecutor + ", options = "
+                        + options);
         try {
-            resetValues();
-            final Locale locale = Locale.forLanguageTag("en-US");
+            setTestModuleForAlwaysOnHotwordDetectorEnabled(true);
+            resetDetectorCreationExceptions();
             if (useExecutor) {
-                return createAlwaysOnHotwordDetector(/* keyphrase */ "Hello Android",
-                        locale,
-                        Helper.createFakePersistableBundleData(),
+                return createAlwaysOnHotwordDetector(KEYPHRASE_TEXT,
+                        KEYPHRASE_LOCALE,
+                        options != null ? options : Helper.createFakePersistableBundleData(),
                         Helper.createFakeSharedMemoryData(),
                         getDetectorCallbackExecutor(),
                         callback);
             }
-            return createAlwaysOnHotwordDetector(/* keyphrase */ "Hello Android",
-                    locale,
-                    Helper.createFakePersistableBundleData(),
+            return createAlwaysOnHotwordDetector(KEYPHRASE_TEXT,
+                    KEYPHRASE_LOCALE,
+                    options != null ? options : Helper.createFakePersistableBundleData(),
                     Helper.createFakeSharedMemoryData(),
                     callback);
         } catch (IllegalStateException | SecurityException e) {
@@ -490,29 +586,42 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
             } else {
                 mIsCreateDetectorSecurityExceptionThrow = true;
             }
-            Log.w(mTag, "callCreateAlwaysOnHotwordDetector() exception: " + e);
+            Log.w(mTag, "callCreateAlwaysOnHotwordDetector() exception: ", e);
             if (mServiceTriggerLatch != null) {
                 mServiceTriggerLatch.countDown();
             }
+        } finally {
+            setTestModuleForAlwaysOnHotwordDetectorEnabled(false);
         }
         return null;
     }
 
     HotwordDetector callCreateSoftwareHotwordDetector(HotwordDetector.Callback callback,
             boolean useExecutor) {
-        Log.i(mTag, "callCreateSoftwareHotwordDetector() useExecutor = " + useExecutor);
+        return callCreateSoftwareHotwordDetector(callback, useExecutor, /* options= */ null);
+    }
+
+    HotwordDetector callCreateSoftwareHotwordDetector(HotwordDetector.Callback callback,
+            boolean useExecutor, @Nullable PersistableBundle options) {
+        Log.i(mTag,
+                "callCreateSoftwareHotwordDetector() useExecutor = " + useExecutor + ", options = "
+                        + options);
         try {
-            resetValues();
+            resetDetectorCreationExceptions();
             if (useExecutor) {
-                return createHotwordDetector(Helper.createFakePersistableBundleData(),
+                return createHotwordDetector(
+                        options != null ? options : Helper.createFakePersistableBundleData(),
                         Helper.createFakeSharedMemoryData(), getDetectorCallbackExecutor(),
                         callback);
             }
-            return createHotwordDetector(Helper.createFakePersistableBundleData(),
+            return createHotwordDetector(
+                    options != null ? options : Helper.createFakePersistableBundleData(),
                     Helper.createFakeSharedMemoryData(), callback);
-        } catch (Exception e) {
+        } catch (IllegalStateException | SecurityException e) {
             if (e instanceof IllegalStateException) {
                 mIsCreateDetectorIllegalStateExceptionThrow = true;
+            } else {
+                mIsCreateDetectorSecurityExceptionThrow = true;
             }
             Log.w(mTag, "callCreateSoftwareHotwordDetector() exception: " + e);
             if (mServiceTriggerLatch != null) {
@@ -525,7 +634,7 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
     VisualQueryDetector callCreateVisualQueryDetector(VisualQueryDetector.Callback callback) {
         Log.i(mTag, "callCreateVisualQueryDetector()");
         try {
-            resetValues();
+            resetDetectorCreationExceptions();
             return createVisualQueryDetector(Helper.createFakePersistableBundleData(),
                     Helper.createFakeSharedMemoryData(), Executors.newSingleThreadExecutor(),
                     callback);

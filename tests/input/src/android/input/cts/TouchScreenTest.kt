@@ -16,104 +16,59 @@
 
 package android.input.cts
 
-import android.Manifest
-import android.app.ActivityOptions
-import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.content.pm.PackageManager
-import android.graphics.PixelFormat
 import android.graphics.Point
-import android.hardware.display.DisplayManager
-import android.hardware.display.VirtualDisplay
+import android.graphics.PointF
 import android.hardware.input.InputManager
-import android.media.ImageReader
-import android.os.Handler
-import android.os.Looper
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
+import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
+import android.util.Size
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.SystemUtil
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.junit.After
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@MediumTest
+@RunWith(AndroidJUnit4::class)
 class TouchScreenTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var touchScreen: UinputTouchScreen
-    private lateinit var virtualDisplay: VirtualDisplay
-    private lateinit var reader: ImageReader
-    private lateinit var activity: CaptureEventActivity
+    private lateinit var touchScreen: UinputTouchDevice
     private lateinit var verifier: EventVerifier
+
+    @get:Rule
+    val virtualDisplayRule = VirtualDisplayActivityScenarioRule()
 
     @Before
     fun setUp() {
-        assumeTrue(supportsMultiDisplay())
-        createDisplayAndTouchScreen()
-
-        val displayId = virtualDisplay.display.displayId
-        val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
-        val intent = Intent(Intent.ACTION_VIEW)
-                .setClass(instrumentation.targetContext, CaptureEventActivity::class.java)
-                .setFlags(FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK)
-        SystemUtil.runWithShellPermissionIdentity({
-            activity = instrumentation.startActivitySync(intent, bundle) as CaptureEventActivity
-        }, Manifest.permission.INTERNAL_SYSTEM_WINDOW)
-        verifier = EventVerifier(activity::getInputEvent)
+        touchScreen = UinputTouchDevice(
+            instrumentation,
+            virtualDisplayRule.virtualDisplay.display,
+            Size(WIDTH, HEIGHT)
+        )
+        verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 
     @After
     fun tearDown() {
-        if (!supportsMultiDisplay()) {
-            return
+        if (this::touchScreen.isInitialized) {
+            touchScreen.close()
         }
-        releaseDisplayAndTouchScreen()
-    }
-
-    private fun supportsMultiDisplay(): Boolean {
-        return instrumentation.targetContext.packageManager
-                .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS)
-    }
-
-    private fun createDisplayAndTouchScreen() {
-        val displayManager =
-                instrumentation.targetContext.getSystemService(DisplayManager::class.java)
-
-        val displayCreated = CountDownLatch(1)
-        displayManager.registerDisplayListener(object : DisplayManager.DisplayListener {
-            override fun onDisplayAdded(displayId: Int) {}
-            override fun onDisplayRemoved(displayId: Int) {}
-            override fun onDisplayChanged(displayId: Int) {
-                displayCreated.countDown()
-                displayManager.unregisterDisplayListener(this)
-            }
-        }, Handler(Looper.getMainLooper()))
-        reader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888, 2)
-        virtualDisplay = displayManager.createVirtualDisplay(
-                VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
-                VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH)
-
-        assertTrue(displayCreated.await(5, TimeUnit.SECONDS))
-
-        touchScreen = UinputTouchScreen(instrumentation, virtualDisplay.display)
-        assertNotNull(touchScreen)
-    }
-
-    private fun releaseDisplayAndTouchScreen() {
-        touchScreen.close()
-        virtualDisplay.release()
-        reader.close()
     }
 
     @Test
     fun testHostUsiVersionIsNull() {
         assertNull(
             instrumentation.targetContext.getSystemService(InputManager::class.java)
-                .getHostUsiVersion(virtualDisplay.display))
+                .getHostUsiVersion(virtualDisplayRule.virtualDisplay.display))
     }
 
     @Test
@@ -180,13 +135,13 @@ class TouchScreenTest {
         verifier.assertReceivedMove()
 
         // ACTION_CANCEL
-        touchScreen.sendToolType(0 /*id*/, UinputTouchScreen.MT_TOOL_PALM)
+        touchScreen.sendToolType(0 /*id*/, UinputTouchDevice.MT_TOOL_PALM)
         verifier.assertReceivedCancel()
 
         // No event
         touchScreen.sendBtnTouch(false)
         touchScreen.sendUp(0 /*id*/)
-        activity.assertNoEvents()
+        virtualDisplayRule.activity.assertNoEvents()
     }
 
     /**
@@ -212,7 +167,7 @@ class TouchScreenTest {
         verifier.assertReceivedPointerDown(1)
 
         // ACTION_POINTER_UP(1) with cancel flag
-        touchScreen.sendToolType(1 /*id*/, UinputTouchScreen.MT_TOOL_PALM)
+        touchScreen.sendToolType(1 /*id*/, UinputTouchDevice.MT_TOOL_PALM)
         verifier.assertReceivedPointerCancel(1)
 
         // ACTION_UP
@@ -221,13 +176,109 @@ class TouchScreenTest {
         verifier.assertReceivedUp()
     }
 
-    companion object {
-        const val VIRTUAL_DISPLAY_NAME = "CtsVirtualDisplay"
-        const val WIDTH = 480
-        const val HEIGHT = 800
-        const val DENSITY = 160
+    @Test
+    fun testTouchScreenPrecisionOrientation0() {
+        virtualDisplayRule.runInDisplayOrientation(ORIENTATION_0) {
+            verifyTapsOnFourCorners(
+                arrayOf(
+                    PointF(0f, 0f),
+                    PointF(WIDTH - 1f, 0f),
+                    PointF(WIDTH - 1f, HEIGHT - 1f),
+                    PointF(0f, HEIGHT - 1f),
+                )
+            )
+        }
+    }
 
-        /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH].  */
-        const val VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 1 shl 6
+    @Test
+    fun testTouchScreenPrecisionOrientation90() {
+        virtualDisplayRule.runInDisplayOrientation(ORIENTATION_90) {
+            verifyTapsOnFourCorners(
+                arrayOf(
+                    PointF(0f, WIDTH - 1f),
+                    PointF(0f, 0f),
+                    PointF(HEIGHT - 1f, 0f),
+                    PointF(HEIGHT - 1f, WIDTH - 1f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testTouchScreenPrecisionOrientation180() {
+        virtualDisplayRule.runInDisplayOrientation(ORIENTATION_180) {
+            verifyTapsOnFourCorners(
+                arrayOf(
+                    PointF(WIDTH - 1f, HEIGHT - 1f),
+                    PointF(0f, HEIGHT - 1f),
+                    PointF(0f, 0f),
+                    PointF(WIDTH - 1f, 0f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testTouchScreenPrecisionOrientation270() {
+        virtualDisplayRule.runInDisplayOrientation(ORIENTATION_270) {
+            verifyTapsOnFourCorners(
+                arrayOf(
+                    PointF(HEIGHT - 1f, 0f),
+                    PointF(HEIGHT - 1f, WIDTH - 1f),
+                    PointF(0f, WIDTH - 1f),
+                    PointF(0f, 0f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testEventTime() {
+        val pointer = Point(100, 100)
+
+       // ACTION_DOWN
+        touchScreen.sendBtnTouch(true)
+        touchScreen.sendDown(0 /*id*/, pointer)
+        verifyEventTime()
+
+        // ACTION_MOVE
+        pointer.offset(1, 1)
+        touchScreen.sendMove(0 /*id*/, pointer)
+        verifyEventTime()
+
+        // ACTION_UP
+        touchScreen.sendBtnTouch(false)
+        touchScreen.sendUp(0 /*id*/)
+        verifyEventTime()
+    }
+
+    private fun verifyEventTime() {
+        val event = verifier.getMotionEvent()
+        assertEquals(event.getEventTimeNanos() / 1_000_000, event.getEventTime())
+    }
+
+    // Verifies that each of the four corners of the touch screen (lt, rt, rb, lb) map to the
+    // given four points by tapping on the corners in order and asserting the location of the
+    // received events match the provided values.
+    private fun verifyTapsOnFourCorners(expectedPoints: Array<PointF>) {
+        for (i in 0 until 4) {
+            touchScreen.sendBtnTouch(true)
+            touchScreen.sendDown(0 /*id*/, CORNERS[i])
+            verifier.assertReceivedDown(expectedPoints[i])
+
+            touchScreen.sendBtnTouch(false)
+            touchScreen.sendUp(0 /*id*/)
+            verifier.assertReceivedUp()
+        }
+    }
+
+    companion object {
+        // The four corners of the touchscreen: lt, rt, rb, lb
+        val CORNERS = arrayOf(
+            Point(0, 0),
+            Point(WIDTH - 1, 0),
+            Point(WIDTH - 1, HEIGHT - 1),
+            Point(0, HEIGHT - 1),
+        )
     }
 }

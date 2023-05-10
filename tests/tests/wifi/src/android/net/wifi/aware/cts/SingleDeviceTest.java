@@ -21,6 +21,8 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.net.wifi.aware.AwarePairingConfig.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC;
 import static android.net.wifi.aware.Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_128;
 import static android.net.wifi.aware.Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256;
+import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_JOINED;
+import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_STARTED;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
@@ -72,7 +74,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -624,7 +625,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         mWifiLock = mWifiManager.createWifiLock(TAG);
         mWifiLock.acquire();
         if (!mWifiManager.isWifiEnabled()) {
-            SystemUtil.runShellCommand("svc wifi enable");
+            ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
         }
 
         mConnectivityManager = (ConnectivityManager) getContext().getSystemService(
@@ -737,7 +738,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         // 1. Disable Wi-Fi
         WifiAwareStateBroadcastReceiver receiver1 = new WifiAwareStateBroadcastReceiver();
         mContext.registerReceiver(receiver1, intentFilter);
-        SystemUtil.runShellCommand("svc wifi disable");
+        ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(false));
 
         assertTrue("Timeout waiting for Wi-Fi Aware to change status",
                 receiver1.waitForStateChange());
@@ -752,7 +753,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         // 2. Enable Wi-Fi
         WifiAwareStateBroadcastReceiver receiver2 = new WifiAwareStateBroadcastReceiver();
         mContext.registerReceiver(receiver2, intentFilter);
-        SystemUtil.runShellCommand("svc wifi enable");
+        ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
 
         assertTrue("Timeout waiting for Wi-Fi Aware to change status",
                 receiver2.waitForStateChange());
@@ -809,8 +810,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             MacAddress clusterId = identityL.getClusterId();
             assertNotNull("Wi-Fi Aware cluster ID: iteration " + i, clusterId);
             int clusterEventType = identityL.getClusterEventType();
-            assertEquals("Wi-Fi Aware cluster event type: iteration " + i,
-                    IdentityChangedListener.CLUSTER_CHANGE_EVENT_STARTED, clusterEventType);
+            if (clusterEventType != CLUSTER_CHANGE_EVENT_STARTED
+                    && clusterEventType != CLUSTER_CHANGE_EVENT_JOINED) {
+                fail("Wi-Fi Aware cluster event type: iteration " + i
+                        + ", invalid cluster event type");
+            }
             byte[] mac = identityL.getMac();
             assertNotNull("Wi-Fi Aware discovery MAC: iteration " + i, mac);
 
@@ -1039,7 +1043,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful publish with a suspendable session when device supports suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPublishSuccessWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1084,7 +1088,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to publish with a suspendable session when device doesn't support
      * suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPublishFailureWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1116,7 +1120,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a publish session.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSuspendResumeSuccessWithPublishSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1338,7 +1342,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful subscribe with a suspendable session when device supports suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSubscribeSuccessWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1384,7 +1388,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to subscribe with a suspendable session when device doesn't support
      * suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSubscribeFailureWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1417,7 +1421,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a subscribe session.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSuspendResumeSuccessWithSubscribeSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1823,6 +1827,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             }
             assertTrue(enabled.get());
             attachAndGetSession();
+            if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+                return;
+            }
             AtomicBoolean called = new AtomicBoolean(false);
             AtomicBoolean canBeCreated = new AtomicBoolean(false);
             AtomicReference<Set<WifiManager.InterfaceCreationImpact>>
@@ -1872,6 +1879,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             };
             Executor executor = Executors.newSingleThreadScheduledExecutor();
             WifiAwareSession session = attachAndGetSession();
+            if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+                // Shell doesn't have permission before T.
+                assertThrows(SecurityException.class, () -> session
+                        .getMasterPreference(executor, result));
+                assertThrows(SecurityException.class, () -> session
+                        .setMasterPreference(254));
+                return;
+            }
             session.getMasterPreference(executor, result);
             synchronized (mLock) {
                 mLock.wait(WAIT_FOR_AWARE_CHANGE_SECS * 1000);

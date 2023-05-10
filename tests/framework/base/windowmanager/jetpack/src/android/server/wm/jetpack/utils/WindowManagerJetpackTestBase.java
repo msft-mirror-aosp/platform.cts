@@ -22,6 +22,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
@@ -40,6 +41,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
+import android.app.ActivityTaskManager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.PictureInPictureParams;
@@ -49,6 +51,7 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.server.wm.NestedShellPermission;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -59,6 +62,7 @@ import androidx.window.sidecar.SidecarDeviceState;
 import org.junit.After;
 import org.junit.Before;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -86,6 +90,11 @@ public class WindowManagerJetpackTestBase {
         assertNotNull(mApplication);
         // Register activity lifecycle callbacks to know which activities are resumed
         registerActivityLifecycleCallbacks();
+        // Clear the previous launch bounds / windowing mode, otherwise persisted launch bounds may
+        // prepend startFullScreenActivityNewTask from launching Activities in full-screen.
+        NestedShellPermission.run(() ->
+                mContext.getSystemService(ActivityTaskManager.class).clearLaunchParamsForPackages(
+                        Collections.singletonList("android.server.wm.jetpack")));
     }
 
     @After
@@ -98,15 +107,23 @@ public class WindowManagerJetpackTestBase {
         return mContext.getPackageManager().hasSystemFeature(requiredFeature);
     }
 
+    /** Assume this device supports rotation */
+    protected void assumeSupportsRotation() {
+        assumeTrue(doesDeviceSupportRotation());
+    }
+
     /**
      * Rotation support is indicated by explicitly having both landscape and portrait
      * features or not listing either at all.
      */
-    protected void assumeSupportsRotation() {
+    protected boolean doesDeviceSupportRotation() {
         final boolean supportsLandscape = hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = hasDeviceFeature(FEATURE_SCREEN_PORTRAIT);
-        assumeTrue((supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait));
+        return (supportsLandscape && supportsPortrait) || (!supportsLandscape && !supportsPortrait);
+    }
+
+    protected boolean supportsPip() {
+        return hasDeviceFeature(FEATURE_PICTURE_IN_PICTURE);
     }
 
     public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass) {

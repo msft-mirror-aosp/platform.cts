@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2023 The Android Open Source Project
  *
@@ -13,27 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package android.permission3.cts
-
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
-import android.os.Build
 import android.provider.DeviceConfig
-import android.support.test.uiautomator.By
-import androidx.test.filters.SdkSuppress
+import androidx.test.uiautomator.By
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.modules.utils.build.SdkLevel
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
 /**
  * Tests for Safety Protection related features. This feature should only be enabled on T+.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
 class SafetyProtectionTest : BaseUsePermissionTest() {
     @get:Rule
     val safetyProtectionEnabled =
@@ -46,46 +43,54 @@ class SafetyProtectionTest : BaseUsePermissionTest() {
 
     @Before
     fun setup() {
-        assumeTrue("Safety Protection should only be enabled on T+", SdkLevel.isAtLeastT())
         assumeFalse(isAutomotive)
         assumeFalse(isTv)
         assumeFalse(isWatch)
     }
 
+    @Ignore("b/276944839")
     @Test
-    fun testSafetyProtectionSectionView_safetyProtectionDisabled() {
-        setDeviceConfigPrivacyProperty(SAFETY_PROTECTION_ENABLED_FLAG, false.toString())
+    fun testSafetyProtectionSectionView_safetyProtection_belowT() {
+        assumeFalse("Safety Protection should only be enabled on T+", SdkLevel.isAtLeastT())
         installPackageViaSession(APP_APK_NAME_31)
-
         assertAppHasPermission(ACCESS_COARSE_LOCATION, false)
         assertAppHasPermission(ACCESS_FINE_LOCATION, false)
-
         requestAppPermissionsForNoResult(ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION) {
             findView(By.res(SAFETY_PROTECTION_DISPLAY_TEXT), false)
         }
     }
 
     @Test
-    fun testSafetyProtectionSectionView_safetyProtectionEnabled() {
-        assumeTrue(safetyProtectionResourcesExist)
+    fun testSafetyProtectionSectionView_safetyProtectionDisabled_aboveT() {
+        assumeTrue("Safety Protection should only be enabled on T+", SdkLevel.isAtLeastT())
+        setDeviceConfigPrivacyProperty(SAFETY_PROTECTION_ENABLED_FLAG, false.toString())
         installPackageViaSession(APP_APK_NAME_31)
-
         assertAppHasPermission(ACCESS_COARSE_LOCATION, false)
         assertAppHasPermission(ACCESS_FINE_LOCATION, false)
+        requestAppPermissionsForNoResult(ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION) {
+            findView(By.res(SAFETY_PROTECTION_DISPLAY_TEXT), false)
+        }
+    }
 
+    @Test
+    fun testSafetyProtectionSectionView_safetyProtectionEnabled_aboveT() {
+        assumeTrue("Safety Protection should only be enabled on T+", SdkLevel.isAtLeastT())
+        assumeTrue(safetyProtectionResourcesExist)
+        installPackageViaSession(APP_APK_NAME_31)
+        assertAppHasPermission(ACCESS_COARSE_LOCATION, false)
+        assertAppHasPermission(ACCESS_FINE_LOCATION, false)
         requestAppPermissionsForNoResult(ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION) {
             findView(By.res(SAFETY_PROTECTION_DISPLAY_TEXT), true)
         }
     }
 
     @Test
-    fun testSafetyProtectionSectionView_safetyProtectionResourcesNotExist() {
+    fun testSafetyProtectionSectionView_safetyProtectionResourcesNotExist_aboveT() {
+        assumeTrue("Safety Protection should only be enabled on T+", SdkLevel.isAtLeastT())
         assumeFalse(safetyProtectionResourcesExist)
         installPackageViaSession(APP_APK_NAME_31)
-
         assertAppHasPermission(ACCESS_COARSE_LOCATION, false)
         assertAppHasPermission(ACCESS_FINE_LOCATION, false)
-
         requestAppPermissionsForNoResult(ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION) {
             findView(By.res(SAFETY_PROTECTION_DISPLAY_TEXT), false)
         }

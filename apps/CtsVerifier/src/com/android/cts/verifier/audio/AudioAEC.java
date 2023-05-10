@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -316,11 +319,15 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
                 setLevelForStream(playbackStreamType, desiredLevel);
 
                 int currentLevel = getLevelForStream(playbackStreamType);
-                if (currentLevel != desiredLevel) {
+                if (am.isVolumeFixed()) {
+                    sendMessage(AudioTestRunner.TEST_MESSAGE,
+                        "configured for Fixed volume, bypassing volume level check");
+
+                } else if (currentLevel != desiredLevel) {
                     am.setMode(originalMode);
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
-                            "Couldn't set level for STREAM_VOICE_CALL. Expected " +
-                                    desiredLevel +" got: " + currentLevel);
+                        "Couldn't set level for STREAM_VOICE_CALL. Expected " +
+                        desiredLevel +" got: " + currentLevel);
                     return;
                 }
 
@@ -486,32 +493,46 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
         mTestThread.start();
     }
 
+    private static final String SECTION_AEC = "aec_activity";
+    private static final String KEY_AEC_MANDATORY = "aec_mandatory";
+    private static final String KEY_AEC_MAX_WITH = "max_with_aec";
+    private static final String KEY_AEC_MAX_WITHOUT = "max_without_aec";
+    private static final String KEY_AEC_RESULT = "result_string";
+
     private void storeTestResults(boolean aecMandatory, double maxAEC, double maxNoAEC,
                                   String msg) {
 
         CtsVerifierReportLog reportLog = getReportLog();
-        reportLog.addValue("AEC_mandatory",
+        reportLog.addValue(KEY_AEC_MANDATORY,
                 aecMandatory,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 
-        reportLog.addValue("max_with_AEC",
+        reportLog.addValue(KEY_AEC_MAX_WITH,
                 maxAEC,
                 ResultType.LOWER_BETTER,
                 ResultUnit.SCORE);
 
-        reportLog.addValue("max_without_AEC",
+        reportLog.addValue(KEY_AEC_MAX_WITHOUT,
                 maxNoAEC,
                 ResultType.HIGHER_BETTER,
                 ResultUnit.SCORE);
 
-        reportLog.addValue("result_string",
+        reportLog.addValue(KEY_AEC_RESULT,
                 msg,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
     }
 
-    @Override // PassFailButtons
+    //
+    // PassFailButtons
+    //
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AEC);
+    }
+
+    @Override
     public void recordTestResults() {
         getReportLog().submit();
     }

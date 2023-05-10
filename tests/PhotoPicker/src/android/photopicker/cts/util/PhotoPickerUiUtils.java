@@ -34,7 +34,7 @@ import java.util.List;
 public class PhotoPickerUiUtils {
     public static final long SHORT_TIMEOUT = 5 * DateUtils.SECOND_IN_MILLIS;
 
-    private static final long TIMEOUT = 30 * DateUtils.SECOND_IN_MILLIS;
+    public static final long TIMEOUT = 30 * DateUtils.SECOND_IN_MILLIS;
 
     public static final String REGEX_PACKAGE_NAME =
             "com(.google)?.android.providers.media(.module)?";
@@ -172,12 +172,16 @@ public class PhotoPickerUiUtils {
     }
 
     public static String getBannerPrimaryText() throws Exception {
-        final UiObject bannerPrimaryText = new UiObject(new UiSelector().resourceIdMatches(
-                REGEX_PACKAGE_NAME + ":id/banner_primary_text"));
+        final UiObject bannerPrimaryText = findBannerPrimaryText();
         assertWithMessage("Timed out waiting for the banner to appear")
                 .that(bannerPrimaryText.waitForExists(TIMEOUT))
                 .isTrue();
         return bannerPrimaryText.getText();
+    }
+
+    public static UiObject findBannerPrimaryText() {
+        return new UiObject(new UiSelector().resourceIdMatches(
+                REGEX_PACKAGE_NAME + ":id/banner_primary_text"));
     }
 
     public static UiObject findBannerDismissButton() {

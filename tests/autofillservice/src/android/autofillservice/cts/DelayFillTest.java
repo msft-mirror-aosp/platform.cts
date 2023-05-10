@@ -30,6 +30,7 @@ import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.content.Intent;
+import android.platform.test.annotations.FlakyTest;
 import android.service.autofill.FillResponse;
 
 import org.junit.Test;
@@ -52,6 +53,7 @@ public class DelayFillTest extends AutoFillServiceTestCase.AutoActivityLaunch<Lo
         };
     }
 
+    @FlakyTest(bugId = 271521636)
     @Test
     public void testDelayedFill() throws Exception {
         // Set service.
@@ -142,6 +144,7 @@ public class DelayFillTest extends AutoFillServiceTestCase.AutoActivityLaunch<Lo
         mUiBot.assertDatasets("placeholder");
     }
 
+    @FlakyTest(bugId = 271521636)
     @Test
     public void testPreventSendingDelayedFillIntentTwice() throws Exception {
         // Set service.

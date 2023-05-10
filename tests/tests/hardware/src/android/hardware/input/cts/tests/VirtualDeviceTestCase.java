@@ -59,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class VirtualDeviceTestCase extends InputTestCase {
 
+    private static final String TAG = "VirtualDeviceTestCase";
+
     private static final int ARBITRARY_SURFACE_TEX_ID = 1;
 
     protected static final int PRODUCT_ID = 1;
@@ -91,6 +93,8 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
                 public void onInputDeviceChanged(int deviceId) {
                 }
             };
+
+    InputManager mInputManager;
 
     VirtualDeviceManager.VirtualDevice mVirtualDevice;
     VirtualDisplay mVirtualDisplay;
@@ -155,15 +159,11 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
 
     @Override
     void onSetUp() {
-        InstrumentationRegistry.getTargetContext().getSystemService(InputManager.class)
-                .registerInputDeviceListener(mInputDeviceListener,
-                        new Handler(Looper.getMainLooper()));
+        mInputManager = mInstrumentation.getTargetContext().getSystemService(InputManager.class);
+        mInputManager.registerInputDeviceListener(mInputDeviceListener,
+                new Handler(Looper.getMainLooper()));
         onSetUpVirtualInputDevice();
-        try {
-            mLatch.await(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            fail("Virtual input device setup was interrupted");
-        }
+        waitForInputDevice();
         // Tap to gain window focus on the activity
         tapActivityToFocus();
     }
@@ -186,18 +186,28 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
             if (mVirtualDevice != null) {
                 mVirtualDevice.close();
             }
+            if (mInputManager != null) {
+                mInputManager.unregisterInputDeviceListener(mInputDeviceListener);
+            }
             final Context context = InstrumentationRegistry.getTargetContext();
-            context.getSystemService(InputManager.class).unregisterInputDeviceListener(
-                    mInputDeviceListener);
             disassociateCompanionDevice(context.getPackageName());
         }
     }
 
     @Override
-    @Nullable Bundle getActivityOptions() {
+    @Nullable
+    Bundle getActivityOptions() {
         return ActivityOptions.makeBasic()
                 .setLaunchDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
                 .toBundle();
+    }
+
+    protected void waitForInputDevice() {
+        try {
+            mLatch.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            fail("Virtual input device setup was interrupted");
+        }
     }
 
     private void associateCompanionDevice(String packageName) {
@@ -213,7 +223,7 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
                         Process.myUserHandle().getIdentifier(), packageName));
     }
 
-    private void tapActivityToFocus() {
+    protected void tapActivityToFocus() {
         final Point p = getViewCenterOnScreen(mTestActivity.getWindow().getDecorView());
         final int displayId = mTestActivity.getDisplayId();
 
@@ -249,6 +259,6 @@ public abstract class VirtualDeviceTestCase extends InputTestCase {
                 /* height= */ DISPLAY_HEIGHT,
                 /* displayIdToMirror= */ 50,
                 /* surface= */ null
-            );
+        );
     }
 }

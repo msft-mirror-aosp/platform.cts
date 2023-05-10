@@ -16,6 +16,7 @@
 
 package android.companion.cts.uiautomation
 
+import android.Manifest.permission.READ_DEVICE_CONFIG
 import android.annotation.CallSuper
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
@@ -23,6 +24,7 @@ import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager
 import android.companion.CompanionException
 import android.companion.cts.common.CompanionActivity
+import android.companion.utils.FeatureUtils
 import android.content.Intent
 import android.os.OutcomeReceiver
 import android.platform.test.annotations.AppModeFull
@@ -40,10 +42,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import libcore.util.EmptyArray
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -62,6 +64,9 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
     @CallSuper
     override fun setUp() {
         super.setUp()
+        assumeTrue(withShellPermissionIdentity(READ_DEVICE_CONFIG) {
+            FeatureUtils.isPermSyncEnabled()
+        })
         cdm.enableSecureTransport(false)
     }
 
@@ -84,9 +89,9 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
         val (resultCode: Int, _: Intent?) = CompanionActivity.waitForActivityResult()
         assertEquals(expected = RESULT_OK, actual = resultCode)
 
-        // Second time request permission transfer should get null IntentSender
+        // Second time request permission transfer should get non null IntentSender
         val pendingUserConsent2 = cdm.buildPermissionTransferUserConsentIntent(association1.id)
-        assertNull(pendingUserConsent2)
+        assertNotNull(pendingUserConsent2)
 
         // disassociate() should clean up the requests
         cdm.disassociate(association1.id)
@@ -109,9 +114,9 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
         val (resultCode: Int, _: Intent?) = CompanionActivity.waitForActivityResult()
         assertEquals(expected = RESULT_CANCELED, actual = resultCode)
 
-        // Second time request permission transfer should get null IntentSender
+        // Second time request permission transfer should get non null IntentSender
         val pendingUserConsent2 = cdm.buildPermissionTransferUserConsentIntent(association1.id)
-        assertNull(pendingUserConsent2)
+        assertNotNull(pendingUserConsent2)
 
         // disassociate() should clean up the requests
         cdm.disassociate(association1.id)
@@ -135,6 +140,29 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
         // Second time request permission transfer should prompt a dialog
         val pendingUserConsent2 = cdm.buildPermissionTransferUserConsentIntent(association1.id)
         assertNotNull(pendingUserConsent2)
+    }
+
+    @Test
+    fun test_userConsentDialogAllowedAndThenDisallowed() {
+        val association1 = associate()
+
+        // First time request permission transfer should prompt a dialog
+        val pendingUserConsent = cdm.buildPermissionTransferUserConsentIntent(association1.id)
+        assertNotNull(pendingUserConsent)
+        CompanionActivity.startIntentSender(pendingUserConsent)
+        confirmationUi.waitUntilSystemDataTransferConfirmationVisible()
+        confirmationUi.clickPositiveButton()
+        val (resultCode: Int, _: Intent?) = CompanionActivity.waitForActivityResult()
+        assertEquals(expected = RESULT_OK, actual = resultCode)
+
+        // Second time request permission transfer should prompt a dialog
+        val pendingUserConsent2 = cdm.buildPermissionTransferUserConsentIntent(association1.id)
+        assertNotNull(pendingUserConsent2)
+        CompanionActivity.startIntentSender(pendingUserConsent2)
+        confirmationUi.waitUntilSystemDataTransferConfirmationVisible()
+        confirmationUi.clickNegativeButton()
+        val (resultCode2: Int, _: Intent?) = CompanionActivity.waitForActivityResult()
+        assertEquals(expected = RESULT_CANCELED, actual = resultCode2)
     }
 
     /**
@@ -215,15 +243,16 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
      * Associate without checking the association data.
      */
     private fun associate(): AssociationInfo {
-        sendRequestAndLaunchConfirmation()
-        callback.assertInvokedByActions(3.seconds) {
-            confirmationUi.waitAndClickOnFirstFoundDevice()
+        sendRequestAndLaunchConfirmation(singleDevice = true)
+        confirmationUi.scrollToBottom()
+        callback.assertInvokedByActions {
+            // User "approves" the request.
+            confirmationUi.clickPositiveButton()
         }
         // Wait until the Confirmation UI goes away.
         confirmationUi.waitUntilGone()
         // Check the result code and the data delivered via onActivityResult()
         val (_: Int, associationData: Intent?) = CompanionActivity.waitForActivityResult()
-        CompanionActivity.clearResult()
         assertNotNull(associationData)
         val association: AssociationInfo? = associationData.getParcelableExtra(
                 CompanionDeviceManager.EXTRA_ASSOCIATION,

@@ -16,9 +16,6 @@
 
 package android.backup.cts;
 
-import static android.app.backup.BackupRestoreEventLogger.BackupRestoreDataType;
-import static android.app.backup.BackupRestoreEventLogger.BackupRestoreError;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
@@ -30,7 +27,6 @@ import android.app.backup.BackupRestoreEventLogger.DataTypeResult;
 import android.app.backup.RestoreObserver;
 import android.app.backup.RestoreSession;
 import android.content.Context;
-
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 
@@ -46,9 +42,7 @@ public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
 
 
     // Copied from LoggingFullBackupAgent.java
-    @BackupRestoreDataType
     private static final String DATA_TYPE = "data_type";
-    @BackupRestoreError
     private static final String ERROR = "error";
     private static final String METADATA = "metadata";
     private static final int SUCCESS_COUNT = 1;
@@ -107,6 +101,9 @@ public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
                 TimeUnit.SECONDS);
         assertThat(operationFinished).isTrue();
         assertLoggingResultsAreCorrect();
+
+        // Clean up restore session
+        restoreSession.endRestoreSession();
     }
 
     /**

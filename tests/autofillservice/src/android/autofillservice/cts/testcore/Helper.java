@@ -87,10 +87,10 @@ import androidx.test.runner.lifecycle.Stage;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.DeviceConfigStateManager;
 import com.android.compatibility.common.util.OneTimeSettingsListener;
-import com.android.compatibility.common.util.SettingsUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.TestNameUtils;
 import com.android.compatibility.common.util.Timeout;
+import com.android.compatibility.common.util.UserSettings;
 
 import java.io.File;
 import java.io.IOException;
@@ -125,6 +125,8 @@ public final class Helper {
     public static final String ID_EMPTY = "empty";
     public static final String ID_CANCEL_FILL = "cancel_fill";
     public static final String ID_IMEACTION_TEXT = "ime_option_text";
+    public static final String ID_IMEACTION_TEXT_IMPORTANT_FOR_AUTOFILL =
+        "ime_option_text_important_for_autofill";
     public static final String ID_IMEACTION_LABEL = "ime_option_text_label";
 
     public static final String NULL_DATASET_ID = null;
@@ -153,6 +155,8 @@ public final class Helper {
             OneTimeSettingsListener.DEFAULT_TIMEOUT_MS);
 
     public static final String DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS = "autofill_dialog_hints";
+
+    private static final UserSettings sUserSettings = new UserSettings();
 
     /**
      * Helper interface used to filter nodes.
@@ -273,8 +277,8 @@ public final class Helper {
     /**
      * Sets whether the user completed the initial setup.
      */
-    public static void setUserComplete(Context context, boolean complete) {
-        SettingsUtils.syncSet(context, USER_SETUP_COMPLETE, complete ? "1" : null);
+    public static void setUserComplete(boolean complete) {
+        sUserSettings.syncSet(USER_SETUP_COMPLETE, complete ? "1" : null);
     }
 
     private static void dump(@NonNull StringBuilder builder, @NonNull ViewNode node,
@@ -951,13 +955,12 @@ public final class Helper {
      * Uses Settings to enable the given autofill service for the default user, and checks the
      * value was properly check, throwing an exception if it was not.
      */
-    public static void enableAutofillService(@NonNull Context context,
-            @NonNull String serviceName) {
+    public static void enableAutofillService(String serviceName) {
         if (isAutofillServiceEnabled(serviceName)) return;
 
         // Sets the setting synchronously. Note that the config itself is sets synchronously but
         // launch of the service is asynchronous after the config is updated.
-        SettingsUtils.syncSet(context, AUTOFILL_SERVICE, serviceName);
+        sUserSettings.syncSet(AUTOFILL_SERVICE, serviceName);
 
         // Waits until the service is actually enabled.
         try {
@@ -973,14 +976,14 @@ public final class Helper {
      * Uses Settings to disable the given autofill service for the default user, and waits until
      * the setting is deleted.
      */
-    public static void disableAutofillService(@NonNull Context context) {
-        final String currentService = SettingsUtils.get(AUTOFILL_SERVICE);
+    public static void disableAutofillService() {
+        final String currentService = sUserSettings.get(AUTOFILL_SERVICE);
         if (currentService == null) {
             Log.v(TAG, "disableAutofillService(): already disabled");
             return;
         }
         Log.v(TAG, "Disabling " + currentService);
-        SettingsUtils.syncDelete(context, AUTOFILL_SERVICE);
+        sUserSettings.syncDelete(AUTOFILL_SERVICE);
     }
 
     /**
@@ -995,14 +998,14 @@ public final class Helper {
      * Gets then name of the autofill service for the default user.
      */
     public static String getAutofillServiceName() {
-        return SettingsUtils.get(AUTOFILL_SERVICE);
+        return sUserSettings.get(AUTOFILL_SERVICE);
     }
 
     /**
      * Asserts whether the given service is enabled as the autofill service for the default user.
      */
     public static void assertAutofillServiceStatus(@NonNull String serviceName, boolean enabled) {
-        final String actual = SettingsUtils.get(AUTOFILL_SERVICE);
+        final String actual = sUserSettings.get(AUTOFILL_SERVICE);
         final String expected = enabled ? serviceName : null;
         assertWithMessage("Invalid value for secure setting %s", AUTOFILL_SERVICE)
                 .that(actual).isEqualTo(expected);
@@ -1671,30 +1674,6 @@ public final class Helper {
     }
 
     /**
-     * Enable the main credential manager feature.
-     * If this is off, any underlying changes for autofill-credentialManager integrations are off.
-     */
-    public static void enableCredentialManagerFeature(@NonNull Context context) {
-        setCredentialManagerFeature(context, true);
-    }
-
-    /**
-     * Enable ignoring credential manager important views for autofill feature
-     */
-    public static void ignoreCredentialManagerViews(@NonNull Context context) {
-        setDeviceConfig(context,
-                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_IGNORE_VIEWS, true);
-    }
-
-    /**
-     * Enable Credential Manager related autofill changes
-     */
-    public static void setCredentialManagerFeature(@NonNull Context context, boolean enabled) {
-        setDeviceConfig(context,
-                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_ENABLED, enabled);
-    }
-
-    /**
      * Set device config to set flag values.
      */
     public static void setDeviceConfig(
@@ -1715,6 +1694,16 @@ public final class Helper {
     }
 
     /**
+     * Enable fill dialog feature
+     */
+    public static void disableFillDialogFeature(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED);
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
      * Enable PCC Detection Feature Hints
      */
     public static void enablePccDetectionFeature(@NonNull Context context, String...types) {
@@ -1727,6 +1716,16 @@ public final class Helper {
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
                         AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED);
         setDeviceConfig(deviceConfigStateManager2, "true");
+    }
+
+    /**
+     * Enable PCC Detection Feature Hints
+     */
+    public static void preferPccDetectionOverProvider(@NonNull Context context, boolean preferPcc) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "prefer_provider_over_pcc");
+        setDeviceConfig(deviceConfigStateManager, String.valueOf(!preferPcc));
     }
 
     /**

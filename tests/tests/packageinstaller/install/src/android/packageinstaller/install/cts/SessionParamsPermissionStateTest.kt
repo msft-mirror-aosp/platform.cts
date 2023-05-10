@@ -22,9 +22,9 @@ import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DEFAUL
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DENIED
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_GRANTED
 import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import android.Manifest
 import android.content.AttributionSource
-import android.content.pm.PermissionInfo
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
 import com.android.compatibility.common.util.SystemUtil

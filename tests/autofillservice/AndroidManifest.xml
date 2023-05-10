@@ -29,6 +29,9 @@
     This can happen when the IME is unbound as a result of enabling
     the config_preventImeStartupUnlessTextEditor option. -->
     <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
+    <uses-permission android:name="android.permission.MANAGE_ROLE_HOLDERS"/>
+    <uses-permission android:name="android.permission.PROVIDE_OWN_AUTOFILL_SUGGESTIONS"/>
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
 
     <queries>
         <package android:name="com.android.cts.mockime" />
@@ -52,10 +55,13 @@
              android:theme="@style/MyAutofilledHighlight"/>
         <activity android:name=".activities.LoginWithStringsActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillActivity"/>
+        <activity android:name=".activities.LoginNotImportantUsernameImportantPasswordActivity"/>
+        <activity android:name=".activities.MultilineLoginActivity"/>
         <activity android:name=".activities.ImeOptionActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedActivityContextActivity"/>
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
+        <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
@@ -167,7 +173,6 @@
         <activity android:name=".activities.SimpleAfterLoginActivity"/>
         <activity android:name=".activities.SimpleBeforeLoginActivity"/>
         <activity android:name=".activities.NonAutofillableActivity"/>
-        <activity android:name=".activities.ClientSuggestionsActivity"/>
 
         <receiver android:name=".testcore.SelfDestructReceiver"
              android:exported="true"

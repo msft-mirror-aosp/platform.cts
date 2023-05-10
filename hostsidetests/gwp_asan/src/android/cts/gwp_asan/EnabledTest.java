@@ -16,38 +16,35 @@
 
 package android.cts.gwp_asan;
 
-import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class EnabledTest extends BaseHostJUnit4Test {
-    private static final String TEST_APK = "CtsGwpAsanEnabled.apk";
-    private static final String TEST_PKG = "android.cts.gwp_asan";
-    private ITestDevice mDevice;
-
-    @Before
-    public void setUp() throws Exception {
-        mDevice = getDevice();
-        installPackage(TEST_APK, new String[0]);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        uninstallPackage(mDevice, TEST_PKG);
+public class EnabledTest extends GwpAsanBaseTest {
+    protected String getTestApk() {
+        return "CtsGwpAsanEnabled.apk";
     }
 
     @Test
     public void testGwpAsanEnabled() throws Exception {
-        Assert.assertTrue(
-                runDeviceTests(TEST_PKG, TEST_PKG + ".GwpAsanActivityTest", "testEnablement"));
-        Assert.assertTrue(
-                runDeviceTests(TEST_PKG, TEST_PKG + ".GwpAsanServiceTest", "testEnablement"));
+        runTest(".GwpAsanActivityTest", "testEnablement");
+        runTest(".GwpAsanServiceTest", "testEnablement");
+    }
+
+    @Test
+    public void testCrashToDropbox() throws Exception {
+        runTest(".GwpAsanActivityTest", "testCrashToDropboxEnabled");
+        runTest(".GwpAsanActivityTest", "testCrashToDropboxDefault");
+        runTest(".GwpAsanServiceTest", "testCrashToDropboxEnabled");
+        runTest(".GwpAsanServiceTest", "testCrashToDropboxDefault");
+    }
+
+    @Test
+    public void testAppExitInfo() throws Exception {
+        resetAppExitInfo();
+        runTest(".GwpAsanActivityTest", "testCrashToDropboxDefault");
+        runTest(".GwpAsanActivityTest", "checkAppExitInfo");
     }
 }

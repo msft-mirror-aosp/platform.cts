@@ -50,10 +50,13 @@ java_test_host {
         "src/**/statsd/*.java",
         "src/**/telephony/*.java",
         "src/**/tls/*.java",
+        "src/**/usb/*.java",
         "src/**/users/*.java",
         "src/**/vibrator/*.java",
+        "src/**/voiceinteraction/*.java",
         "src/**/wifi/*.java",
         "src/**/incremental/*.java",
+        "src/**/memorysafety/*.java",
     ],
 
     test_suites: [
@@ -83,6 +86,7 @@ java_test_host {
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",
         ":CtsStatsdAlarmHelper2",
+        ":CtsVoiceInteractionTestCases",
     ],
     per_testcase_directory: true,
 }

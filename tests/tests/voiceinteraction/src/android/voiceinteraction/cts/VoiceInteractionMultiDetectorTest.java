@@ -26,7 +26,6 @@ import android.hardware.soundtrigger.SoundTrigger;
 import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
 import android.media.AudioFormat;
 import android.os.ConditionVariable;
-import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.util.Log;
@@ -36,19 +35,19 @@ import android.voiceinteraction.service.IProxyDetectorCallback;
 import android.voiceinteraction.service.ITestVoiceInteractionService;
 import android.voiceinteraction.service.ITestVoiceInteractionServiceListener;
 import android.voiceinteraction.service.IVoiceInteractionServiceBindingHelper;
-import android.voiceinteraction.service.ProxyVoiceInteractionService;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 
 import com.android.compatibility.common.util.SettingsStateChangerRule;
-import com.android.compatibility.common.util.SettingsUtils;
+import com.android.compatibility.common.util.UserSettings;
 
 import com.google.common.collect.ImmutableList;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +71,8 @@ public class VoiceInteractionMultiDetectorTest {
     @Rule
     public ServiceTestRule mServiceTestRule = new ServiceTestRule();
     private ITestVoiceInteractionService mTestServiceInterface = null;
+
+    private final UserSettings mUserSettings = new UserSettings();
 
     @Before
     public void setUp() throws Exception {
@@ -107,9 +108,7 @@ public class VoiceInteractionMultiDetectorTest {
     @After
     public void tearDown() throws Exception {
         Log.i(TAG, "tearDown: clearing settings value");
-        SettingsUtils.syncSet(InstrumentationRegistry.getInstrumentation().getTargetContext(),
-                SettingsUtils.NAMESPACE_SECURE, Settings.Secure.VOICE_INTERACTION_SERVICE,
-                "dummy_service");
+        mUserSettings.syncSet(Settings.Secure.VOICE_INTERACTION_SERVICE, "dummy_service");
         Log.i(TAG, "tearDown: waiting for shutdown");
         assertThat(mIsTestServiceShutdown.block(TEST_SERVICE_TIMEOUT.toMillis())).isTrue();
         mServiceTestRule.unbindService();
@@ -118,6 +117,7 @@ public class VoiceInteractionMultiDetectorTest {
     }
 
     @Test
+    @Ignore("b/274789133 - ProxyVIService instrumentation issue")
     public void testAlwaysOnHotwordDetectorDestroy_throwsExceptionAfterDestroy() throws Exception {
         final ConditionVariable availabilityChanged = new ConditionVariable();
         IProxyAlwaysOnHotwordDetector alwaysOnHotwordDetector =
@@ -133,19 +133,17 @@ public class VoiceInteractionMultiDetectorTest {
 
         alwaysOnHotwordDetector.startRecognitionOnFakeAudioStream();
         alwaysOnHotwordDetector.destroy();
-        assertThat(assertThrows(ServiceSpecificException.class,
-                () -> alwaysOnHotwordDetector.startRecognitionOnFakeAudioStream()).errorCode)
-                .isEqualTo(ProxyVoiceInteractionService.EXCEPTION_HOTWORD_DETECTOR_ILLEGAL_STATE);
-        assertThat(assertThrows(ServiceSpecificException.class,
-                () -> alwaysOnHotwordDetector.stopRecognition()).errorCode)
-                .isEqualTo(ProxyVoiceInteractionService.EXCEPTION_HOTWORD_DETECTOR_ILLEGAL_STATE);
+        assertThrows(IllegalStateException.class,
+                () -> alwaysOnHotwordDetector.startRecognitionOnFakeAudioStream());
+        assertThrows(IllegalStateException.class, () -> alwaysOnHotwordDetector.stopRecognition());
         assertThrows(IllegalStateException.class,
                 () -> alwaysOnHotwordDetector.updateState(null, null));
         assertThrows(IllegalStateException.class, () ->
                 alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(/* status */ 0,
-                        /* soundModelHandle */ 100, /* captureAvailable */ true,
-                        /* captureSession */ 101, /* captureDelayMs */ 1000,
-                        /* capturePreambleMs */ 1001, /* triggerInData */ true,
+                        /* soundModelHandle */ 100, /* halEventReceivedMillis */ 12345,
+                        /* captureAvailable */ true, /* captureSession */ 101,
+                        /* captureDelayMs */ 1000, /* capturePreambleMs */ 1001,
+                        /* triggerInData */ true,
                         new AudioFormat.Builder()
                                 .setSampleRate(32000)
                                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -158,6 +156,7 @@ public class VoiceInteractionMultiDetectorTest {
     }
 
     @Test
+    @Ignore("b/274789133 - ProxyVIService instrumentation issue")
     public void testAlwaysOnHotwordDetectorCreate_rejectMultipleDetectorsOfTheSameType()
             throws Exception {
         final ConditionVariable availabilityChanged = new ConditionVariable();

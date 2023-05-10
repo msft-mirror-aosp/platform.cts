@@ -16,6 +16,7 @@
 
 package android.net.wifi.cts;
 
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 import static android.net.wifi.SoftApCapability.SOFTAP_FEATURE_ACS_OFFLOAD;
@@ -32,11 +33,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.annotation.NonNull;
 import android.app.UiAutomation;
@@ -112,7 +110,6 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.net.module.util.MacAddressUtils;
@@ -382,7 +379,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         mIntentFilter.addAction(WifiManager.NETWORK_IDS_CHANGED_ACTION);
         mIntentFilter.addAction(WifiManager.ACTION_PICK_WIFI_NETWORK);
 
-        mContext.registerReceiver(mReceiver, mIntentFilter);
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
+            mContext.registerReceiver(mReceiver, mIntentFilter, RECEIVER_EXPORTED);
+        } else {
+            mContext.registerReceiver(mReceiver, mIntentFilter);
+        }
         mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
         mConnectivityManager = getContext().getSystemService(ConnectivityManager.class);
         mTetheringManager = getContext().getSystemService(TetheringManager.class);
@@ -456,8 +457,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             } else {
                 mMySync.expectedState = (enable ? STATE_WIFI_ENABLED : STATE_WIFI_DISABLED);
             }
-            // now trigger the change using shell commands.
-            SystemUtil.runShellCommand("svc wifi " + (enable ? "enable" : "disable"));
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.setWifiEnabled(enable));
             waitForExpectedWifiState(enable);
         }
     }
@@ -1683,7 +1684,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP,
                         mExecutor, listener));
 
-        String expectedPackage = "com.android.shell";
+        String expectedPackage = "android.net.wifi.cts";
         boolean isEnabledBefore = mWifiManager.isWifiEnabled();
         // toggle wifi and verify getting last caller
         setWifiEnabled(!isEnabledBefore);
@@ -2081,9 +2082,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         TestExecutor executor = new TestExecutor();
         TestSoftApCallback lohsSoftApCallback = new TestSoftApCallback(mLock);
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         setWifiEnabled(false);
+        Thread.sleep(TEST_WAIT_DURATION_MS);
         boolean wifiEnabled = mWifiManager.isWifiEnabled();
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             verifyLohsRegisterSoftApCallback(executor, lohsSoftApCallback);
@@ -2954,9 +2956,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     public void testSoftApConfigurationGetPersistentRandomizedMacAddress() throws Exception {
         SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 mWifiManager::getSoftApConfiguration);
+        final String ssid = currentConfig.getSsid().length() <= 28
+                ? currentConfig.getSsid() + "test"
+                : "AndroidTest";
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setSoftApConfiguration(new SoftApConfiguration.Builder()
-                .setSsid(currentConfig.getSsid() + "test").build()));
+                .setSsid(ssid).build()));
         SoftApConfiguration changedSsidConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 mWifiManager::getSoftApConfiguration);
         assertNotEquals(currentConfig.getPersistentRandomizedMacAddress(),
@@ -2980,6 +2985,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTetheredBridgedAp() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
         // check that softap bridged mode is supported by the device
         if (!mWifiManager.isBridgedApConcurrencySupported()) {
             return;
@@ -3044,6 +3054,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTetheredBridgedApWifiForcedChannel() throws Exception {
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
+
         // check that softap bridged mode is supported by the device
         if (!mWifiManager.isBridgedApConcurrencySupported()) {
             return;
@@ -4218,10 +4233,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         TestExecutor executor = new TestExecutor();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
-            uiAutomation.adoptShellPermissionIdentity();
-            turnOffWifiAndTetheredHotspotIfEnabled();
             // Run with scanning disable to make sure there is no active mode.
             runWithScanning(() -> {
+                uiAutomation.adoptShellPermissionIdentity();
+                turnOffWifiAndTetheredHotspotIfEnabled();
                 mWifiManager.registerActiveCountryCodeChangedCallback(
                         executor, testCountryCodeChangedCallback);
 
@@ -4237,7 +4252,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                                             == null;
                         });
                 // Enable wifi to make sure country code has been updated.
-                setWifiEnabled(true);
+                mWifiManager.setWifiEnabled(true);
                 PollingCheck.check(
                         "DriverCountryCode is null when wifi on",
                         5000,
@@ -4249,7 +4264,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                                             != null;
                         });
                 // Disable wifi to trigger country code change
-                setWifiEnabled(false);
+                mWifiManager.setWifiEnabled(false);
                 PollingCheck.check(
                         "DriverCountryCode should be null when wifi off",
                         5000,
@@ -4262,7 +4277,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 mWifiManager.unregisterActiveCountryCodeChangedCallback(
                             testCountryCodeChangedCallback);
                 testCountryCodeChangedCallback.resetCallbackCallededHistory();
-                setWifiEnabled(true);
+                mWifiManager.setWifiEnabled(true);
                 // Check there is no callback has been called.
                 PollingCheck.check(
                         "Callback is called after unregister",
@@ -4822,7 +4837,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Verify the usage of {@code WifiManager#getMaxSupportedConcurrentTdlsSessions}.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGetMaxSupportedConcurrentTdlsSessions() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported
@@ -6108,9 +6123,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
 
             // Disable and re-enable Wifi to avoid reconnect to the secondary candidate
-            setWifiEnabled(false);
-            setWifiEnabled(true);
-
+            mWifiManager.setWifiEnabled(false);
+            mWifiManager.setWifiEnabled(true);
+            waitForDisconnection();
             // Now trigger scan and ensure that the device does not connect to any networks.
             mWifiManager.startScan();
             ensureNotConnected();
@@ -6305,6 +6320,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             policyParamsList.add(new QosPolicyParams.Builder(
                     policyId, QosPolicyParams.DIRECTION_DOWNLINK)
                             .setUserPriority(QosPolicyParams.USER_PRIORITY_VIDEO_LOW)
+                            .setIpVersion(QosPolicyParams.IP_VERSION_4)
                             .build());
         }
     }
@@ -6314,7 +6330,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#removeQosPolicies(int[])}, and
      * {@link WifiManager#removeAllQosPolicies()} do not crash.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testAddAndRemoveQosPolicies() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported
@@ -6416,51 +6432,69 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests the builder and get methods for {@link QosPolicyParams}.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testQosPolicyParamsBuilder() throws Exception {
         final int policyId = 5;
         final int direction = QosPolicyParams.DIRECTION_DOWNLINK;
+        final int ipVersion = QosPolicyParams.IP_VERSION_6;
         final int dscp = 12;
         final int userPriority = QosPolicyParams.USER_PRIORITY_VIDEO_LOW;
-        final MacAddress srcAddr = MacAddress.fromString("00:11:22:33:44:55");
-        final MacAddress dstAddr = MacAddress.fromString("aa:bb:cc:dd:ee:ff");
+        final String ipv6Address = "2001:db8:3333:4444:5555:6666:7777:8888";
+        final InetAddress srcAddr = InetAddress.getByName(ipv6Address);
+        final InetAddress dstAddr = InetAddress.getByName(ipv6Address);
         final int srcPort = 123;
         final int protocol = QosPolicyParams.PROTOCOL_TCP;
+        final int dstPort = 17;
         final int[] dstPortRange = new int[]{15, 22};
+        final byte[] flowLabel = new byte[]{17, 18, 19};
 
         // Invalid parameter
         assertThrows("Invalid dscp should trigger an exception", IllegalArgumentException.class,
                 () -> new QosPolicyParams.Builder(policyId, direction)
                         .setDscp(70)
                         .build());
-        assertThrows("Null src address should trigger an exception", NullPointerException.class,
-                () -> new QosPolicyParams.Builder(policyId, direction)
-                        .setSourceAddress(null)
-                        .build());
-        assertThrows("Null dest address should trigger an exception", NullPointerException.class,
-                () -> new QosPolicyParams.Builder(policyId, direction)
-                        .setDestinationAddress(null)
-                        .build());
 
-        // Valid parameters
-        QosPolicyParams params = new QosPolicyParams.Builder(policyId, direction)
-                .setSourceAddress(srcAddr)
-                .setDestinationAddress(dstAddr)
-                .setDscp(dscp)
-                .setUserPriority(userPriority)
-                .setSourcePort(srcPort)
-                .setProtocol(protocol)
-                .setDestinationPortRange(dstPortRange[0], dstPortRange[1])
-                .build();
-        assertEquals(policyId, params.getPolicyId());
-        assertEquals(direction, params.getDirection());
-        assertEquals(srcAddr, params.getSourceAddress());
-        assertEquals(dstAddr, params.getDestinationAddress());
-        assertEquals(dscp, params.getDscp());
-        assertEquals(userPriority, params.getUserPriority());
-        assertEquals(srcPort, params.getSourcePort());
-        assertEquals(protocol, params.getProtocol());
-        assertArrayEquals(dstPortRange, params.getDestinationPortRange());
+        // Valid downlink parameters
+        QosPolicyParams downlinkParams =
+                new QosPolicyParams.Builder(policyId, QosPolicyParams.DIRECTION_DOWNLINK)
+                        .setSourceAddress(srcAddr)
+                        .setDestinationAddress(dstAddr)
+                        .setUserPriority(userPriority)
+                        .setIpVersion(ipVersion)
+                        .setSourcePort(srcPort)
+                        .setProtocol(protocol)
+                        .setDestinationPort(dstPort)
+                        .setFlowLabel(flowLabel)
+                        .build();
+        assertEquals(policyId, downlinkParams.getPolicyId());
+        assertEquals(QosPolicyParams.DIRECTION_DOWNLINK, downlinkParams.getDirection());
+        assertEquals(srcAddr, downlinkParams.getSourceAddress());
+        assertEquals(dstAddr, downlinkParams.getDestinationAddress());
+        assertEquals(userPriority, downlinkParams.getUserPriority());
+        assertEquals(ipVersion, downlinkParams.getIpVersion());
+        assertEquals(srcPort, downlinkParams.getSourcePort());
+        assertEquals(protocol, downlinkParams.getProtocol());
+        assertEquals(dstPort, downlinkParams.getDestinationPort());
+        assertArrayEquals(flowLabel, downlinkParams.getFlowLabel());
+
+        // Valid uplink parameters
+        QosPolicyParams uplinkParams =
+                new QosPolicyParams.Builder(policyId, QosPolicyParams.DIRECTION_UPLINK)
+                    .setSourceAddress(srcAddr)
+                    .setDestinationAddress(dstAddr)
+                    .setDscp(dscp)
+                    .setSourcePort(srcPort)
+                    .setProtocol(protocol)
+                    .setDestinationPortRange(dstPortRange[0], dstPortRange[1])
+                    .build();
+        assertEquals(policyId, uplinkParams.getPolicyId());
+        assertEquals(QosPolicyParams.DIRECTION_UPLINK, uplinkParams.getDirection());
+        assertEquals(srcAddr, uplinkParams.getSourceAddress());
+        assertEquals(dstAddr, uplinkParams.getDestinationAddress());
+        assertEquals(dscp, uplinkParams.getDscp());
+        assertEquals(srcPort, uplinkParams.getSourcePort());
+        assertEquals(protocol, uplinkParams.getProtocol());
+        assertArrayEquals(dstPortRange, uplinkParams.getDestinationPortRange());
     }
 
     /**
@@ -6613,7 +6647,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#isThirdPartyAppEnablingWifiConfirmationDialogEnabled()}
      * and {@link WifiManager#setThirdPartyAppEnablingWifiConfirmationDialogEnabled(boolean)}
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGetAndSetThirdPartyAppEnablingWifiConfirmationDialogEnabled() {
         // Expect a SecurityException without the required permissions.
         assertThrows(SecurityException.class,

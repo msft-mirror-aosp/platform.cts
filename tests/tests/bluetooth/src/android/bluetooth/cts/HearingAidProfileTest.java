@@ -17,8 +17,15 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -31,13 +38,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +64,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * To run the test, use adb shell am instrument -e class 'android.bluetooth.HearingAidProfileTest'
  * -w 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
-public class HearingAidProfileTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class HearingAidProfileTest {
     private static final String TAG = "HearingAidProfileTest";
 
     private static final int WAIT_FOR_INTENT_TIMEOUT_MS = 10000; // ms to wait for intent callback
@@ -65,8 +78,7 @@ public class HearingAidProfileTest extends AndroidTestCase {
     private static final int ADAPTER_DISABLE_TIMEOUT_MS = 5000;
     private static final String FAKE_REMOTE_ADDRESS = "00:11:22:AA:BB:CC";
 
-    private boolean mIsHearingAidSupported;
-    private boolean mIsBleSupported;
+    private Context mContext;
     private BluetoothHearingAid mService;
     private BluetoothAdapter mBluetoothAdapter;
     private BroadcastReceiver mIntentReceiver;
@@ -83,12 +95,12 @@ public class HearingAidProfileTest extends AndroidTestCase {
 
     private List<BluetoothDevice> mIntentCallbackDeviceList;
 
+    @Before
     public void setUp() throws Exception {
-        if (!isBleSupported()) return;
-        mIsBleSupported = true;
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        mIsHearingAidSupported = TestUtils.isProfileEnabled(BluetoothProfile.HEARING_AID);
-        if (!mIsHearingAidSupported) return;
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HEARING_AID));
 
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
@@ -102,7 +114,7 @@ public class HearingAidProfileTest extends AndroidTestCase {
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
         mIsProfileReady = false;
         mService = null;
-        mBluetoothAdapter.getProfileProxy(getContext(), new HearingAidsServiceListener(),
+        mBluetoothAdapter.getProfileProxy(mContext, new HearingAidsServiceListener(),
                 BluetoothProfile.HEARING_AID);
 
         Parcel parcel = Parcel.obtain();
@@ -113,17 +125,15 @@ public class HearingAidProfileTest extends AndroidTestCase {
         assertNotNull(mAdvertisementData);
     }
 
-    @Override
+    @After
     public void tearDown() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
+        if (mUiAutomation != null) {
+            mUiAutomation.dropShellPermissionIdentity();
         }
-        mUiAutomation.dropShellPermissionIdentity();
     }
 
+    @Test
     public void test_closeProfileProxy() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) return;
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mService);
         assertTrue(mIsProfileReady);
@@ -137,9 +147,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * Basic test case to make sure that Hearing Aid Profile Proxy can connect.
      */
     @MediumTest
+    @Test
     public void test_getProxyServiceConnect() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) return;
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -149,11 +158,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * Basic test case to make sure that a fictional device is disconnected.
      */
     @MediumTest
+    @Test
     public void test_getConnectionState() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -172,11 +178,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * volume.
      */
     @MediumTest
+    @Test
     public void test_setVolume() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -189,11 +192,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * Basic test case to make sure that a fictional device is unknown side.
      */
     @MediumTest
+    @Test
     public void test_getDeviceSide() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -211,11 +211,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * Basic test case to make sure that a fictional device is unknown mode.
      */
     @MediumTest
+    @Test
     public void test_getDeviceMode() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -231,14 +228,11 @@ public class HearingAidProfileTest extends AndroidTestCase {
 
     /**
      * Basic test case to make sure that a fictional device's ASHA Advertisement Service Data
-     * is an error.
+     * is null.
      */
     @MediumTest
+    @Test
     public void test_getAdvertisementServiceData() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -246,6 +240,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
         // Create a fake device
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
         assertNotNull(device);
+
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
 
         // Fake device should have no service data
         assertNull(mService.getAdvertisementServiceData(device));
@@ -256,11 +252,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * is unknown.
      */
     @MediumTest
+    @Test
     public void test_getAdvertisementDeviceMode() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -278,11 +271,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * is unknown.
      */
     @MediumTest
+    @Test
     public void test_getAdvertisementDeviceSide() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -295,18 +285,33 @@ public class HearingAidProfileTest extends AndroidTestCase {
         assertEquals(BluetoothHearingAid.SIDE_LEFT, side);
     }
 
+    /**
+     * Basic test case to make sure that a fictional device's truncated HiSyncId is the
+     * expected value.
+     */
+    @MediumTest
+    @Test
+    public void test_getTruncatedHiSyncId() {
+        waitForProfileConnect();
+        assertTrue(mIsProfileReady);
+        assertNotNull(mService);
 
+        // Create a fake advertisement data
+        AdvertisementServiceData data = mAdvertisementData;
+        assertNotNull(data);
+
+        final int id = data.getTruncatedHiSyncId();
+        // Fake device should be supported
+        assertEquals(1, id);
+    }
 
     /**
      * Basic test case to make sure that a fictional device's ASHA Advertisement Service Data's CSIP
      * is not supported.
      */
     @MediumTest
+    @Test
     public void test_isCsipSupported() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -320,17 +325,13 @@ public class HearingAidProfileTest extends AndroidTestCase {
         assertEquals(true, supported);
     }
 
-
     /**
      * Basic test case to make sure that a fictional device's ASHA Advertisement Service Data's CSIP
      * is not supported.
      */
     @MediumTest
+    @Test
     public void test_isLikelyPairOfBluetoothHearingAid() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -357,11 +358,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * Basic test case to get the list of connected Hearing Aid devices.
      */
     @MediumTest
+    @Test
     public void test_getConnectedDevices() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -381,11 +379,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * states.
      */
     @MediumTest
+    @Test
     public void test_getDevicesMatchingConnectionStates() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -406,11 +401,8 @@ public class HearingAidProfileTest extends AndroidTestCase {
      * device are correct.
      */
     @MediumTest
+    @Test
     public void test_getConnectionStateChangedIntent() {
-        if (!(mIsBleSupported && mIsHearingAidSupported)) {
-            return;
-        }
-
         waitForProfileConnect();
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
@@ -558,17 +550,6 @@ public class HearingAidProfileTest extends AndroidTestCase {
 
     private void checkValidConnectionState(int connectionState) {
         assertTrue(mValidConnectionStates.contains(connectionState));
-    }
-
-    // Returns whether offloaded scan batching is supported.
-    private boolean isBleBatchScanSupported() {
-        return mBluetoothAdapter.isOffloadedScanBatchingSupported();
-    }
-
-    // Check if Bluetooth LE feature is supported on DUT.
-    private boolean isBleSupported() {
-        return getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
 
     private static void sleep(long t) {

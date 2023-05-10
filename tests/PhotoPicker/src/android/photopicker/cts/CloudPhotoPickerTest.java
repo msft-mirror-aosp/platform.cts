@@ -18,6 +18,7 @@ package android.photopicker.cts;
 
 import static android.photopicker.cts.PhotoPickerCloudUtils.addImage;
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
 import static android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
@@ -63,6 +64,7 @@ import java.util.List;
  * Photo Picker Device only tests for common flows.
  */
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
     private final List<Uri> mUriList = new ArrayList<>();
     private MediaGenerator mCloudPrimaryMediaGenerator;
@@ -91,6 +93,9 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         mCloudPrimaryMediaGenerator.setMediaCollectionId(COLLECTION_1);
         mCloudSecondaryMediaGenerator.setMediaCollectionId(COLLECTION_1);
 
+        // This is a self-instrumentation test, so both "target" package name and "own" package name
+        // should be the same (android.photopicker.cts).
+        enableCloudMediaAndSetAllowedCloudProviders(sTargetPackageName);
         setCloudProvider(mContext, null);
     }
 

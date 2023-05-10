@@ -51,10 +51,12 @@ import android.util.TypedValue;
 import android.util.Xml;
 import android.view.KeyEvent;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.Editor;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
 
@@ -84,11 +86,14 @@ import java.util.concurrent.atomic.AtomicReference;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class EditTextTest {
+
     private Activity mActivity;
     private EditText mEditText1;
     private EditText mEditText2;
     private AttributeSet mAttributeSet;
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
+    private CtsKeyEventUtil mCtsKeyEventUtil;
 
     @Rule
     public ActivityTestRule<EditTextCtsActivity> mActivityRule =
@@ -99,6 +104,8 @@ public class EditTextTest {
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
+        mCtsKeyEventUtil = new CtsKeyEventUtil(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
         mEditText1 = (EditText) mActivity.findViewById(R.id.edittext_simple1);
         mEditText2 = (EditText) mActivity.findViewById(R.id.edittext_simple2);
@@ -381,7 +388,7 @@ public class EditTextTest {
 
     private boolean isWatch() {
         return (mActivity.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_TYPE_WATCH) == Configuration.UI_MODE_TYPE_WATCH;
+                & Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_WATCH;
     }
 
     @Test
@@ -500,7 +507,7 @@ public class EditTextTest {
 
         // Simulate a drag gesture. The cursor should end up at the position where the finger is
         // lifted.
-        CtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule, dragStartEnd.get());
+        mCtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule, dragStartEnd.get());
         assertCursorPosition(mEditText1, text.indexOf("el"));
     }
 
@@ -542,12 +549,12 @@ public class EditTextTest {
             mEditText1.requestFocus();
         });
 
-        CtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mEditText1, KeyEvent.KEYCODE_ENTER);
+        mCtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mEditText1, KeyEvent.KEYCODE_ENTER);
         mInstrumentation.waitForIdleSync();
         assertTrue(mEditText2.hasFocus());
 
         mActivityRule.runOnUiThread(() -> mEditText1.requestFocus());
-        CtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mEditText1, KeyEvent.KEYCODE_NUMPAD_ENTER);
+        mCtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mEditText1, KeyEvent.KEYCODE_NUMPAD_ENTER);
         assertTrue(mEditText2.hasFocus());
     }
 
@@ -827,6 +834,133 @@ public class EditTextTest {
 
         cursorBlinking = editor.isBlinking();
         assertTrue(cursorBlinking);
+    }
+
+    /*
+     * This test makes sure the cursor is blinking when an EditText view is dynamically added to
+     * the layout when it has focus.
+     */
+    @Test
+    public void testCursorBlinking_ViewDynamicallyAdded_WithFocus() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        EditText editText = new EditText(testActivity.getApplicationContext());
+        Editor editor = editText.getEditorForTesting();
+        LinearLayout layout = testActivity.findViewById(R.id.edit_text);
+
+        editText.setLayoutParams(layout.getLayoutParams());
+
+        mInstrumentation.runOnMainSync(() -> {
+            editText.requestFocus();
+            layout.addView(editText);
+        });
+
+        assertTrue(editor.isBlinking());
+    }
+
+    /*
+     * This test makes sure the cursor is not blinking when an EditText view is dynamically added
+     * to the layout.
+     */
+    @Test
+    public void testCursorNotBlinking_ViewDynamicallyAdded_NoFocus() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        EditText editText = new EditText(testActivity.getApplicationContext());
+        Editor editor = editText.getEditorForTesting();
+        LinearLayout layout = testActivity.findViewById(R.id.edit_text);
+
+        editText.setLayoutParams(layout.getLayoutParams());
+
+        mInstrumentation.runOnMainSync(() -> {
+            layout.addView(editText);
+        });
+
+        assertFalse(editor.isBlinking());
+    }
+
+    /*
+     * This test makes sure blink is suspended when the EditText view is dynamically removed from
+     * the layout.
+     */
+    @Test
+    public void testCursorSuspendBlinking_ViewDynamicallyRemoved() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        final EditText editText = testActivity.findViewById(R.id.edittext_simple1);
+        Editor editor = editText.getEditorForTesting();
+
+        mInstrumentation.runOnMainSync(() -> {
+            editText.requestFocus();
+        });
+
+        assertTrue(editor.isBlinking());
+
+        mInstrumentation.runOnMainSync(() -> {
+            ViewGroup viewGroup = (ViewGroup) editText.getParent();
+            viewGroup.removeView(editText);
+        });
+
+        assertFalse(editor.isBlinking());
+    }
+
+    /*
+     * This test checks that an EditText view that never had focus can be removed and added
+     * dynamically to the layout and when focus is requested the cursor blinks.
+     */
+    @Test
+    public void testCursorBlinking_ViewDynamically_RemovedAdded_NeverHadFocus() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        final EditText editText = testActivity.findViewById(R.id.edittext_simple1);
+        Editor editor = editText.getEditorForTesting();
+
+        mInstrumentation.runOnMainSync(() -> {
+            ViewGroup viewGroup = (ViewGroup) editText.getParent();
+            viewGroup.removeView(editText);
+        });
+
+        LinearLayout layout = testActivity.findViewById(R.id.edit_text);
+        layout.addView(editText);
+
+        mInstrumentation.runOnMainSync(() -> {
+            editText.requestFocus();
+        });
+
+        assertTrue(editor.isBlinking());
+    }
+
+    /*
+     * This test checks that a focused EditText view can be removed and added back to the layout
+     * dynamically and the cursor resumes blinking.
+     */
+    @Test
+    public void testCursorResumeBlinking_AfterFocusedView_DynamicallyRemovedAdded() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        final EditText editText = testActivity.findViewById(R.id.edittext_simple1);
+        LinearLayout layout = testActivity.findViewById(R.id.edit_text);
+        Editor editor = editText.getEditorForTesting();
+
+        mInstrumentation.runOnMainSync(() -> {
+            editText.requestFocus();
+        });
+
+        assertTrue(editor.isBlinking());
+
+        mInstrumentation.runOnMainSync(() -> {
+            ViewGroup viewGroup = (ViewGroup) editText.getParent();
+            viewGroup.removeView(editText);
+        });
+
+        assertFalse(editor.isBlinking());
+
+        mInstrumentation.runOnMainSync(() -> {
+            layout.addView(editText);
+        });
+
+        mInstrumentation.runOnMainSync(() -> {
+            editText.requestFocus();
+            editText.setText("This has been re-added");
+        });
+
+        assertTrue(editor.isBlinking());
+
     }
 
 }

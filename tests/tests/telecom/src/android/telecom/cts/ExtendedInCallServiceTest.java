@@ -59,6 +59,11 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         }
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     public void testAddNewOutgoingCallAndThenDisconnect() {
         if (!mShouldTestTelecom) {
             return;
@@ -694,7 +699,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testCanAddCall_CanAddForExistingActiveCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -715,7 +720,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testCanAddCall_CanAddForExistingActiveCallWithoutHoldCapability() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

@@ -43,13 +43,16 @@ import android.content.pm.ServiceInfo;
 import android.location.LocationManager;
 import android.os.Process;
 import android.os.UserHandle;
+
 import android.platform.test.annotations.Presubmit;
-import android.support.test.uiautomator.UiDevice;
 import android.util.ArrayMap;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.util.ArrayUtils;
 
@@ -126,6 +129,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
         });
     }
 
+    @ApiTest(apis = {"android.app.Service#startForeground"})
     @Test
     public void testForegroundServiceTypeMissing() throws Exception {
         try {
@@ -139,6 +143,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
             clearPermissionEnforcement(TEST_PKG_NAME_API33);
         }
     }
+
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_NONE"})
     @Test
     public void testForegroundServiceTypeNone() throws Exception {
         try {
@@ -152,6 +158,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
         }
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_DATA_SYNC"})
     @Test
     public void testForegroundServiceTypeDataSync() throws Exception {
         try {
@@ -165,21 +172,25 @@ public final class ActivityManagerForegroundServiceTypeTest {
         }
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_DATA_SYNC"})
     @Test
     public void testForegroundServiceTypeDataSyncPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK"})
     @Test
     public void testForegroundServiceTypeMediaPlaybackPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_PHONE_CALL"})
     @Test
     public void testForegroundServiceTypePhoneCallPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_LOCATION"})
     @Test
     public void testForegroundServiceTypeLocationPermission() throws Exception {
         final LocationManager lm = mContext.getSystemService(LocationManager.class);
@@ -197,36 +208,43 @@ public final class ActivityManagerForegroundServiceTypeTest {
         }
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE"})
     @Test
     public void testForegroundServiceTypeConnectedDevicePermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION"})
     @Test
     public void testForegroundServiceTypeMediaProjectionPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_CAMERA"})
     @Test
     public void testForegroundServiceTypeCameraPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MICROPHONE"})
     @Test
     public void testForegroundServiceTypeMicrophonePermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_HEALTH"})
     @Test
     public void testForegroundServiceTypeHealthPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING"})
     @Test
     public void testForegroundServiceTypeRemoteMessagingPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED"})
     @Test
     public void testForegroundServiceTypeSystemExemptedPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED,
@@ -239,11 +257,13 @@ public final class ActivityManagerForegroundServiceTypeTest {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_FILE_MANAGEMENT);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SPECIAL_USE"})
     @Test
     public void testForegroundServiceTypeSpecialUsePermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SPECIAL_USE"})
     @Test
     public void testForegroundServiceTypeSpecialUseProperty() throws Exception {
         final String expectedPropertyValue = "foo";
@@ -365,14 +385,18 @@ public final class ActivityManagerForegroundServiceTypeTest {
         final String testPackageName = TEST_PKG_NAME_TARGET;
         TestPermissionInfo[] allOfPermissions = null;
         TestPermissionInfo[] anyOfPermissions = null;
-        try {
+        final ForegroundServiceTypePolicy policy =
+                ForegroundServiceTypePolicy.getDefaultPolicy();
+        final ForegroundServiceTypePolicyInfo info = policy.getForegroundServiceTypePolicyInfo(
+                type, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
+        final String permFlag = info.getPermissionEnforcementFlagForTest();
+        try (DeviceConfigStateHelper helper = new DeviceConfigStateHelper("activity_manager")) {
             // Enable the permission check.
             enablePermissionEnforcement(true, testPackageName);
+            if (permFlag != null) {
+                helper.set(permFlag, "true");
+            }
 
-            final ForegroundServiceTypePolicy policy =
-                    ForegroundServiceTypePolicy.getDefaultPolicy();
-            final ForegroundServiceTypePolicyInfo info = policy.getForegroundServiceTypePolicyInfo(
-                    type, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
             assertEquals(type, info.getForegroundServiceType());
             allOfPermissions = triagePermissions(
                     info.getRequiredAllOfPermissionsForTest(mTargetContext).orElse(null));
@@ -397,6 +421,15 @@ public final class ActivityManagerForegroundServiceTypeTest {
                         startForegroundServiceWithType(TEST_COMP_TARGET_FGS_ALL_TYPE, type));
                 stopService(TEST_COMP_TARGET_FGS_ALL_TYPE, null);
                 resetPermissions(anyOfPermissions, testPackageName);
+
+                // If there is a feature flag to turn the permission check off, it should succeed.
+                if (permFlag != null) {
+                    helper.set(permFlag, "false");
+                    grantPermissions(allOfPermissions, testPackageName);
+                    startAndStopFgsType(TEST_COMP_TARGET_FGS_ALL_TYPE, type, null);
+                    resetPermissions(anyOfPermissions, testPackageName);
+                    helper.set(permFlag, "true");
+                }
 
                 // If we grant any of them, it should succeed.
                 for (TestPermissionInfo perm: anyOfPermissions) {

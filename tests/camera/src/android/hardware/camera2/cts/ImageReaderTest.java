@@ -46,6 +46,7 @@ import android.hardware.DataSpace;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
@@ -60,12 +61,15 @@ import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageWriter;
+import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 
 import org.junit.Test;
@@ -440,62 +444,6 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    public void testDCIP3Jpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
-            try {
-                if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
-                            .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
-                    continue;
-                }
-                Set<ColorSpace.Named> availableColorSpaces =
-                        mAllStaticInfo.get(id).getAvailableColorSpacesChecked(ImageFormat.JPEG);
-
-                if (!availableColorSpaces.contains(ColorSpace.Named.DCI_P3)) {
-                    continue;
-                }
-
-                openDevice(id);
-                Log.v(TAG, "Testing DCI-P3 JPEG capture for Camera " + id);
-                BufferFormatTestParam params = new BufferFormatTestParam(
-                        ImageFormat.JPEG, /*repeating*/false);
-                params.mColorSpace = ColorSpace.Named.DCI_P3;
-                params.mUseColorSpace = true;
-                bufferFormatTestByCamera(params);
-            } finally {
-                closeDevice(id);
-            }
-        }
-    }
-
-    @Test
-    public void testDCIP3JpegRepeating() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
-            try {
-                if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
-                            .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
-                    continue;
-                }
-                Set<ColorSpace.Named> availableColorSpaces =
-                        mAllStaticInfo.get(id).getAvailableColorSpacesChecked(ImageFormat.JPEG);
-
-                if (!availableColorSpaces.contains(ColorSpace.Named.DCI_P3)) {
-                    continue;
-                }
-
-                openDevice(id);
-                Log.v(TAG, "Testing repeating DCI-P3 JPEG capture for Camera " + id);
-                BufferFormatTestParam params = new BufferFormatTestParam(
-                        ImageFormat.JPEG, /*repeating*/true);
-                params.mColorSpace = ColorSpace.Named.DCI_P3;
-                params.mUseColorSpace = true;
-                bufferFormatTestByCamera(params);
-            } finally {
-                closeDevice(id);
-            }
-        }
-    }
-
-    @Test
     public void testSRGBJpeg() throws Exception {
         for (String id : mCameraIdsUnderTest) {
             try {
@@ -555,11 +503,15 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     public void testJpegR() throws Exception {
         for (String id : mCameraIdsUnderTest) {
             try {
-                Log.v(TAG, "Testing Jpeg/R capture for Camera " + id);
-                if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
-                        .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                if (!mAllStaticInfo.get(id).isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
                     continue;
                 }
+                Log.v(TAG, "Testing Jpeg/R capture for Camera " + id);
+
+                assertTrue(mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
+                        .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT));
+
                 openDevice(id);
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.JPEG_R, /*repeating*/false);
@@ -574,6 +526,11 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     public void testJpegRDisplayP3() throws Exception {
         for (String id : mCameraIdsUnderTest) {
             try {
+                if (!mAllStaticInfo.get(id).isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
+                    continue;
+                }
+
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                         .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
                     continue;
@@ -1272,10 +1229,11 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                                             Bitmap.Config.ARGB_8888);
                                     dumpFile(fullSizeYuvFileName, fullYUVBmap);
                                 }
-                                fail("Camera " + mCamera.getId() + ": YUV and JPEG image at " +
-                                        "capture size " + captureSz + " for the same frame are " +
-                                        "not similar, center patches have difference metric of " +
-                                        difference + ", tolerance is " + tolerance);
+                                fail("Camera " + mCamera.getId() + ": YUV image at capture size "
+                                        + captureSz + " and JPEG image at capture size "
+                                        + maxJpegSize + " for the same frame are not similar,"
+                                        + " center patches have difference metric of "
+                                        + difference + ", tolerance is " + tolerance);
                             }
 
                             // Stop capture, delete the streams.
@@ -1340,6 +1298,69 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
         assertWithMessage("Usage bits %s did not contain requested usage bits %s", myBits,
                 REQUESTED_USAGE_BITS).that(myBits & REQUESTED_USAGE_BITS)
                         .isEqualTo(REQUESTED_USAGE_BITS);
+    }
+
+    private void testLandscapeToPortraitOverride(boolean overrideToPortrait) throws Exception {
+        if (!SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
+            Log.i(TAG, "Landscape to portrait override not supported, skipping test");
+            return;
+        }
+
+        for (String id : mCameraIdsUnderTest) {
+            CameraCharacteristics c = mCameraManager.getCameraCharacteristics(
+                    id, /*overrideToPortrait*/false);
+            int[] modes = c.get(CameraCharacteristics.SCALER_AVAILABLE_ROTATE_AND_CROP_MODES);
+            boolean supportsRotateAndCrop = false;
+            for (int mode : modes) {
+                if (mode == CameraMetadata.SCALER_ROTATE_AND_CROP_90
+                        || mode == CameraMetadata.SCALER_ROTATE_AND_CROP_270) {
+                    supportsRotateAndCrop = true;
+                    break;
+                }
+            }
+
+            if (!supportsRotateAndCrop) {
+                Log.i(TAG, "Skipping non-rotate-and-crop cameraId " + id);
+                continue;
+            }
+
+            int sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            if (sensorOrientation != 0 && sensorOrientation != 180) {
+                Log.i(TAG, "Skipping portrait orientation sensor cameraId " + id);
+                continue;
+            }
+
+            Log.i(TAG, "Testing overrideToPortrait " + overrideToPortrait
+                    + " for Camera " + id);
+
+            if (overrideToPortrait) {
+                c = mCameraManager.getCameraCharacteristics(id, overrideToPortrait);
+                sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                assertTrue("SENSOR_ORIENTATION should imply portrait sensor.",
+                        sensorOrientation == 90 || sensorOrientation == 270);
+            }
+
+            BufferFormatTestParam params = new BufferFormatTestParam(
+                    ImageFormat.JPEG, /*repeating*/false);
+            params.mValidateImageData = true;
+
+            try {
+                openDevice(id, overrideToPortrait);
+                bufferFormatTestByCamera(params);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @Test
+    public void testLandscapeToPortraitOverrideEnabled() throws Exception {
+        testLandscapeToPortraitOverride(true);
+    }
+
+    @Test
+    public void testLandscapeToPortraitOverrideDisabled() throws Exception {
+        testLandscapeToPortraitOverride(false);
     }
 
     /**
@@ -1720,13 +1741,18 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                     config.setPhysicalCameraId(physicalId);
                 }
                 config.setDynamicRangeProfile(params.mDynamicRangeProfile);
-                if (params.mUseColorSpace) {
-                    config.setColorSpace(params.mColorSpace);
-                }
                 config.setTimestampBase(params.mTimestampBase);
                 outputConfigs.add(config);
-                CaptureRequest request = prepareCaptureRequestForConfigs(
+
+                CaptureRequest request;
+                if (params.mUseColorSpace) {
+                    request = prepareCaptureRequestForColorSpace(
+                        outputConfigs, CameraDevice.TEMPLATE_PREVIEW, params.mColorSpace)
+                        .build();
+                } else {
+                    request = prepareCaptureRequestForConfigs(
                         outputConfigs, CameraDevice.TEMPLATE_PREVIEW).build();
+                }
 
                 SimpleCaptureCallback listener = new SimpleCaptureCallback();
                 startCapture(request, repeating, listener, mHandler);
@@ -1873,7 +1899,9 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
             if (mStaticInfo.isCapabilitySupported(
                     CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS)) {
                 StaticMetadata staticInfo = mStaticInfo;
-                if (mStaticInfo.isLogicalMultiCamera()
+                boolean supportActivePhysicalIdConsistency =
+                        PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.S;
+                if (mStaticInfo.isLogicalMultiCamera() && supportActivePhysicalIdConsistency
                         && mStaticInfo.isActivePhysicalCameraIdSupported()) {
                     String activePhysicalId =
                             result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);

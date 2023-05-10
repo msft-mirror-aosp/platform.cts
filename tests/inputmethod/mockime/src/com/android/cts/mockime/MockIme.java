@@ -33,6 +33,7 @@ import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -55,6 +56,7 @@ import android.view.ViewConfiguration;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.inputmethod.CancellableHandwritingGesture;
 import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.CursorAnchorInfo;
@@ -113,6 +115,7 @@ public final class MockIme extends InputMethodService {
     private static final String TAG = "MockIme";
 
     private static final String PACKAGE_NAME = "com.android.cts.mockime";
+    private static final long DELAY_CANCELLATION_SIGNAL_MILLIS = 500;
     private ArrayList<MotionEvent> mEvents;
 
     private View mExtractView;
@@ -392,14 +395,33 @@ public final class MockIme extends InputMethodService {
                                 (PreviewableHandwritingGesture) HandwritingGesture.fromByteArray(
                                         command.getExtras().getByteArray("gesture"));
 
-                        getMemorizedOrCurrentInputConnection()
-                                .previewHandwritingGesture(gesture, null /* cancellationSignal */);
+                        boolean useDelayedCancellation =
+                                command.getExtras().getBoolean("useDelayedCancellation");
+                        final CancellationSignal cs =
+                                useDelayedCancellation ? new CancellationSignal() : null;
+                        if (useDelayedCancellation) {
+                            new Handler().postDelayed(() -> cs.cancel(),
+                                    DELAY_CANCELLATION_SIGNAL_MILLIS);
+                        }
+
+                        getMemorizedOrCurrentInputConnection().previewHandwritingGesture(
+                                gesture, cs);
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
                     case "performHandwritingGesture": {
                         final HandwritingGesture gesture =
                                 HandwritingGesture.fromByteArray(
                                         command.getExtras().getByteArray("gesture"));
+
+                        boolean useDelayedCancellation =
+                                command.getExtras().getBoolean("useDelayedCancellation");
+                        if (useDelayedCancellation
+                                && gesture instanceof CancellableHandwritingGesture) {
+                            final CancellationSignal cs = new CancellationSignal();
+                            ((CancellableHandwritingGesture) gesture).setCancellationSignal(cs);
+                            new Handler().postDelayed(() -> cs.cancel(),
+                                    DELAY_CANCELLATION_SIGNAL_MILLIS);
+                        }
 
                         IntConsumer consumer = value ->
                                 getTracer().onPerformHandwritingGestureResult(
@@ -1242,20 +1264,12 @@ public final class MockIme extends InputMethodService {
         stylesBuilder.addStyle(InlineSuggestionUi.newStyleBuilder().build());
         Bundle styles = stylesBuilder.build();
 
-        final boolean supportedClientInlineSuggestions;
-        final boolean supportedServiceInlineSuggestions;
         final boolean supportedInlineSuggestions;
         if (mInlineSuggestionsExtras != null) {
             styles.putAll(mInlineSuggestionsExtras);
-            supportedClientInlineSuggestions =
-                    mInlineSuggestionsExtras.getBoolean("ClientSuggestions", true);
-            supportedServiceInlineSuggestions =
-                    mInlineSuggestionsExtras.getBoolean("ServiceSuggestions", true);
             supportedInlineSuggestions =
                     mInlineSuggestionsExtras.getBoolean("InlineSuggestions", true);
         } else {
-            supportedClientInlineSuggestions = true;
-            supportedServiceInlineSuggestions = true;
             supportedInlineSuggestions = true;
         }
 
@@ -1276,8 +1290,6 @@ public final class MockIme extends InputMethodService {
             final InlineSuggestionsRequest.Builder builder =
                     new InlineSuggestionsRequest.Builder(presentationSpecs)
                             .setInlineTooltipPresentationSpec(tooltipSpec)
-                            .setClientSupported(supportedClientInlineSuggestions)
-                            .setServiceSupported(supportedServiceInlineSuggestions)
                             .setMaxSuggestionCount(6);
             if (mInlineSuggestionsExtras != null) {
                 builder.setExtras(mInlineSuggestionsExtras.deepCopy());

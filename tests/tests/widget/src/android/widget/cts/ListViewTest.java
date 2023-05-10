@@ -128,6 +128,8 @@ public class ListViewTest {
     };
 
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
+    private CtsKeyEventUtil mCtsKeyEventUtil;
     private Activity mActivity;
     private ListView mListView;
     private ListView mListViewStretch;
@@ -150,6 +152,8 @@ public class ListViewTest {
         mPreviousDurationScale = ValueAnimator.getDurationScale();
         ValueAnimator.setDurationScale(1.0f);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
+        mCtsKeyEventUtil = new CtsKeyEventUtil(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
         XmlPullParser parser = mActivity.getResources().getXml(R.layout.listview_layout);
         mAttributeSet = Xml.asAttributeSet(parser);
@@ -760,7 +764,7 @@ public class ListViewTest {
         assertEquals("test sanity", 0, header.mOnDetachCount);
         while (header.getParent() != null) {
             assertEquals("header view should NOT be detached", 0, header.mOnDetachCount);
-            CtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_DOWN);
+            mCtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_DOWN);
             WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mListView, null);
         }
         assertEquals("header view should be detached", 1, header.mOnDetachCount);
@@ -822,13 +826,13 @@ public class ListViewTest {
         assertEquals("test sanity", 0, theView.mOnDetachCount);
         while(theView.getParent() != null) {
             assertEquals("the view should NOT be detached", 0, theView.mOnDetachCount);
-            CtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_DOWN);
+            mCtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_DOWN);
             WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mListView, null);
         }
         assertEquals("the view should be detached", 1, theView.mOnDetachCount);
         assertFalse(theView.isTemporarilyDetached());
         while(theView.getParent() == null) {
-            CtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_UP);
+            mCtsKeyEventUtil.sendKeys(mInstrumentation, mListView, KeyEvent.KEYCODE_DPAD_UP);
             WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mListView, null);
         }
         assertEquals("the view should be re-attached", 2, theView.mOnAttachCount);
@@ -1305,7 +1309,7 @@ public class ListViewTest {
 
 
         // Cause a stretch
-        CtsTouchUtils.emulateDragGesture(
+        mCtsTouchUtils.emulateDragGesture(
                 mInstrumentation,
                 mActivityRule,
                 screenX + mListViewStretch.getWidth() / 2,
@@ -1319,7 +1323,7 @@ public class ListViewTest {
         );
 
         // Now scroll the other direction
-        CtsTouchUtils.emulateDragGesture(
+        mCtsTouchUtils.emulateDragGesture(
                 mInstrumentation,
                 mActivityRule,
                 screenX + mListViewStretch.getWidth() / 2,

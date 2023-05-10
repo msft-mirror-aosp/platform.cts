@@ -32,7 +32,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -72,6 +71,14 @@ public class ActivityEmbeddingUtil {
     public static final String TAG = "ActivityEmbeddingTests";
     public static final long WAIT_FOR_LIFECYCLE_TIMEOUT_MS = 3000;
     public static final SplitAttributes DEFAULT_SPLIT_ATTRS = new SplitAttributes.Builder().build();
+
+    public static final SplitAttributes EXPAND_SPLIT_ATTRS = new SplitAttributes.Builder()
+            .setSplitType(new SplitType.ExpandContainersSplitType()).build();
+
+    public static final SplitAttributes HINGE_SPLIT_ATTRS = new SplitAttributes.Builder()
+            .setSplitType(new SplitType.HingeSplitType(SplitType.RatioSplitType.splitEqually()))
+            .build();
+
     public static final String EMBEDDED_ACTIVITY_ID = "embedded_activity_id";
 
     @NonNull
@@ -151,7 +158,7 @@ public class ActivityEmbeddingUtil {
     public static Activity startActivityAndVerifySplitAttributes(
             @NonNull Activity activityLaunchingFrom, @NonNull Activity expectedPrimaryActivity,
             @NonNull Class<? extends Activity> secondActivityClass,
-            @NonNull SplitPairRule splitPairRule, @NonNull String secondaryActivityId,
+            @NonNull SplitAttributes splitAttributes, @NonNull String secondaryActivityId,
             int expectedCallbackCount,
             @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
         // Set the expected callback count
@@ -160,29 +167,34 @@ public class ActivityEmbeddingUtil {
         // Start second activity
         startActivityFromActivity(activityLaunchingFrom, secondActivityClass, secondaryActivityId);
 
-        // A split info callback should occur after the new activity is launched because the split
-        // states have changed.
-        List<SplitInfo> activeSplitStates = null;
-        try {
-            activeSplitStates = splitInfoConsumer.waitAndGet();
-        } catch (InterruptedException e) {
-            fail("startActivityAndVerifySplit() InterruptedException");
-        }
-        if (activeSplitStates == null) {
-            fail("Didn't receive updated split info");
-        }
-
         // Wait for secondary activity to be resumed and verify that the newly sent split info
         // contains the secondary activity.
         waitAndAssertResumed(secondaryActivityId);
         final Activity secondaryActivity = getResumedActivityById(secondaryActivityId);
-        assertSplitInfoTopSplitIsCorrect(activeSplitStates, expectedPrimaryActivity,
-                secondaryActivity);
 
-        assertValidSplit(expectedPrimaryActivity, secondaryActivity, splitPairRule);
+        assertSplitPairIsCorrect(expectedPrimaryActivity, secondaryActivity, splitAttributes,
+                splitInfoConsumer);
 
         // Return second activity for easy access in calling method
         return secondaryActivity;
+    }
+
+    public static void assertSplitPairIsCorrect(@NonNull Activity expectedPrimaryActivity,
+            @NonNull Activity secondaryActivity, @NonNull SplitAttributes splitAttributes,
+            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
+        // A split info callback should occur after the new activity is launched because the split
+        // states have changed.
+        List<SplitInfo> activeSplitStates;
+        try {
+            activeSplitStates = splitInfoConsumer.waitAndGet();
+        } catch (InterruptedException e) {
+            throw new AssertionError("startActivityAndVerifySplitAttributes()", e);
+        }
+        assertNotNull("Active Split States cannot be null.", activeSplitStates);
+
+        assertSplitInfoTopSplitIsCorrect(activeSplitStates, expectedPrimaryActivity,
+                secondaryActivity, splitAttributes);
+        assertValidSplit(expectedPrimaryActivity, secondaryActivity, splitAttributes);
     }
 
     public static void startActivityAndVerifyNoCallback(@NonNull Activity activityLaunchingFrom,
@@ -200,21 +212,24 @@ public class ActivityEmbeddingUtil {
         assertNull("Received SplitInfo value but did not expect none.", activeSplitStates);
     }
 
-    public static Activity startActivityAndVerifySplitAttributes(@NonNull Activity primaryActivity,
-            @NonNull Class secondActivityClass, @NonNull SplitPairRule splitPairRule,
-            @NonNull String secondActivityId, int expectedCallbackCount,
+    public static Activity startActivityAndVerifySplitAttributes(
+            @NonNull Activity activityLaunchingFrom, @NonNull Activity expectedPrimaryActivity,
+            @NonNull Class<? extends Activity> secondActivityClass,
+            @NonNull SplitRule splitRule, @NonNull String secondaryActivityId,
+            int expectedCallbackCount,
             @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
-        return startActivityAndVerifySplitAttributes(primaryActivity /* activityLaunchingFrom */,
-                primaryActivity, secondActivityClass, splitPairRule, secondActivityId,
+        return startActivityAndVerifySplitAttributes(activityLaunchingFrom, expectedPrimaryActivity,
+                secondActivityClass, splitRule.getDefaultSplitAttributes(), secondaryActivityId,
                 expectedCallbackCount, splitInfoConsumer);
     }
 
     public static Activity startActivityAndVerifySplitAttributes(@NonNull Activity primaryActivity,
-            @NonNull Class secondActivityClass, @NonNull SplitPairRule splitPairRule,
-            @NonNull String secondActivityId,
+            @NonNull Class<? extends Activity> secondActivityClass,
+            @NonNull SplitPairRule splitPairRule, @NonNull String secondActivityId,
             @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
-        return startActivityAndVerifySplitAttributes(primaryActivity, secondActivityClass,
-                splitPairRule, secondActivityId, 1 /* expectedCallbackCount */, splitInfoConsumer);
+        return startActivityAndVerifySplitAttributes(primaryActivity, primaryActivity,
+                secondActivityClass, splitPairRule, secondActivityId, 1 /* expectedCallbackCount */,
+                splitInfoConsumer);
     }
 
     /**
@@ -237,7 +252,7 @@ public class ActivityEmbeddingUtil {
         try {
             activeSplitStates = splitInfoConsumer.waitAndGet();
         } catch (InterruptedException e) {
-            fail("startActivityCrossUidInSplit() InterruptedException");
+            throw new AssertionError("startActivityCrossUidInSplit()", e);
         }
         assertNotNull(activeSplitStates);
         assertFalse(activeSplitStates.isEmpty());
@@ -308,9 +323,17 @@ public class ActivityEmbeddingUtil {
      * a different process, in which case it will only verify the primary one.
      */
     public static void assertValidSplit(@NonNull Activity primaryActivity,
-            @Nullable Activity secondaryActivity, SplitRule splitRule) {
-        final SplitAttributes defaultSplitAttributes = splitRule.getDefaultSplitAttributes();
-        final boolean shouldExpandContainers = defaultSplitAttributes.getSplitType()
+            @Nullable Activity secondaryActivity, @NonNull SplitRule splitRule) {
+        assertValidSplit(primaryActivity, secondaryActivity, splitRule.getDefaultSplitAttributes());
+    }
+
+    /**
+     * Similar to {@link #assertValidSplit(Activity, Activity, SplitRule)}, but verifies
+     * {@link SplitAttributes} instead of {@link SplitRule#getDefaultSplitAttributes}.
+     */
+    public static void assertValidSplit(@NonNull Activity primaryActivity,
+            @Nullable Activity secondaryActivity, @NonNull SplitAttributes splitAttributes) {
+        final boolean shouldExpandContainers = splitAttributes.getSplitType()
                 instanceof SplitType.ExpandContainersSplitType;
         final List<Activity> resumedActivities = new ArrayList<>(2);
         if (secondaryActivity == null) {
@@ -324,7 +347,7 @@ public class ActivityEmbeddingUtil {
         waitAndAssertResumed(resumedActivities);
 
         final Pair<Rect, Rect> expectedBoundsPair = getExpectedBoundsPair(primaryActivity,
-                defaultSplitAttributes);
+                splitAttributes);
 
         final ActivityEmbeddingComponent activityEmbeddingComponent = getWindowExtensions()
                 .getActivityEmbeddingComponent();
@@ -332,7 +355,11 @@ public class ActivityEmbeddingUtil {
         // Verify that both activities are embedded and that the bounds are correct
         assertEquals(!shouldExpandContainers,
                 activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
-        waitForActivityBoundsEquals(primaryActivity, expectedBoundsPair.first);
+        // If the split pair is stacked, ignore to check the bounds because the primary activity
+        // may have been occluded and the latest configuration may not be received.
+        if (!shouldExpandContainers) {
+            waitForActivityBoundsEquals(primaryActivity, expectedBoundsPair.first);
+        }
         if (secondaryActivity != null) {
             assertEquals(!shouldExpandContainers,
                     activityEmbeddingComponent.isActivityEmbedded(secondaryActivity));
@@ -345,13 +372,14 @@ public class ActivityEmbeddingUtil {
     }
 
     public static void waitForFillsTask(Activity activity) {
-        waitForActivityBoundsEquals(activity, getMaximumActivityBounds(activity));
+        PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS, () ->
+                getActivityBounds(activity).equals(getMaximumActivityBounds(activity)));
     }
 
     private static void waitForActivityBoundsEquals(@NonNull Activity activity,
             @NonNull Rect bounds) {
-        PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS, () -> getActivityBounds(activity)
-                .equals(bounds));
+        PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS,
+                () -> getActivityBounds(activity).equals(bounds));
     }
 
     private static boolean waitForResumed(
@@ -627,12 +655,14 @@ public class ActivityEmbeddingUtil {
     }
 
     private static void assertSplitInfoTopSplitIsCorrect(@NonNull List<SplitInfo> splitInfoList,
-            @NonNull Activity primaryActivity, @NonNull Activity secondaryActivity) {
+            @NonNull Activity primaryActivity, @NonNull Activity secondaryActivity,
+            @NonNull SplitAttributes splitAttributes) {
         assertFalse("Split info callback should not be empty", splitInfoList.isEmpty());
         final SplitInfo topSplit = splitInfoList.get(splitInfoList.size() - 1);
         assertEquals("Expect primary activity to match the top of the primary stack",
                 primaryActivity, getPrimaryStackTopActivity(topSplit));
         assertEquals("Expect secondary activity to match the top of the secondary stack",
                 secondaryActivity, getSecondaryStackTopActivity(topSplit));
+        assertEquals(splitAttributes, topSplit.getSplitAttributes());
     }
 }

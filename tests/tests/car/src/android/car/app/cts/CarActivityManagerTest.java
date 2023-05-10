@@ -22,6 +22,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Activity;
@@ -31,6 +33,8 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.car.Car;
 import android.car.app.CarActivityManager;
+import android.car.app.CarTaskViewController;
+import android.car.app.CarTaskViewControllerCallback;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -39,6 +43,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.Display;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
@@ -65,9 +70,7 @@ public class CarActivityManagerTest {
     // Comes from android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED
     private static final int FEATURE_UNDEFINED = -1;
 
-    private static final long QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE = 1000;  // ms
-
-    private static final long TOTAL_TIME_TO_WAIT_FOR_IDLE_STATE = 10_000;  // ms
+    private static final long TIMEOUT_FOR_ACTIVITY_DESTROYED = 1_000;  // ms
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private final Instrumentation mInstrumentation =
@@ -79,6 +82,9 @@ public class CarActivityManagerTest {
     private final ComponentName mFakedTestActivity = new ComponentName("fake_pkg", "fake_class");
 
     private CarActivityManager mCarActivityManager;
+    // When Maps in TaskView is unstable, the test can be flaky, launches a BlankActivity to make
+    // the test robust. See details at b/270989631.
+    private Activity mBlankActivity;
 
     @Before
     public void setUp() {
@@ -91,10 +97,16 @@ public class CarActivityManagerTest {
         mCarActivityManager =
             (CarActivityManager) car.getCarManager(Car.CAR_ACTIVITY_SERVICE);
         assertThat(mCarActivityManager).isNotNull();
+
+        mBlankActivity = mInstrumentation.startActivitySync(
+                Intent.makeMainActivity(new ComponentName(mTargetContext, BlankActivity.class))
+                        .addFlags(FLAG_ACTIVITY_NEW_TASK), /* option */ null);
     }
 
     @After
     public void tearDown() {
+        mBlankActivity.finishAndRemoveTask();
+
         mUiAutomation.dropShellPermissionIdentity();
     }
 
@@ -109,7 +121,7 @@ public class CarActivityManagerTest {
 
             // Need some delay to propagate the virtual display to ActivityTaskManager internal.
             // Without this, setPersistentActivity() would fail or cause the system crash.
-            SystemClock.sleep(100);
+            SystemClock.sleep(200);
 
             // assign the activity to the secondary virtual display
             int ret = mCarActivityManager.setPersistentActivity(mTestActivity,
@@ -247,6 +259,45 @@ public class CarActivityManagerTest {
         }
     }
 
+    @Test
+    @ApiTest(apis = {"android.car.app.CarActivityManager#getCarTaskViewController(Activity,"
+            + "Executor,CarTaskViewControllerCallback)"})
+    public void getCarTaskViewController() throws Exception {
+        assumeTrue(mCarActivityManager.isCarSystemUIProxyRegistered());
+        Intent startIntent = Intent.makeMainActivity(mTestActivity)
+                .addFlags(FLAG_ACTIVITY_NEW_TASK);
+        TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
+                startIntent, /* option */ null);
+        TestCarTaskViewControllerCallback callback = new TestCarTaskViewControllerCallback();
+
+        mTargetContext.getMainExecutor().execute(() ->
+                mCarActivityManager.getCarTaskViewController(activity, mContext.getMainExecutor(),
+                        callback));
+
+        PollingCheck.waitFor(() -> callback.isConnected());
+        assertTrue(callback.isConnected());
+        activity.finishAndRemoveTask();
+    }
+
+    public static final class TestCarTaskViewControllerCallback
+            implements CarTaskViewControllerCallback {
+        private boolean mConnected = false;
+
+        @Override
+        public void onConnected(@NonNull CarTaskViewController carTaskViewController) {
+            mConnected = true;
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CarTaskViewController carTaskViewController) {
+            mConnected = false;
+        }
+
+        public boolean isConnected() {
+            return mConnected;
+        }
+    }
+
     public static final class TestActivity extends Activity {
         private static TestActivity sInstance;
         private final CountDownLatch mDestroyed = new CountDownLatch(1);
@@ -265,7 +316,10 @@ public class CarActivityManagerTest {
         }
 
         private boolean waitForDestroyed() throws InterruptedException {
-            return mDestroyed.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+            return mDestroyed.await(TIMEOUT_FOR_ACTIVITY_DESTROYED, TimeUnit.MILLISECONDS);
         }
+    }
+
+    public static final class BlankActivity extends Activity {
     }
 }

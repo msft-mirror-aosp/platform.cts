@@ -137,7 +137,6 @@ public class Components extends ComponentsBase {
             component("SingleSecondaryHomeActivity");
     public static final ComponentName SINGLE_TASK_ACTIVITY = component("SingleTaskActivity");
     public static final ComponentName SINGLE_TOP_ACTIVITY = component("SingleTopActivity");
-    public static final ComponentName SLOW_CREATE_ACTIVITY = component("SlowCreateActivity");
     public static final ComponentName SPLASHSCREEN_ACTIVITY = component("SplashscreenActivity");
     public static final ComponentName DISABLE_PREVIEW_ACTIVITY =
             component("DisablePreviewActivity");
@@ -421,6 +420,7 @@ public class Components extends ComponentsBase {
 
     /** Extra key constants for {@link android.server.wm.app.FontScaleActivity}. */
     public static class FontScaleActivity {
+        public static final String EXTRA_FONT_SCALE = "fontScale";
         public static final String EXTRA_FONT_PIXEL_SIZE = "fontPixelSize";
         public static final String EXTRA_FONT_ACTIVITY_DPI = "fontActivityDpi";
     }
@@ -677,6 +677,7 @@ public class Components extends ComponentsBase {
         public static final String KEY_RESIZE_DISPLAY = "resize_display";
         public static final String KEY_SHOW_SYSTEM_DECORATIONS = "show_system_decorations";
         public static final String KEY_PRESENTATION_DISPLAY = "presentation_display";
+        public static final String KEY_SUPPORTS_TOUCH = "supports_touch";
         // Value constants of {@link #KEY_COMMAND}.
         public static final String COMMAND_CREATE_DISPLAY = "create_display";
         public static final String COMMAND_DESTROY_DISPLAY = "destroy_display";

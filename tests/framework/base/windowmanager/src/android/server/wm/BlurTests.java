@@ -31,12 +31,12 @@ import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -55,14 +55,17 @@ import androidx.test.filters.FlakyTest;
 import com.android.compatibility.common.util.ColorUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
-import java.util.function.Consumer;
-
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Optional;
+import java.util.function.Consumer;
+
 @Presubmit
+@FlakyTest(bugId = 263872611)
 public class BlurTests extends WindowManagerTestBase {
     private static final int BACKGROUND_BLUR_PX = 80;
     private static final int BLUR_BEHIND_PX = 40;
@@ -70,9 +73,13 @@ public class BlurTests extends WindowManagerTestBase {
     private static final int BLUR_BEHIND_DYNAMIC_UPDATE_WAIT_TIME = 300;
     private static final int BACKGROUND_BLUR_DYNAMIC_UPDATE_WAIT_TIME = 100;
     private static final int DISABLE_BLUR_BROADCAST_WAIT_TIME = 100;
+
     private float mSavedAnimatorDurationScale;
     private boolean mSavedWindowBlurDisabledSetting;
     private Rect mSavedActivityBounds;
+
+    @Rule
+    public final DumpOnFailure mDumpOnFailure = new DumpOnFailure();
 
     @Before
     public void setUp() {
@@ -93,6 +100,14 @@ public class BlurTests extends WindowManagerTestBase {
         // the launched activity covers just one screen
         WindowManagerState.Activity act = startAndReturnTestActivity(BACKGROUND_IMAGE_ACTIVITY);
         mSavedActivityBounds = act.getBounds();
+        WindowManagerState.WindowState windowState =
+                mWmState.getWindowState(BACKGROUND_IMAGE_ACTIVITY);
+        Optional<WindowManagerState.InsetsSource> captionInsetsOptional =
+                windowState.getMergedLocalInsetsSources().stream().filter(
+                        insets -> insets.isCaptionBar()).findFirst();
+        captionInsetsOptional.ifPresent(captionInsets -> {
+            captionInsets.insetGivenFrame(mSavedActivityBounds);
+        });
 
         verifyOnlyBackgroundImageVisible();
         assertTrue(mContext.getSystemService(WindowManager.class).isCrossWindowBlurEnabled());
@@ -114,7 +129,7 @@ public class BlurTests extends WindowManagerTestBase {
         startTestActivity(BLUR_ACTIVITY,
                           extraInt(EXTRA_BACKGROUND_BLUR_RADIUS_PX, BACKGROUND_BLUR_PX));
 
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
         assertBackgroundBlur(takeScreenshotForBounds(mSavedActivityBounds), windowFrame);
     }
 
@@ -125,7 +140,7 @@ public class BlurTests extends WindowManagerTestBase {
                           extraInt(EXTRA_NO_BLUR_BACKGROUND_COLOR, NO_BLUR_BACKGROUND_COLOR));
 
         final Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
         assertBlurBehind(screenshot, windowFrame);
         assertNoBackgroundBlur(screenshot, windowFrame);
     }
@@ -172,7 +187,7 @@ public class BlurTests extends WindowManagerTestBase {
         startTestActivity(BLUR_ACTIVITY,
                           extraInt(EXTRA_BACKGROUND_BLUR_RADIUS_PX, BACKGROUND_BLUR_PX),
                           extraInt(EXTRA_NO_BLUR_BACKGROUND_COLOR, NO_BLUR_BACKGROUND_COLOR));
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
 
         Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
         assertBackgroundBlur(takeScreenshotForBounds(mSavedActivityBounds), windowFrame);
@@ -198,7 +213,7 @@ public class BlurTests extends WindowManagerTestBase {
         startTestActivity(BLUR_ACTIVITY,
                           extraInt(EXTRA_BLUR_BEHIND_RADIUS_PX, BLUR_BEHIND_PX),
                           extraInt(EXTRA_NO_BLUR_BACKGROUND_COLOR, NO_BLUR_BACKGROUND_COLOR));
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
 
         Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
         assertBlurBehind(screenshot, windowFrame);
@@ -226,7 +241,7 @@ public class BlurTests extends WindowManagerTestBase {
                           extraInt(EXTRA_BLUR_BEHIND_RADIUS_PX, BLUR_BEHIND_PX),
                           extraInt(EXTRA_NO_BLUR_BACKGROUND_COLOR, NO_BLUR_BACKGROUND_COLOR),
                           extraInt(EXTRA_BACKGROUND_BLUR_RADIUS_PX, BACKGROUND_BLUR_PX));
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
 
         Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
         assertBlurBehind(screenshot, windowFrame);
@@ -250,7 +265,7 @@ public class BlurTests extends WindowManagerTestBase {
     @Test
     public void testBlurBehindAndBackgroundBlurSetWithAttributes() {
         startTestActivity(BLUR_ATTRIBUTES_ACTIVITY);
-        final Rect windowFrame = getWindowFrame(BLUR_ATTRIBUTES_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ATTRIBUTES_ACTIVITY);
         final Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
 
         assertBlurBehind(screenshot, windowFrame);
@@ -263,7 +278,7 @@ public class BlurTests extends WindowManagerTestBase {
                           extraInt(EXTRA_BLUR_BEHIND_RADIUS_PX, BLUR_BEHIND_PX),
                           extraInt(EXTRA_NO_BLUR_BACKGROUND_COLOR, NO_BLUR_BACKGROUND_COLOR),
                           extraInt(EXTRA_BACKGROUND_BLUR_RADIUS_PX, BACKGROUND_BLUR_PX));
-        final Rect windowFrame = getWindowFrame(BLUR_ACTIVITY);
+        final Rect windowFrame = getFloatingWindowFrame(BLUR_ACTIVITY);
         Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
 
         assertBlurBehind(screenshot, windowFrame);
@@ -346,14 +361,20 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
 
-    private Rect getWindowFrame(ComponentName activityName) {
+    private Rect getFloatingWindowFrame(ComponentName activityName) {
         String windowName = getWindowName(activityName);
         mWmState.computeState(activityName);
-        return mWmState.getMatchingVisibleWindowState(windowName).get(0).getFrame();
+        Rect windowFrame =
+                new Rect(mWmState.getMatchingVisibleWindowState(windowName).get(0).getFrame());
+        // Offset the frame of the BlurActivity to the coordinates of mSavedActivityBounds, because
+        // we only take screenshot in that area.
+        windowFrame.offset(-mSavedActivityBounds.left, -mSavedActivityBounds.top);
+        return windowFrame;
     }
 
     private void verifyOnlyBackgroundImageVisible() {
         final Bitmap screenshot = takeScreenshotForBounds(mSavedActivityBounds);
+        mDumpOnFailure.dumpOnFailure("verifyOnlyBackgroundImageVisible", screenshot);
         final int height = screenshot.getHeight();
         final int width = screenshot.getWidth();
 
@@ -372,24 +393,28 @@ public class BlurTests extends WindowManagerTestBase {
         }
     }
 
-    private static void assertBlurBehind(Bitmap screenshot, Rect windowFrame) {
+    private void assertBlurBehind(Bitmap screenshot, Rect windowFrame) {
+        mDumpOnFailure.dumpOnFailure("assertBlurBehind", screenshot);
         assertBlur(screenshot, BLUR_BEHIND_PX, 0, windowFrame.top);
         assertBlur(screenshot, BLUR_BEHIND_PX, windowFrame.bottom, screenshot.getHeight());
     }
 
-    private static void assertBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
+    private void assertBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
+        mDumpOnFailure.dumpOnFailure("assertBackgroundBlur", screenshot);
         assertBlur(screenshot, BACKGROUND_BLUR_PX, windowFrame.top, windowFrame.bottom);
     }
 
-    private static void assertBackgroundBlurOverBlurBehind(Bitmap screenshot, Rect windowFrame) {
+    private void assertBackgroundBlurOverBlurBehind(Bitmap screenshot, Rect windowFrame) {
+        mDumpOnFailure.dumpOnFailure("assertBackgroundBlurOverBlurBehind", screenshot);
         assertBlur(
                 screenshot,
-                (int) Math.sqrt(Math.pow(BACKGROUND_BLUR_PX, 2.f) + Math.pow(BLUR_BEHIND_PX, 2.f)),
+                (int) Math.hypot(BACKGROUND_BLUR_PX, BLUR_BEHIND_PX),
                 windowFrame.top,
                 windowFrame.bottom);
     }
 
-    private static void assertNoBlurBehind(Bitmap screenshot, Rect windowFrame) {
+    private void assertNoBlurBehind(Bitmap screenshot, Rect windowFrame) {
+        mDumpOnFailure.dumpOnFailure("assertNoBlurBehind", screenshot);
         for (int x = 0; x < screenshot.getWidth(); x++) {
             for (int y = 0; y < screenshot.getHeight(); y++) {
                 if (x < windowFrame.left) {
@@ -414,7 +439,8 @@ public class BlurTests extends WindowManagerTestBase {
         }
     }
 
-    private static void assertNoBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
+    private void assertNoBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
+        mDumpOnFailure.dumpOnFailure("assertNoBackgroundBlur", screenshot);
         for (int y = windowFrame.top; y < windowFrame.bottom; y++) {
             for (int x = windowFrame.left; x < windowFrame.right; x++) {
                 ColorUtils.verifyColor("failed for pixel (x, y) = (" + x + ", " + y + ")",
@@ -423,8 +449,8 @@ public class BlurTests extends WindowManagerTestBase {
         }
     }
 
-    private static void assertBlur(Bitmap screenshot, int blurRadius, int startHeight,
-                                   int endHeight) {
+    private void assertBlur(Bitmap screenshot, int blurRadius, int startHeight,
+            int endHeight) {
         final int width = screenshot.getWidth();
 
         // Adjust the test to check a smaller part of the blurred area in order to accept various
@@ -433,17 +459,15 @@ public class BlurTests extends WindowManagerTestBase {
         final int blurAreaStartX = width / 2 - blurRadius + stepSize;
         final int blurAreaEndX = width / 2 + blurRadius;
 
-        Color previousColor;
-        Color currentColor;
+        // At 2 * radius there should be no visible blur effects.
         final int unaffectedBluePixelX = width / 2 - blurRadius * 2 - 1;
         final int unaffectedRedPixelX = width / 2 + blurRadius * 2 + 1;
+
         for (int y = startHeight; y < endHeight; y++) {
-            ColorUtils.verifyColor(
-                    "failed for pixel (x, y) = (" + unaffectedBluePixelX + ", " + y + ")",
-                    Color.BLUE, screenshot.getPixel(unaffectedBluePixelX, y), 1);
-            previousColor = Color.valueOf(Color.BLUE);
+            Color previousColor = Color.valueOf(Color.BLUE);
             for (int x = blurAreaStartX; x < blurAreaEndX; x += stepSize) {
-                currentColor = screenshot.getColor(x, y);
+                Color currentColor = screenshot.getColor(x, y);
+
                 assertTrue("assertBlur failed for blue for pixel (x, y) = (" + x + ", " + y + ");"
                         + " previousColor blue: " + previousColor.blue()
                         + ", currentColor blue: " + currentColor.blue()
@@ -455,6 +479,12 @@ public class BlurTests extends WindowManagerTestBase {
 
                 previousColor = currentColor;
             }
+        }
+
+        for (int y = startHeight; y < endHeight; y++) {
+            ColorUtils.verifyColor(
+                    "failed for pixel (x, y) = (" + unaffectedBluePixelX + ", " + y + ")",
+                    Color.BLUE, screenshot.getPixel(unaffectedBluePixelX, y), 1);
             ColorUtils.verifyColor(
                     "failed for pixel (x, y) = (" + unaffectedRedPixelX + ", " + y + ")",
                     Color.RED, screenshot.getPixel(unaffectedRedPixelX, y), 1);

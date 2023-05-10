@@ -62,6 +62,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.metrics.LogMaker;
 import android.metrics.MetricsReader;
+import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession.ActivitySessionClient;
@@ -135,7 +136,8 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         final int windowsDrawnDelayMs =
                 (int) metricsLog.getTaggedData(APP_TRANSITION_WINDOWS_DRAWN_DELAY_MS);
         final String expectedLog =
-                "Displayed " + TEST_ACTIVITY.flattenToShortString()
+                "Displayed " + TEST_ACTIVITY.flattenToShortString()  + " for user "
+                        + Process.myUserHandle().getIdentifier()
                         + ": " + formatDuration(windowsDrawnDelayMs);
         assertLogsContain(deviceLogs, expectedLog);
         assertEventLogsContainsLaunchTime(eventLogs, TEST_ACTIVITY, windowsDrawnDelayMs);
@@ -438,7 +440,8 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
      */
     @Test
     public void testConsecutiveLaunch() {
-        final String amStartOutput = executeShellCommand("am start --ez " + KEY_LAUNCH_ACTIVITY
+        final String amStartOutput = SystemUtil.runShellCommand(
+                "am start --ez " + KEY_LAUNCH_ACTIVITY
                 + " true --es " + KEY_TARGET_COMPONENT + " " + TEST_ACTIVITY.flattenToShortString()
                 + " -W " + LAUNCHING_ACTIVITY.flattenToShortString());
         assertLaunchComponentState(amStartOutput, TEST_ACTIVITY, LAUNCH_STATE_COLD);

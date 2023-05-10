@@ -68,6 +68,11 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
                 }, FLAG_REGISTER | FLAG_ENABLE);
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     /**
      * Tests that a request to pull an external call via {@link Call#pullExternalCall()} is
      * communicated to the {@link Connection} via {@link Connection#onPullExternalCall()}.
@@ -161,7 +166,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
      * test to check external call and pull external call with call and connection states check
      */
     public void testExternalCallAndPullCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

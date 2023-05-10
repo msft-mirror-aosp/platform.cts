@@ -32,6 +32,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.UserManager;
+import android.server.wm.WindowManagerState.Task;
+import android.util.Log;
 
 import androidx.annotation.CallSuper;
 
@@ -41,10 +43,15 @@ import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import org.junit.After;
 import org.junit.Before;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase {
+
+    private static final String TAG = BackgroundActivityTestBase.class.getSimpleName();
+
     static final String APP_A_PACKAGE = "android.server.wm.backgroundactivity.appa";
     static final android.server.wm.backgroundactivity.appa.Components APP_A =
             android.server.wm.backgroundactivity.appa.Components.get(APP_A_PACKAGE);
@@ -67,8 +74,6 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     // TODO(b/258792202): Cleanup with feature flag
     static final String NAMESPACE_WINDOW_MANAGER = "window_manager";
-    static final String ASM_RESTRICTIONS_ENABLED =
-            "ActivitySecurity__asm_restrictions_enabled";
     static final String ENABLE_DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER =
             "DefaultRescindBalPrivilegesFromPendingIntentSender__"
                     + "enable_default_rescind_bal_privileges_from_pending_intent_sender";
@@ -79,7 +84,6 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     @Before
     public void enableFeatureFlags() {
-        mDeviceConfig.set(ASM_RESTRICTIONS_ENABLED, "1");
         mDeviceConfig.set(
                 ENABLE_DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER, "true");
     }
@@ -148,19 +152,51 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         return waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, componentName);
     }
 
-    void assertTaskStack(ComponentName[] expectedComponents,
-            ComponentName sourceComponent) {
-        if (expectedComponents == null) {
-            assertNull(mWmState.getTaskByActivity(sourceComponent));
+    void assertTaskStackIsEmpty(ComponentName sourceComponent) {
+        Task task = mWmState.getTaskByActivity(sourceComponent);
+        assertWithMessage("task for %s", sourceComponent.flattenToShortString()).that(task)
+                .isNull();
+    }
+
+    void assertTaskStackHasComponents(ComponentName sourceComponent,
+            ComponentName... expectedComponents) {
+        Task task = mWmState.getTaskByActivity(sourceComponent);
+        assertWithMessage("task for %s", sourceComponent.flattenToShortString()).that(task)
+                .isNotNull();
+        Log.d(TAG, "Task for " + sourceComponent.flattenToShortString() + ": " + task
+                + " Activities: " + task.mActivities);
+        List<String> actualNames = getActivityNames(task.mActivities);
+        List<String> expectedNames = Arrays.stream(expectedComponents)
+                .map((c) -> c.flattenToShortString()).collect(Collectors.toList());
+
+        assertWithMessage("task activities").that(actualNames)
+                .containsExactlyElementsIn(expectedNames).inOrder();
+    }
+
+    void assertTaskDoesNotHaveVisibleComponents(ComponentName sourceComponent,
+            ComponentName... expectedComponents) {
+        Task task = mWmState.getTaskByActivity(sourceComponent);
+        Log.d(TAG, "Task for " + sourceComponent.flattenToShortString() + ": " + task);
+        List<WindowManagerState.Activity> actual = getVisibleActivities(task.mActivities);
+        Log.v(TAG, "Task activities: all=" + task.mActivities + ", visible=" + actual);
+        if (actual == null) {
             return;
         }
-        List<WindowManagerState.Activity> actual = mWmState.getTaskByActivity(
-                sourceComponent).mActivities;
-        assertEquals(expectedComponents.length, actual.size());
-        int size = expectedComponents.length;
-        for (int i = 0; i < size; i++) {
-            assertEquals(expectedComponents[i].flattenToShortString(), actual.get(i).getName());
-        }
+        List<String> actualNames = getActivityNames(actual);
+        List<String> expectedNames = Arrays.stream(expectedComponents)
+                .map((c) -> c.flattenToShortString()).collect(Collectors.toList());
+
+        assertWithMessage("task activities").that(actualNames).containsNoneIn(expectedNames);
+    }
+
+    List<WindowManagerState.Activity> getVisibleActivities(
+            List<WindowManagerState.Activity> activities) {
+        return activities.stream().filter(WindowManagerState.Activity::isVisible)
+                .collect(Collectors.toList());
+    }
+
+    List<String> getActivityNames(List<WindowManagerState.Activity> activities) {
+        return activities.stream().map(a -> a.getName()).collect(Collectors.toList());
     }
 
     Intent getLaunchActivitiesBroadcast(android.server.wm.backgroundactivity.appa.Components appA,
@@ -292,8 +328,8 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         }
 
         ActivityStartVerifier thenAssertTaskStack(ComponentName... expectedComponents) {
-            BackgroundActivityTestBase.this.assertTaskStack(expectedComponents,
-                    expectedComponents[expectedComponents.length - 1]);
+            assertTaskStackHasComponents(expectedComponents[expectedComponents.length - 1],
+                    expectedComponents);
             return this;
         }
 
