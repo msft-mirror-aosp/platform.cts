@@ -619,6 +619,14 @@ public class TestUtils {
         return InstrumentationRegistry.getContext().getPackageManager().
                 hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
     }
+    public static boolean hasAutomotiveFeature() {
+        try {
+            return InstrumentationRegistry.getContext().getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        } catch (Exception e) {
+            return false;
+        }
+    }
     public static BluetoothDevice makeBluetoothDevice(String address) {
         if (!HAS_BLUETOOTH) return null;
         Parcel p1 = Parcel.obtain();
