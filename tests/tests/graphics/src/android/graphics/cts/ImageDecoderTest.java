@@ -252,6 +252,16 @@ public class ImageDecoderTest {
             SystemProperties.getInt("ro.vndk.version", 0) >= Build.VERSION_CODES.TIRAMISU);
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
 
+        Bitmap.Config expectedConfig = Bitmap.Config.RGBA_1010102;
+
+        // For TVs, even if the device advertises that 10 bits profile is supported, the output
+        // format might not be CPU readable, but the video can still be displayed. When the TV's
+        // hevc decoder doesn't support YUVP010 format, then the color type of output falls back
+        // to RGBA_8888 automatically.
+        if (MediaUtils.isTv() && !hasHEVCDecoderSupportsYUVP010()) {
+            expectedConfig = Bitmap.Config.ARGB_8888;
+        }
+
         try {
             ImageDecoder.Source src = ImageDecoder
                 .createSource(getResources(), R.raw.heifimage_10bit);
@@ -262,7 +272,7 @@ public class ImageDecoderTest {
             assertNotNull(bm);
             assertEquals(4096, bm.getWidth());
             assertEquals(3072, bm.getHeight());
-            assertEquals(Bitmap.Config.RGBA_1010102, bm.getConfig());
+            assertEquals(expectedConfig, bm.getConfig());
         } catch (IOException e) {
             fail("Failed with exception " + e);
         }
@@ -2788,5 +2798,27 @@ public class ImageDecoderTest {
             return false;
         }
         return true;
+    }
+
+    private static boolean hasHEVCDecoderSupportsYUVP010() {
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
+            if (mediaCodecInfo.isEncoder()) {
+                continue;
+            }
+            for (String mediaType : mediaCodecInfo.getSupportedTypes()) {
+                if (mediaType.equalsIgnoreCase("video/hevc")) {
+                    MediaCodecInfo.CodecCapabilities codecCapabilities =
+                            mediaCodecInfo.getCapabilitiesForType(mediaType);
+                    for (int i = 0; i < codecCapabilities.colorFormats.length; ++i) {
+                        if (codecCapabilities.colorFormats[i]
+                                == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

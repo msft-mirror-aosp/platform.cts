@@ -58,9 +58,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,6 +81,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final String ANDROID_TEST_MOCK_JAR = "/system/framework/android.test.mock.jar";
     private static final String TEST_HELPER_PACKAGE = "android.compat.sjp.app";
     private static final String TEST_HELPER_APK = "StrictJavaPackagesTestApp.apk";
+
+    private static final Pattern APEX_JAR_PATTERN =
+            Pattern.compile("\\/apex\\/(?<apexName>[^\\/]+)\\/.*\\.(jar|apk)");
 
     private static ImmutableList<String> sBootclasspathJars;
     private static ImmutableList<String> sSystemserverclasspathJars;
@@ -651,7 +657,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final ImmutableSet<String> PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST =
             ImmutableSet.of(
                 "Lcom/android/modules/utils/build/SdkLevel;",
-                "Lcom/android/settingslib/RestrictedLockUtils;"
+                "Lcom/android/settingslib/RestrictedLockUtils;",
+                "Lcom/android/safetycenter/resources/SafetyCenterResourcesContext;"
             );
     // TODO: b/223837599
     private static final ImmutableSet<String> TETHERING_APK_IN_APEX_BURNDOWN_LIST =
@@ -750,6 +757,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final ImmutableMap<String, ImmutableSet<String>> FULL_APK_IN_APEX_BURNDOWN =
         new ImmutableMap.Builder<String, ImmutableSet<String>>()
             .put("/apex/com.android.btservices/app/Bluetooth/Bluetooth.apk",
+                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
+            .put("/apex/com.android.btservices/app/BluetoothArc/BluetoothArc.apk",
                 BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
                 BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
@@ -870,7 +879,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testBootclasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         assertThat(getDuplicateClasses(sBootclasspathJars)).isEmpty();
     }
 
@@ -879,7 +888,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testSystemServerClasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         ImmutableSet<String> overlapBurndownList;
         if (hasFeature(FEATURE_AUTOMOTIVE)) {
             overlapBurndownList = ImmutableSet.copyOf(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST);
@@ -901,7 +910,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testBootClasspathAndSystemServerClasspath_nonDuplicateClasses() throws Exception {
-        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastR());
+        assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
         ImmutableList.Builder<String> jars = ImmutableList.builder();
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSystemserverclasspathJars);
@@ -919,7 +928,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         }
         Multimap<String, String> duplicates = getDuplicateClasses(jars.build());
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
-                duplicate -> !overlapBurndownList.contains(duplicate));
+                duplicate -> !overlapBurndownList.contains(duplicate)
+                        && !jarsInSameApex(duplicates.get(duplicate)));
 
         assertThat(filtered).isEmpty();
     }
@@ -1073,7 +1083,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 LegacyExemptAndroidxSharedLibsNamesToClasses =
                 new ImmutableMap.Builder<String, ImmutableSet<String>>()
                 .put("androidx.camera.extensions.impl",
-                    ImmutableSet.of("Landroidx/camera/extensions/impl/"))
+                    ImmutableSet.of("Landroidx/camera/extensions/impl/",
+                    "Landroidx/camera/extensions/impl/advanced/", "Landroidx/annotation"))
                 .put("androidx.window.extensions",
                     ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/extensions/",
                         "Landroidx/window/util/"))
@@ -1212,6 +1223,21 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         final HashMultimap<String, String> allClasses = HashMultimap.create();
         Multimaps.invertFrom(Multimaps.filterKeys(sJarsToClasses, jars::contains), allClasses);
         return Multimaps.filterKeys(allClasses, key -> allClasses.get(key).size() > 1);
+    }
+
+    private boolean jarsInSameApex(Collection<String> jars) {
+        return jars.stream()
+            .map(path -> apexForJar(path).orElse(path))
+            .distinct()
+            .count() <= 1;
+    }
+
+    private Optional<String> apexForJar(String jar) {
+        Matcher m = APEX_JAR_PATTERN.matcher(jar);
+        if (!m.matches()) {
+            return Optional.empty();
+        }
+        return Optional.of(m.group("apexName"));
     }
 
     private static boolean doesFileExist(String path, ITestDevice device) {

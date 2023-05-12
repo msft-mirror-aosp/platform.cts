@@ -1010,7 +1010,7 @@ public class BitmapFactoryTest {
 
     @Test
     @RequiresDevice
-    public void testDecode10BitHEIFTo10BitBitmap() {
+    public void testDecode10BitHEIF10BitBitmap() {
         assumeTrue(
             "Test needs Android T.", ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU));
         assumeTrue(
@@ -1018,13 +1018,23 @@ public class BitmapFactoryTest {
             SystemProperties.getInt("ro.vndk.version", 0) >= Build.VERSION_CODES.TIRAMISU);
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
 
+        Config expectedConfig = Config.RGBA_1010102;
+
+        // For TVs, even if the device advertises that 10 bits profile is supported, the output
+        // format might not be CPU readable, but the video can still be displayed. When the TV's
+        // hevc decoder doesn't support YUVP010 format, and inPreferredConfig is RGBA_1010102,
+        // then the color type of output falls back to RGBA_8888 automatically.
+        if (MediaUtils.isTv() && !hasHEVCDecoderSupportsYUVP010()) {
+            expectedConfig = Config.ARGB_8888;
+        }
+
         BitmapFactory.Options opt = new BitmapFactory.Options();
         opt.inPreferredConfig = Config.RGBA_1010102;
         Bitmap bm = BitmapFactory.decodeStream(obtainInputStream(R.raw.heifimage_10bit), null, opt);
         assertNotNull(bm);
         assertEquals(4096, bm.getWidth());
         assertEquals(3072, bm.getHeight());
-        assertEquals(Config.RGBA_1010102, bm.getConfig());
+        assertEquals(expectedConfig, bm.getConfig());
     }
 
     @Test
@@ -1036,6 +1046,15 @@ public class BitmapFactoryTest {
             "Test needs VNDK at least T.",
             SystemProperties.getInt("ro.vndk.version", 0) >= Build.VERSION_CODES.TIRAMISU);
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
+
+        // When TV does not support P010, color type of output is RGBA_8888 when decoding 10-bit
+        // heif, and this behavior is tested in testDecode10BitHEIF10BitBitmap. So skipping this
+        // test when P010 is not supported by TV.
+        if (MediaUtils.isTv()) {
+            assumeTrue(
+                "The TV does not support YUVP010 format, skip the test",
+                hasHEVCDecoderSupportsYUVP010());
+        }
 
         BitmapFactory.Options opt = new BitmapFactory.Options();
         opt.inPreferredConfig = Config.ARGB_8888;
@@ -1112,5 +1131,27 @@ public class BitmapFactoryTest {
             return false;
         }
         return true;
+    }
+
+    private static boolean hasHEVCDecoderSupportsYUVP010() {
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
+            if (mediaCodecInfo.isEncoder()) {
+                continue;
+            }
+            for (String mediaType : mediaCodecInfo.getSupportedTypes()) {
+                if (mediaType.equalsIgnoreCase("video/hevc")) {
+                    MediaCodecInfo.CodecCapabilities codecCapabilities =
+                            mediaCodecInfo.getCapabilitiesForType(mediaType);
+                    for (int i = 0; i < codecCapabilities.colorFormats.length; ++i) {
+                        if (codecCapabilities.colorFormats[i]
+                                == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

@@ -175,9 +175,7 @@ abstract class SensorPrivacyBaseTest(
             intent.putExtra(DELAYED_ACTIVITY_EXTRA, delayedActivity)
             intent.putExtra(DELAYED_ACTIVITY_NEW_TASK_EXTRA, delayedActivityNewTask)
             context.startActivity(intent)
-            if (delayedActivity || delayedActivityNewTask) {
-                Thread.sleep(3000)
-            }
+            Thread.sleep(3000)
             unblockSensorWithDialogAndAssert()
         } finally {
             runShellCommandOrThrow("am broadcast" +
@@ -497,7 +495,9 @@ abstract class SensorPrivacyBaseTest(
         intent.putExtra(RETRY_CAM_EXTRA, retryCameraOnError)
         context.startActivity(intent)
         // Wait for app to open
-        UiAutomatorUtils.waitFindObject(By.textContains(ACTIVITY_TITLE_SNIP))
+        if (!isWear()) {
+            UiAutomatorUtils.waitFindObject(By.textContains(ACTIVITY_TITLE_SNIP))
+        }
     }
 
     private fun startTestOverlayApp(retryCameraOnError: Boolean) {
@@ -510,7 +510,9 @@ abstract class SensorPrivacyBaseTest(
         intent.putExtra(RETRY_CAM_EXTRA, retryCameraOnError)
         context.startActivity(intent)
         // Wait for app to open
-        UiAutomatorUtils.waitFindObject(By.textContains(ACTIVITY_TITLE_SNIP))
+        if (!isWear()) {
+            UiAutomatorUtils.waitFindObject(By.textContains(ACTIVITY_TITLE_SNIP))
+        }
 
         context.sendBroadcast(Intent(SHOW_OVERLAY_ACTION))
     }
@@ -585,6 +587,10 @@ abstract class SensorPrivacyBaseTest(
                 assertEquals("Unexpected op running state", isRunning, attrOp.isRunning)
             }
         }
+    }
+
+    private fun isWear(): Boolean {
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
     }
 
     private fun assertLastAccessTimeAndDuration(before: Long, after: Long) {

@@ -39,16 +39,14 @@ import androidx.core.content.FileProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.FutureResultActivity
-import org.junit.After
-import org.junit.Assert
-import org.junit.Assume.assumeFalse
-import org.junit.Assume.assumeTrue
-import org.junit.Before
-import org.junit.Rule
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import org.junit.After
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Rule
 
 const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts"
 const val TEST_APK_EXTERNAL_LOCATION = "/data/local/tmp/cts/packageinstaller"
@@ -233,13 +231,19 @@ open class PackageInstallerTestBase {
     /**
      * Start an installation via a session
      */
-    protected fun startInstallationViaIntent(): CompletableFuture<Int> {
+    protected fun startInstallationViaIntent(
+        intent: Intent = getInstallationIntent()
+    ): CompletableFuture<Int> {
+        return installDialogStarter.activity.startActivityForResult(intent)
+    }
+
+    protected fun getInstallationIntent(): Intent {
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = FileProvider.getUriForFile(context, CONTENT_AUTHORITY, apkFile)
-        intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
 
-        return installDialogStarter.activity.startActivityForResult(intent)
+        return intent
     }
 
     fun assertInstalled() {
@@ -288,17 +292,5 @@ open class PackageInstallerTestBase {
     @After
     fun uninstallTestPackage() {
         uiDevice.executeShellCommand("pm uninstall $TEST_APK_PACKAGE_NAME")
-    }
-
-    fun assumeWatch() {
-        assumeTrue("Test only valid for watch", hasFeatureWatch())
-    }
-
-    fun assumeNotWatch() {
-        assumeFalse("Installing APKs not supported on watch", hasFeatureWatch())
-    }
-
-    private fun hasFeatureWatch(): Boolean {
-        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
     }
 }

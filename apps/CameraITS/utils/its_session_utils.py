@@ -38,6 +38,15 @@ import opencv_processing_utils
 ANDROID13_API_LEVEL = 33
 LOAD_SCENE_DELAY_SEC = 3
 SUB_CAMERA_SEPARATOR = '.'
+DEFAULT_TABLET_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
+ELEVEN_BIT_TABLET_BRIGHTNESS = 1536
+ELEVEN_BIT_TABLET_NAMES = ('nabu',)
+LEGACY_TABLET_BRIGHTNESS = 96
+LEGACY_TABLET_NAME = 'dragon'
+TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
+BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
+                        f'{TABLET_REQUIREMENTS_URL} in the config file')
+
 _VALIDATE_LIGHTING_PATCH_H = 0.05
 _VALIDATE_LIGHTING_PATCH_W = 0.05
 _VALIDATE_LIGHTING_REGIONS = {
@@ -48,6 +57,27 @@ _VALIDATE_LIGHTING_REGIONS = {
                      1-_VALIDATE_LIGHTING_PATCH_H),
 }
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
+
+
+def validate_tablet_brightness(tablet_name, brightness):
+  """Ensures tablet brightness is set according to documentation.
+
+  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
+  Args:
+    tablet_name: tablet product name specified by `ro.build.product`.
+    brightness: brightness specified by config file.
+  """
+  name_to_brightness = {
+      LEGACY_TABLET_NAME: LEGACY_TABLET_BRIGHTNESS,
+  }
+  for name in ELEVEN_BIT_TABLET_NAMES:
+    name_to_brightness[name] = ELEVEN_BIT_TABLET_BRIGHTNESS
+  if tablet_name in name_to_brightness:
+    if brightness != name_to_brightness[tablet_name]:
+      raise AssertionError(BRIGHTNESS_ERROR_MSG)
+  else:
+    if brightness != DEFAULT_TABLET_BRIGHTNESS:
+      raise AssertionError(BRIGHTNESS_ERROR_MSG)
 
 
 class ItsSession(object):
@@ -453,6 +483,39 @@ class ItsSession(object):
     self.sock.settimeout(self.SOCK_TIMEOUT)
     return data['objValue']
 
+  def get_camera_ids(self):
+    """Returns the list of all camera_ids.
+
+    Returns:
+      List of camera ids on the device.
+    """
+    cmd = {'cmdName': 'getCameraIds'}
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'cameraIds':
+      raise error_util.CameraItsError('Invalid command response')
+    return data['objValue']
+
+  def get_unavailable_physical_cameras(self, camera_id):
+    """Get the unavailable physical cameras ids.
+
+    Args:
+      camera_id: int; device id
+    Returns:
+      List of all physical camera ids which are unavailable.
+    """
+    cmd = {'cmdName': 'doGetUnavailablePhysicalCameras',
+           'cameraId': camera_id}
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'unavailablePhysicalCameras':
+      raise error_util.CameraItsError('Invalid command response')
+    return data['objValue']
+
   def is_hlg10_recording_supported(self, profile_id):
     """Query whether the camera device supports HLG10 video recording.
 
@@ -616,6 +679,47 @@ class ItsSession(object):
       raise error_util.CameraItsError('No supported preview sizes')
     return data['strValue'].split(';')
 
+  def get_display_size(self):
+    """ Get the display size of the screen.
+
+    Returns:
+      The size of the display resolution in pixels.
+    """
+    cmd = {
+        'cmdName': 'getDisplaySize'
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'displaySize':
+      raise error_util.CameraItsError('Invalid command response')
+    if not data['strValue']:
+      raise error_util.CameraItsError('No display size')
+    return data['strValue'].split('x')
+
+  def get_max_camcorder_profile_size(self, camera_id):
+    """ Get the maximum camcorder profile size for this camera device.
+
+    Args:
+      camera_id: int; device id
+    Returns:
+      The maximum size among all camcorder profiles supported by this camera.
+    """
+    cmd = {
+        'cmdName': 'getMaxCamcorderProfileSize',
+        'cameraId': camera_id
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'maxCamcorderProfileSize':
+      raise error_util.CameraItsError('Invalid command response')
+    if not data['strValue']:
+      raise error_util.CameraItsError('No max camcorder profile size')
+    return data['strValue'].split('x')
+
   def do_capture_with_flash(self,
                             preview_request_start,
                             preview_request_idle,
@@ -672,7 +776,7 @@ class ItsSession(object):
     ncap = 1
     capture_results_returned = False
     yuv_bufs = {}
-    while not capture_results_returned:
+    while (nbufs < ncap) or (not capture_results_returned):
       json_obj, buf = self.__read_response_from_socket()
       if json_obj['tag'] in ItsSession.IMAGE_FORMAT_LIST_1 and buf is not None:
         fmt = json_obj['tag'][:-5]

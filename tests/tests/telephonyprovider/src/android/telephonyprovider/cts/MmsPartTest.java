@@ -16,7 +16,8 @@
 
 package android.telephonyprovider.cts;
 
-import static android.telephonyprovider.cts.DefaultSmsAppHelper.assumeTelephony;
+import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
+import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -28,6 +29,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
+import android.telephony.cts.util.DefaultSmsAppHelper;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -66,6 +68,7 @@ public class MmsPartTest {
     @Before
     public void setupTestEnvironment() {
         assumeTelephony();
+        assumeMessaging();
         cleanup();
         mContentResolver = getInstrumentation().getContext().getContentResolver();
     }

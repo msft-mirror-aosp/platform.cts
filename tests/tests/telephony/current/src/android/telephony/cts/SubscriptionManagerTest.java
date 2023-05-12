@@ -54,6 +54,7 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionPlan;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.ims.ImsException;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
@@ -1227,7 +1228,7 @@ public class SubscriptionManagerTest {
         // Vendors can add supported usage settings by adding resources.
         try {
             int[] usageSettingsFromResource = context.getResources().getIntArray(
-                com.android.internal.R.array.config_supported_cellular_usage_settings);
+                Resources.getSystem().getIdentifier("config_supported_cellular_usage_settings","array","android"));
 
             for (int setting : usageSettingsFromResource) {
                 supportedUsageSettings.add(setting);

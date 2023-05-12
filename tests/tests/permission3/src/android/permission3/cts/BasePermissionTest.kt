@@ -49,6 +49,7 @@ abstract class BasePermissionTest {
     companion object {
         const val APK_DIRECTORY = "/data/local/tmp/cts/permission3"
 
+        const val QUICK_CHECK_TIMEOUT_MILLIS = 100L
         const val IDLE_TIMEOUT_MILLIS: Long = 1000
         const val UNEXPECTED_TIMEOUT_MILLIS = 1000
         const val TIMEOUT_MILLIS: Long = 20000
@@ -113,6 +114,29 @@ abstract class BasePermissionTest {
         val textWithoutHtml = Html.fromHtml(textWithHtml, 0).toString()
         return Pattern.compile(Pattern.quote(textWithoutHtml),
                 Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+    }
+
+    protected fun getPermissionControllerResString(res: String): String? {
+        try {
+            return mPermissionControllerResources.getString(
+                    mPermissionControllerResources.getIdentifier(
+                            res, "string", "com.android.permissioncontroller"))
+        } catch (e: Resources.NotFoundException) {
+            return null
+        }
+    }
+
+    protected fun byAnyText(vararg texts: String?): BySelector {
+        var regex = ""
+        for (text in texts) {
+            if (text != null) {
+                regex = regex + Pattern.quote(text) + "|"
+            }
+        }
+        if (regex.endsWith("|")) {
+            regex = regex.dropLast(1)
+        }
+        return By.text(Pattern.compile(regex, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE))
     }
 
     protected fun installPackage(
@@ -194,6 +218,11 @@ abstract class BasePermissionTest {
 
     protected fun pressHome() {
         uiDevice.pressHome()
+        waitForIdle()
+    }
+
+    protected fun pressDPadDown() {
+        uiDevice.pressDPadDown()
         waitForIdle()
     }
 

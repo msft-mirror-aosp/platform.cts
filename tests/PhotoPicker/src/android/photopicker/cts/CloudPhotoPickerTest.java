@@ -18,6 +18,7 @@ package android.photopicker.cts;
 
 import static android.photopicker.cts.PhotoPickerCloudUtils.addImage;
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
 import static android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
@@ -63,6 +64,7 @@ import java.util.List;
  * Photo Picker Device only tests for common flows.
  */
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
     private final List<Uri> mUriList = new ArrayList<>();
     private MediaGenerator mCloudPrimaryMediaGenerator;
@@ -91,6 +93,9 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         mCloudPrimaryMediaGenerator.setMediaCollectionId(COLLECTION_1);
         mCloudSecondaryMediaGenerator.setMediaCollectionId(COLLECTION_1);
 
+        // This is a self-instrumentation test, so both "target" package name and "own" package name
+        // should be the same (android.photopicker.cts).
+        enableCloudMediaAndSetAllowedCloudProviders(sTargetPackageName);
         setCloudProvider(mContext, null);
     }
 
@@ -99,9 +104,13 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         for (Uri uri : mUriList) {
             deleteMedia(uri, mContext);
         }
-        mActivity.finish();
+        if (mActivity != null) {
+            mActivity.finish();
+        }
         mUriList.clear();
-        setCloudProvider(mContext, null);
+        if (mCloudPrimaryMediaGenerator != null) {
+            setCloudProvider(mContext, null);
+        }
     }
 
     @Test
@@ -280,10 +289,15 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         assertThat(mediaIds).containsExactly(CLOUD_ID1);
 
         final ContentResolver resolver = mContext.getContentResolver();
+        try (Cursor c = resolver.query(
+                clipData.getItemAt(0).getUri(),
+                new String[] {MediaStore.MediaColumns.RELATIVE_PATH}, null, null)) {
+            assertThat(c).isNotNull();
+            assertThat(c.moveToFirst()).isTrue();
 
-        assertThrows(IllegalArgumentException.class, () -> resolver.query(
-                        clipData.getItemAt(0).getUri(),
-                        new String[] {MediaStore.MediaColumns.RELATIVE_PATH}, null, null));
+            assertThat(c.getString(c.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH)))
+                    .isEqualTo(null);
+        }
     }
 
     @Test

@@ -31,6 +31,9 @@ import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.CommandResult;
+import com.android.tradefed.util.CommandStatus;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,9 +75,16 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(10);
     private static final int UNLOCK_BROADCAST_WAIT_SECONDS = 10;
 
-    private boolean mSupportsMultiUser;
+    // This is the PIN set in EncryptionAppTest.testSetUp()
+    private static final String DEFAULT_PIN = "1234";
 
-    @Rule
+    private boolean mSupportsMultiUser;
+    private String mOriginalVerifyAdbInstallerSetting = null;
+
+    @Rule(order = 0)
+    public BootCountTrackerRule mBootCountTrackingRule = new BootCountTrackerRule(this, 0);
+
+    @Rule(order = 1)
     public NormalizeScreenStateRule mNoDozeRule = new NormalizeScreenStateRule(this);
 
     @Before
@@ -84,6 +94,11 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
         mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
 
+        normalizeUserStates();
+        setScreenStayOnValue(true);
+        mOriginalVerifyAdbInstallerSetting =
+                getDevice().getSetting("global", "verifier_verify_adb_installs");
+        getDevice().setSetting("global", "verifier_verify_adb_installs", "0");
         removeTestPackages();
         deviceDisableDeviceConfigSync();
         deviceSetupServerBasedParameter();
@@ -92,12 +107,20 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     @After
     public void tearDown() throws Exception {
         removeTestPackages();
+        deviceCleanupServerBasedParameter();
         deviceRestoreDeviceConfigSync();
+        if (mOriginalVerifyAdbInstallerSetting != null) {
+            getDevice().setSetting(
+                    "global", "verifier_verify_adb_installs",
+                    mOriginalVerifyAdbInstallerSetting);
+        }
+        setScreenStayOnValue(false);
     }
 
     @Test
     public void resumeOnReboot_ManagedProfile_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         if (!getDevice().hasFeature("android.software.managed_users")) {
             CLog.v(TAG, "Device doesn't support managed users; skipping test");
@@ -122,23 +145,20 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", initialUser);
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", managedUserId);
         } finally {
-            try {
-                stopUserAsync(managedUserId);
-                removeUser(managedUserId);
+            stopUserAsync(managedUserId);
+            removeUser(managedUserId);
 
-                // Remove secure lock screens and tear down test app
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-            }
+            deviceClearLskf();
         }
     }
 
     @Test
     public void resumeOnReboot_TwoUsers_SingleUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         if (!mSupportsMultiUser) {
             CLog.v(TAG, "Device doesn't support multi-user; skipping test");
@@ -174,23 +194,20 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyLockedAndDismiss", secondaryUser);
         } finally {
-            try {
-                // Remove secure lock screens and tear down test app
-                switchUser(secondaryUser);
-                runDeviceTestsAsUser("testTearDown", secondaryUser);
-                switchUser(initialUser);
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            switchUser(secondaryUser);
+            runDeviceTestsAsUser("testTearDown", secondaryUser);
+            switchUser(initialUser);
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-            }
+            deviceClearLskf();
         }
     }
 
     @Test
     public void resumeOnReboot_TwoUsers_BothUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         if (!mSupportsMultiUser) {
             CLog.v(TAG, "Device doesn't support multi-user; skipping test");
@@ -228,23 +245,20 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", secondaryUser);
         } finally {
-            try {
-                // Remove secure lock screens and tear down test app
-                switchUser(secondaryUser);
-                runDeviceTestsAsUser("testTearDown", secondaryUser);
-                switchUser(initialUser);
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            switchUser(secondaryUser);
+            runDeviceTestsAsUser("testTearDown", secondaryUser);
+            switchUser(initialUser);
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-            }
+            deviceClearLskf();
         }
     }
 
     @Test
     public void resumeOnReboot_SingleUser_ServerBased_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         int[] users = Utils.prepareSingleUser(getDevice());
         int initialUser = users[0];
@@ -261,23 +275,17 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", initialUser);
             runDeviceTestsAsUser("testCheckServiceInteraction", initialUser);
         } finally {
-            try {
-                // Remove secure lock screens and tear down test app
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-
-                getDevice().rebootUntilOnline();
-                getDevice().waitForDeviceAvailable();
-            }
+            deviceClearLskf();
         }
     }
 
     @Test
     public void resumeOnReboot_SingleUser_MultiClient_ClientASuccess() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         int[] users = Utils.prepareSingleUser(getDevice());
         int initialUser = users[0];
@@ -301,23 +309,17 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", initialUser);
             runDeviceTestsAsUser("testCheckServiceInteraction", initialUser);
         } finally {
-            try {
-                // Remove secure lock screens and tear down test app
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-
-                getDevice().rebootUntilOnline();
-                getDevice().waitForDeviceAvailable();
-            }
+            deviceClearLskf();
         }
     }
 
     @Test
     public void resumeOnReboot_SingleUser_MultiClient_ClientBSuccess() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
+        assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
 
         int[] users = Utils.prepareSingleUser(getDevice());
         int initialUser = users[0];
@@ -340,17 +342,10 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", initialUser);
             runDeviceTestsAsUser("testCheckServiceInteraction", initialUser);
         } finally {
-            try {
-                // Remove secure lock screens and tear down test app
-                runDeviceTestsAsUser("testTearDown", initialUser);
+            // Remove secure lock screens and tear down test app
+            runDeviceTestsAsUser("testTearDown", initialUser);
 
-                deviceClearLskf();
-            } finally {
-                removeTestPackages();
-
-                getDevice().rebootUntilOnline();
-                getDevice().waitForDeviceAvailable();
-            }
+            deviceClearLskf();
         }
     }
 
@@ -398,12 +393,12 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
                 + " -c android.intent.category.LAUNCHER com.android.cts.splitapp/.MyActivity");
 
         // Give enough time for PackageManager to persist stopped state
-        Thread.sleep(15000);
+        RunUtil.getDefault().sleep(15000);
 
         runDeviceTestsAsUser("testSetUp", userId);
 
         // Give enough time for vold to update keys
-        Thread.sleep(15000);
+        RunUtil.getDefault().sleep(15000);
     }
 
     private void deviceRequestLskf() throws Exception {
@@ -434,9 +429,7 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         do {
             if (retry) {
                 CLog.i("Retrying to summon lockscreen...");
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ignored) {}
+                RunUtil.getDefault().sleep(500);
             }
             runDeviceTestsAsUser("testLockScreen", userId);
             retry = !LockScreenInspector.newInstance(getDevice()).isDisplayedAndNotOccluded();
@@ -477,9 +470,10 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private void deviceRebootAndApply(String clientName) throws Exception {
         verifyLskfCaptured(clientName);
+        mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
-        String res = getDevice().executeShellCommand("cmd recovery reboot-and-apply " + clientName
-                + " cts-test");
+        String res = executeShellCommandWithLogging(
+                "cmd recovery reboot-and-apply " + clientName + " cts-test");
         if (res != null && res.contains("Reboot and apply status: failure")) {
             fail("could not call reboot-and-apply");
         }
@@ -511,17 +505,14 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         getDevice().switchUser(userId);
         HostSideTestUtils.waitUntil("Could not switch users", USER_SWITCH_TIMEOUT_SECONDS,
                 () -> getDevice().getCurrentUser() == userId);
-        Thread.sleep(USER_SWITCH_WAIT);
+        RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
     }
 
     private void stopUserAsync(int userId) throws Exception {
-        String stopUserCommand = "am stop-user -f " + userId;
-        CLog.d("starting command \"" + stopUserCommand);
-        CLog.d("Output for command " + stopUserCommand + ": "
-                + getDevice().executeShellCommand(stopUserCommand));
+        executeShellCommandWithLogging("am stop-user -f " + userId);
     }
 
-    private void removeUser(int userId) throws Exception  {
+    private void removeUser(int userId) throws Exception {
         if (listUsers().contains(userId) && userId != USER_SYSTEM) {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
@@ -573,9 +564,58 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return isAtleastS && getDevice().hasFeature(FEATURE_SECURE_LOCK_SCREEN);
     }
 
+    private boolean supportFileBasedEncryption() throws Exception {
+        return "file".equals(getDevice().getProperty("ro.crypto.type"));
+    }
+
     private class InstallMultiple extends BaseInstallMultiple<InstallMultiple> {
         public InstallMultiple() {
             super(getDevice(), getBuild(), getAbi());
         }
+    }
+
+    private void setScreenStayOnValue(boolean value) throws DeviceNotAvailableException {
+        CommandResult result = getDevice().executeShellV2Command("svc power stayon " + value);
+        if (result.getStatus() != CommandStatus.SUCCESS) {
+            CLog.w("Could not set screen stay-on value. " + generateErrorStringFromCommandResult(
+                    result));
+        }
+    }
+
+    private void normalizeUserStates() throws Exception {
+        int[] userIds = Utils.getAllUsers(getDevice());
+        switchUser(userIds[0]);
+
+        for (int userId : userIds) {
+            CommandResult lockScreenDisabledResult =
+                    getDevice().executeShellV2Command(
+                            "locksettings get-disabled --old " + DEFAULT_PIN + " --user " + userId);
+            if (lockScreenDisabledResult.getStatus() != CommandStatus.SUCCESS) {
+                CLog.w("Couldn't check whether there's already a PIN on the device. "
+                        + generateErrorStringFromCommandResult(lockScreenDisabledResult));
+            }
+            if ("false".equals(lockScreenDisabledResult.getStdout().trim())) {
+                CommandResult unsetPinResult =
+                        getDevice().executeShellV2Command(
+                                "locksettings clear --old " + DEFAULT_PIN + " --user " + userId);
+                if (unsetPinResult.getStatus() != CommandStatus.SUCCESS) {
+                    CLog.w("Couldn't unset existing PIN on device. Test might not work properly. "
+                            + generateErrorStringFromCommandResult(unsetPinResult));
+                }
+            }
+        }
+    }
+
+    private static String generateErrorStringFromCommandResult(CommandResult result) {
+        return "Status code: " + result.getStatus() + ", Exit code: " + result.getExitCode()
+                + ", Error: " + result.getStderr();
+    }
+
+    private String executeShellCommandWithLogging(String command)
+            throws DeviceNotAvailableException {
+        CLog.d("Starting command: " + command);
+        String result = getDevice().executeShellCommand(command);
+        CLog.d("Output for command \"" + command + "\": " + result);
+        return result;
     }
 }

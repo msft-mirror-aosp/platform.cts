@@ -2220,7 +2220,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // wait for the activity to launch and finish
         mContext.startActivity(activityIntent);
-        Thread.sleep(500);
+        Thread.sleep(mActivityManager.isLowRamDevice() ? 1000 : 500);
 
         List<NotificationChannel> channels =
                 mContext.createPackageContextAsUser(TEST_APP, /* flags= */ 0, mContext.getUser())
@@ -2819,6 +2819,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
             assertNotificationCancelled(7, true);
             assertEquals(background8Uri, getNotificationBackgroundImageUri(8));
+            if (mActivityManager.isLowRamDevice()) {
+                Thread.sleep(500);
+            }
             assertInaccessible(background7Uri);
             assertAccessible(background8Uri);
 
@@ -2828,6 +2831,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertNotificationCancelled(7, true);
             assertNotificationCancelled(8, true);
             assertInaccessible(background7Uri);
+            if (mActivityManager.isLowRamDevice()) {
+                Thread.sleep(500);
+            }
             assertInaccessible(background8Uri);
 
         } finally {
@@ -3635,6 +3641,56 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
                         .setSmallIcon(R.drawable.black)
                         .setStyle(new Notification.MediaStyle()
+                                .setRemotePlaybackInfo(deviceName, deviceIcon, deviceIntent))
+                        .build();
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            mNotificationManager.notify(id, notification);
+        }, android.Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        StatusBarNotification sbn = findPostedNotification(id, false);
+        assertNotNull(sbn);
+        assertEquals(deviceName, sbn.getNotification().extras
+                .getString(Notification.EXTRA_MEDIA_REMOTE_DEVICE));
+        assertEquals(deviceIcon, sbn.getNotification().extras
+                .getInt(Notification.EXTRA_MEDIA_REMOTE_ICON));
+        assertEquals(deviceIntent, sbn.getNotification().extras
+                .getParcelable(Notification.EXTRA_MEDIA_REMOTE_INTENT));
+    }
+
+    public void testCustomMediaStyleRemotePlayback_noPermission() throws Exception {
+        int id = 99;
+        final String deviceName = "device name";
+        final int deviceIcon = 123;
+        final PendingIntent deviceIntent = getPendingIntent();
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setStyle(new Notification.DecoratedMediaCustomViewStyle()
+                                .setRemotePlaybackInfo(deviceName, deviceIcon, deviceIntent))
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn = findPostedNotification(id, false);
+        assertNotNull(sbn);
+
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_DEVICE));
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_ICON));
+        assertFalse(sbn.getNotification().extras
+                .containsKey(Notification.EXTRA_MEDIA_REMOTE_INTENT));
+    }
+
+    public void testCustomMediaStyleRemotePlayback_hasPermission() throws Exception {
+        int id = 99;
+        final String deviceName = "device name";
+        final int deviceIcon = 123;
+        final PendingIntent deviceIntent = getPendingIntent();
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setStyle(new Notification.DecoratedMediaCustomViewStyle()
                                 .setRemotePlaybackInfo(deviceName, deviceIcon, deviceIntent))
                         .build();
 

@@ -26,7 +26,7 @@ import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
 import android.telephony.SmsManager;
-import android.telephony.TelephonyManager;
+import android.telephony.SubscriptionManager;
 import android.test.AndroidTestCase;
 import android.text.TextUtils;
 import android.util.Log;
@@ -61,7 +61,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
      */
     public void testReceiveTextMessage() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
+                !packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             return;
         }
 
@@ -98,7 +99,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
      */
     public void testAppSpecificSmsToken() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
+                !packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             return;
         }
 
@@ -136,10 +138,18 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
         PendingIntent deliveryIntent = PendingIntent.getBroadcast(getContext(), 0,
                 new Intent(MESSAGE_STATUS_RECEIVED_ACTION), PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
 
-        TelephonyManager telephony = (TelephonyManager)
-                 getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        SubscriptionManager subscription = (SubscriptionManager)
+                 getContext().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+        int subscriptionId = subscription.getActiveDataSubscriptionId();
+
         // get current phone number
-        String currentNumber = telephony.getLine1Number();
+        String currentNumber = subscription.getPhoneNumber(subscriptionId);
+
+        // fallback to getActiveSubscriptionInfo if number is empty
+        if (TextUtils.isEmpty(currentNumber)) {
+            currentNumber = subscription.getActiveSubscriptionInfo(subscriptionId).getNumber();
+        }
+
         assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(currentNumber));
 

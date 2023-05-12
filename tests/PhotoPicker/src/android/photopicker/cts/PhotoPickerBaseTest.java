@@ -24,7 +24,6 @@ import android.content.pm.PackageManager;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.bedstead.harrier.annotations.BeforeClass;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -37,18 +36,17 @@ public class PhotoPickerBaseTest {
     public static int REQUEST_CODE = 42;
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
+    protected static final String sTargetPackageName =
+            sInstrumentation.getTargetContext().getPackageName();
     protected static final UiDevice sDevice = UiDevice.getInstance(sInstrumentation);
 
     protected GetResultActivity mActivity;
     protected Context mContext;
 
-    @BeforeClass
-    public static void setUpClass() {
-        Assume.assumeTrue(isHardwareSupported());
-    }
-
     @Before
     public void setUp() throws Exception {
+        Assume.assumeTrue(isHardwareSupported());
+
         final String setSyncDelayCommand =
                 "device_config put storage pickerdb.default_sync_delay_ms 0";
         sDevice.executeShellCommand(setSyncDelayCommand);
@@ -68,7 +66,7 @@ public class PhotoPickerBaseTest {
         sDevice.waitForIdle();
     }
 
-    private static boolean isHardwareSupported() {
+    static boolean isHardwareSupported() {
         // These UI tests are not optimised for Watches, TVs, Auto;
         // IoT devices do not have a UI to run these UI tests
         PackageManager pm = sInstrumentation.getContext().getPackageManager();

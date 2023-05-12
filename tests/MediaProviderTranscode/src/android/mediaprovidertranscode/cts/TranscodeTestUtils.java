@@ -16,17 +16,16 @@
 
 package android.mediaprovidertranscode.cts;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-
 import static android.mediaprovidertranscode.cts.TranscodeTestConstants.INTENT_EXTRA_CALLING_PKG;
 import static android.mediaprovidertranscode.cts.TranscodeTestConstants.INTENT_EXTRA_PATH;
-import static android.mediaprovidertranscode.cts.TranscodeTestConstants.OPEN_FILE_QUERY;
 import static android.mediaprovidertranscode.cts.TranscodeTestConstants.INTENT_QUERY_TYPE;
+
+import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -38,6 +37,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -46,18 +49,12 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.SystemClock;
 import android.os.storage.StorageManager;
-import android.os.storage.StorageVolume;
 import android.provider.MediaStore;
 import android.system.Os;
 import android.system.OsConstants;
 import android.util.Log;
 
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.MediaCodecInfo.VideoCapabilities;
-import android.media.MediaCodecList;
-import android.media.MediaFormat;
-
+import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.cts.install.lib.Install;
@@ -85,6 +82,8 @@ public class TranscodeTestUtils {
 
     private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
     private static final long POLLING_SLEEP_MILLIS = 100;
+    private static final String TRANSCODE_COMPAT_MANIFEST_DEVICE_CONFIG_PROPERTY_NAME =
+            "transcode_compat_manifest";
 
     public static Uri stageHEVCVideoFile(File videoFile) throws IOException {
         return stageVideoFile(videoFile, R.raw.testvideo_HEVC);
@@ -165,7 +164,7 @@ public class TranscodeTestUtils {
         assertThat(numBytesWritten).isEqualTo(byteCount);
     }
 
-    public static void enableTranscodingForPackage(String packageName) throws Exception {
+    public static void enableTranscodingForPackage(String packageName) throws IOException {
         executeShellCommand("device_config put storage_native_boot transcode_compat_manifest "
                 + packageName + ",0");
         SystemClock.sleep(1000);
@@ -485,5 +484,10 @@ public class TranscodeTestUtils {
             }
         }
         return false;
+    }
+
+    @NonNull
+    private static UiAutomation getUiAutomation() {
+        return InstrumentationRegistry.getInstrumentation().getUiAutomation();
     }
 }

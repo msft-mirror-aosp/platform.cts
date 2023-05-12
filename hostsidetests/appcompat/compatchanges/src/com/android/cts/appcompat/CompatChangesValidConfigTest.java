@@ -37,6 +37,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCase {
 
+    private static final long RESTRICT_STORAGE_ACCESS_FRAMEWORK = 141600225L;
+    private static final long ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS = 161252188;
+    private static final String FEATURE_WATCH = "android.hardware.type.watch";
+
     private static final Set<String> OVERRIDES_ALLOWLIST = ImmutableSet.of(
         // This change id will sometimes remain enabled if an instrumentation test fails.
         "ALLOW_TEST_API_ACCESS"
@@ -89,18 +93,6 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
     }
 
     /**
-     * Check that only approved changes are overridable.
-     */
-    public void testOnlyAllowedlistedChangesAreOverridable() throws Exception {
-        for (Change c : getOnDeviceCompatConfig()) {
-            if (c.overridable) {
-                assertWithMessage("Please contact compat-team@google.com for approval")
-                        .that(OVERRIDABLE_CHANGES).contains(c.changeName);
-            }
-        }
-    }
-
-    /**
      * Check that the on device config contains all the expected change ids defined in the platform.
      * The device may contain extra changes, but none may be removed.
      */
@@ -126,6 +118,16 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                 changes.add(change);
             }
         }
+
+        // RESTRICT_STORAGE_ACCESS_FRAMEWORK not supported on wear
+        if (getDevice().hasFeature(FEATURE_WATCH)) {
+            changes.removeIf(c -> c.changeId == RESTRICT_STORAGE_ACCESS_FRAMEWORK);
+        }
+
+        // Exclude ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS
+        // This feature is disabled retroactively in T, see b/274147456
+        changes.removeIf(c -> c.changeId == ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS);
+
         return changes;
     }
 

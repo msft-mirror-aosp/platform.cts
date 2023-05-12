@@ -71,13 +71,14 @@ import com.android.eventlib.truth.EventLogsSubject;
 import com.android.queryable.queries.ActivityQuery;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 // TODO(b/228016400): replace usages of createAndProvisionManagedProfile with a nene API
 @RunWith(BedsteadJUnit4.class)
-public class DevicePolicyManagementRoleHolderTest {
+public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on non-headless - figure it out - on headless it d't run with btest so follow up....
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
@@ -135,6 +136,7 @@ public class DevicePolicyManagementRoleHolderTest {
                                     + ".TestAppAccountAuthenticatorService"))
             .get();
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -148,28 +150,33 @@ public class DevicePolicyManagementRoleHolderTest {
         UserHandle profile = null;
         String roleHolderPackageName = null;
         try (TestAppInstance roleHolderApp = sRoleHolderApp.install()) {
-            roleHolderPackageName = roleHolderApp.packageName();
-            TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
+            try {
+                roleHolderPackageName = roleHolderApp.packageName();
+                TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
 
-            profile = sDevicePolicyManager.createAndProvisionManagedProfile(
-                    MANAGED_PROFILE_PROVISIONING_PARAMS);
+                profile = sDevicePolicyManager.createAndProvisionManagedProfile(
+                        MANAGED_PROFILE_PROVISIONING_PARAMS);
 
-            UserReference userReference = UserReference.of(profile);
-            Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
-                    .toMeet(packages -> packages.contains(Package.of(roleHolderApp.packageName())))
-                    .errorOnFail("Role holder package not installed on the managed profile.")
-                    .await();
+                UserReference userReference = UserReference.of(profile);
+                Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
+                        .toMeet(packages -> packages.contains(
+                                Package.of(roleHolderApp.packageName())))
+                        .errorOnFail("Role holder package not installed on the managed profile.")
+                        .await();
+            } finally {
+                if (roleHolderPackageName != null) {
+                    TestApis.devicePolicy()
+                            .unsetDevicePolicyManagementRoleHolder(roleHolderPackageName);
+                }
+            }
         } finally {
             if (profile != null) {
                 TestApis.users().find(profile).remove();
             }
-            if (roleHolderPackageName != null) {
-                TestApis.devicePolicy()
-                        .unsetDevicePolicyManagementRoleHolder(roleHolderPackageName);
-            }
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasDeviceOwner
@@ -182,32 +189,37 @@ public class DevicePolicyManagementRoleHolderTest {
         UserHandle managedUser = null;
         String roleHolderPackageName = null;
         try (TestAppInstance roleHolderApp = sRoleHolderApp.install()) {
-            roleHolderPackageName = roleHolderApp.packageName();
-            TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
+            try {
+                roleHolderPackageName = roleHolderApp.packageName();
+                TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
 
-            managedUser = sDeviceState.dpc().devicePolicyManager().createAndManageUser(
-                    RemoteDpc.DPC_COMPONENT_NAME,
-                    MANAGED_USER_NAME,
-                    RemoteDpc.DPC_COMPONENT_NAME,
-                    /* adminExtras= */ null,
-                    /* flags= */ 0);
+                managedUser = sDeviceState.dpc().devicePolicyManager().createAndManageUser(
+                        RemoteDpc.DPC_COMPONENT_NAME,
+                        MANAGED_USER_NAME,
+                        RemoteDpc.DPC_COMPONENT_NAME,
+                        /* adminExtras= */ null,
+                        /* flags= */ 0);
 
-            UserReference userReference = UserReference.of(managedUser);
-            Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
-                    .toMeet(packages -> packages.contains(Package.of(roleHolderApp.packageName())))
-                    .errorOnFail("Role holder package not installed on the managed user.")
-                    .await();
+                UserReference userReference = UserReference.of(managedUser);
+                Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
+                        .toMeet(packages -> packages.contains(
+                                Package.of(roleHolderApp.packageName())))
+                        .errorOnFail("Role holder package not installed on the managed user.")
+                        .await();
+            } finally {
+                if (roleHolderPackageName != null) {
+                    TestApis.devicePolicy()
+                            .unsetDevicePolicyManagementRoleHolder(roleHolderPackageName);
+                }
+            }
         } finally {
             if (managedUser != null) {
                 TestApis.users().find(managedUser).remove();
             }
-            if (roleHolderPackageName != null) {
-                TestApis.devicePolicy()
-                        .unsetDevicePolicyManagementRoleHolder(roleHolderPackageName);
-            }
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -218,24 +230,27 @@ public class DevicePolicyManagementRoleHolderTest {
     public void profileRemoved_roleHolderReceivesBroadcast() throws Exception {
         String roleHolderPackageName = null;
         try (TestAppInstance roleHolderApp = sRoleHolderApp.install()) {
-            roleHolderPackageName = roleHolderApp.packageName();
-            TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
-            UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
-                    MANAGED_PROFILE_PROVISIONING_PARAMS);
+            try {
+                roleHolderPackageName = roleHolderApp.packageName();
+                TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
+                UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
+                        MANAGED_PROFILE_PROVISIONING_PARAMS);
 
-            TestApis.users().find(profile).remove();
+                TestApis.users().find(profile).remove();
 
-            EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
-                            .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_REMOVED))
-                    .eventOccurred();
-        } finally {
-            if (roleHolderPackageName != null) {
-                TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
-                        roleHolderPackageName);
+                EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
+                                .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_REMOVED))
+                        .eventOccurred();
+            } finally {
+                if (roleHolderPackageName != null) {
+                    TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
+                            roleHolderPackageName);
+                }
             }
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -246,24 +261,28 @@ public class DevicePolicyManagementRoleHolderTest {
     public void profilePaused_roleHolderReceivesBroadcast() throws Exception {
         String roleHolderPackageName = null;
         try (TestAppInstance roleHolderApp = sRoleHolderApp.install()) {
-            roleHolderPackageName = roleHolderApp.packageName();
-            TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
-            UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
-                    MANAGED_PROFILE_PROVISIONING_PARAMS);
+            try {
+                roleHolderPackageName = roleHolderApp.packageName();
+                TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
+                UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
+                        MANAGED_PROFILE_PROVISIONING_PARAMS);
 
-            TestApis.users().find(profile).setQuietMode(true);
+                TestApis.users().find(profile).setQuietMode(true);
 
-            EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
-                            .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_UNAVAILABLE))
-                    .eventOccurred();
-        } finally {
-            if (roleHolderPackageName != null) {
-                TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
-                        roleHolderPackageName);
+                EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
+                                .whereIntent().action().isEqualTo(
+                                        ACTION_MANAGED_PROFILE_UNAVAILABLE))
+                        .eventOccurred();
+            } finally {
+                if (roleHolderPackageName != null) {
+                    TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
+                            roleHolderPackageName);
+                }
             }
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -274,25 +293,28 @@ public class DevicePolicyManagementRoleHolderTest {
     public void profileStarted_roleHolderReceivesBroadcast() throws Exception {
         String roleHolderPackageName = null;
         try (TestAppInstance roleHolderApp = sRoleHolderApp.install()) {
-            roleHolderPackageName = roleHolderApp.packageName();
-            TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
-            UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
-                    MANAGED_PROFILE_PROVISIONING_PARAMS);
-            TestApis.users().find(profile).setQuietMode(true);
+            try {
+                roleHolderPackageName = roleHolderApp.packageName();
+                TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(roleHolderPackageName);
+                UserHandle profile = sDevicePolicyManager.createAndProvisionManagedProfile(
+                        MANAGED_PROFILE_PROVISIONING_PARAMS);
+                TestApis.users().find(profile).setQuietMode(true);
 
-            TestApis.users().find(profile).setQuietMode(false);
+                TestApis.users().find(profile).setQuietMode(false);
 
-            EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
-                            .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_AVAILABLE))
-                    .eventOccurred();
-        } finally {
-            if (roleHolderPackageName != null) {
-                TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
-                        roleHolderPackageName);
+                EventLogsSubject.assertThat(roleHolderApp.events().broadcastReceived()
+                                .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_AVAILABLE))
+                        .eventOccurred();
+            } finally {
+                if (roleHolderPackageName != null) {
+                    TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
+                            roleHolderPackageName);
+                }
             }
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "New test")
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
@@ -311,6 +333,7 @@ public class DevicePolicyManagementRoleHolderTest {
     }
 
     // TODO(b/222669810): add ensureHasNoAccounts annotation
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "New test")
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
@@ -335,6 +358,7 @@ public class DevicePolicyManagementRoleHolderTest {
     }
 
     // TODO(b/222669810): add ensureHasNoAccounts annotation
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "New test")
     @Test
     @RequireFeature(FEATURE_MANAGED_USERS)
@@ -358,6 +382,7 @@ public class DevicePolicyManagementRoleHolderTest {
                 .isFalse();
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "New test")
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
@@ -378,6 +403,7 @@ public class DevicePolicyManagementRoleHolderTest {
         }
     }
 
+    @Ignore("b/268616097 fix issue with pre-existing accounts on the device")
     @Postsubmit(reason = "New test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_ROLE_HOLDERS)

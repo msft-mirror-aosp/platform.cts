@@ -64,7 +64,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.BeforeClass
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -289,6 +288,10 @@ class AppHibernationIntegrationTest {
         assumeFalse(
             "Remove permissions and free up space toggle may be unavailable on TV",
             hasFeatureTV())
+        assumeFalse(
+            "Remove permissions and free up space toggle may be unavailable on Wear",
+            hasFeatureWatch())
+
         withApp(APK_PATH_S_APP, APK_PACKAGE_NAME_S_APP) {
             // Open app info
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)

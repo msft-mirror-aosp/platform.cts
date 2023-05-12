@@ -43,7 +43,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.cts.AsyncSmsMessageListener;
 import android.telephony.cts.CarrierCapability;
 import android.telephony.cts.SmsReceiverHelper;
-import android.telephony.cts.TelephonyUtils;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.ims.ImsException;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
@@ -3532,6 +3532,8 @@ public class ImsServiceTest {
         bundle.putPersistableBundle(
                 CarrierConfigManager.Ims.KEY_MMTEL_REQUIRES_PROVISIONING_BUNDLE,
                 innerBundle);
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONING_REQUIRED_BOOL, false);
         overrideCarrierConfig(bundle);
 
         triggerFrameworkConnectToCarrierImsService();
@@ -3800,7 +3802,8 @@ public class ImsServiceTest {
                 innerBundle);
         bundle.putBoolean(
                 CarrierConfigManager.KEY_CARRIER_RCS_PROVISIONING_REQUIRED_BOOL, false);
-
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONING_REQUIRED_BOOL, false);
         overrideCarrierConfig(bundle);
 
         triggerFrameworkConnectToImsServiceBindMmTelAndRcsFeature();

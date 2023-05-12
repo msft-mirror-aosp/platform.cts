@@ -48,6 +48,7 @@ import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -83,7 +84,7 @@ private const val TV_MIC_INDICATOR_WINDOW_TITLE = "MicrophoneCaptureIndicator"
 private const val MIC_LABEL_NAME = "microphone_toggle_label_qs"
 private const val CAMERA_LABEL_NAME = "camera_toggle_label_qs"
 
-class CameraMicIndicatorsPermissionTest {
+class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.context
     private val uiAutomation: UiAutomation = instrumentation.uiAutomation
@@ -106,6 +107,8 @@ class CameraMicIndicatorsPermissionTest {
 
     @get:Rule
     val disableAnimationRule = DisableAnimationRule()
+
+    constructor() : super()
 
     companion object {
         const val SAFETY_CENTER_ENABLED = "safety_center_is_enabled"
@@ -194,6 +197,8 @@ class CameraMicIndicatorsPermissionTest {
 
     @Test
     fun testCameraIndicator() {
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         val manager = context.getSystemService(CameraManager::class.java)!!
         assumeTrue(manager.cameraIdList.isNotEmpty())
         changeSafetyCenterFlag(false.toString())
@@ -207,7 +212,7 @@ class CameraMicIndicatorsPermissionTest {
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [242537498])
+    @AsbSecurityTest(cveBugId = [258672042])
     fun testMicIndicatorWithManualFinishOpStillShows() {
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = true, useCamera = false, finishEarly = true)
@@ -226,6 +231,8 @@ class CameraMicIndicatorsPermissionTest {
         // Car has separate panels for mic and camera for now.
         // TODO(b/218788634): enable this test for car once the new camera indicator is implemented.
         assumeFalse(isCar)
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = false, useCamera = true, chainUsage = true)
     }
@@ -290,12 +297,14 @@ class CameraMicIndicatorsPermissionTest {
         safetyCenterEnabled: Boolean = false,
         finishEarly: Boolean = false
     ) {
+        // If camera is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
         var chainAttribution: AttributionSource? = null
         openApp(useMic, useCamera, useHotword, finishEarly)
         try {
             eventually {
-                val appView = uiDevice.findObject(UiSelector().textContains(APP_LABEL))
-                assertTrue("View with text $APP_LABEL not found", appView.exists())
+                val appView = uiDevice.findObject(By.textContains(APP_LABEL))
+                assertNotNull("View with text $APP_LABEL not found", appView)
             }
             if (chainUsage) {
                 chainAttribution = createChainAttribution()

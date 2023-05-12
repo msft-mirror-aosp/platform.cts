@@ -483,6 +483,7 @@ public class BleCocClientService extends Service {
                     stopScan();
 
                     BluetoothDevice device = result.getDevice();
+                    mDevice = device;
                     if (DEBUG) {
                         Log.d(TAG, "onScanResult: Found ADV with CoC UUID on device="
                               + device);
@@ -493,12 +494,10 @@ public class BleCocClientService extends Service {
                                 notifyError("Failed to call create bond");
                             }
                         } else {
-                            mDevice = device;
                             mBluetoothGatt = connectGatt(result.getDevice(), BleCocClientService.this, false,
                                                          mSecure, mGattCallbacks);
                         }
                     } else {
-                        mDevice = device;
                         mBluetoothGatt = connectGatt(result.getDevice(), BleCocClientService.this, false, mSecure,
                                                      mGattCallbacks);
                     }
@@ -712,10 +711,7 @@ public class BleCocClientService extends Service {
                                              + device + ", mSecure=" + mSecure
                                              + ", mDevice=" + mDevice);
                             }
-                            if (mDevice == null) {
-                                mDevice = device;
-                            }
-
+                            mDevice = device;
                             mBluetoothGatt = connectGatt(mDevice, BleCocClientService.this, false,
                                                          mSecure, mGattCallbacks);
                         }

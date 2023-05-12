@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -46,6 +47,7 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
 import android.util.Log;
@@ -138,13 +140,15 @@ public class PhoneStateListenerTest {
 
     @Before
     public void setUp() throws Exception {
+        mPackageManager = getContext().getPackageManager();
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         mHandlerThread = new HandlerThread("PhoneStateListenerTest");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
-        mPackageManager = getContext().getPackageManager();
     }
 
     @After
@@ -401,10 +405,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPreciseCallStateChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -436,10 +436,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCallDisconnectCauseChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -468,10 +464,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -499,10 +491,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPhoneStateListenerExecutorWithSrvccChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -531,10 +519,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnRadioPowerStateChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -599,10 +583,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPreciseDataConnectionStateChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -909,11 +889,6 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnOutgoingSmsEmergencyNumberChanged() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
-        }
-
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
 

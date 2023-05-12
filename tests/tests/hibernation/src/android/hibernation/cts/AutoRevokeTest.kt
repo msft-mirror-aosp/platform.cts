@@ -52,6 +52,7 @@ import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.getEventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.compatibility.common.util.UI_ROOT
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
@@ -75,6 +76,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Ignore
@@ -328,6 +330,7 @@ class AutoRevokeTest {
     @AppModeFull(reason = "Uses separate apps for testing")
     @Test
     fun testPreMinAutoRevokeVersionUnusedApp_doesntGetPermissionRevoked() {
+        assumeFalse(isHibernationEnabledForPreSApps())
         withUnusedThresholdMs(3L) {
             withDummyApp(preMinVersionApkPath, preMinVersionAppPackageName) {
                 withDummyApp {
@@ -354,6 +357,18 @@ class AutoRevokeTest {
                 }
             }
         }
+    }
+
+    private fun isHibernationEnabledForPreSApps(): Boolean {
+        return runWithShellPermissionIdentity(
+            ThrowingSupplier {
+                DeviceConfig.getBoolean(
+                    DeviceConfig.NAMESPACE_APP_HIBERNATION,
+                    "app_hibernation_targets_pre_s_apps",
+                    false
+                )
+            }
+        )
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
@@ -450,6 +465,7 @@ class AutoRevokeTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     @Test
     fun testAutoRevoke_showsUpInSafetyCenter() {
+        assumeTrue(deviceSupportsSafetyCenter())
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
@@ -489,6 +505,7 @@ class AutoRevokeTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     @Test
     fun testAutoRevoke_goToUnusedAppsPage_removesSafetyCenterIssue() {
+        assumeTrue(deviceSupportsSafetyCenter())
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
@@ -530,6 +547,11 @@ class AutoRevokeTest {
 
     private fun isAutomotiveDevice(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+    }
+
+    private fun deviceSupportsSafetyCenter(): Boolean {
+        return context.resources.getBoolean(
+            Resources.getSystem().getIdentifier("config_enableSafetyCenter", "bool", "android"))
     }
 
     private fun installApp() {
@@ -667,9 +689,16 @@ class AutoRevokeTest {
 
     private fun getAllowlistToggle(): UiObject2 {
         waitForIdle()
+        // Wear: per b/253990371, unused_apps_summary string is not available,
+        // so look for unused_apps_label_v2 string instead.
+        val autoRevokeText = if (hasFeatureWatch()) {
+            "Pause app"
+        } else {
+            "Remove permissions"
+        }
         val parent = waitFindObject(
             By.clickable(true)
-                .hasDescendant(By.textStartsWith("Remove permissions"))
+                .hasDescendant(By.textStartsWith(autoRevokeText))
                 .hasDescendant(By.checkable(true))
         )
         return parent.findObject(By.checkable(true))

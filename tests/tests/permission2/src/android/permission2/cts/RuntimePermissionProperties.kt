@@ -165,7 +165,6 @@ class RuntimePermissionProperties {
         // Add runtime permissions added in U which were _not_ split from a previously existing
         // runtime permission
         expectedPerms.add(READ_MEDIA_VISUAL_USER_SELECTED)
-
         assertThat(expectedPerms).containsExactlyElementsIn(platformRuntimePerms.map { it.name })
     }
 }
