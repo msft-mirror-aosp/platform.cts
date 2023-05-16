@@ -22,14 +22,14 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        if (mShouldTestTelecom) {
+        if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
             setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
         }
     }
 
     @Override
     protected void tearDown() throws Exception {
-        if (mShouldTestTelecom) {
+        if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
             mTelecomManager.unregisterPhoneAccount(TEST_PHONE_ACCOUNT_HANDLE);
         }
         super.tearDown();
@@ -37,7 +37,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testMidCallComponentEnablement() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -81,7 +81,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testNullBinding() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
