@@ -26,6 +26,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.display.DisplayManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -57,6 +62,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +71,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * This class comprises of routines that are generic to media codec component trying and testing.
@@ -114,7 +121,14 @@ public abstract class CodecTestBase {
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean VNDK_IS_BEFORE_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    public static final boolean BOARD_SDK_IS_AT_LEAST_T =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
+    public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
 
     public static final ArrayList<String> HDR_INFO_IN_BITSTREAM_CODECS = new ArrayList<>();
@@ -172,7 +186,7 @@ public abstract class CodecTestBase {
     static final int[] VP9_HDR_PROFILES =
             combine(VP9_HLG_PROFILES, combine(VP9_HDR10_PROFILES, VP9_HDR10_PLUS_PROFILES));
     static final int[] VP9_PROFILES = combine(VP9_SDR_PROFILES, VP9_HDR_PROFILES);
-    static final int[] HEVC_SDR_PROFILES = new int[]{HEVCProfileMain, HEVCProfileMainStill};
+    static final int[] HEVC_SDR_PROFILES = new int[]{HEVCProfileMain};
     static final int[] HEVC_HLG_PROFILES = new int[]{HEVCProfileMain10};
     static final int[] HEVC_HDR10_PROFILES = new int[]{HEVCProfileMain10HDR10};
     static final int[] HEVC_HDR10_PLUS_PROFILES = new int[]{HEVCProfileMain10HDR10Plus};
@@ -191,6 +205,26 @@ public abstract class CodecTestBase {
             AACObjectLD, AACObjectELD, AACObjectXHE};
     public static final Context CONTEXT =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+    public static final int MAX_DISPLAY_HEIGHT_CURRENT =
+            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+                    .map(Display::getSupportedModes)
+                    .flatMap(Stream::of)
+                    .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                    .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                    .getPhysicalHeight();
+    public static final int MAX_DISPLAY_WIDTH_CURRENT =
+            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+                    .map(Display::getSupportedModes)
+                    .flatMap(Stream::of)
+                    .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                    .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                    .getPhysicalWidth();
+    public static final int MAX_DISPLAY_WIDTH_LAND =
+            Math.max(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
+    public static final int MAX_DISPLAY_HEIGHT_LAND =
+            Math.min(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
+
     public static String mediaTypeSelKeys;
     public static String codecPrefix;
     public static String mediaTypePrefix;
@@ -199,6 +233,10 @@ public abstract class CodecTestBase {
         CODEC_ALL, // All codecs must support
         CODEC_ANY, // At least one codec must support
         CODEC_DEFAULT, // Default codec must support
+        CODEC_HW, // If the component is hardware, then it must support
+        CODEC_SHOULD, // Codec support is optional, but recommended
+        CODEC_HW_RECOMMENDED, // Codec support is optional, but strongly recommended if component
+        // is hardware accelerated
         CODEC_OPTIONAL; // Codec support is optional
 
         public static String toString(SupportClass supportRequirements) {
@@ -209,6 +247,12 @@ public abstract class CodecTestBase {
                     return "CODEC_ANY";
                 case CODEC_DEFAULT:
                     return "CODEC_DEFAULT";
+                case CODEC_HW:
+                    return "CODEC_HW";
+                case CODEC_SHOULD:
+                    return "CODEC_SHOULD";
+                case CODEC_HW_RECOMMENDED:
+                    return "CODEC_HW_RECOMMENDED";
                 case CODEC_OPTIONAL:
                     return "CODEC_OPTIONAL";
                 default:
@@ -280,6 +324,7 @@ public abstract class CodecTestBase {
     static {
         MEDIA_CODEC_LIST_ALL = new MediaCodecList(MediaCodecList.ALL_CODECS);
         MEDIA_CODEC_LIST_REGULAR = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        IS_HDR_CAPTURE_SUPPORTED = isHDRCaptureSupported();
         IS_HDR_EDITING_SUPPORTED = isHDREditingSupported();
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
@@ -435,6 +480,23 @@ public abstract class CodecTestBase {
                                 + "for mediaType : " + mediaType + " formats: " + formats);
                     }
                     break;
+                case CODEC_HW:
+                    if (isHardwareAcceleratedCodec(codecName)) {
+                        fail("format(s) not supported by codec: " + codecName + " for mediaType : "
+                                + mediaType + " formats: " + formats);
+                    }
+                    break;
+                case CODEC_SHOULD:
+                    Assume.assumeTrue(String.format("format(s) not supported by codec: %s for"
+                            + " mediaType : %s. It is recommended to support it",
+                            codecName, mediaType), false);
+                    break;
+                case CODEC_HW_RECOMMENDED:
+                    Assume.assumeTrue(String.format(
+                            "format(s) not supported by codec: %s for mediaType : %s. It is %s "
+                                    + "recommended to support it", codecName, mediaType,
+                            isHardwareAcceleratedCodec(codecName) ? "strongly" : ""), false);
+                    break;
                 case CODEC_OPTIONAL:
                 default:
                     // the later assumeTrue() ensures we skip the test for unsupported codecs
@@ -453,6 +515,31 @@ public abstract class CodecTestBase {
         boolean isSupported = codecCapabilities.isFeatureSupported(feature);
         codec.release();
         return isSupported;
+    }
+
+    public static boolean isHDRCaptureSupported() {
+        // If the device supports HDR, hlg support should always return true
+        if (!MediaUtils.hasCamera()) return false;
+        CameraManager cm = CONTEXT.getSystemService(CameraManager.class);
+        try {
+            String[] cameraIds = cm.getCameraIdList();
+            for (String id : cameraIds) {
+                CameraCharacteristics ch = cm.getCameraCharacteristics(id);
+                int[] caps = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                if (IntStream.of(caps).anyMatch(x -> x
+                        == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    Set<Long> profiles =
+                            ch.get(CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES)
+                                    .getSupportedProfiles();
+                    if (profiles.contains(DynamicRangeProfiles.HLG10)) return true;
+                }
+            }
+        } catch (CameraAccessException e) {
+            Log.e(LOG_TAG, "encountered " + e.getMessage()
+                    + " marking hdr capture to be available to catch your attention");
+            return true;
+        }
+        return false;
     }
 
     public static boolean isHDREditingSupported() {
@@ -508,7 +595,7 @@ public abstract class CodecTestBase {
     public static boolean canDisplaySupportHDRContent() {
         DisplayManager displayManager = CONTEXT.getSystemService(DisplayManager.class);
         return displayManager.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities()
-                .getSupportedHdrTypes().length != 0;
+                .getSupportedHdrTypes().length > 0;
     }
 
     public static boolean areFormatsSupported(String name, String mediaType,
@@ -672,6 +759,9 @@ public abstract class CodecTestBase {
                 // sec 2.3.2
                 list.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
                 list.add(MediaFormat.MIMETYPE_VIDEO_MPEG2);
+                if (IS_AT_LEAST_U) {
+                    list.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+                }
             }
         } else {
             if (MediaUtils.hasMicrophone() && needAudio) {
@@ -688,7 +778,8 @@ public abstract class CodecTestBase {
                     list.add(MediaFormat.MIMETYPE_AUDIO_AAC);
                 }
                 if (needVideo) {
-                    if (MediaUtils.isHandheld() && IS_AT_LEAST_U) {
+                    if ((MediaUtils.isHandheld() || MediaUtils.isTablet() || MediaUtils.isTv())
+                            && IS_AT_LEAST_U) {
                         list.add(MediaFormat.MIMETYPE_VIDEO_AV1);
                     }
                     list.add(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -967,6 +1058,10 @@ public abstract class CodecTestBase {
 
     public MediaFormat getOutputFormat() {
         return mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
+    }
+
+    public int getOutputCount() {
+        return mOutputCount;
     }
 
     protected void flushCodec() {

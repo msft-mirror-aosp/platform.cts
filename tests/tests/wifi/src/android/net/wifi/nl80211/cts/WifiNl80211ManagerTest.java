@@ -89,6 +89,42 @@ public class WifiNl80211ManagerTest {
         }
     }
 
+    private class NormalScanEventCallback implements WifiNl80211Manager.ScanEventCallback {
+        private String mIfaceName;
+
+        NormalScanEventCallback(String ifaceName) {
+            mIfaceName = ifaceName;
+        }
+
+        @Override
+        public void onScanResultReady() {
+        }
+
+        @Override
+        public void onScanFailed() {
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+        }
+    }
+
+    private class PnoScanEventCallback implements WifiNl80211Manager.ScanEventCallback {
+        private String mIfaceName;
+
+        PnoScanEventCallback(String ifaceName) {
+            mIfaceName = ifaceName;
+        }
+
+        @Override
+        public void onScanResultReady() {
+        }
+
+        @Override
+        public void onScanFailed() {
+        }
+    }
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -144,7 +180,7 @@ public class WifiNl80211ManagerTest {
         } catch (Exception ignore) { }
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testStartScan2() {
         try {
@@ -194,11 +230,22 @@ public class WifiNl80211ManagerTest {
         }
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testWifiNl80211ManagerConstructor() {
         IBinder testBinder = new Binder();
         WifiNl80211Manager manager = new WifiNl80211Manager(mContext, testBinder);
         assertNotNull(manager);
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void testScanEventCallback() {
+        try {
+            WifiNl80211Manager manager = mContext.getSystemService(WifiNl80211Manager.class);
+            manager.setupInterfaceForClientMode("wlan0", Runnable::run,
+                    new NormalScanEventCallback("wlan0"),
+                    new PnoScanEventCallback("wlan0"));
+        } catch (Exception ignore) { }
     }
 }

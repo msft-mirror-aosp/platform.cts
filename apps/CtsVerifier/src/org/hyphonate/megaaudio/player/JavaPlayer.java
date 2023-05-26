@@ -21,7 +21,9 @@ import android.media.AudioTimestamp;
 import android.media.AudioTrack;
 import android.util.Log;
 
+import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
+import org.hyphonate.megaaudio.common.StreamState;
 
 /**
  * Implementation of abstract Player class implemented for the Android Java-based audio playback
@@ -39,40 +41,29 @@ public class JavaPlayer extends Player {
     /* The AudioTrack for playing the audio stream */
     private AudioTrack mAudioTrack;
 
-    private AudioSource mAudioSource;
-
-    // Playback state
-    /** <code>true</code> if currently playing audio data */
-    private boolean mPlaying;
-
     /*
      * Data buffers
      */
-    /** Number of FRAMES of audio data in a burst buffer */
-    private int mNumBufferFrames;
-
     /** The Burst Buffer. This is the buffer we fill with audio and feed into the AudioTrack. */
     private float[] mAudioBuffer;
 
     // Player-specific extension
+
+    /**
+     * @return The underlying Java API AudioTrack object
+     */
     public AudioTrack getAudioTrack() { return mAudioTrack; }
 
-    public JavaPlayer(AudioSourceProvider sourceProvider) {
+    /**
+     * Constructs a JavaPlayer object. Create and sets up the AudioTrack for playback.
+     * @param builder   Provides the attributes for the underlying AudioTrack.
+     * @param sourceProvider The AudioSource object providing audio data to play.
+     */
+    public JavaPlayer(PlayerBuilder builder, AudioSourceProvider sourceProvider) {
         super(sourceProvider);
-        mNumBufferFrames = -1;   // TODO need error defines
-    }
+        mNumExchangeFrames = -1;   // TODO need error defines
 
-    @Override
-    public AudioSource getAudioSource() {
-        return mAudioSource;
-    }
-
-    //
-    // Status
-    //
-    @Override
-    public boolean isPlaying() {
-        return mPlaying;
+        setupStream(builder);
     }
 
     /**
@@ -80,46 +71,47 @@ public class JavaPlayer extends Player {
      */
     private void allocBurstBuffer() {
         if (LOG) {
-            Log.i(TAG, "allocBurstBuffer() mNumBufferFrames:" + mNumBufferFrames);
+            Log.i(TAG, "allocBurstBuffer() mNumExchangeFrames:" + mNumExchangeFrames);
         }
         // pad it by 1 frame. This allows some sources to not have to worry about
         // handling the end-of-buffer edge case. i.e. a "Guard Point" for interpolation.
-        mAudioBuffer = new float[(mNumBufferFrames + 1) * mChannelCount];
+        mAudioBuffer = new float[(mNumExchangeFrames + 1) * mChannelCount];
     }
 
     //
     // Attributes
     //
-    public int getNumBufferFrames() {
-        return mNumBufferFrames;
-    }
-
     @Override
     public int getRoutedDeviceId() {
         if (mAudioTrack != null) {
             AudioDeviceInfo routedDevice = mAudioTrack.getRoutedDevice();
-            return routedDevice != null ? routedDevice.getId() : ROUTED_DEVICE_ID_INVALID;
+            return routedDevice != null
+                    ? routedDevice.getId() : BuilderBase.ROUTED_DEVICE_ID_DEFAULT;
         } else {
-            return ROUTED_DEVICE_ID_INVALID;
+            return BuilderBase.ROUTED_DEVICE_ID_DEFAULT;
         }
     }
 
     /*
      * State
      */
-    @Override
-    public int setupStream(int channelCount, int sampleRate, int numBufferFrames) {
+    private int setupStream(PlayerBuilder builder) {
+        mChannelCount = builder.getChannelCount();
+        mSampleRate = builder.getSampleRate();
+        mNumExchangeFrames = builder.getNumExchangeFrames();
+        mPerformanceMode = builder.getJavaPerformanceMode();
+        int routeDeviceId = builder.getRouteDeviceId();
         if (LOG) {
-            Log.i(TAG, "setupStream(chans:" + channelCount + ", rate:" + sampleRate +
-                    ", frames:" + numBufferFrames + ")");
+            Log.i(TAG, "setupStream()");
+            Log.i(TAG, "  chans:" + mChannelCount);
+            Log.i(TAG, "  rate: " + mSampleRate);
+            Log.i(TAG, "  frames: " + mNumExchangeFrames);
+            Log.i(TAG, "  perf mode: " + mPerformanceMode);
+            Log.i(TAG, "  route device: " + routeDeviceId);
         }
 
-        mChannelCount = channelCount;
-        mSampleRate = sampleRate;
-        mNumBufferFrames = numBufferFrames;
-
         mAudioSource = mSourceProvider.getJavaSource();
-        mAudioSource.init(mNumBufferFrames, mChannelCount);
+        mAudioSource.init(mNumExchangeFrames, mChannelCount);
 
         try {
             mAudioTrack = new AudioTrack.Builder()
@@ -131,13 +123,18 @@ public class JavaPlayer extends Player {
                             // StreamBase.channelCountToIndexMask(mChannelCount))
                             .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount))
                             .build())
-                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                    .setPerformanceMode(mPerformanceMode)
                     .build();
 
             allocBurstBuffer();
-            mAudioTrack.setPreferredDevice(mRouteDevice);
-            // set enough space to double-buffer
-            mAudioTrack.setBufferSizeInFrames(mNumBufferFrames * 2);
+            mAudioTrack.setPreferredDevice(builder.getRouteDevice());
+
+            if (LOG) {
+                Log.i(TAG, "  mAudioTrack.getBufferSizeInFrames(): "
+                        + mAudioTrack.getBufferSizeInFrames());
+                Log.i(TAG, "  mAudioTrack.getBufferCapacityInFrames() :"
+                        + mAudioTrack.getBufferCapacityInFrames());
+            }
         }  catch (UnsupportedOperationException ex) {
             if (LOG) {
                 Log.e(TAG, "Couldn't open AudioTrack: " + ex);
@@ -200,6 +197,22 @@ public class JavaPlayer extends Player {
     }
 
     /**
+     * @return See StreamState constants
+     */
+    public int getStreamState() {
+        //TODO - track state so we can return something meaningful here.
+        return StreamState.UNKNOWN;
+    }
+
+    /**
+     * @return The last error callback result (these must match Oboe). See Oboe constants
+     */
+    public int getLastErrorCallbackResult() {
+        //TODO - track errors so we can return something meaningful here.
+        return ERROR_UNKNOWN;
+    }
+
+    /**
      * Gets a timestamp from the audio stream
      * @param timestamp
      * @return
@@ -219,21 +232,23 @@ public class JavaPlayer extends Player {
     private class StreamPlayerRunnable implements Runnable {
         @Override
         public void run() {
-            final int numBufferSamples = mNumBufferFrames * mChannelCount;
-
+            final int mNumPlaySamples = mNumExchangeFrames * mChannelCount;
+            if (LOG) {
+                Log.i(TAG, "mNumPlaySamples: " + mNumPlaySamples);
+            }
             mAudioTrack.play();
             while (mPlaying) {
-                mAudioSource.pull(mAudioBuffer, mNumBufferFrames, mChannelCount);
+                mAudioSource.pull(mAudioBuffer, mNumExchangeFrames, mChannelCount);
 
                 onPull();
 
                 int numSamplesWritten = mAudioTrack.write(
-                        mAudioBuffer,0, numBufferSamples, AudioTrack.WRITE_BLOCKING);
+                        mAudioBuffer, 0, mNumPlaySamples, AudioTrack.WRITE_BLOCKING);
                 if (numSamplesWritten < 0) {
                     // error
-                    Log.e(TAG, "AudioTrack write error: " + numSamplesWritten);
+                    Log.e(TAG, "AudioTrack write error - numSamplesWritten: " + numSamplesWritten);
                     stopStream();
-                } else if (numSamplesWritten < numBufferSamples) {
+                } else if (numSamplesWritten < mNumPlaySamples) {
                     // end of stream
                     if (LOG) {
                         Log.i(TAG, "Stream Complete.");

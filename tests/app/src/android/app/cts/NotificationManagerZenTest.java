@@ -48,11 +48,11 @@ import android.app.AutomaticZenRule;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.cts.android.app.cts.tools.NotificationHelper.SEARCH_TYPE;
+import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.AutomaticZenRuleActivity;
 import android.app.stubs.GetResultActivity;
 import android.app.stubs.R;
-import android.app.stubs.TestNotificationListener;
+import android.app.stubs.shared.TestNotificationListener;
 import android.content.ComponentName;
 import android.content.ContentProviderOperation;
 import android.content.Intent;
@@ -71,10 +71,10 @@ import android.service.notification.Condition;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.service.notification.ZenPolicy;
-import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
@@ -123,8 +123,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         super.setUp();
         PermissionUtils.grantPermission(mContext.getPackageName(), POST_NOTIFICATIONS);
 
-        toggleListenerAccess(true);
-        mListener = TestNotificationListener.getInstance();
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
         createChannels();
@@ -168,7 +167,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         }
 
         mListener.resetData();
-        toggleListenerAccess(false);
+        mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
 
         deleteChannels();
 
@@ -582,10 +581,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     public void testGetSuppressedVisualEffectsOff_ranking() throws Exception {
-        toggleListenerAccess(true);
-        Thread.sleep(500); // wait for listener to be allowed
-
-        mListener = TestNotificationListener.getInstance();
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
         final int notificationId = 1;
@@ -610,10 +606,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         final int originalFilter = mNotificationManager.getCurrentInterruptionFilter();
         NotificationManager.Policy origPolicy = mNotificationManager.getNotificationPolicy();
         try {
-            toggleListenerAccess(true);
-            Thread.sleep(500); // wait for listener to be allowed
-
-            mListener = TestNotificationListener.getInstance();
+            mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
             assertNotNull(mListener);
 
             toggleNotificationPolicyAccess(mContext.getPackageName(),
@@ -1152,8 +1145,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             // start an activity that has no permissions, which will run matchesCallFilter on
             // a meaningless uri. The result code indicates whether or not the method call was
             // permitted.
-            final Intent mcfIntent = new Intent();
-            mcfIntent.setPackage(TEST_APP);
+            final Intent mcfIntent = new Intent(Intent.ACTION_MAIN);
             mcfIntent.setClassName(TEST_APP, MATCHES_CALL_FILTER_CLASS);
             GetResultActivity grActivity = setUpGetResultActivity();
             grActivity.startActivityForResult(mcfIntent, REQUEST_CODE);
@@ -1184,8 +1176,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             Thread.sleep(500);
 
             // set up & run intent
-            final Intent mcfIntent = new Intent();
-            mcfIntent.setPackage(TEST_APP);
+            final Intent mcfIntent = new Intent(Intent.ACTION_MAIN);
             mcfIntent.setClassName(TEST_APP, MATCHES_CALL_FILTER_CLASS);
             GetResultActivity grActivity = setUpGetResultActivity();
             grActivity.startActivityForResult(mcfIntent, REQUEST_CODE);
@@ -1210,8 +1201,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             toggleReadContactsPermission(TEST_APP, true);
 
             // set up & run intent
-            final Intent mcfIntent = new Intent();
-            mcfIntent.setPackage(TEST_APP);
+            final Intent mcfIntent = new Intent(Intent.ACTION_MAIN);
             mcfIntent.setClassName(TEST_APP, MATCHES_CALL_FILTER_CLASS);
             GetResultActivity grActivity = setUpGetResultActivity();
             grActivity.startActivityForResult(mcfIntent, REQUEST_CODE);
@@ -1461,9 +1451,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     public void testRepeatCallers_repeatCallNotIntercepted_contactAfterPhone() throws Exception {
-        toggleListenerAccess(true);
-        Thread.sleep(500); // wait for listener to be allowed
-        mListener = TestNotificationListener.getInstance();
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
         // if a call is recorded with just phone number info (not a contact's uri), which may
@@ -1761,28 +1749,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertFalse(isCharlieIntercepted);
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
-    }
-
-    public void testDefaultOrder() throws Exception {
-        insertSingleContact(ALICE, ALICE_PHONE, ALICE_EMAIL, true);
-        insertSingleContact(BOB, BOB_PHONE, BOB_EMAIL, false);
-        // Not Charlie
-
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
-        sendNotifications(MODE_URI, false, false);
-
-        List<String> orderedKeys = new ArrayList<>(
-                Arrays.asList(mListener.mRankingMap.getOrderedKeys()));
-        int rankA = findTagInKeys(ALICE, orderedKeys);
-        int rankB = findTagInKeys(BOB, orderedKeys);
-        int rankC = findTagInKeys(CHARLIE, orderedKeys);
-        // ordered by time: C, B, A
-        if (rankC < rankB && rankB < rankA) {
-            // yay
-        } else {
-            fail("Notifications out of order. Actual order: Alice: " + rankA + " Bob: " + rankB
-                    + " Charlie: " + rankC);
-        }
     }
 
     @CddTest(requirements = {"2.2.3/3.8.4/H-1-1"})

@@ -52,7 +52,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -311,6 +310,11 @@ public class BasicApiTests {
         mAm.cancel(mSender);
     }
 
+    private static boolean isDeviceIdleEnabled() {
+        final String output = SystemUtil.runShellCommand("cmd deviceidle enabled deep").trim();
+        return Integer.parseInt(output) != 0;
+    }
+
     private void toggleIdleMode(boolean on) {
         SystemUtil.runShellCommand("cmd deviceidle " + (on ? "force-idle deep" : "unforce"));
         if (!on) {
@@ -328,8 +332,9 @@ public class BasicApiTests {
     }
 
     @Test
-    @Ignore("Fails on cuttlefish")  // TODO (b/182835530): Investigate and fix.
     public void testSetPrioritized() throws InterruptedException {
+        assumeTrue("Doze not supported on this device", isDeviceIdleEnabled());
+
         mMockAlarmReceiver.reset();
         mMockAlarmReceiver2.reset();
 

@@ -40,9 +40,16 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class GetCredentialRequestTest {
     private static final List<CredentialOption> sCredOptions = List.of(
-            new CredentialOption("type", createTestBundle(), createTestBundle(), true),
-            new CredentialOption("type2", createTestBundle(), createTestBundle(), false),
-            new CredentialOption("type3", createTestBundle(), createTestBundle(), true));
+            new CredentialOption.Builder("type", createTestBundle(), createTestBundle())
+                    .setIsSystemProviderRequired(true)
+                    .build(),
+            new CredentialOption.Builder("type2", createTestBundle(), createTestBundle())
+                    .setIsSystemProviderRequired(false)
+                    .build(),
+            new CredentialOption.Builder("type3", createTestBundle(), createTestBundle())
+                    .setIsSystemProviderRequired(false)
+                    .build()
+    );
 
     private static final String ORIGIN = "origin";
 
@@ -78,7 +85,7 @@ public class GetCredentialRequestTest {
     }
 
     @Test
-    public void testSetCredentialAddOptions_build() {
+    public void testGetCredentialSetOptions_build() {
         final Bundle dataBundle = createTestBundle();
         final GetCredentialRequest.Builder builder = new GetCredentialRequest.Builder(dataBundle);
 
@@ -92,7 +99,8 @@ public class GetCredentialRequestTest {
     @Test
     public void testSetOrigin_build() {
         final Bundle dataBundle = createTestBundle();
-        final GetCredentialRequest.Builder builder = new GetCredentialRequest.Builder(dataBundle);
+        final GetCredentialRequest.Builder builder = new GetCredentialRequest.Builder(
+                dataBundle).setCredentialOptions(sCredOptions);
 
         builder.setOrigin(ORIGIN);
 
@@ -100,6 +108,7 @@ public class GetCredentialRequestTest {
         final GetCredentialRequest req = builder.build();
         assertThat(req.getOrigin()).isEqualTo(ORIGIN);
         assertThat(req.getData()).isSameInstanceAs(dataBundle);
+        assertThat(req.getCredentialOptions()).isEqualTo(sCredOptions);
     }
 
     @Test

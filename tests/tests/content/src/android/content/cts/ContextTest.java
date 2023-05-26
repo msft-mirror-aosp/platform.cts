@@ -51,6 +51,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -61,7 +62,6 @@ import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.preference.PreferenceManager;
 import android.test.AndroidTestCase;
-import android.test.suitebuilder.annotation.Suppress;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Xml;
@@ -131,7 +131,7 @@ public class ContextTest extends AndroidTestCase {
     private ArrayList<BroadcastReceiver> mRegisteredReceiverList;
 
     private boolean mWallpaperChanged;
-    private BitmapDrawable mOriginalWallpaper;
+    private BitmapDrawable mOriginalWallpaper = null;
     private volatile IBinderPermissionTestService mBinderPermissionTestService;
     private ServiceConnection mBinderPermissionTestConnection;
 
@@ -153,14 +153,11 @@ public class ContextTest extends AndroidTestCase {
         mLockObj = new Object();
 
         mRegisteredReceiverList = new ArrayList<BroadcastReceiver>();
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mOriginalWallpaper = (BitmapDrawable) mContext.getWallpaper(),
-                READ_WALLPAPER_INTERNAL);
     }
 
     @Override
     protected void tearDown() throws Exception {
-        if (mWallpaperChanged) {
+        if (mOriginalWallpaper != null && mWallpaperChanged) {
             mContext.setWallpaper(mOriginalWallpaper.getBitmap());
         }
 
@@ -898,6 +895,10 @@ public class ContextTest extends AndroidTestCase {
     public void testAccessWallpaper() throws IOException, InterruptedException {
         if (!isWallpaperSupported()) return;
 
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mOriginalWallpaper = (BitmapDrawable) mContext.getWallpaper(),
+                READ_WALLPAPER_INTERNAL);
+
         // set Wallpaper by context#setWallpaper(Bitmap)
         Bitmap bitmap = Bitmap.createBitmap(20, 30, Bitmap.Config.RGB_565);
 
@@ -1245,7 +1246,7 @@ public class ContextTest extends AndroidTestCase {
 
         assertEquals(intent.getAction(),
                 mContext.registerReceiver(stickyReceiver, new IntentFilter(MOCK_STICKY_ACTION),
-                        Context.RECEIVER_EXPORTED).getAction());
+                        Context.RECEIVER_NOT_EXPORTED).getAction());
 
         synchronized (mLockObj) {
             mLockObj.wait(BROADCAST_TIMEOUT);
@@ -1804,9 +1805,6 @@ public class ContextTest extends AndroidTestCase {
      * release or later that do not specify {@link Context#RECEIVER_EXPORTED} or {@link
      * Context#RECEIVER_NOT_EXPORTED} when registering for non-system broadcasts.
      */
-    // TODO(b/206699109): Re-enable test when instrumentation workaround is removed; without a flag
-    // specified the instrumentation workaround automatically adds RECEIVER_EXPORTED.
-    @Suppress
     public void testRegisterReceiver_noFlags_exceptionThrown() throws Exception {
         try {
             final ResultReceiver receiver = new ResultReceiver();
@@ -1918,9 +1916,6 @@ public class ContextTest extends AndroidTestCase {
      * Verifies a receiver registered with {@link Context#RECEIVER_NOT_EXPORTED} does not receive
      * a broadcast from an external app.
      */
-    // TODO(b/206699109): Re-enable this test once the skip for an external app sending a broadcast
-    // to an unexported receiver is restored in BroadcastQueue.
-    @Suppress
     public void testRegisterReceiver_notExported_broadcastNotReceived() throws Exception {
         final ResultReceiver receiver = new ResultReceiver();
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION),
@@ -1933,6 +1928,43 @@ public class ContextTest extends AndroidTestCase {
                 "An external app must not be able to send a broadcast to a dynamic receiver "
                         + "registered with RECEIVER_NOT_EXPORTED",
                 receiver.hasReceivedBroadCast());
+    }
+
+    public void testRegisterReceiverForSystemBroadcast_notExported_stickyBroadcastReceived()
+            throws InterruptedException {
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
+            return;
+        }
+        final WifiManager wifiManager = mContext.getSystemService(WifiManager.class);
+        boolean wifiInitiallyOn = wifiManager.isWifiEnabled();
+        // Cycle Wifi to force the WIFI_STATE_CHANGED_ACTION sticky broadcast
+        if (wifiInitiallyOn) {
+            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled disabled");
+            Thread.sleep(1000);
+        }
+        SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+        Thread.sleep(1000);
+
+        try {
+            TestBroadcastReceiver stickyReceiver = new TestBroadcastReceiver();
+            // A receiver registered for sticky broadcasts with the RECEIVER_NOT_EXPORTED flag
+            // should still receive back a sticky broadcast sent from the system UID.
+            assertEquals(WifiManager.WIFI_STATE_CHANGED_ACTION,
+                    mContext.registerReceiver(stickyReceiver,
+                            new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION),
+                            Context.RECEIVER_NOT_EXPORTED).getAction());
+            synchronized (mLockObj) {
+                mLockObj.wait(BROADCAST_TIMEOUT);
+            }
+            assertTrue("Sticky broadcast not delivered to unexported receiver",
+                    stickyReceiver.hadReceivedBroadCast());
+        } finally {
+            if (wifiInitiallyOn) {
+                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+            } else {
+                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled disabled");
+            }
+        }
     }
 
     public void testEnforceCallingOrSelfUriPermission() {

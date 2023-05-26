@@ -26,6 +26,9 @@ import static android.media.bettertogether.cts.MediaSessionTestService.STEP_SET_
 import static android.media.bettertogether.cts.MediaSessionTestService.TEST_SERIES_OF_SET_QUEUE;
 import static android.media.bettertogether.cts.MediaSessionTestService.TEST_SET_QUEUE;
 import static android.media.cts.Utils.compareRemoteUserInfo;
+import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
+
+import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -53,6 +56,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.Process;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -63,6 +67,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,6 +75,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -92,6 +98,7 @@ public class MediaSessionTest {
     private static final long TEST_QUEUE_ID = 12L;
     private static final long TEST_ACTION = 55L;
     private static final int TEST_TOO_MANY_SESSION_COUNT = 1000;
+    private static final boolean SUPPORTS_MULTIPLE_USERS = UserManager.supportsMultipleUsers();
 
     private AudioManager mAudioManager;
     private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -100,6 +107,7 @@ public class MediaSessionTest {
     private MediaSession mSession;
     private RemoteUserInfo mKeyDispatcherInfo;
     private Context mContext;
+    private Optional<Integer> mCloneProfileId = Optional.empty();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
@@ -121,6 +129,41 @@ public class MediaSessionTest {
             mSession.release();
             mSession = null;
         }
+        removeCloneProfile();
+    }
+
+    private void createCloneProfile() {
+        Assume.assumeTrue(SUPPORTS_MULTIPLE_USERS);
+
+        InstrumentationRegistry
+            .getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        boolean isCloneProfileEnabled = userManager.isUserTypeEnabled(USER_TYPE_PROFILE_CLONE);
+        InstrumentationRegistry
+            .getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        Assume.assumeTrue(isCloneProfileEnabled);
+
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final String output = runShellCommand(
+                "pm create-user --user-type android.os.usertype.profile.CLONE --profileOf "
+                + context.getUserId() + " user2");
+
+        // On a successful run the output will be like
+        // Success: created user id 11
+        // Hence we use the last index of " " to fetch the cloned profile id.
+        int userIdIndex = output.lastIndexOf(" ");
+        if (userIdIndex != -1) {
+            mCloneProfileId = Optional.of(
+                Integer.parseInt(output.substring(userIdIndex).trim()));
+        }
+    }
+
+    private void removeCloneProfile() {
+        mCloneProfileId.ifPresent(cloneProfileId -> {
+            runShellCommand("am stop-user -w -f " + cloneProfileId);
+            runShellCommand("pm remove-user " + cloneProfileId);
+            mCloneProfileId = Optional.empty();
+        });
     }
 
     /**
@@ -332,6 +375,66 @@ public class MediaSessionTest {
         }
     }
 
+    @Test
+    public void setMediaSession_withInaccessibleUri_uriCleared() throws Exception {
+        createCloneProfile();
+        Assume.assumeTrue(mCloneProfileId.isPresent());
+        String testMediaUri =
+                "content://" + mCloneProfileId.get() + "@media/external/images/media/";
+        // Save a screenshot in second user files.
+        runShellCommand("screencap -p " + testMediaUri);
+
+        MediaController controller = mSession.getController();
+        controller.registerCallback(mCallback, mHandler);
+        final MediaController.Callback callback = mCallback;
+
+        synchronized (mWaitLock) {
+            // test setMetadata
+            mCallback.resetLocked();
+            MediaMetadata metadata =
+                    new MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_ART_URI,
+                            testMediaUri).build();
+            mSession.setMetadata(metadata);
+            mWaitLock.wait(TIME_OUT_MS);
+
+            assertThat(mCallback.mOnMetadataChangedCalled).isTrue();
+            // just call the callback once directly so it's marked as tested
+            callback.onMetadataChanged(mCallback.mMediaMetadata);
+
+            MediaMetadata metadataOut = mCallback.mMediaMetadata;
+            assertThat(metadataOut).isNotNull();
+            assertThat(TextUtils.isEmpty(metadataOut.getString(MediaMetadata.METADATA_KEY_ART_URI)))
+                    .isTrue();
+        }
+    }
+
+    @Test
+    public void setMediaSession_withUri_uriExists() throws Exception {
+        String testMediaUri = "content://media/external/images/media/";
+        MediaController controller = mSession.getController();
+        controller.registerCallback(mCallback, mHandler);
+        final MediaController.Callback callback = mCallback;
+
+        synchronized (mWaitLock) {
+            // test setMetadata
+            mCallback.resetLocked();
+            MediaMetadata metadata =
+                    new MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_ART_URI,
+                            testMediaUri).build();
+            mSession.setMetadata(metadata);
+            mWaitLock.wait(TIME_OUT_MS);
+
+            assertThat(mCallback.mOnMetadataChangedCalled).isTrue();
+            // just call the callback once directly so it's marked as tested
+            callback.onMetadataChanged(mCallback.mMediaMetadata);
+
+            MediaMetadata metadataOut = mCallback.mMediaMetadata;
+            assertThat(metadataOut).isNotNull();
+            assertThat(metadataOut.getString(MediaMetadata.METADATA_KEY_ART_URI))
+                    .isEqualTo(testMediaUri);
+        }
+    }
+
     /**
      * Test whether media button receiver can be a explicit broadcast receiver via
      * MediaSession.setMediaButtonReceiver(PendingIntent).
@@ -345,6 +448,11 @@ public class MediaSessionTest {
 
         // Play a sound so this session can get the priority.
         Utils.assertMediaPlaybackStarted(getContext());
+
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
 
         // Sets the media button receiver. Framework will keep the broadcast receiver component name
         // from the pending intent in persistent storage.
@@ -391,6 +499,11 @@ public class MediaSessionTest {
 
         // Play a sound so this session can get the priority.
         Utils.assertMediaPlaybackStarted(getContext());
+
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
 
         // Sets the media button receiver. Framework would try to keep the pending intent in the
         // persistent store.
@@ -465,6 +578,11 @@ public class MediaSessionTest {
         // persistent storage.
         mSession.setMediaButtonBroadcastReceiver(new ComponentName(mContext,
                 MediaButtonBroadcastReceiver.class));
+
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
 
         // Call explicit release, so change in the media key event session can be notified using the
         // component name.

@@ -40,7 +40,7 @@ import static android.media.AudioManager.VIBRATE_SETTING_ON;
 import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
-import static android.media.audio.cts.AudioVolumeTestUtil.resetVolumeIndex;
+import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
 import static android.provider.Settings.Global.APPLY_RAMPING_RINGER;
 import static android.provider.Settings.System.SOUND_EFFECTS_ENABLED;
 
@@ -112,7 +112,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
     private static final String TAG = "AudioManagerTest";
 
     private static final long ASYNC_TIMING_TOLERANCE_MS = 50;
-    private static final long POLL_TIME_VOLUME_ADJUST = 200;
+    private static final long POLL_TIME_VOLUME_ADJUST = 400;
     private static final long POLL_TIME_UPDATE_INTERRUPTION_FILTER = 5000;
     private static final int MP3_TO_PLAY = R.raw.testmp3; // ~ 5 second mp3
     private static final long POLL_TIME_PLAY_MUSIC = 2000;
@@ -145,6 +145,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
             STREAM_SYSTEM, STREAM_RING, STREAM_MUSIC,
             STREAM_ALARM, STREAM_NOTIFICATION,
             STREAM_DTMF,  STREAM_ACCESSIBILITY };
+    private static final int VOLUME_CHANGED_INTENT_TIMEOUT_MS = 3000; // 3s
 
     private static final int INVALID_DIRECT_PLAYBACK_MODE = -1;
     private AudioManager mAudioManager;
@@ -332,12 +333,18 @@ public class AudioManagerTest extends InstrumentationTestCase {
         return false;
     }
 
+    @AppModeFull(reason = "ACTION_VOLUME_CHANGED is not sent to Instant apps (no FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS)")
     public void testVolumeChangedIntent() throws Exception {
         final MyBlockingIntentReceiver receiver =
                 new MyBlockingIntentReceiver(AudioManager.ACTION_VOLUME_CHANGED);
         if (mAudioManager.isVolumeFixed()) {
             return;
         }
+        // safe media can block the raising the volume, disable it
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
+        mAudioManager.disableSafeMediaVolume();
+
         try {
             mContext.registerReceiver(receiver,
                     new IntentFilter(AudioManager.ACTION_VOLUME_CHANGED));
@@ -351,7 +358,8 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     mediaVol == maxMediaVol ? --mediaVol : ++mediaVol,
                     0 /*flags*/);
             // verify a change was reported
-            final boolean intentFired = receiver.waitForExpectedAction(500/*ms*/);
+            final boolean intentFired = receiver.waitForExpectedAction(
+                    VOLUME_CHANGED_INTENT_TIMEOUT_MS);
             assertTrue("VOLUME_CHANGED_ACTION wasn't fired for change from "
                     + origVol + " to " + mediaVol, intentFired);
             // verify the new value is in the extras
@@ -364,17 +372,19 @@ public class AudioManagerTest extends InstrumentationTestCase {
                     intent.getIntExtra(AudioManager.EXTRA_PREV_VOLUME_STREAM_VALUE, -1));
         } finally {
             mContext.unregisterReceiver(receiver);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
     private static final class MyBlockingIntentReceiver extends BroadcastReceiver {
+        private static final String TAG = "BlockingIntentRcvr";
         private final SafeWaitObject mLock = new SafeWaitObject();
         // the action for the intent to check
         private final String mAction;
         private String mWaitForExtra;
         private int mWaitForExtraInt = Integer.MAX_VALUE;
         @GuardedBy("mLock")
-        private boolean mIntentReceived = false;
+        private volatile boolean mIntentReceived = false;
         @GuardedBy("mLock")
         private Intent mIntent;
 
@@ -402,23 +412,34 @@ public class AudioManagerTest extends InstrumentationTestCase {
                 // move along, this is not the action we're looking for
                 return;
             }
-            if ((mWaitForExtra != null)
-                    && (intent.getIntExtra(mWaitForExtra, Integer.MIN_VALUE) != mWaitForExtraInt)) {
-                return;
-            }
             synchronized (mLock) {
+                if (mWaitForExtra != null) {
+                    final int extraIntVal = intent.getIntExtra(mWaitForExtra, Integer.MIN_VALUE);
+                    if (extraIntVal != mWaitForExtraInt) {
+                        Log.i(TAG, "extra received: " + extraIntVal);
+                        return;
+                    } else {
+                        Log.i(TAG, "expected extra received: " + mWaitForExtraInt);
+                    }
+                }
                 mIntentReceived = true;
                 mIntent = intent;
                 mLock.notify();
             }
         }
 
+        /**
+         * Wait for the intent up to a given time
+         * @param timeOutMs the timeout in ms
+         * @return true if the intent fire, false if it didn't fire within the timeout
+         */
         public boolean waitForExpectedAction(long timeOutMs) {
             synchronized (mLock) {
-                try {
-                    mLock.waitFor(timeOutMs, () -> mIntentReceived);
-                } catch (InterruptedException e) { }
-                return mIntentReceived;
+                Log.i(TAG, "starting wait: expected extra:"
+                        + mWaitForExtra + " val:" + mWaitForExtraInt);
+                final boolean res = mLock.waitFor(timeOutMs, () -> mIntentReceived);
+                Log.i(TAG, "wait stopped, intent received:" + mIntentReceived);
+                return res;
             }
         }
 
@@ -443,10 +464,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
 
         public boolean waitForExpectedEvent(long timeOutMs) {
             synchronized (mLock) {
-                try {
-                    mLock.waitFor(timeOutMs, () -> mEventReceived);
-                } catch (InterruptedException e) { }
-                return mEventReceived;
+                return mLock.waitFor(timeOutMs, () -> mEventReceived);
             }
         }
     }
@@ -545,6 +563,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
+    @AppModeFull(reason = "Instant apps cannot hold android.permission.WRITE_SETTINGS")
     public void testSetEncodedSurroundMode() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.WRITE_SETTINGS);
@@ -745,6 +764,124 @@ public class AudioManagerTest extends InstrumentationTestCase {
             assertEquals(mHasVibrator ? RINGER_MODE_VIBRATE : RINGER_MODE_SILENT,
                     mAudioManager.getRingerMode());
         }
+    }
+
+    /**
+     * Test that in RINGER_MODE_VIBRATE we observe:
+     * if NOTIFICATION & RING are not aliased:
+     *   ADJUST_UNMUTE NOTIFICATION -> no change (no mode change, NOTIF still muted)
+     *   ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODES -> MODE_NORMAL
+     * if NOTIFICATION & RING are aliased:
+     *   ADJUST_UNMUTE NOTIFICATION -> MODE_NORMAL
+     *   ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODES -> MODE_NORMAL
+     * @throws Exception
+     */
+    public void testAdjustUnmuteNotificationInVibrate() throws Exception {
+        if (mSkipRingerTests) {
+            return;
+        }
+        // set mode to VIBRATE
+        Utils.toggleNotificationPolicyAccess(
+                mContext.getPackageName(), getInstrumentation(), true);
+        mAudioManager.setRingerMode(RINGER_MODE_VIBRATE);
+        assertEquals(RINGER_MODE_VIBRATE, mAudioManager.getRingerMode());
+        Utils.toggleNotificationPolicyAccess(
+                mContext.getPackageName(), getInstrumentation(), false);
+
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        final int notifiAliasedStream = mAudioManager.getStreamTypeAlias(STREAM_NOTIFICATION);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+
+        // verify expected muting from the VIBRATE mode
+        assertStreamMuted(STREAM_RING, true,
+                "RING not muted in MODE_VIBRATE");
+        assertStreamMuted(STREAM_NOTIFICATION, true,
+                "NOTIFICATION not muted in MODE_VIBRATE");
+
+        if (notifiAliasedStream == STREAM_NOTIFICATION) {
+            Log.i(TAG, "testAdjustUnmuteNotificationInVibrate: NOTIF independent");
+            // unmute NOTIFICATION
+            mAudioManager.adjustStreamVolume(STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0);
+            // verify it had no effect
+            assertStreamMuted(STREAM_NOTIFICATION, true, "NOTIFICATION did unmute");
+            // unmuting NOTIFICATION should not have exited RINGER_MODE_VIBRATE
+            assertEquals(RINGER_MODE_VIBRATE, mAudioManager.getRingerMode());
+
+            // unmute NOTIFICATION with FLAG_ALLOW_RINGER_MODES
+            mAudioManager.adjustStreamVolume(STREAM_NOTIFICATION,
+                    AudioManager.ADJUST_UNMUTE, AudioManager.FLAG_ALLOW_RINGER_MODES);
+            // verify it unmuted NOTIFICATION and RING
+            assertStreamMuted(STREAM_NOTIFICATION, false,
+                    "NOTIFICATION (+FLAG_ALLOW_RINGER_MODES) didn't unmute");
+            assertStreamMuted(STREAM_RING, false, "RING didn't unmute");
+            // unmuting NOTIFICATION w/ FLAG_ALLOW_RINGER_MODES should have exited MODE_VIBRATE
+            assertEquals(RINGER_MODE_NORMAL, mAudioManager.getRingerMode());
+        } else if (notifiAliasedStream == STREAM_RING) {
+            Log.i(TAG, "testAdjustUnmuteNotificationInVibrate: NOTIF/RING aliased");
+            // unmute NOTIFICATION (should be just like unmuting RING)
+            mAudioManager.adjustStreamVolume(STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0);
+            // verify it unmuted both RING and NOTIFICATION
+            assertStreamMuted(STREAM_NOTIFICATION, false, "NOTIFICATION didn't unmute");
+            assertStreamMuted(STREAM_RING, false, "RING didn't unmute");
+            // unmuting NOTIFICATION should have exited RINGER_MODE_VIBRATE
+            assertEquals(RINGER_MODE_NORMAL, mAudioManager.getRingerMode());
+
+            // test again with FLAG_ALLOW_RINGER_MODES
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), true);
+            mAudioManager.setRingerMode(RINGER_MODE_VIBRATE);
+            assertEquals(RINGER_MODE_VIBRATE, mAudioManager.getRingerMode());
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), false);
+            // unmute NOTIFICATION (should be just like unmuting RING)
+            mAudioManager.adjustStreamVolume(STREAM_NOTIFICATION,
+                    AudioManager.ADJUST_UNMUTE, AudioManager.FLAG_ALLOW_RINGER_MODES);
+            // verify it unmuted both RING and NOTIFICATION
+            assertStreamMuted(STREAM_NOTIFICATION, false, "NOTIFICATION didn't unmute");
+            assertStreamMuted(STREAM_RING, false, "RING didn't unmute");
+            // unmuting NOTIFICATION should have exited RINGER_MODE_VIBRATE
+            assertEquals(RINGER_MODE_NORMAL, mAudioManager.getRingerMode());
+        }
+    }
+
+    /**
+     * Test that in RINGER_MODE_SILENT we observe:
+     * ADJUST_UNMUTE NOTIFICATION -> no change (no mode change, NOTIF still muted)
+     *
+     * Note that in SILENT we cannot test ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODES
+     * because it depends on VolumePolicy.volumeUpToExitSilent.
+     * TODO add test API to query VolumePolicy, expected in MODE_SILENT:
+     * ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODE ->
+     *                            no change if VolumePolicy.volumeUpToExitSilent false (default?)
+     * ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODE ->
+     *                            MODE_NORMAL if VolumePolicy.volumeUpToExitSilent true
+     * @throws Exception
+     */
+    public void testAdjustUnmuteNotificationInSilent() throws Exception {
+        if (mSkipRingerTests) {
+            return;
+        }
+        // set mode to SILENT
+        Utils.toggleNotificationPolicyAccess(
+                mContext.getPackageName(), getInstrumentation(), true);
+        mAudioManager.setRingerMode(RINGER_MODE_SILENT);
+        assertEquals(RINGER_MODE_SILENT, mAudioManager.getRingerMode());
+        Utils.toggleNotificationPolicyAccess(
+                mContext.getPackageName(), getInstrumentation(), false);
+
+        // verify expected muting from the SILENT mode
+        assertStreamMuted(STREAM_RING, true,
+                "RING not muted in MODE_SILENT");
+        assertStreamMuted(STREAM_NOTIFICATION, true,
+                "NOTIFICATION not muted in MODE_SILENT");
+
+        // unmute NOTIFICATION
+        mAudioManager.adjustStreamVolume(STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0);
+        // verify it had no effect
+        assertStreamMuted(STREAM_NOTIFICATION, true, "NOTIFICATION did unmute");
+        // unmuting NOTIFICATION should not have exited RINGER_MODE_SILENT
+        assertEquals(RINGER_MODE_SILENT, mAudioManager.getRingerMode());
     }
 
     public void testSetRingerModePolicyAccess() throws Exception {

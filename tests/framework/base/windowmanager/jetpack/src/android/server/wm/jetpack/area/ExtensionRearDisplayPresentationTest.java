@@ -24,9 +24,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_ACTIVE;
+import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
-import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INVISIBLE;
-import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_VISIBLE;
 
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
@@ -54,7 +53,6 @@ import android.server.wm.jetpack.utils.TestRearDisplayActivity;
 import android.server.wm.jetpack.utils.WindowExtensionTestRule;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 import android.view.Display;
-import android.view.View;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.area.ExtensionWindowAreaPresentation;
@@ -95,11 +93,10 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
     private static final int TIMEOUT = 2000;
     private static final int INVALID_DEVICE_STATE = -1;
 
-
     private static final List<@WindowAreaComponent.WindowAreaSessionState Integer>
             SESSION_LIFECYCLE_VALUES = new ArrayList<>(
-            Arrays.asList(SESSION_STATE_ACTIVE, SESSION_STATE_VISIBLE,
-                    SESSION_STATE_INVISIBLE, SESSION_STATE_INACTIVE));
+            Arrays.asList(SESSION_STATE_ACTIVE, SESSION_STATE_CONTENT_VISIBLE,
+                    SESSION_STATE_ACTIVE, SESSION_STATE_INACTIVE));
 
     private TestRearDisplayActivity mActivity;
     private int[] mFoldedDeviceStates;
@@ -149,7 +146,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 Resources.getSystem().getIdentifier("config_foldedDeviceStates", "array",
                         "android"));
         assumeTrue(mFoldedDeviceStates.length > 0);
-        // TODO(b/236022708) Move rear display state to device state config file
+        // TODO(b/236022708) Move rear display presentation state to device state config file
         mRearDisplayPresentationState = getInstrumentation().getTargetContext().getResources()
                 .getInteger(Resources.getSystem().getIdentifier(
                         "config_deviceStateConcurrentRearDisplay", "integer", "android"));
@@ -256,10 +253,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         // Rear displays should only exist after concurrent mode is started
         assertEquals(0, mDisplayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_REAR).length);
 
-        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
-        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
-                        mSessionStateListener));
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_ACTIVE);
         assertEquals(mCurrentDeviceState, mRearDisplayPresentationState);
         assertTrue(mDisplayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_REAR).length > 0);
@@ -273,7 +268,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWindowAreaComponent.endRearDisplayPresentationSession();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);
@@ -288,9 +283,9 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
     }
 
     /**
-     * Tests that you can start and end rear display presentation mode by backgrounding the calling
-     * application. Verifies that the {@link ExtensionWindowAreaPresentationSessionCallback} that is
-     * provided when calling {@link WindowAreaComponent#startRearDisplayPresentationSession}
+     * Tests that you can start, and then end rear display presentation mode by backgrounding the
+     * calling application. Verifies that the {@link ExtensionWindowAreaPresentationSessionCallback}
+     * that is provided when calling {@link WindowAreaComponent#startRearDisplayPresentationSession}
      * receives the {@link ExtensionWindowAreaPresentationSessionCallback#onSessionStarted} callback
      * when starting the session and
      * {@link ExtensionWindowAreaPresentationSessionCallback#onSessionEnded()} when backgrounding
@@ -311,10 +306,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
 
-        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
-        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
-                        mSessionStateListener));
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
         waitAndAssert(() -> mCurrentDeviceState == mRearDisplayPresentationState);
 
@@ -327,7 +320,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressHomeButton();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);
@@ -342,7 +335,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
     }
 
     /**
-     * Tests that you can start and end rear display presentation mode by locking the device.
+     * Tests that you can start, and then end rear display presentation mode by locking the device.
      * Verifies that the {@link ExtensionWindowAreaPresentationSessionCallback} that is
      * provided when calling {@link WindowAreaComponent#startRearDisplayPresentationSession}
      * receives the {@link ExtensionWindowAreaPresentationSessionCallback#onSessionStarted} callback
@@ -365,10 +358,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
 
-        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
-        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
-                        mSessionStateListener));
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_ACTIVE);
         assertEquals(mCurrentDeviceState, mRearDisplayPresentationState);
 
@@ -381,7 +372,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
         assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
-        assertEquals(mWindowAreaSessionState, SESSION_STATE_VISIBLE);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressSleepButton();
         waitAndAssert(() -> !presentationView.mAttachedToWindow);
@@ -407,10 +398,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
 
-        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
-        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
-                        mSessionStateListener));
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_ACTIVE);
         assertEquals(mCurrentDeviceState, mRearDisplayPresentationState);
 
@@ -429,6 +418,64 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         // Should throw SecurityException
         launcher.launch(mInstrumentation);
     }
+
+    /**
+     * Tests that the system properly cleans up the rear display presentation if an activity that
+     * started it finished without cleaning itself up.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area."
+                    + "WindowAreaComponent#addRearDisplayPresentationStatusListener"})
+    @Test
+    public void testStartRearDisplayPresentation_applicationFinishes() {
+        assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
+                == WindowAreaComponent.STATUS_AVAILABLE);
+        assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
+
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
+
+        waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_ACTIVE);
+        assertEquals(mRearDisplayPresentationState, mCurrentDeviceState);
+
+        ExtensionWindowAreaPresentation presentation =
+                mWindowAreaComponent.getRearDisplayPresentation();
+        TestPresentationView presentationView = new TestPresentationView(
+                presentation.getPresentationContext());
+        mActivity.runOnUiThread(() ->
+                presentation.setPresentationView(presentationView));
+        waitAndAssert(() -> presentationView.mAttachedToWindow);
+
+        mActivity.finish();
+
+        waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_INACTIVE);
+
+        // Currently when ending rear display presentation session, the display turns off. If this
+        // expectation ever changes, we will probably also need to update KeyguardPresentation in
+        // SystemUI to ensure that the secondary keyguard is shown.
+        assertNotEquals(Display.STATE_ON,
+                presentation.getPresentationContext().getDisplay().getState());
+    }
+
+    /**
+     * Tests that an app in the background cannot start a rear display presentation session.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area."
+                    + "WindowAreaComponent#startRearDisplayPresentationSession"})
+    @Test (expected = SecurityException.class)
+    public void testStartRearDisplayPresentation_whenInBackground() {
+        assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
+                == WindowAreaComponent.STATUS_AVAILABLE);
+        assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
+
+        pressHomeButton();
+        waitAndAssert(() -> mActivity.onStopInvoked);
+
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
+    }
+
 
     @Override
     public void onBaseStateChanged(int state) {
@@ -475,29 +522,5 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
         waitFor(TIMEOUT, condition);
-    }
-
-    /**
-     * View that keeps track of when it's attached and detached to the window, so we can
-     * verify that the view is presented and removed when we expect it.
-     */
-    private static class TestPresentationView extends View {
-        public boolean mAttachedToWindow;
-
-        TestPresentationView(Context context) {
-            super(context);
-        }
-
-        @Override
-        protected void onAttachedToWindow() {
-            super.onAttachedToWindow();
-            mAttachedToWindow = true;
-        }
-
-        @Override
-        protected void onDetachedFromWindow() {
-            super.onDetachedFromWindow();
-            mAttachedToWindow = false;
-        }
     }
 }

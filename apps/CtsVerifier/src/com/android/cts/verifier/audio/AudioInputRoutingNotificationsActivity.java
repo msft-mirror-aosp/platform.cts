@@ -36,8 +36,9 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
+import org.hyphonate.megaaudio.common.BuilderBase;
+import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.recorder.JavaRecorder;
-import org.hyphonate.megaaudio.recorder.Recorder;
 import org.hyphonate.megaaudio.recorder.RecorderBuilder;
 import org.hyphonate.megaaudio.recorder.sinks.NopAudioSinkProvider;
 
@@ -59,7 +60,6 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
 
     static final int NUM_CHANNELS = 2;
     static final int SAMPLE_RATE = 48000;
-    int mNumFrames;
 
     private JavaRecorder mAudioRecorder;
     private AudioRecordRoutingChangeListener mRouteChangeListener;
@@ -157,8 +157,14 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
         }
     }
 
-    protected void storeTestResults() {
-        super.storeTestResults();
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_INPUT_ROUTING);
+    }
+
+    @Override
+    public void recordTestResults() {
+        super.recordTestResults();
 
         CtsVerifierReportLog reportLog = getReportLog();
         reportLog.addValue(
@@ -166,6 +172,8 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
                 mRoutingNotificationReceived ? 1 : 0,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
+
+        reportLog.submit();
     }
 
     @Override
@@ -186,15 +194,16 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
         mContext = this;
 
         // Setup Recorder
-        mNumFrames = Recorder.calcMinBufferFramesStatic(NUM_CHANNELS, SAMPLE_RATE);
+        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
 
-        RecorderBuilder builder = new RecorderBuilder();
         try {
-            mAudioRecorder = (JavaRecorder) builder
-                    .setRecorderType(RecorderBuilder.TYPE_JAVA)
-                    .setAudioSinkProvider(new NopAudioSinkProvider())
-                    .build();
-            mAudioRecorder.setupStream(NUM_CHANNELS, SAMPLE_RATE, mNumFrames);
+            RecorderBuilder builder = new RecorderBuilder();
+            builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
+                .setAudioSinkProvider(new NopAudioSinkProvider())
+                .setChannelCount(NUM_CHANNELS)
+                .setSampleRate(SAMPLE_RATE)
+                .setNumExchangeFrames(numExchangeFrames);
+            mAudioRecorder = (JavaRecorder) builder.build();
         } catch (RecorderBuilder.BadStateException ex) {
             Log.e(TAG, "Failed MegaRecorder build.");
         }
@@ -211,8 +220,4 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
                 R.string.audio_input_routingnotification_instructions, -1);
     }
 
-    @Override
-    public final String getReportSectionName() {
-        return setTestNameSuffix(sCurrentDisplayMode, SECTION_INPUT_ROUTING);
-    }
 }

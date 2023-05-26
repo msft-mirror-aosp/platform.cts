@@ -65,6 +65,7 @@ import java.util.Map;
  */
 @RunWith(Parameterized.class)
 public class VideoEncoderIntraFrameIntervalTest extends VideoEncoderValidationTestBase {
+    private static final String LOG_TAG = VideoEncoderIntraFrameIntervalTest.class.getSimpleName();
     private static final int FRAME_LIMIT = 600;
     private static final int BIT_RATE = 5000000;
     private static final int WIDTH = 1920;
@@ -78,7 +79,7 @@ public class VideoEncoderIntraFrameIntervalTest extends VideoEncoderValidationTe
         for (Object[] arg : exhaustiveArgsList) {
             resources.add((CompressedResource) arg[2]);
         }
-        decodeStreamsToYuv(resources, RES_YUV_MAP);
+        decodeStreamsToYuv(resources, RES_YUV_MAP, LOG_TAG);
     }
 
     @AfterClass
@@ -100,15 +101,20 @@ public class VideoEncoderIntraFrameIntervalTest extends VideoEncoderValidationTe
                 .build();
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() {
         final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC};
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
         final int[] maxBFramesPerSubGop = new int[]{0, 1, 2, 3};
         final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
         final int[] intraIntervals = new int[]{0, 2};
         for (String mediaType : mediaTypes) {
             for (int maxBFrames : maxBFramesPerSubGop) {
+                if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                        && !mediaType.equals((MediaFormat.MIMETYPE_VIDEO_HEVC))
+                        && maxBFrames != 0) {
+                    continue;
+                }
                 for (int bitRateMode : bitRateModes) {
                     for (int intraInterval : intraIntervals) {
                         // mediaType, cfg, res, test label
@@ -147,8 +153,8 @@ public class VideoEncoderIntraFrameIntervalTest extends VideoEncoderValidationTe
                 areFormatsSupported(mCodecName, mMediaType, formats));
         RawResource res = RES_YUV_MAP.getOrDefault(mCRes.uniqueLabel(), null);
         assertNotNull("no raw resource found for testing config : " + mEncCfgParams[0] + mTestConfig
-                + mTestEnv, res);
-        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, true, false);
+                + mTestEnv + DIAGNOSTICS, res);
+        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, false, false);
         assertEquals("encoder did not encode the requested number of frames \n"
                 + mTestConfig + mTestEnv, FRAME_LIMIT, mOutputCount);
         int lastKeyFrameIdx = 0, currFrameIdx = 0, maxKeyFrameDistance = 0;

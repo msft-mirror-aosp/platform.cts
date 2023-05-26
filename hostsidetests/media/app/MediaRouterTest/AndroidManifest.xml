@@ -21,9 +21,16 @@
 
     <!-- See the test's implementation for details on why we need a wake lock. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
 
     <application android:testOnly="true">
         <uses-library android:name="android.test.runner"/>
+        <activity android:name=".PlaceholderActivity" android:exported="false">
+            <intent-filter>
+                <action android:name="android.media.action.TRANSFER_MEDIA"/>
+            </intent-filter>
+        </activity>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

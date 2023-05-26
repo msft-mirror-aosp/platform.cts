@@ -31,6 +31,8 @@
     <string name="retry_button_text">Retry</string>
     <string name="finish_button_text">Finish</string>
     <string name="fail_and_next_button_text">Fail and Next</string>
+    <string name="yes_string">Yes</string>
+    <string name="no_string">No</string>
 
     <!-- Strings for CtsReportLog warning -->
     <string name="reportlog_warning_title">CTS-Verifier Report Log</string>
@@ -285,6 +287,15 @@
         Pass the test if the device admin could not be activated while the details
         window was being obscured.
     </string>
+    <string name="da_tapjacking_instructions" product="tv">
+        1. Launch the device admin add screen by pressing the button below.\n
+        2. Wait for an overlaying transparent activity to show up obscuring the device admin details window.\n
+        3. The button to activate the admin should be disabled and should not register any taps.\n
+        4. Wait for the overlaying activity to finish.\n
+        5. Press \'back\' to exit the device admin details and return to this screen.\n
+        Pass the test if the device admin could not be activated while the details
+        window was being obscured.
+    </string>
     <string name="da_tapjacking_button_text">Enable device admin</string>
 
     <!-- Strings for RecentTaskRemovalTestActivity -->
@@ -319,21 +330,6 @@
     </string>
     <string name="clipboard_preview_test_secret">FAIL</string>
     <string name="clipboard_preview_test_copy_button">Copy</string>
-
-    <!-- Strings for SharesheetTest -->
-    <string name="sharesheet_test">Sharesheet Test</string>
-    <string name="sharesheet_test_info">The sharesheet test validates that the user
-        is presented with the option of modifying the share if the source app indicates it.</string>
-    <string name="sharesheet_test_instructions">When you press "Share" below, you will be shown
-        the system sharesheet sharing an image of the letter \'A\'. On this
-        sharesheet, there should be something you can tap to modify the share (e.g. by selecting
-        different images, a different format, etc). It can have different names
-        on different devices or be instead represented by an icon. Tap on that to
-        complete the test. If it works correctly, the sharesheet will dismiss
-        and you\'ll be able to mark the test as complete. No need to share the image
-        to any app targets or otherwise interact with the sharesheet. If you can\'t see a way to do
-        this, mark the test as failed.</string>
-    <string name="share">Share</string>
 
     <!-- Strings for BiometricTest -->
     <string name="biometric_test">Biometric Tests</string>
@@ -471,6 +467,18 @@
         This test ensures that keys created with setUnlockedDeviceRequired are usable when the
         screen is unlocked but not when it is locked.
     </string>
+
+    <!-- Strings for HasVibratorVerifierActivity -->
+    <string name="has_vibrator_test_description">This test validates the Vibrator#HasVibrator API response.</string>
+    <string name="has_vibrator_response_label">Does this device say it has a vibrator?</string>
+    <string name="has_vibrator_start_test_label">To start the test, hold the device in your hand and click the vibrate button.</string>
+    <string name="has_vibrator_did_device_vibrate_label">Did the device vibrate?</string>
+    <string name="has_vibrator_test_vibrate_and_pass_message">Feeling vibration indicates that the test passed. Click the pass button to register the result.</string>
+    <string name="has_vibrator_test_vibrate_and_fail_message">Not feeling vibration indicates that the test failed. Click the fail button to register the result.</string>
+    <string name="has_vibrator_test_no_vibrate_and_pass_message">Not feeling vibration indicates that the test passed. Click the pass button to register the result.</string>
+    <string name="has_vibrator_test_no_vibrate_and_fail_message">Feeling vibration indicates that the test failed. Click the fail button to register the result.</string>
+    <string name="has_vibrator_test_running_text">Test will end in %d</string>
+    <string name="has_vibrator_test_vibrate_button_text">Vibrate</string>
 
     <!-- Strings for BluetoothActivity -->
     <string name="bluetooth_test">Bluetooth Test</string>
@@ -677,6 +685,7 @@
     <string name="ble_write_descriptor_name">Bluetooth LE Write Descriptor</string>
     <string name="ble_read_rssi_name">Bluetooth LE Read RSSI</string>
     <string name="ble_read_phy_name">Bluetooth LE Read PHY</string>
+    <string name="ble_set_preferred_phy_name">Bluetooth LE Set Preferred PHY</string>
     <string name="ble_on_service_changed">Bluetooth LE On Service Changed</string>
     <string name="ble_client_disconnect_name">Bluetooth LE Client Disconnect</string>
     <string name="ble_insecure_client_test_info">
@@ -1606,24 +1615,6 @@
     <string name="sample_test">Sample Test</string>
     <string name="sample_test_info">This test verifies that bluetooth sharing is working properly.\nThe test assumes the Device Under Test has bluetooth enabled and is already paired with a second device, also with bluetooth enabled.\nStart this test by clicking share, choose bluetooth from the options, and then select a device to share with.\nNote: This is a sample test, used to demonstrate how to write CTS Verifier tests, so just click pass.</string>
 
-    <!-- Strings for UsbDebuggingDialogTapjackingTest -->
-    <string name="usb_tapjacking_button_text">Show overlay</string>
-    <string name="usb_tapjacking_test">Usb Debugging Dialog Tapjacking Test</string>
-    <string name="usb_tapjacking_test_info">This test verifies that tapjacking on the usb dialog is not possible by disallowing users from accepting usb debugging pemissions when dialog is obscured.</string>
-    <string name="usb_tapjacking_test_instructions">
-        1. Connect device via usb to computer.\n
-        2. Click \"Show overlay\" button.  Settings may appear if the CTS Verifier app doesn\'t have display over apps permission.  Enable this permission and then click back to navigate back to the app.\n
-        3. Trigger USB debugging dialog (from computer terminal): \"adb shell am start -e fingerprints placeholder -e key placeholder %s\"\n
-        4. USB debugging dialog should appear.  If the overlay cannot be seen above the USB debugging dialog, PASS this test (no need to proceed to Step 5).  Else, if the overlay does appear on top saying \"This message covers the USB debugging RSA prompt\", continue to Step 5.\n
-        5. Try clicking OK. \n
-        Test pass if you cannot click OK when the text quoted above is on top of the USB debugging dialog.  Toast should appear saying there is an overlay so Settings cannot verify your response. \n
-        Note: Fake message overlay may remain on screen until you leave the test. This is working as intended. \n
-    </string>
-    <string name="usb_tapjacking_usb_debugging_component">com.android.systemui/.UsbDebuggingActivityAlias</string>
-    <string name="usb_tapjacking_overlay_message">This message covers the USB debugging RSA prompt</string>
-    <string name="usb_tapjacking_error_toast">Please restart the application and try again.</string>
-    <string name="usb_tapjacking_error_toast2">Please enable display over apps permission for this application before proceeding.</string>
-
     <!-- Strings for Camera Orientation -->
     <string name="camera_orientation">Camera Orientation</string>
     <string name="co_info">This test verifies the orientation capabilities of
@@ -1859,6 +1850,37 @@
     </string>
     <string name="its_test_progress">ITS test progress will be shown here.</string>
 
+    <!-- Strings for the Camera Webcam test activity -->
+    <string name="camera_webcam_test">Camera Webcam Test</string>
+    <string name="camera_webcam_test_info">
+        This test verifies the FPS rates the device advertises as a webcam. It also
+        includes manual verification on the functionality of the webcam stream.
+
+        \n\nInstructions for Test Run:
+        \n1. Connect your Android device to a computer with adb installed via a USB cable.
+        \n\n2. Setup the Camera Webcam test environment by following the setup instructions in the
+        README file found in the DeviceAsWebcam directory
+        (packages/services/DeviceAsWebcam/tests).
+
+        \n\n3. Ensure the camera is aimed at a bright scene to get the most accurate FPS reading.
+        \n\n4. Run the test script.
+        (python run_webcam_test.py -c config.yml).
+        Once the test has been run, the \'Yes\' and \'No\' buttons will be enabled. Confirm if the frames
+        from the webcam service were okay. Then, click \'Done\'. The \'PASS\' will be enabled
+        if the script results passed and the frames contained no issues.
+    </string>
+
+    <string name="camera_webcam_frames_pass">Yes</string>
+    <string name="camera_webcam_frames_fail">No</string>
+    <string name="camera_webcam_done_button">Done</string>
+    <string name="camera_webcam_start_text">Run the test script to begin.</string>
+    <string name="camera_webcam_confirm_frames_text">Webcam testing complete. Confirm if the frames from webcam stream were okay.</string>
+    <string name="camera_webcam_results_pass_frames_fail_text">Script results passed but frames contained errors. Test failed. Click Done to complete.</string>
+    <string name="camera_webcam_results_pass_frames_pass_text">Script results passed and frames were normal. Test passed Click Done to complete.</string>
+    <string name="camera_webcam_results_fail_frames_pass_text">Script results failed but frames were normal. Test failed. Click Done to complete.</string>
+    <string name="camera_webcam_results_fail_frames_fail_text">Script results failed and frames contained errors. Test failed. Click Done to complete.</string>
+    <string name="camera_webcam_not_supported_text">Webcam feature not supported. Test skipped. Click Done to complete.</string>
+
     <!-- Strings for the Camera Flashlight test activity -->
     <string name="camera_flashlight_test">Camera Flashlight</string>
     <string name="camera_flashlight_info">
@@ -1936,8 +1958,8 @@
     <string name="wifi_test_info">
         The Wi-Fi tests requires an open or PSK access point in the environment along with the DUT.
         \nPlease perform a network settings reset between each test to reset platform\'s internal state which
-        might interfere with the test flow.\nNavigate to \"Settings -> System -> Reset Options -> Reset Wi-Fi,
-        mobile &amp; Bluetooth\" to perform a network settings reset.
+        might interfere with the test flow.\nNavigate to \"Settings -> System -> Reset Options -> Reset Bluetooth
+        &amp; Wi-Fi\" to perform a network settings reset.
     </string>
     <string name="wifi_location_not_enabled">Wi-Fi / Location Mode is not enabled</string>
     <string name="wifi_location_not_enabled_message">These tests require Wi-Fi and Location Mode to be enabled.
@@ -2349,6 +2371,9 @@
     <string name="package_priority_default">Find \"%s\" in the \"Notifications\" settings panel, and disallow it to Override Do Not Disturb.</string>
     <string name="package_priority_user_order">Check that ranker respects user priorities.</string>
 
+    <string name="test_category_vibrations">Vibrations</string>
+    <string name="test_title_has_vibrator">Has Vibrator Test</string>
+
     <string name="shortcut_reset_test">Shortcut Reset Rate-limiting Test</string>
     <string name="shortcut_reset_info">This test checks that when an inline-reply happens, ShortcutManager\'s rate-limiting
         is reset. Please grant access to show notification when prompted.</string>
@@ -2434,20 +2459,75 @@
     <string name="nd_test_info">This test checks if Notifications can only be
         dismissed, when it is allowed.</string>
     <string name="nd_notif_title">NotifDismissTest</string>
-    <string name="nd_notif_public_version_title">NotifDismissTest: REDACTED</string>
-    <string name="nd_notif_private_version_title">NotifDismissTest: EXPOSED</string>
     <string name="dismiss_notif_from_the_shade">Open the shade while the device is unlocked and find the NotifDismissTest notification.\n
         Swipe it to either side to dismiss it.\n
-        Fail the test if it could\'t be dismissed.</string>
+        Pass the test if it can be dismissed.</string>
     <string name="dismiss_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
         Swipe it to either side to dismiss it.\n
-        Fail the test if it couldn\'t be dismissed from the lock screen.</string>
+        Pass the test if it can be dismissed from the lock screen.</string>
     <string name="non_dismissable_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
         Try to dismiss it. Verify that it is non-dismissible.\n
         Fail the test if it could be dismissed from the lock screen.</string>
+    <string name="fsi_test">Notification Full Screen Intent Test</string>
+    <string name="fsi_test_info">This test checks the behavior of Notifications
+        with Full Screen Intents.</string>
+    <string name="fsi_lockscreen_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
+        Wait for a heads up notification to appear first in the list with a pill button.\n
+        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
+        Fail the test if the notification does not appear as described.
+    </string>
+    <string name="fsi_lockscreen_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
+        Wait for a page to automatically launch and display the message \"This page is a full screen intent.\".\n
+        Unlock screen to return to this page after seeing the page or after 5 seconds.\n
+        Fail the test if the page does not launch as described.
+    </string>
+    <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, press the power button as quickly as possible to turn off the screen.\n
+        Wait for a notification to appear on the screen with a pill button.\n
+        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
+        Fail the test if the notification does not appear as described.
+    </string>
+    <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, press the power button as quickly as possible to turn off the screen.\n
+        Wait for a page to automatically launch and display the message \"This page is a full screen intent.\".\n
+        Unlock screen to return to this page after seeing the page or after 5 seconds.\n
+        Fail the test if the page does not launch as described.
+    </string>
+    <string name="fsi_aod_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, press the power button as quickly as possible to go to Always on Display.\n
+        Wait for a page to automatically launch and display the message \"This page is a full screen intent.\".\n
+        Unlock screen to return to this page after seeing the page or after 5 seconds.\n
+        Fail the test if the page does not launch as described.
+    </string>
+    <string name="fsi_aod_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
+        After clicking, press the power button as quickly as possible to go to Always on Display.\n
+        Wait for a notification to appear on the screen with a pill button.\n
+        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
+        Fail the test if the notification does not show as described.
+    </string>
+    <string name="fsi_turn_on_aod">Turn on Always on Display by toggling on \"Always show time and info\" in Lockscreen Settings.</string>
+    <string name="fsi_turn_off_aod">Turn off Always on Display by toggling off \"Always show time and info\" in Lockscreen Settings.</string>
+    <string name="fsi_notif_title">NotifFsiTest</string>
+    <string name="fsi_mock_call_desc">This page is a full screen intent (e.g. a call).\n
+        Pass the test if you see this page.\n
+        To return to the test, use the back button or gesture and unlock the screen.
+    </string>
+    <string name="fsi_notif_content">Fsi Notif Content Fsi Notif Content Fsi Notif Content \n
+        Fsi Notif Content Fsi Notif Content Fsi Notif Content</string>
+    <string name="fsi_grant_permission">Please toggle on the full screen intents permission for CTSVerifier.</string>
+    <string name="fsi_deny_permission">Please toggle off the full screen intents permission for CTSVerifier</string>
+    <string name="fsi_sticky_hun">There should be a sticky Heads Up Notification on the screen.\n
+        It would not be automatically cleared out.\n
+        Fail the test if it doesn\'t show or disappears within 60s.</string>
+    <string name="fsi_sticky_hun_60s">There should be a Heads Up Notification on the screen.\n
+        It would show for 60s.\n
+        Fail the test if it doesn\'t show or disappears within 60s.</string>
     <string name="np_start_channel_settings">Launch Channel Settings</string>
     <string name="np_start_security_settings">Launch Security Settings</string>
     <string name="np_start_notif_settings">Launch Notification Settings</string>
+    <string name="np_start_lockscreen_settings">Launch Lock Screen Settings</string>
     <string name="np_when_locked_see_redacted">Lock the screen and find the NotifPrivacyTest notification.\n
         Pass the test if the notification content is REDACTED.</string>
     <string name="np_when_locked_see_private">Lock the screen and find the NotifPrivacyTest notification.\n
@@ -2490,6 +2570,7 @@
         icon, large icon, notification title, notification text, and two action buttons.
         If this device does not support heads-up notifications, press Pass.</string>
     <string name="action">Action %1$d</string>
+    <string name="no_test_items">No tests available for this device.</string>
     <string name="tile_service_name">Tile Service for CTS Verifier</string>
     <string name="tiles_test">Tile Service Test</string>
     <string name="tiles_info">This test checks that a Tile Service added by a third party
@@ -2566,6 +2647,8 @@ When the buttons are enabled, pass this test if the information in the dialog wa
     <string name="nls_unblock_app">Please unblock the linked application and return here.</string>
     <string name="nls_block_channel">Please block the linked notification channel and return here.</string>
     <string name="nls_block_group">Please block the linked notification channel group and return here.</string>
+    <string name="nls_channel_settings_with_filter_instructions">In the following dialog, please take a note of which channel settings are visible. Then turn on vibration for the channel and press \"Done\".</string>
+    <string name="nls_channel_settings_with_filter_verification">Were the channel settings shown in a bottom sheet instead of the normal \"full-screen\" settings? Were sound and vibration the only available options?</string>
     <string name="nls_disable_service">Please disable \"Notification Listener for CTS Verifier\"
         under Apps > Gear Icon > Special Access > Notification Access and return here.</string>
     <string name="nls_start_settings">Launch Settings</string>
@@ -2857,6 +2940,27 @@ You should be prompted to select credentials; choose the ones you just installed
 
         6. Repeat step 1 to remove CtsVpnFirewallApp.
     </string>
+    <string name="provisioning_byod_allow_nondismissible_notification_channel">Non-Dismissible Notification Channel</string>
+    <string name="provisioning_byod_allow_nondismissible_notification_title">Non-Dismissible Notification</string>
+    <string name="provisioning_byod_allow_nondismissible_notification_text">This is a notification</string>
+    <string name="provisioning_byod_allow_nondismissible_notification">Non-Dismissible notification</string>
+    <string name="provisioning_byod_allow_nondismissible_notification_instructions">
+        In this test, you\'ll verify that you are unable to dismiss a notification.\n
+
+        1. Grant the non-dismissible exemption by running\n
+           \"adb shell appops set com.android.cts.verifier android:system_exempt_from_dismissible_notifications allow\".\n
+
+        2. Now hit \"Go\" and you will see a notification pop up.\n
+
+        3. Scroll from the top to see the notification and verify you are unable to dismiss it.\n
+
+        4. To then remove the notification you must revoke the exemption by running\n
+           \"adb shell appops set com.android.cts.verifier android:system_exempt_from_dismissible_notifications default\".\n
+
+        5. Now hit \"Go\" again and dismiss the notification.\n
+
+        6. Mark test as pass\n
+    </string>
     <string name="provisioning_byod_always_on_vpn_prepare_button">Prepare VPN</string>
     <string name="provisioning_byod_always_on_vpn_vpn_not_found_note">
         Can\'t find VPN app. Did you install it correctly?
@@ -2997,6 +3101,37 @@ You should be prompted to select credentials; choose the ones you just installed
         Verify that the prompt does not appear at all.\n
         Mark the test as passed if the text at the bottom shows \"PASSED (2/2)\"\n
     </string>
+
+    <string name="provisioning_byod_screenshot">Work profile Screenshot Test</string>
+    <string name="provisioning_byod_screenshot_info">
+        This test verifies how screenshots are saved when using work profile apps.\n
+        \n
+        Whenever a screenshot is taken while a work application is in the foreground,\n
+        the resulting image should:\n
+        \n
+        *  include only the work application\n
+        *  be saved to the work profile
+    </string>
+    <string name="provisioning_byod_screenshot_start">
+        Press \'Open Work App\', to launch an activity in the work profile.\n
+    </string>
+    <string name="provisioning_byod_screenshot_open">Open Work App</string>
+    <string name="provisioning_byod_screenshot_work_app">Work App</string>
+    <string name="provisioning_byod_screenshot_capture">Capture Screenshot</string>
+    <string name="provisioning_byod_screenshot_verify">
+        Examine the screenshot image contained within the checkerboard area below.\n
+        \n
+        Verify the image contains only the work app and does not contain:\n
+            \t* any other application windows\n
+            \t* foreground status or navigation bar content (back, home, clock, battery, signal)\n
+        \n
+        If these conditions are met, pass the test.\n
+    </string>
+    <string name="provisioning_byod_screenshot_capture_title"> Take a screenshot now using the device\'s physical buttons.</string>
+    <string name="provisioning_byod_screenshot_capture_open">Choose Screenshot</string>
+    <string name="provisioning_byod_screenshot_capture_cancel">Cancel Test</string>
+    <string name="provisioning_byod_screenshot_select_title">A screenshot was detected.</string>
+    <string name="provisioning_byod_screenshot_select_message">Press the button to choose the screenshot image just captured. If no images appear, press \'Back\' to cancel this and fail the test.</string>
 
     <!-- Strings for DeskClock -->
     <string name="deskclock_tests">Alarms and Timers Tests</string>
@@ -4318,12 +4453,6 @@ You should be prompted to select credentials; choose the ones you just installed
         3. Verify that performing the following action will trigger a support dialog:\n
            <xliff:g id="user_action" example="Adding an account">%2$s</xliff:g>.<xliff:g id="exception_node" example="NOTE: if the device doesn't support the action...">%3$s</xliff:g>\n
         4. Verify that the support dialog displays the short support message set earlier.\n
-        5. Verify that clicking the "Learn more" link will either launch a help web page with more
-           information or redirect to Device administrators page in Settings app which displays the
-           long support message set earlier.\n
-        6. If in step 5. the help web page was launched, navigate to the Device administrators page
-           from Settings -> Security, open the work profile \'CTS Verifier\' enabled admin and
-           verify that the page displays the long support message set earlier.\n
     </string>
     <string name="optional_policy_transparency_test_note">\n\t<b>NOTE</b>: if the device doesn\'t support this action please skip this test and mark it as passing.</string>
     <string name="user_restriction_set_step">
@@ -5153,21 +5282,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="tv_start_test">Start Test</string>
     <string name="tv_done">Done</string>
 
-    <!-- Audio Capabilities test -->
-    <string name="tv_audio_capabilities_test">Audio Capabilities Test</string>
-    <string name="tv_audio_capabilities_test_info">This test checks if AudioDeviceInfo and
-    AudioTrack#isDirectPlaybackSupported APIs correctly report the Audio capabilities
-    of the connected audio devices.</string>
-    <string name="tv_audio_capabilities_no_receiver_connected">Disconnect all receivers or
-    soundbars which are connected. </string>
-    <string name="tv_audio_capabilities_receiver_connected">Connect a receiver or
-    soundbar which can play Dolby Atmos. </string>
-    <string name="tv_audio_capabilities_atmos_supported">Does your Android TV device support Dolby
-    Atmos (either passthrough or decode)?  </string>
-    <string name="tv_audio_capabilities_skip_test"> This test is only applicable to OTT and STB
-        devices. Is your device a soundbar or panel TV?
-    </string>
-
     <!-- Hotplug Test -->
     <string name="tv_hotplug_test">Hotplug Test</string>
     <string name="tv_hotplug_test_info">This test checks whether DisplayManager responds correctly
@@ -5322,7 +5436,7 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_uap_buttons_test">USB Audio Peripheral Buttons Test</string>
     <string name="uapButtonTestInstructions">Connect the USB Audio headset with buttons
-        and press each transport/media button in turn.</string>
+        and press each button on the headset to verify recognition.</string>
 
      <string name="uapNotificationsTestInfo">
          This test verifies that the correct notifications and Intents are sent when a USB audio
@@ -5335,28 +5449,45 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_usb_restrict_record_test">USB Audio Restrict Record Access Test</string>
     <string name="audio_usb_restrict_record_entry">
-        This test checks that the appropriate warning message is displayed when an app which has
-        not been granted RECORD permission could potentially record audio through the raw USB
-        API. To test, connect a USB peripheral with CAPTURE capability and press the "Test" button.
-        The access permission API should contain a warning message about potential dangerous
-        access. If so, the test passes.
+    Tests whether the appropriate warning message is displayed when an app which has
+    not been granted RECORD permission could potentially record audio through the raw USB API.
+    \n\nTest Setup:
+    \n1. Exit CTS-Verifier with the Home button
+    \n2. Go to Android Settings
+    \n3. Select Apps &amp; notifications
+    \n4. Select CTS Verifier
+    \n5. Select Permissions
+    \n6. Deny Microphone permission
+    \n7. Start CTS Verifier. Ignore the \"Please grant all permissions\" message by clicking on the
+        face of the CTS Verifier (not in the dialog).
+    \n8. Run this test
+    \n\nTest Process:
+    \nConnect a USB peripheral with CAPTURE capability and press the \"Test\" button.
+    \n\nTest Criteria:
+    \nThe access permission API should present a warning message about potential dangerous
+    access. If so, the test passes. If you do not see this warning, the test fails.
+    \n\nPost-test completion:
+    \n1. Exit CTS-Verifier with the Home button
+    \n2. Reenable Microphone permission in Android Settings
     </string>
 
     <string name="audio_usb_restrict_permission_info">
-        The test can only be run with Microphone permission DENIED.\n\n
-        To run this test:\n
-        &#160;&#160;Exit CTS-Verifier\n
-        &#160;&#160;Go to Android Settings\n
-        &#160;&#160;Select Apps &amp; notifications\n
-        &#160;&#160;Select CTS Verifier\n
-        &#160;&#160;Select Permissions\n
-        &#160;&#160;Deny Microphone permission\n
-        &#160;&#160;Run this test\n
-        When complete:\n
-        &#160;&#160;Exit CTS-Verifier\n
-        &#160;&#160;Return to Permissions Settings for CTS Verifier\n
-        &#160;&#160;grant Microphone permission
+    The test can only be run with Microphone permission DENIED.
+    \n\nTo run this test:
+    \n1. Exit CTS-Verifier with the Home button
+    \n2. Go to Android Settings
+    \n3. Select Apps &amp; notifications
+    \n4. Select CTS Verifier
+    \n5. Select Permissions
+    \n6. Deny Microphone permission
+    \n7. Start CTS Verifier. Ignore the \"Please grant all permissions\" message by clicking on the
+    ace of the CTS Verifier (not in the dialog).
+    \n8. Run this test
+    \n\nWhen complete:
+    \n1. Exit CTS-Verifier with the Home button
+    \n2. Reenable Microphone permission in Android Settings
     </string>
+
     <string name="usb_restrictrecord_instructions">
         Permissions for CTS Verifier are correctly set to run this test.\n\n
         Connect a USB peripheral with CAPTURE capability. Press the "Test" button and verify that
@@ -5507,10 +5638,14 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_stop">Stop</string>
     <string name="audio_general_status">Status</string>
     <string name="audio_general_pass">PASS</string>
+    <string name="audio_general_teststatus_pass">Test Status: PASS</string>
     <string name="audio_general_fail">FAIL</string>
+    <string name="audio_general_teststatus_fail">Test Status: FAIL</string>
     <string name="audio_general_not_tested">Not Tested</string>
     <string name="audio_general_not_required">Please Test If Supported</string>
     <string name="audio_general_required">Required</string>
+    <string name="audio_general_run">Run</string>
+    <string name="audio_general_cancel">Cancel</string>
 
     <string name="audio_general_Input">Input</string>
     <string name="audio_general_Output">Output</string>
@@ -5552,7 +5687,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \nTest Completion:
         \n - Once each of the data paths and APIs have been measured, the test can be marked successful.
     </string>
-
+    <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <!-- Audio Loopback Latency Test -->
@@ -5593,14 +5728,27 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
     in a quiet room. Press the Start button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_headsetpath_instructions">Insert the loopback plug in the
-    headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_headsetpath_instructions">If supported, insert the loopback plug
+        into the headset jack.  Press the Start button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_usbpath_instructions">Plug in the appropriate USB audio test
-        peripheral with loopback setup into the USB port. Press the start button and allow the
-        test to proceed.</string>
+    <string name="audio_loopback_usbpath_instructions">If USB Audio supported, Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+        button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
+
+    <!-- result codes -->
+    <string name="audio_loopback_resultcode_none">Result: None.</string>
+    <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
+    <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
+    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency not met.</string>
+    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency not met.</string>
+    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path not met.</string>
+    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency not met.</string>
+    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency not met.</string>
+    <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
+    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
+    <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
 
     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
@@ -5772,7 +5920,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="analog_headset_pass_noheadset">"PASS (No headset port available)"</string>
     <string name="analog_headset_pass">PASS</string>
     <string name="analog_headset_port_detected">"Analog port detected"</string>
-    <string name="analog_headset_press_buttons">Press headset buttons to verify recognition</string>
+    <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Headset connected</string>
     <string name="analog_headset_no_headset">No Headset - Connect headset to 3.5mm analog jack</string>
@@ -5810,6 +5958,22 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
 
+    <!-- Audio Connection Test -->
+    <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
+    <string name="audio_disconnect_info">
+        Tests that audio streams generate the correct stream disconnection events. Note that this
+        test is only required for devices that support wired headset.
+        \n\nTest Requirements
+        \nA wired (analog or USB) headset peripheral, or analog loopback adapter.
+        \n\nTest Process:
+        \n1. Press the \"Start\" button.
+        \n2. For each tested audio route:
+        \n a. Connect the headset peripheral when instructed.
+        \n b. Disconnect the headset peripheral when instructed.
+        \n\nTest Criteria:
+        \nThe test passes if all routes demonstrate the correct stream disconnection behavior.
+    </string>
+    <string name="audio_disconnect_wired_prompt">Does this device support an analog or USB audio peripheral?</string>
     <!--Audio Frequency Global strings -->
     <string name="af_button_play">Play</string>
     <string name="af_button_stop">Stop</string>
@@ -5843,7 +6007,10 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="audio_tap2tone_too_few">Not enough edges. Use fingernail.</string>
     <string name="audio_tap2tone_too_many">Too many edges. Use fingernail. Ensure there is
     no background noise.</string>
-    <string name="audio_tap2tone_buffer_frames">Buffer Frames:</string>
+    <string name="audio_tap2tone_buffer_frames">Buffer Frames: </string>
+    <string name="audio_tap2tone_bad_streams">Can\'t open streams.</string>
+    <string name="audio_tap2tone_noio">No mic and/or speaker. PASS</string>
+
     <!-- Strings for 6DoF test -->
     <string name="six_dof_test">6DoF Test</string>
     <string name="action_settings">Settings</string>
@@ -6179,13 +6346,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="telecom_audio_call_test">Telecom Call Audio Test</string>
     <string name="telecom_audio_call_test_info">This test verifies that there are no audio
         issues when starting a sim call while in an active self-managed call. Note, this test
-        an active sim with service.
-    </string>
-    <string name="tel_audio_call_test_in_call_ui_label">call audio test InCallUi</string>
-    <string name="tel_audio_call_test_in_call_ui_instructions_text">
-        The self-managed call is now active. There should be audio playing to simulate a call.
-        Hold your ear to the phone and determine if you can hear audio playing.  Return to the
-        test by clicking "Go back to test" below.
+        requires the device under test to have an active sim with service.
     </string>
     <string name="telecom_status_image_description"> The image represents the status of the step
     in the test. The start state is indeterminate which is a question mark image. If the test step
@@ -6194,11 +6355,12 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="tel_as1_instructions">set default outgoing phone account to a SIM based account
     </string>
     <string name="tel_as2_instructions">
-        Click the button below to initiate a self-managed call. You should be segued over
-        to a InCall-UI screen and hear an audio clip.
+        Click the button below to initiate a self-managed call. Once clicked, you should hear an
+        audio clip looping in whichever audio route is active (e.g. earpiece).
     </string>
     <string name="tel_as3_instructions">Click the button below to confirm the audio from the
-        self-managed call is audible
+        self-managed call is audible. Hearing the audio means the self-managed call was created
+        successfully.
     </string>
     <string name="tel_as4_instructions">Now, enter a valid phone number and start an active sim
         based call. Ensure call audio is working both ways and end the sim call.
@@ -6749,6 +6911,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="stop_advertising_presence">Stop Advertising</string>
     <string name="device_id_info_presence">You are advertising with deviceId: %1$d</string>
     <string name="device_found_presence">Reference device found. %1$d of %2$d samples collected</string>
+    <string name="result_pending_presence">Awaiting Rx RSSI median from reference device... </string>
     <string name="dut_test_result_info_presence">Tx RSSI median: %1$d. Rx RSSI median received from reference device: %2$d</string>
     <string name="ref_test_result_info_presence">Rx RSSI median computed: %1$d.</string>
     <string name="reference_device_id_input_presence">Enter the device ID displayed on the advertising device</string>
@@ -6773,7 +6936,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n1. Ensure that the test is already started on the reference device.
         \n2. Input the device ID of the reference device (displayed on the reference device) into the provided field and click "Start Test"
         \n3. The test is automatically stopped and passed (or failed) when all the required data is collected
-        \n4. The test is passed if the median RSSI from both DUT and reference device is between -45dBm and 65dBm.
+        \n4. The test is passed if the median RSSI from both DUT and reference device is between -65dBm and -45dBm.
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>
@@ -6919,4 +7082,120 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="audio_clear_preferred_mixer_attributes_failed">Clearing preferred mixer attributes failed.</string>
     <string name="audio_get_preferred_mixer_attributes_should_be_null">Preferred mixer attributes is not null after calling AudioManager#clearPreferredMixerAttributes.</string>
     <string name="audio_no_callback_for_preferred_mixer_attributes_changed">Callback is not called when preferred mixer attributes changed.</string>
+
+    <!-- Strings for CaptureContentForNotes test -->
+    <string name="ccfn_tests">Capture Content For Notes Tests</string>
+    <string name="ccfn_tests_info">
+        This test verifies the support for Content Capture For Notes APIs on devices that have the
+        ROLE_NOTES enabled.
+
+        \n\nIf the ROLE_NOTES is not enabled, no test should be shown in the list below, and you
+        should mark the CTS test as passed.
+
+        \n\nFor this test you need to install CtsDefaultNotesApp.apk and set it as the Default notes
+        app.
+
+        \n\nFor some tests you will need to set up device owner.
+
+        \n\nPlease clear the device owner after all the test cases are run, if it was set up.
+    </string>
+    <!-- Dialogs -->
+    <string name="set_default_notes_button_label">Set default notes app</string>
+    <string name="set_default_notes_button_info">
+        For these tests you need to install CtsDefaultNotesApp.apk.
+        \nThen you need to set it as the Default notes app setting through device settings app.
+        \nThe Default notes app settings is generally under Apps -> Default apps -> Notes app.
+    </string>
+    <string name="setup_device_owner_button_label">Set up device owner</string>
+    <string name="setup_device_owner_button_info">
+        Some tests require to set up device owner in order to enforce device manager policies.
+        Please run:
+        \nadb shell dpm set-device-owner --user 0 com.android.cts.verifier/.capturecontentfornotes.DeviceAdminTestReceiver
+    </string>
+    <!-- Error messages -->
+    <string name="admin_policy_setup_failed">
+        Failed to set up device admin policy, is the device owner set up?
+    </string>
+    <!-- Toasts -->
+    <string name="disable_screenshot_toast">Screenshots disabled successfully</string>
+    <string name="enable_screenshot_toast">Screenshots enabled successfully</string>
+    <string name="clear_device_owner_toast">Successfully cleared device owner</string>
+    <string name="no_command_run_toast">No command run</string>
+    <!-- Other button labels -->
+    <string name="disable_screenshot_button_label">Disable screenshots</string>
+    <string name="enable_screenshot_button_label">Enable screenshots</string>
+    <string name="clear_device_owner_button_label">Clear device owner</string>
+    <!-- Test titles and instructions -->
+    <string name="ccfn_launch_and_add_test">Fire intent action then add screenshot</string>
+    <string name="ccfn_launch_and_add_test_info">
+        1. Open the CtsDefaultNotesApp using certain actions such as the stylus button click.
+        \n2. Then tap on the Fire Intent Action button shown in the CtsDefaultNotesApp.
+        \n3. Android SystemUI should show a UI with a button that lets you add the screenshot to the
+        notes app, tap on this button.
+        \n4. The CtsDefaultNotesApp should be back in focus informing that screenshot was received.
+        \n5. If so, pass this test else fail.
+    </string>
+    <string name="ccfn_launch_and_cancel_test">Fire intent action then cancel screenshot</string>
+    <string name="ccfn_launch_and_cancel_test_info">
+        1. Open the CtsDefaultNotesApp using certain actions such as the stylus button click.
+        \n2. Then tap on the Fire Intent Action button shown in the CtsDefaultNotesApp.
+        \n3. Android SystemUI should show a UI with a button that lets you cancel, tap on this
+        button.
+        \n4. The CtsDefaultNotesApp should be back in focus informing that screenshot was not
+        received.
+        \n5. If so, pass this test else fail.
+    </string>
+    <string name="ccfn_launch_window_unsupported">
+        Fire intent action but window mode not supported
+    </string>
+    <string name="ccfn_launch_window_unsupported_info">
+        1. Open the CtsDefaultNotesApp using the app icon, this should launch the app in regular
+        mode.
+        \n2. Then tap on the Fire Intent Action button shown in the CtsDefaultNotesApp.
+        \n3. Android SystemUI should not be shown, instead the CtsDefaultNotesApp should inform that
+        window mode is unsupported.
+        \n4. If so, pass this test else fail.
+    </string>
+    <string name="ccfn_launch_blocked_by_admin">Fire intent action but blocked by admin</string>
+    <string name="ccfn_launch_blocked_blocked_by_admin_info">
+        1. Ensure device owner is set up by running:
+        \nadb shell dpm set-device-owner --user 0 com.android.cts.verifier/.capturecontentfornotes.DeviceAdminTestReceiver
+        \n2. Tap on the disable screenshot button shown below.
+        \n3. Open the CtsDefaultNotesApp using certain actions such as the stylus button click.
+        \n4. Then tap on the Fire Intent Action button shown in the CtsDefaultNotesApp.
+        \n5. Android SystemUI should not be shown, instead the CtsDefaultNotesApp should inform that
+        screenshot blocked by admin.
+        \n6. If so, pass this test else fail.
+        \n7. Ensure to tap on enable screenshot button otherwise future tests would be impacted.
+    </string>
+    <string name="ccfn_call_can_use_api_true">Trigger can all API which returns true</string>
+    <string name="ccfn_call_can_use_api_true_info">
+        1. Open the CtsDefaultNotesApp using certain actions such as the stylus button click.
+        \n2. Then tap on the Call Can Use API button.
+        \n3. Verify the CtsDefaultNotesApp informs can use API returned true.
+        \n4. If so, pass this test else fail.
+    </string>
+    <string name="ccfn_call_can_use_api_blocked_by_admin">
+        Trigger can call API but blocked by admin
+    </string>
+    <string name="ccfn_call_can_use_api_blocked_by_admin_info">
+        1. Ensure device owner is set up by running:
+        \nadb shell dpm set-device-owner --user 0 com.android.cts.verifier/.capturecontentfornotes.DeviceAdminTestReceiver
+        \n2. Tap on the disable screenshot button shown below.
+        \n3. Open the CtsDefaultNotesApp using certain actions such as the stylus button click.
+        \n4. Tap on the Call Can Use API button.
+        \n5. Verify the CtsDefaultNotesApp informs can use API returned false.
+        \n6. If so, pass this test else fail.
+        \n7. Ensure to tap on enable screenshot button otherwise future tests would be impacted.
+    </string>
+    <string name="ccfn_call_can_use_api_window_unsupported">
+        Trigger can call API but window mode unsupported
+    </string>
+    <string name="ccfn_call_can_use_api_window_unsupported_info">
+        1. Open the CtsDefaultNotesApp using the app icon, this should launch the app in regular
+        mode.
+        \n2. Tap on the Call Can Use API button.
+        \n3. Verify the CtsDefaultNotesApp informs can use API returned false.
+        \n4. If so, pass this test else fail.
+    </string>
 </resources>

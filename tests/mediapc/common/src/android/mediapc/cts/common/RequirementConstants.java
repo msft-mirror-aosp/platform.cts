@@ -41,15 +41,20 @@ public class RequirementConstants {
     public static final String R5_1__H_1_14 = "r5_1__h_1_14"; // 5.1/H-1-14
     public static final String R5_1__H_1_15 = "r5_1__h_1_15"; // 5.1/H-1-16
     public static final String R5_1__H_1_16 = "r5_1__h_1_16"; // 5.1/H-1-16
+    public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
+    public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
     public static final String R5_6__H_1_1 = "r5_6__h_1_1"; // 5.6/H-1-1
     public static final String R5_7__H_1_1 = "r5_7__h_1_1"; // 5.7/H-1-1
     public static final String R5_7__H_1_2 = "r5_7__h_1_2"; // 5.7/H-1-2
+    public static final String R5_12__H_1_2 = "r5_12__h_1_2"; // 5.12/H-1-2
     public static final String R7_5__H_1_1 = "r7_5__h_1_1"; // 7.5/H-1-1
     public static final String R7_5__H_1_2 = "r7_5__h_1_2"; // 7.5/H-1-2
     public static final String R7_5__H_1_3 = "r7_5__h_1_3"; // 7.5/H-1-3
     public static final String R7_5__H_1_4 = "r7_5__h_1_4"; // 7.5/H-1-4
+
+    public static final String R5_12__H_1_3 = "r5_12__h_1_3"; // 5.12/H-1-3
 
     // these includes "its" because the proto in google3 was originally implemented incorrectly
     public static final String R7_5__H_1_5 = "r7_5__h_1_5__its"; // 7.5/H-1-5
@@ -62,6 +67,8 @@ public class RequirementConstants {
     public static final String R7_5__H_1_12 = "r7_5__h_1_12"; // 7.5/H-1-12
     public static final String R7_5__H_1_13 = "r7_5__h_1_13"; // 7.5/H-1-13
     public static final String R7_5__H_1_14 = "r7_5__h_1_14"; // 7.5/H-1-14
+    public static final String R7_5__H_1_15 = "r7_5__h_1_15"; // 7.5/H-1-15
+    public static final String R7_5__H_1_16 = "r7_5__h_1_16"; // 7.5/H-1-16
     public static final String R7_1_1_1__H_1_1 = "r7_1_1_1__h_1_1"; // 7.1.1.1/H-1-1
     public static final String R7_1_1_3__H_1_1 = "r7_1_1_3__h_1_1"; // 7.1.1.3/H-1-1
     public static final String R7_6_1__H_1_1 = "r7_6_1__h_1_1"; // 7.6.1/H-1-1
@@ -91,12 +98,16 @@ public class RequirementConstants {
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
     public static final String CODEC_INIT_LATENCY = "codec_initialization_latency_ms";
     public static final String AV1_DEC_REQ = "av1_decoder_requirement_boolean";
+    public static final String AVIF_DEC_REQ = "avif_image_decoder_boolean";
+    public static final String RGBA_1010102_COLOR_FORMAT_REQ = "rgba_1010102_color_format";
     public static final String NUM_4k_HW_DEC = "number_4k_hw_decoders";
     public static final String NUM_4k_HW_ENC = "number_4k_hw_encoders";
     public static final String SECURE_REQ_SATISFIED = "secure_requirement_satisfied_boolean";
     public static final String NUM_CRYPTO_HW_SECURE_ALL_SUPPORT =
         "number_crypto_hw_secure_all_support";
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
+
+    public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
     public static final String PRIMARY_CAMERA_RESOLUTION = "primary_camera_resolution";
@@ -131,6 +142,18 @@ public class RequirementConstants {
             "rear_camera_stream_usecase_supported";
     public static final String FRONT_CAMERA_STREAM_USECASE_SUPPORTED =
             "front_camera_stream_usecase_supported";
+    public static final String REAR_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
+            "rear_camera2_extension_night_supported";
+    public static final String FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
+            "front_camera2_extension_night_supported";
+    public static final String REAR_CAMERAX_EXTENSION_NIGHT_SUPPORTED =
+            "rear_camerax_extension_night_supported";
+    public static final String FRONT_CAMERAX_EXTENSION_NIGHT_SUPPORTED =
+            "front_camerax_extension_night_supported";
+    public static final String REAR_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
+            "rear_camera_dynamic_tenbits_supported";
+    public static final String FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
+            "front_camera_dynamic_tenbits_supported";
     public static final String API_NATIVE_LATENCY = "native_latency_ms";
     public static final String API_JAVA_LATENCY = "java_latency_ms";
 

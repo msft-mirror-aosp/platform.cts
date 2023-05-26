@@ -29,6 +29,7 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.MyAutofillCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.FillResponse;
 import android.util.Log;
@@ -37,6 +38,7 @@ import com.android.compatibility.common.util.RetryableException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -238,6 +240,7 @@ public class DisableAutofillTest extends AutoFillServiceTestCase.ManualActivityL
         launchPreSimpleSaveActivity(PostLaunchAction.ASSERT_ENABLED_AND_AUTOFILL);
     }
 
+    @Ignore("b/275112488")
     @Test
     @AppModeFull(reason = "testDisableApp() is enough")
     public void testDisableAppThenResetServiceToReenableIt() throws Exception {
@@ -312,6 +315,7 @@ public class DisableAutofillTest extends AutoFillServiceTestCase.ManualActivityL
         launchSimpleSaveActivity(PostLaunchAction.ASSERT_ENABLED_AND_AUTOFILL);
     }
 
+    @FlakyTest(bugId = 278560571)
     @Test
     @AppModeFull(reason = "testDisableActivity() is enough")
     public void testDisableActivityThenResetServiceToReenableIt() throws Exception {

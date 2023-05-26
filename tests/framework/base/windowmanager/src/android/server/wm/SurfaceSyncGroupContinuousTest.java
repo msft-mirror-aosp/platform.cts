@@ -16,17 +16,9 @@
 
 package android.server.wm;
 
-import static android.server.wm.UiDeviceUtils.pressUnlockButton;
-import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
-import android.app.KeyguardManager;
-import android.app.UiAutomation;
-import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.scvh.SyncValidatorSCVHTestCase;
 import android.view.cts.surfacevalidator.CapturedActivity;
 
 import androidx.test.rule.ActivityTestRule;
@@ -35,8 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import java.util.Objects;
 
 public class SurfaceSyncGroupContinuousTest {
     @Rule
@@ -52,29 +42,19 @@ public class SurfaceSyncGroupContinuousTest {
     public void setup() {
         mCapturedActivity = mActivityRule.getActivity();
         mCapturedActivity.setLogicalDisplaySize(getLogicalDisplaySize());
-
-        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity();
-        final KeyguardManager km = mCapturedActivity.getSystemService(KeyguardManager.class);
-        if ((km != null && km.isKeyguardLocked()) || !Objects.requireNonNull(
-                mCapturedActivity.getSystemService(PowerManager.class)).isInteractive()) {
-            pressWakeupButton();
-            pressUnlockButton();
-        }
-        uiAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     public void testSurfaceControlViewHostIPCSync_Fast() throws Throwable {
         mCapturedActivity.verifyTest(
-                new SyncValidatorSCVHTestCase(0 /* delayMs */, false /* overrideDefaultDuration */),
-                mName);
+                new SyncValidatorSCVHTestCase(0 /* delayMs */, false /* overrideDefaultDuration */,
+                        false /* inProcess */), mName);
     }
 
     @Test
     public void testSurfaceControlViewHostIPCSync_Slow() throws Throwable {
         mCapturedActivity.verifyTest(new SyncValidatorSCVHTestCase(100 /* delayMs */,
-                false /* overrideDefaultDuration */), mName);
+                false /* overrideDefaultDuration */, false /* inProcess */), mName);
     }
 
     @Test
@@ -82,7 +62,15 @@ public class SurfaceSyncGroupContinuousTest {
     public void testSurfaceControlViewHostIPCSync_Short() throws Throwable {
         mCapturedActivity.setMinimumCaptureDurationMs(5000);
         mCapturedActivity.verifyTest(
-                new SyncValidatorSCVHTestCase(0 /* delayMs */, true /* overrideDefaultDuration */),
-                mName);
+                new SyncValidatorSCVHTestCase(0 /* delayMs */, true /* overrideDefaultDuration */,
+                        false /* inProcess */), mName);
+    }
+
+    @Test
+    @Presubmit
+    public void testSurfaceControlViewHostSyncInProcess() throws Throwable {
+        mCapturedActivity.setMinimumCaptureDurationMs(5000);
+        mCapturedActivity.verifyTest(new SyncValidatorSCVHTestCase(0 /* delayMs */,
+                true /* overrideDefaultDuration */, true /* inProcess */), mName);
     }
 }

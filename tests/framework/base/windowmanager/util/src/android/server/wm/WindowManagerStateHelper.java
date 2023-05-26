@@ -51,6 +51,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /** Window Manager State helper class with assert and wait functions. */
 public class WindowManagerStateHelper extends WindowManagerState {
@@ -193,8 +194,9 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
     void waitAndAssertWindowShown(int windowType, boolean show) {
         assertTrue(waitFor(state -> {
-            WindowState w = state.findFirstWindowWithType(windowType);
-            return w != null && w.isSurfaceShown() == show;
+            Stream<WindowState> windows = getMatchingWindows(
+                    ws -> ws.isSurfaceShown() == show && ws.getType() == windowType);
+            return windows.findAny().isPresent();
         }, "wait for window surface " + (show ? "show" : "hide")));
     }
 
@@ -233,6 +235,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
             waitForLastOrientation(screenOrientation);
         }
         assertEquals(message, screenOrientation, getLastOrientation());
+    }
+
+    /** Waits for the configuration orientation (landscape or portrait) of the default display. */
+    public void waitForDisplayOrientation(int configOrientation) {
+        waitForWithAmState(state -> state.getDisplay(DEFAULT_DISPLAY)
+                        .mFullConfiguration.orientation == configOrientation,
+                "orientation of default display to be " + configOrientation);
     }
 
     /**

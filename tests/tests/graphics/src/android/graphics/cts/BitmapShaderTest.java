@@ -16,11 +16,14 @@
 package android.graphics.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
+import android.graphics.Gainmap;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
@@ -242,5 +245,53 @@ public class BitmapShaderTest {
         // Configuring the anisotropic value should override the default filter mode
         shader.setMaxAnisotropy(4);
         assertEquals(BitmapShader.FILTER_MODE_DEFAULT, shader.getFilterMode());
+    }
+
+    @Test
+    public void testRecycledBitmapThrowsISE() {
+        Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        BitmapShader shader = new BitmapShader(bitmap,
+                Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        Paint paint = new Paint();
+        Canvas canvas = new Canvas(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888));
+        bitmap.recycle();
+        assertThrows(IllegalStateException.class, () -> {
+            paint.setShader(shader);
+            canvas.drawPaint(paint);
+        });
+        assertThrows(IllegalStateException.class, () -> {
+            new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        });
+    }
+
+    @Test
+    public void testBitmapShaderAppliesGainmapHLG() {
+        Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(Color.WHITE);
+        Bitmap gainmapBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        gainmapBitmap.eraseColor(0);
+        bitmap.setGainmap(new Gainmap(gainmapBitmap));
+
+        Paint paint = new Paint();
+        paint.setShader(new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        Bitmap result = Bitmap.createBitmap(1, 1, Bitmap.Config.RGBA_F16, false,
+                ColorSpace.get(ColorSpace.Named.BT2020_HLG));
+        Canvas canvas = new Canvas(result);
+        canvas.drawPaint(paint);
+
+        // Gainmap is all-black, no boost should happen
+        Color color = result.getColor(0, 0);
+        assertEquals(0.75f, color.red(), 0.01f);
+        assertEquals(0.75f, color.green(), 0.01f);
+        assertEquals(0.75f, color.blue(), 0.01f);
+
+        gainmapBitmap.eraseColor(Color.WHITE);
+        canvas.drawPaint(paint);
+        color = result.getColor(0, 0);
+
+        // Gainmap is all-white, maximum boost of 2x should happen
+        assertEquals(0.88, color.red(), 0.01f);
+        assertEquals(0.88, color.green(), 0.01f);
+        assertEquals(0.88, color.blue(), 0.01f);
     }
 }

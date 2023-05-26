@@ -65,29 +65,40 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
 
     @Override
     public void setUp() throws Exception {
+        boolean isSetUpComplete = false;
         super.setUp();
         NewOutgoingCallBroadcastReceiver.reset();
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
-        setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
+        try {
+            setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
 
-        mTelecomManager.registerPhoneAccount(TEST_SIM_CALL_MANAGER_ACCOUNT);
-        TestUtils.enablePhoneAccount(getInstrumentation(),
-                TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
-        assertPhoneAccountEnabled(TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
-
+            mTelecomManager.registerPhoneAccount(TEST_SIM_CALL_MANAGER_ACCOUNT);
+            TestUtils.enablePhoneAccount(getInstrumentation(),
+                    TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
+            assertPhoneAccountEnabled(TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
+            isSetUpComplete = true;
+        } finally {
+            // Force tearDown if setUp errors out to ensure unused listeners are cleaned up.
+            if (!isSetUpComplete) {
+                tearDown();
+            }
+        }
     }
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        if (!mShouldTestTelecom) return;
-
-        mTelecomManager.unregisterPhoneAccount(TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
+        try {
+            if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
+                mTelecomManager.unregisterPhoneAccount(TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
+            }
+        } finally {
+            super.tearDown();
+        }
     }
 
     public void testQueryLocationException() {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         String message = "QueryLocationException";
         Throwable cause = new Throwable();
@@ -119,7 +130,7 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
      * OutcomeReceiver)}
      */
     public void testQueryLocationForEmergencyTryNormalCall() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         try {
             placeAndVerifyCall();
@@ -161,7 +172,7 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
      * OutcomeReceiver)}
      */
     public void testQueryLocationForEmergencyReturnLocation() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         try {
             // Add Test Provider
@@ -223,7 +234,7 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
      * OutcomeReceiver)}
      */
     public void testQueryLocationForEmergencyReturnTimeoutException() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         try {
             // Add Test Provider

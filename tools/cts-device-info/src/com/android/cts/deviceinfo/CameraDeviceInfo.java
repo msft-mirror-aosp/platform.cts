@@ -16,12 +16,16 @@
 package com.android.cts.deviceinfo;
 
 import android.content.Context;
+import android.graphics.ColorSpace;
+import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.BlackLevelPattern;
+import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.ColorSpaceTransform;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.MultiResolutionStreamConfigurationMap;
 import android.hardware.camera2.params.MultiResolutionStreamInfo;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -46,6 +50,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Camera information collector.
@@ -269,6 +274,40 @@ public final class CameraDeviceInfo extends DeviceInfo {
             mStore.endGroup();
         }
 
+        private void storeColorSpaceProfiles(
+                ColorSpaceProfiles profiles, String protoName) throws Exception {
+            if (protoName == null) {
+                mStore.startGroup();
+            } else {
+                mStore.startGroup(protoName);
+            }
+
+            mStore.startArray("color_space_profiles");
+            Set<ColorSpace.Named> supportedColorSpaces = profiles.getSupportedColorSpaces(
+                    ImageFormat.UNKNOWN);
+            for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                mStore.startGroup();
+                Set<Integer> supportedImageFormats =
+                        profiles.getSupportedImageFormatsForColorSpace(colorSpace);
+                mStore.addResult("color_space", colorSpace.ordinal());
+                mStore.startArray("image_formats");
+                for (int imageFormat : supportedImageFormats) {
+                    mStore.startGroup();
+                    Set<Long> supportedDynamicRangeProfiles =
+                            profiles.getSupportedDynamicRangeProfiles(colorSpace, imageFormat);
+                    mStore.addResult("image_format", imageFormat);
+                    mStore.addArrayResult("dynamic_range_profiles",
+                            supportedDynamicRangeProfiles.stream().mapToLong(
+                                    Long::longValue).toArray());
+                    mStore.endGroup();
+                }
+                mStore.endArray();
+                mStore.endGroup();
+            }
+            mStore.endArray();
+            mStore.endGroup();
+        }
+
         private void storeColorSpaceTransform(
                 ColorSpaceTransform xform, String protoName) throws Exception {
             if (protoName == null) {
@@ -284,6 +323,18 @@ public final class CameraDeviceInfo extends DeviceInfo {
                 }
             }
             mStore.endArray();
+            mStore.endGroup();
+        }
+
+        private void storeDynamicRangeProfiles(
+                DynamicRangeProfiles profiles, String protoName) throws Exception {
+            if (protoName == null) {
+                mStore.startGroup();
+            } else {
+                mStore.startGroup(protoName);
+            }
+            mStore.addArrayResult("dynamic_range_profiles",
+                    profiles.getSupportedProfiles().stream().mapToLong(Long::longValue).toArray());
             mStore.endGroup();
         }
 
@@ -426,6 +477,10 @@ public final class CameraDeviceInfo extends DeviceInfo {
             } else if (keyType == MultiResolutionStreamConfigurationMap.class) {
                 storeMultiResStreamConfigurationMap(
                         (MultiResolutionStreamConfigurationMap) keyValue, protoName);
+            } else if (keyType == DynamicRangeProfiles.class) {
+                storeDynamicRangeProfiles((DynamicRangeProfiles) keyValue, protoName);
+            } else if (keyType == ColorSpaceProfiles.class) {
+                storeColorSpaceProfiles((ColorSpaceProfiles) keyValue, protoName);
             } else {
                 Log.w(TAG, "Storing unsupported key type: " + keyType +
                         " for keyName: " + keyName);

@@ -22,21 +22,26 @@ import android.app.Instrumentation
 import android.content.ComponentName
 import android.content.Intent
 import android.content.Intent.ACTION_REVIEW_APP_DATA_SHARING_UPDATES
+import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_OTHER
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.DeviceConfig
 import android.provider.Settings
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiObjectNotFoundException
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
 import android.text.Spanned
 import android.text.style.ClickableSpan
 import android.view.View
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObjectNotFoundException
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
@@ -89,10 +94,12 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val OTHER_APP_PACKAGE_NAME = "android.permission3.cts.usepermissionother"
         const val TEST_INSTALLER_PACKAGE_NAME = "android.permission3.cts"
 
-        const val ALLOW_ALL_PHOTOS_BUTTON =
-            "com.android.permissioncontroller:id/permission_allow_all_photos_button"
-        const val SELECT_PHOTOS_BUTTON =
-            "com.android.permissioncontroller:id/permission_allow_selected_photos_button"
+        const val ALLOW_ALL_BUTTON =
+            "com.android.permissioncontroller:id/permission_allow_all_button"
+        const val SELECT_BUTTON =
+            "com.android.permissioncontroller:id/permission_allow_selected_button"
+        const val DONT_SELECT_MORE_BUTTON =
+            "com.android.permissioncontroller:id/permission_dont_allow_more_selected_button"
         const val ALLOW_BUTTON =
                 "com.android.permissioncontroller:id/permission_allow_button"
         const val ALLOW_FOREGROUND_BUTTON =
@@ -113,8 +120,8 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 "com.android.permissioncontroller:id/allow_foreground_only_radio_button"
         const val ASK_RADIO_BUTTON = "com.android.permissioncontroller:id/ask_radio_button"
         const val DENY_RADIO_BUTTON = "com.android.permissioncontroller:id/deny_radio_button"
-        const val SELECT_PHOTOS_RADIO_BUTTON =
-            "com.android.permissioncontroller:id/select_photos_radio_button"
+        const val SELECT_RADIO_BUTTON =
+            "com.android.permissioncontroller:id/select_radio_button"
 
         const val NOTIF_TEXT = "permgrouprequest_notifications"
         const val ALLOW_BUTTON_TEXT = "grant_dialog_button_allow"
@@ -168,8 +175,11 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                         " practices may vary based on your app version, use, region, and age."
         const val LEARN_ABOUT_DATA_SHARING = "Learn about data sharing"
         const val LOCATION_PERMISSION = "Location permission"
-        const val PERMISSION_MANAGER = "Permission manager"
         const val APP_PACKAGE_NAME_SUBSTRING = "android.permission3"
+        const val NOW_SHARED_WITH_THIRD_PARTIES = "Your location data is now shared with third " +
+                "parties"
+        const val NOW_SHARED_WITH_THIRD_PARTIES_FOR_ADS = "Your location data is now shared with " +
+                "third parties for advertising or marketing"
         const val PROPERTY_DATA_SHARING_UPDATE_PERIOD_MILLIS =
                 "data_sharing_update_period_millis"
         const val PROPERTY_MAX_SAFETY_LABELS_PERSISTED_PER_APP =
@@ -201,8 +211,11 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
 
         @JvmStatic
         protected fun isPhotoPickerPermissionPromptEnabled(): Boolean {
-            return SystemUtil.callWithShellPermissionIdentity { DeviceConfig.getBoolean(
-                DeviceConfig.NAMESPACE_PRIVACY, PICKER_ENABLED_SETTING, true)
+            return SdkLevel.isAtLeastU() &&
+                    !isTv && !isAutomotive && !isWatch &&
+                callWithShellPermissionIdentity {
+                    DeviceConfig.getBoolean(
+                        DeviceConfig.NAMESPACE_PRIVACY, PICKER_ENABLED_SETTING, true)
             }
         }
     }
@@ -265,10 +278,6 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             android.Manifest.permission.BODY_SENSORS to "@android:string/permgrouplab_sensors",
             android.Manifest.permission.BODY_SENSORS_BACKGROUND
                     to "@android:string/permgrouplab_sensors",
-            android.Manifest.permission.BODY_SENSORS_WRIST_TEMPERATURE
-                    to "@android:string/permgrouplab_sensors",
-            android.Manifest.permission.BODY_SENSORS_WRIST_TEMPERATURE_BACKGROUND
-                    to "@android:string/permgrouplab_sensors",
             // Bluetooth
             android.Manifest.permission.BLUETOOTH_CONNECT to
                     "@android:string/permgrouplab_nearby_devices",
@@ -313,6 +322,34 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         apkName: String
     ) {
         installPackageViaSession(apkName, AppMetadata.createDefaultAppMetadata())
+    }
+
+    protected fun installPackageWithInstallSourceAndMetadataFromStore(
+        apkName: String
+    ) {
+        installPackageViaSession(apkName, AppMetadata.createDefaultAppMetadata(),
+            PACKAGE_SOURCE_STORE)
+    }
+
+    protected fun installPackageWithInstallSourceAndMetadataFromLocalFile(
+        apkName: String
+    ) {
+        installPackageViaSession(apkName, AppMetadata.createDefaultAppMetadata(),
+            PACKAGE_SOURCE_LOCAL_FILE)
+    }
+
+    protected fun installPackageWithInstallSourceAndMetadataFromDownloadedFile(
+        apkName: String
+    ) {
+        installPackageViaSession(apkName, AppMetadata.createDefaultAppMetadata(),
+            PACKAGE_SOURCE_DOWNLOADED_FILE)
+    }
+
+    protected fun installPackageWithInstallSourceAndMetadataFromOther(
+        apkName: String
+    ) {
+        installPackageViaSession(apkName, AppMetadata.createDefaultAppMetadata(),
+            PACKAGE_SOURCE_OTHER)
     }
 
     protected fun installPackageWithInstallSourceAndNoMetadata(
@@ -540,8 +577,8 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         }
     }
 
-    protected fun clickPermissionRequestAllowAllPhotosButton(timeoutMillis: Long = 20000) {
-        click(By.res(ALLOW_ALL_PHOTOS_BUTTON), timeoutMillis)
+    protected fun clickPermissionRequestAllowAllButton(timeoutMillis: Long = 20000) {
+        click(By.res(ALLOW_ALL_BUTTON), timeoutMillis)
     }
 
     /**
@@ -718,6 +755,13 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     }
                 )
+                if (isTv) {
+                    waitForIdle()
+                    pressDPadDown()
+                    pressDPadDown()
+                    pressDPadDown()
+                    pressDPadDown()
+                }
                 // Open the permissions UI
                 click(byTextRes(R.string.permissions).enabled(true))
             } catch (e: Exception) {
@@ -765,6 +809,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                     putExtra(Intent.EXTRA_PERMISSION_NAME, permission)
                     putExtra(Intent.EXTRA_USER, Process.myUserHandle())
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 })
         }
     }
@@ -816,6 +861,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                             putExtra(Intent.EXTRA_PERMISSION_NAME, permission)
                             putExtra(Intent.EXTRA_USER, Process.myUserHandle())
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                         })
                 }
             }

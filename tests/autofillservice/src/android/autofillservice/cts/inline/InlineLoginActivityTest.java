@@ -25,8 +25,10 @@ import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeat
 import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResourceId;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.Helper.getContext;
+import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.autofillservice.cts.testcore.Timeouts.MOCK_IME_TIMEOUT_MS;
+import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
@@ -54,14 +56,17 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.FillContext;
-import android.support.test.uiautomator.Direction;
+import android.util.Log;
 import android.view.accessibility.AccessibilityManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.Direction;
 
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
@@ -75,7 +80,7 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
 
     @Override
     protected void enableService() {
-        Helper.enableAutofillService(getContext(), SERVICE_NAME);
+        Helper.enableAutofillService(SERVICE_NAME);
     }
 
     public InlineLoginActivityTest() {
@@ -90,6 +95,12 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
     @Override
     public TestRule getMainTestRule() {
         return InlineUiBot.annotateRule(super.getMainTestRule());
+    }
+
+    @After
+    public void disablePcc() {
+        Log.d(TAG, "@After: disablePcc()");
+        disablePccDetectionFeature(sContext);
     }
 
     @Test
@@ -387,40 +398,6 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
 
     @Test
     @AppModeFull(reason = "BROADCAST_STICKY permission cannot be granted to instant apps")
-    public void testImeDisableServiceSuggestions_fallbackDropdownUi() throws Exception {
-        // Set service.
-        enableService();
-
-        final MockImeSession mockImeSession = sMockImeSessionRule.getMockImeSession();
-        assumeTrue("MockIME not available", mockImeSession != null);
-
-        // Disable inline suggestions for the default service.
-        final Bundle bundle = new Bundle();
-        bundle.putBoolean("ServiceSuggestions", false);
-        mockImeSession.callSetInlineSuggestionsExtras(bundle);
-
-        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setPresentation(createPresentation("The Username"))
-                        .setInlinePresentation(createInlinePresentation("The Username"))
-                        .build());
-        sReplier.addResponse(builder.build());
-
-        // Trigger auto-fill.
-        mUiBot.selectByRelativeId(ID_USERNAME);
-        mUiBot.waitForIdleSync();
-
-        // Check that no inline requests are sent to the service.
-        final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
-        assertThat(request.inlineRequest).isNull();
-
-        // Check dropdown UI shown.
-        getDropdownUiBot().assertDatasets("The Username");
-    }
-
-    @Test
-    @AppModeFull(reason = "BROADCAST_STICKY permission cannot be granted to instant apps")
     public void testImeDisableInlineSuggestions_fallbackDropdownUi() throws Exception {
         // Set service.
         enableService();
@@ -434,11 +411,11 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         mockImeSession.callSetInlineSuggestionsExtras(bundle);
 
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setPresentation(createPresentation("The Username"))
-                        .setInlinePresentation(createInlinePresentation("The Username"))
-                        .build());
+            .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                .setField(ID_USERNAME, "dude")
+                .setPresentation(createPresentation("The Username"))
+                .setInlinePresentation(createInlinePresentation("The Username"))
+                .build());
         sReplier.addResponse(builder.build());
 
         // Trigger auto-fill.
@@ -630,6 +607,7 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         Helper.assertActiveViewCountFromInlineSuggestionRenderService(0);
     }
 
+    @Ignore("b/281726966")
     @Test
     public void testAutofill_pccDatasets() throws Exception {
         // Set service.
@@ -655,8 +633,43 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.waitForIdleSync();
 
         final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
-        assertThat(request.hints.size()).isEqualTo(1);
-        assertThat(request.hints.get(0)).isEqualTo("username");
+        if (isPccFieldClassificationSet(sContext)) {
+            assertThat(request.hints.size()).isEqualTo(1);
+            assertThat(request.hints.get(0)).isEqualTo("username");
+        }
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
+    }
+
+    @Ignore("b/281726966")
+    @Test
+    public void autofillPccDatasetTest_setForAllHints() throws Exception {
+        // Set service.
+        enableService();
+        enablePccDetectionFeature(sContext, "username", "password", "new_password");
+        sReplier.setIdMode(IdMode.PCC_ID);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(AUTOFILL_HINT_USERNAME, "dude")
+                        .setField("allField1")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField("allField2")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Trigger auto-fill.
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdleSync();
+
+        final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
+        if (isPccFieldClassificationSet(sContext)) {
+            assertThat(request.hints.size()).isEqualTo(3);
+        }
+
         disablePccDetectionFeature(sContext);
         sReplier.setIdMode(IdMode.RESOURCE_ID);
     }

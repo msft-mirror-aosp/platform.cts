@@ -19,15 +19,19 @@ package com.android.cts.appcloning;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.CommandResult;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -37,13 +41,18 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
     protected static final String APP_A = "CtsAppCloningTestApp.apk";
 
     private static final String TEST_CLASS_A = APP_A_PACKAGE + ".AppCloningDeviceTest";
+
+    private static final String FEATURE_WATCH = "android.hardware.type.watch";
+    private static final String FEATURE_EMBEDDED = "android.hardware.type.embedded";
+    private static final String FEATURE_LEANBACK = "android.software.leanback"; // TV
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final long DEFAULT_INSTRUMENTATION_TIMEOUT_MS = 600_000; // 10min
 
-    protected static final String CONTENT_PROVIDER_URL =
-            "content://android.tradefed.contentprovider";
     protected static final String MEDIA_PROVIDER_URL = "content://media";
 
     protected static String sCloneUserId;
+
+    protected static String sPublicSdCardVol;
 
     protected static void createAndStartCloneUser() throws Exception {
         // create clone user
@@ -54,17 +63,54 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
                 "");
         assertThat(sCloneUserId).isNotEmpty();
 
-        CommandResult out = sDevice.executeShellV2Command("am start-user -w " + sCloneUserId);
+        startUserAndWait(sCloneUserId);
+    }
+
+    protected static void startUserAndWait(String userId) throws DeviceNotAvailableException {
+        CommandResult out = sDevice.executeShellV2Command("am start-user -w " + userId);
         assertThat(isSuccessful(out)).isTrue();
     }
 
-    protected static void removeCloneUser() throws Exception {
-        sDevice.executeShellCommand("pm remove-user " + sCloneUserId);
+    protected static void waitForBroadcastIdle() throws DeviceNotAvailableException {
+        CommandResult out = sDevice.executeShellV2Command(
+                "am wait-for-broadcast-idle", 240, TimeUnit.SECONDS);
+        assertThat(isSuccessful(out)).isTrue();
+        if (!out.getStdout().contains("All broadcast queues are idle!")) {
+            LogUtil.CLog.e("Output from 'am wait-for-broadcast-idle': %s", out);
+            fail("'am wait-for-broadcase-idle' did not complete.");
+        }
+    }
+
+    protected static void removeUser(String userId) throws Exception {
+        sDevice.executeShellCommand("pm remove-user " + userId);
+    }
+
+    protected static void createSDCardVirtualDisk() throws Exception {
+        //remove any existing volume that was mounted before
+        removeVirtualDisk();
+        String existingPublicVolume = getPublicVolumeExcluding(null);
+        sDevice.executeShellCommand("sm set-force-adoptable on");
+        sDevice.executeShellCommand("sm set-virtual-disk true");
+        eventually(AppCloningBaseHostTest::partitionDisks, 15000,
+                "Could not create public volume in time");
+        // Need to do a short wait, to allow the newly created volume to mount.
+        Thread.sleep(2000);
+        sPublicSdCardVol = getPublicVolumeExcluding(existingPublicVolume);
+        assertThat(sPublicSdCardVol).isNotNull();
+        assertThat(sPublicSdCardVol).isNotEmpty();
+        assertThat(sPublicSdCardVol).isNotEqualTo("null");
+    }
+
+    protected static void removeVirtualDisk() throws Exception {
+        sDevice.executeShellCommand("sm set-virtual-disk false");
+        //sleep to make sure that it is unmounted
+        Thread.sleep(4000);
     }
 
     public static void baseHostSetup(ITestDevice device) throws Exception {
         setDevice(device);
 
+        assumeTrue("Hardware type doesn't support clone profiles", isHardwareSupported());
         assumeTrue("Device doesn't support multiple users", supportsMultipleUsers());
         assumeFalse("Device is in headless system user mode", isHeadlessSystemUserMode());
         assumeTrue(isAtLeastS());
@@ -74,11 +120,39 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
     }
 
     public static void baseHostTeardown() throws Exception {
-        if (!supportsMultipleUsers() || isHeadlessSystemUserMode() || !isAtLeastS()
-                || usesSdcardFs())
-            return;
+        if (!isAppCloningSupportedOnDevice()) return;
 
-        removeCloneUser();
+        removeUser(sCloneUserId);
+    }
+
+    public static boolean isAppCloningSupportedOnDevice() throws Exception {
+        return supportsMultipleUsers() && !isHeadlessSystemUserMode() && isAtLeastS()
+                && !usesSdcardFs() && isHardwareSupported();
+    }
+
+    protected static void assumeHasDeviceFeature(String feature)
+            throws DeviceNotAvailableException {
+        assumeTrue("device doesn't have " + feature, sDevice.hasFeature(feature));
+    }
+
+    protected static boolean supportsMoreThanTwoUsers() throws DeviceNotAvailableException {
+        return sDevice.getMaxNumberOfUsersSupported() > 2
+                && sDevice.getMaxNumberOfRunningUsersSupported() > 2;
+    }
+
+    protected static boolean doesDeviceHaveFeature(String feature)
+            throws DeviceNotAvailableException {
+        return sDevice.hasFeature(feature);
+    }
+
+    protected static boolean isAppCloningBuildingBlockConfigEnabled(ITestDevice testDevice)
+            throws DeviceNotAvailableException {
+        String buildingBlocksConfigIdentifier =
+                "android:bool/config_enableAppCloningBuildingBlocks";
+        CommandResult commandResult = testDevice.executeShellV2Command(String.format(
+                "cmd overlay lookup android %s", buildingBlocksConfigIdentifier));
+        assertTrue(isSuccessful(commandResult));
+        return Boolean.parseBoolean(commandResult.getStdout().trim());
     }
 
     protected CommandResult runContentProviderCommand(String commandType, String userId,
@@ -133,5 +207,13 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
     protected static void setFeatureFlagValue(String namespace, String flag, String value)
             throws DeviceNotAvailableException {
         sDevice.executeShellCommand("device_config put " + namespace + " " + flag + " " + value);
+    }
+
+    protected static boolean isHardwareSupported() throws DeviceNotAvailableException {
+        // Clone profiles are not supported on all form factors, only on handheld devices.
+        return !sDevice.hasFeature(FEATURE_EMBEDDED)
+                && !sDevice.hasFeature(FEATURE_WATCH)
+                && !sDevice.hasFeature(FEATURE_LEANBACK)
+                && !sDevice.hasFeature(FEATURE_AUTOMOTIVE);
     }
 }

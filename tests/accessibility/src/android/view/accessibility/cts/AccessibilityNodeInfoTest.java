@@ -393,7 +393,7 @@ public class AccessibilityNodeInfoTest {
         info.setTextEntryKey(true);
         info.setTextSelectable(true);
         info.setRequestInitialAccessibilityFocus(true);
-        info.setRequestTouchPassthrough(true);
+        info.setAccessibilityDataSensitive(true);
     }
 
     /**
@@ -645,9 +645,9 @@ public class AccessibilityNodeInfoTest {
         assertSame("hasRequestInitialAccessibilityFocus has incorrect value",
                 expectedInfo.hasRequestInitialAccessibilityFocus(),
                 receivedInfo.hasRequestInitialAccessibilityFocus());
-        assertSame("hasRequestTouchPassthrough has incorrect value",
-                expectedInfo.hasRequestTouchPassthrough(),
-                receivedInfo.hasRequestTouchPassthrough());
+        assertSame("isAccessibilityDataSensitive has incorrect value",
+                expectedInfo.isAccessibilityDataSensitive(),
+                receivedInfo.isAccessibilityDataSensitive());
     }
 
     /**
@@ -746,9 +746,8 @@ public class AccessibilityNodeInfoTest {
         assertFalse("isTextSelectable not properly reset", info.isTextSelectable());
         assertFalse("hasRequestInitialAccessibilityFocus not properly reset",
                 info.hasRequestInitialAccessibilityFocus());
-        assertFalse("hasRequestTouchPassthrough not properly reset",
-                info.hasRequestTouchPassthrough());
-
+        assertFalse("isAccessibilityDataSensitive not properly reset",
+                info.isAccessibilityDataSensitive());
     }
 
     private static void replaceSpan(

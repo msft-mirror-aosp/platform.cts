@@ -40,7 +40,7 @@ import android.support.test.uiautomator.UiObject2;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -49,7 +49,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,7 +83,8 @@ public final class RecognitionServiceMicIndicatorTest {
             "android.recognitionservice.service/android.recognitionservice.service"
                     + ".CtsVoiceRecognitionService";
 
-    protected final Context mContext = InstrumentationRegistry.getTargetContext();
+    protected final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final String mOriginalVoiceRecognizer = Settings.Secure.getString(
             mContext.getContentResolver(), VOICE_RECOGNITION_SERVICE);
     private UiDevice mUiDevice;
@@ -192,7 +192,6 @@ public final class RecognitionServiceMicIndicatorTest {
         testVoiceRecognitionServiceBlameCallingApp(/* trustVoiceService */ false);
     }
 
-    @Ignore("b/266789512")
     @Test
     public void testTrustedRecognitionServiceCanBlameCallingApp() throws Throwable {
         // We treat trusted if the current voice recognizer is also a preinstalled app. This is a
@@ -200,6 +199,8 @@ public final class RecognitionServiceMicIndicatorTest {
         boolean hasPreInstalledRecognizer = hasPreInstalledRecognizer(
                 getComponentPackageNameFromString(mOriginalVoiceRecognizer));
         assumeTrue("No preinstalled recognizer.", hasPreInstalledRecognizer);
+        // TODO(b/279146568): remove the next line after test is fixed for auto
+        assumeFalse(isCar());
 
         // verify that the trusted app can blame the calling app mic access
         testVoiceRecognitionServiceBlameCallingApp(/* trustVoiceService */ true);

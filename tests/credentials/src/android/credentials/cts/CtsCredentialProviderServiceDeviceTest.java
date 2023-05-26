@@ -26,8 +26,11 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.credentials.ClearCredentialStateException;
 import android.credentials.ClearCredentialStateRequest;
 import android.credentials.CreateCredentialException;
@@ -35,10 +38,13 @@ import android.credentials.CreateCredentialRequest;
 import android.credentials.CreateCredentialResponse;
 import android.credentials.CredentialManager;
 import android.credentials.CredentialOption;
+import android.credentials.CredentialProviderInfo;
 import android.credentials.GetCredentialException;
 import android.credentials.GetCredentialRequest;
 import android.credentials.GetCredentialResponse;
+import android.credentials.PrepareGetCredentialResponse;
 import android.credentials.cts.testcore.DeviceConfigStateRequiredRule;
+import android.net.Uri;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
@@ -57,8 +63,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceConfigStateManager;
 import com.android.compatibility.common.util.RequiredFeatureRule;
-import com.android.compatibility.common.util.SettingsUtils;
 import com.android.compatibility.common.util.Timeout;
+import com.android.compatibility.common.util.UserSettings;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,13 +72,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
@@ -83,17 +92,37 @@ public class CtsCredentialProviderServiceDeviceTest {
             + CtsNoOpCredentialProviderService.class.getSimpleName();
     private static final int USER_ID = UserHandle.myUserId();
     private static final String TAG = "CtsCredentialProviderServiceDeviceTest";
-    public static final String DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER =
-            "enable_credential_manager";
     private static final String PASSWORD_CREDENTIAL_TYPE =
             "android.credentials.TYPE_PASSWORD_CREDENTIAL";
+    private static final String PASSKEY_CREDENTIAL_TYPE = "android.credentials.TYPE_PUBLIC_KEY_CREDENTIAL";
     private static final String CREDENTIAL_SERVICE = "credential_service";
     private static final Timeout CONNECTION_TIMEOUT = new Timeout(
             "CONNECTION_TIMEOUT", 1500, 2F, 1500);
-
+    private static final UserHandle USER_ID_HANDLE = UserHandle.getUserHandleForUid(USER_ID);
+    private static final int TEMPORARY_SERVICE_DURATION = 10000;
+    public static final String DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER =
+            "enable_credential_manager";
+    private static final String NOOP_SERVICE =
+            "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderService";
+    private static final String NOOP_SERVICE_ALT =
+            "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderAltService";
+    private static final String NOOP_SERVICE_SYSTEM =
+            "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderSysService";
+    private static final List<String> CREDENTIAL_TYPES =
+            Arrays.asList(PASSKEY_CREDENTIAL_TYPE, PASSWORD_CREDENTIAL_TYPE);
+    private static final List<String> PASSKEY_CREDENTIAL_TYPE_LIST =
+            Arrays.asList(PASSKEY_CREDENTIAL_TYPE);
+    private static final List<String> PASSWORD_CREDENTIAL_TYPE_LIST =
+            Arrays.asList(PASSWORD_CREDENTIAL_TYPE);
+    private static final String PROVIDER_LABEL = "Test Provider Service";
+    private static final String PROVIDER_LABEL_ALT = "Test Provider Service Alternate";
+    private static final String PROVIDER_LABEL_SYSTEM = "Test Provider Service System";
+    private static final String PRIMARY_SETTINGS_INTENT = "android.settings.CREDENTIAL_PROVIDER";
+    private static final String SECONDARY_SETTINGS_INTENT = "android.settings.SYNC_SETTINGS";
 
     private CredentialManager mCredentialManager;
     private final Context mContext = getInstrumentation().getContext();
+    private final UserSettings mUserSettings = new UserSettings(mContext);
 
     @Rule
     public ActivityScenarioRule mActivityScenarioRule =
@@ -128,7 +157,7 @@ public class CtsCredentialProviderServiceDeviceTest {
     }
 
     private void clearAllTestCredentialProviderServices() {
-        SettingsUtils.set("secure", CREDENTIAL_SERVICE, null);
+        mUserSettings.set(CREDENTIAL_SERVICE, null);
     }
 
     @Test
@@ -151,8 +180,9 @@ public class CtsCredentialProviderServiceDeviceTest {
         CountDownLatch latch = new CountDownLatch(1);
         Bundle empty = new Bundle();
         GetCredentialRequest request = new GetCredentialRequest.Builder(empty)
-                .addCredentialOption(new CredentialOption(
-                PASSWORD_CREDENTIAL_TYPE, empty, empty, false)).build();
+                .addCredentialOption(new CredentialOption.Builder(
+                        PASSWORD_CREDENTIAL_TYPE, empty, empty)
+                        .build()).build();
         OutcomeReceiver<GetCredentialResponse, GetCredentialException> callback =
                 new OutcomeReceiver<>() {
                     @Override
@@ -170,7 +200,92 @@ public class CtsCredentialProviderServiceDeviceTest {
         ActivityScenario<TestCredentialActivity> activityScenario =
                 ActivityScenario.launch(TestCredentialActivity.class);
         activityScenario.onActivity(activity -> {
-            mCredentialManager.getCredential(request, activity, null,
+            mCredentialManager.getCredential(activity, request, null,
+                    Executors.newSingleThreadExecutor(), callback);
+        });
+
+        latch.await(100L, TimeUnit.MILLISECONDS);
+        assertThat(loadedResult.get()).isNotNull();
+        assertThat(loadedResult.get().getClass()).isEqualTo(
+                GetCredentialException.class);
+        assertThat(loadedResult.get().getType()).isEqualTo(
+                GetCredentialException.TYPE_NO_CREDENTIAL);
+        // TODO add a null check for the case when the feature exists but remains false
+    }
+
+    @Test
+    public void testGetPasswordCredentialRequest_invalidAllowedProviders_onErrorForEmptyResponse()
+            throws InterruptedException {
+        AtomicReference<GetCredentialException> loadedResult = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Bundle empty = new Bundle();
+        GetCredentialRequest request = new GetCredentialRequest.Builder(empty)
+                .addCredentialOption(new CredentialOption.Builder(
+                        PASSWORD_CREDENTIAL_TYPE, empty, empty)
+                        .addAllowedProvider(new ComponentName(
+                                "dummpackage", "/dummypackage.dummyservice"))
+                        .build()
+                ).build();
+        OutcomeReceiver<GetCredentialResponse, GetCredentialException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(@NonNull GetCredentialResponse response) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        loadedResult.set(e);
+                        latch.countDown();
+                    }
+                };
+
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+        activityScenario.onActivity(activity -> {
+            mCredentialManager.getCredential(activity, request, null,
+                    Executors.newSingleThreadExecutor(), callback);
+        });
+
+        latch.await(100L, TimeUnit.MILLISECONDS);
+        assertThat(loadedResult.get()).isNotNull();
+        assertThat(loadedResult.get().getClass()).isEqualTo(
+                GetCredentialException.class);
+        assertThat(loadedResult.get().getType()).isEqualTo(
+                GetCredentialException.TYPE_NO_CREDENTIAL);
+        // TODO add a null check for the case when the feature exists but remains false
+    }
+
+    @Test
+    public void testGetPasswordCredentialRequest_validAllowedProviders_onErrorForEmptyResponse()
+            throws InterruptedException {
+        AtomicReference<GetCredentialException> loadedResult = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Bundle empty = new Bundle();
+        GetCredentialRequest request = new GetCredentialRequest.Builder(empty)
+                .addCredentialOption(new CredentialOption.Builder(
+                        PASSWORD_CREDENTIAL_TYPE, empty, empty)
+                        .addAllowedProvider(ComponentName.unflattenFromString(CTS_SERVICE_NAME))
+                        .build()
+                ).build();
+        OutcomeReceiver<GetCredentialResponse, GetCredentialException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(@NonNull GetCredentialResponse response) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        loadedResult.set(e);
+                        latch.countDown();
+                    }
+                };
+
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+        activityScenario.onActivity(activity -> {
+            mCredentialManager.getCredential(activity, request, null,
                     Executors.newSingleThreadExecutor(), callback);
         });
 
@@ -201,10 +316,109 @@ public class CtsCredentialProviderServiceDeviceTest {
 
         ActivityScenario<TestCredentialActivity> activityScenario =
                 ActivityScenario.launch(TestCredentialActivity.class);
+        GetCredentialRequest nullRequest = null;
         activityScenario.onActivity(activity -> {
 
             assertThrows("expect null request to throw NPE", NullPointerException.class,
-                    () -> mCredentialManager.getCredential(null, activity, null,
+                    () -> mCredentialManager.getCredential(activity, nullRequest, null,
+                    Executors.newSingleThreadExecutor(), callback));
+        });
+    }
+
+    @Test
+    public void prepareGetPasswordCredentialRequest_serviceSetUp_onErrorInvokedForEmptyResponse()
+            throws InterruptedException {
+        AtomicReference<PrepareGetCredentialResponse> prepareGetCredResponse =
+                new AtomicReference<>();
+        AtomicReference<GetCredentialException> prepareGetCredException = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Bundle empty = new Bundle();
+        GetCredentialRequest request = new GetCredentialRequest.Builder(empty)
+                .addCredentialOption(new CredentialOption.Builder(
+                PASSWORD_CREDENTIAL_TYPE, empty, empty).build()).build();
+        OutcomeReceiver<PrepareGetCredentialResponse,
+                GetCredentialException> prepareGetCredCallback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(@NonNull PrepareGetCredentialResponse response) {
+                        prepareGetCredResponse.set(response);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        prepareGetCredException.set(e);
+                        latch.countDown();
+                    }
+                };
+
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+        activityScenario.onActivity(activity -> {
+            mCredentialManager.prepareGetCredential(request, null,
+                    Executors.newSingleThreadExecutor(), prepareGetCredCallback);
+        });
+
+        latch.await(1000L, TimeUnit.MILLISECONDS);
+        assertThat(prepareGetCredException.get()).isNull();
+        assertThat(prepareGetCredResponse.get()).isNotNull();
+
+        // Next, invoke the full getCredential flow.
+        AtomicReference<GetCredentialResponse> getCredResponse = new AtomicReference<>();
+        AtomicReference<GetCredentialException> getCredException = new AtomicReference<>();
+        CountDownLatch getCredLatch = new CountDownLatch(1);
+        OutcomeReceiver<GetCredentialResponse, GetCredentialException> getCredCallback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(@NonNull GetCredentialResponse response) {
+                        getCredResponse.set(response);
+                        getCredLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        getCredException.set(e);
+                        getCredLatch.countDown();
+                    }
+                };
+        activityScenario.onActivity(activity -> {
+            mCredentialManager.getCredential(activity,
+                    prepareGetCredResponse.get().getPendingGetCredentialHandle(), null,
+                    Executors.newSingleThreadExecutor(), getCredCallback);
+        });
+
+        getCredLatch.await(100L, TimeUnit.MILLISECONDS);
+        assertThat(getCredResponse.get()).isNull();
+        assertThat(getCredException.get()).isNotNull();
+        assertThat(getCredException.get().getClass()).isEqualTo(
+                GetCredentialException.class);
+        assertThat(getCredException.get().getType()).isEqualTo(
+                GetCredentialException.TYPE_NO_CREDENTIAL);
+        // TODO add a null check for the case when the feature exists but remains false
+    }
+
+    @Test
+    public void prepareGetCredentialRequest_nullRequest_throwsNPE() {
+        OutcomeReceiver<PrepareGetCredentialResponse, GetCredentialException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(@NonNull PrepareGetCredentialResponse response) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        // Do nothing
+                    }
+                };
+
+
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+        activityScenario.onActivity(activity -> {
+
+            assertThrows("expect null request to throw NPE", NullPointerException.class,
+                    () -> mCredentialManager.prepareGetCredential(null, null,
                     Executors.newSingleThreadExecutor(), callback));
         });
     }
@@ -215,8 +429,8 @@ public class CtsCredentialProviderServiceDeviceTest {
         AtomicReference<CreateCredentialException> loadedResult = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         Bundle empty = new Bundle();
-        CreateCredentialRequest request = new CreateCredentialRequest.Builder(empty, empty)
-                .setType(PASSWORD_CREDENTIAL_TYPE)
+        CreateCredentialRequest request = new CreateCredentialRequest.Builder(
+                PASSWORD_CREDENTIAL_TYPE, empty, empty)
                 .setIsSystemProviderRequired(false)
                 .setAlwaysSendAppInfoToProvider(true)
                 .build();
@@ -237,7 +451,7 @@ public class CtsCredentialProviderServiceDeviceTest {
         ActivityScenario<TestCredentialActivity> activityScenario =
                 ActivityScenario.launch(TestCredentialActivity.class);
         activityScenario.onActivity(activity -> {
-            mCredentialManager.createCredential(request, activity, null,
+            mCredentialManager.createCredential(activity, request, null,
                     Executors.newSingleThreadExecutor(), callback);
         });
 
@@ -269,7 +483,7 @@ public class CtsCredentialProviderServiceDeviceTest {
         activityScenario.onActivity(activity -> {
 
             assertThrows("expect null request to throw NPE", NullPointerException.class,
-                    () -> mCredentialManager.createCredential(null, activity, null,
+                    () -> mCredentialManager.createCredential(activity, null, null,
                             Executors.newSingleThreadExecutor(), callback));
         });
     }
@@ -317,6 +531,95 @@ public class CtsCredentialProviderServiceDeviceTest {
                     () -> mCredentialManager.clearCredentialState(null, null,
                     Executors.newSingleThreadExecutor(), null));
         });
+    }
+
+    @Test
+    public void getCredentialProviderServices_returnsAllProviders() {
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+
+        activityScenario.onActivity(
+                activity -> {
+                    Map<String, CredentialProviderInfo> results =
+                            getCredentialProviderServices(
+                                    CredentialManager.PROVIDER_FILTER_ALL_PROVIDERS);
+
+                    // Verify data of the returned provider.
+                    CredentialProviderInfo cpi = results.get(NOOP_SERVICE);
+                    assertThat(cpi).isNotNull();
+                    assertThat(cpi.isSystemProvider()).isFalse();
+                    assertThat(cpi.getLabel(mContext)).isEqualTo(PROVIDER_LABEL);
+                    assertThat(cpi.getSettingsSubtitle()).isEqualTo("This is a subtitle");
+                    assertThat(cpi.getServiceIcon(mContext)).isNotNull();
+                    assertThat(cpi.getServiceInfo()).isNotNull();
+                    assertThat(cpi.getCapabilities()).containsExactlyElementsIn(CREDENTIAL_TYPES);
+
+                    // Verify data of the returned provider.
+                    CredentialProviderInfo cpi2 = results.get(NOOP_SERVICE_ALT);
+                    assertThat(cpi2).isNotNull();
+                    assertThat(cpi2.isSystemProvider()).isFalse();
+                    assertThat(cpi2.getSettingsSubtitle()).isNull();
+                    assertThat(cpi2.getLabel(mContext)).isEqualTo(PROVIDER_LABEL_ALT);
+                    assertThat(cpi2.getServiceIcon(mContext)).isNotNull();
+                    assertThat(cpi2.getServiceInfo()).isNotNull();
+                    assertThat(cpi2.getCapabilities()).containsExactlyElementsIn(PASSWORD_CREDENTIAL_TYPE_LIST);
+                });
+    }
+
+    @Test
+    public void getCredentialProviderServices_returnsUserProviders() {
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+
+        activityScenario.onActivity(
+                activity -> {
+                    Map<String, CredentialProviderInfo> results =
+                            getCredentialProviderServices(
+                                    CredentialManager.PROVIDER_FILTER_USER_PROVIDERS_ONLY);
+
+                    // Verify data of the returned provider.
+                    CredentialProviderInfo cpi = results.get(NOOP_SERVICE);
+                    assertThat(cpi).isNotNull();
+                    assertThat(cpi.isSystemProvider()).isFalse();
+                    assertThat(cpi.getLabel(mContext)).isEqualTo(PROVIDER_LABEL);
+                    assertThat(cpi.getSettingsSubtitle()).isEqualTo("This is a subtitle");
+                    assertThat(cpi.getServiceIcon(mContext)).isNotNull();
+                    assertThat(cpi.getServiceInfo()).isNotNull();
+                    assertThat(cpi.getCapabilities()).containsExactlyElementsIn(CREDENTIAL_TYPES);
+
+                    // Verify data of the returned provider.
+                    CredentialProviderInfo cpi2 = results.get(NOOP_SERVICE_ALT);
+                    assertThat(cpi2).isNotNull();
+                    assertThat(cpi2.isSystemProvider()).isFalse();
+                    assertThat(cpi2.getSettingsSubtitle()).isNull();
+                    assertThat(cpi2.getLabel(mContext)).isEqualTo(PROVIDER_LABEL_ALT);
+                    assertThat(cpi2.getServiceIcon(mContext)).isNotNull();
+                    assertThat(cpi2.getServiceInfo()).isNotNull();
+                    assertThat(cpi2.getCapabilities()).containsExactlyElementsIn(PASSWORD_CREDENTIAL_TYPE_LIST);
+                });
+    }
+
+    @Test
+    public void getCredentialProviderServices_returnsSystemProviders() {
+        ActivityScenario<TestCredentialActivity> activityScenario =
+                ActivityScenario.launch(TestCredentialActivity.class);
+
+        activityScenario.onActivity(
+                activity -> {
+                    Map<String, CredentialProviderInfo> results =
+                            getCredentialProviderServices(
+                                    CredentialManager.PROVIDER_FILTER_SYSTEM_PROVIDERS_ONLY);
+
+                    // Verify data of the returned provider.
+                    CredentialProviderInfo cpi = results.get(NOOP_SERVICE_SYSTEM);
+                    assertThat(cpi).isNotNull();
+                    assertThat(cpi.isSystemProvider()).isTrue();
+                    assertThat(cpi.getLabel(mContext)).isEqualTo(PROVIDER_LABEL_SYSTEM);
+                    assertThat(cpi.getServiceIcon(mContext)).isNotNull();
+                    assertThat(cpi.getSettingsSubtitle()).isEqualTo("This is a subtitle");
+                    assertThat(cpi.getServiceInfo()).isNotNull();
+                    assertThat(cpi.getCapabilities()).containsExactlyElementsIn(PASSKEY_CREDENTIAL_TYPE_LIST);
+                });
     }
 
     /**
@@ -382,7 +685,7 @@ public class CtsCredentialProviderServiceDeviceTest {
         }
         // Guaranteed to not be null now since the NoOp service exists at a minimum
         Log.i(TAG, "Attempting to set services: " + settingOutput);
-        SettingsUtils.set("secure", CREDENTIAL_SERVICE, settingOutput);
+        mUserSettings.set(CREDENTIAL_SERVICE, settingOutput);
 
         // Waits until the service is actually enabled.
         try {
@@ -392,6 +695,15 @@ public class CtsCredentialProviderServiceDeviceTest {
             Log.i(TAG, "Failure... " + e.getLocalizedMessage());
             throw new AssertionError("Enabling Credman service failed.");
         }
+    }
+
+    private Map<String, CredentialProviderInfo> getCredentialProviderServices(int providerFilter) {
+        return mCredentialManager.getCredentialProviderServicesForTesting(providerFilter)
+                .stream()
+                .collect(Collectors.toMap(
+                        c -> c.getComponentName().flattenToString(),
+                        c -> c
+                ));
     }
 
     /**
@@ -417,7 +729,7 @@ public class CtsCredentialProviderServiceDeviceTest {
      * Gets then name of the credential service for the default user.
      */
     private String readCredentialManagerProviderSetting() {
-        String serviceNames = SettingsUtils.get(CREDENTIAL_SERVICE);
+        String serviceNames = mUserSettings.get(CREDENTIAL_SERVICE);
         return serviceNames;
     }
 
@@ -426,7 +738,7 @@ public class CtsCredentialProviderServiceDeviceTest {
      * the setting is deleted.
      */
     private void disableCredentialProviderService(@NonNull Context context, String service) {
-        final String currentService = SettingsUtils.get(CREDENTIAL_SERVICE);
+        final String currentService = mUserSettings.get(CREDENTIAL_SERVICE);
         if (currentService == null) {
             return;
         }
@@ -434,7 +746,18 @@ public class CtsCredentialProviderServiceDeviceTest {
         Set<String> services = new LinkedHashSet<>(List.of(currentService.split(";")));
         services.remove(service);
         String originalString = String.join(";", services);
-        SettingsUtils.set("secure", CREDENTIAL_SERVICE, originalString);
+        mUserSettings.set(CREDENTIAL_SERVICE, originalString);
+    }
+
+    /**
+     * Assert target intent can be handled by at least one Activity.
+     * @param intent - the Intent will be handled.
+     */
+    private void assertCanBeHandled(final Intent intent) {
+        PackageManager packageManager = mContext.getPackageManager();
+        List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
+        assertThat(resolveInfoList).isNotNull();
+        // one or more activity can handle this intent.
+        assertTrue(resolveInfoList.size() > 0);
     }
 }
-

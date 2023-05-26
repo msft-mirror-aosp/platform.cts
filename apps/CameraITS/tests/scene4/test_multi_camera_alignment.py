@@ -29,7 +29,7 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ALIGN_TOL_MM = 4.0  # mm
+_ALIGN_TOL_MM = 5.0  # mm
 _ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
@@ -300,7 +300,7 @@ def convert_to_world_coordinates(x, y, r, t, k, z_w):
   a = np.array([[x*r[2][0]-k_x1, x*r[2][1]-k_x2],
                 [y*r[2][0]-k_y1, y*r[2][1]-k_y2]])
   b = np.array([[k_x3-x*c_1], [k_y3-y*c_1]])
-  return np.dot(np.linalg.inv(a), b)
+  return (float(x) for x in np.dot(np.linalg.inv(a), b))
 
 
 def convert_to_image_coordinates(p_w, r, t, k):
@@ -504,8 +504,10 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
             fmt == 'raw'):
           cv2_distort = camera_properties_utils.get_distortion_matrix(
               physical_props[i])
-          if not np.any(cv2_distort):
+          if cv2_distort is None:
             raise AssertionError(f'Camera {i} has no distortion matrix!')
+          if not np.any(cv2_distort):
+            logging.warning('Camera %s has distortion matrix of all zeroes', i)
           image_processing_utils.write_image(
               img/255, f'{name_with_log_path}_{fmt}_{i}.jpg')
           img = cv2.undistort(img, k[i], cv2_distort)

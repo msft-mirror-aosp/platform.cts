@@ -24,6 +24,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -38,6 +39,7 @@ import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.test.InstrumentationRegistry
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
+import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
@@ -65,8 +67,10 @@ const val ACTION_SET_UP_HIBERNATION =
     "com.android.permissioncontroller.action.SET_UP_HIBERNATION"
 
 const val SYSUI_PKG_NAME = "com.android.systemui"
-const val NOTIF_LIST_ID = "com.android.systemui:id/notification_stack_scroller"
+const val NOTIF_LIST_ID = "notification_stack_scroller"
+const val NOTIF_LIST_ID_AUTOMOTIVE = "notifications"
 const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
+const val MANAGE_BUTTON_AUTOMOTIVE = "manage_button"
 // Time to find a notification. Unlikely, but in cases with a lot of notifications, it may take
 // time to find the notification we're looking for
 const val NOTIF_FIND_TIMEOUT = 20000L
@@ -258,7 +262,12 @@ fun openUnusedAppsNotification() {
             // Eventually clause because clicking is sometimes inconsistent if the screen is
             // scrolling
             runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
-            waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT).click()
+            val notification = waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT)
+            if (hasFeatureAutomotive()) {
+                notification.click(Point(0, 0))
+            } else {
+                notification.click()
+            }
             wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
                 assertTrue(
                     "Unused apps page did not open after tapping notification.",
@@ -314,10 +323,21 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
 
     var isAtEnd = false
     var wasScrolledUpAlready = false
+    val notificationListId = if (FeatureUtil.isAutomotive()) {
+        NOTIF_LIST_ID_AUTOMOTIVE
+    } else {
+        NOTIF_LIST_ID
+    }
+    val notificationEndViewId = if (FeatureUtil.isAutomotive()) {
+        MANAGE_BUTTON_AUTOMOTIVE
+    } else {
+        CLEAR_ALL_BUTTON_ID
+    }
     while (view == null && start + timeoutMs > System.currentTimeMillis()) {
         view = uiDevice.wait(Until.findObject(selector), VIEW_WAIT_TIMEOUT)
         if (view == null) {
-            val notificationList = UiScrollable(UiSelector().resourceId(NOTIF_LIST_ID))
+            val notificationList = UiScrollable(UiSelector().resourceId(
+                SYSUI_PKG_NAME + ":id/" + notificationListId))
             wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
                 Assert.assertTrue("Notification list view not found",
                     notificationList.waitForExists(VIEW_WAIT_TIMEOUT))
@@ -331,7 +351,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
                 wasScrolledUpAlready = true
             } else {
                 notificationList.scrollForward()
-                isAtEnd = uiDevice.hasObject(By.res(SYSUI_PKG_NAME, CLEAR_ALL_BUTTON_ID))
+                isAtEnd = uiDevice.hasObject(By.res(SYSUI_PKG_NAME, notificationEndViewId))
             }
         }
     }
@@ -351,14 +371,18 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
         val title = ui.depthFirstSearch { node ->
             node.viewIdResourceName?.contains("alertTitle") == true
         }
-        val okButton = ui.depthFirstSearch { node ->
-            node.textAsString?.equals("OK", ignoreCase = true) ?: false
+        val okCloseButton = ui.depthFirstSearch { node ->
+            (node.textAsString?.equals("OK", ignoreCase = true) ?: false)  ||
+                (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
         }
-
-        if (title?.text?.toString() == "Android System" && okButton != null) {
+        val titleString = title?.text?.toString()
+        if (okCloseButton != null &&
+            titleString != null &&
+            (titleString == "Android System" ||
+                titleString.endsWith("keeps stopping"))) {
             // Auto dismiss occasional system dialogs to prevent interfering with the test
             android.util.Log.w(AutoRevokeTest.LOG_TAG, "Ignoring exception", e)
-            okButton.click()
+            okCloseButton.click()
             return UiAutomatorUtils.waitFindObject(selector)
         } else {
             throw e

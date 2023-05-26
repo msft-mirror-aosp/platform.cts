@@ -19,11 +19,18 @@ package android.permission3.cts
 import android.app.Instrumentation
 import android.app.UiAutomation
 import android.content.Context
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_OTHER
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE
+import android.content.pm.PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.PersistableBundle
 import android.os.Process
 import android.permission.cts.CtsNotificationListenerHelperRule
 import android.permission.cts.CtsNotificationListenerServiceUtils
+import android.permission.cts.CtsNotificationListenerServiceUtils.getNotification
 import android.permission.cts.CtsNotificationListenerServiceUtils.getNotificationForPackageAndId
 import android.permission.cts.PermissionUtils
 import android.permission.cts.TestUtils
@@ -32,9 +39,9 @@ import android.permission3.cts.AppMetadata.createAppMetadataWithNoSharing
 import android.provider.DeviceConfig
 import android.safetylabel.SafetyLabelConstants
 import android.safetylabel.SafetyLabelConstants.SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED
-import android.support.test.uiautomator.By
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
+import androidx.test.uiautomator.By
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.eventually
@@ -98,8 +105,9 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
     }
 
     @After
-    fun cancelJobAndNotifications() {
-        cancelJob(SAFETY_LABEL_CHANGES_JOB_ID)
+    fun cancelJobsAndNotifications() {
+        cancelJob(SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID)
+        cancelJob(SAFETY_LABEL_CHANGES_PERIODIC_NOTIFICATION_JOB_ID)
         CtsNotificationListenerServiceUtils.cancelNotifications(permissionControllerPackageName)
         // Reset battery saving restrictions
         SystemUtil.runShellCommand(
@@ -108,140 +116,184 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
     }
 
     @Test
-    fun runMainJob_initializesSafetyLabelsHistoryForApps() {
-        // Disable the safety labels feature during install to simulate installing an app without
-        // receiving an update about the change to its safety label.
-        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, false.toString())
-        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
-        waitForBroadcasts()
-        // Add a short sleep to ensure that the SafetyLabelChangedBroadcastReceiver finishes its
-        // work based according to the current feature flag value before changing the flag value.
-        // While `waitForBroadcasts()` waits for broadcasts to be dispatched, it will not wait for
-        // the receivers' `onReceive` to finish.
-        Thread.sleep(SHORT_SLEEP_MS)
-        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, true.toString())
+    fun runDetectUpdatesJob_initializesSafetyLabelsHistoryForApps() {
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithNoSharing())
         grantLocationPermission(APP_PACKAGE_NAME)
 
         // Run the job to check whether the missing safety label for the above app install is
         // identified and recorded.
-        runMainJob()
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackageName,
-            SAFETY_LABEL_CHANGES_JOB_ID,
-            TIMEOUT_TIME_MS,
-            uiAutomation(),
-            JOB_STATUS_UNKNOWN)
+        runDetectUpdatesJob()
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
         waitForBroadcasts()
 
-        startAppDataSharingUpdatesActivity()
-        try {
-            findView(By.descContains(DATA_SHARING_UPDATES), true)
-            findView(By.textContains(DATA_SHARING_UPDATES_SUBTITLE), true)
-            findView(By.textContains(UPDATES_IN_LAST_30_DAYS), true)
-            findView(By.textContains(APP_PACKAGE_NAME_SUBSTRING), true)
-            findView(By.textContains(DATA_SHARING_UPDATES_FOOTER_MESSAGE), true)
-            findView(By.textContains(LEARN_ABOUT_DATA_SHARING), true)
-        } finally {
-            pressBack()
-        }
+        assertNotificationNotShown()
+        assertDataSharingScreenHasUpdates()
     }
 
     @Test
-    fun runMainJob_updatesSafetyLabelHistoryForApps() {
-        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
-        waitForBroadcasts()
-        // Add a short sleep to ensure that the SafetyLabelChangedBroadcastReceiver finishes its
-        // work based according to the current feature flag value before changing the flag value.
-        // While `waitForBroadcasts()` waits for broadcasts to be dispatched, it will not wait for
-        // the receivers' `onReceive` to finish.
-        Thread.sleep(SHORT_SLEEP_MS)
-        // Disable the safety labels feature during install to simulate installing an app without
-        // receiving an update about the change to its safety label.
-        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, false.toString())
+    fun runNotificationJob_initializesSafetyLabelsHistoryForApps() {
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithNoSharing())
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app install is
+        // identified and recorded.
+        runNotificationJob()
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
         waitForBroadcasts()
-        // Add a short sleep to ensure that the SafetyLabelChangedBroadcastReceiver finishes its
-        // work based according to the current feature flag value before changing the flag value.
-        // While `waitForBroadcasts()` waits for broadcasts to be dispatched, it will not wait for
-        // the receivers' `onReceive` to finish.
-        Thread.sleep(SHORT_SLEEP_MS)
-        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, true.toString())
+
+        assertDataSharingScreenHasUpdates()
+    }
+
+    @Test
+    fun runDetectUpdatesJob_updatesSafetyLabelHistoryForApps() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
         grantLocationPermission(APP_PACKAGE_NAME)
 
         // Run the job to check whether the missing safety label for the above app update is
         // identified and recorded.
-        runMainJob()
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackageName,
-            SAFETY_LABEL_CHANGES_JOB_ID,
-            TIMEOUT_TIME_MS,
-            uiAutomation(),
-            JOB_STATUS_UNKNOWN)
+        runDetectUpdatesJob()
 
-        startAppDataSharingUpdatesActivity()
-        try {
-            findView(By.descContains(DATA_SHARING_UPDATES), true)
-            findView(By.textContains(DATA_SHARING_UPDATES_SUBTITLE), true)
-            findView(By.textContains(UPDATES_IN_LAST_30_DAYS), true)
-            findView(By.textContains(APP_PACKAGE_NAME_SUBSTRING), true)
-            findView(By.textContains(DATA_SHARING_UPDATES_FOOTER_MESSAGE), true)
-            findView(By.textContains(LEARN_ABOUT_DATA_SHARING), true)
-        } finally {
-            pressBack()
-        }
+        assertNotificationNotShown()
+        assertDataSharingScreenHasUpdates()
     }
 
     @Test
-    fun runMainJob_whenLocationSharingUpdatesForLocationGrantedApps_showsNotification() {
+    fun runNotificationJob_updatesSafetyLabelHistoryForApps() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
+
+        assertDataSharingScreenHasUpdates()
+    }
+
+    @Test
+    fun runNotificationJob_whenLocationSharingUpdatesForLocationGrantedApps_showsNotification() {
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
         waitForBroadcasts()
+        // TODO(b/279455955): Investigate why this is necessary and remove if possible.
+        Thread.sleep(500)
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
         waitForBroadcasts()
         grantLocationPermission(APP_PACKAGE_NAME)
 
-        runMainJob()
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackageName,
-            SAFETY_LABEL_CHANGES_JOB_ID,
-            TIMEOUT_TIME_MS,
-            uiAutomation(),
-            JOB_STATUS_UNKNOWN)
+        runNotificationJob()
 
-        assertNotificationShown()
+        waitForNotificationShown()
+
+        val statusBarNotification = getNotification(permissionControllerPackageName,
+                SAFETY_LABEL_CHANGES_NOTIFICATION_ID)
+        val contentIntent = statusBarNotification!!.notification.contentIntent
+        contentIntent.send()
+
+        assertDataSharingScreenHasUpdates()
     }
 
     @Test
-    fun runMainJob_whenNoLocationGrantedApps_doesNotShowNotification() {
+    fun runNotificationJob_whenNoLocationGrantedApps_doesNotShowNotification() {
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
         waitForBroadcasts()
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds())
         waitForBroadcasts()
 
-        runMainJob()
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackageName,
-            SAFETY_LABEL_CHANGES_JOB_ID,
-            TIMEOUT_TIME_MS,
-            uiAutomation(),
-            JOB_STATUS_UNKNOWN)
+        runNotificationJob()
 
         assertNotificationNotShown()
     }
 
     @Test
-    fun runMainJob_whenNoLocationSharingUpdates_doesNotShowNotification() {
+    fun runNotificationJob_whenNoLocationSharingUpdates_doesNotShowNotification() {
         installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing())
         waitForBroadcasts()
         grantLocationPermission(APP_PACKAGE_NAME)
 
-        runMainJob()
-        TestUtils.awaitJobUntilRequestedState(
-            permissionControllerPackageName,
-            SAFETY_LABEL_CHANGES_JOB_ID,
-            TIMEOUT_TIME_MS,
-            uiAutomation(),
-            JOB_STATUS_UNKNOWN)
+        runNotificationJob()
+
+        assertNotificationNotShown()
+    }
+
+    @Test
+    fun runNotificationJob_packageSourceUnspecified_updatesSafetyLabelHistoryForApps() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing(),
+            PACKAGE_SOURCE_UNSPECIFIED)
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds(),
+            PACKAGE_SOURCE_UNSPECIFIED)
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
+
+        assertDataSharingScreenHasUpdates()
+    }
+
+    @Test
+    fun runNotificationJob_packageSourceOther_doesNotShowNotification() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing(),
+            PACKAGE_SOURCE_OTHER)
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds(),
+            PACKAGE_SOURCE_OTHER)
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
+
+        assertNotificationNotShown()
+    }
+
+    @Test
+    fun runNotificationJob_packageSourceStore_updatesSafetyLabelHistoryForApps() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing(),
+            PACKAGE_SOURCE_STORE)
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds(),
+            PACKAGE_SOURCE_STORE)
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
+
+        assertDataSharingScreenHasUpdates()
+    }
+
+    @Test
+    fun runNotificationJob_packageSourceLocalFile_doesNotShowNotification() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing(),
+            PACKAGE_SOURCE_LOCAL_FILE)
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds(),
+            PACKAGE_SOURCE_LOCAL_FILE)
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
+
+        assertNotificationNotShown()
+    }
+
+    @Test
+    fun runNotificationJob_packageSourceDownloadedFile_udoesNotShowNotification() {
+        installPackageViaSession(APP_APK_NAME_31, createAppMetadataWithNoSharing(),
+            PACKAGE_SOURCE_DOWNLOADED_FILE)
+        waitForBroadcastReceiverFinished()
+        installPackageNoBroadcast(APP_APK_NAME_31, createAppMetadataWithLocationSharingNoAds(),
+            PACKAGE_SOURCE_DOWNLOADED_FILE)
+        grantLocationPermission(APP_PACKAGE_NAME)
+
+        // Run the job to check whether the missing safety label for the above app update is
+        // identified and recorded.
+        runNotificationJob()
 
         assertNotificationNotShown()
     }
@@ -251,11 +303,38 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
             packageName, android.Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
+    private fun installPackageNoBroadcast(
+        apkName: String,
+        appMetadata: PersistableBundle? = null,
+        packageSource: Int? = null
+    ) {
+        // Disable the safety labels feature during install to simulate installing an app without
+        // receiving an update about the change to its safety label.
+        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, false.toString())
+        installPackageViaSession(apkName, appMetadata, packageSource)
+        waitForBroadcastReceiverFinished()
+        setDeviceConfigPrivacyProperty(SAFETY_LABEL_CHANGE_NOTIFICATIONS_ENABLED, true.toString())
+    }
+
+    private fun assertDataSharingScreenHasUpdates() {
+        startAppDataSharingUpdatesActivity()
+        try {
+            findView(By.descContains(DATA_SHARING_UPDATES), true)
+            findView(By.textContains(DATA_SHARING_UPDATES_SUBTITLE), true)
+            findView(By.textContains(UPDATES_IN_LAST_30_DAYS), true)
+            findView(By.textContains(APP_PACKAGE_NAME_SUBSTRING), true)
+            findView(By.textContains(DATA_SHARING_UPDATES_FOOTER_MESSAGE), true)
+        } finally {
+            pressBack()
+        }
+    }
+
     companion object {
         private const val TIMEOUT_TIME_MS = 60_000L
         private const val SHORT_SLEEP_MS = 2000L
 
-        private const val SAFETY_LABEL_CHANGES_JOB_ID = 9
+        private const val SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID = 8
+        private const val SAFETY_LABEL_CHANGES_PERIODIC_NOTIFICATION_JOB_ID = 9
         private const val SET_UP_SAFETY_LABEL_CHANGES_JOB =
             "com.android.permissioncontroller.action.SET_UP_SAFETY_LABEL_CHANGES_JOB"
         private const val SAFETY_LABEL_CHANGES_JOB_SERVICE_RECEIVER_CLASS =
@@ -264,6 +343,7 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
         private const val SAFETY_LABEL_CHANGES_NOTIFICATION_ID = 5
         private const val JOB_STATUS_UNKNOWN = "unknown"
         private const val JOB_STATUS_ACTIVE = "active"
+        private const val JOB_STATUS_WAITING = "waiting"
 
         private val context: Context = InstrumentationRegistry.getTargetContext()
         private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -278,7 +358,7 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
             CtsNotificationListenerHelperRule(
                 InstrumentationRegistry.getInstrumentation().targetContext)
 
-        private fun assertNotificationShown() {
+        private fun waitForNotificationShown() {
             eventually {
                 val notification = getNotification(false)
                 assertThat(notification).isNotNull()
@@ -294,13 +374,13 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
 
         private fun getNotification(cancelNotification: Boolean) =
             getNotificationForPackageAndId(
-                    permissionControllerPackageName,
-                    SAFETY_LABEL_CHANGES_NOTIFICATION_ID,
-                    cancelNotification)
+                permissionControllerPackageName,
+                SAFETY_LABEL_CHANGES_NOTIFICATION_ID,
+                cancelNotification)
                 ?.notification
 
         private fun cancelJob(jobId: Int) {
-            SystemUtil.runShellCommand(
+            SystemUtil.runShellCommandOrThrow(
                 "cmd jobscheduler cancel -u $userId $permissionControllerPackageName $jobId")
             TestUtils.awaitJobUntilRequestedState(
                 permissionControllerPackageName,
@@ -310,31 +390,68 @@ class SafetyLabelChangesJobServiceTest : BaseUsePermissionTest() {
                 JOB_STATUS_UNKNOWN)
         }
 
-        private fun runMainJob() {
-            val runJobCmd =
-                "cmd jobscheduler run -u $userId -f $permissionControllerPackageName " +
-                    "$SAFETY_LABEL_CHANGES_JOB_ID"
-            try {
-                SystemUtil.runShellCommand(uiAutomation(), runJobCmd)
-            } catch (e: Throwable) {
-                throw RuntimeException(e)
-            }
+        private fun runDetectUpdatesJob() {
+            startJob(SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID)
             TestUtils.awaitJobUntilRequestedState(
                 permissionControllerPackageName,
-                SAFETY_LABEL_CHANGES_JOB_ID,
+                SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID,
                 TIMEOUT_TIME_MS,
                 uiAutomation(),
                 JOB_STATUS_ACTIVE)
+            TestUtils.awaitJobUntilRequestedState(
+                permissionControllerPackageName,
+                SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID,
+                TIMEOUT_TIME_MS,
+                uiAutomation(),
+                JOB_STATUS_UNKNOWN)
+        }
+
+        private fun runNotificationJob() {
+            startJob(SAFETY_LABEL_CHANGES_PERIODIC_NOTIFICATION_JOB_ID)
+            TestUtils.awaitJobUntilRequestedState(
+                permissionControllerPackageName,
+                SAFETY_LABEL_CHANGES_PERIODIC_NOTIFICATION_JOB_ID,
+                TIMEOUT_TIME_MS,
+                uiAutomation(),
+                JOB_STATUS_ACTIVE)
+            // TODO(b/266449833): In theory we should only have to wait for "waiting" here, but
+            // sometimes jobscheduler returns "unknown".
+            TestUtils.awaitJobUntilRequestedState(
+                permissionControllerPackageName,
+                SAFETY_LABEL_CHANGES_PERIODIC_NOTIFICATION_JOB_ID,
+                TIMEOUT_TIME_MS,
+                uiAutomation(),
+                JOB_STATUS_WAITING,
+                JOB_STATUS_UNKNOWN)
+        }
+
+        private fun startJob(jobId: Int) {
+            val runJobCmd = "cmd jobscheduler run -u $userId -f " +
+                "$permissionControllerPackageName $jobId"
+            try {
+                SystemUtil.runShellCommandOrThrow(runJobCmd)
+            } catch (e: Throwable) {
+                throw RuntimeException(e)
+            }
         }
 
         private fun resetPermissionControllerAndSimulateReboot() {
             PermissionUtils.resetPermissionControllerJob(
                 uiAutomation(),
                 permissionControllerPackageName,
-                SAFETY_LABEL_CHANGES_JOB_ID,
+                SAFETY_LABEL_CHANGES_DETECT_UPDATES_JOB_ID,
                 TIMEOUT_TIME_MS,
                 SET_UP_SAFETY_LABEL_CHANGES_JOB,
                 SAFETY_LABEL_CHANGES_JOB_SERVICE_RECEIVER_CLASS)
+        }
+
+        private fun waitForBroadcastReceiverFinished() {
+            waitForBroadcasts()
+            // Add a short sleep to ensure that the SafetyLabelChangedBroadcastReceiver finishes its
+            // work based according to the current feature flag value before changing the flag value.
+            // While `waitForBroadcasts()` waits for broadcasts to be dispatched, it will not wait for
+            // the receivers' `onReceive` to finish.
+            Thread.sleep(SHORT_SLEEP_MS)
         }
     }
 }

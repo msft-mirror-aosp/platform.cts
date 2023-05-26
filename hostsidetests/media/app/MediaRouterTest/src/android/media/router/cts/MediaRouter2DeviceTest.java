@@ -16,6 +16,8 @@
 
 package android.media.router.cts;
 
+import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
+import static android.media.MediaRoute2Info.FEATURE_LIVE_VIDEO;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_1;
@@ -36,6 +38,8 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_5;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
@@ -58,10 +62,8 @@ import com.android.compatibility.common.util.ApiTest;
 import com.google.common.truth.Truth;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
 
 import java.util.List;
 import java.util.Map;
@@ -79,10 +81,18 @@ public class MediaRouter2DeviceTest {
      */
     private static final int ROUTE_UPDATE_MAX_WAIT_MS = 10_000;
 
+    /** {@link RouteDiscoveryPreference} for system routes only. */
+    private static final RouteDiscoveryPreference SYSTEM_ROUTE_DISCOVERY_PREFERENCE =
+            new RouteDiscoveryPreference.Builder(
+                            List.of(FEATURE_LIVE_AUDIO, FEATURE_LIVE_VIDEO),
+                            /* activeScan= */ false)
+                    .build();
+
     private MediaRouter2 mRouter2;
     private MediaRouter2Manager mRouter2Manager;
     private PowerManager.WakeLock mWakeLock;
     private Context mContext;
+    private ComponentName mPlaceholderComponentName;
 
     @Before
     public void setUp() throws Exception {
@@ -103,6 +113,7 @@ public class MediaRouter2DeviceTest {
                         "MediaRouterCts:MediaRouter2DeviceTest");
         mWakeLock.setReferenceCounted(false);
         mWakeLock.acquire();
+        mPlaceholderComponentName = new ComponentName(mContext, PlaceholderActivity.class);
     }
 
     @After
@@ -199,7 +210,7 @@ public class MediaRouter2DeviceTest {
                 new RouteListingPreference.Builder()
                         .setItems(items)
                         .setUseSystemOrdering(false)
-                        .setLinkedItemComponentName(new ComponentName(mContext, getClass()))
+                        .setLinkedItemComponentName(mPlaceholderComponentName)
                         .build();
         MediaRouter2ManagerCallbackImpl mediaRouter2ManagerCallback =
                 new MediaRouter2ManagerCallbackImpl();
@@ -225,7 +236,7 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(receivedRouteListingPreference.getItems().get(2).getSubText())
                 .isEqualTo(RouteListingPreference.Item.SUBTEXT_SUBSCRIPTION_REQUIRED);
         Truth.assertThat(receivedRouteListingPreference.getLinkedItemComponentName())
-                .isEqualTo(new ComponentName(mContext, getClass()));
+                .isEqualTo(mPlaceholderComponentName);
 
         // Check that null is also propagated correctly.
         mediaRouter2ManagerCallback.closeRouteListingPreferenceWaitingCondition();
@@ -280,20 +291,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    public void setRouteListingPreference_withIllegalComponentName_throws() {
-        ThrowingRunnable setRlpRunnable =
-                () ->
-                        mRouter2.setRouteListingPreference(
-                                new RouteListingPreference.Builder()
-                                        .setLinkedItemComponentName(
-                                                new ComponentName(
-                                                        /* package= */ "android",
-                                                        /* class= */ getClass().getCanonicalName()))
-                                        .build());
-        Assert.assertThrows(IllegalArgumentException.class, setRlpRunnable);
-    }
-
-    @Test
     public void getInstance_findsExternalPackage() {
         MediaRouter2 systemRouter =
                 MediaRouter2.getInstance(mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE);
@@ -330,6 +327,28 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(routes.get(ROUTE_ID_APP_3_ROUTE_5).getName()).isEqualTo(ROUTE_NAME_5);
     }
 
+    @Test
+    public void getRoutes_returnsDefaultDevice() {
+        assertThat(
+                        waitForAndGetRoutes(
+                                        SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
+                                        /* expectedRouteIds= */ Set.of(
+                                                MediaRoute2Info.ROUTE_ID_DEFAULT))
+                                .keySet())
+                .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
+    }
+
+    @Test
+    public void getRoutes_returnDeviceRoute() {
+        assertThat(
+                        waitForAndGetRoutes(
+                                        SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
+                                        /* expectedRouteIds= */ Set.of(
+                                                MediaRoute2Info.ROUTE_ID_DEVICE))
+                                .keySet())
+                .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
+    }
+
     /**
      * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
      * that includes all the given {@code expectedRouteIds}.
@@ -355,8 +374,14 @@ public class MediaRouter2DeviceTest {
 
         mRouter2.registerRouteCallback(
                 Executors.newSingleThreadExecutor(), routeCallback, preference);
+        Set<String> currentRoutes =
+                mRouter2.getRoutes().stream()
+                        .map(MediaRoute2Info::getOriginalId)
+                        .collect(Collectors.toSet());
         try {
-            Truth.assertThat(condition.block(ROUTE_UPDATE_MAX_WAIT_MS)).isTrue();
+            if (!currentRoutes.containsAll(expectedRouteIds)) {
+                Truth.assertThat(condition.block(ROUTE_UPDATE_MAX_WAIT_MS)).isTrue();
+            }
             return mRouter2.getRoutes().stream()
                     .collect(Collectors.toMap(MediaRoute2Info::getOriginalId, Function.identity()));
         } finally {

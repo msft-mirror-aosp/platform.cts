@@ -16,7 +16,7 @@
 
 package android.provider.cts.settings;
 
-import static android.provider.Settings.Config.SYNC_DISABLED_MODE_NONE;
+import static android.provider.DeviceConfig.SYNC_DISABLED_MODE_NONE;
 import static android.provider.Settings.RESET_MODE_PACKAGE_DEFAULTS;
 
 import static org.junit.Assert.assertEquals;
@@ -121,10 +121,8 @@ public class Settings_ConfigTest {
     @After
     public void cleanUp() throws Exception {
         Settings.Config.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
-        deleteProperty(NAMESPACE1, KEY1);
-        deleteProperty(NAMESPACE2, KEY1);
-        deleteProperty(NAMESPACE1, KEY2);
-        deleteProperty(NAMESPACE2, KEY2);
+        deleteProperties(NAMESPACE1, Arrays.asList(KEY1, KEY2));
+        deleteProperties(NAMESPACE2, Arrays.asList(KEY1, KEY2));
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
@@ -364,6 +362,7 @@ public class Settings_ConfigTest {
      */
     @Test
     public void testSetSyncDisabledMode() {
+        Settings.Config.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
         assertEquals(SYNC_DISABLED_MODE_NONE, Settings.Config.getSyncDisabledMode());
         Settings.Config.setSyncDisabledMode(RESET_MODE_PACKAGE_DEFAULTS);
         assertEquals(RESET_MODE_PACKAGE_DEFAULTS, Settings.Config.getSyncDisabledMode());
@@ -428,8 +427,6 @@ public class Settings_ConfigTest {
 
         Settings.Config.setMonitorCallback(sContentResolver,
                 Executors.newSingleThreadExecutor(), callback);
-        // Reading properties triggers the monitor callback function.
-        Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1));
         try {
             Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
                     put(KEY1, VALUE1);
@@ -438,6 +435,8 @@ public class Settings_ConfigTest {
         } catch (DeviceConfig.BadConfigException e) {
             fail("Callback set strings" + e.toString());
         }
+        // Reading properties triggers the monitor callback function.
+        Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1));
 
         try {
             if (!latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
@@ -508,6 +507,19 @@ public class Settings_ConfigTest {
 
     private static void deleteProperty(String namespace, String key) {
         Settings.Config.deleteString(namespace, key);
+    }
+
+    private static void deleteProperties(String namespace, List<String> keys) {
+        HashMap<String, String> deletedKeys = new HashMap<String, String>();
+        for (String key : keys) {
+            deletedKeys.put(key, null);
+        }
+
+        try {
+            Settings.Config.setStrings(namespace, deletedKeys);
+        } catch (DeviceConfig.BadConfigException e) {
+            fail("Failed to delete the properties " + e.toString());
+        }
     }
 
     private static class MockContentObserver extends ContentObserver {

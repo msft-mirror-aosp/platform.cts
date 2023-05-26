@@ -17,16 +17,14 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.EARLY;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 
 import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
+import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -37,17 +35,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation
-@RequireRunOnSystemUser
+@RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)
 @EnsureHasNoWorkProfile
-@EnsureHasDeviceOwner(isPrimary = true)
-@EnsureFeatureFlagNotEnabled(
-        namespace = NAMESPACE_DEVICE_POLICY_MANAGER,
-        key = ENABLE_DEVICE_POLICY_ENGINE_FLAG
-)
-@EnsureFeatureFlagNotEnabled(
-        namespace = NAMESPACE_DEVICE_POLICY_MANAGER,
-        key = PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG
-)
+@EnsureHasDeviceOwner(isPrimary = true, key = "dpc")
+@EnsureHasNoDelegate
 public @interface IncludeRunOnDeviceOwnerUser {
     /**
      * Weight sets the order that annotations will be resolved.

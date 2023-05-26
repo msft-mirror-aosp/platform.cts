@@ -27,27 +27,29 @@ import android.hardware.camera2.CameraManager
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
+import android.os.SystemProperties
 import android.permission.PermissionManager
 import android.platform.test.annotations.AsbSecurityTest
 import android.provider.DeviceConfig
 import android.provider.Settings
 import android.safetycenter.SafetyCenterManager
 import android.server.wm.WindowManagerStateHelper
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.StaleObjectException
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiSelector
 import androidx.annotation.RequiresApi
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiSelector
+import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.modules.utils.build.SdkLevel
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import org.junit.After
@@ -74,8 +76,6 @@ private const val USE_HOTWORD = "use_hotword"
 private const val FINISH_EARLY = "finish_early"
 private const val USE_INTENT_ACTION = "test.action.USE_CAMERA_OR_MIC"
 private const val PRIVACY_CHIP_ID = "com.android.systemui:id/privacy_chip"
-private const val CAR_MIC_PRIVACY_CHIP_ID = "com.android.systemui:id/mic_privacy_chip"
-private const val CAR_CAMERA_PRIVACY_CHIP_ID = "com.android.systemui:id/camera_privacy_chip"
 private const val PRIVACY_ITEM_ID = "com.android.systemui:id/privacy_item"
 private const val SAFETY_CENTER_ITEM_ID = "com.android.permissioncontroller:id/parent_card_view"
 private const val INDICATORS_FLAG = "camera_mic_icons_enabled"
@@ -86,6 +86,8 @@ private const val TIMEOUT_MILLIS: Long = 20000
 private const val TV_MIC_INDICATOR_WINDOW_TITLE = "MicrophoneCaptureIndicator"
 private const val MIC_LABEL_NAME = "microphone_toggle_label_qs"
 private const val CAMERA_LABEL_NAME = "camera_toggle_label_qs"
+private val HOTWORD_DETECTION_SERVICE_REQUIRED =
+        SystemProperties.getBoolean("ro.hotword.detection_service_required", false)
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S, codeName = "S")
 class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
@@ -108,6 +110,8 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     private var wasEnabled = false
     private var isScreenOn = false
     private var screenTimeoutBeforeTest: Long = 0L
+    private lateinit var carMicPrivacyChipId: String
+    private lateinit var carCameraPrivacyChipId: String
 
     @get:Rule
     val disableAnimationRule = DisableAnimationRule()
@@ -212,6 +216,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @CddTest(requirement = "9.8.2/H-5-1,T-5-1,A-2-1")
     fun testCameraIndicator() {
         // If camera is not available skip the test
         assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
@@ -222,6 +227,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @CddTest(requirement = "9.8.2/H-4-1,T-4-1,A-1-1")
     fun testMicIndicator() {
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = true, useCamera = false)
@@ -237,7 +243,10 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @CddTest(requirement = "9.8.2/H-4-1,T-4-1,A-1-1")
     fun testHotwordIndicatorBehavior() {
+        // TODO(b/283429128): remove assumption once leaky indicators issue fixed
+        assumeTrue(HOTWORD_DETECTION_SERVICE_REQUIRED)
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = false, useCamera = false, useHotword = true)
     }
@@ -283,6 +292,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     fun testSafetyCenterHotwordIndicatorBehavior() {
         assumeFalse(isTv)
         assumeFalse(isCar)
+        assumeTrue(HOTWORD_DETECTION_SERVICE_REQUIRED)
         changeSafetyCenterFlag(true.toString())
         assumeSafetyCenterEnabled()
         testCameraAndMicIndicator(
@@ -317,7 +327,9 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         finishEarly: Boolean = false
     ) {
         // If camera is not available skip the test
-        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
+        if (useCamera) {
+            assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
+        }
         var chainAttribution: AttributionSource? = null
         openApp(useMic, useCamera, useHotword, finishEarly)
         try {
@@ -372,7 +384,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         } else if (isCar) {
             assertCarIndicatorsShown(useMic, useCamera, useHotword, chainUsage)
         } else {
-            val micInUse = if (SdkLevel.isAtLeastU()) {
+            val micInUse = if (SdkLevel.isAtLeastU() && HOTWORD_DETECTION_SERVICE_REQUIRED) {
                 useMic || useHotword
             } else {
                 useMic
@@ -408,8 +420,10 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     ) {
         eventually {
             // Ensure the privacy chip is present (or not)
-            var micPrivacyChip = uiDevice.findObject(By.res(CAR_MIC_PRIVACY_CHIP_ID))
-            var cameraPrivacyChip = uiDevice.findObject(By.res(CAR_CAMERA_PRIVACY_CHIP_ID))
+            carMicPrivacyChipId = context.getString(R.string.car_mic_privacy_chip_id)
+            carCameraPrivacyChipId = context.getString(R.string.car_camera_privacy_chip_id)
+            var micPrivacyChip = uiDevice.findObject(By.res(carMicPrivacyChipId))
+            var cameraPrivacyChip = uiDevice.findObject(By.res(carCameraPrivacyChipId))
             if (useMic) {
                 assertNotNull("Did not find mic chip", micPrivacyChip)
                 // Click to chip to show the panel.
@@ -466,13 +480,13 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
         // Ensure the privacy chip is present
         if (useCamera || useMic) {
             eventually {
-                val privacyChip = uiDevice.findObject(UiSelector().resourceId(PRIVACY_CHIP_ID))
-                assertTrue("view with id $PRIVACY_CHIP_ID not found", privacyChip.exists())
+                val privacyChip = UiAutomatorUtils2.waitFindObjectOrNull(By.res(PRIVACY_CHIP_ID))
+                assertNotNull("view with id $PRIVACY_CHIP_ID not found", privacyChip)
                 privacyChip.click()
             }
         } else {
-            val privacyChip = uiDevice.findObject(UiSelector().resourceId(PRIVACY_CHIP_ID))
-            assertFalse("Expected not to find view with id $PRIVACY_CHIP_ID", privacyChip.exists())
+            val privacyChip = UiAutomatorUtils2.waitFindObjectOrNull(By.res(PRIVACY_CHIP_ID))
+            assertNull("Expected not to find view with id $PRIVACY_CHIP_ID", privacyChip)
             return
         }
 
@@ -585,7 +599,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
 
     protected fun waitFindObject(selector: BySelector): UiObject2? {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObject(selector, t) })
+        return findObjectWithRetry({ t -> UiAutomatorUtils2.waitFindObject(selector, t) })
     }
 
     private fun findObjectWithRetry(

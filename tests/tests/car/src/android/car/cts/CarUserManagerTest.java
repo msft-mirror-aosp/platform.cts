@@ -31,8 +31,6 @@ import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_UNLOCKIN
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_VISIBLE;
 import static android.car.user.CarUserManager.UserLifecycleEvent;
 
-import static com.android.compatibility.common.util.TestUtils.waitUntil;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -40,19 +38,22 @@ import static org.junit.Assert.assertThrows;
 
 import static java.lang.Math.max;
 
-import android.app.ActivityManager;
 import android.car.CarOccupantZoneManager;
+import android.car.SyncResultCallback;
 import android.car.test.ApiCheckerRule;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.car.test.util.AndroidHelper;
 import android.car.test.util.UserTestingHelper;
 import android.car.testapi.BlockingUserLifecycleListener;
 import android.car.user.CarUserManager;
+import android.car.user.UserCreationRequest;
+import android.car.user.UserCreationResult;
+import android.car.user.UserRemovalRequest;
+import android.car.user.UserRemovalResult;
 import android.car.user.UserStartRequest;
 import android.car.user.UserStopRequest;
 import android.os.Bundle;
-import android.os.NewUserRequest;
-import android.os.NewUserResponse;
+import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
@@ -69,14 +70,15 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public final class CarUserManagerTest extends AbstractCarTestCase {
-    private static final String TAG = AbstractCarTestCase.class.getSimpleName();
+    private static final String TAG = CarUserManagerTest.class.getSimpleName();
     private static final String NEW_USER_NAME_PREFIX = "CarCTSTest.";
     private static final int START_TIMEOUT_MS = 20_000;
-    private static final int STOP_TIMEOUT_MS = 20_000;
-
     private static final int NO_EVENTS_TIMEOUT_MS = 5_000;
+    private static final int CREATE_USER_TIMEOUT_MS = 20_000;
 
     private final List<UserHandle> mUsersToRemove = new ArrayList<>();
     private CarUserManager mCarUserManager;
@@ -110,8 +112,8 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
 
     @Test
     @ApiTest(apis = {
-            "android.car.user.CarUserManager#startUser(UserStartRequest)",
-            "android.car.user.CarUserManager#stopUser(UserStopRequest)"})
+            "android.car.user.CarUserManager#startUser(UserStartRequest, Executor, ResultCallback)",
+            "android.car.user.CarUserManager#stopUser(UserStopRequest, Executor, ResultCallback)"})
     @EnsureHasPermission({CREATE_USERS, MANAGE_USERS, INTERACT_ACROSS_USERS})
     public void testStartUserOnDisplayAndStopUser() throws Exception {
 
@@ -122,26 +124,35 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                 .getDisplayForStartingBackgroundUser(mContext, mOccupantZoneManager);
 
         BlockingUserLifecycleListener listenerForVisible = null;
+        BlockingUserLifecycleListener listenerForStarting = null;
         BlockingUserLifecycleListener listenerForInvisible = null;
         UserHandle newUser = null;
         boolean isAdded = false;
         try {
             newUser = createUser("newUser", /* isGuest= */ false);
+            int userId = newUser.getIdentifier();
             listenerForVisible = BlockingUserLifecycleListener
                     .forSpecificEvents()
-                    .forUser(newUser.getIdentifier())
+                    .forUser(userId)
                     .setTimeout(START_TIMEOUT_MS)
                     .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_VISIBLE)
                     .build();
+            listenerForStarting = BlockingUserLifecycleListener
+                    .forSpecificEvents()
+                    .forUser(userId)
+                    .setTimeout(START_TIMEOUT_MS)
+                    .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_STARTING)
+                    .build();
             listenerForInvisible = BlockingUserLifecycleListener
                     .forSpecificEvents()
-                    .forUser(newUser.getIdentifier())
+                    .forUser(userId)
                     .setTimeout(START_TIMEOUT_MS)
                     .addExpectedEvent(USER_LIFECYCLE_EVENT_TYPE_INVISIBLE)
                     .build();
 
             Log.d(TAG, "Registering listeners.");
             mCarUserManager.addListener(Runnable::run, listenerForVisible);
+            mCarUserManager.addListener(Runnable::run, listenerForStarting);
             mCarUserManager.addListener(Runnable::run, listenerForInvisible);
             Log.d(TAG, "Registered listeners.");
             isAdded = true;
@@ -149,7 +160,10 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
             // Start the new user on a display.
             UserStartRequest startRequest = new UserStartRequest.Builder(newUser)
                     .setDisplayId(displayId).build();
-            mCarUserManager.startUser(startRequest);
+            mCarUserManager.startUser(startRequest, Runnable::run,
+                    response ->
+                            assertWithMessage("startUser success for user %s on display %s",
+                                    userId, displayId).that(response.isSuccess()).isTrue());
 
             List<UserLifecycleEvent> visibleEvents = listenerForVisible.waitForEvents();
             assertWithMessage("events").that(visibleEvents).hasSize(1);
@@ -160,11 +174,20 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                     .isEqualTo(newUser);
             assertWithMessage("Visible users").that(mUserManager.getVisibleUsers())
                     .contains(newUser);
-            // By the time USER_VISIBLE event is received the user should have been assigned to
-            // the display.
-            assertWithMessage("User assigned to display " + displayId)
+
+            List<UserLifecycleEvent> startingEvents = listenerForStarting.waitForEvents();
+            assertWithMessage("events").that(startingEvents).hasSize(1);
+            UserLifecycleEvent startingEvent = startingEvents.get(0);
+            assertWithMessage("Type of the event").that(startingEvent.getEventType())
+                    .isEqualTo(USER_LIFECYCLE_EVENT_TYPE_STARTING);
+            assertWithMessage("UserId of the event").that(startingEvent.getUserHandle())
+                    .isEqualTo(newUser);
+
+            // By the time USER_VISIBLE event and USER_STARTING event are both received
+            // the user should have been assigned to the display in occupant zone.
+            assertWithMessage("User assigned to display %s", displayId)
                     .that(mOccupantZoneManager.getUserForDisplayId(displayId))
-                    .isEqualTo(newUser.getIdentifier());
+                    .isEqualTo(userId);
             CarOccupantZoneManager.OccupantZoneInfo zone =
                     mOccupantZoneManager.getOccupantZoneForUser(newUser);
             assertWithMessage("The display assigned to the started user %s", newUser)
@@ -174,7 +197,10 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
 
             // Stop the user.
             UserStopRequest stopRequest = new UserStopRequest.Builder(newUser).setForce().build();
-            mCarUserManager.stopUser(stopRequest);
+            mCarUserManager.stopUser(stopRequest, Runnable::run,
+                    response ->
+                            assertWithMessage("stopUser success for user %s on display %s",
+                                    userId, displayId).that(response.isSuccess()).isTrue());
 
             List<UserLifecycleEvent> invisibleEvents = listenerForInvisible.waitForEvents();
             assertWithMessage("events").that(invisibleEvents).hasSize(1);
@@ -183,14 +209,13 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
                     .isEqualTo(USER_LIFECYCLE_EVENT_TYPE_INVISIBLE);
             assertWithMessage("UserId of the event").that(invisibleEvent.getUserHandle())
                     .isEqualTo(newUser);
-            // TODO(b/269324030): Remove the retry logic when we know the user is unassigned by
-            // the time USER_INVISIBLE event is received.
             assertWithMessage("Visible users").that(mUserManager.getVisibleUsers())
                     .doesNotContain(newUser);
-            waitUntil("User " + newUser + " cannot be unassigned from display " + displayId
-                            + " after timeout", STOP_TIMEOUT_MS / 1000,
-                    () -> (mOccupantZoneManager.getUserForDisplayId(displayId)
-                            == CarOccupantZoneManager.INVALID_USER_ID));
+            // By the time USER_INVISIBLE event is received, the user should have been unassigned
+            // from the display.
+            assertWithMessage("User assigned to display %s", displayId)
+                    .that(mOccupantZoneManager.getUserForDisplayId(displayId))
+                            .isEqualTo(CarOccupantZoneManager.INVALID_USER_ID);
             assertWithMessage("The occupant zone assigned to the stopped user %s", newUser)
                     .that(mOccupantZoneManager.getOccupantZoneForUser(newUser))
                     .isNull();
@@ -395,8 +420,7 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {"android.car.user.CarUserManager#isValidUser(UserHandle)"})
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testIsValidUserExists() {
-        assertThat(mCarUserManager.isValidUser(
-                UserHandle.of(ActivityManager.getCurrentUser()))).isTrue();
+        assertThat(mCarUserManager.isValidUser(Process.myUserHandle())).isTrue();
     }
 
     @Test
@@ -432,6 +456,56 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
         expectThat(mCarUserManager.lifecycleEventTypeToString(0)).isEqualTo("UNKNOWN-0");
     }
 
+    @Test
+    @ApiTest(apis = {
+            "android.car.user.CarUserManager#removeUser(UserRemovalRequest, Executor, "
+                    + "ResultCallback)"})
+    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
+    public void testRemoveUserExists() {
+        UserHandle newUser = createUser("TestUserToRemove", false);
+
+        mCarUserManager.removeUser(new UserRemovalRequest.Builder(newUser).build(), Runnable::run,
+                response -> assertThat(response.getStatus()).isEqualTo(
+                        UserRemovalResult.STATUS_SUCCESSFUL)
+        );
+
+        // If user is removed by CarUserManager, then user does not need to be removed in cleanup.
+        mUsersToRemove.remove(newUser);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.car.user.CarUserManager#removeUser(UserRemovalRequest, Executor, "
+                    + "ResultCallback)"})
+    @EnsureHasPermission({CREATE_USERS})
+    public void testRemoveUserDoesNotExist() {
+        mCarUserManager.removeUser(new UserRemovalRequest.Builder(getNonExistentUser()).build(),
+                Runnable::run, response -> assertThat(response.getStatus()).isEqualTo(
+                        UserRemovalResult.STATUS_USER_DOES_NOT_EXIST)
+        );
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.car.user.CarUserManager#createUser(UserCreationRequest, Executor, "
+                    + "ResultCallback)"})
+    @EnsureHasPermission({CREATE_USERS})
+    public void testCreateUser() throws Exception {
+        SyncResultCallback<UserCreationResult> userCreationResultCallback =
+                new SyncResultCallback<>();
+        mCarUserManager.createUser(new UserCreationRequest.Builder().build(), Runnable::run,
+                userCreationResultCallback);
+
+        UserCreationResult result = userCreationResultCallback.get(CREATE_USER_TIMEOUT_MS,
+                TimeUnit.MILLISECONDS);
+
+        assertWithMessage("createUser: ").that(result.getStatus()).isEqualTo(
+                UserCreationResult.STATUS_SUCCESSFUL);
+
+        // Clean up new user at end of test.
+        mUsersToRemove.add(result.getUser());
+    }
+
     @NonNull
     private UserHandle createUser(@Nullable String name, boolean isGuest) {
         name = getNewUserName(name);
@@ -440,14 +514,27 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
 
         assertCanAddUser();
 
-        // TODO(b/235994008): Update this to use CarUserManager.createUser when it is unhidden.
-        NewUserResponse result = mUserManager.createUser(new NewUserRequest.Builder().build());
+        SyncResultCallback<UserCreationResult> userCreationResultCallback =
+                new SyncResultCallback<>();
+        mCarUserManager.createUser(new UserCreationRequest.Builder().build(), Runnable::run,
+                userCreationResultCallback);
+        UserCreationResult result = new UserCreationResult(
+                UserCreationResult.STATUS_ANDROID_FAILURE);
 
-        Log.d(TAG, "result: " + result);
+        try {
+            result = userCreationResultCallback.get(CREATE_USER_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            Log.d(TAG, "result: " + result);
+        } catch (TimeoutException e) {
+            Log.e(TAG, "createUser: timed out waiting for result", e);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "createUser: interrupted waiting for result", e);
+            Thread.currentThread().interrupt();
+        }
+
         assertWithMessage("user creation result (waited for %sms)", DEFAULT_WAIT_TIMEOUT_MS)
                 .that(result).isNotNull();
-        assertWithMessage("user creation result (%s) success for user named %s", result, name)
-                .that(result.isSuccessful()).isTrue();
+        assertWithMessage("user creation result (%s) for user named %s", result, name)
+                .that(result.isSuccess()).isTrue();
         UserHandle user = result.getUser();
         assertWithMessage("user on result %s", result).that(user).isNotNull();
         mUsersToRemove.add(user);

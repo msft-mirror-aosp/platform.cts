@@ -26,6 +26,8 @@ import static android.service.autofill.FillEventHistory.Event.TYPE_DATASETS_SHOW
 import static android.service.autofill.FillEventHistory.Event.TYPE_DATASET_AUTHENTICATION_SELECTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_DATASET_SELECTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_SAVE_SHOWN;
+import static android.service.autofill.FillEventHistory.Event.TYPE_VIEW_REQUESTED_AUTOFILL;
+
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
@@ -48,6 +50,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.hardware.devicestate.DeviceStateManager;
+import android.hardware.devicestate.DeviceStateManager.DeviceStateCallback;
 import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.os.Environment;
@@ -85,14 +89,15 @@ import androidx.test.runner.lifecycle.Stage;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.DeviceConfigStateManager;
 import com.android.compatibility.common.util.OneTimeSettingsListener;
-import com.android.compatibility.common.util.SettingsUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.TestNameUtils;
 import com.android.compatibility.common.util.Timeout;
+import com.android.compatibility.common.util.UserSettings;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +128,8 @@ public final class Helper {
     public static final String ID_EMPTY = "empty";
     public static final String ID_CANCEL_FILL = "cancel_fill";
     public static final String ID_IMEACTION_TEXT = "ime_option_text";
+    public static final String ID_IMEACTION_TEXT_IMPORTANT_FOR_AUTOFILL =
+        "ime_option_text_important_for_autofill";
     public static final String ID_IMEACTION_LABEL = "ime_option_text_label";
 
     public static final String NULL_DATASET_ID = null;
@@ -151,6 +158,8 @@ public final class Helper {
             OneTimeSettingsListener.DEFAULT_TIMEOUT_MS);
 
     public static final String DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS = "autofill_dialog_hints";
+
+    private static final UserSettings sUserSettings = new UserSettings();
 
     /**
      * Helper interface used to filter nodes.
@@ -271,8 +280,8 @@ public final class Helper {
     /**
      * Sets whether the user completed the initial setup.
      */
-    public static void setUserComplete(Context context, boolean complete) {
-        SettingsUtils.syncSet(context, USER_SETUP_COMPLETE, complete ? "1" : null);
+    public static void setUserComplete(boolean complete) {
+        sUserSettings.syncSet(USER_SETUP_COMPLETE, complete ? "1" : null);
     }
 
     private static void dump(@NonNull StringBuilder builder, @NonNull ViewNode node,
@@ -901,6 +910,22 @@ public final class Helper {
     }
 
     /**
+     * Checks if PCC is enabled for the device
+     */
+    public static boolean isPccSupported(Context context) {
+        final PackageManager packageManager = context.getPackageManager();
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            Log.v(TAG, "isPccSupported(): is auto");
+            return false;
+        }
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PC)) {
+            Log.v(TAG, "isPccSupported(): is PC");
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Checks if screen orientation can be changed.
      */
     public static boolean isRotationSupported(Context context) {
@@ -949,13 +974,12 @@ public final class Helper {
      * Uses Settings to enable the given autofill service for the default user, and checks the
      * value was properly check, throwing an exception if it was not.
      */
-    public static void enableAutofillService(@NonNull Context context,
-            @NonNull String serviceName) {
+    public static void enableAutofillService(String serviceName) {
         if (isAutofillServiceEnabled(serviceName)) return;
 
         // Sets the setting synchronously. Note that the config itself is sets synchronously but
         // launch of the service is asynchronous after the config is updated.
-        SettingsUtils.syncSet(context, AUTOFILL_SERVICE, serviceName);
+        sUserSettings.syncSet(AUTOFILL_SERVICE, serviceName);
 
         // Waits until the service is actually enabled.
         try {
@@ -971,14 +995,14 @@ public final class Helper {
      * Uses Settings to disable the given autofill service for the default user, and waits until
      * the setting is deleted.
      */
-    public static void disableAutofillService(@NonNull Context context) {
-        final String currentService = SettingsUtils.get(AUTOFILL_SERVICE);
+    public static void disableAutofillService() {
+        final String currentService = sUserSettings.get(AUTOFILL_SERVICE);
         if (currentService == null) {
             Log.v(TAG, "disableAutofillService(): already disabled");
             return;
         }
         Log.v(TAG, "Disabling " + currentService);
-        SettingsUtils.syncDelete(context, AUTOFILL_SERVICE);
+        sUserSettings.syncDelete(AUTOFILL_SERVICE);
     }
 
     /**
@@ -993,14 +1017,14 @@ public final class Helper {
      * Gets then name of the autofill service for the default user.
      */
     public static String getAutofillServiceName() {
-        return SettingsUtils.get(AUTOFILL_SERVICE);
+        return sUserSettings.get(AUTOFILL_SERVICE);
     }
 
     /**
      * Asserts whether the given service is enabled as the autofill service for the default user.
      */
     public static void assertAutofillServiceStatus(@NonNull String serviceName, boolean enabled) {
-        final String actual = SettingsUtils.get(AUTOFILL_SERVICE);
+        final String actual = sUserSettings.get(AUTOFILL_SERVICE);
         final String expected = enabled ? serviceName : null;
         assertWithMessage("Invalid value for secure setting %s", AUTOFILL_SERVICE)
                 .that(actual).isEqualTo(expected);
@@ -1204,6 +1228,14 @@ public final class Helper {
             @Nullable String datasetId, int uiType) {
         assertFillEvent(event, TYPE_DATASET_SELECTED, datasetId, null, null, null);
         assertFillEventPresentationType(event, uiType);
+    }
+
+    /**
+     * Asserts that {@android.service.autofill.FillEventHistory.Event#TYPE_VIEW_REQUESTED_AUTOFILL}
+     * is present in the FillEventHistory
+     */
+    public static void assertFillEventForViewEntered(@NonNull FillEventHistory.Event event) {
+        assertFillEvent(event, TYPE_VIEW_REQUESTED_AUTOFILL, null, null, null, null);
     }
 
     /**
@@ -1661,30 +1693,6 @@ public final class Helper {
     }
 
     /**
-     * Enable the main credential manager feature.
-     * If this is off, any underlying changes for autofill-credentialManager integrations are off.
-     */
-    public static void enableCredentialManagerFeature(@NonNull Context context) {
-        setCredentialManagerFeature(context, true);
-    }
-
-    /**
-     * Enable ignoring credential manager important views for autofill feature
-     */
-    public static void ignoreCredentialManagerViews(@NonNull Context context) {
-        setDeviceConfig(context,
-                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_IGNORE_VIEWS, true);
-    }
-
-    /**
-     * Enable Credential Manager related autofill changes
-     */
-    public static void setCredentialManagerFeature(@NonNull Context context, boolean enabled) {
-        setDeviceConfig(context,
-                AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_ENABLED, enabled);
-    }
-
-    /**
      * Set device config to set flag values.
      */
     public static void setDeviceConfig(
@@ -1705,6 +1713,16 @@ public final class Helper {
     }
 
     /**
+     * Enable fill dialog feature
+     */
+    public static void disableFillDialogFeature(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED);
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
      * Enable PCC Detection Feature Hints
      */
     public static void enablePccDetectionFeature(@NonNull Context context, String...types) {
@@ -1717,6 +1735,16 @@ public final class Helper {
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
                         AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED);
         setDeviceConfig(deviceConfigStateManager2, "true");
+    }
+
+    /**
+     * Enable PCC Detection Feature Hints
+     */
+    public static void preferPccDetectionOverProvider(@NonNull Context context, boolean preferPcc) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "prefer_provider_over_pcc");
+        setDeviceConfig(deviceConfigStateManager, String.valueOf(!preferPcc));
     }
 
     /**
@@ -1749,6 +1777,11 @@ public final class Helper {
         }
 
         deviceConfigStateManager.set(value);
+    }
+
+    public static boolean isPccFieldClassificationSet(@NonNull Context context) {
+        return Boolean.valueOf(runShellCommand(
+                "cmd autofill get field-detection-service-enabled " + context.getUserId()));
     }
 
     /**
@@ -1796,6 +1829,97 @@ public final class Helper {
 
     private Helper() {
         throw new UnsupportedOperationException("contain static methods only");
+    }
+
+    public enum DeviceStateEnum {
+        HALF_FOLDED,
+        REAR_DISPLAY
+    };
+
+    /**
+     * Test if the device is in half-folded or rear display state.
+     */
+    private static final class DeviceStateAssessor implements DeviceStateCallback {
+        DeviceStateManager mDeviceStateManager;
+        int[] mHalfFoldedStates;
+        int[] mRearDisplayStates;
+        int mCurrentState = -1;
+
+        DeviceStateAssessor(Context context) {
+            Resources systemRes = Resources.getSystem();
+            mHalfFoldedStates = getStatesFromConfig(systemRes, "config_halfFoldedDeviceStates");
+            mRearDisplayStates = getStatesFromConfig(systemRes, "config_rearDisplayDeviceStates");
+            try {
+                mDeviceStateManager = context.getSystemService(DeviceStateManager.class);
+                mDeviceStateManager.registerCallback(context.getMainExecutor(), this);
+                Log.v(TAG, "DeviceStateAssessor initialized halfFoldedStates.length="
+                        + mHalfFoldedStates.length + ", readDisplayStates.length="
+                        + mRearDisplayStates.length);
+            } catch (java.lang.IllegalStateException e) {
+                Log.v(TAG, "DeviceStateManager not available: cannot check for half-fold");
+            }
+        }
+
+        private int[] getStatesFromConfig(Resources systemRes, String configKey) {
+            int statesArrayIdentifier = systemRes.getIdentifier(configKey, "array", "android");
+            if (statesArrayIdentifier == 0) {
+                return new int[0];
+            } else {
+                return systemRes.getIntArray(statesArrayIdentifier);
+            }
+        }
+
+        public void onStateChanged(int state) {
+            synchronized (this) {
+                mCurrentState = state;
+                this.notify();
+            }
+        }
+
+        void close() {
+            if (mDeviceStateManager != null) {
+                mDeviceStateManager.unregisterCallback(this);
+            }
+        }
+
+        boolean isDeviceInState(DeviceStateEnum deviceState) throws InterruptedException {
+            int[] states;
+            switch(deviceState) {
+                case HALF_FOLDED:
+                    states = mHalfFoldedStates;
+                    break;
+                case REAR_DISPLAY:
+                    states = mRearDisplayStates;
+                    break;
+                default:
+                    return false;
+            }
+            if (states.length == 0 || mDeviceStateManager == null) {
+                return false;
+            }
+            synchronized (this) {
+                if (mCurrentState == -1) {
+                    this.wait(1000);
+                }
+            }
+            if (mCurrentState == -1) {
+                Log.w(TAG, "DeviceStateCallback not called within 1 second");
+            }
+            Log.v(TAG, "Current state=" + mCurrentState + ", states[0]="
+                    + states[0]);
+            return Arrays.stream(states).anyMatch(x -> x == mCurrentState);
+        }
+    }
+
+    public static boolean isDeviceInState(Context context, DeviceStateEnum deviceState) {
+        DeviceStateAssessor deviceStateAssessor = new DeviceStateAssessor(context);
+        try {
+            return deviceStateAssessor.isDeviceInState(deviceState);
+        } catch (InterruptedException e) {
+            return false;
+        } finally {
+            deviceStateAssessor.close();
+        }
     }
 
     public static class FieldClassificationResult {

@@ -29,6 +29,7 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -61,6 +62,7 @@ import java.util.List;
  *     atest CtsWindowManagerDeviceTestCases:WindowInsetsAnimationTests
  */
 @Presubmit
+@android.server.wm.annotation.Group2
 public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
 
     @Before
@@ -70,6 +72,7 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
                 WINDOWING_MODE_FULLSCREEN);
         mRootView = mActivity.getWindow().getDecorView();
         assumeTrue(hasWindowInsets(mRootView, systemBars()));
+        assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
     }
 
     @Test

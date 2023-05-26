@@ -19,7 +19,6 @@ package android.devicepolicy.cts;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
-import static com.android.bedstead.remotedpc.RemoteDpc.DPC_COMPONENT_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -47,6 +46,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -84,7 +84,7 @@ public class LockTest {
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.LOCK_NOW_VALUE)
-                    .whereAdminPackageName().isEqualTo(DPC_COMPONENT_NAME.getPackageName())
+                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
                     .whereInteger().isEqualTo(0)
             ).wasLogged();
         }
@@ -97,6 +97,8 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_noPasswordSet_turnsScreenOff() throws Exception {
+        Assume.assumeFalse("LockNow on profile won't turn off screen",
+                sDeviceState.dpc().user().isProfile());
         sDeviceState.dpc().devicePolicyManager().lockNow();
 
         Poll.forValue("isScreenOn", () -> TestApis.device().isScreenOn())

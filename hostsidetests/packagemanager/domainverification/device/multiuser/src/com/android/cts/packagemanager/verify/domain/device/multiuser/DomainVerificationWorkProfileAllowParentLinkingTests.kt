@@ -21,7 +21,6 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.remotedpc.RemoteDpc.DPC_COMPONENT_NAME
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -37,17 +36,19 @@ class DomainVerificationWorkProfileAllowParentLinkingTests :
     @Before
     fun saveAndSetPolicy() {
         val manager = deviceState.getWorkDevicePolicyManager()
-        initialAppLinkPolicy = manager.getAppLinkPolicy(DPC_COMPONENT_NAME)
+        val component = deviceState.getWorkDpcComponent()
+        initialAppLinkPolicy = manager.getAppLinkPolicy(component)
         if (initialAppLinkPolicy != true) {
-            manager.setAppLinkPolicy(DPC_COMPONENT_NAME, true)
+            manager.setAppLinkPolicy(component, true)
         }
     }
 
     @After
     fun resetPolicy() {
         val manager = deviceState.getWorkDevicePolicyManager()
-        if (initialAppLinkPolicy ?: return != manager.getAppLinkPolicy(DPC_COMPONENT_NAME)) {
-            manager.setAppLinkPolicy(DPC_COMPONENT_NAME, initialAppLinkPolicy!!)
+        val component = deviceState.getWorkDpcComponent()
+        if (initialAppLinkPolicy ?: return != manager.getAppLinkPolicy(component)) {
+            manager.setAppLinkPolicy(component, initialAppLinkPolicy!!)
         }
     }
 

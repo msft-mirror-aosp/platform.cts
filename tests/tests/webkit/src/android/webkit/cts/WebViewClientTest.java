@@ -27,6 +27,7 @@ import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SafeBrowsingResponse;
@@ -41,7 +42,6 @@ import android.webkit.cts.WebViewSyncLoader.WaitForLoadedClient;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
@@ -177,7 +177,6 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     // Verify shouldoverrideurlloading called on webview called via onCreateWindow
     // TODO(sgurun) upstream this test to Aw.
-    @FlakyTest(bugId = 253448914)
     @Test
     public void testShouldOverrideUrlLoadingOnCreateWindow() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
@@ -192,56 +191,70 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         final WebView childWebView = mOnUiThread.createWebView();
 
-        WebViewOnUiThread childWebViewOnUiThread = new WebViewOnUiThread(childWebView);
-        mOnUiThread.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onCreateWindow(
-                WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                childWebView.setWebViewClient(childWebViewClient);
-                childWebView.getSettings().setJavaScriptEnabled(true);
-                transport.setWebView(childWebView);
-                getTestEnvironment().addContentView(childWebView, new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.FILL_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT));
-                resultMsg.sendToTarget();
-                return true;
-            }
-        });
-        {
-          final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
-          mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_TAG_URL));
+        try {
+            WebViewOnUiThread childWebViewOnUiThread = new WebViewOnUiThread(childWebView);
+            mOnUiThread.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public boolean onCreateWindow(
+                        WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                    childWebView.setWebViewClient(childWebViewClient);
+                    childWebView.getSettings().setJavaScriptEnabled(true);
+                    transport.setWebView(childWebView);
+                    getTestEnvironment().addContentView(childWebView, new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.FILL_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT));
+                    resultMsg.sendToTarget();
+                    return true;
+                }
+            });
+            {
+                final int childCallCount = childWebViewClient
+                        .getShouldOverrideUrlLoadingCallCount();
+                mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_TAG_URL));
 
-          new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-              @Override
-              protected boolean check() {
-                  return childWebViewClient.hasOnPageFinishedCalled();
-              }
-          }.run();
-          new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-              @Override
-              protected boolean check() {
-                  return childWebViewClient.getShouldOverrideUrlLoadingCallCount() > childCallCount;
-              }
-          }.run();
-          assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
-                  childWebViewClient.getLastShouldOverrideUrl());
+                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                    @Override
+                    protected boolean check() {
+                        return childWebViewClient.hasOnPageFinishedCalled();
+                    }
+                }.run();
+                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                    @Override
+                    protected boolean check() {
+                        return childWebViewClient
+                                .getShouldOverrideUrlLoadingCallCount() > childCallCount;
+                    }
+                }.run();
+                assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
+                        childWebViewClient.getLastShouldOverrideUrl());
+            }
+
+            final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
+            final int mainCallCount = mainWebViewClient.getShouldOverrideUrlLoadingCallCount();
+            clickOnLinkUsingJs("link", childWebViewOnUiThread);
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return childWebViewClient
+                            .getShouldOverrideUrlLoadingCallCount() > childCallCount;
+                }
+            }.run();
+            assertEquals(mainCallCount, mainWebViewClient.getShouldOverrideUrlLoadingCallCount());
+            // PAGE_WITH_LINK_URL has a link to BLANK_PAGE_URL (an arbitrary page
+            // also controlled by the test server)
+            assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL),
+                    childWebViewClient.getLastShouldOverrideUrl());
+
+        } finally {
+            WebkitUtils.onMainThreadSync(() -> {
+                ViewParent parent = childWebView.getParent();
+                if (parent instanceof ViewGroup) {
+                    ((ViewGroup) parent).removeView(childWebView);
+                }
+                childWebView.destroy();
+            });
         }
-
-        final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
-        final int mainCallCount = mainWebViewClient.getShouldOverrideUrlLoadingCallCount();
-        clickOnLinkUsingJs("link", childWebViewOnUiThread);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return childWebViewClient.getShouldOverrideUrlLoadingCallCount() > childCallCount;
-            }
-        }.run();
-        assertEquals(mainCallCount, mainWebViewClient.getShouldOverrideUrlLoadingCallCount());
-        // PAGE_WITH_LINK_URL has a link to BLANK_PAGE_URL (an arbitrary page also controlled by the
-        // test server)
-        assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL),
-                childWebViewClient.getLastShouldOverrideUrl());
     }
 
     private void clickOnLinkUsingJs(final String linkId, WebViewOnUiThread webViewOnUiThread) {

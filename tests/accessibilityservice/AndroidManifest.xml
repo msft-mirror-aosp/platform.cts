@@ -29,6 +29,8 @@
 
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
+    <uses-feature android:name="android.software.companion_device_setup" />
+
     <application android:theme="@android:style/Theme.Holo.NoActionBar"
          android:requestLegacyExternalStorage="true">
 
@@ -73,8 +75,8 @@
                   android:name=".activities.ProxyDisplayActivity"
                   android:screenOrientation="locked"/>
 
-        <activity android:label="@string/proxy_concurrent_activity"
-                  android:name=".activities.ProxyConcurrentActivity"
+        <activity android:label="@string/non_proxy_activity"
+                  android:name=".activities.NonProxyActivity"
                   android:screenOrientation="locked"/>
 
         <activity android:label="Full screen activity for gesture dispatch testing"
@@ -281,6 +283,26 @@
 
             <meta-data android:name="android.accessibilityservice"
                        android:resource="@xml/stub_proxy_concurrent_service"/>
+        </service>
+        <service android:name=".StubA11yToolAccessibilityService"
+             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accessibilityservice"
+                 android:resource="@xml/stub_a11ytool_service"/>
+        </service>
+        <service android:name=".StubNonA11yToolAccessibilityService"
+             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accessibilityservice"
+                 android:resource="@xml/stub_nona11ytool_service"/>
         </service>
     </application>
 

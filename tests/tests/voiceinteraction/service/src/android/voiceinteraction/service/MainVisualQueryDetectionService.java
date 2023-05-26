@@ -16,7 +16,20 @@
 
 package android.voiceinteraction.service;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import android.graphics.ImageFormat;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureRequest;
+import android.media.Image;
+import android.media.ImageReader;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.Process;
@@ -24,11 +37,14 @@ import android.os.SharedMemory;
 import android.service.voice.VisualQueryDetectionService;
 import android.system.ErrnoException;
 import android.util.Log;
+import android.util.Size;
+import android.view.Surface;
 import android.voiceinteraction.common.Utils;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.function.IntConsumer;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -36,22 +52,28 @@ import javax.annotation.concurrent.GuardedBy;
 public class MainVisualQueryDetectionService extends VisualQueryDetectionService {
     static final String TAG = "MainVisualQueryDetectionService";
 
+    public static final String PERCEPTION_MODULE_SUCCESS = "Perception module working";
     public static final String FAKE_QUERY_FIRST = "What is ";
     public static final String FAKE_QUERY_SECOND = "the weather today?";
 
     public static String KEY_VQDS_TEST_SCENARIO = "test scenario";
-    public static int SCENARIO_ATTENTION_LEAVE = 0;
-    public static int SCENARIO_ATTENTION_QUERY_REJECTED_LEAVE = 1;
-    public static int SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE = 2;
-    public static int SCENARIO_ATTENTION_DOUBLE_QUERY_FINISHED_LEAVE = 3;
-    public static int SCENARIO_QUERY_NO_ATTENTION = 4;
-    public static int SCENARIO_QUERY_NO_QUERY_FINISH = 5;
+
+    public static int SCENARIO_TEST_PERCEPTION_MODULES = 0;
+    public static int SCENARIO_ATTENTION_LEAVE = 1;
+    public static int SCENARIO_ATTENTION_QUERY_REJECTED_LEAVE = 2;
+    public static int SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE = 3;
+    public static int SCENARIO_ATTENTION_DOUBLE_QUERY_FINISHED_LEAVE = 4;
+    public static int SCENARIO_QUERY_NO_ATTENTION = 5;
+    public static int SCENARIO_QUERY_NO_QUERY_FINISH = 6;
 
     private int mScenario = -1;
 
     private final Object mLock = new Object();
     private Handler mHandler;
-    private Callback mCallback;
+
+    private ImageReader mImageReader;
+    private Handler mCameraBackgroundHandler;
+    private HandlerThread mCameraBackgroundThread;
 
     @GuardedBy("mLock")
     private boolean mStopDetectionCalled;
@@ -70,10 +92,10 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
     }
 
     @Override
-    public void onStartDetection(@NonNull Callback callback) {
+    public void onStartDetection() {
         Log.d(TAG, "onStartDetection");
 
-        mCallback = callback;
+        startCameraBackgroundThread();
 
         synchronized (mLock) {
             if (mDetectionJob != null) {
@@ -87,15 +109,14 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
                 // detection jobs.
                 mDetectionJob = createTestDetectionJob(mScenario);
                 mHandler.postDelayed(mDetectionJob, 1500);
-
             } else {
                 Log.d(TAG, "Sending detected result after stop detection");
                 // We can't store and use this callback in onStopDetection (not valid anymore
                 // there), so we shut down the service.
-                mCallback.onAttentionGained();
-                mCallback.onQueryDetected(FAKE_QUERY_SECOND);
-                mCallback.onQueryRejected();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                streamQuery(FAKE_QUERY_SECOND);
+                rejectQuery();
+                lostAttention();
             }
         }
     }
@@ -103,6 +124,7 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
     @Override
     public void onStopDetection() {
         super.onStopDetection();
+        stopCameraBackgroundThread();
         Log.d(TAG, "onStopDetection");
         synchronized (mLock) {
             mHandler.removeCallbacks(mDetectionJob);
@@ -168,52 +190,171 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
     private Runnable createTestDetectionJob(int scenario) {
         Runnable detectionJob;
 
-        if (scenario == SCENARIO_ATTENTION_LEAVE) {
+        if (scenario == SCENARIO_TEST_PERCEPTION_MODULES) {
+            detectionJob = this::openCamera;
+        } else if (scenario == SCENARIO_ATTENTION_LEAVE) {
             detectionJob = () -> {
-                mCallback.onAttentionGained();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                lostAttention();
             };
         } else if (scenario == SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE) {
             detectionJob = () -> {
-                mCallback.onAttentionGained();
-                mCallback.onQueryDetected(FAKE_QUERY_FIRST);
-                mCallback.onQueryDetected(FAKE_QUERY_SECOND);
-                mCallback.onQueryFinished();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                streamQuery(FAKE_QUERY_FIRST);
+                streamQuery(FAKE_QUERY_SECOND);
+                finishQuery();
+                lostAttention();
             };
         } else if (scenario == SCENARIO_ATTENTION_QUERY_REJECTED_LEAVE) {
             detectionJob = () -> {
-                mCallback.onAttentionGained();
-                mCallback.onQueryDetected(FAKE_QUERY_FIRST);
-                mCallback.onQueryRejected();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                streamQuery(FAKE_QUERY_FIRST);
+                rejectQuery();
+                lostAttention();
             };
         } else if (scenario == SCENARIO_ATTENTION_DOUBLE_QUERY_FINISHED_LEAVE) {
             detectionJob = () -> {
-                mCallback.onAttentionGained();
-                mCallback.onQueryDetected(FAKE_QUERY_FIRST);
-                mCallback.onQueryFinished();
-                mCallback.onQueryDetected(FAKE_QUERY_SECOND);
-                mCallback.onQueryFinished();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                streamQuery(FAKE_QUERY_FIRST);
+                finishQuery();
+                streamQuery(FAKE_QUERY_SECOND);
+                finishQuery();
+                lostAttention();
             };
         } else if (scenario == SCENARIO_QUERY_NO_ATTENTION) {
             detectionJob = () -> {
-                mCallback.onQueryDetected(FAKE_QUERY_FIRST);
-                mCallback.onQueryFinished();
-                mCallback.onQueryRejected();
+                streamQuery(FAKE_QUERY_FIRST);
+                finishQuery();
+                rejectQuery();
             };
         } else if (scenario == SCENARIO_QUERY_NO_QUERY_FINISH) {
             detectionJob = () -> {
-                mCallback.onAttentionGained();
-                mCallback.onQueryFinished();
-                mCallback.onAttentionLost();
+                gainedAttention();
+                finishQuery();
+                lostAttention();
             };
         } else {
             Log.i(TAG, "Do nothing...");
             return null;
         }
         return detectionJob;
+    }
+
+    private void sendCameraOpenSuccessSignals() {
+        gainedAttention();
+        streamQuery(PERCEPTION_MODULE_SUCCESS);
+        finishQuery();
+        lostAttention();
+    }
+
+    private void startCameraBackgroundThread() {
+        mCameraBackgroundThread = new HandlerThread("Camera Background Thread");
+        mCameraBackgroundThread.start();
+        mCameraBackgroundHandler = new Handler(mCameraBackgroundThread.getLooper());
+    }
+
+    private void stopCameraBackgroundThread() {
+        mCameraBackgroundThread.quitSafely();
+        try {
+            mCameraBackgroundThread.join();
+            mCameraBackgroundThread = null;
+            mCameraBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Failed to stop camera thread.");
+        }
+    }
+
+    private void onReceiveImage(ImageReader reader) {
+        Log.i(TAG, "Image received.");
+        try (Image image = reader.acquireLatestImage()) {
+            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+            assertThat(buffer.capacity()).isGreaterThan(0);
+            sendCameraOpenSuccessSignals();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void openCamera() {
+        CameraManager manager = getSystemService(CameraManager.class);
+        assert manager != null;
+        try {
+            // Check camera can be seen
+            String cameraId = manager.getCameraIdList()[0]; //get front facing camera
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+            Size imageSize = characteristics.get(
+                            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                    .getOutputSizes(ImageFormat.JPEG)[0];
+            initializeImageReader(imageSize.getWidth(), imageSize.getHeight());
+            manager.openCamera(cameraId, new CameraDevice.StateCallback() {
+                @Override
+                public void onOpened(CameraDevice camera) {
+                    // This is called when the camera is open
+                    Log.i(TAG, "onCameraOpened");
+                    // The camera data will be zero on virtual device, so it would be better to skip
+                    // to check the camera data.
+                    if (Utils.isVirtualDevice()) {
+                        sendCameraOpenSuccessSignals();
+                    }
+                    createCameraPreview(camera);
+                }
+
+                @Override
+                public void onDisconnected(CameraDevice camera) {
+                    camera.close();
+                }
+
+                @Override
+                public void onError(CameraDevice camera, int error) {
+                    camera.close();
+                }
+            }, mCameraBackgroundHandler);
+        } catch (CameraAccessException e) {
+            throw new IllegalStateException("Missing Camera access.");
+        }
+    }
+
+    private void initializeImageReader(int width, int height) {
+        // Initialize image reader
+        mImageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 2);
+        ImageReader.OnImageAvailableListener readerListener = this::onReceiveImage;
+        mImageReader.setOnImageAvailableListener(readerListener, mCameraBackgroundHandler);
+    }
+
+    private void createCameraPreview(CameraDevice cameraDevice) {
+        try {
+            CaptureRequest.Builder captureRequestBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            Surface imageSurface = mImageReader.getSurface();
+            captureRequestBuilder.addTarget(imageSurface);
+            cameraDevice.createCaptureSession(List.of(imageSurface),
+                    new CameraCaptureSession.StateCallback() {
+                        @Override
+                        public void onConfigured(CameraCaptureSession cameraCaptureSession) {
+                            updatePreview(captureRequestBuilder, cameraCaptureSession);
+                            Log.i(TAG, "Capture session configured.");
+                        }
+
+                        @Override
+                        public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+                            //No-op
+                        }
+                    }, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "Camera preview created.");
+    }
+
+    private void updatePreview(CaptureRequest.Builder captureRequestBuilder,
+            CameraCaptureSession cameraCaptureSession) {
+        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        try {
+            cameraCaptureSession.capture(captureRequestBuilder.build(), null,
+                    mCameraBackgroundHandler);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 

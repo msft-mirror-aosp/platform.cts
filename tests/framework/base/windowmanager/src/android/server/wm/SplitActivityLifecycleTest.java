@@ -47,6 +47,7 @@ import android.os.IBinder;
 import android.os.SystemProperties;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerState.TaskFragment;
+import android.view.WindowManager;
 import android.window.TaskFragmentCreationParams;
 import android.window.TaskFragmentInfo;
 import android.window.WindowContainerToken;
@@ -68,6 +69,7 @@ import org.junit.Test;
  *     atest CtsWindowManagerDeviceTestCases:SplitActivityLifecycleTest
  */
 @Presubmit
+@android.server.wm.annotation.Group2
 public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     /** The bounds should only be updated through {@link #updateSplitBounds(Rect)}. */
     private final Rect mPrimaryBounds = new Rect();
@@ -452,10 +454,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     public void testLaunchEmbeddedActivityWithShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 
-        // Create lock screen session and set credentials (since some devices will not show a
-        // lockscreen without credentials set).
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B (with showWhenLocked)
         // side-by-side.
         initializeSplitActivities(true /* showWhenLocked */);
@@ -475,10 +474,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     public void testLaunchEmbeddedActivitiesWithoutShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 
-        // Create lock screen session and set credentials (since some devices will not show a
-        // lockscreen without credentials set).
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B side-by-side.
         initializeSplitActivities();
 
@@ -498,10 +494,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
     public void testLaunchEmbeddedActivitiesWithShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 
-        // Create lock screen session and set credentials (since some devices will not show a
-        // lockscreen without credentials set).
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
         // Initialize test environment by launching Activity A and B side-by-side.
         mOwnerActivity.setShowWhenLocked(true);
         initializeSplitActivities(true /* showWhenLocked */);
@@ -597,7 +590,8 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
         assumeTrue(SystemProperties.getBoolean("persist.wm.extensions.enabled", false));
 
         // Skip the test if this is not a large screen device
-        assumeTrue(getDisplayConfiguration().smallestScreenWidthDp >= 600);
+        assumeTrue(getDisplayConfiguration().smallestScreenWidthDp
+                >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP);
 
         // Rotate the device to landscape
         final RotationSession rotationSession = createManagedRotationSession();

@@ -97,6 +97,7 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
     private DialogTestListItem mWiFiDataUsageSettingsVisibleTest;
     private DialogTestListItem mCellularDataUsageSettingsVisibleTest;
     private DialogTestListItem mCredSettingsVisibleTest;
+    private DialogTestListItem mAllowNonDismissibleNotificationTest;
     private DialogTestListItem mPrintSettingsVisibleTest;
     private DialogTestListItem mIntentFiltersTest;
     private DialogTestListItem mPermissionLockdownTest;
@@ -116,6 +117,7 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
     private DialogTestListItem mPatternWorkChallenge;
     private DialogTestListItem mParentProfilePassword;
     private DialogTestListItem mPersonalRingtonesTest;
+    private TestListItem mScreenshotTest;
     private TestListItem mVpnTest;
     private TestListItem mKeyChainTest;
     private TestListItem mAlwaysOnVpnSettingsTest;
@@ -292,6 +294,7 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                     "BYOD_ConfirmWorkCredentials",
                     R.string.provisioning_byod_confirm_work_credentials_description,
                     new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+
             mPatternWorkChallenge = new DialogTestListItem(this,
                     R.string.provisioning_byod_pattern_work_challenge,
                     "BYOD_PatternWorkChallenge",
@@ -337,6 +340,12 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 "BYOD_CredSettingsVisibleTest",
                 R.string.provisioning_byod_cred_settings_instruction,
                 new Intent(Settings.ACTION_SECURITY_SETTINGS));
+
+        mAllowNonDismissibleNotificationTest = new DialogTestListItem(this,
+                R.string.provisioning_byod_allow_nondismissible_notification,
+                "BYOD_AllowNonDismissibleNotificationTest",
+                R.string.provisioning_byod_allow_nondismissible_notification_instructions,
+                new Intent(this, NotificationActivity.class));
 
         mLocationSettingsVisibleTest = new DialogTestListItem(this,
                 R.string.provisioning_byod_location_settings,
@@ -474,6 +483,12 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 "BYOD_PersonalRingtones",
                 R.string.provisioning_byod_personal_ringtones_instruction,
                 new Intent(Settings.ACTION_SOUND_SETTINGS));
+
+        mScreenshotTest = TestListItem.newTest(/* context= */ this,
+                R.string.provisioning_byod_screenshot,
+                ScreenshotTestActivity.class.getName(),
+                new Intent(ScreenshotTestActivity.ACTION_SCREENSHOT_TEST),
+                /* requiredFeatures= */ null);
 
         final Intent policyTransparencyTestIntent = new Intent(this,
                 PolicyTransparencyTestListActivity.class);
@@ -695,6 +710,9 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 "BYOD_LaunchWorkTab",
                 R.string.provisioning_byod_launch_work_tab_instruction,
                 createLaunchWorkTabIntent()));
+
+        adapter.add(mScreenshotTest);
+        adapter.add(mAllowNonDismissibleNotificationTest);
     }
 
     private Intent createInstallWorkProfileAppIntent() {

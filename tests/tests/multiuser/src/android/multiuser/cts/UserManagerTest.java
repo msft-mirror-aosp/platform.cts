@@ -18,6 +18,7 @@ package android.multiuser.cts;
 
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.multiuser.cts.TestingUtils.getBooleanProperty;
@@ -36,7 +37,9 @@ import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
@@ -67,6 +70,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
@@ -133,6 +137,57 @@ public final class UserManagerTest {
     @Test
     public void testUserGoat_api30() {
         assertWithMessage("isUserAGoat()").that(mUserManager.isUserAGoat()).isFalse();
+    }
+
+    /**
+     * Verify that isAdminUser() can be called without any permissions and returns true for the
+     * initial user which is an admin user.
+     */
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
+    @RequireRunOnInitialUser
+    public void testIsAdminUserOnInitialUser_noPermission() {
+        assertTrue(mUserManager.isAdminUser());
+    }
+
+    /**
+     * Verify that isAdminUser() throws SecurityException when called for a different user context
+     * without any permission.
+     */
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
+    @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
+    public void testIsAdminUserForOtherUserContextFailsWithoutPermission() {
+        UserReference additionalUser = sDeviceState.additionalUser();
+        additionalUser.switchTo();
+        Context userContext;
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
+            userContext = getContextForUser(additionalUser.id());
+        }
+
+        UserManager um = userContext.getSystemService(UserManager.class);
+        assertThrows(SecurityException.class, () -> um.isAdminUser());
+    }
+
+    /**
+     * Verify that isAdminUser() works fine when called for a different user context
+     * with required permission.
+     */
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
+    @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
+    @EnsureHasPermission(CREATE_USERS)
+    public void testIsAdminUserForOtherUserContextWithPermission() {
+        UserReference additionalUser = sDeviceState.additionalUser();
+        Context userContext;
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
+            userContext = getContextForUser(additionalUser.id());
+        }
+
+        UserManager um = userContext.getSystemService(UserManager.class);
+        assertFalse(um.isAdminUser());
     }
 
     @Test
@@ -230,18 +285,19 @@ public final class UserManagerTest {
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserRunning"})
-    @RequireRunOnSecondaryUser(switchedToUser = FALSE)
+    @EnsureHasSecondaryUser(switchedToUser = FALSE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call isUserRunning()
     public void testIsUserRunning_stoppedSecondaryUser() {
-        UserReference user = TestApis.users().instrumented();
-        Log.d(TAG, "Stopping  user " + user + " (called from " + sContext.getUser() + ")");
-        user.stop();
+        Log.d(TAG, "Stopping  user " + sDeviceState.secondaryUser()
+                + " (called from " + sContext.getUser() + ")");
+        sDeviceState.secondaryUser().stop();
 
-        Context context = getContextForUser(user.userHandle().getIdentifier());
-        UserManager um = context.getSystemService(UserManager.class);
+        UserManager um =
+                TestApis.context().instrumentedContext().getSystemService(UserManager.class);
 
         assertWithMessage("isUserRunning() for stopped secondary user (id=%s)",
-                user.id()).that(um.isUserRunning(user.userHandle())).isFalse();
+                sDeviceState.secondaryUser().id())
+                .that(um.isUserRunning(sDeviceState.secondaryUser().userHandle())).isFalse();
     }
 
     @Test
@@ -273,7 +329,7 @@ public final class UserManagerTest {
             assertThat(cloneUserManager.isProfile()).isTrue();
             assertThat(cloneUserManager.isUserOfType(UserManager.USER_TYPE_PROFILE_CLONE)).isTrue();
 
-            final List<UserInfo> list = mUserManager.getUsers(true, true, true);
+            final List<UserInfo> list = mUserManager.getAliveUsers();
             final UserHandle finalUserHandle = userHandle;
             final List<UserInfo> cloneUsers = list.stream().filter(
                     user -> (user.id == finalUserHandle.getIdentifier()
@@ -834,7 +890,7 @@ public final class UserManagerTest {
     }
 
     @Test
-    @CddTest
+    @CddTest(requirements = {"9.5/H-1-1,H-4-2"})
     public void headlessCannotSupportTelephony() {
         boolean isHeadless = UserManager.isHeadlessSystemUserMode();
         boolean hasTelephony =
@@ -907,7 +963,7 @@ public final class UserManagerTest {
     @Nullable
     private UserInfo getUser(int id) {
         try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
-            return  mUserManager.getUsers(false, false, false)
+            return  mUserManager.getUsers()
                     .stream().filter(user -> user.id == id).findFirst()
                     .orElse(null);
         }

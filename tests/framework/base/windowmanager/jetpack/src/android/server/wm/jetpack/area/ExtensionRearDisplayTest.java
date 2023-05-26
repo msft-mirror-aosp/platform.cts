@@ -24,21 +24,30 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
+import android.server.wm.jetpack.utils.ExtensionUtil;
 import android.server.wm.jetpack.utils.TestRearDisplayActivity;
 import android.server.wm.jetpack.utils.WindowExtensionTestRule;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
+import android.util.DisplayMetrics;
+import android.util.Pair;
+import android.view.WindowMetrics;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.window.extensions.area.WindowAreaComponent;
@@ -55,7 +64,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -74,6 +85,10 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
     private static final int TIMEOUT = 2000;
     private static final int INVALID_DEVICE_STATE = -1;
+    private static final int INVALID_DISPLAY_ADDRESS = -1;
+
+    private static final int CALLBACK_TYPE_WINDOW_AREA_STATUS = 1;
+    private static final int CALLBACK_TYPE_WINDOW_AREA_SESSION_STATE = 2;
 
     private TestRearDisplayActivity mActivity;
     private WindowAreaComponent mWindowAreaComponent;
@@ -85,6 +100,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @WindowAreaSessionState
     private Integer mWindowAreaSessionState;
     private int mRearDisplayState;
+    private long mRearDisplayAddress;
 
     private final Context mInstrumentationContext = getInstrumentation().getTargetContext();
     private final KeyguardManager mKeyguardManager = mInstrumentationContext.getSystemService(
@@ -92,10 +108,16 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     private final DeviceStateManager mDeviceStateManager = mInstrumentationContext
             .getSystemService(DeviceStateManager.class);
 
-    private final Consumer<Integer> mStatusListener = (status) -> mWindowAreaStatus = status;
+    private final List<Pair<Integer, Integer>> mCallbackLogs = new ArrayList<>();
+
+    private final Consumer<Integer> mStatusListener = (status) -> {
+        mWindowAreaStatus = status;
+        mCallbackLogs.add(new Pair<>(CALLBACK_TYPE_WINDOW_AREA_STATUS, status));
+    };
 
     private final Consumer<Integer> mSessionStateListener = (sessionState) -> {
         mWindowAreaSessionState = sessionState;
+        mCallbackLogs.add(new Pair<>(CALLBACK_TYPE_WINDOW_AREA_SESSION_STATE, sessionState));
     };
 
     @Rule
@@ -114,12 +136,14 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         mRearDisplayState = getInstrumentation().getTargetContext().getResources()
                 .getInteger(Resources.getSystem()
                         .getIdentifier("config_deviceStateRearDisplay", "integer", "android"));
+        mRearDisplayAddress = getRearDisplayAddress();
         assumeTrue(mRearDisplayState != INVALID_DEVICE_STATE);
         mDeviceStateManager.registerCallback(Runnable::run, this);
         mWindowAreaComponent.addRearDisplayStatusListener(mStatusListener);
         unlockDeviceIfNeeded();
         mActivity = startActivityNewTask(TestRearDisplayActivity.class);
         waitAndAssert(() -> mWindowAreaStatus != null);
+        mCallbackLogs.clear();
     }
 
     @After
@@ -146,7 +170,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
      * (i.e. the base state of the device is different than the current state, and that current
      * state is the RearDisplay state), then it should receive the
      * {@link WindowAreaStatus#STATUS_AVAILABLE} value, otherwise it should receive the
-     * {@link WindowAreaStatus#STATUS_UNAVAILABLE} value.
+     * {@link WindowAreaStatus#STATUS_ACTIVE} value.
      */
     @ApiTest(apis = {
             "androidx.window.extensions.area.WindowAreaComponent#addRearDisplayStatusListener",
@@ -171,7 +195,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                             () -> mWindowAreaStatus == WindowAreaComponent.STATUS_AVAILABLE);
                 } else {
                     waitAndAssert(
-                            () -> mWindowAreaStatus == WindowAreaComponent.STATUS_UNAVAILABLE);
+                            () -> mWindowAreaStatus == WindowAreaComponent.STATUS_ACTIVE);
                 }
             }
         }
@@ -196,19 +220,24 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         assumeTrue(mWindowAreaStatus == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(mCurrentDeviceState != mRearDisplayState);
 
-        mActivity.mConfigurationChanged = false;
+        // Reset configuration property to be able to verify that rear display was enabled.
+        resetActivityConfigurationChangeValues(mActivity);
         // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
         DeviceStateUtils.runWithControlDeviceStatePermission(() ->
                 mWindowAreaComponent.startRearDisplaySession(mActivity, mSessionStateListener));
+        // To verify that the rear display is enabled, check a configuration change occurred
         waitAndAssert(() -> mActivity.mConfigurationChanged);
         assertTrue(mWindowAreaSessionState != null
                         && mWindowAreaSessionState == WindowAreaComponent.SESSION_STATE_ACTIVE);
         assertEquals(mCurrentDeviceState, mRearDisplayState);
         assertTrue(isActivityVisible(mActivity));
+        assertEquals(WindowAreaComponent.STATUS_ACTIVE, (int) mWindowAreaStatus);
 
-        mActivity.mConfigurationChanged = false;
+        // Reset configuration property to be able to verify that rear display was disabled.
+        resetActivityConfigurationChangeValues(mActivity);
         mWindowAreaComponent.endRearDisplaySession();
         waitAndAssert(() -> WindowAreaComponent.SESSION_STATE_INACTIVE == mWindowAreaSessionState);
+        // To verify that the rear display is enabled, check a configuration change occurred
         waitAndAssert(() -> mActivity.mConfigurationChanged);
         assertTrue(isActivityVisible(mActivity));
         // Cancelling rear display mode should cancel the override, so verifying that the
@@ -216,6 +245,105 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         assertEquals(mCurrentDeviceState, mCurrentDeviceBaseState);
         assertEquals(WindowAreaComponent.STATUS_AVAILABLE, (int) mWindowAreaStatus);
 
+        verifyCallbacks();
+    }
+
+    /**
+     * Tests that the {@link DisplayMetrics} returned by
+     * {@link WindowAreaComponent#getRearDisplayMetrics} is non-null and matches the expected
+     * metrics pertaining to the rear display address.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
+    @Test
+    public void testGetRearDisplayMetrics() throws Throwable {
+        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        assumeTrue(mRearDisplayAddress != INVALID_DISPLAY_ADDRESS);
+        DisplayMetrics originalMetrics = mWindowAreaComponent.getRearDisplayMetrics();
+        DisplayMetrics expectedMetrics = new DisplayMetrics();
+
+        // Reset configuration property to be able to verify that rear display was disabled.
+        resetActivityConfigurationChangeValues(mActivity);
+        // Enable rear display mode to get the expected display metrics for the rear display
+        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
+        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
+                mWindowAreaComponent.startRearDisplaySession(mActivity, mSessionStateListener));
+
+        // To verify that the rear display is enabled, check a configuration change occurred
+        waitAndAssert(() -> mActivity.mConfigurationChanged);
+        mActivity.getDisplay().getRealMetrics(expectedMetrics);
+        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
+                mWindowAreaComponent.endRearDisplaySession());
+        waitAndAssert(() -> mCurrentDeviceState == mCurrentDeviceBaseState);
+
+        DisplayMetrics actualMetrics = mWindowAreaComponent.getRearDisplayMetrics();
+
+        assertNotNull(actualMetrics);
+        assertEquals(expectedMetrics, actualMetrics);
+
+        // Verifying that the metrics are the same before and after entering the feature.
+        assertEquals(originalMetrics, actualMetrics);
+    }
+
+    /**
+     * Tests that the {@link DisplayMetrics} returned by
+     * {@link WindowAreaComponent#getRearDisplayMetrics} is non-null
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
+    @Test
+    public void testGetRearDisplayMetrics_sameAfterRotation() throws Throwable {
+        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        assumeTrue(mRearDisplayAddress != INVALID_DISPLAY_ADDRESS);
+        DisplayMetrics originalMetricsApi = mWindowAreaComponent.getRearDisplayMetrics();
+        // Reset configuration property to be able to verify that rear display was disabled.
+        resetActivityConfigurationChangeValues(mActivity);
+        // Enable rear display mode to get the expected display metrics for the rear display
+        // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
+        DeviceStateUtils.runWithControlDeviceStatePermission(() ->
+                mWindowAreaComponent.startRearDisplaySession(mActivity, mSessionStateListener));
+
+        // To verify that the rear display is enabled, check a configuration change occurred
+        waitAndAssert(() -> mActivity.mConfigurationChanged);
+
+        WindowMetrics windowMetrics = mActivity.getWindowManager().getCurrentWindowMetrics();
+
+        int newOrientation;
+        if (mActivity.getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_PORTRAIT) {
+            newOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+            mActivity.setRequestedOrientation(newOrientation);
+        } else {
+            newOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+            mActivity.setRequestedOrientation(newOrientation);
+        }
+        waitAndAssert(() -> mActivity.getRequestedOrientation() == newOrientation);
+
+        WindowMetrics postRotationWindowMetrics =
+                mActivity.getWindowManager().getCurrentWindowMetrics();
+        DisplayMetrics postRotationMetricsApi = mWindowAreaComponent.getRearDisplayMetrics();
+
+
+        // Verify that the metrics returned from the activity do not equal after rotation
+        assertNotEquals(windowMetrics, postRotationWindowMetrics);
+        // Verify that metrics returned from #getRearDisplayMetrics equals
+        assertEquals(originalMetricsApi, postRotationMetricsApi);
+    }
+
+    /**
+     * Tests that the {@link DisplayMetrics} returned by
+     * {@link WindowAreaComponent#getRearDisplayMetrics} is non-null and empty for an empty or
+     * incorrectly formatted rear display address.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
+    @Test
+    public void testGetRearDisplayMetrics_invalidRearDisplayAddress() {
+        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        assumeTrue(mRearDisplayAddress == INVALID_DISPLAY_ADDRESS);
+        DisplayMetrics expectedDisplayMetrics = new DisplayMetrics();
+        DisplayMetrics actualDisplayMetrics = mWindowAreaComponent.getRearDisplayMetrics();
+        assertEquals(expectedDisplayMetrics, actualDisplayMetrics);
     }
 
     @Override
@@ -254,6 +382,17 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 && (currentDeviceState == mRearDisplayState);
     }
 
+    private void resetActivityConfigurationChangeValues(@NonNull TestRearDisplayActivity activity) {
+        activity.mConfigurationChanged = false;
+    }
+
+    private long getRearDisplayAddress() {
+        String address = getInstrumentation().getTargetContext().getResources().getString(
+                Resources.getSystem().getIdentifier("config_rearDisplayPhysicalAddress", "string",
+                        "android"));
+        return address.isEmpty() ? INVALID_DISPLAY_ADDRESS : Long.parseLong(address);
+    }
+
     private void unlockDeviceIfNeeded() {
         if (isKeyguardLocked() || !Objects.requireNonNull(
                 mInstrumentationContext.getSystemService(PowerManager.class)).isInteractive()) {
@@ -268,5 +407,28 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
         waitFor(TIMEOUT, condition);
+    }
+
+    /**
+     * Verifies the order of window area status callbacks and window area session state callbacks.
+     *
+     * Currently, only checks that the STATUS_ACTIVE window area status callback should never happen
+     * after SESSION_STATE_INACTIVE window area session callback.
+     */
+    private void verifyCallbacks() {
+        boolean sessionEnded = false;
+        for (Pair<Integer, Integer> callback : mCallbackLogs) {
+            if (callback.first == CALLBACK_TYPE_WINDOW_AREA_SESSION_STATE) {
+                if (callback.second == WindowAreaComponent.SESSION_STATE_INACTIVE) {
+                    sessionEnded = true;
+                }
+            }
+            if (callback.first == CALLBACK_TYPE_WINDOW_AREA_STATUS) {
+                if (sessionEnded && callback.second == WindowAreaComponent.STATUS_ACTIVE) {
+                    throw new IllegalStateException(
+                            "STATUS_ACTIVE should not happen after SESSION_STATE_INACTIVE");
+                }
+            }
+        }
     }
 }

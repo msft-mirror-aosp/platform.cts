@@ -765,8 +765,9 @@ public class CommonPermissions {
     public static final String CHANGE_CONFIGURATION = "android.permission.CHANGE_CONFIGURATION";
     /** See {@code Manifest#WRITE_GSERVICES} */
     public static final String WRITE_GSERVICES = "android.permission.WRITE_GSERVICES";
-    /** See {@code Manifest#WRITE_DEVICE_CONFIG} */
-    public static final String WRITE_DEVICE_CONFIG = "android.permission.WRITE_DEVICE_CONFIG";
+    /** See {@code Manifest#WRITE_ALLOWLISTED_DEVICE_CONFIG} */
+    public static final String WRITE_ALLOWLISTED_DEVICE_CONFIG =
+            "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG";
     /** See {@code Manifest#READ_DEVICE_CONFIG} */
     public static final String READ_DEVICE_CONFIG = "android.permission.READ_DEVICE_CONFIG";
     /** See {@code Manifest#READ_APP_SPECIFIC_LOCALES} */
@@ -1989,4 +1990,6 @@ public class CommonPermissions {
     public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS = "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS";
     /** See {@link Manifest#MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL} */
     public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL = "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL";
+
+    public static final String MANAGE_DEFAULT_APPLICATIONS = "android.permission.MANAGE_DEFAULT_APPLICATIONS";
 }

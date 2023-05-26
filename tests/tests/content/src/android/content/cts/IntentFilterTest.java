@@ -27,8 +27,6 @@ import static android.os.PatternMatcher.PATTERN_PREFIX;
 import static android.os.PatternMatcher.PATTERN_SIMPLE_GLOB;
 import static android.os.PatternMatcher.PATTERN_SUFFIX;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -39,10 +37,9 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Parcel;
 import android.os.PatternMatcher;
-import android.os.PersistableBundle;
+import android.platform.test.annotations.PlatinumTest;
 import android.provider.Contacts.People;
 import android.test.AndroidTestCase;
 import android.util.Printer;
@@ -63,11 +60,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
 
+@PlatinumTest(focusArea = "pm")
 public class IntentFilterTest extends AndroidTestCase {
 
     private IntentFilter mIntentFilter;
@@ -82,38 +79,6 @@ public class IntentFilterTest extends AndroidTestCase {
     private static final int PORT = 80;
     private static final String DATA_PATH = "testDataPath";
     private static final Uri URI = People.CONTENT_URI;
-    private static final String EXTRA_INT = "extra_int";
-    private static final int VALUE_INT = 11;
-    private static final String EXTRA_INT_ARRAY = "extra_int_array";
-    private static final int[] VALUE_INT_ARRAY = {22, 444, 6666, 8888};
-    private static final String EXTRA_LONG = "extra_long";
-    private static final long VALUE_LONG = 1111111111L;
-    private static final String EXTRA_LONG_ARRAY = "extra_long_array";
-    private static final long[] VALUE_LONG_ARRAY = {2222L, 4444444L, 88888888L};
-    private static final String EXTRA_DOUBLE = "extra_double";
-    private static final double VALUE_DOUBLE = 10.12f;
-    private static final String EXTRA_DOUBLE_ARRAY = "extra_double_array";
-    private static final double[] VALUE_DOUBLE_ARRAY = {2.14f, 64.32f};
-    private static final String EXTRA_STRING = "extra_string";
-    private static final String VALUE_STRING = "value_str";
-    private static final String EXTRA_STRING_ARRAY = "extra_string_array";
-    private static final String[] VALUE_STRING_ARRAY = {"value_str1", "value_str2", "value_str3"};
-    private static final String EXTRA_BOOL = "extra_bool";
-    private static final boolean VALUE_BOOL = true;
-    private static final String EXTRA_BOOL_ARRAY = "extra_bool_array";
-    private static final boolean[] VALUE_BOOL_ARRAY = {true, true, false, true, false};
-    private static final Map<String, Object> EXTRAS = Map.of(
-            EXTRA_INT, VALUE_INT,
-            EXTRA_INT_ARRAY, VALUE_INT_ARRAY,
-            EXTRA_LONG, VALUE_LONG,
-            EXTRA_LONG_ARRAY, VALUE_LONG_ARRAY,
-            EXTRA_DOUBLE, VALUE_DOUBLE,
-            EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY,
-            EXTRA_STRING, VALUE_STRING,
-            EXTRA_STRING_ARRAY, VALUE_STRING_ARRAY,
-            EXTRA_BOOL, VALUE_BOOL,
-            EXTRA_BOOL_ARRAY, VALUE_BOOL_ARRAY
-    );
 
     @Override
     protected void setUp() throws Exception {
@@ -182,195 +147,172 @@ public class IntentFilterTest extends AndroidTestCase {
             assertFalse(mIntentFilter.hasCategory(CATEGORY + i + 10));
             i++;
         }
-        IntentFilter filter = new Match(new String[]{ACTION}, new String[]{"category1"},
-                null, null, null, null);
+        IntentFilter filter = new Match(null, new String[]{"category1"}, null, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION,
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null,
                         new String[]{"category1"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, ACTION,
+                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, null,
                         new String[]{"category2"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, ACTION, new String[]{
+                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, null, new String[]{
                         "category1", "category2"}, null, null));
 
-        filter = new Match(new String[]{ACTION}, new String[]{"category1", "category2"},
-                null, null, null, null);
+        filter = new Match(null, new String[]{"category1", "category2"}, null, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION,
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null,
                         new String[]{"category1"}, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION,
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null,
                         new String[]{"category2"}, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, ACTION, new String[]{
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, new String[]{
                         "category1", "category2"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, ACTION,
+                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, null,
                         new String[]{"category3"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, ACTION, new String[]{
+                new MatchCondition(IntentFilter.NO_MATCH_CATEGORY, null, new String[]{
                         "category1", "category2", "category3"}, null, null));
     }
 
     public void testMimeTypes() throws Exception {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, new String[]{"which1/what1"},
-                null, null, null);
+        IntentFilter filter = new Match(null, null, new String[]{"which1/what1"}, null, null,
+                null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null));
 
-        filter = new Match(new String[]{ACTION}, null, new String[]{"which1/what1", "which2/what2"},
-                null, null, null);
+        filter = new Match(null, null, new String[]{"which1/what1", "which2/what2"}, null, null,
+                null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/what2",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/*",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which3/what3", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which3/what3", null));
 
-        filter = new Match(new String[]{ACTION}, null, new String[]{"which1/*"}, null, null, null);
+        filter = new Match(null, null, new String[]{"which1/*"}, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what2",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which3/what3", null));
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which3/what3", null));
 
-        filter = new Match(new String[]{ACTION}, null, new String[]{"*/*"}, null, null, null);
+        filter = new Match(null, null, new String[]{"*/*"}, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/what2",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what2",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which3/what3",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which3/what3",
                         null));
     }
 
     public void testDynamicMimeTypes() {
         IntentFilter filter = new Match()
-                .addActions(new String[]{ACTION})
                 .addDynamicMimeTypes(new String[] { "which1/what1" });
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null));
 
         filter = new Match()
-                .addActions(new String[]{ACTION})
                 .addDynamicMimeTypes(new String[] { "which1/what1", "which2/what2" });
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/what2",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/*",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which3/what3", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which3/what3", null));
 
         filter = new Match()
-                .addActions(new String[]{ACTION})
                 .addDynamicMimeTypes(new String[] { "which1/*" });
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what2",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which3/what3", null));
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which3/what3", null));
 
         filter = new Match()
-                .addActions(new String[]{ACTION})
                 .addDynamicMimeTypes(new String[] { "*/*" });
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/what2",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what2",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which3/what3",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which3/what3",
                         null));
     }
 
     public void testClearDynamicMimeTypesWithStaticType() {
         IntentFilter filter = new Match()
-                .addActions(new String[]{ACTION})
                 .addMimeTypes(new String[] {"which1/what1"})
                 .addDynamicMimeTypes(new String[] { "which2/what2" });
 
-        checkMatches(filter, new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null,
+        checkMatches(filter, new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/what2",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/what2",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which2/*",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which3/what3", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which3/what3", null));
 
         filter.clearDynamicDataTypes();
 
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/what1",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "which1/*",
-                        null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, ACTION, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/what2", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which2/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, ACTION, null, "which1/what2", null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null));
     }
 
     public void testClearDynamicMimeTypesWithAction() {
@@ -379,22 +321,19 @@ public class IntentFilterTest extends AndroidTestCase {
                 .addDynamicMimeTypes(new String[] { "which1/what1" });
 
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, "action1", null, null, null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, "action1", null,
-                        "which1/what1", null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, "action1", null, "which1/*",
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/what1",
                         null),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, "action1", null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, "action1", null, "which2/what2",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, "action1", null, "which2/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_TYPE, "action1", null, "which1/what2",
-                        null));
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "which1/*", null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_TYPE, null, null, "*/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/what2", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which2/*", null),
+                new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null));
 
         filter.clearDynamicDataTypes();
 
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null),
                 new MatchCondition(IntentFilter.NO_MATCH_TYPE, "action1", null, "which2/what2",
                         null));
@@ -422,49 +361,18 @@ public class IntentFilterTest extends AndroidTestCase {
             assertFalse(mIntentFilter.hasDataScheme(DATA_SCHEME + i + 10));
             i++;
         }
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
-                null, null);
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme1"}, null, null);
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_SCHEME, "scheme1:foo"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme2:foo"));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1", "scheme2"},
-                null, null);
+        filter = new Match(null, null, null, new String[]{"scheme1", "scheme2"}, null, null);
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_SCHEME, "scheme1:foo"),
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_SCHEME, "scheme2:foo"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme3:foo"));
-    }
-
-    public void testExtras() {
-        addExtras(mIntentFilter, EXTRAS);
-        verifyExtras(mIntentFilter, EXTRAS);
-
-        final IntentFilter filter = new Match(new String[]{"action1"}, null, null, null, null, null,
-                Map.of(EXTRA_INT, VALUE_INT, EXTRA_STRING, VALUE_STRING,
-                        EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY));
-        checkMatches(filter,
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null,
-                        false, null,
-                        Map.of(EXTRA_INT, VALUE_INT, EXTRA_STRING, VALUE_STRING,
-                                EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY)),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null,
-                        false, null,
-                        Map.of(EXTRA_INT, VALUE_INT, EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY,
-                                EXTRA_STRING, VALUE_STRING)),
-                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null,
-                        false, null,
-                        Map.of(EXTRA_INT, VALUE_INT, EXTRA_STRING, VALUE_STRING,
-                                EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY, EXTRA_BOOL, VALUE_BOOL)),
-                new MatchCondition(IntentFilter.NO_MATCH_EXTRAS, "action1", null, null, null,
-                        false, null,
-                        Map.of(EXTRA_INT, VALUE_INT, EXTRA_STRING, VALUE_STRING)),
-                new MatchCondition(IntentFilter.NO_MATCH_EXTRAS, "action1", null, null, null,
-                        false, null,
-                        Map.of(EXTRA_INT, String.valueOf(VALUE_INT), EXTRA_STRING, VALUE_STRING,
-                                EXTRA_DOUBLE_ARRAY, VALUE_DOUBLE_ARRAY)));
     }
 
     public void testCreate() {
@@ -475,7 +383,7 @@ public class IntentFilterTest extends AndroidTestCase {
 
 
     public void testSchemeSpecificParts() throws Exception {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme"},
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"ssp1", "2ssp"},
                 new int[]{PATTERN_LITERAL, PATTERN_LITERAL});
         checkMatches(filter,
@@ -484,7 +392,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(MATCH_CATEGORY_SCHEME_SPECIFIC_PART, "scheme:2ssp"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme:ssp"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme:ssp12"));
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme"},
+        filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"ssp1", "2ssp"},
                 new int[]{PATTERN_PREFIX, PATTERN_PREFIX});
         checkMatches(filter,
@@ -493,7 +401,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(MATCH_CATEGORY_SCHEME_SPECIFIC_PART, "scheme:2ssp"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme:ssp"),
                 MatchCondition.data(MATCH_CATEGORY_SCHEME_SPECIFIC_PART, "scheme:ssp12"));
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme"},
+        filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"p1", "sp", ".file"},
                 new int[]{PATTERN_SUFFIX, PATTERN_SUFFIX, PATTERN_SUFFIX});
         checkMatches(filter,
@@ -606,13 +514,13 @@ public class IntentFilterTest extends AndroidTestCase {
     }
 
     private Match filterForSchemeAndSchemeSpecificPart(String scheme, String ssp, int matchType) {
-        return new Match(new String[]{ACTION}, null, null, new String[]{scheme},
+        return new Match(null, null, null, new String[]{scheme},
                 null, null, null, null, new String[]{ssp},
                 new int[]{matchType});
     }
 
     public void testSchemeSpecificPartsWithWildCards() throws Exception {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme"},
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"ssp1"},
                 new int[]{PATTERN_LITERAL, PATTERN_LITERAL});
         checkMatches(filter,
@@ -651,7 +559,7 @@ public class IntentFilterTest extends AndroidTestCase {
             assertFalse(mIntentFilter.hasDataAuthority(uri2));
             i++;
         }
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{null});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -660,7 +568,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority2/"),
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_HOST, "scheme1://authority1:100/"));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{"100"});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -670,7 +578,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_PORT, "scheme1://authority1:100/"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority1:200/"));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1", "authority2"}, new String[]{"100", null});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -682,7 +590,7 @@ public class IntentFilterTest extends AndroidTestCase {
     }
 
     public void testAuthoritiesWithWildcards() throws Exception {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{null});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null, true),
@@ -692,7 +600,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://*/", false),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://*:100/", false));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{"100"});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null, true),
@@ -716,7 +624,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "*://*/", false),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "*://*:100/", false));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"*"}, null);
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_HOST, "scheme1://", true),
@@ -873,13 +781,13 @@ public class IntentFilterTest extends AndroidTestCase {
         }
         IntentFilter filter = new Match(new String[]{"action1"}, null, null, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null),
                 new MatchCondition(IntentFilter.NO_MATCH_ACTION, "action2", null, null, null));
 
         filter = new Match(new String[]{"action1", "action2"}, null, null, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action1", null, null, null),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "action2", null, null, null),
                 new MatchCondition(IntentFilter.NO_MATCH_ACTION, "action3", null, null, null),
@@ -891,41 +799,11 @@ public class IntentFilterTest extends AndroidTestCase {
                         false, Arrays.asList("action2")));
     }
 
-    public void testNullActions() {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, null, null, null);
-        checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null));
-
-        filter = new Match(new String[]{ACTION}, new String[]{"category1", "category2"},
-                null, null, null, null);
-        checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null,
-                        new String[]{"category1"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null,
-                        new String[]{"category2"}, null, null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, new String[]{
-                        "category1", "category2"}, null, null));
-
-        filter = new Match(new String[]{ACTION}, null, new String[]{"which1/what1", "which2/what2"},
-                null, null, null);
-        checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, "which1/what1",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, "which1/*",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, "*/*", null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, "which2/what2",
-                        null),
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, "which2/*",
-                        null));
-    }
-
     public void testActionWildCards() throws Exception {
         IntentFilter filter =
                 new Match(new String[]{"action1", "action2"}, null, null, null, null, null);
         checkMatches(filter,
-                new MatchCondition(IntentFilter.NO_MATCH_ACTION, null, null, null, null, true),
+                new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, null, null, null, null, true),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "*", null, null, null, true),
                 new MatchCondition(IntentFilter.MATCH_CATEGORY_EMPTY, "*", null, null, null, true,
                         Arrays.asList("action1")),
@@ -1189,43 +1067,6 @@ public class IntentFilterTest extends AndroidTestCase {
         out.close();
     }
 
-    public void testWriteToXml_withExtras() throws IllegalArgumentException, IllegalStateException,
-            IOException, MalformedMimeTypeException, XmlPullParserException {
-        XmlSerializer xml;
-        ByteArrayOutputStream out;
-
-        xml = new FastXmlSerializer();
-        out = new ByteArrayOutputStream();
-        xml.setOutput(out, "utf-8");
-        mIntentFilter.addAction(ACTION);
-        mIntentFilter.addCategory(CATEGORY);
-        mIntentFilter.addDataAuthority(HOST, String.valueOf(PORT));
-        mIntentFilter.addDataPath(DATA_PATH, 1);
-        mIntentFilter.addDataScheme(DATA_SCHEME);
-        mIntentFilter.addDataType(DATA_STATIC_TYPE);
-        mIntentFilter.addDynamicDataType(DATA_DYNAMIC_TYPE);
-        mIntentFilter.addMimeGroup(MIME_GROUP);
-        addExtras(mIntentFilter, EXTRAS);
-        mIntentFilter.writeToXml(xml);
-        xml.flush();
-        final XmlPullParser parser = Xml.newPullParser();
-        final InputStream in = new ByteArrayInputStream(out.toByteArray());
-        parser.setInput(in, "utf-8");
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.readFromXml(parser);
-        assertEquals(ACTION, intentFilter.getAction(0));
-        assertEquals(CATEGORY, intentFilter.getCategory(0));
-        assertTrue(intentFilter.hasExactStaticDataType(DATA_STATIC_TYPE));
-        assertTrue(intentFilter.hasExactDynamicDataType(DATA_DYNAMIC_TYPE));
-        assertEquals(MIME_GROUP, intentFilter.getMimeGroup(0));
-        assertEquals(DATA_SCHEME, intentFilter.getDataScheme(0));
-        assertEquals(DATA_PATH, intentFilter.getDataPath(0).getPath());
-        assertEquals(HOST, intentFilter.getDataAuthority(0).getHost());
-        assertEquals(PORT, intentFilter.getDataAuthority(0).getPort());
-        verifyExtras(intentFilter, EXTRAS);
-        out.close();
-    }
-
     public void testMatchCategories() {
         assertNull(mIntentFilter.matchCategories(null));
         Set<String> cat = new HashSet<String>();
@@ -1393,7 +1234,7 @@ public class IntentFilterTest extends AndroidTestCase {
             i++;
         }
 
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        IntentFilter filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{null});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -1402,7 +1243,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority2/"),
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_HOST, "scheme1://authority1:100/"));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{"100"});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -1412,7 +1253,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_PORT, "scheme1://authority1:100/"),
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority1:200/"));
 
-        filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
+        filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1", "authority2"}, new String[]{"100", null});
         checkMatches(filter,
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, null),
@@ -1546,36 +1387,6 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals(mIntentFilter.getMimeGroup(0), target.getMimeGroup(0));
     }
 
-    public void testWriteToParcel_withExtras() throws MalformedMimeTypeException {
-        mIntentFilter.addAction(ACTION);
-        mIntentFilter.addCategory(CATEGORY);
-        mIntentFilter.addDataAuthority(HOST, String.valueOf(PORT));
-        mIntentFilter.addDataPath(DATA_PATH, 1);
-        mIntentFilter.addDataScheme(DATA_SCHEME);
-        mIntentFilter.addDataType(DATA_STATIC_TYPE);
-        mIntentFilter.addDynamicDataType(DATA_DYNAMIC_TYPE);
-        mIntentFilter.addMimeGroup(MIME_GROUP);
-        addExtras(mIntentFilter, EXTRAS);
-        Parcel parcel = Parcel.obtain();
-        mIntentFilter.writeToParcel(parcel, 1);
-        parcel.setDataPosition(0);
-        IntentFilter target = IntentFilter.CREATOR.createFromParcel(parcel);
-        assertEquals(mIntentFilter.getAction(0), target.getAction(0));
-        assertEquals(mIntentFilter.getCategory(0), target.getCategory(0));
-        assertEquals(mIntentFilter.getDataAuthority(0).getHost(),
-                target.getDataAuthority(0).getHost());
-        assertEquals(mIntentFilter.getDataAuthority(0).getPort(),
-                target.getDataAuthority(0).getPort());
-        assertEquals(mIntentFilter.getDataPath(0).getPath(), target.getDataPath(0).getPath());
-        assertEquals(mIntentFilter.getDataScheme(0), target.getDataScheme(0));
-        assertEquals(mIntentFilter.getDataType(0), target.getDataType(0));
-        assertEquals(mIntentFilter.getDataType(1), target.getDataType(1));
-        assertEquals(mIntentFilter.countStaticDataTypes(), target.countStaticDataTypes());
-        assertEquals(mIntentFilter.countDataTypes(), target.countDataTypes());
-        assertEquals(mIntentFilter.getMimeGroup(0), target.getMimeGroup(0));
-        verifyExtras(target, EXTRAS);
-    }
-
     public void testAddDataType() throws MalformedMimeTypeException {
         try {
             mIntentFilter.addDataType("test");
@@ -1586,75 +1397,6 @@ public class IntentFilterTest extends AndroidTestCase {
 
         mIntentFilter.addDataType(DATA_STATIC_TYPE);
         assertEquals(DATA_STATIC_TYPE, mIntentFilter.getDataType(0));
-    }
-
-    private static void addExtras(IntentFilter filter, Map<String, Object> extras) {
-        final PersistableBundle bundle = new PersistableBundle();
-        extras.forEach((name, value) -> {
-            if (value instanceof Integer) {
-                bundle.putInt(name, (int) value);
-            } else if (value instanceof int[]) {
-                bundle.putIntArray(name, (int[]) value);
-            } else if (value instanceof Long) {
-                bundle.putLong(name, (long) value);
-            } else if (value instanceof long[]) {
-                bundle.putLongArray(name, (long[]) value);
-            } else if (value instanceof Double) {
-                bundle.putDouble(name, (double) value);
-            } else if (value instanceof double[]) {
-                bundle.putDoubleArray(name, (double[]) value);
-            } else if (value instanceof String) {
-                bundle.putString(name, (String) value);
-            } else if (value instanceof String[]) {
-                bundle.putStringArray(name, (String[]) value);
-            } else if (value instanceof Boolean) {
-                bundle.putBoolean(name, (boolean) value);
-            } else if (value instanceof boolean[]) {
-                bundle.putBooleanArray(name, (boolean[]) value);
-            } else {
-                fail("value type not supported; name=" + name + ", value=" + value);
-            }
-        });
-        filter.setExtras(bundle);
-    }
-
-    private static void verifyExtras(IntentFilter filter, Map<String, Object> extras) {
-        final PersistableBundle bundle = filter.getExtras();
-        extras.forEach((name, value) -> {
-            if (value instanceof Integer) {
-                assertEquals("Unexpected value for " + name,
-                        bundle.getInt(name), (int) value);
-            } else if (value instanceof int[]) {
-                assertArrayEquals("Unexpected value for " + name,
-                        bundle.getIntArray(name), (int[]) value);
-            } else if (value instanceof Long) {
-                assertEquals("Unexpected value for " + name,
-                        bundle.getLong(name), (long) value);
-            } else if (value instanceof long[]) {
-                assertArrayEquals("Unexpected value for " + name,
-                        bundle.getLongArray(name), (long[]) value);
-            } else if (value instanceof Double) {
-                assertEquals("Unexpected value for " + name,
-                        bundle.getDouble(name), (double) value);
-            } else if (value instanceof double[]) {
-                assertArrayEquals("Unexpected value for " + name,
-                        bundle.getDoubleArray(name), (double[]) value, 0);
-            } else if (value instanceof String) {
-                assertEquals("Unexpected value for " + name,
-                        bundle.getString(name), (String) value);
-            } else if (value instanceof String[]) {
-                assertArrayEquals("Unexpected value for " + name,
-                        bundle.getStringArray(name), (String[]) value);
-            } else if (value instanceof Boolean) {
-                assertEquals("Unexpected value for " + name,
-                        bundle.getBoolean(name), (boolean) value);
-            } else if (value instanceof boolean[]) {
-                assertArrayEquals("Unexpected value for " + name,
-                        bundle.getBooleanArray(name), (boolean[]) value);
-            } else {
-                fail("value type not supported; name=" + name + ", value=" + value);
-            }
-        });
     }
 
     private static class Match extends IntentFilter {
@@ -1713,17 +1455,6 @@ public class IntentFilterTest extends AndroidTestCase {
             }
         }
 
-        Match(String[] actions, String[] categories, String[] mimeTypes, String[] schemes,
-                String[] authorities, String[] ports, Map<String, Object> extras) {
-            this(actions, categories, mimeTypes, schemes, authorities, ports);
-            addExtras(extras);
-        }
-
-        Match addExtras(Map<String, Object> extras) {
-            IntentFilterTest.addExtras(this, extras);
-            return this;
-        }
-
         Match addDynamicMimeTypes(String[] dynamicMimeTypes) {
             for (int i = 0; i < dynamicMimeTypes.length; i++) {
                 try {
@@ -1769,41 +1500,28 @@ public class IntentFilterTest extends AndroidTestCase {
         public final String[] categories;
         public final boolean wildcardSupported;
         public final Collection<String> ignoredActions;
-        public final Bundle extras;
 
         public static MatchCondition data(int result, String data) {
-            return new MatchCondition(result, ACTION, null, null, data);
+            return new MatchCondition(result, null, null, null, data);
         }
-
         public static MatchCondition data(int result, String data, boolean wildcardSupported) {
-            return new MatchCondition(result, ACTION, null, null, data, wildcardSupported, null);
+            return new MatchCondition(result, null, null, null, data, wildcardSupported, null);
         }
-
         public static MatchCondition data(int result, String data, boolean wildcardSupported,
                 Collection<String> ignoredActions) {
-            return new MatchCondition(result, ACTION, null, null, data, wildcardSupported,
+            return new MatchCondition(result, null, null, null, data, wildcardSupported,
                     ignoredActions);
         }
-
         MatchCondition(int result, String action, String[] categories, String mimeType,
                 String data) {
             this(result, action, categories, mimeType, data, false, null);
         }
-
         MatchCondition(int result, String action, String[] categories, String mimeType,
                 String data, boolean wildcardSupported) {
             this(result, action, categories, mimeType, data, wildcardSupported, null);
         }
-
         MatchCondition(int result, String action, String[] categories, String mimeType,
                 String data, boolean wildcardSupported, Collection<String> ignoredActions) {
-            this(result, action, categories, mimeType, data, wildcardSupported,
-                    ignoredActions, null);
-        }
-
-        MatchCondition(int result, String action, String[] categories, String mimeType,
-                String data, boolean wildcardSupported, Collection<String> ignoredActions,
-                Map<String, Object> extras) {
             this.result = result;
             this.action = action;
             this.mimeType = mimeType;
@@ -1811,13 +1529,6 @@ public class IntentFilterTest extends AndroidTestCase {
             this.categories = categories;
             this.wildcardSupported = wildcardSupported;
             this.ignoredActions = ignoredActions;
-            this.extras = extras == null ? null : mapToBundle(extras);
-        }
-
-        private Bundle mapToBundle(Map<String, Object> map) {
-            final Bundle bundle = new Bundle();
-            map.forEach((name, value) -> bundle.putObject(name, value));
-            return bundle;
         }
     }
 
@@ -1840,8 +1551,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 }
             }
             int result = filter.match(mc.action, mc.mimeType, mc.data != null ? mc.data.getScheme()
-                    : null, mc.data, categories, "test", mc.wildcardSupported, false,
-                    mc.ignoredActions, mc.extras);
+                    : null, mc.data, categories, "test", mc.wildcardSupported, mc.ignoredActions);
             if ((result & IntentFilter.MATCH_CATEGORY_MASK) !=
                     (mc.result & IntentFilter.MATCH_CATEGORY_MASK)) {
                 StringBuilder msg = new StringBuilder();
@@ -1862,12 +1572,6 @@ public class IntentFilterTest extends AndroidTestCase {
                         msg.append(mc.categories[j]);
                     }
                 }
-                msg.append("\nMatch extras: ");
-                if (mc.extras == null) {
-                    msg.append("[EMPTY]");
-                } else {
-                    msg.append(mc.extras.toString());
-                }
                 msg.append("\nExpected result: 0x");
                 msg.append(Integer.toHexString(mc.result));
                 msg.append(", got result: 0x");
@@ -1878,7 +1582,7 @@ public class IntentFilterTest extends AndroidTestCase {
     }
 
     public void testPaths() throws Exception {
-        IntentFilter filter = new Match(new String[]{ACTION}, null, null,
+        IntentFilter filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null,
                 new String[]{"/literal1", "/2literal"},
                 new int[]{PATTERN_LITERAL, PATTERN_LITERAL});
@@ -1893,7 +1597,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/literal"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/literal12"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null,
                 new String[]{"/literal1", "/2literal"}, new int[]{PATTERN_PREFIX, PATTERN_PREFIX});
         checkMatches(filter,
@@ -1907,7 +1611,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/literal"),
                 MatchCondition.data(
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/literal12"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null,
                 new String[]{"literal1", "2literal"}, new int[]{PATTERN_SUFFIX, PATTERN_SUFFIX});
         checkMatches(filter,
@@ -1925,7 +1629,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/2literal1"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/literal1a"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/.*"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -1937,7 +1641,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{".*"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -1949,7 +1653,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/"),
                 MatchCondition.data(
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a1*b"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -1967,7 +1671,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a1bc"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a1*"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -1985,7 +1689,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/a11"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a2"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a\\.*b"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -2003,7 +1707,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a.bc"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a.*b"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -2021,7 +1725,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a.bc"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a.*"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -2039,7 +1743,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.MATCH_CATEGORY_PATH, "scheme://authority/a.bc"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a.\\*b"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,
@@ -2057,7 +1761,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a.bc"),
                 MatchCondition.data(
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/"));
-        filter = new Match(new String[]{ACTION}, null, null,
+        filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null, new String[]{"/a.\\*"},
                 new int[]{PATTERN_SIMPLE_GLOB});
         checkMatches(filter,

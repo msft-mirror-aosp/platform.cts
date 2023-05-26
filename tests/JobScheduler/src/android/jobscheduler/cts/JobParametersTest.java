@@ -167,11 +167,11 @@ public class JobParametersTest extends BaseJobSchedulerTest {
                 .setRequiresStorageNotLow(true)
                 .build();
 
+        kTestEnvironment.setExpectedExecutions(1);
         setStorageStateLow(true);
         assertEquals(JobScheduler.RESULT_SUCCESS, jsA.schedule(jobA));
         assertEquals(JobScheduler.RESULT_SUCCESS, jsB.schedule(jobB));
 
-        kTestEnvironment.setExpectedExecutions(1);
         runSatisfiedJob(JOB_ID, "A");
         runSatisfiedJob(JOB_ID, "B");
         assertTrue("Job A didn't fire", kTestEnvironment.awaitExecution());
@@ -200,19 +200,17 @@ public class JobParametersTest extends BaseJobSchedulerTest {
 
         // In automotive device, always-on screen and endless battery charging are assumed.
         if (BatteryUtils.hasBattery() && !isAutomotiveDevice()) {
-            BatteryUtils.runDumpsysBatterySetLevel(100);
-            BatteryUtils.runDumpsysBatteryUnplug();
+            setBatteryState(false, 100);
             verifyStopReason(new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                             .setRequiresBatteryNotLow(true).build(),
                     JobParameters.STOP_REASON_CONSTRAINT_BATTERY_NOT_LOW,
-                    () -> BatteryUtils.runDumpsysBatterySetLevel(5));
+                    () -> setBatteryState(false, 5));
 
-            BatteryUtils.runDumpsysBatterySetPluggedIn(true);
-            BatteryUtils.runDumpsysBatterySetLevel(100);
+            setBatteryState(true, 100);
             verifyStopReason(new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                             .setRequiresCharging(true).build(),
                     JobParameters.STOP_REASON_CONSTRAINT_CHARGING,
-                    BatteryUtils::runDumpsysBatteryUnplug);
+                    () -> setBatteryState(false, 100));
         }
 
         setStorageStateLow(false);

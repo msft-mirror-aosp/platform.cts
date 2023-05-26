@@ -51,7 +51,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -220,7 +220,7 @@ abstract class AbstractRecognitionServiceTest {
     }
 
     @Test
-    public void testCanSetModelDownloadListener() throws Throwable {
+    public void testCanTriggerModelDownloadWithListener() throws Throwable {
         mUiDevice.waitForIdle();
         SpeechRecognizer recognizer = mActivity.getRecognizerInfoDefault().mRecognizer;
         assertThat(recognizer).isNotNull();
@@ -251,8 +251,7 @@ abstract class AbstractRecognitionServiceTest {
                 callbackCalls.add("error");
             }
         };
-        mActivity.setModelDownloadListenerDefault(intent, listener);
-        mActivity.triggerModelDownloadDefault(intent);
+        mActivity.triggerModelDownloadWithListenerDefault(intent, listener);
         PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
                 () -> CtsRecognitionService.sDownloadTriggers.size() > 0);
         PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
@@ -260,16 +259,6 @@ abstract class AbstractRecognitionServiceTest {
         assertThat(callbackCalls)
                 .containsExactly("progress", "scheduled", "success", "error")
                 .inOrder();
-
-        CtsRecognitionService.sDownloadTriggers.clear();
-        callbackCalls.clear();
-        assertThat(callbackCalls).isEmpty();
-        mActivity.setModelDownloadListenerDefault(intent, listener);
-        mActivity.clearModelDownloadListenerDefault(intent);
-        mActivity.triggerModelDownloadDefault(intent);
-        PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
-                () -> CtsRecognitionService.sDownloadTriggers.size() > 0);
-        assertThat(callbackCalls).isEmpty();
     }
 
     @Test
@@ -291,7 +280,9 @@ abstract class AbstractRecognitionServiceTest {
                 SequenceExecutionInfo.Scenario.START_START,
                 SequenceExecutionInfo.Scenario.START_STOP_CANCEL,
                 SequenceExecutionInfo.Scenario.START_ERROR_CANCEL,
+                SequenceExecutionInfo.Scenario.START_STOP_DESTROY,
                 SequenceExecutionInfo.Scenario.START_ERROR_DESTROY,
+                SequenceExecutionInfo.Scenario.START_DESTROY_DESTROY,
                 SequenceExecutionInfo.Scenario.START_DETECTION_STOP_RESULTS};
     }
 
@@ -317,6 +308,8 @@ abstract class AbstractRecognitionServiceTest {
                 SequenceExecutionInfo.Scenario.START_CANCEL,
                 SequenceExecutionInfo.Scenario.START_START,
                 SequenceExecutionInfo.Scenario.START_STOP_CANCEL,
+                SequenceExecutionInfo.Scenario.START_STOP_DESTROY,
+                SequenceExecutionInfo.Scenario.START_DESTROY_DESTROY,
                 SequenceExecutionInfo.Scenario.START_DETECTION_STOP_RESULTS);
 
         List<Object[]> scenarios = new ArrayList<>();
@@ -574,12 +567,10 @@ abstract class AbstractRecognitionServiceTest {
             START_START,
             START_STOP_CANCEL,
             START_ERROR_CANCEL,
-            START_ERROR_DESTROY,
-            START_DETECTION_STOP_RESULTS,
-
-            // TODO(kiridza): Investigate why these scenarios are flaky (5-10% failure).
             START_STOP_DESTROY,
+            START_ERROR_DESTROY,
             START_DESTROY_DESTROY,
+            START_DETECTION_STOP_RESULTS,
 
             // Sad scenarios.
             START_ERROR

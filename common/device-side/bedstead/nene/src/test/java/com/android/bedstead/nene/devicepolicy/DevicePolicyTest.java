@@ -17,11 +17,10 @@
 package com.android.bedstead.nene.devicepolicy;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_REMOVE_USER;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.content.ComponentName;
@@ -36,15 +35,17 @@ import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoProfileOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
-import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestApp;
 
 import org.junit.ClassRule;
@@ -120,6 +121,7 @@ public class DevicePolicyTest {
     @Test
     @EnsureHasNoDeviceOwner
     @EnsureHasNoWorkProfile
+    @Ignore // Now we retry on this error so this test takes too long
     public void setProfileOwner_profileOwnerIsAlreadySet_throwsException() {
         UserReference profile = TestApis.users().createUser()
                 .parent(sUser)
@@ -281,10 +283,8 @@ public class DevicePolicyTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     @EnsureHasSecondaryUser
+    @RequireSdkVersion(max = Build.VERSION_CODES.R)
     public void setDeviceOwner_preS_userAlreadyOnDevice_throwsException() {
-        assumeFalse("After S, device owner can be set with users on the device",
-                Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S));
-
         assertThrows(NeneException.class,
                 () -> TestApis.devicePolicy()
                         .setDeviceOwner(DPC_COMPONENT_NAME));
@@ -294,10 +294,8 @@ public class DevicePolicyTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     @EnsureHasSecondaryUser
+    @RequireSdkVersion(min = Build.VERSION_CODES.S)
     public void setDeviceOwner_sPlus_userAlreadyOnDevice_deviceOwnerIsSet() {
-        assumeTrue("After S, device owner can be set with users on the device",
-                Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S));
-
         DeviceOwner deviceOwner = TestApis.devicePolicy().setDeviceOwner(DPC_COMPONENT_NAME);
 
         try {
@@ -305,11 +303,6 @@ public class DevicePolicyTest {
         } finally {
             deviceOwner.remove();
         }
-    }
-
-    @Test
-    @Ignore("TODO: Update once account support is added to Nene")
-    public void setDeviceOwner_accountAlreadyOnDevice_throwsException() {
     }
 
     @Test
@@ -526,5 +519,4 @@ public class DevicePolicyTest {
             }
         }
     }
-
 }

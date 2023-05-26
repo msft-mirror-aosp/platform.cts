@@ -33,9 +33,12 @@ import static android.media.AudioManager.FX_KEY_CLICK;
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.util.concurrent.Uninterruptibles.tryAcquireUninterruptibly;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.Nullable;
 import android.companion.virtual.VirtualDevice;
@@ -44,10 +47,16 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.sensor.VirtualSensor;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.common.FakeAssociationRule;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -65,6 +74,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -81,6 +92,8 @@ public class VirtualDeviceManagerBasicTest {
             new VirtualDeviceParams.Builder()
                     .setName(VIRTUAL_DEVICE_NAME)
                     .build();
+    private static final VirtualDisplayConfig DEFAULT_VIRTUAL_DISPLAY_CONFIG =
+            new VirtualDisplayConfig.Builder("testDisplay", 100, 100, 100).build();
 
     @Rule
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -105,12 +118,16 @@ public class VirtualDeviceManagerBasicTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         Context context = getApplicationContext();
+        final PackageManager packageManager = context.getPackageManager();
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
+        assumeTrue(packageManager.hasSystemFeature(
+                PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
     }
 
     @After
     public void tearDown() {
-        if (mVirtualDevice != null) {
+        if (mVirtualDevice != null && mVirtualDevice.getDeviceId() != DEVICE_ID_INVALID) {
             mVirtualDevice.close();
         }
         if (mAnotherVirtualDevice != null) {
@@ -164,12 +181,224 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     @Test
+    public void createVirtualDevice_close_isClosed() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        mVirtualDevice.close();
+
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+    }
+
+    @Test
+    public void createVirtualDevice_closeMultipleTimes_isSafe() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        mVirtualDevice.close();
+        mVirtualDevice.close();
+
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+    }
+
+    @Test
+    public void createVirtualDevice_removeAssociation_shouldCloseVirtualDevice()
+            throws InterruptedException {
+        // TODO(b/282629983): Re-enable test for Automotive once CDM Listener supports more users.
+        assumeFalse("Skipping test: not supported on automotive",
+                getApplicationContext().getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Create device with a display and ensure it is all set up
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        VirtualDisplay display = mVirtualDevice.createVirtualDisplay(
+                DEFAULT_VIRTUAL_DISPLAY_CONFIG,
+                getApplicationContext().getMainExecutor(),
+                null);
+
+        DisplayManager displayManager = getApplicationContext().getSystemService(
+                DisplayManager.class);
+        displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
+            @Override
+            public void onDisplayAdded(int displayId) {
+            }
+
+            @Override
+            public void onDisplayRemoved(int displayId) {
+                if (displayId == display.getDisplay().getDisplayId()) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void onDisplayChanged(int displayId) {
+            }
+        }, null);
+        assertThat(display).isNotNull();
+        assertThat(display.getDisplay().isValid()).isTrue();
+
+        mFakeAssociationRule.disassociate();
+        latch.await(5, TimeUnit.SECONDS);
+
+        // Ensure device is closed properly and the display is removed
+        assertThat(display.getDisplay().isValid()).isFalse();
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+
+        // Ensure the virtual device can no longer setup new functionality
+        assertThrows(SecurityException.class, () -> mVirtualDevice.createVirtualDisplay(
+                DEFAULT_VIRTUAL_DISPLAY_CONFIG, null,  null));
+    }
+
+    @Test
+    public void createVirtualDevice_removeAssociationAndCloseAfterwards_isSafe()
+            throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Create device with a display and ensure it is all set up
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        VirtualDisplay display = mVirtualDevice.createVirtualDisplay(
+                DEFAULT_VIRTUAL_DISPLAY_CONFIG,
+                getApplicationContext().getMainExecutor(),
+                null);
+
+        DisplayManager displayManager = getApplicationContext().getSystemService(
+                DisplayManager.class);
+        displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
+            @Override
+            public void onDisplayAdded(int displayId) {
+            }
+
+            @Override
+            public void onDisplayRemoved(int displayId) {
+                if (displayId == display.getDisplay().getDisplayId()) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void onDisplayChanged(int displayId) {
+            }
+        }, null);
+
+        mFakeAssociationRule.disassociate();
+        latch.await(5, TimeUnit.SECONDS);
+
+        mVirtualDevice.close();
+
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+    }
+
+    @Test
+    public void createVirtualDevice_closeAndRemoveAssociation_isSafe()
+            throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Create device with a display and ensure it is all set up
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        VirtualDisplay display = mVirtualDevice.createVirtualDisplay(
+                DEFAULT_VIRTUAL_DISPLAY_CONFIG,
+                getApplicationContext().getMainExecutor(),
+                null);
+
+        DisplayManager displayManager = getApplicationContext().getSystemService(
+                DisplayManager.class);
+        displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
+            @Override
+            public void onDisplayAdded(int displayId) {
+            }
+
+            @Override
+            public void onDisplayRemoved(int displayId) {
+                if (displayId == display.getDisplay().getDisplayId()) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void onDisplayChanged(int displayId) {
+            }
+        }, null);
+
+        mVirtualDevice.close();
+        mFakeAssociationRule.disassociate();
+        latch.await(5, TimeUnit.SECONDS);
+
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+    }
+
+    @Test
+    public void createVirtualDevice_removeAssociationAndClose_isSafe()
+            throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Create device with a display and ensure it is all set up
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        VirtualDisplay display = mVirtualDevice.createVirtualDisplay(
+                DEFAULT_VIRTUAL_DISPLAY_CONFIG,
+                getApplicationContext().getMainExecutor(),
+                null);
+
+        DisplayManager displayManager = getApplicationContext().getSystemService(
+                DisplayManager.class);
+        displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
+            @Override
+            public void onDisplayAdded(int displayId) {
+            }
+
+            @Override
+            public void onDisplayRemoved(int displayId) {
+                if (displayId == display.getDisplay().getDisplayId()) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void onDisplayChanged(int displayId) {
+            }
+        }, null);
+
+        mFakeAssociationRule.disassociate();
+        mVirtualDevice.close();
+        latch.await(5, TimeUnit.SECONDS);
+
+        assertThat(mVirtualDevice.getDeviceId()).isEqualTo(DEVICE_ID_INVALID);
+    }
+
+    /**
+     * It is expected that there are zero VirtualDevices active on a new device. If this test fails
+     * some application may have created a VirtualDevice before this test was run. Clear all
+     * VirtualDevices (or disassociate the related CDM associations) before re-running this test.
+     */
+    @Test
     public void getVirtualDevices_noVirtualDevices_returnsEmptyList() {
-        assertThat(mVirtualDeviceManager.getVirtualDevices()).isEmpty();
+        assertWithMessage(
+                "Expected no previous VirtualDevices. Please remove all VirtualDevices before "
+                        + "running this test.").that(
+                mVirtualDeviceManager.getVirtualDevices()).isEmpty();
     }
 
     @Test
     public void getVirtualDevices_returnsAllVirtualDevices() {
+        // Take into account pre-existing VirtualDevices
+        List<VirtualDevice> previousVirtualDevices = mVirtualDeviceManager.getVirtualDevices();
         mVirtualDevice =
                 mVirtualDeviceManager.createVirtualDevice(
                         mFakeAssociationRule.getAssociationInfo().getId(),
@@ -181,7 +410,10 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(mAnotherVirtualDevice).isNotNull();
 
         List<VirtualDevice> virtualDevices = mVirtualDeviceManager.getVirtualDevices();
-        assertThat(virtualDevices).hasSize(2);
+        for (VirtualDevice previousVirtualDevice : previousVirtualDevices) {
+            virtualDevices.remove(previousVirtualDevice);
+        }
+        assertThat(virtualDevices.size()).isEqualTo(2);
 
         VirtualDevice device = virtualDevices.get(0);
         assertThat(device.getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
@@ -453,6 +685,144 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(soundEffectListener.getObservedSoundEffects()).isEmpty();
     }
 
+    @Test
+    public void createVirtualDevice_nullArguments_shouldThrow() {
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(), null));
+    }
+
+    @Test
+    public void createVirtualDisplay_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualDisplay(null, null, null));
+    }
+
+    @Test
+    public void addSoundEffectListener_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.addSoundEffectListener(null, effectType -> {
+                }));
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.addSoundEffectListener(Executors.newSingleThreadExecutor(),
+                        null));
+    }
+
+    @Test
+    public void removeSoundEffectListener_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.removeSoundEffectListener(null));
+    }
+
+    @Test
+    public void addActivityListener_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.addActivityListener(null,
+                        new VirtualDeviceManager.ActivityListener() {
+                            @Override
+                            public void onTopActivityChanged(int displayId,
+                                    @NonNull ComponentName topActivity) {
+
+                            }
+
+                            @Override
+                            public void onDisplayEmpty(int displayId) {
+
+                            }
+                        }));
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.addActivityListener(Executors.newSingleThreadExecutor(),
+                        null));
+    }
+
+    @Test
+    public void removeActivityListener_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.removeActivityListener(null));
+    }
+
+    @Test
+    public void createVirtualMouse_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualMouse(null));
+    }
+
+    @Test
+    public void createVirtualTouchscreen_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualTouchscreen(null));
+    }
+
+    @Test
+    public void createVirtualDpad_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualDpad(null));
+    }
+
+    @Test
+    public void createVirtualKeyboard_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualKeyboard(null));
+    }
+
+    @Test
+    public void createVirtualNavigationTouchpad_nullArguments_shouldThrow() {
+        mVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        mFakeAssociationRule.getAssociationInfo().getId(),
+                        DEFAULT_VIRTUAL_DEVICE_PARAMS);
+
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualNavigationTouchpad(null));
+    }
+
     private static class SoundEffectListenerForTest
             implements VirtualDeviceManager.SoundEffectListener {
         private final Semaphore mSemaphore = new Semaphore(0);
@@ -475,7 +845,6 @@ public class VirtualDeviceManagerBasicTest {
         /**
          * Wait until listener is called specifies number of times or until the timeout expires.
          *
-         * @param nrTimes
          * @return true if the listener was called before timeout expired.
          */
         public boolean waitUntilCalled(int nrTimes) {

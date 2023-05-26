@@ -29,21 +29,28 @@ import static android.jobscheduler.cts.jobtestapp.TestJobService.JOB_PROC_STATE_
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.AppOpsManager;
 import android.app.job.JobParameters;
+import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
+import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
+import android.util.SparseArray;
 
+import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -57,13 +64,14 @@ class TestAppInterface implements AutoCloseable {
 
     static final String TEST_APP_PACKAGE = "android.jobscheduler.cts.jobtestapp";
     private static final String TEST_APP_ACTIVITY = TEST_APP_PACKAGE + ".TestActivity";
+    private static final String TEST_APP_FGS = TEST_APP_PACKAGE + ".TestFgsService";
     static final String TEST_APP_RECEIVER = TEST_APP_PACKAGE + ".TestJobSchedulerReceiver";
 
     private final Context mContext;
     private final int mJobId;
 
     /* accesses must be synchronized on itself */
-    private final TestJobState mTestJobState = new TestJobState();
+    private final SparseArray<TestJobState> mTestJobStates = new SparseArray();
 
     TestAppInterface(Context ctx, int jobId) {
         mContext = ctx;
@@ -74,20 +82,32 @@ class TestAppInterface implements AutoCloseable {
         intentFilter.addAction(ACTION_JOB_STOPPED);
         intentFilter.addAction(ACTION_JOB_SCHEDULE_RESULT);
         mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED_UNAUDITED);
+        if (AppStandbyUtils.isAppStandbyEnabled()) {
+            // Disable the bucket elevation so that we put the app in lower buckets.
+            SystemUtil.runShellCommand(
+                    "am compat enable --no-kill SCHEDULE_EXACT_ALARM_DOES_NOT_ELEVATE_BUCKET "
+                            + TEST_APP_PACKAGE);
+            // Force the test app out of the never bucket.
+            SystemUtil.runShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE + " rare");
+        }
     }
 
-    void cleanup() {
+    void cleanup() throws Exception {
         final Intent cancelJobsIntent = new Intent(TestJobSchedulerReceiver.ACTION_CANCEL_JOBS);
         cancelJobsIntent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
         cancelJobsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.sendBroadcast(cancelJobsIntent);
         closeActivity();
+        stopFgs();
         mContext.unregisterReceiver(mReceiver);
-        mTestJobState.reset();
+        AppOpsUtils.reset(TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("am compat --reset-all" + TEST_APP_PACKAGE);
+        mTestJobStates.clear();
+        forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
         cleanup();
     }
 
@@ -145,6 +165,20 @@ class TestAppInterface implements AutoCloseable {
                 15 /* 15 seconds */);
     }
 
+    void postFgsStartingAlarm() throws Exception {
+        AppOpsUtils.setOpMode(TEST_APP_PACKAGE,
+                AppOpsManager.OPSTR_SCHEDULE_EXACT_ALARM, AppOpsManager.MODE_ALLOWED);
+        final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_SCHEDULE_FGS_START_ALARM);
+        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
+
+        final CallbackAsserter resultBroadcastAsserter = CallbackAsserter.forBroadcast(
+                new IntentFilter(TestJobSchedulerReceiver.ACTION_ALARM_SCHEDULED));
+        mContext.sendBroadcast(intent);
+        resultBroadcastAsserter.assertCalled("Didn't get alarm scheduled broadcast",
+                15 /* 15 seconds */);
+    }
+
     /** Asks (not forces) JobScheduler to run the job if constraints are met. */
     void runSatisfiedJob() throws Exception {
         SystemUtil.runShellCommand("cmd jobscheduler run -s"
@@ -167,6 +201,11 @@ class TestAppInterface implements AutoCloseable {
     void forceStopApp() {
         SystemUtil.runShellCommand("am force-stop"
                 + " --user " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE);
+    }
+
+    void cancelJob() throws Exception {
+        SystemUtil.runShellCommand("cmd jobscheduler cancel"
+                + " -u " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE + " " + mJobId);
     }
 
     void startAndKeepTestActivity() {
@@ -197,6 +236,22 @@ class TestAppInterface implements AutoCloseable {
         }
     }
 
+    void startFgs() throws Exception {
+        final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_START_FGS);
+        intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
+
+        final CallbackAsserter resultBroadcastAsserter =
+                CallbackAsserter.forBroadcast(new IntentFilter(TestFgsService.ACTION_FGS_STARTED));
+        mContext.sendBroadcast(intent);
+        resultBroadcastAsserter.assertCalled("Didn't get FGS started broadcast",
+                15 /* 15 seconds */);
+    }
+
+    void stopFgs() {
+        final Intent testFgs = new Intent(TestFgsService.ACTION_STOP_FOREGROUND);
+        mContext.sendBroadcast(testFgs);
+    }
+
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -206,27 +261,43 @@ class TestAppInterface implements AutoCloseable {
                 case ACTION_JOB_STOPPED:
                     final JobParameters params = intent.getParcelableExtra(JOB_PARAMS_EXTRA_KEY);
                     Log.d(TAG, "JobId: " + params.getJobId());
-                    synchronized (mTestJobState) {
-                        mTestJobState.running = ACTION_JOB_STARTED.equals(intent.getAction());
-                        mTestJobState.jobId = params.getJobId();
-                        mTestJobState.params = params;
+                    synchronized (mTestJobStates) {
+                        TestJobState jobState = mTestJobStates.get(params.getJobId());
+                        if (jobState == null) {
+                            jobState = new TestJobState();
+                            mTestJobStates.put(params.getJobId(), jobState);
+                        } else {
+                            jobState.reset();
+                        }
+                        jobState.running = ACTION_JOB_STARTED.equals(intent.getAction());
+                        jobState.params = params;
+                        // With these broadcasts, the job is/was running, and therefore scheduling
+                        // was successful.
+                        jobState.scheduleResult = JobScheduler.RESULT_SUCCESS;
                         if (intent.getBooleanExtra(EXTRA_REQUEST_JOB_UID_STATE, false)) {
-                            mTestJobState.procState = intent.getIntExtra(JOB_PROC_STATE_KEY,
+                            jobState.procState = intent.getIntExtra(JOB_PROC_STATE_KEY,
                                     ActivityManager.PROCESS_STATE_NONEXISTENT);
-                            mTestJobState.capabilities = intent.getIntExtra(JOB_CAPABILITIES_KEY,
+                            jobState.capabilities = intent.getIntExtra(JOB_CAPABILITIES_KEY,
                                     ActivityManager.PROCESS_CAPABILITY_NONE);
-                            mTestJobState.oomScoreAdj = intent.getIntExtra(JOB_OOM_SCORE_ADJ_KEY,
+                            jobState.oomScoreAdj = intent.getIntExtra(JOB_OOM_SCORE_ADJ_KEY,
                                     INVALID_ADJ);
                         }
                     }
                     break;
                 case ACTION_JOB_SCHEDULE_RESULT:
-                    synchronized (mTestJobState) {
-                        mTestJobState.running = false;
-                        mTestJobState.jobId = intent.getIntExtra(
+                    synchronized (mTestJobStates) {
+                        final int jobId = intent.getIntExtra(
                                 TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, 0);
-                        mTestJobState.params = null;
-                        mTestJobState.scheduleResult = intent.getIntExtra(
+                        TestJobState jobState = mTestJobStates.get(jobId);
+                        if (jobState == null) {
+                            jobState = new TestJobState();
+                            mTestJobStates.put(jobId, jobState);
+                        } else {
+                            jobState.reset();
+                        }
+                        jobState.running = false;
+                        jobState.params = null;
+                        jobState.scheduleResult = intent.getIntExtra(
                                 TestJobSchedulerReceiver.EXTRA_SCHEDULE_RESULT, -1);
                     }
                     break;
@@ -240,36 +311,47 @@ class TestAppInterface implements AutoCloseable {
 
     boolean awaitJobStart(int jobId, long maxWait) throws Exception {
         return waitUntilTrue(maxWait, () -> {
-            synchronized (mTestJobState) {
-                return (mTestJobState.jobId == jobId) && mTestJobState.running;
+            synchronized (mTestJobStates) {
+                TestJobState jobState = mTestJobStates.get(jobId);
+                return jobState != null && jobState.running;
             }
         });
     }
 
     boolean awaitJobStop(long maxWait) throws Exception {
         return waitUntilTrue(maxWait, () -> {
-            synchronized (mTestJobState) {
-                return (mTestJobState.jobId == mJobId) && !mTestJobState.running;
+            synchronized (mTestJobStates) {
+                TestJobState jobState = mTestJobStates.get(mJobId);
+                return jobState != null && !jobState.running;
             }
         });
     }
 
     void assertJobUidState(int procState, int capabilities, int oomScoreAdj) {
-        synchronized (mTestJobState) {
+        synchronized (mTestJobStates) {
+            TestJobState jobState = mTestJobStates.get(mJobId);
+            if (jobState == null) {
+                fail("Job not started");
+            }
             assertEquals("procState expected=" + procStateToString(procState)
-                    + ",actual=" + procStateToString(mTestJobState.procState),
-                    procState, mTestJobState.procState);
+                            + ",actual=" + procStateToString(jobState.procState),
+                    procState, jobState.procState);
             assertEquals("capabilities expected=" + getCapabilitiesSummary(capabilities)
-                    + ",actual=" + getCapabilitiesSummary(mTestJobState.capabilities),
-                    capabilities, mTestJobState.capabilities);
-            assertEquals("Unexpected oomScoreAdj", oomScoreAdj, mTestJobState.oomScoreAdj);
+                            + ",actual=" + getCapabilitiesSummary(jobState.capabilities),
+                    capabilities, jobState.capabilities);
+            assertEquals("Unexpected oomScoreAdj", oomScoreAdj, jobState.oomScoreAdj);
         }
     }
 
     boolean awaitJobScheduleResult(long maxWaitMs, int jobResult) throws Exception {
+        return awaitJobScheduleResult(mJobId, maxWaitMs, jobResult);
+    }
+
+    boolean awaitJobScheduleResult(int jobId, long maxWaitMs, int jobResult) throws Exception {
         return waitUntilTrue(maxWaitMs, () -> {
-            synchronized (mTestJobState) {
-                return mTestJobState.jobId == mJobId && mTestJobState.scheduleResult == jobResult;
+            synchronized (mTestJobStates) {
+                TestJobState jobState = mTestJobStates.get(jobId);
+                return jobState != null && jobState.scheduleResult == jobResult;
             }
         });
     }
@@ -283,13 +365,13 @@ class TestAppInterface implements AutoCloseable {
     }
 
     JobParameters getLastParams() {
-        synchronized (mTestJobState) {
-            return mTestJobState.params;
+        synchronized (mTestJobStates) {
+            TestJobState jobState = mTestJobStates.get(mJobId);
+            return jobState == null ? null : jobState.params;
         }
     }
 
     private static final class TestJobState {
-        int jobId;
         int scheduleResult;
         boolean running;
         int procState;

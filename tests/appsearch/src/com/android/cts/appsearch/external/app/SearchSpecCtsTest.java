@@ -73,6 +73,9 @@ public class SearchSpecCtsTest {
                         .addProjection("schemaType2", expectedPropertyPaths2)
                         .setPropertyWeights("schemaType1", expectedPropertyWeights)
                         .setPropertyWeightPaths("schemaType2", expectedPropertyWeightPaths)
+                        .setNumericSearchEnabled(true)
+                        .setVerbatimSearchEnabled(true)
+                        .setListFilterQueryLanguageEnabled(true)
                         .build();
 
         assertThat(searchSpec.getTermMatch()).isEqualTo(SearchSpec.TERM_MATCH_PREFIX);
@@ -114,6 +117,9 @@ public class SearchSpecCtsTest {
                         new PropertyPath("property1"), 1.0, new PropertyPath("property2"), 2.0);
         assertThat(searchSpec.getPropertyWeightPaths().get("schemaType2"))
                 .containsExactly(new PropertyPath("property1.nested"), 1.0);
+        assertThat(searchSpec.isNumericSearchEnabled()).isTrue();
+        assertThat(searchSpec.isVerbatimSearchEnabled()).isTrue();
+        assertThat(searchSpec.isListFilterQueryLanguageEnabled()).isTrue();
     }
 
     @Test
@@ -192,6 +198,65 @@ public class SearchSpecCtsTest {
                                 ImmutableMap.of(
                                         new PropertyPath("property1"), 1.0,
                                         new PropertyPath("property2.nested"), 2.0))
+                        .build();
+
+        Map<String, Map<PropertyPath, Double>> typePropertyWeightsMap =
+                searchSpec.getPropertyWeightPaths();
+
+        assertThat(typePropertyWeightsMap.keySet()).containsExactly("TypeA", "TypeB");
+        assertThat(typePropertyWeightsMap.get("TypeA"))
+                .containsExactly(
+                        new PropertyPath("property1"), 1.0, new PropertyPath("property2"), 2.0);
+        assertThat(typePropertyWeightsMap.get("TypeB"))
+                .containsExactly(
+                        new PropertyPath("property1"),
+                        1.0,
+                        new PropertyPath("property2.nested"),
+                        2.0);
+    }
+
+    @Test
+    public void testGetTypePropertyWeightsWithAdvancedRanking() {
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setTermMatch(SearchSpec.TERM_MATCH_PREFIX)
+                        .setRankingStrategy("sum(this.propertyWeights())")
+                        .setPropertyWeights(
+                                "TypeA", ImmutableMap.of("property1", 1.0, "property2", 2.0))
+                        .setPropertyWeights(
+                                "TypeB",
+                                ImmutableMap.of("property1", 1.0, "property2" + ".nested", 2.0))
+                        .build();
+
+        Map<String, Map<String, Double>> typePropertyWeightsMap = searchSpec.getPropertyWeights();
+
+        assertThat(typePropertyWeightsMap.keySet()).containsExactly("TypeA", "TypeB");
+        assertThat(typePropertyWeightsMap.get("TypeA"))
+                .containsExactly("property1", 1.0, "property2", 2.0);
+        assertThat(typePropertyWeightsMap.get("TypeB"))
+                .containsExactly("property1", 1.0, "property2.nested", 2.0);
+    }
+
+    @Test
+    public void testGetTypePropertyWeightPathsWithAdvancedRanking() {
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setTermMatch(SearchSpec.TERM_MATCH_PREFIX)
+                        .setRankingStrategy("sum(this.propertyWeights())")
+                        .setPropertyWeightPaths(
+                                "TypeA",
+                                ImmutableMap.of(
+                                        new PropertyPath("property1"),
+                                        1.0,
+                                        new PropertyPath("property2"),
+                                        2.0))
+                        .setPropertyWeightPaths(
+                                "TypeB",
+                                ImmutableMap.of(
+                                        new PropertyPath("property1"),
+                                        1.0,
+                                        new PropertyPath("property2.nested"),
+                                        2.0))
                         .build();
 
         Map<String, Map<PropertyPath, Double>> typePropertyWeightsMap =
@@ -358,6 +423,28 @@ public class SearchSpecCtsTest {
         assertThat(searchSpec.getRankingStrategy())
                 .isEqualTo(SearchSpec.RANKING_STRATEGY_ADVANCED_RANKING_EXPRESSION);
         assertThat(searchSpec.getAdvancedRankingExpression()).isEqualTo("this.documentScore()");
+    }
+
+    @Test
+    public void testSetFeatureEnabledToFalse() {
+        SearchSpec.Builder builder = new SearchSpec.Builder();
+        SearchSpec searchSpec =
+                builder.setNumericSearchEnabled(true)
+                        .setVerbatimSearchEnabled(true)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        assertThat(searchSpec.isNumericSearchEnabled()).isTrue();
+        assertThat(searchSpec.isVerbatimSearchEnabled()).isTrue();
+        assertThat(searchSpec.isListFilterQueryLanguageEnabled()).isTrue();
+
+        searchSpec =
+                builder.setNumericSearchEnabled(false)
+                        .setVerbatimSearchEnabled(false)
+                        .setListFilterQueryLanguageEnabled(false)
+                        .build();
+        assertThat(searchSpec.isNumericSearchEnabled()).isFalse();
+        assertThat(searchSpec.isVerbatimSearchEnabled()).isFalse();
+        assertThat(searchSpec.isListFilterQueryLanguageEnabled()).isFalse();
     }
 
     @Test

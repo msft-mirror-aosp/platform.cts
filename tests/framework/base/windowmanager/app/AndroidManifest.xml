@@ -88,9 +88,6 @@
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|fontScale|colorMode|density|touchscreen"
              android:exported="true"
              android:taskAffinity="nobody.but.NoRelaunchActivity"/>
-        <activity android:name=".SlowCreateActivity"
-             android:resizeableActivity="true"
-             android:exported="true"/>
         <activity android:name=".LaunchingActivity"
              android:resizeableActivity="true"
              android:exported="true"
@@ -341,10 +338,11 @@
              android:exported="true"
              android:configChanges="uiMode"/>
         <activity android:name=".FontScaleActivity"
+             android:configChanges="screenSize|screenLayout"
              android:exported="true"/>
         <activity android:name=".FontScaleNoRelaunchActivity"
              android:exported="true"
-             android:configChanges="fontScale"/>
+             android:configChanges="fontScale|screenSize|screenLayout"/>
         <activity android:name=".DisplayAccessCheckEmbeddingActivity"
              android:allowEmbedded="true"
              android:exported="true"/>
@@ -625,10 +623,6 @@
              android:launchMode="singleTop"
              android:exported="true"/>
         <activity android:name=".HideOverlayWindowsActivity" android:exported="true"/>
-        <activity android:name=".BackgroundImageActivity"
-             android:theme="@style/BackgroundImage"
-             android:colorMode="wideColorGamut"
-             android:exported="true"/>
         <activity android:name=".BlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"

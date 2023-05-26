@@ -33,12 +33,6 @@ WAIT_TIME_SEC = 5
 SCROLLER_TIMEOUT_MS = 3000
 VALID_NUM_DEVICES = (1, 2)
 NOT_YET_MANDATED_ALL = 100
-DEFAULT_TABLET_BRIGHTNESS = 192
-LEGACY_TABLET_BRIGHTNESS = 96
-LEGACY_TABLET_NAME = 'dragon'
-TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
-BRIGHTNESS_ERROR = ('Tablet brightness not set as per '
-                    f'{TABLET_REQUIREMENTS_URL} in the config file')
 
 # Not yet mandated tests ['test', first_api_level not yet mandatory]
 # ie. ['test_test_patterns', 30] is MANDATED for first_api_level > 30
@@ -58,6 +52,8 @@ NOT_YET_MANDATED = {
     'scene5': [],
     'scene6': [['test_zoom', 30]],
     'sensor_fusion': [],
+    'scene_hdr': [],
+    'scene_night': [],
 }
 
 logging.getLogger('matplotlib.font_manager').disabled = True
@@ -93,9 +89,10 @@ class ItsBaseTest(base_test.BaseTestClass):
     else:
       self.lighting_cntl = 'None'
       self.lighting_ch = '1'
+    if self.user_params.get('tablet_device'):
+      self.tablet_device = self.user_params['tablet_device'] == 'True'
     if self.user_params.get('debug_mode'):
-      self.debug_mode = True if self.user_params[
-          'debug_mode'] == 'True' else False
+      self.debug_mode = self.user_params['debug_mode'] == 'True'
     if self.user_params.get('scene'):
       self.scene = self.user_params['scene']
     camera_id_combo = self.parse_hidden_camera_id()
@@ -115,12 +112,8 @@ class ItsBaseTest(base_test.BaseTestClass):
         )
         tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
         logging.debug('tablet name: %s', tablet_name)
-        if tablet_name != LEGACY_TABLET_NAME:
-          if self.tablet_screen_brightness != DEFAULT_TABLET_BRIGHTNESS:
-            raise AssertionError(BRIGHTNESS_ERROR)
-        else:
-          if self.tablet_screen_brightness != LEGACY_TABLET_BRIGHTNESS:
-            raise AssertionError(BRIGHTNESS_ERROR)
+        its_session_utils.validate_tablet_brightness(
+            tablet_name, self.tablet_screen_brightness)
       except KeyError:
         logging.debug('Not all tablet arguments set.')
     else:  # sensor_fusion or manual run
@@ -218,6 +211,28 @@ class ItsBaseTest(base_test.BaseTestClass):
                   int(self.tablet.adb.shell(
                       'settings get system user_rotation')))
 
+  def set_screen_brightness(self, brightness_level):
+    """Sets the screen brightness to desired level.
+
+    Args:
+       brightness_level : brightness level to set.
+    """
+    # Turn off the adaptive brightness on tablet.
+    self.tablet.adb.shell(
+        ['settings', 'put', 'system', 'screen_brightness_mode', '0'])
+    # Set the screen brightness
+    self.tablet.adb.shell([
+        'settings', 'put', 'system', 'screen_brightness',
+        brightness_level
+    ])
+    logging.debug('Tablet brightness set to: %s', brightness_level)
+    actual_brightness = self.tablet.adb.shell(
+        'settings get system screen_brightness')
+    if int(actual_brightness) != int(brightness_level):
+      raise AssertionError('Brightness was not set as expected! '
+                           'Requested brightness: {brightness_level}, '
+                           'Actual brightness: {actual_brightness}')
+
   def parse_hidden_camera_id(self):
     """Parse the string of camera ID into an array.
 
@@ -269,9 +284,12 @@ class ItsBaseTest(base_test.BaseTestClass):
     # edit root_output_path and summary_writer path
     # to add test name to output directory
     logging.debug('summary_writer._path: %s', self.summary_writer._path)
-    logging.debug('root_output_path: %s', self.root_output_path)
     summary_head, summary_tail = os.path.split(self.summary_writer._path)
     self.summary_writer._path = os.path.join(
         f'{summary_head}_{self.__class__.__name__}', summary_tail)
     os.rename(self.root_output_path,
               f'{self.root_output_path}_{self.__class__.__name__}')
+    # print root_output_path so that it can be written to report log.
+    # Note: Do not replace print with logging.debug here.
+    print('root_output_path:',
+          f'{self.root_output_path}_{self.__class__.__name__}')

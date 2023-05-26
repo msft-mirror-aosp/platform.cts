@@ -16,6 +16,8 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+
+// TODO(276742331): Restore host/device separation
 java_library_host {
     name: "HarrierCommon",
     srcs: [
@@ -27,6 +29,7 @@ java_library_host {
         "auto_value_annotations",
         "guava",
         "NeneCommon",
+        "QueryableCommon",
         "truth-prebuilt",
     ],
 
@@ -44,6 +47,7 @@ android_library {
         "auto_value_annotations",
         "guava",
         "NeneCommonAndroid",
+        "QueryableCommonAndroid",
         "truth-prebuilt",
     ],
 
@@ -72,6 +76,7 @@ android_library {
 
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
+    plugins: ["auto_annotation_plugin"],
 }
 
 android_test {

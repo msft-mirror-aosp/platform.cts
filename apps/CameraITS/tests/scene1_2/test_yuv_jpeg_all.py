@@ -68,8 +68,8 @@ def do_capture_and_extract_rgb_means(
     img_raw = image_processing_utils.convert_capture_to_rgb_image(
         cap_raw, props=props)
     image_processing_utils.write_image(
-        img_raw, f'{name_with_log_path}_raw_{img_type}_w{size[0]}_h{size[1]}',
-        True)
+        img_raw,
+        f'{name_with_log_path}_raw_{img_type}_w{size[0]}_h{size[1]}.png', True)
   else:
     cap = cam.do_capture(req, out_surface)
   logging.debug('e_cap: %d, s_cap: %d, f_distance: %s',
@@ -123,6 +123,10 @@ class YuvJpegAllTest(its_base_test.ItsBaseTest):
       log_path = self.log_path
       debug = self.debug_mode
       name_with_log_path = os.path.join(log_path, _NAME)
+
+      # Check SKIP conditions
+      camera_properties_utils.skip_unless(
+          camera_properties_utils.linear_tonemap(props))
 
       # Load chart for scene
       its_session_utils.load_scene(

@@ -37,6 +37,7 @@ import android.uirendering.cts.testinfrastructure.DrawActivity;
 import android.uirendering.cts.testinfrastructure.Tracer;
 import android.uirendering.cts.testinfrastructure.ViewInitializer;
 import android.uirendering.cts.util.BitmapAsserter;
+import android.view.AttachedSurfaceControl;
 import android.view.Gravity;
 import android.view.PixelCopy;
 import android.view.SurfaceControl;
@@ -51,6 +52,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SynchronousPixelCopy;
+import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -123,6 +125,23 @@ public class SurfaceViewTests extends ActivityTestBase {
                 testPositionInfo.screenOffset.x, testPositionInfo.screenOffset.y,
                 TEST_WIDTH, TEST_HEIGHT);
     };
+
+    // waitForRedraw checks that HWUI finished drawing but SurfaceFlinger may be backpressured, so
+    // synchronizing by applying no-op transactions with UI draws instead.
+    private void waitForScreenshottable() throws InterruptedException {
+        AttachedSurfaceControl rootSurfaceControl =
+                getActivity().getWindow().getRootSurfaceControl();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        SurfaceControl stub = new SurfaceControl.Builder().setName("test").build();
+        rootSurfaceControl.applyTransactionOnDraw(
+                rootSurfaceControl.buildReparentTransaction(stub));
+        rootSurfaceControl.applyTransactionOnDraw(
+                new SurfaceControl.Transaction().reparent(stub, null)
+                        .addTransactionCommittedListener(Runnable::run, latch::countDown));
+        getActivity().waitForRedraw();
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
 
     @FlakyTest(bugId = 244426304)
     @Test
@@ -511,10 +530,13 @@ public class SurfaceViewTests extends ActivityTestBase {
             assertTrue(helper.hasSurface());
             helper.getFence().await(3, TimeUnit.SECONDS);
             CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch transactionCommitted = new CountDownLatch(1);
             activity.runOnUiThread(() -> {
                 SurfaceControl.Transaction transaction = new SurfaceControl.Transaction()
                         .reparent(blueLayer, helper.getSurfaceView().getSurfaceControl())
-                        .setLayer(blueLayer, 1);
+                        .setLayer(blueLayer, 1)
+                        .addTransactionCommittedListener(Runnable::run,
+                                transactionCommitted::countDown);
 
                 int width = helper.getSurfaceView().getWidth();
                 int height = helper.getSurfaceView().getHeight();
@@ -540,28 +562,88 @@ public class SurfaceViewTests extends ActivityTestBase {
                 });
             });
 
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
             // Wait for an additional second to ensure that the transaction reparenting the blue
             // layer is not applied.
-            TimeUnit.SECONDS.sleep(1);
+            assertFalse(transactionCommitted.await(1, TimeUnit.SECONDS));
             Bitmap screenshot = mScreenshotter.takeScreenshot(testInfo);
             BitmapAsserter asserter =
                     new BitmapAsserter(this.getClass().getSimpleName(), name.getMethodName());
             asserter.assertBitmapIsVerified(
-                    screenshot, new ColorVerifier(Color.RED, 0), getName(), "");
+                    screenshot, new ColorVerifier(Color.RED, 2), getName(), "");
             activity.runOnUiThread(() -> {
                 SurfaceHolder holder = helper.getSurfaceView().getHolder();
                 Canvas canvas = holder.lockHardwareCanvas();
                 canvas.drawColor(Color.GREEN);
                 holder.unlockCanvasAndPost(canvas);
             });
-            activity.waitForRedraw();
+            assertTrue(transactionCommitted.await(1, TimeUnit.SECONDS));
             screenshot = mScreenshotter.takeScreenshot(testInfo);
             // Now that a new frame was drawn, the blue layer should be overlaid now.
             asserter.assertBitmapIsVerified(
-                    screenshot, new ColorVerifier(Color.BLUE, 0), getName(), "");
+                    screenshot, new ColorVerifier(Color.BLUE, 2), getName(), "");
         } finally {
             activity.reset();
         }
     }
+
+    // Regression test for b/269113414
+    @Test
+    public void surfaceViewOffscreenDoesNotPeekThrough() throws InterruptedException {
+
+        // Add a shared latch which will fire after both callbacks are complete.
+        CountDownLatch latch = new CountDownLatch(2);
+        sGreenCanvasCallback.setFence(latch);
+        sRedCanvasCallback.setFence(latch);
+
+        DrawActivity activity = getActivity();
+
+        SurfaceView surfaceViewRed = new SurfaceView(activity);
+        surfaceViewRed.getHolder().addCallback(sRedCanvasCallback);
+        SurfaceView surfaceViewGreen = new SurfaceView(activity);
+        surfaceViewGreen.setZOrderMediaOverlay(true);
+        surfaceViewGreen.getHolder().addCallback(sGreenCanvasCallback);
+
+        int width = activity.getWindow().getDecorView().getWidth();
+        int height = activity.getWindow().getDecorView().getHeight();
+
+        ViewInitializer initializer = (View view) -> {
+            FrameLayout root = view.findViewById(R.id.frame_layout);
+            root.addView(surfaceViewRed, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+
+            root.addView(surfaceViewGreen, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+        };
+
+        try {
+            TestPositionInfo testInfo = activity.enqueueRenderSpecAndWait(
+                    R.layout.frame_layout, null, initializer, true, false);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            BitmapAsserter asserter =
+                    new BitmapAsserter(this.getClass().getSimpleName(), name.getMethodName());
+
+            // Layout the SurfaceView way offscreen which would cause it to get quick rejected.
+            WidgetTestUtils.runOnMainAndDrawSync(surfaceViewGreen, () -> {
+                surfaceViewGreen.layout(
+                        width * 2,
+                        height * 2,
+                        width * 2 + TEST_WIDTH,
+                        height * 2 + TEST_HEIGHT);
+            });
+            waitForScreenshottable();
+            Bitmap screenshot = mScreenshotter.takeScreenshot(testInfo);
+            asserter.assertBitmapIsVerified(
+                    screenshot,
+                    new ColorVerifier(Color.RED, 0), getName(),
+                    "Verifying red SurfaceControl");
+        } finally {
+            activity.reset();
+        }
+    }
+
+
 }

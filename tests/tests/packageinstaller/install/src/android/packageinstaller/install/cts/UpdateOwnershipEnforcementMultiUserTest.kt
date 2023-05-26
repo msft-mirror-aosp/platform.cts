@@ -36,6 +36,10 @@ class UpdateOwnershipEnforcementMultiUserTest : UpdateOwnershipEnforcementTestBa
     private lateinit var currentUser: UserReference
     private lateinit var otherUser: UserReference
 
+	// TODO: should not use primary user or current user, but rather the user running the test and
+	// other user. Otherwise, it won't support well devices that support headless system user mode
+	// and / or visible background users (the test will pass, but it woudn't be reflecting the
+	// reality of these devices)
     /**
      * Create another user for testing, and install the test installer package on both of them.
      */
@@ -158,6 +162,11 @@ class UpdateOwnershipEnforcementMultiUserTest : UpdateOwnershipEnforcementTestBa
     fun installExistingPackage_updateOwnerIsTheSame_ownerRetained() {
         // Since installer/update owner are only assigned with existing package,
         // install this package to test user as well.
+        uiDevice.executeShellCommand(
+                "pm install-existing --wait --user ${otherUser.id()} " + context.opPackageName
+        )
+        // The command would only hang if the package was installed for the user before.
+        // Second call will guarantee the buggy codepath to be triggered.
         uiDevice.executeShellCommand(
                 "pm install-existing --wait --user ${otherUser.id()} " + context.opPackageName
         )

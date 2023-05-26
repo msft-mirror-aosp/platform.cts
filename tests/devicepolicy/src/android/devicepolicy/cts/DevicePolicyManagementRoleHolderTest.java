@@ -37,10 +37,12 @@ import android.app.admin.ProvisioningException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.UserHandle;
+import android.util.Log;
 
 import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
@@ -56,18 +58,18 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
-import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.CddTest;
 import com.android.eventlib.truth.EventLogsSubject;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 // TODO(b/228016400): replace usages of createAndProvisionManagedProfile with a nene API
 @RunWith(BedsteadJUnit4.class)
-public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on non-headless - figure it out - on headless it d't run with btest so follow up....
+public class DevicePolicyManagementRoleHolderTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
@@ -108,17 +110,17 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
 
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
-    @EnsureHasDeviceOwner
-    @RequireMultiUserSupport
+    @EnsureHasDeviceOwner(isPrimary = true)
+    @EnsureCanAddUser
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @Test
     @CddTest(requirements = {"3.9.4/C-3-1"})
     public void createAndManageUser_roleHolderIsInManagedUser() {
         try (UserReference userReference = UserReference.of(
                 sDeviceState.dpc().devicePolicyManager().createAndManageUser(
-                        RemoteDpc.DPC_COMPONENT_NAME,
+                        sDeviceState.dpc().componentName(),
                         MANAGED_USER_NAME,
-                        RemoteDpc.DPC_COMPONENT_NAME,
+                        sDeviceState.dpc().componentName(),
                         /* adminExtras= */ null,
                         /* flags= */ 0))) {
             Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
@@ -191,9 +193,13 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
     @EnsureHasNoAccounts(onUser = ANY)
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_noUsersAndAccounts_returnsTrue()
             throws Exception {
-        assertThat(
-                sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification())
-                .isTrue();
+        // We don't want to reset the cache too early in case the account state hasn't been cached
+        Poll.forValue("shouldAllowBypassingDevicePolicyManagementRoleQualification", () -> {
+                    TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+                    return sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
+                }).toBeEqualTo(true)
+                .errorOnFail()
+                .await();
     }
 
     @Postsubmit(reason = "New test")
@@ -202,10 +208,12 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
     @EnsureHasNoDpc
     @RequireMultiUserSupport
     @EnsureHasNoAccounts(onUser = ANY)
+    @EnsureCanAddUser
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonTestUsers_returnsFalse()
             throws Exception {
         TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
         try (UserReference user = TestApis.users().createUser()
+                .name("shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonTestUsers_returnsFalse")
                 .forTesting(false)
                 .create()) {
             assertThat(
@@ -221,6 +229,7 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
     @EnsureHasNoDpc
     @RequireMultiUserSupport
     @EnsureHasNoAccounts(onUser = ANY)
+    @EnsureCanAddUser
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withTestUsers_returnsTrue()
             throws Exception {
         TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
@@ -242,11 +251,13 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
     @EnsureHasAccount(onUser = ADDITIONAL_USER, features = {})
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonAllowedAccounts_returnsFalse()
             throws Exception {
-        TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
-
-        assertThat(
-                sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification())
-                .isFalse();
+        // We don't want to reset the cache too early in case the account state hasn't been cached - REMOVE THIS ONCE ADD ACOCUNT AND REMOVE ACCOUNT IS BLOCKING CORRECTLY
+        Poll.forValue("shouldAllowBypassingDevicePolicyManagementRoleQualification", () -> {
+            TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+            return sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
+        }).toBeEqualTo(false)
+          .errorOnFail()
+          .await();
     }
 
     @Postsubmit(reason = "New test")
@@ -254,14 +265,17 @@ public class DevicePolicyManagementRoleHolderTest { // TODO: This is crashing on
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasAdditionalUser
     @EnsureHasNoDpc
+    @EnsureHasNoAccounts // TODO: Specify no accounts that don't match the account we actually want
     @EnsureHasAccount(onUser = ADDITIONAL_USER, features = FEATURE_ALLOW)
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withAllowedAccounts_returnsTrue()
             throws Exception {
-        TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
-
-        assertThat(
-                sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification())
-                .isTrue();
+        // We don't want to reset the cache too early in case the account state hasn't been cached
+        Poll.forValue("shouldAllowBypassingDevicePolicyManagementRoleQualification", () -> {
+                    TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+                    return sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
+                }).toBeEqualTo(true)
+                .errorOnFail()
+                .await();
     }
 
     @Postsubmit(reason = "New test")

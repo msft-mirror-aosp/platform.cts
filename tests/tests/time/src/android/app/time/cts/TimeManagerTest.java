@@ -68,7 +68,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** In-process tests for {@link TimeManager} and associated classes. */
+/**
+ * In-process tests for {@link TimeManager} and associated classes. This test covers SDK APIs and
+ * other behavior that partners really shouldn't break. Internal / non-critical behavior is tested
+ * outside of CTS in {@link android.app.time.TimeManagerTest}.
+ */
 public class TimeManagerTest {
 
     /**

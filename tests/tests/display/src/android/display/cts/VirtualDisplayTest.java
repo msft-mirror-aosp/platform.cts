@@ -35,6 +35,7 @@ import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -51,11 +52,14 @@ import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.StateKeeperRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -103,20 +107,27 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
-    @Rule
+    @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
             InstrumentationRegistry.getInstrumentation().getUiAutomation(),
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
     public static final SettingsStateKeeperRule mAreUserDisabledHdrFormatsAllowedSettingsKeeper =
-            new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
+            new SettingsStateKeeperRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
                     Settings.Global.ARE_USER_DISABLED_HDR_FORMATS_ALLOWED);
 
     @ClassRule
     public static final SettingsStateKeeperRule mUserDisabledHdrFormatsSettingsKeeper =
-            new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
+            new SettingsStateKeeperRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
                     Settings.Global.USER_DISABLED_HDR_FORMATS);
+
+    @Rule(order = 1)
+    public StateKeeperRule<DisplayStateManager.DisplayState> mDisplayManagerStateKeeper =
+            new StateKeeperRule<>(new DisplayStateManager(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext()));
 
     @Before
     public void setUp() throws Exception {
@@ -287,17 +298,17 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testVirtualDisplayWithRequestedRefreshRate() throws Exception {
-        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
-                WIDTH, HEIGHT, DENSITY, REQUESTED_REFRESH_RATE, mSurface, 0);
+        VirtualDisplayConfig config = new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                .setSurface(mSurface)
+                .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
+                .build();
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(config);
         assertNotNull("virtual display must not be null", virtualDisplay);
         Display display = virtualDisplay.getDisplay();
         try {
             assertDisplayRegistered(display, Display.FLAG_PRIVATE);
             assertEquals(mSurface, virtualDisplay.getSurface());
 
-            // Show a private presentation on the display.
-            assertDisplayCanShowPresentation("private presentation window",
-                    display, BLUEISH, 0);
             assertEquals(display.getRefreshRate(), REQUESTED_REFRESH_RATE, 0.1f);
         } finally {
             virtualDisplay.release();

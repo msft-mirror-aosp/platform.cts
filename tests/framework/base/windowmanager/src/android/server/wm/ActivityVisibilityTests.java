@@ -22,6 +22,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 import static android.server.wm.CliIntentExtra.extraString;
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.VirtualDisplayHelper.waitForDefaultDisplayState;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -197,9 +198,6 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     public void testTurnScreenOnActivity() {
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        if (!supportsInsecureLock()) {
-            lockScreenSession.setLockCredential();
-        }
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         testTurnScreenOnActivity(lockScreenSession, activityClient,
                 true /* useWindowFlags */);
@@ -831,12 +829,13 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     private void verifyActivityVisibilities(ComponentName activityBehind,
             boolean behindFullScreen) {
-        if (behindFullScreen) {
+        final boolean visible = !behindFullScreen;
+        if (!visible) {
             mWmState.waitForActivityState(activityBehind, STATE_STOPPED);
-            mWmState.assertVisibility(activityBehind, false);
         } else {
             mWmState.waitForValidState(activityBehind);
-            mWmState.assertVisibility(activityBehind, true);
         }
+        mWmState.waitForWindowSurfaceShown(getWindowName(activityBehind), visible);
+        mWmState.assertVisibility(activityBehind, visible);
     }
 }

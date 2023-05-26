@@ -46,6 +46,7 @@ import android.content.ComponentName;
 import android.content.res.Resources;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession.ActivityCallback;
+import android.view.WindowManager;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
 
@@ -120,19 +121,9 @@ public class MultiWindowTests extends ActivityManagerTestBase {
                 assertActivitySupportedInSplitScreen(NON_RESIZEABLE_ACTIVITY);
                 break;
             case 0:
-                final int configLargeScreenSmallestScreenWidthDp;
-                try {
-                    configLargeScreenSmallestScreenWidthDp =
-                            resources.getInteger(resources.getIdentifier(
-                                    "config_largeScreenSmallestScreenWidthDp",
-                                    "integer", "android"));
-                } catch (Resources.NotFoundException e) {
-                    fail("Device must define config_largeScreenSmallestScreenWidthDp");
-                    return;
-                }
                 final int smallestScreenWidthDp = mWmState.getHomeTask()
                         .mFullConfiguration.smallestScreenWidthDp;
-                if (smallestScreenWidthDp >= configLargeScreenSmallestScreenWidthDp) {
+                if (smallestScreenWidthDp >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP) {
                     assertActivitySupportedInSplitScreen(NON_RESIZEABLE_ACTIVITY);
                 } else {
                     assertActivityNotSupportedInSplitScreen(NON_RESIZEABLE_ACTIVITY);
@@ -274,6 +265,9 @@ public class MultiWindowTests extends ActivityManagerTestBase {
 
         mWmState.assertFocusedActivity("Launched to side activity must be in front.",
                 TEST_ACTIVITY);
+
+        // Set secondary split as launch root
+        mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
 
         // Launch another activity to side to cover first one.
         launchActivityInSecondarySplit(NO_RELAUNCH_ACTIVITY);
@@ -458,20 +452,16 @@ public class MultiWindowTests extends ActivityManagerTestBase {
                     mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE);
 
             // Verify specifying non-fullscreen windowing mode will fail.
-            boolean exceptionThrown = false;
-            try {
-                runWithShellPermission(() -> {
-                    final WindowContainerTransaction wct = new WindowContainerTransaction()
-                            .setWindowingMode(
-                                    mTaskOrganizer.getTaskInfo(task.mTaskId).getToken(),
-                                    WINDOWING_MODE_MULTI_WINDOW);
-                    mTaskOrganizer.applyTransaction(wct);
-                });
-            } catch (UnsupportedOperationException e) {
-                exceptionThrown = true;
-            }
-            assertTrue("Not allowed to specify windowing mode while in locked task mode.",
-                    exceptionThrown);
+            runWithShellPermission(() -> {
+                final WindowContainerTransaction wct = new WindowContainerTransaction()
+                        .setWindowingMode(
+                                mTaskOrganizer.getTaskInfo(task.mTaskId).getToken(),
+                                WINDOWING_MODE_MULTI_WINDOW);
+                mTaskOrganizer.applyTransaction(wct);
+            });
+            mWmState.computeState(TEST_ACTIVITY);
+            assertEquals(WINDOWING_MODE_FULLSCREEN,
+                    mWmState.getWindowState(TEST_ACTIVITY).getWindowingMode());
         } finally {
             runWithShellPermission(() -> {
                 mAtm.stopSystemLockTaskMode();

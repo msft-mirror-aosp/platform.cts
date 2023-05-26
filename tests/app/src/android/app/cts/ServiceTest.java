@@ -45,6 +45,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ServiceInfo;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -58,6 +59,7 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
+import android.platform.test.annotations.Presubmit;
 import android.service.notification.StatusBarNotification;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
@@ -83,6 +85,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+@Presubmit
 public class ServiceTest extends ActivityTestsBase {
     private static final String TAG = "ServiceTest";
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
@@ -738,6 +741,8 @@ public class ServiceTest extends ActivityTestsBase {
         mExternalService.setComponent(ComponentName.unflattenFromString(EXTERNAL_SERVICE_COMPONENT));
         mLocalForegroundService = new Intent(mContext, LocalForegroundService.class);
         mLocalPhoneCallService = new Intent(mContext, LocalPhoneCallService.class);
+        mLocalPhoneCallService.putExtra(LocalForegroundService.EXTRA_FOREGROUND_SERVICE_TYPE,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
         mLocalDeniedService = new Intent(mContext, LocalDeniedService.class);
         mLocalGrantedService = new Intent(mContext, LocalGrantedService.class);
         mLocalService_ApplicationHasPermission = new Intent(

@@ -73,8 +73,6 @@ def match_face_locations(faces_cropped, faces_opencv, mode, img, img_name):
         num_centers_aligned += 1
 
   # If test failed, save image with green AND OpenCV red rectangles
-  faces_opencv = opencv_processing_utils.find_opencv_faces(
-      img, _CV2_FACE_SCALE_FACTOR, _CV2_FACE_MIN_NEIGHBORS)
   image_processing_utils.write_image(img, img_name)
   if num_centers_aligned != _NUM_FACES:
     for (x, y, w, h) in faces_opencv:
@@ -268,11 +266,13 @@ class NumFacesTest(its_base_test.ItsBaseTest):
                 check_face_landmarks(face, fd_mode, k)
 
             # Match location of opencv and face detection mode faces
-            faces_opencv = opencv_processing_utils.find_opencv_faces(
-                img, _CV2_FACE_SCALE_FACTOR, _CV2_FACE_MIN_NEIGHBORS)
-            if fd_mode:  # non-zero value for ON
-              match_face_locations(faces_cropped, faces_opencv,
-                                   fd_mode, img, img_name)
+            if self.scene == 'scene2_d':
+              logging.debug('Match face centers between opencv & faces')
+              faces_opencv = opencv_processing_utils.find_opencv_faces(
+                  img, _CV2_FACE_SCALE_FACTOR, _CV2_FACE_MIN_NEIGHBORS)
+              if fd_mode:  # non-zero value for ON
+                match_face_locations(faces_cropped, faces_opencv,
+                                     fd_mode, img, img_name)
 
           if not faces:
             continue

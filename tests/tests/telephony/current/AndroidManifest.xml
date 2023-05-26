@@ -46,6 +46,7 @@
     <uses-permission android:name="android.permission.WRITE_EMBEDDED_SUBSCRIPTIONS" />
     <uses-permission android:name="android.permission.USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER" />
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SATELLITE_COMMUNICATION"/>
 
     <permission android:name="android.telephony.embms.cts.permission.TEST_BROADCAST"
          android:protectionLevel="signature"/>
@@ -195,6 +196,33 @@
                 <action android:name="android.telephony.gba.GbaService"/>
             </intent-filter>
         </service>
+
+        <service android:name="android.telephony.satellite.cts.MockSatelliteService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_SATELLITE_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.satellite.SatelliteService"/>
+            </intent-filter>
+        </service>
+
+        <service android:name="android.telephony.satellite.cts.MockSatelliteGatewayService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_SATELLITE_GATEWAY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.satellite.SatelliteGatewayService"/>
+            </intent-filter>
+        </service>
+
+        <activity android:name="android.telephony.satellite.cts.MockPointingUiActivity"
+             android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity android:name="android.telephony.cts.StubDialerActvity"
              android:exported="true">

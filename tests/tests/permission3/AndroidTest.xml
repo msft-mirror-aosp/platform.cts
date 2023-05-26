@@ -45,10 +45,7 @@
     </target_preparer>
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
-        <option name="push" value="CtsAccessMicrophoneApp.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneApp.apk" />
-        <option name="push" value="CtsAccessMicrophoneApp2.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneApp2.apk" />
         <option name="push" value="CtsAccessMicrophoneAppLocationProvider.apk->/data/local/tmp/cts/permission3/CtsAccessMicrophoneAppLocationProvider.apk" />
-        <option name="push" value="CtsAppLocationProviderWithSummary.apk->/data/local/tmp/cts/permission3/CtsAppLocationProviderWithSummary.apk" />
         <option name="push" value="CtsPermissionPolicyApp25.apk->/data/local/tmp/cts/permission3/CtsPermissionPolicyApp25.apk" />
         <option name="push" value="CtsUsePermissionApp22.apk->/data/local/tmp/cts/permission3/CtsUsePermissionApp22.apk" />
         <option name="push" value="CtsUsePermissionApp22CalendarOnly.apk->/data/local/tmp/cts/permission3/CtsUsePermissionApp22CalendarOnly.apk" />
@@ -78,7 +75,14 @@
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="appops set android.permission3.cts REQUEST_INSTALL_PACKAGES allow" />
         <option name="run-command" value="am wait-for-broadcast-barrier"  />
+        <!-- ensure user setup is completed -->
+        <option name="run-command" value="settings put secure user_setup_complete 1" />
     </target_preparer>
+
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="directory-keys" value="/data/user/0/android.permission3.cts/files" />
+        <option name="collect-on-run-ended-only" value="true" />
+    </metrics_collector>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.permission3.cts" />

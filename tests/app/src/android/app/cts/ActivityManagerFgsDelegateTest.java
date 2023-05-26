@@ -16,7 +16,6 @@
 
 package android.app.cts;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.fail;
@@ -24,37 +23,25 @@ import static junit.framework.Assert.fail;
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
-import android.app.NotificationManager;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundService;
-import android.app.stubs.TestNotificationListener;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.media.session.MediaController;
-import android.media.session.MediaSessionManager;
 import android.os.Bundle;
-import android.os.RemoteCallback;
-import android.os.SystemClock;
+import android.os.UserHandle;
 import android.permission.cts.PermissionUtils;
-import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerFgsDelegateTest {
@@ -256,7 +243,9 @@ public class ActivityManagerFgsDelegateTest {
     private void setForegroundServiceDelegate(String packageName, boolean isStart)
             throws Exception {
         CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "am set-foreground-service-delegate --user 0 " + packageName
+                "am set-foreground-service-delegate --user "
+                + UserHandle.getUserId(android.os.Process.myUid())
+                + " " + packageName
                 + (isStart ? " start" : " stop"));
     }
 

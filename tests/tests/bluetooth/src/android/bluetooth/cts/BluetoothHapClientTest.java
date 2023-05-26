@@ -42,8 +42,10 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,11 +66,9 @@ public class BluetoothHapClientTest {
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
 
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
 
     private BluetoothHapClient mBluetoothHapClient;
-    private boolean mIsHapClientSupported;
     private boolean mIsProfileReady;
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
@@ -91,18 +91,10 @@ public class BluetoothHapClientTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            return;
-        }
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
 
-        mIsHapClientSupported = TestUtils.isProfileEnabled(BluetoothProfile.HAP_CLIENT);
-        if (!mIsHapClientSupported) {
-            return;
-        }
+        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HAP_CLIENT));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
@@ -119,9 +111,6 @@ public class BluetoothHapClientTest {
 
     @After
     public void tearDown() throws Exception {
-        if (!(mHasBluetooth && mIsHapClientSupported)) {
-            return;
-        }
         if (mBluetoothHapClient != null) {
             mBluetoothHapClient.close();
             mBluetoothHapClient = null;
@@ -131,12 +120,9 @@ public class BluetoothHapClientTest {
         TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void test_closeProfileProxy() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
         assertTrue(mIsProfileReady);
@@ -146,11 +132,9 @@ public class BluetoothHapClientTest {
         assertFalse(mIsProfileReady);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetConnectedDevices() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -161,11 +145,9 @@ public class BluetoothHapClientTest {
         assertTrue(connectedDevices.isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetDevicesMatchingConnectionStates() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -177,11 +159,9 @@ public class BluetoothHapClientTest {
         assertTrue(connectedDevices.isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetConnectionState() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -198,11 +178,9 @@ public class BluetoothHapClientTest {
                 mBluetoothHapClient.getConnectionState(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetActivePresetIndex() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -214,11 +192,9 @@ public class BluetoothHapClientTest {
         assertNull(mBluetoothHapClient.getActivePresetInfo(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSelectPreset() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -229,11 +205,9 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.selectPreset(testDevice, 1);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSelectPresetForGroup() {
-        if (shouldSkipTest()) {
-            return;
-        }
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -242,12 +216,9 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.selectPresetForGroup(1, 1);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetAllPresetInfo() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -260,12 +231,9 @@ public class BluetoothHapClientTest {
         assertTrue(presets.isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSetPresetName() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -276,12 +244,9 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.setPresetName(testDevice, 1 , "New Name");
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSetPresetNameForGroup() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -290,10 +255,9 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.setPresetNameForGroup(1, 1 , "New Name");
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSetGetConnectionPolicy() {
-        if (!(mHasBluetooth && mIsHapClientSupported)) return;
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -315,10 +279,9 @@ public class BluetoothHapClientTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testRegisterUnregisterCallback() {
-        if (!(mHasBluetooth && mIsHapClientSupported)) return;
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -365,10 +328,9 @@ public class BluetoothHapClientTest {
                 () -> mBluetoothHapClient.registerCallback(executor, callback));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testRegisterCallbackNoPermission() {
-        if (!(mHasBluetooth && mIsHapClientSupported)) return;
-
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
@@ -405,10 +367,9 @@ public class BluetoothHapClientTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testCallbackCalls() {
-        if (!(mHasBluetooth && mIsHapClientSupported)) return;
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -474,12 +435,9 @@ public class BluetoothHapClientTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testGetHearingAidType() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -491,12 +449,9 @@ public class BluetoothHapClientTest {
         assertEquals(0x00, mBluetoothHapClient.getHearingAidType(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSupportsSynchronizedPresets() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -508,12 +463,9 @@ public class BluetoothHapClientTest {
         assertFalse(mBluetoothHapClient.supportsSynchronizedPresets(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSupportsIndependentPresets() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -525,12 +477,9 @@ public class BluetoothHapClientTest {
         assertFalse(mBluetoothHapClient.supportsIndependentPresets(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSupportsDynamicPresets() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -542,12 +491,9 @@ public class BluetoothHapClientTest {
         assertFalse(mBluetoothHapClient.supportsDynamicPresets(testDevice));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testSupportsWritablePresets() {
-        if (shouldSkipTest()) {
-            return;
-        }
-
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
@@ -557,10 +503,6 @@ public class BluetoothHapClientTest {
 
         // Verify returns false if bluetooth is not enabled
         assertFalse(mBluetoothHapClient.supportsWritablePresets(testDevice));
-    }
-
-    private boolean shouldSkipTest() {
-        return !(mHasBluetooth && mIsHapClientSupported);
     }
 
     private boolean waitForProfileConnect() {

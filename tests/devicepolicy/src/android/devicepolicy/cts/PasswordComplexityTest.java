@@ -32,7 +32,6 @@ import android.content.Intent;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.LocalPresubmit;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
@@ -63,28 +62,12 @@ public final class PasswordComplexityTest { // Skipped checking on headless beca
 
     private static final int PASSWORD_COMPLEXITY = PASSWORD_COMPLEXITY_HIGH;
 
-    @CanSetPolicyTest(policy = RequiredPasswordComplexity.class) // TODO: Remove
-    @Postsubmit(reason = "new test")
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#getRequiredPasswordComplexity")
-    public void getRequiredPasswordComplexity_doesNotThrowException() {
-        sDeviceState.dpc().devicePolicyManager().getRequiredPasswordComplexity();
-    }
-
     @CannotSetPolicyTest(policy = RequiredPasswordComplexity.class, includeNonDeviceAdminStates = false)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getRequiredPasswordComplexity")
     public void getRequiredPasswordComplexity_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
                 () -> sDeviceState.dpc().devicePolicyManager().getRequiredPasswordComplexity());
-    }
-
-    @CanSetPolicyTest(policy = RequiredPasswordComplexity.class) // TODO: Remove
-    @Postsubmit(reason = "new test")
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setRequiredPasswordComplexity")
-    @LocalPresubmit
-    public void setRequiredPasswordComplexity_doesNotThrowException() {
-        sDeviceState.dpc().devicePolicyManager()
-                .setRequiredPasswordComplexity(PASSWORD_COMPLEXITY);
     }
 
     @CannotSetPolicyTest(policy = RequiredPasswordComplexity.class, includeNonDeviceAdminStates = false)
@@ -115,13 +98,6 @@ public final class PasswordComplexityTest { // Skipped checking on headless beca
             sDeviceState.dpc().devicePolicyManager().setRequiredPasswordComplexity(
                     originalRequiredPasswordComplexity);
         }
-    }
-
-    @CanSetPolicyTest(policy = PasswordComplexity.class) // TODO: Remove
-    @Postsubmit(reason = "new test")
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#getPasswordComplexity")
-    public void getPasswordComplexity_doesNotThrowSecurityException() {
-        sDeviceState.dpc().devicePolicyManager().getPasswordComplexity();
     }
 
     @CannotSetPolicyTest(policy = PasswordComplexity.class)

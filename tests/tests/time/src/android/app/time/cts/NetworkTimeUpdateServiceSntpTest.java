@@ -20,12 +20,10 @@ import static android.app.time.cts.shell.DeviceConfigKeys.NAMESPACE_SYSTEM_TIME;
 import static android.app.time.cts.shell.DeviceConfigKeys.TimeDetector.KEY_TIME_DETECTOR_LOWER_BOUND_MILLIS_OVERRIDE;
 import static android.app.time.cts.shell.DeviceConfigShellHelper.SYNC_DISABLED_MODE_UNTIL_REBOOT;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.app.time.cts.shell.DeviceConfigShellHelper;
 import android.app.time.cts.shell.DeviceShellCommandExecutor;
@@ -46,6 +44,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ThrowingSupplier;
 
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -90,23 +89,32 @@ public class NetworkTimeUpdateServiceSntpTest {
     private DeviceConfigShellHelper.PreTestState mPreTestDeviceConfigState;
     private Instant mSetupInstant;
     private long mSetupElapsedRealtimeMillis;
+    private boolean mTearDownRequired;
 
     @Before
     public void setUp() throws Exception {
-        mSetupInstant = Instant.now();
-        mSetupElapsedRealtimeMillis = SystemClock.elapsedRealtime();
         mShellCommandExecutor = new InstrumentationShellCommandExecutor(
                 InstrumentationRegistry.getInstrumentation().getUiAutomation());
         mNetworkTimeUpdateServiceShellHelper =
                 new NetworkTimeUpdateServiceShellHelper(mShellCommandExecutor);
+
+        skipOnFormFactorsWithoutService(mNetworkTimeUpdateServiceShellHelper);
+
+        mSetupInstant = Instant.now();
+        mSetupElapsedRealtimeMillis = SystemClock.elapsedRealtime();
         mTimeDetectorShellHelper = new TimeDetectorShellHelper(mShellCommandExecutor);
         mDeviceConfigShellHelper = new DeviceConfigShellHelper(mShellCommandExecutor);
         mPreTestDeviceConfigState = mDeviceConfigShellHelper.setSyncModeForTest(
                 SYNC_DISABLED_MODE_UNTIL_REBOOT, NAMESPACE_SYSTEM_TIME);
+        mTearDownRequired = true;
     }
 
     @After
     public void tearDown() throws Exception {
+        if (!mTearDownRequired) {
+            return;
+        }
+
         mNetworkTimeUpdateServiceShellHelper.resetServerConfigForTests();
         mTimeDetectorShellHelper.clearNetworkTime();
         mNetworkTimeUpdateServiceShellHelper.forceRefresh();
@@ -149,14 +157,6 @@ public class NetworkTimeUpdateServiceSntpTest {
     @AppModeFull(reason = "Cannot bind socket in instant app mode")
     @Test
     public void testNetworkTimeUpdate() throws Exception {
-        // If you have to adjust this logic: consider that the public SDK
-        // SystemClock.currentNetworkTimeClock() method currently requires
-        // network_time_update_service to be present to work.
-        if (isWatch()) {
-            // network_time_update_service is not expected to exist on Wear. This means that
-            // SystemClock.currentNetworkTimeClock() will do nothing useful there.
-            assumeFalse(mNetworkTimeUpdateServiceShellHelper.isNetworkTimeUpdateServicePresent());
-        }
         mNetworkTimeUpdateServiceShellHelper.assumeNetworkTimeUpdateServiceIsPresent();
 
         // Set the device's lower bound for acceptable system clock time to avoid the canned test
@@ -235,7 +235,7 @@ public class NetworkTimeUpdateServiceSntpTest {
 
     /** Asserts the latest network time held by the time detector is as expected. */
     private void assertTimeDetectorLatestNetworkTimeInBounds(
-            long expectedUnixEpochMillis, long beforeRefreshElapsedMillis,
+            long serverUnixEpochMillis, long beforeRefreshElapsedMillis,
             long afterRefreshElapsedMillis) throws Exception {
         TestNetworkTime networkTime = mTimeDetectorShellHelper.getNetworkTime();
 
@@ -243,13 +243,37 @@ public class NetworkTimeUpdateServiceSntpTest {
         // That shouldn't happen because the lower bound is overridden by this test.
         assertNotNull("Expected network time but it is null", networkTime);
 
-        assertEquals(expectedUnixEpochMillis, networkTime.unixEpochTime.unixEpochTimeMillis);
+        assertInRange("Unix epoch tine",
+                networkTime.unixEpochTime.unixEpochTimeMillis,
+                serverUnixEpochMillis - networkTime.uncertaintyMillis,
+                serverUnixEpochMillis + networkTime.uncertaintyMillis);
         assertInRange("Latest network time elapsed realtime",
                 networkTime.unixEpochTime.elapsedRealtimeMillis,
                 beforeRefreshElapsedMillis, afterRefreshElapsedMillis);
     }
 
-    private boolean isWatch() {
+    private static void skipOnFormFactorsWithoutService(
+            NetworkTimeUpdateServiceShellHelper networkTimeUpdateServiceShellHelper)
+            throws Exception {
+        // If you have to adjust or remove this logic: consider that the public SDK
+        // SystemClock.currentNetworkTimeClock() method currently requires
+        // network_time_update_service (or NtpNetworkTimeHelper in the location service) to be
+        // running in order to work. See also b/271256787 for context.
+        if (isWatch()) {
+            // network_time_update_service is not expected to exist on Wear due to
+            // form-factor-specific changes. If this fails, more changes could be required besides
+            // just removing this logic, so failing the test forces a discussion rather than moving
+            // from silently skip test -> test passing.
+            assertFalse(networkTimeUpdateServiceShellHelper.isNetworkTimeUpdateServicePresent());
+
+            // Stop the test execution, but in a way that isn't considered a failure.
+            // assumeFalse(isWatch()) would also work except for the assertion immediately above.
+            throw new AssumptionViolatedException(
+                    "Skipping test on devices without network_time_update_service");
+        }
+    }
+
+    private static boolean isWatch() {
         return ApplicationProvider.getApplicationContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_WATCH);
     }

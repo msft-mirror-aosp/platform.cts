@@ -151,6 +151,7 @@ public class ViewTest {
     private static final String LOG_TAG = "ViewTest";
 
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
     private ViewTestCtsActivity mActivity;
     private Resources mResources;
     private MockViewParent mMockParent;
@@ -168,6 +169,7 @@ public class ViewTest {
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
+        mCtsTouchUtils = new CtsTouchUtils(mContext);
         mActivity = mActivityRule.getActivity();
         WindowUtil.waitForFocus(mActivity);
         mResources = mActivity.getResources();
@@ -420,7 +422,7 @@ public class ViewTest {
         view.setTouchDelegate(delegate);
         assertSame(delegate, view.getTouchDelegate());
         verify(delegate, never()).onTouchEvent(any());
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
         assertTrue(view.hasCalledOnTouchEvent());
         verify(delegate, times(1)).onTouchEvent(any());
         CtsMouseUtil.emulateHoverOnView(mInstrumentation, view, view.getWidth() / 2,
@@ -494,23 +496,11 @@ public class ViewTest {
 
         final int[] xy = new int[2];
         view.getLocationOnScreen(xy);
-        final int viewWidth = view.getWidth();
-        final int viewHeight = view.getHeight();
-        float x = xy[0] + viewWidth / 2.0f;
-        float y = xy[1] + viewHeight / 2.0f;
+        int x = xy[0] + view.getWidth() / 2;
+        int y = xy[1] + view.getHeight() / 2;
 
-        long eventTime = SystemClock.uptimeMillis();
-
-        MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[1];
-        pointerCoords[0] = new MotionEvent.PointerCoords();
-        pointerCoords[0].x = x;
-        pointerCoords[0].y = y;
-
-        final int[] pointerIds = new int[1];
-        pointerIds[0] = 0;
-
-        MotionEvent event = MotionEvent.obtain(0, eventTime, MotionEvent.ACTION_HOVER_MOVE,
-                1, pointerIds, pointerCoords, 0, 0, 0, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(x, y, MotionEvent.ACTION_HOVER_MOVE, 0);
         mInstrumentation.sendPointerSync(event);
         mInstrumentation.waitForIdleSync();
 
@@ -523,11 +513,8 @@ public class ViewTest {
     @Test
     public void testAccessPointerIcon() {
         View view = mActivity.findViewById(R.id.pointer_icon_layout);
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0, 0, 0);
-        // Only pointer sources (SOURCE_CLASS_POINTER) will have translation applied, since only
-        // they refer to locations on the screen. We need to set the source to get
-        // "setLocation" to work.
-        event.setSource(InputDevice.SOURCE_MOUSE);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0);
 
         // First view has pointerIcon="help"
         assertEquals(PointerIcon.getSystemIcon(mActivity, PointerIcon.TYPE_HELP),
@@ -574,7 +561,8 @@ public class ViewTest {
         child2.setPointerIcon(iconChild2);
         child3.setPointerIcon(iconChild3);
 
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0, 0, 0);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0);
 
         assertEquals(iconChild3, parent.onResolvePointerIcon(event, 0));
 
@@ -611,14 +599,14 @@ public class ViewTest {
     }
 
     private void onResolvePointerIcon_scrollabilityAffectsPointerIcon(boolean vertical,
-            boolean canScroll, boolean pointerIsSystemArrow) {
+            boolean canScroll, boolean pointerIsDefaultIcon) {
 
         // Arrange
 
-        int range = canScroll ? 101 : 100;
-        int thumbLength = ScrollBarUtils.getThumbLength(1, 10, 100, range);
+        final int range = canScroll ? 101 : 100;
+        final int thumbLength = ScrollBarUtils.getThumbLength(1, 10, 100, range);
 
-        PointerIcon expectedPointerIcon = PointerIcon.getSystemIcon(mContext,
+        final PointerIcon expectedPointerIcon = PointerIcon.getSystemIcon(mContext,
                 PointerIcon.TYPE_HAND);
 
         final ScrollTestView view = spy(new ScrollTestView(mContext));
@@ -634,20 +622,21 @@ public class ViewTest {
         when(view.computeHorizontalScrollExtent()).thenReturn(100);
         when(view.computeHorizontalScrollRange()).thenReturn(range);
 
-        int touchX = vertical ? 95 : thumbLength / 2;
-        int touchY = vertical ? thumbLength / 2 : 95;
-        MotionEvent event =
+        final int touchX = vertical ? 95 : thumbLength / 2;
+        final int touchY = vertical ? thumbLength / 2 : 95;
+        final MotionEvent event =
                 EventUtils.generateMouseEvent(touchX, touchY, MotionEvent.ACTION_HOVER_ENTER, 0);
 
         // Act
 
-        PointerIcon actualResult = view.onResolvePointerIcon(event, 0);
+        final PointerIcon actualResult = view.onResolvePointerIcon(event, 0);
         event.recycle();
 
         // Assert
 
-        if (pointerIsSystemArrow) {
-            assertEquals(PointerIcon.getSystemIcon(mContext, PointerIcon.TYPE_ARROW), actualResult);
+        if (pointerIsDefaultIcon) {
+            // onResolvePointerIcon should return null to show the default pointer icon.
+            assertNull(actualResult);
         } else {
             assertEquals(expectedPointerIcon, actualResult);
         }
@@ -1937,7 +1926,7 @@ public class ViewTest {
 
         view.setParent(mMockParent);
         view.setOnLongClickListener(listener);
-        mMockParent.reset();
+        view.reset();
 
         assertTrue(view.performLongClick());
         assertTrue(view.hasCalledPerformHapticFeedback());
@@ -1960,7 +1949,31 @@ public class ViewTest {
 
         view.setParent(mMockParent);
         view.setOnLongClickListener(listener);
-        mMockParent.reset();
+        view.reset();
+
+        assertTrue(view.performLongClick());
+        assertFalse(view.hasCalledPerformHapticFeedback());
+    }
+
+    @Test
+    public void testPerformLongClick_withListenerRemovedOnLongClick_upholdDefaultHapticOverride() {
+        final MockView view = new MockView(mActivity);
+        View.OnLongClickListener listener = new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                view.setOnLongClickListener(null);
+                return true;
+            }
+
+            @Override
+            public boolean onLongClickUseDefaultHapticFeedback(View v) {
+                return false;
+            }
+        };
+
+        view.setParent(mMockParent);
+        view.setOnLongClickListener(listener);
+        view.reset();
 
         assertTrue(view.performLongClick());
         assertFalse(view.hasCalledPerformHapticFeedback());
@@ -3723,7 +3736,7 @@ public class ViewTest {
         assertFalse(view.isClickable());
         assertFalse(view.isLongClickable());
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
         assertTrue(view.hasCalledOnTouchEvent());
     }
 
@@ -4073,7 +4086,7 @@ public class ViewTest {
         assertFalse(mockView.isInTouchMode());
         assertFalse(fitWindowsView.isInTouchMode());
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mockView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mockView);
         assertFalse(fitWindowsView.isFocused());
         assertFalse(mockView.isFocused());
         mActivityRule.runOnUiThread(mockView::requestFocus);

@@ -66,21 +66,18 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("CRUISE_CONTROL_COMMAND");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CRUISE_CONTROL_TARGET_SPEED))
                 .isEqualTo("CRUISE_CONTROL_TARGET_SPEED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP))
+                .isEqualTo("ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE))
+                .isEqualTo("ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED))
                 .isEqualTo("HANDS_ON_DETECTION_ENABLED");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_DRIVER_STATE))
                 .isEqualTo("HANDS_ON_DETECTION_DRIVER_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HANDS_ON_DETECTION_WARNING))
                 .isEqualTo("HANDS_ON_DETECTION_WARNING");
-        assertThat(
-                VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_ENABLED))
-                .isEqualTo("DRIVER_ATTENTION_MONITORING_ENABLED");
-        assertThat(
-                VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_STATE))
-                .isEqualTo("DRIVER_ATTENTION_MONITORING_STATE");
-        assertThat(
-                VehiclePropertyIds.toString(VehiclePropertyIds.DRIVER_ATTENTION_MONITORING_WARNING))
-                .isEqualTo("DRIVER_ATTENTION_MONITORING_WARNING");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.IGNITION_STATE))
                 .isEqualTo("IGNITION_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_DRIVER_SEAT))
@@ -111,6 +108,8 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("INFO_VIN");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.EPOCH_TIME))
                 .isEqualTo("EPOCH_TIME");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LOCATION_CHARACTERIZATION))
+                .isEqualTo("LOCATION_CHARACTERIZATION");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.PERF_ODOMETER))
                 .isEqualTo("PERF_ODOMETER");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.PERF_REAR_STEERING_ANGLE))

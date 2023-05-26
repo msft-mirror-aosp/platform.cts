@@ -419,8 +419,13 @@ public class TestUtils {
             return false;
         }
         final PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) &&
-                pm.hasSystemFeature(PackageManager.FEATURE_TELECOM);
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELECOM);
+    }
+
+    public static boolean hasTelephonyFeature(Context context) {
+        final PackageManager pm = context.getPackageManager();
+        return (pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) && pm.hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_CALLING));
     }
 
     public static String setCallDiagnosticService(Instrumentation instrumentation,
@@ -675,6 +680,14 @@ public class TestUtils {
         try {
             return InstrumentationRegistry.getContext().getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    public static boolean hasAutomotiveFeature() {
+        try {
+            return InstrumentationRegistry.getContext().getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         } catch (Exception e) {
             return false;
         }

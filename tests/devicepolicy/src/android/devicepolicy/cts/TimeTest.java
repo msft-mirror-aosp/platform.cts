@@ -36,8 +36,9 @@ import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.AutoTime;
+import com.android.bedstead.harrier.policies.AutoTimeEnabled;
 import com.android.bedstead.harrier.policies.AutoTimeRequired;
+import com.android.bedstead.harrier.policies.AutoTimeZoneEnabled;
 import com.android.bedstead.harrier.policies.DisallowConfigDateTime;
 import com.android.bedstead.harrier.policies.Time;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
@@ -163,7 +164,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = AutoTime.class)
+    @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_logsEvent() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
@@ -183,7 +184,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = AutoTime.class)
+    @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_logsEvent() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
@@ -204,7 +205,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = AutoTime.class)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_autoTimeIsEnabled() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
@@ -223,7 +224,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = AutoTime.class)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_autoTimeIsNotEnabled() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -242,7 +243,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = AutoTime.class)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void getAutoTimeEnabled_returnsAutoTimeEnabled() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -261,7 +262,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CannotSetPolicyTest(policy = AutoTime.class, includeNonDeviceAdminStates = false)
+    @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
@@ -270,7 +271,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CannotSetPolicyTest(policy = AutoTime.class, includeNonDeviceAdminStates = false)
+    @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#getAutoTimeEnabled")
     public void getAutoTimeEnabled_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
@@ -279,7 +280,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = AutoTime.class)
+    @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_autoTimeZoneIsEnabled() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -298,7 +299,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = AutoTime.class)
+    @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_autoTimeZoneIsNotEnabled() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -317,7 +318,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CannotSetPolicyTest(policy = AutoTime.class, includeNonDeviceAdminStates = false)
+    @CannotSetPolicyTest(policy = AutoTimeZoneEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_notAllowed_throwsException() {
         assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager()
@@ -325,7 +326,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = AutoTime.class)
+    @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_logsEvent() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -345,7 +346,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = AutoTime.class)
+    @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_logsEvent() {
         boolean originalValue = sDeviceState.dpc().devicePolicyManager()
@@ -363,6 +364,9 @@ public final class TimeTest {
                     sDeviceState.dpc().componentName(), originalValue);
         }
     }
+
+    // TODO: Add test of ACTION_TIME_CHANGED broadcast
+    // TODO: Add test of ACTION_TIMEZONE_CHANGED broadcast
 
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = Time.class)
@@ -464,7 +468,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = Time.class)
+    @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_timeZoneIsSet() {
         boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
@@ -499,7 +503,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyDoesNotApplyTest(policy = Time.class)
+    @PolicyDoesNotApplyTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_doesNotApply_timeZoneIsNotSet() {
         boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
@@ -520,7 +524,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = Time.class)
+    @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_autoTimeZoneIsEnabled_returnsFalse() {
         boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
@@ -541,7 +545,8 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CannotSetPolicyTest(policy = Time.class, includeNonDeviceAdminStates = false)
+    @CannotSetPolicyTest(policy = com.android.bedstead.harrier.policies.TimeZone.class,
+            includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_notAllowed_throwsException() {
         assertThrows(SecurityException.class,

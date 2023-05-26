@@ -29,6 +29,7 @@ import static android.server.wm.CliIntentExtra.extraBool;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getWindowName;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.UiDeviceUtils.pressWindowButton;
@@ -1208,7 +1209,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
                 });
                 mBroadcastActionTrigger.enterPipAndWait();
                 assertPinnedStackDoesNotExist();
-                launchHomeActivityNoWait();
+                launchHomeActivityNoWaitExpectFailure();
                 mWmState.computeState();
                 assertPinnedStackDoesNotExist();
             } finally {
@@ -1913,7 +1914,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     private void waitForEnterPip(ComponentName activityName) {
         mWmState.waitForWithAmState(wmState -> {
             Task task = wmState.getTaskByActivity(activityName);
-            return task != null && task.getWindowingMode() == WINDOWING_MODE_PINNED;
+            return task != null
+                    && task.getActivity(activityName).getWindowingMode() == WINDOWING_MODE_PINNED;
         }, "checking task windowing mode");
     }
 

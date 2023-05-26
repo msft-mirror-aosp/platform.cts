@@ -16,13 +16,24 @@
 
 package android.graphics.cts;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapRegionDecoder;
+import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.Gainmap;
 import android.graphics.ImageDecoder;
+import android.graphics.Rect;
 import android.os.Parcel;
 
 import androidx.test.filters.SmallTest;
@@ -32,14 +43,49 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
 import junitparams.JUnitParamsRunner;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
 public class GainmapTest {
     private static final float EPSILON = 0.0001f;
+    private static final int TILE_SIZE = 256;
 
     private static Context sContext;
+
+    static final Bitmap sScalingRedA8;
+    static final Bitmap sScalingRed8888;
+
+    static {
+        sScalingRedA8 = Bitmap.createBitmap(new int[] {
+                Color.RED,
+                Color.RED,
+                Color.RED,
+                Color.RED
+        }, 4, 1, Bitmap.Config.ARGB_8888);
+        sScalingRedA8.setGainmap(new Gainmap(Bitmap.createBitmap(new int[] {
+                0x00000000,
+                0x40000000,
+                0x80000000,
+                0xFF000000
+        }, 4, 1, Bitmap.Config.ALPHA_8)));
+
+        sScalingRed8888 = Bitmap.createBitmap(new int[] {
+                Color.RED,
+                Color.RED,
+                Color.RED,
+                Color.RED
+        }, 4, 1, Bitmap.Config.ARGB_8888);
+        sScalingRed8888.setGainmap(new Gainmap(Bitmap.createBitmap(new int[] {
+                0xFF000000,
+                0xFF404040,
+                0xFF808080,
+                0xFFFFFFFF
+        }, 4, 1, Bitmap.Config.ARGB_8888)));
+    }
 
     @BeforeClass
     public static void setupClass() {
@@ -60,11 +106,7 @@ public class GainmapTest {
         assertEquals(b, value[2], EPSILON);
     }
 
-    @Test
-    public void testDecodeGainmap() throws Exception {
-        Bitmap bitmap = ImageDecoder.decodeBitmap(
-                ImageDecoder.createSource(sContext.getResources(), R.raw.gainmap),
-                (decoder, info, source) -> decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE));
+    private void checkGainmap(Bitmap bitmap) throws Exception {
         assertNotNull(bitmap);
         assertTrue("Missing gainmap", bitmap.hasGainmap());
         assertEquals(Bitmap.Config.ARGB_8888, bitmap.getConfig());
@@ -83,6 +125,77 @@ public class GainmapTest {
         assertAllAre(4f, gainmap.getRatioMax());
         assertAllAre(1.0f, gainmap.getRatioMin());
         assertEquals(5f, gainmap.getDisplayRatioForFullHdr(), EPSILON);
+    }
+
+    @Test
+    public void testDecodeGainmap() throws Exception {
+        Bitmap bitmap = ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(sContext.getResources(), R.raw.gainmap),
+                (decoder, info, source) -> decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE));
+        checkGainmap(bitmap);
+    }
+
+    @Test
+    public void testDecodeGainmapBitmapFactory() throws Exception {
+        Bitmap bitmap = BitmapFactory.decodeResource(sContext.getResources(), R.raw.gainmap);
+        checkGainmap(bitmap);
+    }
+
+    @Test
+    public void testDecodeGainmapBitmapFactoryReuse() throws Exception {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inMutable = true;
+        options.inDensity = 160;
+        options.inTargetDensity = 160;
+
+        Bitmap bitmap = BitmapFactory.decodeResource(sContext.getResources(), R.raw.gainmap,
+                options);
+        checkGainmap(bitmap);
+        options.inBitmap = bitmap;
+        assertSame(bitmap, BitmapFactory.decodeResource(
+                sContext.getResources(), R.drawable.baseline_jpeg, options));
+        assertEquals(1280, bitmap.getWidth());
+        assertEquals(960, bitmap.getHeight());
+        assertFalse(bitmap.hasGainmap());
+        assertNull(bitmap.getGainmap());
+        assertSame(bitmap, BitmapFactory.decodeResource(
+                sContext.getResources(), R.raw.gainmap, options));
+        checkGainmap(bitmap);
+    }
+
+    @Test
+    public void testDecodeGainmapBitmapRegionDecoder() throws Exception {
+        InputStream is = sContext.getResources().openRawResource(R.raw.gainmap);
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(is);
+        Bitmap region = decoder.decodeRegion(new Rect(0, 0, TILE_SIZE, TILE_SIZE), null);
+        checkGainmap(region);
+    }
+
+    @Test
+    public void testDecodeGainmapBitmapRegionDecoderReuse() throws Exception {
+        InputStream is = sContext.getResources().openRawResource(R.raw.gainmap);
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(is);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inMutable = true;
+        options.inDensity = 160;
+        options.inTargetDensity = 160;
+        Bitmap region = decoder.decodeRegion(new Rect(0, 0, TILE_SIZE, TILE_SIZE),
+                options);
+        checkGainmap(region);
+        Bitmap previousGainmap = region.getGainmap().getGainmapContents();
+        options.inBitmap = region;
+
+        is = sContext.getResources().openRawResource(R.drawable.baseline_jpeg);
+        BitmapRegionDecoder secondDecoder = BitmapRegionDecoder.newInstance(is);
+        assertSame(region, secondDecoder.decodeRegion(new Rect(0, 0, TILE_SIZE, TILE_SIZE),
+                options));
+        assertFalse(region.hasGainmap());
+        assertNull(region.getGainmap());
+
+        assertSame(region, decoder.decodeRegion(new Rect(0, 0, TILE_SIZE, TILE_SIZE),
+                options));
+        checkGainmap(region);
+        assertNotSame(previousGainmap, region.getGainmap().getGainmapContents());
     }
 
     @Test
@@ -153,5 +266,100 @@ public class GainmapTest {
         assertEquals(gainmap.getDisplayRatioForFullHdr(),
                 unparceledGainmap.getDisplayRatioForFullHdr(), 0f);
         p.recycle();
+    }
+
+    @Test
+    public void testCompress8888() throws Exception {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        assertTrue(sScalingRed8888.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        byte[] data = stream.toByteArray();
+        Bitmap result = ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(data), (decoder, info, src) -> {
+                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+            });
+        assertTrue(result.hasGainmap());
+        Bitmap gainmapImage = result.getGainmap().getGainmapContents();
+        assertEquals(Bitmap.Config.ARGB_8888, gainmapImage.getConfig());
+        Bitmap sourceImage = sScalingRed8888.getGainmap().getGainmapContents();
+        for (int x = 0; x < 4; x++) {
+            Color expected = sourceImage.getColor(x, 0);
+            Color got = gainmapImage.getColor(x, 0);
+            assertArrayEquals("Differed at x=" + x,
+                    expected.getComponents(), got.getComponents(), 0.05f);
+        }
+    }
+
+    @Test
+    public void testCompressA8ByImageDecoder() throws Exception {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        assertTrue(sScalingRedA8.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        byte[] data = stream.toByteArray();
+        Bitmap result = ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(data), (decoder, info, src) -> {
+                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+            });
+        assertTrue(result.hasGainmap());
+        Bitmap gainmapImage = result.getGainmap().getGainmapContents();
+        assertEquals(Bitmap.Config.ALPHA_8, gainmapImage.getConfig());
+        Bitmap sourceImage = sScalingRedA8.getGainmap().getGainmapContents();
+        for (int x = 0; x < 4; x++) {
+            Color expected = sourceImage.getColor(x, 0);
+            Color got = gainmapImage.getColor(x, 0);
+            assertArrayEquals("Differed at x=" + x,
+                    expected.getComponents(), got.getComponents(), 0.05f);
+        }
+    }
+
+    @Test
+    public void testCompressA8ByBitmapRegionDecoder() throws Exception {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        assertTrue(sScalingRedA8.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        byte[] data = stream.toByteArray();
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(data, 0, data.length);
+        Bitmap region = decoder.decodeRegion(new Rect(0, 0, 4, 1), null);
+        assertTrue(region.hasGainmap());
+        Bitmap gainmapImage = region.getGainmap().getGainmapContents();
+        assertEquals(Bitmap.Config.ALPHA_8, gainmapImage.getConfig());
+        Bitmap sourceImage = sScalingRedA8.getGainmap().getGainmapContents();
+        for (int x = 0; x < 4; x++) {
+            Color expected = sourceImage.getColor(x, 0);
+            Color got = gainmapImage.getColor(x, 0);
+            assertArrayEquals("Differed at x=" + x,
+                    expected.getComponents(), got.getComponents(), 0.05f);
+        }
+    }
+
+    @Test
+    public void testCompressA8ByBitmapFactory() throws Exception {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        assertTrue(sScalingRedA8.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        byte[] data = stream.toByteArray();
+        Bitmap result = BitmapFactory.decodeByteArray(data, 0, data.length);
+        assertTrue(result.hasGainmap());
+        Bitmap gainmapImage = result.getGainmap().getGainmapContents();
+        assertEquals(Bitmap.Config.ALPHA_8, gainmapImage.getConfig());
+        Bitmap sourceImage = sScalingRedA8.getGainmap().getGainmapContents();
+        for (int x = 0; x < 4; x++) {
+            Color expected = sourceImage.getColor(x, 0);
+            Color got = gainmapImage.getColor(x, 0);
+            assertArrayEquals("Differed at x=" + x,
+                    expected.getComponents(), got.getComponents(), 0.05f);
+        }
+    }
+
+    @Test
+    public void testHardwareGainmapCopy() throws Exception {
+        Bitmap bitmap = ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(sContext.getResources(), R.raw.gainmap),
+                (decoder, info, source) -> decoder.setAllocator(ImageDecoder.ALLOCATOR_HARDWARE));
+        assertNotNull(bitmap);
+        assertTrue("Missing gainmap", bitmap.hasGainmap());
+        assertEquals(Bitmap.Config.HARDWARE, bitmap.getConfig());
+
+        Gainmap gainmap = bitmap.getGainmap();
+        assertNotNull(gainmap);
+        Bitmap gainmapData = gainmap.getGainmapContents();
+        assertNotNull(gainmapData);
+        assertEquals(Bitmap.Config.HARDWARE, gainmapData.getConfig());
     }
 }

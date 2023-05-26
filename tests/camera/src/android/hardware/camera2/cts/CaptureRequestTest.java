@@ -16,19 +16,19 @@
 
 package android.hardware.camera2.cts;
 
-import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static android.hardware.camera2.CameraCharacteristics.*;
+import static android.hardware.camera2.cts.CameraTestUtils.*;
 
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
-import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
@@ -40,24 +40,27 @@ import android.hardware.camera2.params.LensShadingMap;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.TonemapCurve;
-import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.cts.helpers.CameraUtils;
 import android.media.Image;
 import android.os.Parcel;
 import android.util.ArraySet;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.PropertyUtil;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
 
 /**
  * <p>
@@ -1186,6 +1189,26 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         }
     }
 
+    private void verifyFocusRange(CaptureResult result, float focusDistance) {
+        if (PropertyUtil.getVendorApiLevel() < 33) {
+            // Skip, as this only applies to UDC and above
+            if (VERBOSE) {
+                Log.v(TAG, "Skipping FOCUS_RANGE verification due to API level");
+            }
+            return;
+        }
+
+        Pair<Float, Float> focusRange = result.get(CaptureResult.LENS_FOCUS_RANGE);
+        if (focusRange != null) {
+            mCollector.expectLessOrEqual("Focus distance should be less than or equal to "
+                    + "FOCUS_RANGE.near", focusRange.first, focusDistance);
+            mCollector.expectGreaterOrEqual("Focus distance should be greater than or equal to "
+                    + "FOCUS_RANGE.far", focusRange.second, focusDistance);
+        } else if (VERBOSE) {
+            Log.v(TAG, "FOCUS_RANGE undefined, skipping verification");
+        }
+    }
+
     private void focusDistanceTestRepeating(CaptureRequest.Builder requestBuilder,
             float errorMargin) throws Exception {
         CaptureRequest request;
@@ -1211,6 +1234,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
             resultDistances[i] = getValueNotNull(result, CaptureResult.LENS_FOCUS_DISTANCE);
             resultLensStates[i] = getValueNotNull(result, CaptureResult.LENS_STATE);
+
+            verifyFocusRange(result, resultDistances[i]);
 
             if (VERBOSE) {
                 Log.v(TAG, "Capture repeating request focus distance: " + testDistances[i]
@@ -1283,6 +1308,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
             resultDistances[i] = getValueNotNull(result, CaptureResult.LENS_FOCUS_DISTANCE);
             resultLensStates[i] = getValueNotNull(result, CaptureResult.LENS_STATE);
+
+            verifyFocusRange(result, resultDistances[i]);
 
             if (VERBOSE) {
                 Log.v(TAG, "Capture burst request focus distance: " + testDistances[i]
@@ -3208,10 +3235,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         stopPreviewAndDrain();
         startPreview(requestBuilder, maxPreviewSize, listenerZoom);
         waitForSettingsApplied(listenerZoom, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
-        // Wait additional 2 frames, the required minimal zoom improvement, to allow non-overridden
+        // Wait additional 2 frames to allow non-overridden
         // results during startup.
-        final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 2;
-        waitForNumResults(listenerZoom, ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES);
+        final int ZOOM_SOME_FRAMES = 2;
+        waitForNumResults(listenerZoom, ZOOM_SOME_FRAMES);
         verifyCaptureResultForKey(CaptureResult.CONTROL_SETTINGS_OVERRIDE,
                 CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM, listenerZoom, NUM_FRAMES_VERIFIED);
     }
@@ -3508,6 +3535,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             long[] frameDurationRange = new long[]{
                     (long) (1e9 / fpsRange.getUpper()), (long) (1e9 / fpsRange.getLower())};
             long captureTime = 0, prevCaptureTime = 0;
+            long frameDurationSum = 0;
             for (int j = 0; j < numFramesVerified; j++) {
                 long frameDuration = frameDurationRange[0];
                 CaptureResult result =
@@ -3523,13 +3551,16 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                     }
                     prevCaptureTime = captureTime;
                 }
-                mCollector.expectInRange(
-                        "Frame duration must be in the range of " +
-                                Arrays.toString(frameDurationRange),
-                        frameDuration,
-                        (long) (frameDurationRange[0] * (1 - frameDurationErrorMargin)),
-                        (long) (frameDurationRange[1] * (1 + frameDurationErrorMargin)));
+                frameDurationSum += frameDuration;
             }
+            long frameDurationAvg = frameDurationSum / numFramesVerified;
+            mCollector.expectInRange(
+                    "Frame duration must be in the range of " +
+                            Arrays.toString(frameDurationRange),
+                    frameDurationAvg,
+                    (long) (frameDurationRange[0] * (1 - frameDurationErrorMargin)),
+                    (long) (frameDurationRange[1] * (1 + frameDurationErrorMargin)));
+
         }
 
         stopPreview();

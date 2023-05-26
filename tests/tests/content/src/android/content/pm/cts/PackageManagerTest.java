@@ -380,8 +380,8 @@ public class PackageManagerTest {
         }
     }
 
-    @Test
-    public void testEnforceIntentToMatchIntentFilter() {
+    // Disable the test due to feature revert
+    private void testEnforceIntentToMatchIntentFilter() {
         Intent intent = new Intent();
         List<ResolveInfo> results;
 
@@ -601,6 +601,53 @@ public class PackageManagerTest {
         } catch (ActivityNotFoundException ignore) {
 
         }
+    }
+
+    @Test
+    public void testRevertEnforceIntentToMatchIntentFilter() {
+        Intent intent = new Intent();
+        List<ResolveInfo> results;
+        ComponentName comp;
+
+        /* Component explicit intent tests */
+
+        // Explicit intents with non-matching intent filter on target T+
+        intent.setAction(NON_EXISTENT_ACTION_NAME);
+        comp = new ComponentName(INTENT_RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME);
+        intent.setComponent(comp);
+        results = mPackageManager.queryIntentActivities(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
+        comp = new ComponentName(INTENT_RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
+        intent.setComponent(comp);
+        results = mPackageManager.queryIntentServices(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
+        comp = new ComponentName(INTENT_RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        intent.setComponent(comp);
+        results = mPackageManager.queryBroadcastReceivers(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
+
+        /* Intent selector tests */
+
+        Intent selector = new Intent();
+        selector.setPackage(INTENT_RESOLUTION_TEST_PKG_NAME);
+        intent = new Intent();
+        intent.setSelector(selector);
+
+        // Non-matching intent and matching selector
+        selector.setAction(SELECTOR_ACTION_NAME);
+        intent.setAction(NON_EXISTENT_ACTION_NAME);
+        results = mPackageManager.queryIntentActivities(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
+        results = mPackageManager.queryIntentServices(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
+        results = mPackageManager.queryBroadcastReceivers(intent,
+                PackageManager.ResolveInfoFlags.of(0));
+        assertEquals(1, results.size());
     }
 
     private boolean containsActivityInfoName(String expectedName, List<ResolveInfo> resolves) {
@@ -2028,7 +2075,17 @@ public class PackageManagerTest {
 
     @Test
     public void testInstall_withLongUsesPermissionName_fail() {
-        assertThat(installPackage(LONG_USES_PERMISSION_NAME_APK)).isFalse();
+        String expectedErrorCode = "INSTALL_PARSE_FAILED_MANIFEST_MALFORMED";
+        String expectedErrorMessage = "The name in the <uses-permission> is greater than 512";
+
+        String installResult = installPackageWithResult(LONG_USES_PERMISSION_NAME_APK);
+
+        assertThat(installResult.contains(expectedErrorCode)).isTrue();
+        assertThat(installResult.contains(expectedErrorMessage)).isTrue();
+    }
+
+    private String installPackageWithResult(String apkPath) {
+        return SystemUtil.runShellCommand("pm install -t " + apkPath);
     }
 
     private boolean installPackage(String apkPath) {

@@ -21,6 +21,8 @@ import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MO
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_PERSISTENT;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_TEMPORARY;
 
+import static org.junit.Assert.assertThrows;
+
 import android.net.MacAddress;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.os.Build;
@@ -129,6 +131,25 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL);
     }
 
+    @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.S_V2)
+    public void testWifiP2pConfigBuilderForIpv6LinkLocalNotSupportedBelowTiramisu() {
+        assertThrows(UnsupportedOperationException.class, () ->
+                new WifiP2pConfig.Builder()
+                        .setDeviceAddress(MacAddress.fromString("aa:bb:cc:dd:ee:ff"))
+                        .setGroupClientIpProvisioningMode(
+                                GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL)
+                        .build());
+    }
+
+    public void testWifiP2pConfigBuilderWithJoinExistingGroupSet() {
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setJoinExistingGroup(true)
+                .build();
+        assertEquals(config.deviceAddress, TEST_DEVICE_ADDRESS);
+        assertTrue(config.isJoinExistingGroup());
+    }
+
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,
             String networkName, String passphrase, int groupOwnerFrequency, String deviceAddress,
             int networkId, int groupClientIpProvisioningMode) {
@@ -138,5 +159,6 @@ public class WifiP2pConfigTest extends AndroidTestCase {
         assertEquals(config.deviceAddress, deviceAddress);
         assertEquals(config.getNetworkId(), networkId);
         assertEquals(config.getGroupClientIpProvisioningMode(), groupClientIpProvisioningMode);
+        assertFalse(config.isJoinExistingGroup());
     }
 }

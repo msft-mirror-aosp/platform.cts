@@ -17,7 +17,8 @@
 package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_WEIGHT;
+import static com.android.bedstead.harrier.annotations.EnsureHasNoAccounts.ENSURE_HAS_NO_ACCOUNTS_WEIGHT;
+import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS;
 
 import com.android.bedstead.harrier.UserType;
 
@@ -31,6 +32,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@EnsureDoesNotHaveUserRestriction(DISALLOW_MODIFY_ACCOUNTS)
 // TODO(263353411): Make this take a query argument the same as remotedpc - instead of individual parameters
 public @interface EnsureHasAccount {
 
@@ -59,5 +61,5 @@ public @interface EnsureHasAccount {
      *
      * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default ENSURE_HAS_ACCOUNT_AUTHENTICATOR_WEIGHT + 1;
+    int weight() default ENSURE_HAS_NO_ACCOUNTS_WEIGHT + 1;
 }

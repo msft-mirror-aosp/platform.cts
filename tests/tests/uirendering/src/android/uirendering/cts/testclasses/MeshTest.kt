@@ -31,9 +31,13 @@ import android.uirendering.cts.bitmapverifiers.SamplePointVerifier
 import android.uirendering.cts.testinfrastructure.ActivityTestBase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
+import java.nio.Buffer
+import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -295,6 +299,109 @@ class MeshTest : ActivityTestBase() {
         indexBuffer.put(1, 1)
         indexBuffer.put(2, 2)
         indexBuffer.rewind()
+        Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
+                RectF(0f, 0f, 100f, 100f)
+        )
+    }
+
+    @Test
+    fun testMeshIndirectIndexAndVertexBuffers() {
+        // vertex -> indirect
+        // index -> indirect
+        val vertexBuffer = FloatBuffer.wrap(
+                floatArrayOf(0f, 0f, 50f, 50f, 0f, 50f))
+        assertFalse(vertexBuffer.isDirect)
+        vertexBuffer.rewind()
+        val indexBuffer = ShortBuffer.wrap(shortArrayOf(0, 1, 2))
+        assertFalse(indexBuffer.isDirect)
+        indexBuffer.rewind()
+        testMeshHelper(vertexBuffer, indexBuffer)
+    }
+
+    @Test
+    fun testMeshDirectIndexAndVertexBuffers() {
+        // vertex -> direct
+        // index -> direct
+        val numFloats = 6
+        val vertexBuffer = ByteBuffer.allocateDirect(numFloats * 4).asFloatBuffer().apply {
+            put(0f)
+            put(0f)
+            put(50f)
+            put(50f)
+            put(0f)
+            put(50f)
+        }
+        assertTrue(vertexBuffer.isDirect)
+        vertexBuffer.rewind()
+        val numShorts = 3
+        val indexBuffer = ByteBuffer.allocateDirect(numShorts * 2).asShortBuffer().apply {
+            put(0)
+            put(1)
+            put(2)
+        }
+        assertTrue(indexBuffer.isDirect)
+        indexBuffer.rewind()
+        testMeshHelper(vertexBuffer, indexBuffer)
+    }
+
+    @Test
+    fun testMeshDirectVertexWithIndirectIndexBuffers() {
+        // vertex -> direct
+        // index -> indirect
+        val numFloats = 6
+        val vertexBuffer = ByteBuffer.allocateDirect(numFloats * 4).asFloatBuffer().apply {
+            put(0f)
+            put(0f)
+            put(50f)
+            put(50f)
+            put(0f)
+            put(50f)
+        }
+        assertTrue(vertexBuffer.isDirect)
+        vertexBuffer.rewind()
+        val numShorts = 3
+        val indexBuffer = ShortBuffer.allocate(numShorts).apply {
+            put(0)
+            put(1)
+            put(2)
+        }
+        assertFalse(indexBuffer.isDirect)
+        indexBuffer.rewind()
+        testMeshHelper(vertexBuffer, indexBuffer)
+    }
+
+    @Test
+    fun testMeshIndirectVertexWithDirectIndexBuffers() {
+        // vertex -> indirect
+        // index -> direct
+        val numFloats = 6
+        val vertexBuffer = FloatBuffer.allocate(numFloats).apply {
+            put(0f)
+            put(0f)
+            put(50f)
+            put(50f)
+            put(0f)
+            put(50f)
+        }
+        assertFalse(vertexBuffer.isDirect)
+        vertexBuffer.rewind()
+        val numShorts = 3
+        val indexBuffer = ByteBuffer.allocateDirect(numShorts * 2).asShortBuffer().apply {
+            put(0)
+            put(1)
+            put(2)
+        }
+        assertTrue(indexBuffer.isDirect)
+        indexBuffer.rewind()
+        testMeshHelper(vertexBuffer, indexBuffer)
+    }
+
+    private fun testMeshHelper(vertexBuffer: Buffer, indexBuffer: ShortBuffer) {
+        val meshSpec = MeshSpecification.make(
+                simpleAttributeList, 8, simpleVaryingList,
+                simpleVertexShader, simpleFragmentShader
+        )
         Mesh(
                 meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
                 RectF(0f, 0f, 100f, 100f)
@@ -921,6 +1028,36 @@ class MeshTest : ActivityTestBase() {
     }
 
     @Test
+    fun testDrawMeshWithIndirectFloatUniformArray() {
+        val fragmentShader = ("uniform float2 test;" +
+                "float2 main(const Varyings varyings, out float4 color) {\n" +
+                "      color = vec4(1.0, 0.0, 0.0, 1.0);" +
+                "      return varyings.position;\n" +
+                "}")
+        val meshSpec = MeshSpecification.make(
+                simpleAttributeList, 8, simpleVaryingList,
+                simpleVertexShader, fragmentShader
+        )
+        val vertexBuffer = FloatBuffer.wrap(floatArrayOf(20f, 20f, 80f, 80f, 20f, 80f, 80f, 20f,
+                20f, 20f, 80f, 80f))
+        assertFalse(vertexBuffer.isDirect)
+        vertexBuffer.rewind()
+
+        val rect = Rect(20, 20, 80, 80)
+        val paint = Paint()
+        paint.color = Color.BLUE
+        val mesh = Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 6,
+                RectF(20f, 20f, 80f, 80f)
+        )
+
+        mesh.setFloatUniform("test", floatArrayOf(1f, 2f))
+        createTest().addCanvasClient({ canvas: Canvas, width: Int, height: Int ->
+            canvas.drawMesh(mesh, BlendMode.SRC, paint)
+        }, true).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
+    }
+
+    @Test
     fun testDrawMeshWithOutOfOrderAttributes() {
         val attList = arrayOf(
                 MeshSpecification.Attribute(
@@ -987,6 +1124,134 @@ class MeshTest : ActivityTestBase() {
             MeshSpecification.TYPE_FLOAT2, "myVarying")
         assertEquals(MeshSpecification.TYPE_FLOAT2, varying.type)
         assertEquals("myVarying", varying.name)
+    }
+
+    @Test
+    fun testInvalidOffsetThrows() {
+        val meshSpec = MeshSpecification.make(
+            simpleAttributeList, 8, simpleVaryingList,
+            simpleVertexShader, simpleFragmentShader
+        )
+        val vertexBuffer = FloatBuffer.allocate(6)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.rewind()
+        val indexBuffer = ShortBuffer.allocate(3)
+        indexBuffer.put(0, 0)
+        indexBuffer.put(1, 1)
+        indexBuffer.put(2, 2)
+        indexBuffer.rewind()
+        indexBuffer.position(1)
+        assertThrows(IllegalArgumentException::class.java) {
+            Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
+                RectF(0f, 0f, 100f, 100f)
+            )
+        }
+    }
+
+    @Test
+    fun testInvalidVertexCountThrows() {
+        val meshSpec = MeshSpecification.make(
+            simpleAttributeList, 8, simpleVaryingList,
+            simpleVertexShader, simpleFragmentShader
+        )
+        val vertexBuffer = FloatBuffer.allocate(6)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.rewind()
+        assertThrows(IllegalArgumentException::class.java) {
+            Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 2,
+                RectF(0f, 0f, 100f, 100f)
+            )
+        }
+    }
+
+    @Test
+    fun testInvalidIndexCountThrows() {
+        val meshSpec = MeshSpecification.make(
+            simpleAttributeList, 8, simpleVaryingList,
+            simpleVertexShader, simpleFragmentShader
+        )
+        val vertexBuffer = FloatBuffer.allocate(6)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.rewind()
+        val indexBuffer = ShortBuffer.allocate(1)
+        indexBuffer.put(0, 0)
+        indexBuffer.rewind()
+        assertThrows(IllegalArgumentException::class.java) {
+            Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
+                RectF(0f, 0f, 100f, 100f)
+            )
+        }
+    }
+
+    @Test
+    fun testInvalidIndexOffsetThrows() {
+        val meshSpec = MeshSpecification.make(
+            simpleAttributeList, 8, simpleVaryingList,
+            simpleVertexShader, simpleFragmentShader
+        )
+        val vertexBuffer = FloatBuffer.allocate(6)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.rewind()
+        val indexBuffer = ShortBuffer.allocate(1)
+        indexBuffer.put(0, 0)
+        indexBuffer.rewind()
+        assertThrows(IllegalArgumentException::class.java) {
+            Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
+                RectF(0f, 0f, 100f, 100f)
+            )
+        }
+    }
+
+    @Test
+    fun testIndexOffsetBeyondBoundsThrows() {
+        val meshSpec = MeshSpecification.make(
+            simpleAttributeList, 8, simpleVaryingList,
+            simpleVertexShader, simpleFragmentShader
+        )
+        val vertexBuffer = FloatBuffer.allocate(6)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(50f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(50f)
+        vertexBuffer.rewind()
+        val indexBuffer = ShortBuffer.allocate(3)
+        indexBuffer.put(0, 0)
+        indexBuffer.put(1, 1)
+        indexBuffer.put(2, 2)
+        indexBuffer.rewind()
+        indexBuffer.position(2)
+        assertThrows(IllegalArgumentException::class.java) {
+            Mesh(
+                meshSpec, Mesh.TRIANGLES, vertexBuffer, 3, indexBuffer,
+                RectF(0f, 0f, 100f, 100f)
+            )
+        }
     }
 
     // /////////////    Test Values    ///////////////

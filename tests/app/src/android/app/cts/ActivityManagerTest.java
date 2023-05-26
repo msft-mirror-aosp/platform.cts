@@ -18,7 +18,8 @@ package android.app.cts;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_CAMERA;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
-import static android.app.ActivityManager.PROCESS_CAPABILITY_NETWORK;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
@@ -86,6 +87,7 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -101,27 +103,32 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.permission.cts.PermissionUtils;
+import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
-import android.support.test.uiautomator.UiDevice;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -140,7 +147,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @RunWith(AndroidJUnit4.class)
-public class ActivityManagerTest {
+@Presubmit
+public final class ActivityManagerTest {
     private static final String TAG = ActivityManagerTest.class.getSimpleName();
     private static final String STUB_PACKAGE_NAME = "android.app.stubs";
     private static final long WAITFOR_MSEC = 5000;
@@ -160,7 +168,7 @@ public class ActivityManagerTest {
     // The action sent back by the SIMPLE_APP_IMMEDIATE_EXIT when it terminates.
     private static final String ACTIVITY_EXIT_ACTION =
             "com.android.cts.launchertests.LauncherAppsTests.EXIT_ACTION";
-    // The action sent back by the SIMPLE_APP_CHAIN_EXIT when the task chain ends. 
+    // The action sent back by the SIMPLE_APP_CHAIN_EXIT when the task chain ends.
     private static final String ACTIVITY_CHAIN_EXIT_ACTION =
             "com.android.cts.launchertests.LauncherAppsTests.CHAIN_EXIT_ACTION";
     // The action sent to identify the time track info.
@@ -184,7 +192,8 @@ public class ActivityManagerTest {
     private static final int PROCESS_CAPABILITY_ALL = PROCESS_CAPABILITY_FOREGROUND_LOCATION
             | PROCESS_CAPABILITY_FOREGROUND_CAMERA
             | PROCESS_CAPABILITY_FOREGROUND_MICROPHONE
-            | PROCESS_CAPABILITY_NETWORK;
+            | PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+            | PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 
     private Context mTargetContext;
     private ActivityManager mActivityManager;
@@ -198,13 +207,26 @@ public class ActivityManagerTest {
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
 
+    private final UserHelper mUserHelper = new UserHelper();
+
+    private String mPreviousModernTrim;
+
+    private static final String WRITE_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_DEVICE_CONFIG";
+
+    private static final String READ_DEVICE_CONFIG_PERMISSION =
+            "android.permission.READ_DEVICE_CONFIG";
+
+    private static final String MONITOR_DEVICE_CONFIG_ACCESS =
+            "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mTargetContext = mInstrumentation.getTargetContext();
-        mActivityManager = (ActivityManager) mInstrumentation.getContext()
-                .getSystemService(Context.ACTIVITY_SERVICE);
+        mActivityManager = mInstrumentation.getContext().getSystemService(ActivityManager.class);
         mPackageManager = mInstrumentation.getContext().getPackageManager();
+
         mStartedActivityList = new ArrayList<Activity>();
         mErrorProcessID = -1;
         mAppStandbyEnabled = AppStandbyUtils.isAppStandbyEnabled();
@@ -494,8 +516,10 @@ public class ActivityManagerTest {
         return uiDevice.executeShellCommand(cmd).trim();
     }
 
-    private void setForcedAppStandby(String packageName, boolean enabled) throws IOException {
-        final StringBuilder cmdBuilder = new StringBuilder("appops set ")
+    private void setForcedAppStandby(String packageName, boolean enabled)
+            throws IOException {
+        final StringBuilder cmdBuilder = new StringBuilder("appops set --user ")
+                .append(mUserHelper.getUserId()).append(' ')
                 .append(packageName)
                 .append(" RUN_ANY_IN_BACKGROUND ")
                 .append(enabled ? "ignore" : "allow");
@@ -505,27 +529,30 @@ public class ActivityManagerTest {
     @Test
     public void testIsBackgroundRestricted() throws IOException {
         // This instrumentation runs in the target package's uid.
-        final Context targetContext = mInstrumentation.getTargetContext();
-        final String targetPackage = targetContext.getPackageName();
-        final ActivityManager am = targetContext.getSystemService(ActivityManager.class);
+        final String targetPackage = mTargetContext.getPackageName();
+        final ActivityManager am = mTargetContext.getSystemService(ActivityManager.class);
         setForcedAppStandby(targetPackage, true);
         assertTrue(am.isBackgroundRestricted());
         setForcedAppStandby(targetPackage, false);
         assertFalse(am.isBackgroundRestricted());
     }
 
+    @FlakyTest(detail = "Known fail on cuttleshish b/275888802 and other devices b/255817314.")
     @Test
     public void testGetMemoryInfo() {
-        ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
-        mActivityManager.getMemoryInfo(outInfo);
-        assertTrue(
+        // Advertised memory is required when VSR API is V.
+        if (PropertyUtil.getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
+            mActivityManager.getMemoryInfo(outInfo);
+            assertTrue(
                 String.format("lowmemory (%s) == (%d <= %d)",
                 outInfo.lowMemory, outInfo.availMem, outInfo.threshold),
                 outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold));
-        assertTrue(
+            assertTrue(
                 String.format("totalMem (%d) <= advertisedMem (%d)",
                 outInfo.totalMem, outInfo.advertisedMem),
                 outInfo.totalMem <= outInfo.advertisedMem);
+        }
     }
 
     @Test
@@ -600,7 +627,7 @@ public class ActivityManagerTest {
         final ApplicationInfo stubInfo = mTargetContext.getPackageManager().getApplicationInfo(
                 STUB_PACKAGE_NAME, 0);
         final WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
-                WAITFOR_MSEC);
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
         final String crashActivityName = "ActivityManagerStubCrashActivity";
 
         final SettingsSession<Integer> showOnFirstCrash = new SettingsSession<>(
@@ -781,13 +808,34 @@ public class ActivityManagerTest {
      * lifetime tests.
      */
     private void launchHome() throws Exception {
-        if (!noHomeScreen()) {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mTargetContext.startActivity(intent);
-            Thread.sleep(WAIT_TIME);
+        if (noHomeScreen()) {
+            Log.d(TAG, "launcHome(): no home screen");
+            return;
         }
+        launchHomeScreenUsingIntent();
+        Thread.sleep(WAIT_TIME);
+    }
+
+    private void launchHomeScreenUsingIntent() {
+        Intent intent = new Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            ActivityOptions options = mUserHelper.getActivityOptions();
+            mTargetContext.startActivity(intent, options.toBundle());
+        } else {
+            mTargetContext.startActivity(intent);
+        }
+    }
+
+    private void launchHomeScreenUsingKeyCode() throws IOException {
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            // TODO(b/270634492): should call "input -d + mDisplayId + keyevent KEYCODE_HOME", but
+            // it's not working
+            launchHomeScreenUsingIntent();
+            return;
+        }
+        executeAndLogShellCommand("input keyevent KEYCODE_HOME");
     }
 
     /**
@@ -1021,6 +1069,7 @@ public class ActivityManagerTest {
                 ACTIVITY_LAUNCHED_ACTION);
         // Start an activity of another APK.
         Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_MAIN);
         intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mTargetContext.startActivity(intent);
@@ -1028,7 +1077,7 @@ public class ActivityManagerTest {
 
         // Start a new activity in the same task. Here adds an action to make a different to intent
         // filter comparison so another same activity will be created.
-        intent.setAction(Intent.ACTION_MAIN);
+        intent.setAction(Intent.ACTION_VIEW);
         mTargetContext.startActivity(intent);
         assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
         appStartedReceiver.close();
@@ -1187,7 +1236,7 @@ public class ActivityManagerTest {
             toggleScreenOn(true);
 
             // Now launch home
-            executeAndLogShellCommand("input keyevent KEYCODE_HOME");
+            launchHomeScreenUsingKeyCode();
 
             // force device idle again
             toggleScreenOn(false);
@@ -1551,6 +1600,17 @@ public class ActivityManagerTest {
 
     @Test
     public void testTrimMemActivityFg() throws Exception {
+
+        runWithShellPermissionIdentity(() -> {
+            mPreviousModernTrim = DeviceConfig.getString(
+                DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                "use_modern_trim",
+                null);
+
+            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER, "use_modern_trim",
+                    "false", false);
+        });
+
         final int waitForSec = 5 * 1000;
         final ApplicationInfo ai1 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
@@ -1675,6 +1735,14 @@ public class ActivityManagerTest {
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
                 mActivityManager.forceStopPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
+                if (mPreviousModernTrim == null) {
+                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                            "use_modern_trim");
+                } else {
+                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                            "use_modern_trim", mPreviousModernTrim, false);
+                }
+
             });
 
             watcher1.finish();
@@ -1694,6 +1762,17 @@ public class ActivityManagerTest {
         int startSeq = 0;
 
         try {
+
+            runWithShellPermissionIdentity(() -> {
+                mPreviousModernTrim = DeviceConfig.getString(
+                    DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                    "use_modern_trim",
+                    null);
+
+                DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                        "use_modern_trim", "false", false);
+            });
+
             // Kill all background processes
             runShellCommand(mInstrumentation, "am kill-all");
 
@@ -1784,6 +1863,14 @@ public class ActivityManagerTest {
 
             runWithShellPermissionIdentity(() -> {
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                if (mPreviousModernTrim == null) {
+                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                            "use_modern_trim");
+                } else {
+                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
+                            "use_modern_trim", mPreviousModernTrim, false);
+                }
+
             });
         }
     }
@@ -2132,6 +2219,9 @@ public class ActivityManagerTest {
     @Test
     public void testSwitchToSystemUserIsRestrictedWhenItsNotAFullUser() {
         assumeHeadlessSystemUserMode();
+        assumeFalse("Switch to Non-full headless SYSTEM user is only restricted when "
+                        + "config_canSwitchToHeadlessSystemUser is disabled.",
+                canSwitchToHeadlessSystemUser());
 
         runWithShellPermissionIdentity(() ->
                 assertFalse(mActivityManager.switchUser(UserHandle.SYSTEM)));
@@ -2141,11 +2231,12 @@ public class ActivityManagerTest {
     public void testSwitchToSystemUserIsAllowedWhenItsAFullUser() {
         assumeNonHeadlessSystemUserMode();
 
-        runWithShellPermissionIdentity(() ->
-                assertTrue(mActivityManager.switchUser(UserHandle.SYSTEM)));
-
+        runWithShellPermissionIdentity(() -> {
+            int currentUser = mActivityManager.getCurrentUser();
+            assertTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
+            mActivityManager.switchUser(UserHandle.of(currentUser));
+        });
     }
-
 
     @Test
     public void testSwitchToHeadlessSystemUser_whenCanSwitchToHeadlessSystemUserEnabled() {
@@ -2156,6 +2247,43 @@ public class ActivityManagerTest {
 
         runWithShellPermissionIdentity(() ->
                 assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM)));
+    }
+
+    @Test
+    @Ignore("b/279787820: This is an internal API "
+            + "that must be one way and thus cannot be verified.")
+    public void testNoteForegroundResourceUse() {
+        // Testing the method without permissions
+        try {
+            mActivityManager.noteForegroundResourceUseBegin(1, 1, 1);
+            fail("Should not be able to call noteForegroundResourceUseBegin without permission");
+        } catch (SecurityException expected) {
+        }
+        try {
+            mActivityManager.noteForegroundResourceUseEnd(1, 1, 1);
+            fail("Should not be able to call noteForegroundResourceUseEnd without permission");
+        } catch (SecurityException expected) {
+        }
+
+        try {
+            mInstrumentation.getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.LOG_FOREGROUND_RESOURCE_USE);
+        } catch (Exception e) {
+            fail("Couldn't grant permission: " + e.getMessage());
+        }
+
+        // Testing invocation with permission granted
+        try {
+            mActivityManager.noteForegroundResourceUseBegin(1, 1, 1);
+        } catch (SecurityException e) {
+            fail("Could not call noteForegroundResourceUseBegin with permission" + e.getMessage());
+        }
+        try {
+            mActivityManager.noteForegroundResourceUseEnd(1, 1, 1);
+        } catch (SecurityException e) {
+            fail("Could not call noteForegroundResourceUseBegin with permission" + e.getMessage());
+        }
     }
 
     private CountDownLatch startRemoteActivityAndLinkToDeath(ComponentName activity,
@@ -2483,7 +2611,7 @@ public class ActivityManagerTest {
     }
 
     /**
-     * Gets the value of {@link com.android.internal.R.bool.config_canSwitchToHeadlessSystemUser}.
+     * Gets the value of {@link com.android.internal.R.bool#config_canSwitchToHeadlessSystemUser}.
      * @return {@code true} If headless system user is allowed to run in the foreground
      * even though it is not a full user.
      */

@@ -80,14 +80,6 @@
              android:process=":SecondProcess"
              android:exported="true"/>
 
-        <activity android:name="android.server.wm.lifecycle.ActivityLifecycleClientTestBase$LaunchFromHomeActivity"
-                android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
         <provider android:name="android.server.wm.lifecycle.EventLog"
              android:authorities="android.server.wm.lifecycle.logprovider"
              android:exported="true"/>
@@ -287,7 +279,7 @@
                   android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.DialogFrameTestActivity" />
         <activity android:name="android.server.wm.DisplayCutoutTests$TestActivity"
-                  android:configChanges="orientation|screenSize"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
                   android:screenOrientation="nosensor"
                   android:turnScreenOn="true"
                   android:showWhenLocked="true"/>
@@ -337,6 +329,7 @@
              android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.LocationInWindowTests$TestActivity"/>
         <activity android:name="android.server.wm.EnsureBarContrastTest$TestActivity"
+             android:screenOrientation="locked"
              android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.WindowFocusTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.WindowFocusTests$SecondaryActivity"
@@ -409,6 +402,7 @@
         </activity>
         <activity android:name="android.view.cts.surfacevalidator.CapturedActivity"
              android:screenOrientation="locked"
+             android:turnScreenOn="true"
              android:theme="@style/WhiteBackgroundTheme"
              android:exported="true">
             <intent-filter>
@@ -443,7 +437,8 @@
              android:directBootAware="true"/>
 
         <activity android:name="android.server.wm.WindowInsetsAnimationTestBase$TestActivity"
-             android:theme="@android:style/Theme.Material.NoActionBar"/>
+            android:screenOrientation="locked"
+            android:theme="@android:style/Theme.Material.NoActionBar"/>
         <activity android:name="android.server.wm.WindowInsetsAnimationControllerTests$ControllerTestActivity"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
@@ -481,9 +476,20 @@
         <activity android:name="android.server.wm.DisplayHashManagerTest$TestActivity"
                    android:exported="true"/>
 
+        <activity android:name="android.server.wm.CompatChangeTests$ResizeableLeftActivity"
+                  android:resizeableActivity="true"
+                  android:exported="true"/>
+
+        <activity android:name="android.server.wm.CompatChangeTests$ResizeableRightActivity"
+                  android:resizeableActivity="true"
+                  android:exported="true"/>
+
         <activity android:name="android.server.wm.CompatChangeTests$ResizeablePortraitActivity"
                   android:resizeableActivity="true"
                   android:screenOrientation="portrait"
+                  android:exported="true"/>
+
+        <activity android:name="android.server.wm.CompatChangeTests$ResponsiveActivity"
                   android:exported="true"/>
 
         <activity android:name="android.server.wm.CompatChangeTests$NonResizeablePortraitActivity"
@@ -520,6 +526,10 @@
                        android:value="true"/>
         </activity>
 
+        <activity android:name="android.server.wm.CompatChangeTests$NoPropertyChangeOrientationWhileRelaunchingActivity"
+                  android:screenOrientation="landscape"
+                  android:exported="true"/>
+
         <service android:name="android.server.wm.WindowContextTests$TestWindowService"
                  android:exported="true"
                  android:enabled="true" />
@@ -528,8 +538,10 @@
                   android:resizeableActivity="true"
                   android:supportsPictureInPicture="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.BlurTests$ListenerTestActivity"
-                  android:exported="true"/>
+        <activity android:name="android.server.wm.BlurTests$BackgroundActivity"
+             android:theme="@style/BackgroundImage"
+             android:colorMode="wideColorGamut"
+             android:exported="true"/>
 
         <!-- Overrides the activity declaration in AndroidX test library to remove the starting
              animation. -->
@@ -626,8 +638,15 @@
                   android:noHistory="true"
                   android:theme="@style/Floating.NoMove"/>
 
+        <activity android:name="android.server.wm.scvh.SurfaceSyncGroupActivity"
+            android:screenOrientation="locked"
+            android:turnScreenOn="true"
+            android:theme="@style/WhiteBackgroundTheme"
+            android:exported="true"/>
+
         <service android:name="android.server.wm.scvh.EmbeddedSCVHService"
             android:process="com.android.server.wm.scvh.embedded_process" />
+        <service android:name="android.server.wm.scvh.SurfaceControlViewHostHelper$InProcessEmbeddedSCVHService" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

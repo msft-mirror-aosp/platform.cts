@@ -31,7 +31,9 @@ import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
+import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
@@ -60,7 +62,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
             "android.car.builtin.os.UserManagerHelper#isFullUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isGuestUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isEnabledUser(UserManager, UserHandle)",
-            "android.car.builtin.os.UserManagerHelper#isPreCreatedUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isInitializedUser(UserManager, UserHandle)"
     })
     public void testMultiplePropertiesForCurrentUser() {
@@ -78,10 +79,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
         expectWithMessage("User %s isEnabledUser", currentUser).that(
                 UserManagerHelper.isEnabledUser(mUserManager, currentUser)).isTrue();
 
-        // Current user should not be preCreated
-        expectWithMessage("User %s isPreCreatedUser", currentUser).that(
-                UserManagerHelper.isPreCreatedUser(mUserManager, currentUser)).isFalse();
-
         // Current should be initialized, otherwise test would be running
         expectWithMessage("User %s isInitializedUser", currentUser).that(
                 UserManagerHelper.isInitializedUser(mUserManager, currentUser)).isTrue();
@@ -98,7 +95,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
             "android.car.builtin.os.UserManagerHelper#isFullUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isGuestUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isEnabledUser(UserManager, UserHandle)",
-            "android.car.builtin.os.UserManagerHelper#isPreCreatedUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isInitializedUser(UserManager, UserHandle)"
     })
     public void testMultiplePropertiesForFullSystemUser() {
@@ -112,8 +108,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
                 UserManagerHelper.isGuestUser(mUserManager, systemUser)).isFalse();
         expectWithMessage("System user isEnabledUser").that(
                 UserManagerHelper.isEnabledUser(mUserManager, systemUser)).isTrue();
-        expectWithMessage("System user isPreCreatedUser").that(
-                UserManagerHelper.isPreCreatedUser(mUserManager, systemUser)).isFalse();
         expectWithMessage("System user isInitializedUser").that(
                 UserManagerHelper.isInitializedUser(mUserManager, systemUser)).isTrue();
         expectGetUserHandlesHasUser(systemUser);
@@ -127,7 +121,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
             "android.car.builtin.os.UserManagerHelper#isFullUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isGuestUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isEnabledUser(UserManager, UserHandle)",
-            "android.car.builtin.os.UserManagerHelper#isPreCreatedUser(UserManager, UserHandle)",
             "android.car.builtin.os.UserManagerHelper#isInitializedUser(UserManager, UserHandle)"
     })
     public void testMultiplePropertiesForHeadlessSystemUser() {
@@ -141,8 +134,6 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
                 UserManagerHelper.isGuestUser(mUserManager, systemUser)).isFalse();
         expectWithMessage("System user isEnabledUser").that(
                 UserManagerHelper.isEnabledUser(mUserManager, systemUser)).isTrue();
-        expectWithMessage("System user isPreCreatedUser").that(
-                UserManagerHelper.isPreCreatedUser(mUserManager, systemUser)).isFalse();
         expectWithMessage("System user isInitializedUser").that(
                 UserManagerHelper.isInitializedUser(mUserManager, systemUser)).isTrue();
         expectGetUserHandlesHasUser(systemUser);
@@ -213,8 +204,29 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
             + "isVisibleBackgroundUsersSupported(UserManager)"})
     @RequireNotVisibleBackgroundUsers(reason = "Because test is testing exactly that")
     public void testIsVisibleBackgroundUsersSupported_not() {
-        expectWithMessage("Users on secondary displays supported").that(
+        expectWithMessage("Users on secondary displays not supported").that(
                 UserManagerHelper.isVisibleBackgroundUsersSupported(mUserManager)).isFalse();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.builtin.os.UserManagerHelper#"
+            + "isVisibleBackgroundUsersOnDefaultDisplaySupported(UserManager)"})
+    @RequireVisibleBackgroundUsersOnDefaultDisplay(reason = "Because test is testing exactly that")
+    public void testIsVisibleBackgroundUsersOnDefaultDisplaySupported() {
+        expectWithMessage("Visible background Users on default display supported").that(
+                UserManagerHelper.isVisibleBackgroundUsersOnDefaultDisplaySupported(mUserManager))
+                    .isTrue();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.builtin.os.UserManagerHelper#"
+            + "isVisibleBackgroundUsersOnDefaultDisplaySupported(UserManager)"})
+    @RequireNotVisibleBackgroundUsersOnDefaultDisplay(
+            reason = "Because test is testing exactly that")
+    public void testIsVisibleBackgroundUsersOnDefaultDisplaySupported_not() {
+        expectWithMessage("Visible background Users on default display not supported").that(
+                UserManagerHelper.isVisibleBackgroundUsersOnDefaultDisplaySupported(mUserManager))
+                    .isFalse();
     }
 
     @Test
@@ -225,9 +237,8 @@ public final class UserManagerHelperLiteTest extends AbstractCarBuiltinTestCase 
     }
 
     private void expectGetUserHandlesHasUser(UserHandle user) {
-        List<UserHandle> allUsersHandles = UserManagerHelper.getUserHandles(mUserManager,
-                /* excludePartial= */ false, /* excludeDying= */ false,
-                /* excludePreCreated= */ false);
+        List<UserHandle> allUsersHandles =
+                UserManagerHelper.getUserHandles(mUserManager, /* excludeDying= */ false);
         expectWithMessage("allUsersHandles").that(allUsersHandles).contains(user);
     }
 }

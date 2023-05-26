@@ -50,6 +50,8 @@ import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -1269,7 +1271,7 @@ public class VideoEncoderTest extends MediaTestBase {
         return encoder;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2}x{3}_{4}_{5})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}x{3}_{4}_{5}")
     public static Collection<Object[]> input() {
         final String[] mediaTypesList = new String[] {
                 MediaFormat.MIMETYPE_VIDEO_AVC,
@@ -1353,6 +1355,17 @@ public class VideoEncoderTest extends MediaTestBase {
         mMode = mode;
     }
 
+    @CddTest(requirements = {"5.1.7/C-3-1"})
+    @ApiTest(apis = {"MediaCodecInfo.CodecCapabilities#FEATURE_IntraRefresh",
+            "android.media.MediaFormat#KEY_WIDTH",
+            "android.media.MediaFormat#KEY_HEIGHT",
+            "android.media.MediaFormat#KEY_FRAME_RATE",
+            "android.media.MediaFormat#KEY_BIT_RATE",
+            "android.media.MediaFormat#KEY_I_FRAME_INTERVAL",
+            "android.media.MediaFormat#KEY_INTRA_REFRESH_PERIOD",
+            "android.media.MediaFormat#KEY_MAX_INPUT_SIZE",
+            "MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
+            "MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @Test
     public void testEncode() {
         int frameRate = 30;

@@ -17,6 +17,8 @@ package android.host.multiuser;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.Presubmit;
 
@@ -39,6 +41,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     private static final String TEST_APP_PKG_NAME = "com.android.cts.multiuser";
     private static final String TEST_APP_PKG_APK = "CtsMultiuserApp.apk";
 
+    private static final String FEATURE_DEVICE_ADMIN = "android.software.device_admin";
+
     // Values below were copied from UserManager
     private static final int REMOVE_RESULT_REMOVED = 0;
     private static final int REMOVE_RESULT_DEFERRED = 1;
@@ -54,8 +58,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     public void testSwitchAndRemoveEphemeralUser() throws Exception {
         final int ephemeralUserId = createEphemeralUser();
 
-        assertSwitchToNewUser(ephemeralUserId);
-        assertSwitchToUser(ephemeralUserId, mInitialUserId);
+        assertSwitchToUser(ephemeralUserId);
+        assertSwitchToUser(mInitialUserId);
         waitForUserRemove(ephemeralUserId);
         assertUserNotPresent(ephemeralUserId);
     }
@@ -66,7 +70,7 @@ public class EphemeralTest extends BaseMultiUserTest {
     public void testRebootAndRemoveEphemeralUser() throws Exception {
         final int ephemeralUserId = createEphemeralUser();
 
-        assertSwitchToNewUser(ephemeralUserId);
+        assertSwitchToUser(ephemeralUserId);
         getDevice().reboot();
         assertUserNotPresent(ephemeralUserId);
     }
@@ -78,7 +82,7 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Test
     public void testRebootAndRemoveEphemeralUser_withAccount() throws Exception {
         final int ephemeralUserId = createEphemeralUser();
-        assertSwitchToNewUser(ephemeralUserId);
+        assertSwitchToUser(ephemeralUserId);
 
         installPackageAsUser(
                 TEST_APP_PKG_APK, /* grantPermissions= */true, ephemeralUserId, /* options= */"-t");
@@ -129,11 +133,11 @@ public class EphemeralTest extends BaseMultiUserTest {
             throws Exception {
         final int userId = createUser();
 
-        assertSwitchToNewUser(userId);
+        assertSwitchToUser(userId);
         executeRemoveUserWhenPossible(userId, /* expectedResult= */ REMOVE_RESULT_DEFERRED);
         assertUserEphemeral(userId);
 
-        assertSwitchToUser(userId, mInitialUserId);
+        assertSwitchToUser(mInitialUserId);
         waitForUserRemove(userId);
         assertUserNotPresent(userId);
     }
@@ -151,7 +155,7 @@ public class EphemeralTest extends BaseMultiUserTest {
             throws Exception {
         final int userId = createUser();
 
-        assertSwitchToNewUser(userId);
+        assertSwitchToUser(userId);
         executeRemoveUserWhenPossible(userId, /* expectedResult= */ REMOVE_RESULT_DEFERRED);
         assertUserEphemeral(userId);
 
@@ -167,6 +171,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Presubmit
     @Test
     public void testRemoveUserWhenPossible_devicePolicyIsSet() throws Exception {
+        assumeTrue("Test requires device with device admin support",
+                getDevice().hasFeature(FEATURE_DEVICE_ADMIN));
         installPackage(DpcCommander.PKG_APK, /* options= */ "-t");
         assertWithMessage("isPackageInstalled(%s)", DpcCommander.PKG_APK)
                 .that(getDevice().isPackageInstalled(DpcCommander.PKG_NAME))

@@ -57,6 +57,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.modules.utils.build.SdkLevel;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -104,6 +106,7 @@ public class PermissionUtils {
                 + (Build.VERSION.RELEASE_OR_CODENAME.equals("REL") ? 0 : 1);
         boolean forceQueryable = sdkVersion > Build.VERSION_CODES.Q;
         runShellCommand("pm install -r --force-sdk "
+                + (SdkLevel.isAtLeastU() ? "--bypass-low-target-sdk-block " : "")
                 + (forceQueryable ? "--force-queryable " : "")
                 + apkFile);
     }
@@ -260,6 +263,26 @@ public class PermissionUtils {
     }
 
     /**
+     * Get all the flags of a permission.
+     *
+     * @param packageName Package the permission belongs to
+     * @param permission Name of the permission
+     *
+     * @return Permission flags
+     */
+    public static int getAllPermissionFlags(@NonNull String packageName,
+            @NonNull String permission) {
+        try {
+            return callWithShellPermissionIdentity(
+                    () -> sContext.getPackageManager().getPermissionFlags(permission, packageName,
+                            UserHandle.getUserHandleForUid(Process.myUid())),
+                    GRANT_RUNTIME_PERMISSIONS);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * Get the flags of a permission.
      *
      * @param packageName Package the permission belongs to
@@ -268,14 +291,7 @@ public class PermissionUtils {
      * @return Permission flags
      */
     public static int getPermissionFlags(@NonNull String packageName, @NonNull String permission) {
-        try {
-            return callWithShellPermissionIdentity(
-                    () -> sContext.getPackageManager().getPermissionFlags(permission, packageName,
-                            UserHandle.getUserHandleForUid(Process.myUid())) & TESTED_FLAGS,
-                    GRANT_RUNTIME_PERMISSIONS);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        return getAllPermissionFlags(packageName, permission) & TESTED_FLAGS;
     }
 
     /**
@@ -362,6 +378,9 @@ public class PermissionUtils {
                             + " " + packageName + " " + jobId;
             jobStatus = runShellCommand(automation, cmd).trim();
             Log.v(LOG_TAG, "Job: " + jobId + ", job status " + jobStatus);
+        }
+        if (!jobStatus.contains("waiting")) {
+            throw new IllegalStateException("The job didn't get scheduled in time.");
         }
     }
 

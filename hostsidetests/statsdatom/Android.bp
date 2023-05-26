@@ -42,6 +42,7 @@ java_test_host {
         "src/**/memory/*.java",
         "src/**/net/*.java",
         "src/**/notification/*.java",
+        "src/**/perf/*.java",
         "src/**/perfetto/*.java",
         "src/**/performancehintmanager/*.java",
         "src/**/permissionstate/*.java",
@@ -50,10 +51,13 @@ java_test_host {
         "src/**/statsd/*.java",
         "src/**/telephony/*.java",
         "src/**/tls/*.java",
+        "src/**/usb/*.java",
         "src/**/users/*.java",
         "src/**/vibrator/*.java",
+        "src/**/voiceinteraction/*.java",
         "src/**/wifi/*.java",
         "src/**/incremental/*.java",
+        "src/**/memorysafety/*.java",
     ],
 
     test_suites: [
@@ -66,7 +70,6 @@ java_test_host {
         "core_cts_test_resources",
         "cts-tradefed",
         "host-libprotobuf-java-full",
-        "platformprotos",
         "tradefed",
         "truth-prebuilt",
     ],
@@ -84,6 +87,7 @@ java_test_host {
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",
         ":CtsStatsdAlarmHelper2",
+        ":CtsVoiceInteractionTestCases",
     ],
     per_testcase_directory: true,
 }
