@@ -18,22 +18,30 @@ package android.photopicker.cts;
 
 import static android.photopicker.cts.util.GetContentActivityAliasUtils.clearPackageData;
 import static android.photopicker.cts.util.GetContentActivityAliasUtils.getDocumentsUiPackageName;
-import static android.photopicker.cts.util.PhotoPickerAssertionsUtils.assertReadOnlyAccess;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUriAndPath;
+import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickBrowse;
-
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertNoPersistedWriteGrant;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedReadGrants;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedWriteGrants;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPickerUriFormat;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertReadOnlyAccess;
+import static android.photopicker.cts.util.UiAssertionUtils.assertThatShowsPickerUi;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.photopicker.cts.util.GetContentActivityAliasUtils;
-import android.photopicker.cts.util.PhotoPickerUiUtils;
 import android.util.Pair;
 
 import androidx.test.uiautomator.UiObject;
@@ -42,9 +50,7 @@ import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -73,24 +79,17 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         if (mActivity != null) {
             mActivity.finish();
         }
-    }
 
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-        sDocumentsUiPackageName = getDocumentsUiPackageName();
-        sGetContentTakeOverActivityAliasState = GetContentActivityAliasUtils.enableAndGetOldState();
+        GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
     }
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
+        sDocumentsUiPackageName = getDocumentsUiPackageName();
+        sGetContentTakeOverActivityAliasState = GetContentActivityAliasUtils.enableAndGetOldState();
         clearPackageData(sDocumentsUiPackageName);
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
     }
 
     @Test
@@ -100,7 +99,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("audio/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
-        mDevice.waitForIdle();
+        sDevice.waitForIdle();
         // Should open documentsUi
         assertThatShowsDocumentsUiButtons();
 
@@ -116,7 +115,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.setType("image/*");
         intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"video/*", "audio/*"});
         mActivity.startActivityForResult(intent, REQUEST_CODE);
-        mDevice.waitForIdle();
+        sDevice.waitForIdle();
         // Should open documentsUi
         assertThatShowsDocumentsUiButtons();
 
@@ -140,7 +139,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.setType("image/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        findAndClickBrowse(mDevice);
+        findAndClickBrowse(sDevice);
 
         findAndClickFilesInDocumentsUi(fileNameList);
 
@@ -166,7 +165,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.setType("image/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        findAndClickBrowse(mDevice);
+        findAndClickBrowse(sDevice);
 
         findAndClickFilesInDocumentsUi(fileNameList);
 
@@ -179,13 +178,47 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
-    public void testChooserIntent_mediaFilter() throws Exception {
+    public void testChooserIntent_mediaFilter_verifyReadGrantsOnly() throws Exception {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU);
+        final int itemCount = 1;
+        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
+
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
 
         // Should open Picker
         assertThatShowsPickerUi();
+        final UiObject item = findItemList(itemCount).get(0);
+        clickAndWait(sDevice, item);
+
+        final Uri uri = mActivity.getResult().data.getData();
+        assertPickerUriFormat(uri, mContext.getUserId());
+        assertPersistedReadGrants(uri, mContext.getContentResolver());
+        assertNoPersistedWriteGrant(uri, mContext.getContentResolver());
+    }
+
+    @Test
+    public void testChooserIntent_mediaFilter_verifyReadAndWriteGrants() throws Exception {
+        assumeTrue(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU);
+        final int itemCount = 1;
+        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
+
+        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
+
+        // Should open Picker
+        assertThatShowsPickerUi();
+        final UiObject item = findItemList(itemCount).get(0);
+        clickAndWait(sDevice, item);
+
+        final Uri uri = mActivity.getResult().data.getData();
+        assertPickerUriFormat(uri, mContext.getUserId());
+        assertPersistedReadGrants(uri, mContext.getContentResolver());
+        // Write grants given to picker uris when launched via ACTION_GET_CONTENT in Android
+        // R & S to resolve samsung message app issue.
+        assertPersistedWriteGrants(uri, mContext.getContentResolver());
     }
 
     @Test
@@ -219,30 +252,14 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
                 new UiObject(appList).waitForExists(SHORT_TIMEOUT)).isTrue();
 
         String photoPickerAppName = "Media";
-        UiObject mediaButton = mDevice.findObject(new UiSelector().text(photoPickerAppName));
+        UiObject mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
 
         assertWithMessage("Timed out waiting for " + photoPickerAppName + " app icon to appear")
-                .that(new UiScrollable(appList).scrollIntoView(mediaButton)).isTrue();
-        mDevice.waitForIdle();
+                .that(new UiScrollable(appList).setAsHorizontalList().scrollIntoView(mediaButton))
+                .isTrue();
+        sDevice.waitForIdle();
 
-        clickAndWait(mDevice, mediaButton);
-    }
-
-    private void assertThatShowsPickerUi() {
-        // Assert that Search bar for DocumentsUi shows
-        // Add a short timeout wait for DocumentsUi to show
-        assertThat(new UiObject(new UiSelector().resourceIdMatches(
-                PhotoPickerUiUtils.REGEX_PACKAGE_NAME + ":id/bottom_sheet"))
-                .waitForExists(SHORT_TIMEOUT)).isTrue();
-
-        // Assert that "Recent files" header for DocumentsUi shows
-        assertThat(new UiObject(new UiSelector().resourceIdMatches(
-                PhotoPickerUiUtils.REGEX_PACKAGE_NAME + ":id/privacy_text"))
-                .exists()).isTrue();
-
-        // Assert that Documents list UiObject for DocumentsUi shows
-        assertThat(new UiObject(new UiSelector().text("Photos")).exists()).isTrue();
-        assertThat(new UiObject(new UiSelector().text("Albums")).exists()).isTrue();
+        clickAndWait(sDevice, mediaButton);
     }
 
     private void assertThatShowsDocumentsUiButtons() {
@@ -268,7 +285,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     private void findAndClickSelect() throws Exception {
         final UiObject selectButton = new UiObject(new UiSelector().resourceId(
                 sDocumentsUiPackageName + ":id/action_menu_select"));
-        clickAndWait(mDevice, selectButton);
+        clickAndWait(sDevice, selectButton);
     }
 
     private void findAndClickFileInDocumentsUi(String fileName) throws Exception {
@@ -284,7 +301,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
             // Enforce to set the list mode
             // Because UiScrollable can't reach the real bottom (when WEB_LINKABLE_FILE item)
             // in grid mode when screen landscape mode
-            clickAndWait(mDevice, new UiObject(new UiSelector().resourceId(sDocumentsUiPackageName
+            clickAndWait(sDevice, new UiObject(new UiSelector().resourceId(sDocumentsUiPackageName
                     + ":id/sub_menu_list")));
         } catch (UiObjectNotFoundException ignored) {
             // Do nothing, already be in list mode.
@@ -306,9 +323,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
                 }
             }
 
-            mDevice.swipe(/* startX= */ mDevice.getDisplayWidth() / 2,
-                    /* startY= */ mDevice.getDisplayHeight() / 2,
-                    /* endX= */ mDevice.getDisplayWidth() / 2,
+            sDevice.swipe(/* startX= */ sDevice.getDisplayWidth() / 2,
+                    /* startY= */ sDevice.getDisplayHeight() / 2,
+                    /* endX= */ sDevice.getDisplayWidth() / 2,
                     /* endY= */ 0,
                     /* steps= */ 40);
         }

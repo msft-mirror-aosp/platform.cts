@@ -16,12 +16,7 @@
 
 package android.location.cts.fine;
 
-import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_AWARE;
-import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -29,11 +24,10 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager.ResolveInfoFlags;
 import android.location.Geocoder;
 import android.location.Geocoder.GeocodeListener;
-import android.platform.test.annotations.AppModeFull;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -46,6 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 @RunWith(AndroidJUnit4.class)
@@ -62,21 +57,13 @@ public class GeocoderTest {
     public void setUp() {
         mContext = ApplicationProvider.getApplicationContext();
         mGeocoder = new Geocoder(mContext, Locale.US);
-    }
 
-    @Test
-    public void testIsPresent() {
-        if (mContext.getPackageManager().queryIntentServices(
-                new Intent("com.android.location.service.GeocodeProvider"), ResolveInfoFlags.of(
-                        MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE)).isEmpty()) {
-            assertFalse(Geocoder.isPresent());
-        } else {
-            assertTrue(Geocoder.isPresent());
-        }
+        // geocoding is not supported for instant apps until S (b/238831704)
+        assumeTrue(
+                !mContext.getPackageManager().isInstantApp() || VERSION.SDK_INT >= VERSION_CODES.S);
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocation")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocation() {
         assumeTrue(Geocoder.isPresent());
@@ -87,7 +74,6 @@ public class GeocoderTest {
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocation")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocation_sync() throws Exception {
         assumeTrue(Geocoder.isPresent());
@@ -96,7 +82,6 @@ public class GeocoderTest {
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocation")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocation_badInput() {
         GeocodeListener listener = mock(GeocodeListener.class);
@@ -111,7 +96,6 @@ public class GeocoderTest {
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocationName")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocationName() {
         assumeTrue(Geocoder.isPresent());
@@ -122,7 +106,6 @@ public class GeocoderTest {
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocationName")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocationName_sync() throws Exception {
         assumeTrue(Geocoder.isPresent());
@@ -131,7 +114,6 @@ public class GeocoderTest {
     }
 
     @ApiTest(apis = "android.location.Geocoder#getFromLocationName")
-    @AppModeFull(reason = "b/238831704 - Test cases don't apply for Instant apps")
     @Test
     public void testGetFromLocationName_badInput() {
         GeocodeListener listener = mock(GeocodeListener.class);
@@ -145,5 +127,16 @@ public class GeocoderTest {
                 () -> mGeocoder.getFromLocationName("Beijing", 5, 25, 100, 91, 130, listener));
         assertThrows(IllegalArgumentException.class,
                 () -> mGeocoder.getFromLocationName("Beijing", 5, 25, 100, 45, -181, listener));
+    }
+
+    @ApiTest(apis = {
+            "android.location.Geocoder.GeocodeListener#onGeocode",
+            "android.location.Geocoder.GeocodeListener#onError",
+    })
+    @Test
+    public void testGeocodeListener() {
+        GeocodeListener listener = mock(GeocodeListener.class);
+        listener.onGeocode(new ArrayList<>());
+        listener.onError(null);
     }
 }

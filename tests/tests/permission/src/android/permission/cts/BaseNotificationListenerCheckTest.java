@@ -16,56 +16,36 @@
 
 package android.permission.cts;
 
-import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
-import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.os.Process.myUserHandle;
-import static android.permission.cts.PermissionUtils.clearAppState;
 import static android.permission.cts.TestUtils.eventually;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-import static com.android.server.job.nano.JobPackageHistoryProto.START_PERIODIC_JOB;
-import static com.android.server.job.nano.JobPackageHistoryProto.STOP_PERIODIC_JOB;
 
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.app.NotificationManager;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.os.Build;
-import android.platform.test.annotations.AppModeFull;
 import android.provider.DeviceConfig;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.SdkSuppress;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
-import com.android.compatibility.common.util.ProtoUtils;
-import com.android.server.job.nano.JobPackageHistoryProto;
-import com.android.server.job.nano.JobSchedulerServiceDumpProto;
-import com.android.server.job.nano.JobSchedulerServiceDumpProto.RegisteredJob;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -73,10 +53,6 @@ import java.util.List;
  * Base test class used for {@code NotificationListenerCheckTest} and
  * {@code NotificationListenerCheckWithSafetyCenterUnsupportedTest}
  */
-@RunWith(AndroidJUnit4.class)
-@AppModeFull(reason = "Cannot set system settings as instant app. Also we never show a notification"
-        + " listener check notification for instant apps.")
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
 public class BaseNotificationListenerCheckTest {
     private static final String LOG_TAG = BaseNotificationListenerCheckTest.class.getSimpleName();
     private static final boolean DEBUG = false;
@@ -101,17 +77,11 @@ public class BaseNotificationListenerCheckTest {
      * notification
      * listeners are queried
      */
-    private static final String PROPERTY_NOTIFICATION_LISTENER_CHECK_INTERVAL_MILLIS =
+    protected static final String PROPERTY_NOTIFICATION_LISTENER_CHECK_INTERVAL_MILLIS =
             "notification_listener_check_interval_millis";
 
     protected static final Long OVERRIDE_NOTIFICATION_LISTENER_CHECK_INTERVAL_MILLIS =
-            SECONDS.toMillis(1);
-
-    private static final String PROPERTY_JOB_SCHEDULER_MAX_JOB_PER_RATE_LIMIT_WINDOW =
-            "qc_max_job_count_per_rate_limiting_window";
-
-    private static final String PROPERTY_JOB_SCHEDULER_RATE_LIMIT_WINDOW_MILLIS =
-            "qc_rate_limiting_window_ms";
+            SECONDS.toMillis(0);
 
     private static final String ACTION_SET_UP_NOTIFICATION_LISTENER_CHECK =
             "com.android.permissioncontroller.action.SET_UP_NOTIFICATION_LISTENER_CHECK";
@@ -161,39 +131,29 @@ public class BaseNotificationListenerCheckTest {
                     PROPERTY_NOTIFICATION_LISTENER_CHECK_INTERVAL_MILLIS,
                     Long.toString(OVERRIDE_NOTIFICATION_LISTENER_CHECK_INTERVAL_MILLIS));
 
-    // Disable job scheduler throttling by allowing 300000 jobs per 30 sec
-    @Rule
-    public DeviceConfigStateChangerRule sJobSchedulerDeviceConfig1 =
-            new DeviceConfigStateChangerRule(sContext,
-                    DeviceConfig.NAMESPACE_JOB_SCHEDULER,
-                    PROPERTY_JOB_SCHEDULER_MAX_JOB_PER_RATE_LIMIT_WINDOW,
-                    Integer.toString(3000000));
-
-    // Disable job scheduler throttling by allowing 300000 jobs per 30 sec
-    @Rule
-    public DeviceConfigStateChangerRule sJobSchedulerDeviceConfig2 =
-            new DeviceConfigStateChangerRule(sContext,
-                    DeviceConfig.NAMESPACE_JOB_SCHEDULER,
-                    PROPERTY_JOB_SCHEDULER_RATE_LIMIT_WINDOW_MILLIS,
-                    Integer.toString(30000));
-
     @Rule
     public CtsNotificationListenerHelperRule ctsNotificationListenerHelper =
             new CtsNotificationListenerHelperRule(sContext);
 
     @BeforeClass
     public static void beforeClassSetup() throws Exception {
+        // Bypass battery saving restrictions
+        runShellCommand("cmd tare set-vip "
+                + myUserHandle().getIdentifier() + " " + PERMISSION_CONTROLLER_PKG + " true");
         // Disallow any OEM enabled NLS
         disallowPreexistingNotificationListeners();
     }
 
     @AfterClass
     public static void afterClassTearDown() throws Throwable {
+        // Reset battery saving restrictions
+        runShellCommand("cmd tare set-vip "
+                + myUserHandle().getIdentifier() + " " + PERMISSION_CONTROLLER_PKG + " default");
         // Reallow any previously OEM allowed NLS
         reallowPreexistingNotificationListeners();
     }
 
-    private static void setDeviceConfigPrivacyProperty(String propertyName, String value) {
+    protected static void setDeviceConfigPrivacyProperty(String propertyName, String value) {
         runWithShellPermissionIdentity(() -> {
             boolean valueWasSet =  DeviceConfig.setProperty(
                     DeviceConfig.NAMESPACE_PRIVACY,
@@ -203,7 +163,7 @@ public class BaseNotificationListenerCheckTest {
             if (!valueWasSet) {
                 throw new  IllegalStateException("Could not set " + propertyName + " to " + value);
             }
-        }, WRITE_DEVICE_CONFIG);
+        });
     }
 
     /**
@@ -264,65 +224,23 @@ public class BaseNotificationListenerCheckTest {
     }
 
     /**
-     * Get the state of the job scheduler
-     */
-    private static JobSchedulerServiceDumpProto getJobSchedulerDump() throws Exception {
-        return ProtoUtils.getProto(sUiAutomation, JobSchedulerServiceDumpProto.class,
-                ProtoUtils.DUMPSYS_JOB_SCHEDULER);
-    }
-
-    /**
-     * Get the last time the NOTIFICATION_LISTENER_CHECK_JOB_ID job was started/stopped for
-     * permission
-     * controller.
-     *
-     * @param event the job event (start/stop)
-     * @return the last time the event happened.
-     */
-    private static long getLastJobTime(int event) throws Exception {
-        int permControllerUid = sPackageManager.getPackageUid(PERMISSION_CONTROLLER_PKG, 0);
-
-        long lastTime = -1;
-
-        for (JobPackageHistoryProto.HistoryEvent historyEvent :
-                getJobSchedulerDump().history.historyEvent) {
-            if (historyEvent.uid == permControllerUid
-                    && historyEvent.jobId == NOTIFICATION_LISTENER_CHECK_JOB_ID
-                    && historyEvent.event == event) {
-                lastTime = max(lastTime,
-                        System.currentTimeMillis() - historyEvent.timeSinceEventMs);
-            }
-        }
-
-        return lastTime;
-    }
-
-    /**
      * Force a run of the notification listener check.
      */
     protected static void runNotificationListenerCheck() throws Throwable {
-        // Sleep a little to make sure we don't have overlap in timing
-        Thread.sleep(1000);
+        TestUtils.awaitJobUntilRequestedState(
+                PERMISSION_CONTROLLER_PKG,
+                NOTIFICATION_LISTENER_CHECK_JOB_ID,
+                UNEXPECTED_TIMEOUT_MILLIS,
+                sUiAutomation,
+                "waiting"
+        );
 
-        long beforeJob = System.currentTimeMillis();
-
-        // Sleep a little to avoid raciness in time keeping
-        Thread.sleep(1000);
-
-        runShellCommand("cmd jobscheduler run -u " + myUserHandle().getIdentifier() + " -f "
-                + PERMISSION_CONTROLLER_PKG + " " + NOTIFICATION_LISTENER_CHECK_JOB_ID);
-
-        eventually(() -> {
-            long startTime = getLastJobTime(START_PERIODIC_JOB);
-            assertTrue(startTime + " !> " + beforeJob, startTime > beforeJob);
-        }, UNEXPECTED_TIMEOUT_MILLIS);
-
-        // We can't simply require startTime <= endTime because the time being reported isn't
-        // accurate, and sometimes the end time may come before the start time by around 100 ms.
-        eventually(() -> {
-            long stopTime = getLastJobTime(STOP_PERIODIC_JOB);
-            assertTrue(stopTime + " !> " + beforeJob, stopTime > beforeJob);
-        }, UNEXPECTED_TIMEOUT_MILLIS);
+        TestUtils.runJobAndWaitUntilCompleted(
+                PERMISSION_CONTROLLER_PKG,
+                NOTIFICATION_LISTENER_CHECK_JOB_ID,
+                UNEXPECTED_TIMEOUT_MILLIS,
+                sUiAutomation
+        );
     }
 
     /**
@@ -357,59 +275,16 @@ public class BaseNotificationListenerCheckTest {
         runShellCommand(
                 "cmd jobscheduler reset-execution-quota -u " + myUserHandle().getIdentifier() + " "
                         + PERMISSION_CONTROLLER_PKG);
+        runShellCommand("cmd jobscheduler reset-schedule-quota");
     }
 
     /**
      * Reset the permission controllers state.
      */
     private static void resetPermissionController() throws Throwable {
-        clearAppState(PERMISSION_CONTROLLER_PKG);
-        int currentUserId = myUserHandle().getIdentifier();
-
-        // Wait until jobs are cleared
-        eventually(() -> {
-            JobSchedulerServiceDumpProto dump = getJobSchedulerDump();
-
-            for (RegisteredJob job : dump.registeredJobs) {
-                if (job.dump.sourceUserId == currentUserId) {
-                    assertNotEquals(job.dump.sourcePackageName, PERMISSION_CONTROLLER_PKG);
-                }
-            }
-        }, UNEXPECTED_TIMEOUT_MILLIS);
-
-        // Setup up permission controller again (simulate a reboot)
-        Intent permissionControllerSetupIntent = new Intent(
-                ACTION_SET_UP_NOTIFICATION_LISTENER_CHECK).setPackage(
-                PERMISSION_CONTROLLER_PKG).setFlags(FLAG_RECEIVER_FOREGROUND);
-
-        // Query for the setup broadcast receiver
-        List<ResolveInfo> resolveInfos = sContext.getPackageManager().queryBroadcastReceivers(
-                permissionControllerSetupIntent, 0);
-
-        if (resolveInfos.size() > 0) {
-            sContext.sendBroadcast(permissionControllerSetupIntent);
-        } else {
-            sContext.sendBroadcast(new Intent()
-                    .setClassName(PERMISSION_CONTROLLER_PKG, NotificationListenerOnBootReceiver)
-                    .setFlags(FLAG_RECEIVER_FOREGROUND)
-                    .setPackage(PERMISSION_CONTROLLER_PKG));
-        }
-
-        // Wait until jobs are set up
-        eventually(() -> {
-            JobSchedulerServiceDumpProto dump = getJobSchedulerDump();
-
-            for (RegisteredJob job : dump.registeredJobs) {
-                if (job.dump.sourceUserId == currentUserId
-                        && job.dump.sourcePackageName.equals(PERMISSION_CONTROLLER_PKG)
-                        && job.dump.jobInfo.service.className.contains(
-                        "NotificationListenerCheck")) {
-                    return;
-                }
-            }
-
-            fail("Permission controller jobs not found");
-        }, UNEXPECTED_TIMEOUT_MILLIS);
+        PermissionUtils.resetPermissionControllerJob(sUiAutomation, PERMISSION_CONTROLLER_PKG,
+                NOTIFICATION_LISTENER_CHECK_JOB_ID, 45000,
+                ACTION_SET_UP_NOTIFICATION_LISTENER_CHECK, NotificationListenerOnBootReceiver);
     }
 
     /**
@@ -433,7 +308,7 @@ public class BaseNotificationListenerCheckTest {
      * @return The notification or `null` if there is none
      */
     protected StatusBarNotification getNotification(boolean cancelNotification) throws Throwable {
-        return NotificationUtils.getNotificationForPackageAndId(
+        return CtsNotificationListenerServiceUtils.getNotificationForPackageAndId(
                 PERMISSION_CONTROLLER_PKG,
                 NOTIFICATION_LISTENER_CHECK_NOTIFICATION_ID,
                 cancelNotification);
@@ -444,6 +319,6 @@ public class BaseNotificationListenerCheckTest {
      */
     protected void clearNotifications() throws Throwable {
         // Clear notification if present
-        NotificationUtils.clearNotificationsForPackage(PERMISSION_CONTROLLER_PKG);
+        CtsNotificationListenerServiceUtils.cancelNotifications(PERMISSION_CONTROLLER_PKG);
     }
 }

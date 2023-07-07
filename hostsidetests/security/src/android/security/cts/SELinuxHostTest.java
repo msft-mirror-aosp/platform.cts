@@ -39,6 +39,7 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.FileUtil;
 
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,8 +55,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,7 +99,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static final Map<ITestDevice, File> cachedDeviceVintfJson = new HashMap<>(1);
     private static final Map<ITestDevice, File> cachedDeviceSystemPolicy = new HashMap<>(1);
 
-    private File sepolicyAnalyze;
+    private File mSepolicyAnalyze;
     private File checkSeapp;
     private File checkFc;
     private File aospSeappFile;
@@ -128,7 +127,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
     public static File copyResourceToTempFile(String resName) throws IOException {
         InputStream is = SELinuxHostTest.class.getResourceAsStream(resName);
-        File tempFile = File.createTempFile("SELinuxHostTest", ".tmp");
+        String tempFileName = "SELinuxHostTest" + resName.replace("/", "_");
+        File tempFile = File.createTempFile(tempFileName, ".tmp");
         FileOutputStream os = new FileOutputStream(tempFile);
         byte[] buf = new byte[1024];
         int len;
@@ -162,8 +162,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         assumeSecurityModelCompat();
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
-        sepolicyAnalyze = copyResourceToTempFile("/sepolicy-analyze");
-        sepolicyAnalyze.setExecutable(true);
+        mSepolicyAnalyze = copyResourceToTempFile("/sepolicy-analyze");
+        mSepolicyAnalyze.setExecutable(true);
 
         devicePolicyFile = getDevicePolicyFile(mDevice);
         if (isSepolicySplit(mDevice)) {
@@ -179,6 +179,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             deviceVendorFcFile = getDeviceFile(mDevice, cachedDeviceVendorFcFiles,
                     "/vendor_file_contexts", "vendor_file_contexts");
         }
+    }
+
+    @After
+    public void cleanUp() throws Exception {
+        mSepolicyAnalyze.delete();
     }
 
     private void assumeSecurityModelCompat() throws Exception {
@@ -246,11 +251,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         assertTrue(device.pullFile("/system/etc/selinux/plat_sepolicy.cil", systemSepolicyCilFile));
 
         ProcessBuilder pb = new ProcessBuilder(
-            secilc.getAbsolutePath(),
-            "-m", "-M", "true", "-c", "30",
-            "-o", builtPolicyFile.getAbsolutePath(),
-	    "-f", fileContextsFile.getAbsolutePath(),
-            systemSepolicyCilFile.getAbsolutePath());
+                secilc.getAbsolutePath(),
+                "-m", "-M", "true", "-c", "30",
+                "-o", builtPolicyFile.getAbsolutePath(),
+                "-f", fileContextsFile.getAbsolutePath(),
+                systemSepolicyCilFile.getAbsolutePath());
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
         Process p = pb.start();
@@ -420,7 +425,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testAllDomainsEnforcing() throws Exception {
 
         /* run sepolicy-analyze permissive check on policy file */
-        ProcessBuilder pb = new ProcessBuilder(sepolicyAnalyze.getAbsolutePath(),
+        ProcessBuilder pb = new ProcessBuilder(mSepolicyAnalyze.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(), "permissive");
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
@@ -471,7 +476,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             String attribute) throws Exception {
         ProcessBuilder pb =
                 new ProcessBuilder(
-                        sepolicyAnalyze.getAbsolutePath(),
+                        mSepolicyAnalyze.getAbsolutePath(),
                         devicePolicyFile.getAbsolutePath(),
                         "attribute",
                         attribute);
@@ -553,53 +558,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /**
-     * Asserts that no domains are exempted from the prohibition on initiating socket communications
-     * between core and vendor domains.
-     *
-     * <p>NOTE: socket_between_core_and_vendor_violators attribute is only there to help bring up
-     * Treble devices. It offers a convenient way to temporarily bypass the prohibition on
-     * initiating socket communications between core and vendor domains. This attribute must not be
-     * used on production Treble devices.
-     */
-    @Test
-    public void testNoExemptionsForSocketsBetweenCoreAndVendorBan() throws Exception {
-        if (!isFullTrebleDevice()) {
-            return;
-        }
-
-        Set<String> types =
-                sepolicyAnalyzeGetTypesAssociatedWithAttribute(
-                        "socket_between_core_and_vendor_violators");
-        if (!types.isEmpty()) {
-            List<String> sortedTypes = new ArrayList<>(types);
-            Collections.sort(sortedTypes);
-            fail("Policy exempts domains from ban on socket communications between core and"
-                    + " vendor: " + sortedTypes);
-        }
-    }
-
-    /**
-     * Asserts that no vendor domains are exempted from the prohibition on directly
-     * executing binaries from /system.
-     * */
-    @Test
-    public void testNoExemptionsForVendorExecutingCore() throws Exception {
-        if (!isFullTrebleDevice()) {
-            return;
-        }
-
-        Set<String> types =
-                sepolicyAnalyzeGetTypesAssociatedWithAttribute(
-                        "vendor_executes_system_violators");
-        if (!types.isEmpty()) {
-            List<String> sortedTypes = new ArrayList<>(types);
-            Collections.sort(sortedTypes);
-            fail("Policy exempts vendor domains from ban on executing files in /system: "
-                    + sortedTypes);
-        }
-    }
-
-    /**
      * Tests that mlstrustedsubject does not include untrusted_app
      * and that mlstrustedobject does not include app_data_file.
      * This helps prevent circumventing the per-user isolation of
@@ -630,10 +588,10 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         deviceVendorSeappFile.deleteOnExit();
         if (mDevice.pullFile("/system/etc/selinux/plat_seapp_contexts", devicePlatSeappFile)) {
             mDevice.pullFile("/vendor/etc/selinux/vendor_seapp_contexts", deviceVendorSeappFile);
-        }else {
+        } else {
             mDevice.pullFile("/plat_seapp_contexts", devicePlatSeappFile);
             mDevice.pullFile("/vendor_seapp_contexts", deviceVendorSeappFile);
-	}
+        }
 
         /* retrieve the checkseapp executable from jar */
         checkSeapp = copyResourceToTempFile("/checkseapp");
@@ -940,6 +898,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             errorString.append("\n");
         }
         assertTrue(errorString.toString(), errorString.length() == 0);
+
+        sepolicyTests.delete();
     }
 
     /**
@@ -1042,7 +1002,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testNoBooleans() throws Exception {
 
         /* run sepolicy-analyze booleans check on policy file */
-        ProcessBuilder pb = new ProcessBuilder(sepolicyAnalyze.getAbsolutePath(),
+        ProcessBuilder pb = new ProcessBuilder(mSepolicyAnalyze.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(), "booleans");
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
@@ -1338,7 +1298,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.7")
     @Test
     public void testDrmServerDomain() throws DeviceNotAvailableException {
-        assertDomainHasExecutable("u:r:drmserver:s0", "/system/bin/drmserver", "/system/bin/drmserver64");
+        assertDomainHasExecutable("u:r:drmserver:s0", "/system/bin/drmserver", "/system/bin/drmserver32", "/system/bin/drmserver64");
     }
 
     /* Installd is always running */

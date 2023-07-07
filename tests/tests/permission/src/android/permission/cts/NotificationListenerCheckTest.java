@@ -25,6 +25,7 @@ import static android.permission.cts.TestUtils.eventually;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
@@ -32,6 +33,8 @@ import android.service.notification.StatusBarNotification;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.Before;
@@ -109,7 +112,6 @@ public class NotificationListenerCheckTest extends BaseNotificationListenerCheck
         eventually(() -> assertNotNull(getNotification(true)), UNEXPECTED_TIMEOUT_MILLIS);
 
         runNotificationListenerCheck();
-
         ensure(() -> assertNull("Expected no notifications", getNotification(false)),
                 ENSURE_NOTIFICATION_NOT_SHOWN_EXPECTED_TIMEOUT_MILLIS);
     }
@@ -117,11 +119,9 @@ public class NotificationListenerCheckTest extends BaseNotificationListenerCheck
     @Test
     public void notificationIsShownAgainAfterClear() throws Throwable {
         runNotificationListenerCheck();
-
         eventually(() -> assertNotNull(getNotification(true)), UNEXPECTED_TIMEOUT_MILLIS);
 
         clearAppState(TEST_APP_PKG);
-
         // Wait until package is cleared and permission controller has cleared the state
         Thread.sleep(2000);
 
@@ -207,7 +207,13 @@ public class NotificationListenerCheckTest extends BaseNotificationListenerCheck
 
         // Verify content intent
         PendingIntent contentIntent = currentNotification.getNotification().contentIntent;
-        contentIntent.send();
+        if (SdkLevel.isAtLeastU()) {
+            contentIntent.send(null, 0, null, null, null, null,
+                    ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle());
+        } else {
+            contentIntent.send();
+        }
 
         SafetyCenterUtils.assertSafetyCenterStarted();
     }

@@ -19,10 +19,10 @@ import os
 
 from mobly import test_runner
 
+import its_base_test
 import camera_properties_utils
 import image_fov_utils
 import image_processing_utils
-import its_base_test
 import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
@@ -30,31 +30,33 @@ import video_processing_utils
 _PREVIEW_STABILIZATION_MODE_PREVIEW = 2
 _VIDEO_DURATION = 3  # seconds
 
-_MAX_STABILIZED_RADIUS_RATIO = 1.2  # radius of circle in stabilized preview
-                                    # should be at most 20% larger
+_MAX_STABILIZED_RADIUS_RATIO = 1.25  # An FOV reduction of 20% corresponds to an
+                                     # increase in lengths of 25%. So the
+                                     # stabilized circle's radius can be at most
+                                     # 1.25 times that of an unstabilized circle
 _ROUNDESS_DELTA_THRESHOLD = 0.05
 
 _MAX_CENTER_THRESHOLD_PERCENT = 0.075
 _MAX_AREA = 1920 * 1440  # max mandatory preview stream resolution
-_MIN_CENTER_THRESHOLD_PERCENT = 0.02
+_MIN_CENTER_THRESHOLD_PERCENT = 0.03
 _MIN_AREA = 176 * 144  # assume QCIF to be min preview size
 
 
-def _collect_data(cam, video_size, stabilize):
+def _collect_data(cam, preview_size, stabilize):
   """Capture a preview video from the device.
 
   Captures camera preview frames from the passed device.
 
   Args:
     cam: camera object
-    video_size: str; video resolution. ex. '1920x1080'
+    preview_size: str; preview resolution. ex. '1920x1080'
     stabilize: boolean; whether the preview should be stabilized or not
 
   Returns:
     recording object as described by cam.do_preview_recording
   """
 
-  recording_obj = cam.do_preview_recording(video_size, _VIDEO_DURATION,
+  recording_obj = cam.do_preview_recording(preview_size, _VIDEO_DURATION,
                                            stabilize)
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
@@ -95,8 +97,7 @@ def _calculate_center_offset_threshold(image_size):
 
   img_area = image_size[0] * image_size[1]
 
-  normalized_area = ((img_area - _MIN_AREA) /
-                         (_MAX_AREA - _MIN_AREA))
+  normalized_area = (img_area - _MIN_AREA) / (_MAX_AREA - _MIN_AREA)
 
   if normalized_area > 1 or normalized_area < 0:
     raise AssertionError(f'normalized area > 1 or < 0! '
@@ -109,7 +110,8 @@ def _calculate_center_offset_threshold(image_size):
                                   (_MAX_CENTER_THRESHOLD_PERCENT -
                                    _MIN_CENTER_THRESHOLD_PERCENT))
 
-  return (normalized_threshold_percent + _MIN_CENTER_THRESHOLD_PERCENT)
+  return normalized_threshold_percent + _MIN_CENTER_THRESHOLD_PERCENT
+
 
 class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
   """Tests if stabilized preview FoV is within spec.
@@ -127,7 +129,7 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
       20%
   """
 
-  def test_fov_with_preview_stabilization(self):
+  def test_preview_stabilization_fov(self):
     log_path = self.log_path
 
     with its_session_utils.ItsSession(
@@ -149,9 +151,8 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
           'First API level should be {} or higher. Found {}.'.format(
               its_session_utils.ANDROID13_API_LEVEL, first_api_level))
 
-      # Get ffmpeg version being used.
-      ffmpeg_version = video_processing_utils.get_ffmpeg_version()
-      logging.debug('ffmpeg_version: %s', ffmpeg_version)
+      # Log ffmpeg version being used
+      video_processing_utils.log_ffmpeg_version()
 
       supported_stabilization_modes = props[
           'android.control.availableVideoStabilizationModes'
@@ -170,19 +171,22 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
           and facing != camera_properties_utils.LENS_FACING_FRONT):
         raise AssertionError('Unknown lens facing: {facing}.')
 
-      # List of video resolutions to test
+      # List of preview resolutions to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
+      for size in video_processing_utils.LOW_RESOLUTION_SIZES:
+        if size in supported_preview_sizes:
+          supported_preview_sizes.remove(size)
       logging.debug('Supported preview resolutions: %s',
                     supported_preview_sizes)
 
       test_failures = []
 
-      for video_size in supported_preview_sizes:
+      for preview_size in supported_preview_sizes:
 
         # recording with stabilization off
-        ustab_rec_obj = _collect_data(cam, video_size, False)
+        ustab_rec_obj = _collect_data(cam, preview_size, False)
         # recording with stabilization on
-        stab_rec_obj = _collect_data(cam, video_size, True)
+        stab_rec_obj = _collect_data(cam, preview_size, True)
 
         # Grab the unstabilized video from DUT
         self.dut.adb.pull([ustab_rec_obj['recordedOutputPath'], log_path])
@@ -240,9 +244,9 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
 
         # Ensure the circles are equally round w/ and w/o stabilization
         ustab_roundness = ustab_circle['w'] / ustab_circle['h']
-        logging.debug('unstabilized roundess: %f', ustab_roundness)
+        logging.debug('unstabilized roundness: %f', ustab_roundness)
         stab_roundness = stab_circle['w'] / stab_circle['h']
-        logging.debug('stabilized roundess: %f', stab_roundness)
+        logging.debug('stabilized roundness: %f', stab_roundness)
 
         roundness_diff = abs(stab_roundness - ustab_roundness)
         if roundness_diff > _ROUNDESS_DELTA_THRESHOLD:
@@ -288,7 +292,7 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
                              f'{max_stab_radius}. ')
 
         if failure_string:
-          failure_string = f'{video_size} fails FoV test. ' + failure_string
+          failure_string = f'{preview_size} fails FoV test. ' + failure_string
           test_failures.append(failure_string)
 
       if test_failures:
