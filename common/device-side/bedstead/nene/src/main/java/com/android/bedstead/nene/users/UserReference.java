@@ -30,12 +30,11 @@ import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PRO
 import static com.android.bedstead.nene.permissions.CommonPermissions.MODIFY_QUIET_MODE;
 import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_USERS;
 import static com.android.bedstead.nene.users.Users.users;
+import static com.android.bedstead.nene.utils.Versions.U;
 
 import android.annotation.TargetApi;
-import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.content.Intent;
 import android.content.pm.UserInfo;
 import android.os.Build;
 import android.os.UserHandle;
@@ -133,7 +132,7 @@ public final class UserReference implements AutoCloseable {
      * {@code true} if this is a test user which should not include any user data.
      */
     public boolean isForTesting() {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
             return false;
         }
         return userInfo().isForTesting();
@@ -339,68 +338,44 @@ public final class UserReference implements AutoCloseable {
             return this;
         }
 
-        // This is created outside of the try because we don't want to wait for the broadcast
-        // on versions less than R
-        BlockingBroadcastReceiver broadcastReceiver =
-                new BlockingBroadcastReceiver(TestApis.context().instrumentedContext(),
-                        Intent.ACTION_USER_FOREGROUND,
-                        (intent) ->((UserHandle)
-                                intent.getParcelableExtra(Intent.EXTRA_USER))
-                                .getIdentifier() == mId);
-
+        boolean isSdkVersionMinimum_R = Versions.meetsMinimumSdkVersionRequirement(R);
         try {
-            if (Versions.meetsMinimumSdkVersionRequirement(R)) {
-                try (PermissionContext p =
-                             TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-                    broadcastReceiver.registerForAllUsers();
-                }
+            ShellCommand.builder("am switch-user")
+                    .addOperand(isSdkVersionMinimum_R ? "-w" : "")
+                    .addOperand(mId)
+                    .withTimeout(Duration.ofMinutes(1))
+                    .allowEmptyOutput(true)
+                    .validate(String::isEmpty)
+                    .execute();
+        } catch (AdbException e) {
+            String error = getSwitchToUserError();
+            if (error != null) {
+                throw new NeneException(error);
             }
-
-            ActivityManager am = TestApis.context().instrumentedContext().getSystemService(
-                    ActivityManager.class);
-
-            boolean switched = false;
-            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
-                switched = am.switchUser(userHandle());
+            if (!exists()) {
+                throw new NeneException("Tried to switch to user " + this + " but does not exist");
             }
+            // TODO(273229540): It might take a while to fail - we should stream from the
+            // start of the call
+            throw new NeneException("Error switching user to " + this + ". Relevant logcat: "
+                    + TestApis.logcat().dump((line) -> line.contains("Cannot switch")), e);
+        }
+        if (isSdkVersionMinimum_R) {
+            Poll.forValue("current user", () -> TestApis.users().current())
+                    .toBeEqualTo(this)
+                    .await();
 
-            if (!switched) {
-                String error = getSwitchToUserError();
-                if (error != null) {
-                    throw new NeneException(error);
-                }
-
-                if (!exists()) {
-                    throw new NeneException("Tried to switch to user " + this + " but does not exist");
-                }
-
-                // TODO(273229540): It might take a while to fail - we should stream from the
-                // start of the call
-                throw new NeneException("Error switching user to " + this +
-                        ". Relevant logcat: " + TestApis.logcat().dump(
-                                (line) -> line.contains("Cannot switch")));
+            if (!TestApis.users().current().equals(this)) {
+                throw new NeneException("Error switching user to " + this
+                        + " (current user is " + TestApis.users().current() + "). Relevant logcat: "
+                        + TestApis.logcat().dump((line) -> line.contains("ActivityManager")));
             }
-
-            if (Versions.meetsMinimumSdkVersionRequirement(R)) {
-                broadcastReceiver.awaitForBroadcast();
-
-                Poll.forValue("current user", () -> TestApis.users().current())
-                        .toBeEqualTo(this)
-                        .await();
-
-                if (!TestApis.users().current().equals(this)) {
-                    throw new NeneException("Error switching user to " + this
-                            + " (current user is " + TestApis.users().current() + "). Relevant logcat: " + TestApis.logcat().dump(
-                            (line) -> line.contains("ActivityManager")));
-                }
-            } else {
+        } else {
+            try {
                 Thread.sleep(20000);
+            } catch (InterruptedException e) {
+                Log.e(LOG_TAG, "Interrupted while switching user", e);
             }
-
-        } catch (InterruptedException e) {
-            Log.e(LOG_TAG, "Interrupted while switching user", e);
-        } finally {
-            broadcastReceiver.unregisterQuietly();
         }
 
         return this;
@@ -435,7 +410,7 @@ public final class UserReference implements AutoCloseable {
                 if (mName == null || mName.equals("")) {
                     if (!exists()) {
                         mName = null;
-                        throw new NeneException("User does not exist " + this);
+                        throw new NeneException("User does not exist with id " + id());
                     }
                 }
             }
@@ -529,7 +504,8 @@ public final class UserReference implements AutoCloseable {
                 mUserType = adbUser().type();
             } else {
                 try (PermissionContext p = TestApis.permissions()
-                        .withPermission(CREATE_USERS, QUERY_USERS)) {
+                        .withPermission(CREATE_USERS)
+                        .withPermissionOnVersionAtLeast(U, QUERY_USERS)) {
                     String userTypeName = mUserManager.getUserType();
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
@@ -558,10 +534,12 @@ public final class UserReference implements AutoCloseable {
 
     /**
      * {@code true} if this user is a profile of another user.
+     *
+     * <p>A non-existing user will return false
      */
     @Experimental
     public boolean isProfile() {
-        return parent() != null;
+        return exists() && parent() != null;
     }
 
     /**
@@ -656,17 +634,34 @@ public final class UserReference implements AutoCloseable {
     /**
      * Set a specific type of lock credential for the user.
      */
-    private void setLockCredential(String lockType, String lockCredential) {
+    private void setLockCredential(
+            String lockType, String lockCredential, String existingCredential) {
         String lockTypeSentenceCase = Character.toUpperCase(lockType.charAt(0))
                 + lockType.substring(1);
         try {
-            ShellCommand.builder("cmd lock_settings")
+            ShellCommand.Builder commandBuilder = ShellCommand.builder("cmd lock_settings")
                     .addOperand("set-" + lockType)
-                    .addOption("--user", mId)
-                    .addOperand(lockCredential)
+                    .addOption("--user", mId);
+
+            if (existingCredential != null) {
+                commandBuilder.addOption("--old", existingCredential);
+            } else if (mLockCredential != null) {
+                commandBuilder.addOption("--old", mLockCredential);
+            }
+
+            commandBuilder.addOperand(lockCredential)
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
+            if (e.output().contains("null or empty")) {
+                throw new NeneException("Error attempting to set lock credential when there is "
+                        + "already one set. Use the version which takes the existing credential");
+            }
+
+            if (e.output().contains("doesn't satisfy admin policies")) {
+                throw new NeneException(e.output().strip(), e);
+            }
+
             throw new NeneException("Error setting " + lockType, e);
         }
         mLockCredential = lockCredential;
@@ -677,21 +672,48 @@ public final class UserReference implements AutoCloseable {
      * Set a password for the user.
      */
     public void setPassword(String password) {
-        setLockCredential(TYPE_PASSWORD, password);
+        setPassword(password, /* existingCredential= */ null);
+    }
+
+    /**
+     * Set a password for the user.
+     *
+     * <p>If the existing credential was set using TestApis, you do not need to provide it.
+     */
+    public void setPassword(String password, String existingCredential) {
+        setLockCredential(TYPE_PASSWORD, password, existingCredential);
     }
 
     /**
      * Set a pin for the user.
      */
     public void setPin(String pin) {
-        setLockCredential(TYPE_PIN, pin);
+        setPin(pin, /* existingCredential=*/ null);
+    }
+
+    /**
+     * Set a pin for the user.
+     *
+     * <p>If the existing credential was set using TestApis, you do not need to provide it.
+     */
+    public void setPin(String pin, String existingCredential) {
+        setLockCredential(TYPE_PIN, pin, existingCredential);
     }
 
     /**
      * Set a pattern for the user.
      */
     public void setPattern(String pattern) {
-        setLockCredential(TYPE_PATTERN, pattern);
+        setPattern(pattern, /* existingCredential= */ null);
+    }
+
+    /**
+     * Set a pattern for the user.
+     *
+     * <p>If the existing credential was set using TestApis, you do not need to provide it.
+     */
+    public void setPattern(String pattern, String existingCredential) {
+        setLockCredential(TYPE_PATTERN, pattern, existingCredential);
     }
 
     /**
@@ -765,6 +787,9 @@ public final class UserReference implements AutoCloseable {
                 mLockCredential = null;
                 mLockType = null;
                 return;
+            }
+            if (e.output().contains("doesn't satisfy admin policies")) {
+                throw new NeneException(e.output().strip(), e);
             }
             throw new NeneException("Error clearing lock credential", e);
         }
@@ -911,7 +936,12 @@ public final class UserReference implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "User{id=" + id() + ", name=" + name() + "}";
+        try {
+            return "User{id=" + id() + ", name=" + name() + "}";
+        } catch (NeneException e) {
+            // If the user does not exist we won't be able to get a name
+            return "User{id=" + id() + "}";
+        }
     }
 
     /**
@@ -943,7 +973,9 @@ public final class UserReference implements AutoCloseable {
 
         UserInfo userInfo = userInfo();
         if (!userInfo.supportsSwitchTo()) {
-            return "supportsSwitchTo=false(partial=" + userInfo.partial + ", isEnabled=" + userInfo.isEnabled() + ", preCreated=" + userInfo.preCreated + ", isFull=" + userInfo.isFull() + ")";
+            return "supportsSwitchTo=false(partial=" + userInfo.partial + ", isEnabled="
+                    + userInfo.isEnabled() + ", preCreated=" + userInfo.preCreated + ", isFull="
+                    + userInfo.isFull() + ")";
         }
 
         return null;

@@ -95,7 +95,7 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Calls the provided predicate each time window information changes if a
+     * Calls the provided predicate each time window information changes if a visible
      * window is found that matches the supplied window token.
      *
      * <p>
@@ -124,6 +124,9 @@ public class CtsWindowInfoUtils {
             }
 
             for (var windowInfo : windowInfos) {
+                if (!windowInfo.isVisible) {
+                    continue;
+                }
                 if (windowInfo.windowToken == windowToken) {
                     return predicate.test(windowInfo);
                 }
@@ -219,7 +222,7 @@ public class CtsWindowInfoUtils {
                         targetWindowInfo = windowInfo;
                         break;
                     }
-                    if (windowInfo.isTrustedOverlay) {
+                    if (windowInfo.isTrustedOverlay || !windowInfo.isVisible) {
                         continue;
                     }
                     aboveWindowInfos.add(windowInfo);
@@ -233,7 +236,8 @@ public class CtsWindowInfoUtils {
                 }
 
                 for (var windowInfo : aboveWindowInfos) {
-                    if (Rect.intersects(targetWindowInfo.bounds, windowInfo.bounds)) {
+                    if (targetWindowInfo.displayId == windowInfo.displayId
+                            && Rect.intersects(targetWindowInfo.bounds, windowInfo.bounds)) {
                         // The window is occluded. If we have an active timer, we need to cancel it
                         // as it's possible the window was previously not occluded and now is
                         // occluded.

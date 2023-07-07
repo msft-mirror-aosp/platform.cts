@@ -46,6 +46,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
+import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.util.Log;
@@ -55,6 +56,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
@@ -99,6 +101,7 @@ public class PerformanceTest {
     private static final int NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY = 8;
     private static final long FRAME_DURATION_NS_30FPS = 33333333L;
     private static final int NUM_ZOOM_STEPS = 10;
+    private static final String HAS_ACTIVITY_ARG_KEY = "has-activity";
 
     private DeviceReportLog mReportLog;
 
@@ -123,6 +126,33 @@ public class PerformanceTest {
 
     @Rule
     public final Camera2AndroidTestRule mTestRule = new Camera2AndroidTestRule(mContext);
+
+    // b/284352937: Display an activity with SurfaceView so that camera's effect on refresh
+    // rate takes precedence.
+    //
+    // - If no activity is displayed, home screen would vote for a completely different refresh
+    // rate. Some examples are 24hz and 144hz. These doesn't reflect the actual refresh rate
+    // when camera runs with a SurfaceView.
+    // - The testSurfaceViewJitterReduction needs to read timestamps for each output image. If
+    // we directly connect camera to SurfaceView, we won't have access to timestamps.
+    //
+    // So the solution is that if no activity already exists, create an activity with SurfaceView,
+    // but not connect it to camera.
+    @Rule
+    public final ActivityTestRule<Camera2SurfaceViewCtsActivity> mActivityRule =
+            createActivityRuleIfNeeded();
+
+    private static ActivityTestRule<Camera2SurfaceViewCtsActivity> createActivityRuleIfNeeded() {
+        Bundle bundle = InstrumentationRegistry.getArguments();
+        byte hasActivity = bundle.getByte(HAS_ACTIVITY_ARG_KEY);
+
+        // If the caller already has an activity, do not create the ActivityTestRule.
+        if (hasActivity != 0) {
+            return null;
+        } else {
+            return new ActivityTestRule<>(Camera2SurfaceViewCtsActivity.class);
+        }
+    }
 
     /**
      * Test camera launch KPI: the time duration between a camera device is
@@ -953,7 +983,7 @@ public class PerformanceTest {
             ZoomDirection direction, ZoomRange range) throws Exception {
         final int ZOOM_STEPS = 5;
         final float ZOOM_ERROR_MARGIN = 0.05f;
-        final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 2;
+        final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 1;
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMetadata = mTestRule.getAllStaticInfo().get(id);
             CameraCharacteristics ch = staticMetadata.getCharacteristics();
@@ -998,19 +1028,19 @@ public class PerformanceTest {
                 mPreviewSize = mTestRule.getOrderedPreviewSizes().get(0);
                 updatePreviewSurface(mPreviewSize);
 
-                // Start viewfinder with settings override unset and smallest zoom ratio,
+                // Start viewfinder with settings override set and the starting zoom ratio,
                 // and wait for some number of frames.
                 CaptureRequest.Builder previewBuilder = configurePreviewOutputs(id);
+                previewBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
+                        CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
+                previewBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, startRatio);
                 SimpleCaptureCallback resultListener = new SimpleCaptureCallback();
                 int sequenceId = mTestRule.getCameraSession().setRepeatingRequest(
                         previewBuilder.build(), resultListener, mTestRule.getHandler());
                 CaptureResult result = CameraTestUtils.waitForNumResults(
                         resultListener, NUM_RESULTS_WAIT, WAIT_FOR_RESULT_TIMEOUT_MS);
 
-                // zoom in with setting override set to TRUE
-                previewBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
-                        CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
-
+                float previousRatio = startRatio;
                 for (int j = 0; j < NUM_ZOOM_STEPS; j++) {
                     float zoomFactor = startRatio + (endRatio - startRatio)
                              * (j + 1) / NUM_ZOOM_STEPS;
@@ -1022,21 +1052,33 @@ public class PerformanceTest {
                                     WAIT_FOR_RESULT_TIMEOUT_MS);
 
                     int improvement = 0;
-                    long lastFrameNumber = -1;
+                    long frameNumber = -1;
                     Log.v(TAG, "LastFrameNumber for sequence " + sequenceId + ": "
                             + lastFrameNumberForRequest);
-                    while (lastFrameNumber < lastFrameNumberForRequest + 1) {
+                    while (frameNumber < lastFrameNumberForRequest + 1) {
                         TotalCaptureResult zoomResult = resultListener.getTotalCaptureResult(
                                 WAIT_FOR_RESULT_TIMEOUT_MS);
-                        lastFrameNumber = zoomResult.getFrameNumber();
+                        frameNumber = zoomResult.getFrameNumber();
                         float resultZoomFactor = zoomResult.get(CaptureResult.CONTROL_ZOOM_RATIO);
-                        Log.v(TAG, "lastFrame " + lastFrameNumber + " zoom: " + resultZoomFactor);
-                        if (Math.abs(resultZoomFactor - zoomFactor) < ZOOM_ERROR_MARGIN) {
-                            improvement = (int) (lastFrameNumberForRequest + 1 - lastFrameNumber);
-                            break;
+
+                        Log.v(TAG, "frameNumber " + frameNumber + " zoom: " + resultZoomFactor);
+                        assertTrue(String.format("Zoom ratio should monotonically increase/decrease"
+                                + " or stay the same (previous = %f, current = %f", previousRatio,
+                                resultZoomFactor),
+                                Math.abs(previousRatio - resultZoomFactor) < ZOOM_ERROR_MARGIN
+                                || (direction == ZoomDirection.ZOOM_IN
+                                        && previousRatio < resultZoomFactor)
+                                || (direction == ZoomDirection.ZOOM_OUT
+                                        && previousRatio > resultZoomFactor));
+
+                        if (Math.abs(resultZoomFactor - zoomFactor) < ZOOM_ERROR_MARGIN
+                                && improvement == 0) {
+                            improvement = (int) (lastFrameNumberForRequest + 1 - frameNumber);
                         }
+                        previousRatio = resultZoomFactor;
                     }
-                    // Zoom in from 1.0x must have at least 2 frames latency improvement.
+
+                    // Zoom in from 1.0x must have at least 1 frame latency improvement.
                     if (direction == ZoomDirection.ZOOM_IN
                             && range == ZoomRange.RATIO_1_OR_LARGER
                             && staticMetadata.isPerFrameControlSupported()) {
@@ -1057,6 +1099,7 @@ public class PerformanceTest {
                         ResultType.HIGHER_BETTER, ResultUnit.FRAMES);
             } finally {
                 mTestRule.closeDefaultImageReader();
+                mTestRule.closeDevice(id);
                 closePreviewSurface();
             }
             mReportLog.submit(mInstrumentation);

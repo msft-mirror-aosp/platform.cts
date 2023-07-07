@@ -17,6 +17,8 @@
 package android.media.misc.cts;
 
 import android.hardware.Camera;
+import android.hardware.cts.helpers.CameraUtils;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
@@ -26,6 +28,7 @@ import android.media.cts.MediaStubActivity;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Surface;
 
 import static org.junit.Assert.assertTrue;
 
@@ -75,7 +78,7 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         if (extras != null) {
             mHighResolution = extras.getBoolean("high-resolution", mHighResolution);
             mMime = extras.getString("mime", mMime);
-            if (mMime == MediaFormat.MIMETYPE_VIDEO_HEVC) {
+            if (mMime.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
                 mVideoEncoderType = MediaRecorder.VideoEncoder.HEVC;
             }
         }
@@ -146,11 +149,7 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
     // Get the lowest or highest supported Video size
     // through the camera capture.
     private void setSupportedResolution(Camera camera) {
-        Camera.Parameters parameters = camera.getParameters();
-        List<Camera.Size> videoSizes = parameters.getSupportedPreviewSizes();
-        if (videoSizes == null) {
-            videoSizes = parameters.getSupportedVideoSizes();
-        }
+        List<Camera.Size> videoSizes = CameraUtils.getSupportedVideoSizes(camera);
 
         // Pick the max or min resolution (width * height) based
         // on the requirement.
@@ -210,6 +209,20 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         return true;
     }
 
+    // Checks whether the device supports any encoder with given
+    // configuration.
+    private static boolean isEncoderSupported(String mime, int width, int height) {
+        MediaCodecList mcl = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        MediaFormat format = MediaFormat.createVideoFormat(mime, width, height);
+        if (mcl.findEncoderForFormat(format) == null) {
+            return false;
+        }
+
+        Log.i(TAG, "The device has an encoder for mime: " + mime
+                + " resolution: " + width + "x" + height);
+        return true;
+    }
+
     // Open camera#0, start recording and validate the recorded video.
     private void recordVideoUsingCamera() throws Exception {
         int nCamera = Camera.getNumberOfCameras();
@@ -221,13 +234,24 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
             int cameraId = 0;
             mCamera = Camera.open(cameraId);
             setSupportedResolution(mCamera);
-            recordVideoUsingCamera(mCamera, mOutputPath, durMs);
+            // Make sure the device supports the encoder at given configuration before start
+            // recording.
+            if (isEncoderSupported(mMime, mVideoWidth, mVideoHeight)) {
+                recordVideoUsingCamera(mCamera, mOutputPath, durMs);
+            } else {
+                // We are skipping the test.
+                Log.w(TAG, "The device doesn't support the encoder wth configuration("
+                        + mMime + "," + mVideoWidth + "x" + mVideoHeight
+                        + ") required for the Recording");
+                mSuccess = true;
+            }
             mCamera.release();
             mCamera = null;
-            mSuccess = checkLocationInFile(mOutputPath);
+            if (!mSuccess) {
+                mSuccess = checkLocationInFile(mOutputPath);
+            }
         }
     }
-
 
     // Set up the MediaRecorder and record for durMs milliseconds
     private void recordVideoUsingCamera(Camera camera, String fileName, int durMs)
@@ -244,9 +268,17 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         });
         mMediaRecorder.setOnErrorListener(new OnErrorListener() {
             public void onError(MediaRecorder mr, int what, int extra) {
-                Log.v(TAG, "onError(" + what + ", " + extra + ")");
+                Log.e(TAG, "onError(" + what + ", " + extra + ")");
             }
         });
+
+        // Make sure the preview surface is available for recording.
+        Surface previewSurface = getSurface(getSurfaceHolder());
+        if (previewSurface == null) {
+            Log.e(TAG, "Failed to get the Surface");
+            finishWithResult(RESULT_CANCELED);
+        }
+
         mMediaRecorder.setCamera(camera);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -255,7 +287,7 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         mMediaRecorder.setVideoFrameRate(frameRate);
         mMediaRecorder.setVideoSize(mVideoWidth, mVideoHeight);
-        mMediaRecorder.setPreviewDisplay(getSurfaceHolder().getSurface());
+        mMediaRecorder.setPreviewDisplay(previewSurface);
         mMediaRecorder.setOutputFile(fileName);
         mMediaRecorder.setLocation(LATITUDE, LONGITUDE);
 

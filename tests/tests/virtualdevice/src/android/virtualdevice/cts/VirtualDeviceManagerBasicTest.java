@@ -37,6 +37,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.util.concurrent.Uninterruptibles.tryAcquireUninterruptibly;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.Nullable;
@@ -60,6 +61,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.os.BackgroundThread;
 
@@ -121,6 +123,10 @@ public class VirtualDeviceManagerBasicTest {
         assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
         assumeTrue(packageManager.hasSystemFeature(
                 PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
+
+        // Virtual device manager is disabled on wearables
+        assumeFalse(FeatureUtil.isWatch());
+
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
     }
 
@@ -207,6 +213,11 @@ public class VirtualDeviceManagerBasicTest {
     @Test
     public void createVirtualDevice_removeAssociation_shouldCloseVirtualDevice()
             throws InterruptedException {
+        // TODO(b/282629983): Re-enable test for Automotive once CDM Listener supports more users.
+        assumeFalse("Skipping test: not supported on automotive",
+                getApplicationContext().getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         CountDownLatch latch = new CountDownLatch(1);
 
         // Create device with a display and ensure it is all set up

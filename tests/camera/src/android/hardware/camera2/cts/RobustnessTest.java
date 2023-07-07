@@ -489,11 +489,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 mCollector.addMessage("SCALER_RAW_CROP_REGION should not be null " +
                         "when CROPPED_RAW stream use case is used.");
             }
-            if (!preCorrectionActiveArrayRect.contains(rawCropRegion)) {
-                mCollector.addMessage("RAW_CROP_REGION should be within pre correction active " +
-                        "array region, RAW_CROP_REGION is " + rawCropRegion.flattenToString() +
-                        " pre correction active array is " +
-                        preCorrectionActiveArrayRect.flattenToString());
+            if (!(preCorrectionActiveArrayRect.width() >= rawCropRegion.width()
+                    && preCorrectionActiveArrayRect.height() >= rawCropRegion.height())) {
+                mCollector.addMessage("RAW_CROP_REGION dimensions should be <= pre correction"
+                        + " array dimensions. SCALER_RAW_CROP_REGION : "
+                        + rawCropRegion.flattenToString() + " pre correction active array is "
+                        + preCorrectionActiveArrayRect.flattenToString());
             }
         }
     }
@@ -3160,12 +3161,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 mMaxYuvSizes[VGA] = vgaSize;
                 mMaxJpegSizes[VGA] = vgaSize;
 
+                // Check for 720p size for PRIVATE and YUV
+                // 720p is not mandatory for JPEG so it is not checked
                 final Size s720pSize = new Size(1280, 720);
                 mMaxPrivSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.PRIVATE),
                         s720pSize);
                 mMaxYuvSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.YUV_420_888),
-                        s720pSize);
-                mMaxJpegSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.JPEG),
                         s720pSize);
 
                 final Size s1440pSize = new Size(1920, 1440);

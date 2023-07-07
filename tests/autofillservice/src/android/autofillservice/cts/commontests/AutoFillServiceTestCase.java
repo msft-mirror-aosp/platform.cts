@@ -25,6 +25,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.PendingIntent;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.AbstractAutoFillActivity;
@@ -372,6 +374,22 @@ public final class AutoFillServiceTestCase {
                         AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_FEATURE_PROVIDER_HINTS,
                         ""))
 
+
+                //
+                // AFAA should be off by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            AutofillFeatureFlags.
+                                DEVICE_CONFIG_TRIGGER_FILL_REQUEST_ON_UNIMPORTANT_VIEW,
+                            Boolean.toString(false)))
+
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "trigger_fill_request_on_filtered_important_views",
+                            Boolean.toString(false)))
+
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "include_all_autofill_type_not_none_views_in_assist_structure",
+                            Boolean.toString(false)))
+
                 //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
@@ -475,6 +493,9 @@ public final class AutoFillServiceTestCase {
 
             // Collapse notifications.
             runShellCommand("cmd statusbar collapse");
+
+            assumeFalse("Device is half-folded",
+                    Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.HALF_FOLDED));
 
             // Set orientation as portrait, otherwise some tests might fail due to elements not
             // fitting in, IME orientation, etc...

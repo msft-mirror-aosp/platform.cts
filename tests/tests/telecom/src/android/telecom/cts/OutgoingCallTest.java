@@ -81,6 +81,8 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
                 mPhoneRecord = cr.insert(phoneUri, values);
 
             } catch (Exception e) {
+                // Force tearDown if setUp errors out to ensure unused listeners are cleaned up.
+                tearDown();
                 assertTrue("Failed to insert test contact", false);
             }
         }
@@ -88,20 +90,24 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void tearDown() throws Exception {
-        if (mShouldTestTelecom) {
-            ContentResolver resolver = getInstrumentation().getTargetContext().getContentResolver();
+        try {
+            if (mShouldTestTelecom) {
+                ContentResolver resolver =
+                        getInstrumentation().getTargetContext().getContentResolver();
 
-            if (mPersonRecord != null) {
-                resolver.delete(mPersonRecord, null, null);
-            }
-            if (mPhoneRecord != null) {
-                resolver.delete(mPhoneRecord, null, null);
-            }
+                if (mPersonRecord != null) {
+                    resolver.delete(mPersonRecord, null, null);
+                }
+                if (mPhoneRecord != null) {
+                    resolver.delete(mPhoneRecord, null, null);
+                }
 
-            TestUtils.clearSystemDialerOverride(getInstrumentation());
-            TestUtils.removeTestEmergencyNumber(getInstrumentation(), TEST_EMERGENCY_NUMBER);
+                TestUtils.clearSystemDialerOverride(getInstrumentation());
+                TestUtils.removeTestEmergencyNumber(getInstrumentation(), TEST_EMERGENCY_NUMBER);
+            }
+        } finally {
+            super.tearDown();
         }
-        super.tearDown();
     }
 
     /* TODO: Need to send some commands to the UserManager via adb to do setup
@@ -133,7 +139,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @see {@link TelecomManager#EXTRA_START_CALL_WITH_SPEAKERPHONE}
      */
     public void testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -145,7 +151,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testStartCallWithSpeakerphoneFalse_SpeakerphoneOffInCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -161,7 +167,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testStartCallWithSpeakerphoneNotProvided_SpeakerphoneOffByDefault() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -218,7 +224,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testPhoneStateListenerInvokedOnOutgoingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -236,7 +242,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @throws Exception
      */
     public void testPhoneStateChangeAsExpected() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -265,7 +271,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @throws Exception
      */
     public void testExtraPhoneAccountHandleAvailable() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -306,7 +312,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAccountSelectionAvailable() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         PhoneAccountHandle cachedHandle = mTelecomManager.getUserSelectedOutgoingPhoneAccount();

@@ -628,6 +628,7 @@ public class ItsService extends Service implements SensorEventListener {
                 mCamera.close();
                 mCamera = null;
                 mCameraManager.unregisterAvailabilityCallback(ac);
+                unavailablePhysicalCamEventQueue.clear();
             }
         } catch (Exception e) {
             throw new ItsException("Failed to close device");
@@ -1332,6 +1333,8 @@ public class ItsService extends Service implements SensorEventListener {
                 array.put(id);
             }
             obj.put("cameraIdArray", array);
+            obj.put("primaryRearCameraId", mItsCameraIdList.mPrimaryRearCameraId);
+            obj.put("primaryFrontCameraId", mItsCameraIdList.mPrimaryFrontCameraId);
             mSocketRunnableObj.sendResponse("cameraIds", obj);
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
@@ -1645,6 +1648,7 @@ public class ItsService extends Service implements SensorEventListener {
         bundle.putString("camera-id", cameraId);
         bundle.putString("perf-measure", "on");
         bundle.putString("perf-class-test", "on");
+        bundle.putByte("has-activity", (byte) 1);
         InstrumentationRegistry.registerInstance(mCameraInstrumentation, bundle);
 
         JUnitCore testRunner = new JUnitCore();
@@ -1679,6 +1683,13 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
+    private static long getReaderUsage(int format) {
+        // Private image format camera readers will default to ZSL usage unless
+        // explicitly configured to use a common consumer such as display.
+        return (format == ImageFormat.PRIVATE) ? HardwareBuffer.USAGE_COMPOSER_OVERLAY :
+                HardwareBuffer.USAGE_CPU_READ_OFTEN;
+    }
+
     private void prepareImageReaders(Size[] outputSizes, int[] outputFormats, Size inputSize,
             int inputFormat, int maxInputBuffers) {
         closeImageReaders();
@@ -1688,18 +1699,19 @@ public class ItsService extends Service implements SensorEventListener {
             if (outputSizes[i].equals(inputSize) && outputFormats[i] == inputFormat) {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers);
+                        MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
+                        getReaderUsage(outputFormats[i]));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS);
+                        MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i]));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
-                    inputFormat, maxInputBuffers);
+                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat));
         }
     }
 

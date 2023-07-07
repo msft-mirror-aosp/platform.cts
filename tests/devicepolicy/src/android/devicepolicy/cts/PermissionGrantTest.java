@@ -34,7 +34,7 @@ import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_AUTO_DENY;
 import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT;
 import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_PROMPT;
 
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
+import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.utils.Versions.U;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -44,15 +44,20 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
-import android.util.Log;
+import android.app.admin.ManagedSubscriptionsPolicy;
+import android.app.admin.RemoteDevicePolicyManager;
+import android.content.ComponentName;
+import android.provider.Settings;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.NotificationsTest;
+import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
@@ -80,6 +85,7 @@ import com.android.queryable.annotations.Query;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -594,6 +600,7 @@ public final class PermissionGrantTest {
             query = @Query(targetSdkVersion =
             @IntegerQuery(isGreaterThanOrEqualTo = U))
     )
+    @Ignore("b/273496614 - Reenable once the unicorn APIs are unflagged.")
     @CannotSetPolicyTest(policy = SetSensorPermissionGranted.class)
     public void grantSensorPermission_cannotBeApplied_throwsSecurityException(
             @SensorPermissionTestParameter String permission) {
@@ -1036,6 +1043,34 @@ public final class PermissionGrantTest {
             sDeviceState.dpc().devicePolicyManager().setPermissionGrantState(
                     sDeviceState.dpc().componentName(), sDeviceState.dpc().packageName(),
                     READ_PHONE_STATE, existingGrantState);
+        }
+    }
+
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
+    @RequireRunOnWorkProfile(isOrganizationOwned = true)
+    @Test
+    public void grantSmsPermission_orgOwnedDeviceWithManagedSubscriptionsPolicySet_granted() {
+        RemoteDevicePolicyManager devicePolicyManager = sDeviceState.profileOwner(
+                WORK_PROFILE).devicePolicyManager();
+        ComponentName componentName = sDeviceState.profileOwner(WORK_PROFILE).componentName();
+        int existingGrantState = devicePolicyManager.getPermissionGrantState(componentName,
+                sTestApp.packageName(), READ_SMS);
+        try {
+            devicePolicyManager.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
+                    ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
+
+            boolean wasSet = devicePolicyManager.setPermissionGrantState(componentName,
+                    sTestApp.packageName(), READ_SMS, PERMISSION_GRANT_STATE_GRANTED);
+
+            assertWithMessage("setPermissionGrantState did not return true").that(wasSet).isTrue();
+            assertWithMessage("Permission should be granted but was not")
+                    .that(sTestApp.pkg().hasPermission(READ_SMS)).isTrue();
+        } finally {
+            devicePolicyManager.setPermissionGrantState(componentName, sTestApp.packageName(),
+                    READ_SMS, existingGrantState);
+            devicePolicyManager.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
+                    ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
     }
 

@@ -50,9 +50,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.hardware.devicestate.DeviceStateManager;
+import android.hardware.devicestate.DeviceStateManager.DeviceStateCallback;
 import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.UserManager;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.autofill.FieldClassification;
@@ -95,6 +98,7 @@ import com.android.compatibility.common.util.UserSettings;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -904,6 +908,44 @@ public final class Helper {
      */
     public static boolean isAutofillWindowFullScreen(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
+    /**
+     * Checks if PCC is enabled for the device
+     */
+    public static boolean isPccSupported(Context context) {
+        final PackageManager packageManager = context.getPackageManager();
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            Log.v(TAG, "isPccSupported(): is auto");
+            return false;
+        }
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PC)) {
+            Log.v(TAG, "isPccSupported(): is PC");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns if devices is Automotive device
+     */
+    public static boolean isAutomotive(Context context) {
+        final PackageManager packageManager = context.getPackageManager();
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    public static boolean isMainUser(Context context) {
+        boolean mainUser = false;
+        try {
+            final UserManager userManager = context.getSystemService(UserManager.class);
+            mainUser = userManager.isMainUser();
+        } catch (SecurityException ex) {
+            // Nothing
+            mainUser = false;
+        }
+
+        return mainUser;
+
     }
 
     /**
@@ -1760,6 +1802,11 @@ public final class Helper {
         deviceConfigStateManager.set(value);
     }
 
+    public static boolean isPccFieldClassificationSet(@NonNull Context context) {
+        return Boolean.valueOf(runShellCommand(
+                "cmd autofill get field-detection-service-enabled " + context.getUserId()));
+    }
+
     /**
      * Whether IME is showing
      */
@@ -1805,6 +1852,97 @@ public final class Helper {
 
     private Helper() {
         throw new UnsupportedOperationException("contain static methods only");
+    }
+
+    public enum DeviceStateEnum {
+        HALF_FOLDED,
+        REAR_DISPLAY
+    };
+
+    /**
+     * Test if the device is in half-folded or rear display state.
+     */
+    private static final class DeviceStateAssessor implements DeviceStateCallback {
+        DeviceStateManager mDeviceStateManager;
+        int[] mHalfFoldedStates;
+        int[] mRearDisplayStates;
+        int mCurrentState = -1;
+
+        DeviceStateAssessor(Context context) {
+            Resources systemRes = Resources.getSystem();
+            mHalfFoldedStates = getStatesFromConfig(systemRes, "config_halfFoldedDeviceStates");
+            mRearDisplayStates = getStatesFromConfig(systemRes, "config_rearDisplayDeviceStates");
+            try {
+                mDeviceStateManager = context.getSystemService(DeviceStateManager.class);
+                mDeviceStateManager.registerCallback(context.getMainExecutor(), this);
+                Log.v(TAG, "DeviceStateAssessor initialized halfFoldedStates.length="
+                        + mHalfFoldedStates.length + ", readDisplayStates.length="
+                        + mRearDisplayStates.length);
+            } catch (java.lang.IllegalStateException e) {
+                Log.v(TAG, "DeviceStateManager not available: cannot check for half-fold");
+            }
+        }
+
+        private int[] getStatesFromConfig(Resources systemRes, String configKey) {
+            int statesArrayIdentifier = systemRes.getIdentifier(configKey, "array", "android");
+            if (statesArrayIdentifier == 0) {
+                return new int[0];
+            } else {
+                return systemRes.getIntArray(statesArrayIdentifier);
+            }
+        }
+
+        public void onStateChanged(int state) {
+            synchronized (this) {
+                mCurrentState = state;
+                this.notify();
+            }
+        }
+
+        void close() {
+            if (mDeviceStateManager != null) {
+                mDeviceStateManager.unregisterCallback(this);
+            }
+        }
+
+        boolean isDeviceInState(DeviceStateEnum deviceState) throws InterruptedException {
+            int[] states;
+            switch(deviceState) {
+                case HALF_FOLDED:
+                    states = mHalfFoldedStates;
+                    break;
+                case REAR_DISPLAY:
+                    states = mRearDisplayStates;
+                    break;
+                default:
+                    return false;
+            }
+            if (states.length == 0 || mDeviceStateManager == null) {
+                return false;
+            }
+            synchronized (this) {
+                if (mCurrentState == -1) {
+                    this.wait(1000);
+                }
+            }
+            if (mCurrentState == -1) {
+                Log.w(TAG, "DeviceStateCallback not called within 1 second");
+            }
+            Log.v(TAG, "Current state=" + mCurrentState + ", states[0]="
+                    + states[0]);
+            return Arrays.stream(states).anyMatch(x -> x == mCurrentState);
+        }
+    }
+
+    public static boolean isDeviceInState(Context context, DeviceStateEnum deviceState) {
+        DeviceStateAssessor deviceStateAssessor = new DeviceStateAssessor(context);
+        try {
+            return deviceStateAssessor.isDeviceInState(deviceState);
+        } catch (InterruptedException e) {
+            return false;
+        } finally {
+            deviceStateAssessor.close();
+        }
     }
 
     public static class FieldClassificationResult {

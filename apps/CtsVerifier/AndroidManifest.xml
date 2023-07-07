@@ -88,6 +88,9 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
 
+    <!-- Allow Network Background Connectivity Test to turn on the screen when the tests finish. -->
+    <uses-permission android:name="android.permission.TURN_SCREEN_ON"/>
+
     <!-- Needed for Telecom self-managed ConnectionService tests. -->
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
@@ -2848,10 +2851,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
+            <meta-data android:name="CddTest" android:value="7.3/C-1-5" />
             <meta-data android:name="test_category" android:value="@string/test_category_sensors" />
             <meta-data android:name="test_applicable_features"
                        android:value="android.hardware.sensor.stepcounter:android.hardware.sensor.stepdetector:android.hardware.sensor.proximity:android.hardware.sensor.light" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="test_pass_mode" android:value="either_mode" />
         </activity>
 
         <!-- TODO: enable when a more reliable way to identify time synchronization is available -->
@@ -3491,10 +3496,11 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
-            <meta-data android:name="android.service.notification.default_filter_types"
+            <!-- TODO(b/284478205): Reenable or remove along with NLS filter test cases. -->
+            <!-- <meta-data android:name="android.service.notification.default_filter_types"
                        android:value="alerting|silent" />
             <meta-data android:name="android.service.notification.disabled_filter_types"
-                       android:value="ongoing" />
+                       android:value="ongoing" /> -->
         </service>
 
         <service android:name=".notifications.MockAssistant"
@@ -3506,6 +3512,7 @@
             </intent-filter>
         </service>
 
+        <!-- (b/285905698) Re-enable the test after investigation on black window issue is done
         <activity android:name=".notifications.ShortcutThrottlingResetActivity"
             android:label="@string/shortcut_reset_test"
                   android:exported="true"
@@ -3521,6 +3528,7 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="3.8.1/C-4-1" />
         </activity>
+        -->
 
         <activity android:name=".qstiles.TileServiceVerifierActivity"
                   android:exported="true"
@@ -4609,6 +4617,8 @@
                 android:name="com.android.cts.verifier.sensors.DeviceSuspendTestActivity"
                 android:label="@string/snsr_device_suspend_test"
                 android:exported="true"
+                android:turnScreenOn="true"
+                android:showWhenLocked="true"
                 android:screenOrientation="nosensor" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -4618,6 +4628,10 @@
             <meta-data android:name="test_excluded_features"
                     android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data
+                android:name="test_required_configs"
+                android:value="config_battery_supported" />
+            <meta-data android:name="CddTest" android:value="7.3/C-1-5" />
         </activity>
 
         <service
@@ -5651,8 +5665,6 @@
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest"
-                android:value="AAudioStreamBuilder_setErrorCallback" />
         </activity>
 
         <activity android:name=".audio.AudioDescriptorActivity"

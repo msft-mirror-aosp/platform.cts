@@ -36,11 +36,11 @@ import android.media.cts.SdkMediaCodec;
 import android.media.cts.TestArgs;
 import android.opengl.GLES20;
 import android.os.Build;
+import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
@@ -77,8 +77,7 @@ import javax.microedition.khronos.opengles.GL10;
 @Presubmit
 @SmallTest
 @RequiresDevice
-// TODO: b/186001256
-@FlakyTest
+@PlatinumTest(focusArea = "media")
 @RunWith(Parameterized.class)
 public class EncodeDecodeTest {
     private static final String TAG = "EncodeDecodeTest";

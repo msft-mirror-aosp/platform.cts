@@ -73,6 +73,7 @@ abstract class TestBase {
     }
 
     private val locationManager = context.getSystemService(LocationManager::class.java)!!
+
     // CDM discovery requires location is enabled, enable the location if it was disabled.
     private var locationWasEnabled: Boolean = false
     private var userHandle: UserHandle = Process.myUserHandle()
@@ -91,7 +92,6 @@ abstract class TestBase {
         assertValidCompanionDeviceServicesUnbind()
         // Enable location if it was disabled.
         enableLocation()
-
         setUp()
     }
 

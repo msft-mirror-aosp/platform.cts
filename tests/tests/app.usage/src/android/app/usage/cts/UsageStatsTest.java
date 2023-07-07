@@ -19,6 +19,8 @@ package android.app.usage.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_FREQUENT;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_NEVER;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RARE;
@@ -37,6 +39,7 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.AppOpsManager;
 import android.app.KeyguardManager;
 import android.app.Notification;
@@ -67,6 +70,7 @@ import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
@@ -88,6 +92,7 @@ import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import org.junit.After;
 import org.junit.Before;
@@ -125,7 +130,7 @@ import java.util.function.Supplier;
  * - Proper eviction of old data.
  */
 @RunWith(UsageStatsTestRunner.class)
-public class UsageStatsTest {
+public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     private static final boolean DEBUG = false;
     static final String TAG = "UsageStatsTest";
 
@@ -233,9 +238,14 @@ public class UsageStatsTest {
             setUsageSourceSetting(mCachedUsageSourceSetting);
         }
         // Force stop test package to avoid any running test code from carrying over to the next run
-        SystemUtil.runWithShellPermissionIdentity(() -> mAm.forceStopPackage(TEST_APP_PKG));
-        SystemUtil.runWithShellPermissionIdentity(() -> mAm.forceStopPackage(TEST_APP2_PKG));
-        mUiDevice.pressHome();
+        if (mAm != null) {
+            SystemUtil.runWithShellPermissionIdentity(() -> mAm.forceStopPackage(TEST_APP_PKG));
+            SystemUtil.runWithShellPermissionIdentity(() -> mAm.forceStopPackage(TEST_APP2_PKG));
+        }
+
+        if (mUiDevice != null) {
+            mUiDevice.pressHome();
+        }
         // Destroy the other user if created
         if (mOtherUser != 0) {
             stopUser(mOtherUser, true, true);
@@ -244,13 +254,15 @@ public class UsageStatsTest {
         }
         // Use test API to prevent PermissionManager from killing the test process when revoking
         // permission.
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mContext.getSystemService(PermissionManager.class)
-                        .revokePostNotificationPermissionWithoutKillForTest(
-                                mTargetPackage,
-                                Process.myUserHandle().getIdentifier()),
-                REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
-                REVOKE_RUNTIME_PERMISSIONS);
+        if (mContext != null && mTargetPackage != null) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mContext.getSystemService(PermissionManager.class)
+                            .revokePostNotificationPermissionWithoutKillForTest(
+                                    mTargetPackage,
+                                    Process.myUserHandle().getIdentifier()),
+                    REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
+                    REVOKE_RUNTIME_PERMISSIONS);
+        }
     }
 
     private static void assertLessThan(long left, long right) {
@@ -287,10 +299,16 @@ public class UsageStatsTest {
     }
 
     private void launchSubActivity(Class<? extends Activity> clazz) {
+        launchSubActivity(clazz, WINDOWING_MODE_UNDEFINED);
+    }
+
+    private void launchSubActivity(Class<? extends Activity> clazz, int windowingMode) {
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClassName(mTargetPackage, clazz.getName());
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(windowingMode);
+        mContext.startActivity(intent, options.toBundle());
         mUiDevice.wait(Until.hasObject(By.clazz(clazz)), TIMEOUT);
     }
 
@@ -302,7 +320,13 @@ public class UsageStatsTest {
     }
 
     private void launchTestActivity(String pkgName, String className) {
-        mContext.startActivity(createTestActivityIntent(pkgName, className));
+        launchTestActivity(pkgName, className, WINDOWING_MODE_UNDEFINED);
+    }
+
+    private void launchTestActivity(String pkgName, String className, int windowingMode) {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(windowingMode);
+        mContext.startActivity(createTestActivityIntent(pkgName, className), options.toBundle());
         mUiDevice.wait(Until.hasObject(By.clazz(pkgName, className)), TIMEOUT);
     }
 
@@ -588,37 +612,29 @@ public class UsageStatsTest {
         // Activity will be paused as the activities we launch might be placed on a different
         // TaskDisplayArea. Starting an activity and finishing it immediately will update the last
         // background package of the UsageStatsService regardless of the HOME Activity state.
-        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME);
-        launchSubActivity(Activities.ActivityOne.class);
-        launchSubActivity(Activities.ActivityTwo.class);
+        // To ensure that the test is not affected by the display windowing mode, all activities are
+        // forced to launch in fullscreen mode in this test.
+        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME,
+                WINDOWING_MODE_FULLSCREEN);
+        launchSubActivity(Activities.ActivityOne.class, WINDOWING_MODE_FULLSCREEN);
+        launchSubActivity(Activities.ActivityTwo.class, WINDOWING_MODE_FULLSCREEN);
         endTime = System.currentTimeMillis();
         events = mUsageStatsManager.queryAndAggregateUsageStats(
                 startTime, endTime);
         stats = events.get(mTargetPackage);
         assertEquals(startingCount + 1, stats.getAppLaunchCount());
-        mUiDevice.pressHome();
 
-        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME);
-        launchSubActivity(Activities.ActivityOne.class);
-        launchSubActivity(Activities.ActivityTwo.class);
-        launchSubActivity(Activities.ActivityThree.class);
+        launchTestActivity(TEST_APP_PKG, TEST_APP_CLASS_FINISH_SELF_ON_RESUME,
+                WINDOWING_MODE_FULLSCREEN);
+        launchSubActivity(Activities.ActivityOne.class, WINDOWING_MODE_FULLSCREEN);
+        launchSubActivity(Activities.ActivityTwo.class, WINDOWING_MODE_FULLSCREEN);
+        launchSubActivity(Activities.ActivityThree.class, WINDOWING_MODE_FULLSCREEN);
         endTime = System.currentTimeMillis();
         events = mUsageStatsManager.queryAndAggregateUsageStats(
                 startTime, endTime);
         stats = events.get(mTargetPackage);
 
-        // generally applicable to single screen devices
-        int expectedUsageStatsIncrement = 2;
-        // devices that handle Apps in a multi windowing mode are unlikely to behave as defined by
-        // the single screen expectations; For example, Launcher may always be visible;
-        // consequently, the expected lifecycle will not be triggered, thus resulting in improper
-        // UsageStats values as expected for a single screen environment
-        if (Activities.startedActivities.size() > 0 &&
-                Activities.startedActivities.valueAt(0).isInMultiWindowMode()) {
-            expectedUsageStatsIncrement = 1;
-        }
-
-        assertEquals(startingCount + expectedUsageStatsIncrement, stats.getAppLaunchCount());
+        assertEquals(startingCount + 2, stats.getAppLaunchCount());
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
@@ -2097,6 +2113,82 @@ public class UsageStatsTest {
                 secondSleepTime, 1,
                 TEST_APP2_PKG);
         assertEquals(Event.ACTIVITY_STOPPED, secondStoppedEvent.get(0).getEventType());
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @Test
+    @AsbSecurityTest(cveBugId = 229633537)
+    public void testReportChooserSelection() throws Exception {
+        // attempt to report an event with a null package, should fail.
+        try {
+            mUsageStatsManager.reportChooserSelection(null, 0,
+                    "text/plain", null, "android.intent.action.SEND");
+            fail("Able to report a chooser selection with a null package");
+        } catch (IllegalArgumentException expected) { }
+
+        // attempt to report an event with a non-existent package, should fail.
+        long startTime = System.currentTimeMillis();
+        mUsageStatsManager.reportChooserSelection("android.app.usage.cts.nonexistent.pkg", 0,
+                "text/plain", null, "android.intent.action.SEND");
+        UsageEvents events = mUsageStatsManager.queryEvents(
+                startTime - 1000, System.currentTimeMillis() + 1000);
+        while (events.hasNextEvent()) {
+            final Event event = new Event();
+            events.getNextEvent(event);
+            if (event.mEventType == Event.CHOOSER_ACTION) {
+                fail("Able to report a chooser action event with a non-existent package.");
+            }
+        }
+
+        // attempt to report an event with a null/empty contentType, should fail.
+        startTime = System.currentTimeMillis();
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                null, null, "android.intent.action.SEND");
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                " ", null, "android.intent.action.SEND");
+        events = mUsageStatsManager.queryEvents(
+                startTime - 1000, System.currentTimeMillis() + 1000);
+        while (events.hasNextEvent()) {
+            final Event event = new Event();
+            events.getNextEvent(event);
+            if (event.mEventType == Event.CHOOSER_ACTION) {
+                fail("Able to report a chooser action event with a null/empty contentType.");
+            }
+        }
+
+        // attempt to report an event with a null/empty action, should fail.
+        startTime = System.currentTimeMillis();
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                "text/plain", null, null);
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                "text/plain", null, " ");
+        events = mUsageStatsManager.queryEvents(
+                startTime - 1000, System.currentTimeMillis() + 1000);
+        while (events.hasNextEvent()) {
+            final Event event = new Event();
+            events.getNextEvent(event);
+            if (event.mEventType == Event.CHOOSER_ACTION) {
+                fail("Able to report a chooser action event with a null/empty action.");
+            }
+        }
+
+        // report an event with valid args - event should be found.
+        startTime = System.currentTimeMillis();
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                "text/plain", null, "android.intent.action.SEND");
+        Thread.sleep(500); // wait a little for the event to report via the handler.
+        events = mUsageStatsManager.queryEvents(
+                startTime - 1000, System.currentTimeMillis() + 1000);
+        boolean foundEvent = false;
+        while (events.hasNextEvent()) {
+            final Event event = new Event();
+            events.getNextEvent(event);
+            if (event.mEventType == Event.CHOOSER_ACTION) {
+                foundEvent = true;
+                break;
+            }
+        }
+        assertTrue("Couldn't find the reported chooser action event.", foundEvent);
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")

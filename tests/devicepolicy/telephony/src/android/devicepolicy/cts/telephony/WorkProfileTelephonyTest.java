@@ -19,6 +19,7 @@ package android.devicepolicy.cts.telephony;
 import static android.Manifest.permission.CALL_PHONE;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.READ_CALL_LOG;
+import static android.Manifest.permission.READ_PHONE_NUMBERS;
 import static android.Manifest.permission.READ_PHONE_STATE;
 import static android.Manifest.permission.READ_SMS;
 import static android.Manifest.permission.WRITE_CALL_LOG;
@@ -26,8 +27,6 @@ import static android.app.role.RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP;
 import static android.app.role.RoleManager.ROLE_SMS;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
-import static android.provider.DeviceConfig.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static android.provider.DeviceConfig.NAMESPACE_TELEPHONY;
 
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_CALL_PHONE;
@@ -38,6 +37,7 @@ import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -56,18 +56,22 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.provider.CallLog;
+import android.provider.Settings;
 import android.provider.Telephony;
 import android.telecom.Call;
 import android.telecom.InCallService;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 
 import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
+import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -113,13 +117,10 @@ public final class WorkProfileTelephonyTest {
             sDeviceState.testApps().query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_DIAL))).get();
-    private static final ComponentReference SWITCH_TO_MANAGED_PROFILE_DIALOG_FOR_CALL_COMPONENT =
-            TestApis.packages().component(new ComponentName("com.android.systemui",
-                    "com.android.systemui.telephony.ui.activity"
-                            + ".SwitchToManagedProfileForCallActivity"));
-    private static final ComponentReference SWITCH_TO_MANAGED_PROFILE_DIALOG_FOR_SMS_COMPONENT =
-            TestApis.packages().component(new ComponentName("com.android.phone",
-                    "com.android.phone" + ".ErrorDialogActivity"));
+
+    private static final ComponentReference INTENT_FORWARDER_COMPONENT =
+            TestApis.packages().component(new ComponentName(
+                    "android", "com.android.internal.app.IntentForwarderActivity"));
     private static final String SMS_SENT_INTENT_ACTION = "TEST_SMS_SENT_ACTION";
     private static final Context sContext = TestApis.context().instrumentedContext();
     private static final String ENABLE_WORK_PROFILE_TELEPHONY_FLAG =
@@ -135,24 +136,25 @@ public final class WorkProfileTelephonyTest {
     public void setUp() {
         mTelephonyManager = sContext.getSystemService(TelephonyManager.class);
         mRoleManager = sContext.getSystemService(RoleManager.class);
-        try (PermissionContext p = TestApis.permissions().withPermission(READ_PHONE_STATE)) {
-            mDestinationNumber = mTelephonyManager.getLine1Number();
+
+        try (PermissionContext p = TestApis.permissions().withPermission(READ_PHONE_NUMBERS)) {
+            SubscriptionManager subscriptionManager = sContext.getSystemService(
+                    SubscriptionManager.class);
+            mDestinationNumber = PhoneNumberUtils.formatNumberToE164(
+                    subscriptionManager.getPhoneNumber(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID),
+                    mTelephonyManager.getSimCountryIso());
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @RequireRunOnWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-3-1"})
-    public void sendTextMessage_fromWorkProfile_allManagedSubscriptions_smsSentSuccessfullyAndReceivedSmsIntentDeliveredToWorkProfileDefaultSmsApp() {
+    public void sendTextMessage_fromWorkProfile_allManagedSubscriptions_smsSentSuccessfully() {
         assumeSmsCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
@@ -168,10 +170,6 @@ public final class WorkProfileTelephonyTest {
                     PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
             IntentFilter sentIntentFilter = new IntentFilter(SMS_SENT_INTENT_ACTION);
             smsApp.registerReceiver(sentIntentFilter, Context.RECEIVER_EXPORTED_UNAUDITED);
-            IntentFilter receivedMessageIntentFilter = new IntentFilter(
-                    Telephony.Sms.Intents.SMS_DELIVER_ACTION);
-            smsApp.registerReceiver(receivedMessageIntentFilter,
-                    Context.RECEIVER_EXPORTED_UNAUDITED);
 
             smsApp.smsManager().sendTextMessage(mDestinationNumber, null, "test", sentPendingIntent,
                     null);
@@ -179,8 +177,6 @@ public final class WorkProfileTelephonyTest {
             assertThat(smsApp.events().broadcastReceived().whereIntent().action().isEqualTo(
                     SMS_SENT_INTENT_ACTION).whereResultCode().isEqualTo(
                     Activity.RESULT_OK)).eventOccurred();
-            assertThat(smsApp.events().broadcastReceived().whereIntent().action().isEqualTo(
-                    Telephony.Sms.Intents.SMS_DELIVER_ACTION)).eventOccurred();
         } finally {
             dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
                     previousDefaultSmsPackage);
@@ -191,12 +187,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @RequireRunOnInitialUser
     @Postsubmit(reason = "new test")
@@ -205,7 +197,7 @@ public final class WorkProfileTelephonyTest {
     public void sendTextMessage_fromPersonalProfile_allManagedSubscriptions_errorUserNotAllowed()
             throws ExecutionException, InterruptedException {
         assumeSmsCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
@@ -236,9 +228,8 @@ public final class WorkProfileTelephonyTest {
             assertThat(smsApp.events().broadcastReceived().whereIntent().action().isEqualTo(
                     SMS_SENT_INTENT_ACTION).whereResultCode().isEqualTo(
                     SmsManager.RESULT_USER_NOT_ALLOWED)).eventOccurred();
-            Poll.forValue("Foreground activity",
-                    () -> TestApis.activities().foregroundActivity()).toBeEqualTo(
-                    SWITCH_TO_MANAGED_PROFILE_DIALOG_FOR_SMS_COMPONENT).errorOnFail().await();
+            Poll.forValue("Foreground activity", () -> TestApis.activities().foregroundActivity())
+                    .toBeEqualTo(INTENT_FORWARDER_COMPONENT).errorOnFail().await();
         } finally {
             sDeviceState.profileOwner(
                     WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
@@ -248,12 +239,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @RequireRunOnInitialUser
     @Postsubmit(reason = "new test")
@@ -261,7 +248,7 @@ public final class WorkProfileTelephonyTest {
     @CddTest(requirements = {"7.4.1.4/C-3-1"})
     public void allManagedSubscriptions_accessWorkMessageFromPersonalProfile_fails() {
         assumeSmsCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
@@ -302,12 +289,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @RequireRunOnWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
@@ -359,16 +342,14 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
     public void placeCall_fromWorkProfile_allManagedSubscriptions_works() throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -395,19 +376,15 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-1-1", "7.4.1.4/C-3-2"})
     public void placeCall_fromPersonalProfile_allManagedSubscriptions_fails() throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -424,7 +401,7 @@ public final class WorkProfileTelephonyTest {
 
             Poll.forValue("Foreground activity",
                     () -> TestApis.activities().foregroundActivity()).toBeEqualTo(
-                    SWITCH_TO_MANAGED_PROFILE_DIALOG_FOR_CALL_COMPONENT).errorOnFail().await();
+                    INTENT_FORWARDER_COMPONENT).errorOnFail().await();
         } finally {
             sDeviceState.profileOwner(
                     WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
@@ -433,12 +410,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
@@ -446,7 +419,7 @@ public final class WorkProfileTelephonyTest {
     public void getCallCapablePhoneAccounts_fromWorkProfile_allManagedSubscriptions_notEmpty()
             throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -468,12 +441,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_SWITCH_TO_MANAGED_PROFILE_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
@@ -481,7 +450,7 @@ public final class WorkProfileTelephonyTest {
     public void getCallCapablePhoneAccounts_fromPersonalProfile_allManagedSubscriptions_emptyList()
             throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -503,17 +472,15 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @RequireRunOnWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-2-1"})
     public void allManagedSubscriptions_accessWorkCallLogFromWorkProfile_works() throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -545,10 +512,8 @@ public final class WorkProfileTelephonyTest {
         }
     }
 
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_DEVICE_POLICY_MANAGER, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE_TELEPHONY, key =
-            ENABLE_WORK_PROFILE_TELEPHONY_FLAG)
+    @EnsureGlobalSettingSet(key =
+            Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
     @EnsureHasWorkProfile(isOrganizationOwned = true, installInstrumentedApp = TRUE)
     @RequireRunOnInitialUser
     @Postsubmit(reason = "new test")
@@ -557,7 +522,7 @@ public final class WorkProfileTelephonyTest {
     public void allManagedSubscriptions_accessWorkCallLogFromPersonalProfile_fails()
             throws Exception {
         assumeCallCapableDevice();
-        assertSimCardPresent();
+        assertValidSimCardPresent();
         sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
@@ -618,9 +583,10 @@ public final class WorkProfileTelephonyTest {
                 && mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)));
     }
 
-    private void assertSimCardPresent() {
+    private void assertValidSimCardPresent() {
         assertTrue("[RERUN] This test requires SIM card to be present", isSimCardPresent());
-
+        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+                TextUtils.isEmpty(mDestinationNumber));
     }
 
     private boolean isSimCardPresent() {

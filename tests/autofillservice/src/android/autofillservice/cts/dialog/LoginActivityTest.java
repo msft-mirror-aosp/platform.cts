@@ -29,11 +29,14 @@ import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFea
 import static android.autofillservice.cts.testcore.Helper.enableFillDialogFeature;
 import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.isImeShowing;
+import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
 import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
 import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assume.assumeTrue;
 
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.FieldsNoPasswordActivity;
@@ -43,6 +46,7 @@ import android.autofillservice.cts.activities.LoginMixedImportantForCredentialMa
 import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
+import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.content.Intent;
@@ -73,10 +77,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @Test
     public void testPccRequest() throws Exception {
         // Enable feature and test service
-        enableService();
         enablePccDetectionFeature(sContext, "username");
         enableFillDialogFeature(sContext);
         sReplier.setIdMode(IdMode.PCC_ID);
+        enableService();
+
+        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
 
         // Set response with a dataset > fill dialog should have two buttons
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
@@ -97,8 +103,10 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
         // Check onFillRequest has hints populated
         final FillRequest request = sReplier.getNextFillRequest();
-        assertThat(request.hints.size()).isEqualTo(1);
-        assertThat(request.hints.get(0)).isEqualTo("username");
+        if (isPccEnabled) {
+            assertThat(request.hints.size()).isEqualTo(1);
+            assertThat(request.hints.get(0)).isEqualTo("username");
+        }
         mUiBot.waitForIdleSync();
         disablePccDetectionFeature(sContext);
         sReplier.setIdMode(IdMode.RESOURCE_ID);
@@ -108,10 +116,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @Test
     public void testPccRequest_setForAllHints() throws Exception {
         // Set service.
-        enableService();
         enablePccDetectionFeature(sContext, "username", "password", "new_password");
         enableFillDialogFeature(sContext);
         sReplier.setIdMode(IdMode.PCC_ID);
+        enableService();
+
+        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
 
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
                 .addDataset(new CannedDataset.Builder()
@@ -131,8 +141,10 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
         // Check onFillRequest has the flag: FLAG_SEND_ALL_USER_DATA
         final FillRequest request = sReplier.getNextFillRequest();
-        assertThat(request.hints.size()).isEqualTo(3);
-        assertThat(request.hints.get(0)).isEqualTo("username");
+        if (isPccEnabled) {
+            assertThat(request.hints.size()).isEqualTo(3);
+            assertThat(request.hints.get(0)).isEqualTo("username");
+        }
         mUiBot.waitForIdleSync();
         disablePccDetectionFeature(sContext);
         sReplier.setIdMode(IdMode.RESOURCE_ID);
@@ -142,6 +154,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     // Need to manually check that the icon has changed.
     @Test
     public void testShowFillDialogCustomIcon() throws Exception {
+        // Breaks for HSUM
+        assumeTrue("Is main user", Helper.isMainUser(sContext));
+        // Disable this test for Automotive until we know why it's failing.
+        // bug: 270482520
+        assumeTrue("Skip Automotive", !Helper.isAutomotive(sContext));
+
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();

@@ -243,7 +243,7 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         val installation = startInstallationViaIntent(appInstallIntent)
         // Dismiss the device policy dialog
         val closeBtn: UiObject = TestApis.ui().device().findObject(
-                UiSelector().text("Close")
+                UiSelector().resourceId("android:id/button1")
         )
         closeBtn.click()
 
@@ -333,6 +333,7 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         receiver.register()
 
         val intent = Intent(APP_INSTALL_ACTION).setPackage(context.packageName)
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         val pendingIntent = PendingIntent.getBroadcast(
                 context, 0 /* requestCode */, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)

@@ -42,6 +42,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -69,7 +70,7 @@ public class BluetoothLeBroadcastMetadataTest {
 
     // For BluetoothLeAudioCodecConfigMetadata
     private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
-    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 7;
+    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 6;
     private static final int TEST_FRAME_DURATION_10000 = 0x01 << 1;
     private static final int TEST_OCTETS_PER_FRAME = 100;
 
@@ -120,6 +121,7 @@ public class BluetoothLeBroadcastMetadataTest {
         TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
     public void testCreateMetadataFromBuilder() {
         BluetoothDevice testDevice =
@@ -167,6 +169,7 @@ public class BluetoothLeBroadcastMetadataTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
     public void testCreateMetadataFromCopy() {
         BluetoothDevice testDevice =

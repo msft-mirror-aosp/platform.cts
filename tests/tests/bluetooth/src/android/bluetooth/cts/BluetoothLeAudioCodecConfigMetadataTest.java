@@ -35,6 +35,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -46,7 +47,7 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class BluetoothLeAudioCodecConfigMetadataTest {
     private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
-    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 7;
+    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 6;
     private static final int TEST_FRAME_DURATION_10000 = 0x01 << 1;
     private static final int TEST_OCTETS_PER_FRAME = 100;
 
@@ -105,6 +106,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testCreateCodecConfigMetadataFromBuilder() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
@@ -122,6 +124,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         // assertArrayEquals(TEST_METADATA_BYTES, codecMetadata.getRawMetadata());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testCreateCodecConfigMetadataFromCopy() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
@@ -141,6 +144,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         assertArrayEquals(codecMetadata.getRawMetadata(), codecMetadataCopy.getRawMetadata());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testCreateCodecConfigMetadataFromBytes() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =

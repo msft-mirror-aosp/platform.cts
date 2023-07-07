@@ -24,7 +24,6 @@ import its_base_test
 import its_session_utils
 from mobly import test_runner
 import numpy as np
-import opencv_processing_utils
 import zoom_capture_utils
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
@@ -37,6 +36,7 @@ _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
+_TEST_REQUIRED_MPC = 33
 _ZOOM_MIN_THRESH = 2.0
 
 
@@ -63,9 +63,25 @@ class ZoomTest(its_base_test.ItsBaseTest):
       debug = self.debug_mode
 
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
       z_list = np.arange(z_min, z_max, float(z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
+
+      # Check media performance class
+      media_performance_class = its_session_utils.get_media_performance_class(
+          self.dut.serial)
+      if (media_performance_class >= _TEST_REQUIRED_MPC and
+          cam.is_primary_camera() and
+          cam.has_ultrawide_camera(facing=props['android.lens.facing']) and
+          int(z_min) >= 1):
+        raise AssertionError(
+            f'With primary camera {self.camera_id}, '
+            f'MPC >= {_TEST_REQUIRED_MPC}, and '
+            'an ultrawide camera facing in the same direction as the primary, '
+            'zoom_ratio minimum must be less than 1.0. '
+            f'Found media performance class {media_performance_class} '
+            f'and minimum zoom {z_min}.')
+
+      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
 
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
@@ -117,34 +133,18 @@ class ZoomTest(its_base_test.ItsBaseTest):
           cap_fl = cap['metadata']['android.lens.focalLength']
           radius_tol, offset_tol = test_tols[cap_fl]
 
-          # convert [0, 1] image to [0, 255] and cast as uint8
-          img = image_processing_utils.convert_image_to_uint8(img)
-
           # Find the center circle in img
-          try:
-            circle = opencv_processing_utils.find_center_circle(
-                img, img_name, _CIRCLE_COLOR, circle_ar_rtol=_CIRCLE_AR_RTOL,
-                circlish_rtol=_CIRCLISH_RTOL,
-                min_area=_MIN_AREA_RATIO * size[0] * size[1] * z * z,
-                min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
-            if opencv_processing_utils.is_circle_cropped(circle, size):
-              logging.debug('zoom %.2f is too large! Skip further captures', z)
-              break
-          except AssertionError as e:
-            if z/z_list[0] >= zoom_capture_utils.ZOOM_MAX_THRESH:
-              break
-            else:
-              raise AssertionError(
-                  'No circle detected for zoom ratio <= '
-                  f'{zoom_capture_utils.ZOOM_MAX_THRESH}. '
-                  'Take pictures according to instructions carefully!') from e
+          circle = zoom_capture_utils.get_center_circle(img, img_name, size, z,
+                                                        z_list[0], debug)
+          # Zoom is too large to find center circle
+          if circle is None:
+            break
           test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
                           'o_tol': offset_tol, 'fl': cap_fl}
 
-          test_failed_for_ratio = zoom_capture_utils.verify_zoom_results(
-              test_data, size, z_max, z_min)
-          if test_failed_for_ratio:
-            test_failed = True
+        if not zoom_capture_utils.verify_zoom_results(
+            test_data, size, z_max, z_min):
+          test_failed = True
 
     if test_failed:
       raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')

@@ -47,6 +47,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
 import android.service.quicksettings.TileService;
@@ -116,6 +117,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNon
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
+import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
@@ -211,6 +213,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A Junit rule which exposes methods for efficiently changing and querying device state.
@@ -267,10 +270,39 @@ public final class DeviceState extends HarrierRule {
             Duration.ofMillis(
                     Long.parseLong(TestApis.instrumentation().arguments().getString(
                             "timeout_msec", "600000")) - 2000);
+
+    // We allow overriding the limit on a class-by-class basis
+    private final Duration mMaxTestDuration;
+
     private final ExecutorService mTestExecutor = Executors.newSingleThreadExecutor();
     private Thread mTestThread;
 
-    public DeviceState() {
+    private PackageManager mPackageManager = sContext.getPackageManager();
+
+    public static final class Builder {
+
+        private Duration mMaxTestDuration = MAX_TEST_DURATION;
+
+        private Builder() {
+
+        }
+
+        public Builder maxTestDuration(Duration maxTestDuration) {
+            mMaxTestDuration = maxTestDuration;
+            return this;
+        }
+
+        public DeviceState build() {
+            return new DeviceState(mMaxTestDuration);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public DeviceState(Duration maxTestDuration) {
+        mMaxTestDuration = maxTestDuration;
         Future<Thread> testThreadFuture = mTestExecutor.submit(Thread::currentThread);
 
         mSkipTestTeardown = TestApis.instrumentation().arguments().getBoolean(
@@ -297,6 +329,10 @@ public final class DeviceState extends HarrierRule {
             throw new AssertionError(
                     "Error setting up DeviceState. Interrupted getting test thread", e);
         }
+    }
+
+    public DeviceState() {
+        this(MAX_TEST_DURATION);
     }
 
     @Override
@@ -334,7 +370,7 @@ public final class DeviceState extends HarrierRule {
 
                 Throwable t;
                 try {
-                    t = future.get(MAX_TEST_DURATION.getSeconds(), TimeUnit.SECONDS);
+                    t = future.get(mMaxTestDuration.getSeconds(), TimeUnit.SECONDS);
                 } catch (TimeoutException e) {
                     StackTraceElement[] stack = mTestThread.getStackTrace();
                     future.cancel(true);
@@ -1255,8 +1291,17 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof RequireTelephonySupport) {
+                RequireTelephonySupport requireTelephonySupport =
+                        (RequireTelephonySupport) annotation;
+                checkFailOrSkip("Device does not have telephony support",
+                        mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
+                        requireTelephonySupport.failureMode());
+                continue;
+            }
+
             if (annotation instanceof MostImportantCoexistenceTest) {
-                mTestApps.put(MostImportantCoexistenceTest.MORE_IMPORTANT, dpmRoleHolder());
+                mTestApps.put(MostImportantCoexistenceTest.MORE_IMPORTANT, deviceOwner());
 
                 MostImportantCoexistenceTest mostImportantCoexistenceTestAnnotation =
                         (MostImportantCoexistenceTest) annotation;
@@ -1359,6 +1404,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         annotations.addAll(description.getAnnotations());
+        annotations.sort(BedsteadJUnit4::annotationSorter);
 
         checkAnnotations(annotations);
 
@@ -2074,6 +2120,7 @@ public final class DeviceState extends HarrierRule {
 
                 // DO + work profile isn't a valid state
                 ensureHasNoDeviceOwner();
+                ensureDoesNotHaveUserRestriction(DISALLOW_ADD_MANAGED_PROFILE, forUserReference);
             }
 
             profile = createProfile(resolvedUserType, forUserReference);
@@ -2267,6 +2314,13 @@ public final class DeviceState extends HarrierRule {
                         + maxUsers
                         + " max users)",
                 currentUsers + number <= maxUsers,
+                failureMode);
+    }
+
+    private void ensureCanAddProfile(
+            com.android.bedstead.nene.users.UserType userType, FailureMode failureMode) {
+        checkFailOrSkip("the device cannot add more profiles of type " + userType,
+                TestApis.users().canCreateProfile(userType),
                 failureMode);
     }
 
@@ -2715,6 +2769,7 @@ public final class DeviceState extends HarrierRule {
     private UserReference createProfile(
             com.android.bedstead.nene.users.UserType profileType, UserReference parent) {
         ensureCanAddUser();
+        ensureCanAddProfile(profileType, FailureMode.SKIP);
 
         if (profileType.name().equals("android.os.usertype.profile.CLONE")) {
             // Special case - we can't create a clone profile if this is set
@@ -3037,7 +3092,7 @@ public final class DeviceState extends HarrierRule {
 
             for (UserReference u : TestApis.users().all().stream()
                     .sorted(Comparator.comparing(u -> u.equals(instrumented)).reversed())
-                    .toList()) {
+                    .collect(Collectors.toList())) {
                 if (u.isSystem()) {
                     continue;
                 }
@@ -3555,9 +3610,9 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        // There are no users to switch to so we'll create one
-        ensureHasUser(SECONDARY_USER_TYPE_NAME,
-                /* installInstrumentedApp= */ OptionalBoolean.ANY,
+        // There are no users to switch to so we'll create one.
+        // In HSUM, an additional user needs to be created to switch from the existing user.
+        ensureHasAdditionalUser(/* installInstrumentedApp= */ OptionalBoolean.ANY,
                 /* switchedToUser= */ OptionalBoolean.TRUE);
     }
 
@@ -4213,7 +4268,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         if (TestApis.devicePolicy().userRestrictions(onUser).isSet(restriction)) {
-            throw new NeneException("Error removing user restriction " + restriction + ". "
+            throw new AssumptionViolatedException("Error removing user restriction " + restriction + ". "
                     + "It's possible this is set by the system and cannot be removed");
         }
 

@@ -40,13 +40,12 @@ import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 
 // MegaAudio
+import org.hyphonate.megaaudio.common.Globals;
 import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.AudioSource;
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.player.NativeAudioSource;
-import org.hyphonate.megaaudio.player.sources.NoiseAudioSourceProvider;
-import org.hyphonate.megaaudio.player.sources.SilenceAudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SinAudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
@@ -74,30 +73,28 @@ public class AudioDataPathsActivity
     private boolean mHasSpeaker;
 
     // UI
-    View mStartBtn;
-    View mStopBtn;
+    private View mStartBtn;
+    private View mStopBtn;
 
-    TextView mRoutesTx;
-    WebView mResultsView;
+    private TextView mRoutesTx;
+    private WebView mResultsView;
 
     private WaveScopeView mWaveView = null;
 
-    HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private  HtmlFormatter mHtmlFormatter = new HtmlFormatter();
 
     // Test Manager
-    TestManager mTestManager = new TestManager();
+    private TestManager mTestManager = new TestManager();
 
     // Audio I/O
-    AudioManager mAudioManager;
+    private AudioManager mAudioManager;
 
     // Analysis
-    BaseSineAnalyzer mAnalyzer = new BaseSineAnalyzer();
-
-    private static final int NUM_RECORD_CHANNELS = 1;
+    private BaseSineAnalyzer mAnalyzer = new BaseSineAnalyzer();
 
     private DuplexAudioManager mDuplexAudioManager;
 
-    AppCallback mAnalysisCallbackHandler;
+    private AppCallback mAnalysisCallbackHandler;
 
     class HtmlFormatter {
         StringBuilder mSB = new StringBuilder();
@@ -200,32 +197,34 @@ public class AudioDataPathsActivity
         getPassButton().setEnabled(false);
     }
 
+    //
+    // UI Helpers
+    //
+    private void showDeviceView() {
+        mRoutesTx.setVisibility(View.VISIBLE);
+        mWaveView.setVisibility(View.VISIBLE);
+
+        mResultsView.setVisibility(View.GONE);
+    }
+
+    private void showResultsView() {
+        mRoutesTx.setVisibility(View.GONE);
+        mWaveView.setVisibility(View.GONE);
+
+        mResultsView.setVisibility(View.VISIBLE);
+    }
+
     void enableTestButtons(boolean startEnabled, boolean stopEnabled) {
         mStartBtn.setEnabled(startEnabled);
         mStopBtn.setEnabled(stopEnabled);
     }
 
-    private void startTest() {
-        if (mDuplexAudioManager == null) {
-            mDuplexAudioManager = new DuplexAudioManager(null, null);
-        }
-
-        enableTestButtons(false, true);
-
-        mTestManager.startTest();
-    }
-
-    private void stopTest() {
-        mTestManager.displayTestDevices();
-    }
-
-    private void calculateTestPass() {
-        // for now, just verify that the test was run.
-        boolean pass = true;
-        getPassButton().setEnabled(pass);
-    }
-
     private class TestSpec {
+        //
+        // Stream Attributes
+        //
+        static final int ATTRIBUTE_DISABLE_MMAP = 0x00000001;
+
         //
         // Datapath specifications
         //
@@ -241,13 +240,24 @@ public class AudioDataPathsActivity
         final int mInChannelCount;
         int mInputPreset;
 
+        int mGlobalAttributes;
+
         AudioDeviceInfo mOutDeviceInfo;
         AudioDeviceInfo mInDeviceInfo;
 
         public AudioSourceProvider mSourceProvider;
         public AudioSinkProvider mSinkProvider;
 
+        String mSectionTitle = null;
         String mDescription = "";
+
+        int[] mTestState;
+
+        TestResults[] mTestResults;
+
+        // Pass/Fail criteria (with defaults)
+        double mMinPassMagnitude = 0.01;
+        double mMaxPassJitter = 0.1;
 
         TestSpec(int outDeviceType, int outSampleRate, int outChannelCount,
                  int inDeviceType, int inSampleRate, int inChannelCount) {
@@ -259,6 +269,32 @@ public class AudioDataPathsActivity
             mInDeviceType = inDeviceType;
             mInChannelCount = inChannelCount;
             mInSampleRate = inSampleRate;
+
+            mTestState = new int[NUM_TEST_APIS];
+            for (int api = 0; api < NUM_TEST_APIS; api++) {
+                mTestState[api] = TestSpec.TESTSTATUS_NOT_RUN;
+            }
+            mTestResults = new TestResults[NUM_TEST_APIS];
+        }
+
+        // Test states that indicate a skipped test are negative
+        // Test states that indicate an executed test that failed are positive.
+        public static final int TESTSTATUS_BAD_ROUTING = -2;
+        public static final int TESTSTATUS_NOT_RUN = -1;
+        public static final int TESTSTATUS_OK = 0;
+        public static final int TESTSTATUS_BAD_STATE = 1;
+        public static final int TESTSTATUS_BAD_START = 2;
+
+        void clearTestState(int api) {
+            mTestState[api] = TESTSTATUS_NOT_RUN;
+        }
+
+        int getTestState(int api) {
+            return mTestState[api];
+        }
+
+        void setTestState(int api, int state) {
+            mTestState[api] = state;
         }
 
         String getOutDeviceName() {
@@ -267,6 +303,14 @@ public class AudioDataPathsActivity
 
         String getInDeviceName() {
             return AudioDeviceUtils.getDeviceTypeName(mInDeviceType);
+        }
+
+        void setSectionTitle(String title) {
+            mSectionTitle = title;
+        }
+
+        String getSectionTitle() {
+            return mSectionTitle;
         }
 
         void setDescription(String description) {
@@ -286,8 +330,205 @@ public class AudioDataPathsActivity
             mInputPreset = preset;
         }
 
-        boolean isValid() {
+        void setGlobalAttributes(int attributes) {
+            mGlobalAttributes = attributes;
+        }
+
+        int getGlobalAttributes() {
+            return mGlobalAttributes;
+        }
+
+        boolean canRun() {
             return mInDeviceInfo != null && mOutDeviceInfo != null;
+        }
+
+        void setTestResults(int api, TestResults results) {
+            mTestResults[api] = results;
+        }
+
+        void setPassCriteria(double minPassMagnitude, double maxPassJitter) {
+            mMinPassMagnitude = minPassMagnitude;
+            mMaxPassJitter = maxPassJitter;
+        }
+
+        //
+        // Predicates
+        //
+        // Ran to completion and results supplied
+        boolean hasRun(int api) {
+            // return mTestState[api] == TESTSTATUS_OK;
+            return mTestResults[api] != null;
+        }
+
+        // Didn't run because of invalid hardware or bad routing.
+        boolean wasSkipped(int api) {
+            // either doesn't have the hardware or the routing failed.
+            return mTestState[api] < 0;
+        }
+
+        // Ran and passed the criteria
+        boolean hasPassed(int api) {
+            if (hasRun(api)) {
+                return mTestResults[api].mMaxMagnitude >= mMinPassMagnitude
+                        && mTestResults[api].mPhaseJitter <= mMaxPassJitter;
+            } else {
+                return false;
+            }
+        }
+
+        // Ran, but failed the pass criteria
+        boolean hasFailed(int api) {
+            if (hasRun(api)) {
+                return mTestResults[api].mMaxMagnitude < mMinPassMagnitude
+                        || mTestResults[api].mPhaseJitter > mMaxPassJitter;
+            } else {
+                return false;
+            }
+        }
+
+        // Should've been able to run, but ran into errors opening/starting streams
+        boolean hadError(int api) {
+            // TESTSTATUS_NOT_RUN && TESTSTATUS_BAD_ROUTING are not considered failures
+            return mTestState[api] > 0;
+        }
+
+        //
+        // CTS VerifierReportLog stuff
+        //
+        // ReportLog Schema
+        private static final String KEY_TESTDESCRIPTION = "test_description";
+        // Output Specification
+        private static final String KEY_OUT_DEVICE_TYPE = "out_device_type";
+        private static final String KEY_OUT_DEVICE_NAME = "out_device_name";
+        private static final String KEY_OUT_DEVICE_RATE = "out_device_rate";
+        private static final String KEY_OUT_DEVICE_CHANS = "out_device_chans";
+
+        // Input Specification
+        private static final String KEY_IN_DEVICE_TYPE = "in_device_type";
+        private static final String KEY_IN_DEVICE_NAME = "in_device_name";
+        private static final String KEY_IN_DEVICE_RATE = "in_device_rate";
+        private static final String KEY_IN_DEVICE_CHANS = "in_device_chans";
+        private static final String KEY_IN_PRESET = "in_preset";
+
+        void generateReportLog(int api) {
+            if (!canRun() || mTestResults[api] == null) {
+                return;
+            }
+
+            CtsVerifierReportLog reportLog = newReportLog();
+
+            // Description
+            reportLog.addValue(
+                    KEY_TESTDESCRIPTION,
+                    getDescription(),
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            // Output Specification
+            reportLog.addValue(
+                    KEY_OUT_DEVICE_NAME,
+                    getOutDeviceName(),
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUT_DEVICE_TYPE,
+                    mOutDeviceType,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUT_DEVICE_RATE,
+                    mOutSampleRate,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUT_DEVICE_CHANS,
+                    mOutChannelCount,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            // Input Specifications
+            reportLog.addValue(
+                    KEY_IN_DEVICE_NAME,
+                    getInDeviceName(),
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_IN_DEVICE_TYPE,
+                    mInDeviceType,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_IN_DEVICE_RATE,
+                    mInSampleRate,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_IN_DEVICE_CHANS,
+                    mInChannelCount,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_IN_PRESET,
+                    mInputPreset,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            // Results
+            mTestResults[api].generateReportLog(reportLog);
+
+            reportLog.submit();
+        }
+    }
+
+    /*
+     * TestResults
+     */
+    class TestResults {
+        int mApi;
+        double mMagnitude;
+        double mMaxMagnitude;
+        double mPhase;
+        double mPhaseJitter;
+
+        TestResults(int api, double magnitude, double maxMagnitude, double phase,
+                    double phaseJitter) {
+            mApi = api;
+            mMagnitude = magnitude;
+            mMaxMagnitude = maxMagnitude;
+            mPhase = phase;
+            mPhaseJitter = phaseJitter;
+        }
+
+        // ReportLog Schema
+        private static final String KEY_TESTAPI = "test_api";
+        private static final String KEY_MAXMAGNITUDE = "max_magnitude";
+        private static final String KEY_PHASEJITTER = "phase_jitter";
+
+        void generateReportLog(CtsVerifierReportLog reportLog) {
+            reportLog.addValue(
+                    KEY_TESTAPI,
+                    mApi,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_MAXMAGNITUDE,
+                    mMaxMagnitude,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_PHASEJITTER,
+                    mPhaseJitter,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
         }
     }
 
@@ -295,13 +536,14 @@ public class AudioDataPathsActivity
      * TestManager
      */
     private class TestManager {
+        static final String TAG = "TestManager";
+
         // Audio Device Type ID -> TestProfile
         ArrayList<TestSpec> mTestSpecs = new ArrayList<TestSpec>();
 
-        double[] mMagnitudes;
-        double[] mMaxMagnitudes;
-        double[] mPhases;
-        double[] mPhaseJitters;
+        int mApi;
+
+        boolean mPreTestMMapEnabled;
 
         private int    mPhaseCount;
 
@@ -315,8 +557,6 @@ public class AudioDataPathsActivity
         NativeAudioSource mNativeSinSource;
 
         public void initializeTests() {
-            AudioSourceProvider noiseSourceProvider = new NoiseAudioSourceProvider();
-            AudioSourceProvider silenceSourceProvider = new SilenceAudioSourceProvider();
             AudioSourceProvider sinSourceProvider = new SinAudioSourceProvider();
             mJavaSinSource = sinSourceProvider.getJavaSource();
             mNativeSinSource = sinSourceProvider.getNativeSource();
@@ -332,129 +572,277 @@ public class AudioDataPathsActivity
             //TODO - Also add test specs for MMAP vs Legacy
             TestSpec testSpec;
 
+            // These just make it easier to turn on/off various categories
+            boolean doMono = true;
+            boolean doInputPresets = true;
+            boolean doStereo = true;
+            boolean doSampleRates = true;
+            boolean doAnalogJack = true;
+            boolean doUsbHeadset = true;
+            boolean doUsbDevice = true;
+            boolean doSpeakerSafe = true;
+            boolean forceFailure = false;
+
             //
             // Built-in Speaker/Mic
             //
             // - Mono
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setInputPreset(Recorder.INPUT_PRESET_UNPROCESSED);
-            testSpec.setDescription("Speaker:1 Mic:1:UNPROCESSED");
-            mTestSpecs.add(testSpec);
+            if (doMono) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSectionTitle("Mono");
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_NONE);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_NONE");
+                mTestSpecs.add(testSpec);
+
+                if (forceFailure) {
+                    // Failure Case
+                    testSpec = new TestSpec(
+                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                            AudioDeviceInfo.TYPE_BUILTIN_MIC, 42, 1);
+                    testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                    testSpec.setInputPreset(Recorder.INPUT_PRESET_NONE);
+                    testSpec.setDescription("Speaker:1 Mic:1:PRESET_NONE");
+                    mTestSpecs.add(testSpec);
+                }
+            }
+
+            if (doInputPresets) {
+                // These three ALWAYS fail on Pixel. They require special system permissions.
+                // INPUT_PRESET_VOICE_UPLINK, INPUT_PRESET_VOICE_DOWNLINK, INPUT_PRESET_VOICE_CALL
+                // INPUT_PRESET_REMOTE_SUBMIX requires special system setup
+                // INPUT_PRESET_VOICECOMMUNICATION - the aggressive AEC always causes it to fail
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSectionTitle("Input Presets");
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_DEFAULT);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_DEFAULT");
+                mTestSpecs.add(testSpec);
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_GENERIC);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_GENERIC");
+                mTestSpecs.add(testSpec);
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_UNPROCESSED);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_UNPROCESSED");
+                mTestSpecs.add(testSpec);
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_CAMCORDER);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_CAMCORDER");
+                mTestSpecs.add(testSpec);
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_VOICERECOGNITION");
+                mTestSpecs.add(testSpec);
+
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setInputPreset(Recorder.INPUT_PRESET_VOICEPERFORMANCE);
+                testSpec.setDescription("Speaker:1 Mic:1:PRESET_VOICEPERFORMANCE");
+                mTestSpecs.add(testSpec);
+            }
 
             // - Stereo, channels individually
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:Left Mic:1");
-            mTestSpecs.add(testSpec);
+            if (doStereo) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSectionTitle("Stereo");
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:Left Mic:1");
+                mTestSpecs.add(testSpec);
 
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:Right Mic:1");
-            mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:Right Mic:1");
+                mTestSpecs.add(testSpec);
+            }
 
             //
             // Let's check some sample rates
             //
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 11025, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:11025 Mic:1:48000");
-            mTestSpecs.add(testSpec);
+            if (doSampleRates) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 11025, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSectionTitle("Sample Rates");
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:11025 Mic:1:48000");
+                mTestSpecs.add(testSpec);
 
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 44100, 1);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:48000 Mic:1:44100");
-            mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 44100, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:48000 Mic:1:44100");
+                mTestSpecs.add(testSpec);
 
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 44100, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:44100 Mic:1:48000");
-            mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 44100, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:44100 Mic:1:48000");
+                mTestSpecs.add(testSpec);
 
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 96000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("Speaker:2:96000 Mic:1:48000");
-            mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 96000, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testSpec.setSources(sinSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("Speaker:2:96000 Mic:1:48000");
+                mTestSpecs.add(testSpec);
+            }
 
             //
             // Analog Headset Jack
             //
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 2,
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 1);
-            testSpec.setDescription("Analog:2:Left Analog:1");
-            testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
-            mTestSpecs.add(testSpec);
+            if (doAnalogJack) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 2,
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 1);
+                testSpec.setSectionTitle("Analog Jack");
+                testSpec.setDescription("Analog:2:Left Analog:1");
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                mTestSpecs.add(testSpec);
 
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 2,
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 1);
-            testSpec.setDescription("Analog:2:Right Analog:1");
-            testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
-            mTestSpecs.add(testSpec);
-
-            //
-            // USB Headset
-            //
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2,
-                    AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2);
-            testSpec.setSources(sinSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("USBHeadset:2 USBHeadset:2");
-            mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 2,
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET, 48000, 1);
+                testSpec.setDescription("Analog:2:Right Analog:1");
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                mTestSpecs.add(testSpec);
+            }
 
             //
             // USB Device
             //
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2,
-                    AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2);
-            testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("USBDevice:2:L USBDevice:2");
-            mTestSpecs.add(testSpec);
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2,
-                    AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2);
-            testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("USBDevice:2:R USBDevice:2");
-            mTestSpecs.add(testSpec);
+            if (doUsbDevice) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2,
+                        AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2);
+                testSpec.setSectionTitle("USB Device");
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("USBDevice:2:L USBDevice:2");
+                mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2,
+                        AudioDeviceInfo.TYPE_USB_DEVICE, 48000, 2);
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("USBDevice:2:R USBDevice:2");
+                mTestSpecs.add(testSpec);
+            }
 
-            // Speaker Safe
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, 48000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("SpeakerSafe:2:Left Mic:1");
-            mTestSpecs.add(testSpec);
-            testSpec = new TestSpec(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, 48000, 2,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
-            testSpec.setDescription("SpeakerSafe:2:Right Mic:1");
-            mTestSpecs.add(testSpec);
+            //
+            // USB Headset
+            //
+            if (doUsbHeadset) {
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2,
+                        AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2);
+                testSpec.setSectionTitle("USB Headset");
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("USBHeadset:2:L USBHeadset:2");
+                mTestSpecs.add(testSpec);
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2,
+                        AudioDeviceInfo.TYPE_USB_HEADSET, 48000, 2);
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("USBHeadset:2:R USBHeadset:2");
+                mTestSpecs.add(testSpec);
+            }
+
+            if (doSpeakerSafe) {
+                int speakerSafeSampleRate = 48000;
+
+                // Left
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                testSpec.setSectionTitle("Speaker Safe");
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("SpeakerSafe:2:Left Mic:1 no MMAP");
+                testSpec.setGlobalAttributes(TestSpec.ATTRIBUTE_DISABLE_MMAP);
+                mTestSpecs.add(testSpec);
+
+                // Right
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("SpeakerSafe:2:Right Mic:1 no MMAP");
+                testSpec.setGlobalAttributes(TestSpec.ATTRIBUTE_DISABLE_MMAP);
+                mTestSpecs.add(testSpec);
+
+                // These specs are duplicated because it often only fails on the second time.
+                // Left
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("SpeakerSafe:2:Left Mic:1 no MMAP");
+                testSpec.setGlobalAttributes(TestSpec.ATTRIBUTE_DISABLE_MMAP);
+                mTestSpecs.add(testSpec);
+
+                // Right
+                testSpec = new TestSpec(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                testSpec.setDescription("SpeakerSafe:2:Right Mic:1 no MMAP");
+                testSpec.setGlobalAttributes(TestSpec.ATTRIBUTE_DISABLE_MMAP);
+                mTestSpecs.add(testSpec);
+
+                if (Globals.isMMapSupported() || mApi == TEST_API_JAVA) {
+                    testSpec = new TestSpec(
+                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                            AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                    testSpec.setSources(leftSineSourceProvider, mMicSinkProvider);
+                    testSpec.setDescription("SpeakerSafe:2:Left Mic:1 Maybe MMAP");
+                    testSpec.setGlobalAttributes(0);
+                    mTestSpecs.add(testSpec);
+
+                    testSpec = new TestSpec(
+                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
+                            AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
+                    testSpec.setSources(rightSineSourceProvider, mMicSinkProvider);
+                    testSpec.setDescription("SpeakerSafe:2:Right Mic:1 Maybe MMAP");
+                    testSpec.setGlobalAttributes(0);
+                    mTestSpecs.add(testSpec);
+                }
+            }
 
             validateTestDevices();
             displayTestDevices();
+        }
 
-            int numTestSpecs = mTestSpecs.size();
-            mMagnitudes = new double[numTestSpecs];
-            mMaxMagnitudes = new double[numTestSpecs];
-            mPhases = new double[numTestSpecs];
-            mPhaseJitters = new double[numTestSpecs];
+        public void clearTestState() {
+            for (TestSpec spec: mTestSpecs) {
+                spec.clearTestState(mApi);
+            }
         }
 
         public void validateTestDevices() {
@@ -509,18 +897,42 @@ public class AudioDataPathsActivity
             int testStep = 0;
             for (TestSpec testSpec : mTestSpecs) {
                 sb.append("\n");
+                if (testSpec.getSectionTitle() != null) {
+                    sb.append("---" + testSpec.getSectionTitle() + "---\n");
+                }
                 if (testStep == mTestStep) {
                     sb.append(">>>");
                 }
                 sb.append(testSpec.getDescription());
 
-                if (testSpec.isValid()) {
+                if (testSpec.canRun() && testStep != mTestStep) {
                     sb.append(" *");
                 }
+
                 if (testStep == mTestStep) {
                     sb.append("<<<");
                 }
 
+                if (testSpec.canRun()) {
+                    int status = testSpec.getTestState(mApi);
+                    switch (status) {
+                        case TestSpec.TESTSTATUS_NOT_RUN:
+                            // This doesn't need to be annotated
+                            break;
+                        case TestSpec.TESTSTATUS_OK:
+                            sb.append(testSpec.hasPassed(mApi) ? " - PASS" : " - FAIL");
+                            break;
+                        case TestSpec.TESTSTATUS_BAD_STATE:
+                            sb.append(" - BAD STATE");
+                            break;
+                        case TestSpec.TESTSTATUS_BAD_START:
+                            sb.append(" - BAD START");
+                            break;
+                        case TestSpec.TESTSTATUS_BAD_ROUTING:
+                            sb.append(" - BAD ROUTE");
+                            break;
+                    }
+                }
                 testStep++;
             }
             mRoutesTx.setText(sb.toString());
@@ -532,17 +944,27 @@ public class AudioDataPathsActivity
         }
 
         public TestSpec getActiveTestSpec() {
-            return mTestSpecs.get(mTestStep);
+            return mTestStep != TESTSTEP_NONE && mTestStep < mTestSpecs.size()
+                    ? mTestSpecs.get(mTestStep)
+                    : null;
         }
 
-        public boolean runTest(TestSpec testSpec) {
+        private boolean calculateTestPass(int api) {
+            for (TestSpec spec : mTestSpecs) {
+                if (spec.hadError(api) || spec.hasFailed(api)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public int startTest(TestSpec testSpec) {
+            Log.i(TAG, "startTest() testSpec:" + testSpec);
             AudioDeviceInfo outDevInfo = testSpec.mOutDeviceInfo;
             AudioDeviceInfo inDevInfo = testSpec.mInDeviceInfo;
             if (outDevInfo != null && inDevInfo != null) {
                 mAnalyzer.reset();
                 mAnalyzer.setSampleRate(testSpec.mInSampleRate);
-
-                mDuplexAudioManager.stop();
 
                 // Player
                 mDuplexAudioManager.setSources(
@@ -561,12 +983,16 @@ public class AudioDataPathsActivity
                 mDuplexAudioManager.setInputPreset(testSpec.mInputPreset);
                 mDuplexAudioManager.setRecorderSampleRate(testSpec.mInSampleRate);
                 mDuplexAudioManager.setNumRecorderChannels(testSpec.mInChannelCount);
+
                 mDuplexAudioManager.setupStreams(mAudioApi, mAudioApi);
+
+                if ((testSpec.getGlobalAttributes() & TestSpec.ATTRIBUTE_DISABLE_MMAP) != 0) {
+                    Globals.setMMapEnabled(false);
+                }
 
                 // Adjust the player frequency to match with the quantized frequency
                 // of the analyzer.
                 float freq = (float) mAnalyzer.getAdjustedFrequency();
-                Log.i(TAG, "freq:" + freq);
                 if (mActiveTestAPI == TEST_API_NATIVE) {
                     mNativeSinSource.setFreq(freq);
                 } else {
@@ -575,35 +1001,56 @@ public class AudioDataPathsActivity
 
                 mWaveView.setNumChannels(testSpec.mInChannelCount);
 
-                mDuplexAudioManager.start();
-                return true;
+                if (mDuplexAudioManager.start() != StreamBase.OK) {
+                    Log.e(TAG, "Couldn't start duplex streams");
+                    testSpec.setTestState(mApi, TestSpec.TESTSTATUS_BAD_START);
+                    Log.i(TAG, "TESTSTATUS_BAD_START");
+                    return TestSpec.TESTSTATUS_BAD_START;
+                }
+
+                // Validate routing
+                if (!mDuplexAudioManager.validateRouting()) {
+                    testSpec.setTestState(mApi, TestSpec.TESTSTATUS_BAD_ROUTING);
+                    Log.i(TAG, "TESTSTATUS_BAD_ROUTING");
+                    return TestSpec.TESTSTATUS_BAD_ROUTING;
+                }
+                testSpec.setTestState(mApi, TestSpec.TESTSTATUS_OK);
+                Log.i(TAG, "TESTSTATUS_OK");
+                return TestSpec.TESTSTATUS_OK;
             } else {
-                return false;
+                testSpec.setTestState(mApi, TestSpec.TESTSTATUS_NOT_RUN);
+                return TestSpec.TESTSTATUS_NOT_RUN;
             }
         }
 
         private static final int MS_PER_SEC = 1000;
         private static final int TEST_TIME_IN_SECONDS = 2;
-        public void startTest() {
-            mRoutesTx.setVisibility(View.VISIBLE);
-            mWaveView.setVisibility(View.VISIBLE);
+        public void startTest(int api) {
+            Log.i(TAG, "startTest(" + api + ")");
+            showDeviceView();
 
-            mResultsView.setVisibility(View.GONE);
+            mApi = api;
 
-            if (mTestStep == TESTSTEP_NONE) {
-                (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
-                    @Override
-                    public void run() {
-                        advanceTestStep();
-                    }
-                }, 0, TEST_TIME_IN_SECONDS * MS_PER_SEC);
-            }
+            clearTestState();
+
+            mPreTestMMapEnabled = Globals.isMMapEnabled();
+
+            mTestStep = TESTSTEP_NONE;
+            (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    completeTestStep();
+                    advanceTestStep();
+                }
+            }, 0, TEST_TIME_IN_SECONDS * MS_PER_SEC);
         }
 
         public void stopTest() {
+            Log.i(TAG, "stopTest() mTestStep:" + mTestStep);
             if (mTestStep != TESTSTEP_NONE) {
                 mTimer.cancel();
                 mTimer = null;
+
                 mDuplexAudioManager.stop();
 
                 mTestStep = TESTSTEP_NONE;
@@ -611,6 +1058,10 @@ public class AudioDataPathsActivity
         }
 
         public void completeTest() {
+            Log.i(TAG, "completeTest()");
+
+            Globals.setMMapEnabled(mPreTestMMapEnabled);
+
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -619,10 +1070,9 @@ public class AudioDataPathsActivity
                     mRoutesTx.setVisibility(View.GONE);
                     mWaveView.setVisibility(View.GONE);
 
-                    mResultsView.setVisibility(View.VISIBLE);
-
                     mHtmlFormatter.clear();
                     mHtmlFormatter.openDocument();
+                    boolean allPassed = calculateTestPass(mActiveTestAPI);
                     if (countValidTestSpecs() == 0) {
                         mRoutesTx.setVisibility(View.VISIBLE);
                         getPassButton().setEnabled(true);
@@ -630,36 +1080,56 @@ public class AudioDataPathsActivity
                                  .appendText("No valid test specs.")
                                  .closeParagraph();
                     } else {
-                        calculateTestPass();
+                        getPassButton().setEnabled(allPassed);
 
                         mTestManager.generateReport(mHtmlFormatter);
+                        mHtmlFormatter.openParagraph()
+                            .appendText(allPassed ? "All tests passed." : "There were failures.")
+                            .closeDocument();
                     }
-                    mHtmlFormatter.closeDocument();
+
                     mResultsView.loadData(mHtmlFormatter.toString(),
                             "text/html; charset=utf-8", "utf-8");
+                    showResultsView();
                 }
             });
         }
 
-        public void advanceTestStep() {
+        public void completeTestStep() {
+            Log.i(TAG, "completeTestStep() mTestStep:" + mTestStep);
             if (mTestStep != TESTSTEP_NONE) {
                 mDuplexAudioManager.stop();
+                // Give the audio system a chance to settle from the previous state
+                // It is often the case that the Java API will not route to the specified
+                // device if we teardown/startup too quickly. This sleep cirmumvents that.
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    Log.e(TAG, "sleep failed?");
+                }
 
-                int localTestStep = mTestStep;
-                TestSpec testSpec = mTestSpecs.get(mTestStep);
-                AudioDeviceInfo devInfo = testSpec.mOutDeviceInfo;
-                if (devInfo != null) {
-                    mMagnitudes[localTestStep] = mAnalyzer.getMagnitude();
-                    mMaxMagnitudes[localTestStep] = mAnalyzer.getMaxMagnitude();
-                    mPhases[localTestStep] = mAnalyzer.getPhaseOffset();
-                    mPhaseJitters[localTestStep] = mAnalyzer.getPhaseJitter();
-
-                    recordTestStatus();
-
+                TestSpec testSpec = getActiveTestSpec();
+                if (testSpec.canRun()) {
+                    testSpec.setTestResults(mApi, new TestResults(mApi,
+                            mAnalyzer.getMagnitude(),
+                            mAnalyzer.getMaxMagnitude(),
+                            mAnalyzer.getPhaseOffset(),
+                            mAnalyzer.getPhaseJitter()));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            displayTestDevices();
+                            mWaveView.resetPersistentMaxMagnitude();
+                        }
+                    });
                 }
             }
+        }
 
+        public void advanceTestStep() {
+            Log.i(TAG, "advanceTestStep() mTestStep:" + mTestStep);
             while (++mTestStep < mTestSpecs.size()) {
+                // update the display to show progress
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -667,17 +1137,17 @@ public class AudioDataPathsActivity
                     }
                 });
 
-                int localTestStep = mTestStep;
-                mMaxMagnitudes[localTestStep] = 0.0;
-
-                TestSpec testSpec = mTestSpecs.get(localTestStep);
-                if (runTest(testSpec)) {
+                // Scan until we find a TestSpec that starts playing/recording
+                TestSpec testSpec = mTestSpecs.get(mTestStep);
+                int status = startTest(testSpec);
+                testSpec.setTestState(mApi, status);
+                if (status == TestSpec.TESTSTATUS_OK || status == TestSpec.TESTSTATUS_BAD_ROUTING) {
+                    // these are statuses where playing/recording successfully starts, even if
+                    // to the wrong route, so allow this test to run to completion.
                     break;
-                } else {
-                    continue;
                 }
+                // Otherwise, playing/recording failed, look for the next TestSpec
             }
-            Log.i(TAG, "[... done]");
 
             if (mTestStep >= mTestSpecs.size()) {
                 stopTest();
@@ -686,30 +1156,126 @@ public class AudioDataPathsActivity
         }
 
         HtmlFormatter generateReport(HtmlFormatter htmlFormatter) {
-            int testIndex = 0;
             for (TestSpec spec : mTestSpecs) {
-                Locale locale = Locale.getDefault();
-                String magString = String.format(locale, "mag:%.4f", mMagnitudes[testIndex]);
-                String maxMagString = String.format(locale, "max:%.4f", mMaxMagnitudes[testIndex]);
-                String phaseString = String.format(locale, "phs:%.4f", mPhases[testIndex]);
-                String phaseJitterString =
-                        String.format(locale, "jit:%.4f", mPhaseJitters[testIndex]);
-                htmlFormatter.openParagraph()
-                        .appendText(spec.mDescription)
-                        .insertBreak()
-                        .openTextColor("red")
-                        .appendText(magString + " ")
-                        .closeTextColor()
-                        .appendText(maxMagString + " ")
-                        .appendText(phaseString + " ")
-                        .appendText(phaseJitterString + " ")
-                        .closeParagraph();
+                if (spec.canRun()) {
+                    // Description
+                    htmlFormatter.openParagraph()
+                            .appendText(spec.mDescription);
+                    if (spec.hasPassed(mApi)) {
+                        htmlFormatter.appendText(" - PASS");
+                    } else {
+                        int testStatus = spec.getTestState(mApi);
+                        switch (testStatus) {
+                            case TestSpec.TESTSTATUS_BAD_ROUTING:
+                                htmlFormatter.appendText(" - BAD ROUTING");
+                                break;
+                            case TestSpec.TESTSTATUS_BAD_START:
+                                htmlFormatter.openTextColor("red");
+                                htmlFormatter.appendText(" - BAD START");
+                                htmlFormatter.closeTextColor();
+                                break;
+                            case TestSpec.TESTSTATUS_BAD_STATE:
+                                htmlFormatter.openTextColor("red");
+                                htmlFormatter.appendText(" - BAD STATE");
+                                htmlFormatter.closeTextColor();
+                                break;
+                            default: {
+                                TestResults results = spec.mTestResults[mApi];
+                                Locale locale = Locale.getDefault();
+                                String maxMagString =
+                                        String.format(locale, "mag:%.4f ", results.mMaxMagnitude);
+                                String phaseJitterString =
+                                        String.format(locale, "jit:%.4f ", results.mPhaseJitter);
 
-                testIndex++;
+                                boolean passMagnitude =
+                                        results.mMaxMagnitude >= spec.mMinPassMagnitude;
+                                boolean passJitter = results.mPhaseJitter <= spec.mMaxPassJitter;
+                                boolean fail = !passMagnitude || !passJitter;
+
+                                // The play/record was OK, but the analysis failed
+                                htmlFormatter.appendText(" - FAIL");
+
+                                // Values
+                                htmlFormatter.insertBreak();
+                                if (!passMagnitude) {
+                                    htmlFormatter.openTextColor("red")
+                                            .appendText(maxMagString)
+                                            .closeTextColor();
+                                } else {
+                                    htmlFormatter.appendText(maxMagString);
+                                }
+
+                                if (!passJitter) {
+                                    htmlFormatter.openTextColor("red")
+                                            .appendText(phaseJitterString)
+                                            .closeTextColor();
+                                } else {
+                                    htmlFormatter.appendText(phaseJitterString);
+                                }
+
+                                // Criteria
+                                htmlFormatter.insertBreak();
+                                if (!passMagnitude) {
+                                    htmlFormatter.openTextColor("blue")
+                                            .appendText(maxMagString
+                                                    + String.format(locale, " <= %.4f ",
+                                                    spec.mMinPassMagnitude))
+                                            .closeTextColor();
+                                }
+
+                                if (!passJitter) {
+                                    htmlFormatter.openTextColor("blue")
+                                            .appendText(phaseJitterString
+                                                    + String.format(locale, " >= %.4f",
+                                                    spec.mMaxPassJitter))
+                                            .closeTextColor();
+                                }
+                            }
+                            break;
+                        }
+                        htmlFormatter.insertBreak();
+                    } // pass/fail
+                    htmlFormatter.closeParagraph();
+                } // hasRun()
             }
 
             return htmlFormatter;
         }
+
+        //
+        // CTS VerifierReportLog stuff
+        //
+        void generateReportLog() {
+            int testIndex = 0;
+            for (TestSpec spec : mTestSpecs) {
+                for (int api = TEST_API_NATIVE; api < NUM_TEST_APIS; api++) {
+                    spec.generateReportLog(api);
+                }
+            }
+        }
+    }
+
+    //
+    // Process Handling
+    //
+    private void startTest(int api) {
+        Log.i(TAG, "startTest(" + api + ")");
+        if (mDuplexAudioManager == null) {
+            mDuplexAudioManager = new DuplexAudioManager(null, null);
+        }
+
+        enableTestButtons(false, true);
+        getPassButton().setEnabled(true);
+
+        mTestManager.startTest(api);
+    }
+
+    private void stopTest() {
+        Log.i(TAG, "stopTest()");
+        mTestManager.stopTest();
+        mTestManager.displayTestDevices();
+
+        enableTestButtons(true, false);
     }
 
     //
@@ -720,6 +1286,9 @@ public class AudioDataPathsActivity
         return true;
     }
 
+    //
+    // CTS VerifierReportLog stuff
+    //
     @Override
     public String getReportFileName() {
         return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
@@ -730,152 +1299,21 @@ public class AudioDataPathsActivity
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_DATAPATHS);
     }
 
+    @Override
+    public void recordTestResults() {
+// TODO Remove all report logging from this file. This is a quick fix.
+// This code generates multiple records in the JSON file.
+// That duplication is invalid JSON and causes the database
+// ingestion to fail.
+//        mTestManager.generateReportLog();
+    }
+
     //
     // AudioMultiApiActivity Overrides
     //
     @Override
     public void onApiChange(int api) {
         stopTest();
-    }
-
-    // ReportLog Schema
-    // Test General
-    private static final String KEY_TESTSTEP = "test_step";
-    private static final String KEY_TESTDESCRIPTION = "test_description";
-    private static final String KEY_TESTAPI = "test_api";
-
-    // Output Specification
-    private static final String KEY_OUT_DEVICE_TYPE = "out_device_type";
-    private static final String KEY_OUT_DEVICE_NAME = "out_device_name";
-    private static final String KEY_OUT_DEVICE_RATE = "out_device_rate";
-    private static final String KEY_OUT_DEVICE_CHANS = "out_device_chans";
-
-    // Input Specification
-    private static final String KEY_IN_DEVICE_TYPE = "in_device_type";
-    private static final String KEY_IN_DEVICE_NAME = "in_device_name";
-    private static final String KEY_IN_DEVICE_RATE  = "in_device_rate";
-    private static final String KEY_IN_DEVICE_CHANS  = "in_device_chans";
-    private static final String KEY_IN_PRESET  = "in_preset";
-
-    // Analysis
-    private static final String KEY_MAXMAGNITUDE = "max_magnitude";
-    private static final String KEY_MAGNITUDE = "magnitude";
-    private static final String KEY_PHASEOFFSET = "phase_offset";
-    private static final String KEY_PHASEJITTER = "phase_jitter";
-
-    private void recordTestStatus() {
-        CtsVerifierReportLog reportLog = getReportLog();
-
-        // Test General
-        reportLog.addValue(
-                KEY_TESTAPI,
-                mActiveTestAPI,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        // Test Phase ID
-        reportLog.addValue(
-                KEY_TESTSTEP,
-                mTestManager.mTestStep,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        TestSpec testSpec = mTestManager.getActiveTestSpec();
-        // Description
-        reportLog.addValue(
-                KEY_TESTDESCRIPTION,
-                testSpec.getDescription(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        // Output Specification
-        reportLog.addValue(
-                KEY_OUT_DEVICE_NAME,
-                testSpec.getOutDeviceName(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_OUT_DEVICE_TYPE,
-                testSpec.mOutDeviceType,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_OUT_DEVICE_RATE,
-                testSpec.mOutSampleRate,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_OUT_DEVICE_CHANS,
-                testSpec.mOutChannelCount,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        // Input Specifications
-        reportLog.addValue(
-                KEY_IN_DEVICE_NAME,
-                testSpec.getInDeviceName(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_IN_DEVICE_TYPE,
-                testSpec.mInDeviceType,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_IN_DEVICE_RATE,
-                testSpec.mInSampleRate,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_IN_DEVICE_CHANS,
-                testSpec.mInChannelCount,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_IN_PRESET,
-                testSpec.mInputPreset,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        // Analysis
-        reportLog.addValue(
-                KEY_MAGNITUDE,
-                mAnalyzer.getMagnitude(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_MAXMAGNITUDE,
-                mAnalyzer.getMaxMagnitude(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_PHASEOFFSET,
-                mAnalyzer.getPhaseOffset(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.addValue(
-                KEY_PHASEJITTER,
-                mAnalyzer.getPhaseJitter(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.submit();
-    }
-
-    @Override
-    public void setTestResultAndFinish(boolean passed) {
-        recordTestStatus();
-        super.setTestResultAndFinish(passed);
     }
 
     //
@@ -885,11 +1323,13 @@ public class AudioDataPathsActivity
     public void onClick(View view) {
         int id = view.getId();
         if (id == R.id.audio_datapaths_start) {
-            startTest();
+            startTest(mActiveTestAPI);
         } else if (id == R.id.audio_datapaths_stop) {
             stopTest();
         } else if (id == R.id.audioJavaApiBtn || id == R.id.audioNativeApiBtn) {
             super.onClick(view);
+            mTestManager.clearTestState();
+            showDeviceView();
             mTestManager.displayTestDevices();
         }
     }
@@ -912,12 +1352,14 @@ public class AudioDataPathsActivity
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            showDeviceView();
             mTestManager.validateTestDevices();
             mTestManager.displayTestDevices();
         }
 
         @Override
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+            showDeviceView();
             mTestManager.validateTestDevices();
             mTestManager.displayTestDevices();
         }

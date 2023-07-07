@@ -33,6 +33,7 @@ WAIT_TIME_SEC = 5
 SCROLLER_TIMEOUT_MS = 3000
 VALID_NUM_DEVICES = (1, 2)
 NOT_YET_MANDATED_ALL = 100
+FRONT_CAMERA_ID_PREFIX = '1'
 
 # Not yet mandated tests ['test', first_api_level not yet mandatory]
 # ie. ['test_test_patterns', 30] is MANDATED for first_api_level > 30
@@ -52,6 +53,8 @@ NOT_YET_MANDATED = {
     'scene5': [],
     'scene6': [['test_zoom', 30]],
     'sensor_fusion': [],
+    'scene_hdr': [],
+    'scene_night': [],
 }
 
 logging.getLogger('matplotlib.font_manager').disabled = True
@@ -136,6 +139,27 @@ class ItsBaseTest(base_test.BaseTestClass):
           self.lighting_ch, 255, arduino_serial_port)
       logging.debug('Light is turned ON.')
 
+    # Check if current foldable state matches scene, if applicable
+    if self.user_params.get('foldable_device', 'False') == 'True':
+      foldable_state_unencoded = tablet_name_unencoded = self.dut.adb.shell(
+          ['cmd', 'device_state', 'state']
+      )
+      foldable_state = str(foldable_state_unencoded.decode('utf-8')).strip()
+      is_folded = 'CLOSE' in foldable_state
+      scene_with_suffix = self.user_params.get('scene_with_suffix')
+      if scene_with_suffix:
+        if 'folded' in scene_with_suffix and not is_folded:
+          raise AssertionError(
+              f'Testing folded scene {scene_with_suffix} with unfolded device!')
+        if ('folded' not in scene_with_suffix and is_folded and
+            self.camera.startswith(FRONT_CAMERA_ID_PREFIX)):  # Not rear camera
+          raise AssertionError(
+              f'Testing unfolded scene {scene_with_suffix} with a '
+              'non-rear camera while device is folded!'
+          )
+      else:
+        logging.debug('Testing without `run_all_tests`')
+
   def _setup_devices(self, num):
     """Sets up each device in parallel if more than one device."""
     if num not in VALID_NUM_DEVICES:
@@ -184,6 +208,8 @@ class ItsBaseTest(base_test.BaseTestClass):
     self.tablet.adb.shell('am force-stop com.android.gallery3d')
     self.tablet.adb.shell('am force-stop com.sec.android.gallery3d')
     self.tablet.adb.shell('am force-stop com.miui.gallery')
+    self.tablet.adb.shell(
+        'settings put global policy_control immersive.full=*')
 
   def set_tablet_landscape_orientation(self):
     """Sets the screen orientation to landscape.

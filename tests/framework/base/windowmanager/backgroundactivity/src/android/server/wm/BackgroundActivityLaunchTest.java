@@ -56,6 +56,7 @@ import android.os.IBinder;
 import android.os.ResultReceiver;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.backgroundactivity.appa.Components;
@@ -725,12 +726,56 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         assertFalse("Should not able to launch background activity", result);
     }
 
+    @Test
+    @AsbSecurityTest(cveBugId = 271576718)
+    public void testPipCannotStartFromBackground() throws Exception {
+        Intent intent = new Intent();
+        intent.setComponent(APP_A.LAUNCH_INTO_PIP_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        boolean result = waitForActivityFocused(APP_A.LAUNCH_INTO_PIP_ACTIVITY);
+        assertTrue("Should not able to launch background activity", result);
+
+        pressHomeAndWaitHomeResumed();
+        result = waitForActivityFocused(APP_A.LAUNCH_INTO_PIP_ACTIVITY);
+        assertFalse("Activity should be in background", result);
+
+        Intent broadcast = new Intent(APP_A.LAUNCH_INTO_PIP_ACTIONS.LAUNCH_INTO_PIP);
+        mContext.sendBroadcast(broadcast);
+        result = waitForActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertFalse("Should not able to launch LaunchIntoPip activity", result);
+
+        assertPinnedStackDoesNotExist();
+    }
+
     // Check that a presentation on a virtual display won't allow BAL after pressing home.
     @Test
-    public void testVirtualDisplayCannotStartAfterHomeButton() throws Exception {
+    public void testPrivateVirtualDisplayCannotStartAfterHomeButton() throws Exception {
         Intent intent = new Intent();
         intent.setComponent(APP_A.VIRTUAL_DISPLAY_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra(APP_A.VIRTUAL_DISPLAY_ACTIVITY_EXTRA.USE_PUBLIC_PRESENTATION, false);
+        mContext.startActivity(intent);
+
+        assertTrue("VirtualDisplay activity not started", waitUntilForegroundChanged(
+                APP_A.APP_PACKAGE_NAME, true, ACTIVITY_START_TIMEOUT_MS));
+
+        // Click home button, and test app activity onPause() will trigger which tries to launch
+        // the background activity.
+        pressHomeAndWaitHomeResumed();
+
+        boolean result = waitForActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertFalse("Should not able to launch background activity", result);
+    }
+
+    // Check that a presentation on a virtual display won't allow BAL after pressing home.
+    @Test
+    public void testPublicVirtualDisplayCannotStartAfterHomeButton() throws Exception {
+        Intent intent = new Intent();
+        intent.setComponent(APP_A.VIRTUAL_DISPLAY_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra(APP_A.VIRTUAL_DISPLAY_ACTIVITY_EXTRA.USE_PUBLIC_PRESENTATION, true);
         mContext.startActivity(intent);
 
         assertTrue("VirtualDisplay activity not started", waitUntilForegroundChanged(

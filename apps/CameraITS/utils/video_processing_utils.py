@@ -51,11 +51,9 @@ LOWEST_RES_TESTED_AREA = 640*360
 
 
 VIDEO_QUALITY_SIZE = {
-    # 'HIGH' and 'LOW' not included as they are DUT-dependent
+    # '480P', '1080P', HIGH' and 'LOW' are not included as they are DUT-dependent
     '2160P': '3840x2160',
-    '1080P': '1920x1080',
     '720P': '1280x720',
-    '480P': '720x480',
     'VGA': '640x480',
     'CIF': '352x288',
     'QVGA': '320x240',
@@ -220,6 +218,7 @@ def extract_all_frames_from_video(log_path, video_file_name, img_format):
       f'{os.path.join(log_path, ffmpeg_image_name)}_%03d.{img_format}')
   cmd = [
       'ffmpeg', '-i', os.path.join(log_path, video_file_name),
+      '-vsync', 'vfr', # force ffmpeg to use video fps instead of inferred fps
       ffmpeg_image_file_names, '-loglevel', 'quiet'
   ]
   _ = subprocess.call(cmd)
@@ -299,12 +298,13 @@ def get_frame_deltas(video_file_name_with_path, timestamp_type='pts'):
   if raw_output:
     output = str(raw_output.decode('utf-8')).strip().split('\n')
     deltas = []
-    prev_time = 0
+    prev_time = None
     for line in output:
       if timestamp_type not in line:
         continue
       curr_time = float(re.search(r'time= *([0-9][0-9\.]*)', line).group(1))
-      deltas.append(curr_time - prev_time)
+      if prev_time is not None:
+        deltas.append(curr_time - prev_time)
       prev_time = curr_time
     logging.debug('Frame deltas: %s', deltas)
     return deltas

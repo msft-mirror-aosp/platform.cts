@@ -26,10 +26,14 @@ import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
 import android.telephony.SmsManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.test.AndroidTestCase;
 import android.text.TextUtils;
 import android.util.Log;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Verify Sms and Mms cannot be received without required permissions.
@@ -39,8 +43,6 @@ import android.util.Log;
 @SystemUserOnly(reason = "Secondary users have the DISALLOW_SMS user restriction")
 public class NoReceiveSmsPermissionTest extends AndroidTestCase {
 
-    // time to wait for sms to get delivered - currently 2 minutes
-    private static final int WAIT_TIME = 2*60*1000;
     private static final String TELEPHONY_SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
     private static final String MESSAGE_STATUS_RECEIVED_ACTION =
         "com.android.cts.permission.sms.MESSAGE_STATUS_RECEIVED_ACTION";
@@ -51,6 +53,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
 
 
     private static final String LOG_TAG = "NoReceiveSmsPermissionTest";
+
+    private Semaphore mSemaphore = new Semaphore(0);
 
     /**
      * Verify that SmsManager.sendTextMessage requires permissions.
@@ -78,14 +82,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
 
         getContext().registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         sendSMSToSelf("test");
-        synchronized(receiver) {
-            try {
-                receiver.wait(WAIT_TIME);
-            } catch (InterruptedException e) {
-                Log.w(LOG_TAG, "wait for sms interrupted");
-            }
-        }
 
+        waitForForEvents(mSemaphore, 1);
         assertTrue("[RERUN] Sms not sent successfully. Check signal.",
                 receiver.isMessageSent());
         assertFalse("Sms received without proper permissions", receiver.isSmsReceived());
@@ -118,18 +116,26 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
         String token = SmsManager.getDefault().createAppSpecificSmsToken(receivedIntent);
         String message = "test message, token=" + token;
         sendSMSToSelf(message);
-        synchronized(receiver) {
-            try {
-                receiver.wait(WAIT_TIME);
-            } catch (InterruptedException e) {
-                Log.w(LOG_TAG, "wait for sms interrupted");
-            }
-        }
 
+        waitForForEvents(mSemaphore, 1);
         assertTrue("[RERUN] Sms not sent successfully. Check signal.",
                 receiver.isMessageSent());
         assertFalse("Sms received without proper permissions", receiver.isSmsReceived());
+        waitForForEvents(mSemaphore, 1);
         assertTrue("App specific SMS intent not triggered", receiver.isAppSpecificSmsReceived());
+    }
+
+    private boolean waitForForEvents(Semaphore semaphore, int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!semaphore.tryAcquire(2000, TimeUnit.MILLISECONDS)) {
+                    return false;
+                }
+            } catch (Exception ex) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void sendSMSToSelf(String message) {
@@ -145,12 +151,19 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
                  getContext().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         int subscriptionId = subscription.getActiveDataSubscriptionId();
 
+        assertFalse("[RERUN] No active telephony subscription. Check there is one enabled.",
+                subscriptionId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
         // get current phone number
         String currentNumber = subscription.getPhoneNumber(subscriptionId);
 
         // fallback to getActiveSubscriptionInfo if number is empty
         if (TextUtils.isEmpty(currentNumber)) {
-            currentNumber = subscription.getActiveSubscriptionInfo(subscriptionId).getNumber();
+            SubscriptionInfo subInfo = subscription.getActiveSubscriptionInfo(subscriptionId);
+
+            assertTrue("[RERUN] No info for the active telephony subscription.",
+                    subInfo != null);
+            currentNumber = subInfo.getNumber();
         }
         assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(currentNumber));
@@ -248,6 +261,11 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
                 mAppSpecificSmsReceived = true;
             } else {
                 super.onReceive(context, intent);
+            }
+            try {
+                mSemaphore.release();
+            } catch (Exception ex) {
+                Log.e(LOG_TAG, "mSemaphore: Got exception in releasing semaphore, ex=" + ex);
             }
         }
 

@@ -25,14 +25,12 @@ java_test_host {
         "src/**/*.java",
         "src/**/*.kt",
     ],
-
     libs: [
         "cts-tradefed",
         "tradefed",
         "compatibility-host-util",
         "truth-prebuilt",
         "hamcrest-library",
-        "sts-host-util",
     ],
 
     static_libs: [
@@ -40,6 +38,7 @@ java_test_host {
         "CtsPkgInstallerConstants",
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
+        "sts-host-util",
     ],
 
     java_resource_dirs: ["res"],
@@ -71,6 +70,8 @@ java_test_host {
 
     // Prebuilts of all ABIs.
     data: [
+        ":CtsSignatureQueryService",
+        ":CtsSignatureQueryServiceTest",
         ":CtsApkVerityTestPrebuiltFiles",
         ":CtsExternalStorageApp",
         ":CtsReadExternalStorageApp",
@@ -91,6 +92,13 @@ java_test_host {
         ":CtsV3SigningSchemeRotationTest",
         ":CtsPkgInstallTinyApp",
         ":CtsPkgInstallTinyAppV2",
+        ":CtsStorageStatsApp",
+        ":CtsStorageAppA",
+        ":CtsStorageAppB",
+        ":CtsNoAppDataStorageApp",
+        ":CtsDocumentClient",
+        ":CtsDocumentProvider",
+        ":CtsStubIme",
         ":v1v2-ec-p256-two-signers-targetSdk-30",
         ":v3-ec-p256-1-companion-usesperm",
         ":v3-ec-p256-1-sharedUid",

@@ -87,6 +87,7 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -121,11 +122,13 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -537,16 +540,19 @@ public final class ActivityManagerTest {
     @FlakyTest(detail = "Known fail on cuttleshish b/275888802 and other devices b/255817314.")
     @Test
     public void testGetMemoryInfo() {
-        ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
-        mActivityManager.getMemoryInfo(outInfo);
-        assertTrue(
+        // Advertised memory is required when VSR API is V.
+        if (PropertyUtil.getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
+            mActivityManager.getMemoryInfo(outInfo);
+            assertTrue(
                 String.format("lowmemory (%s) == (%d <= %d)",
                 outInfo.lowMemory, outInfo.availMem, outInfo.threshold),
                 outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold));
-        assertTrue(
+            assertTrue(
                 String.format("totalMem (%d) <= advertisedMem (%d)",
                 outInfo.totalMem, outInfo.advertisedMem),
                 outInfo.totalMem <= outInfo.advertisedMem);
+        }
     }
 
     @Test
@@ -906,6 +912,14 @@ public final class ActivityManagerTest {
         assertTrue(timeReceiver.mTimeUsed != 0);
     }
 
+    /**
+     * Checks whether the device is automotive
+     */
+    private static boolean isAutomotive(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
     @Test
     public void testHomeVisibilityListener() throws Exception {
         assumeFalse("With platforms that have no home screen, no need to test", noHomeScreen());
@@ -922,8 +936,19 @@ public final class ActivityManagerTest {
                 (am) -> am.addHomeVisibilityListener(Runnable::run, homeVisibilityListener));
 
         try {
-            // Make sure we got the first notification that the home screen is visible.
-            assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
+            PackageManager pm = mTargetContext.getPackageManager();
+            // In multi-task mode with split screen there can be more than one application that is
+            // visible and to user. An activity with category HOME might not be visible when HOME
+            // intent is fired.
+            // Hence, when in PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING mode
+            // do not check that HOME is visible.
+            if (!pm.hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
+                    "android.software.car.splitscreen_multitasking")
+                    || !isAutomotive(mTargetContext)) {
+                // Make sure we got the first notification that the home screen is visible.
+                assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
+            }
+
             // Launch a basic activity to obscure the home screen.
             Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
@@ -2244,6 +2269,8 @@ public final class ActivityManagerTest {
     }
 
     @Test
+    @Ignore("b/279787820: This is an internal API "
+            + "that must be one way and thus cannot be verified.")
     public void testNoteForegroundResourceUse() {
         // Testing the method without permissions
         try {
