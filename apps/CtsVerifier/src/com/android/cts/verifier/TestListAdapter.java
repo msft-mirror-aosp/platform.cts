@@ -103,31 +103,37 @@ public abstract class TestListAdapter extends BaseAdapter {
     public static class TestListItem {
 
         /** Title shown in the {@link ListView}. */
-        final String title;
+        public final String title;
 
         /** Test name with class and test ID to uniquely identify the test. Null for categories. */
-        String testName;
+        public String testName;
 
         /** Intent used to launch the activity from the list. Null for categories. */
-        final Intent intent;
+        public final Intent intent;
 
         /** Features necessary to run this test. */
-        final String[] requiredFeatures;
+        public final String[] requiredFeatures;
 
         /** Configs necessary to run this test. */
-        final String[] requiredConfigs;
+        public final String[] requiredConfigs;
 
         /** Intent actions necessary to run this test. */
-        final String[] requiredActions;
+        public final String[] requiredActions;
 
         /** Features such that, if any present, the test gets excluded from being shown. */
-        final String[] excludedFeatures;
+        public final String[] excludedFeatures;
+
+        /** User "types" that, if any present, the test gets excluded from being shown. */
+        public final String[] excludedUserTypes;
 
         /** If any of of the features are present the test is meaningful to run. */
-        final String[] applicableFeatures;
+        public final String[] applicableFeatures;
 
         /** Configs display mode to run this test. */
-        final String displayMode;
+        public final String displayMode;
+
+        /** Configs test pass mode to record the test result. */
+        public final boolean passInEitherMode;
 
         // TODO: refactor to use a Builder approach instead
 
@@ -204,6 +210,37 @@ public abstract class TestListAdapter extends BaseAdapter {
                 String[] requiredActions,
                 String[] excludedFeatures,
                 String[] applicableFeatures,
+                String[] excludedUserTypes,
+                String displayMode,
+                boolean passInEitherMode) {
+            return new TestListItem(
+                    title,
+                    testName,
+                    intent,
+                    requiredFeatures,
+                    requiredConfigs,
+                    requiredActions,
+                    excludedFeatures,
+                    applicableFeatures,
+                    excludedUserTypes,
+                    displayMode,
+                    passInEitherMode);
+        }
+
+        /**
+         * Creates a new test item with given display mode, the required, excluded, applicable
+         * features, required configurations and actions and test pass mode.
+         */
+        public static TestListItem newTest(
+                String title,
+                String testName,
+                Intent intent,
+                String[] requiredFeatures,
+                String[] requiredConfigs,
+                String[] requiredActions,
+                String[] excludedFeatures,
+                String[] applicableFeatures,
+                String[] excludedUserTypes,
                 String displayMode) {
             return new TestListItem(
                     title,
@@ -214,7 +251,9 @@ public abstract class TestListAdapter extends BaseAdapter {
                     requiredActions,
                     excludedFeatures,
                     applicableFeatures,
-                    displayMode);
+                    excludedUserTypes,
+                    displayMode,
+                    /* passInEitherMode= */ false);
         }
 
         /**
@@ -235,10 +274,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     intent,
                     requiredFeatures,
                     requiredConfigs,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     excludedFeatures,
                     applicableFeatures,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         /** Creates a new test item with given required, excluded and applicable features. */
@@ -255,10 +296,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     intent,
                     requiredFeatures,
                     /* requiredConfigs= */ null,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     excludedFeatures,
                     applicableFeatures,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         /** Creates a new test item with given required and excluded features. */
@@ -274,10 +317,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     intent,
                     requiredFeatures,
                     /* requiredConfigs= */ null,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     excludedFeatures,
                     /* applicableFeatures= */ null,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         /** Creates a new test item with given required features. */
@@ -289,10 +334,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     intent,
                     requiredFeatures,
                     /* requiredConfigs= */ null,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     /* excludedFeatures= */ null,
                     /* applicableFeatures= */ null,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         public static TestListItem newCategory(Context context, int titleResId) {
@@ -306,10 +353,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     /* intent= */ null,
                     /* requiredFeatures= */ null,
                     /* requiredConfigs= */ null,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     /* excludedFeatures= */ null,
                     /* applicableFeatures= */ null,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         protected TestListItem(
@@ -325,10 +374,12 @@ public abstract class TestListAdapter extends BaseAdapter {
                     intent,
                     requiredFeatures,
                     /* requiredConfigs= */ null,
-                    /* requiredActions = */ null,
+                    /* requiredActions= */ null,
                     excludedFeatures,
                     applicableFeatures,
-                    /* displayMode= */ null);
+                    /* excludedUserTypes= */ null,
+                    /* displayMode= */ null,
+                    /* passInEitherMode= */ false);
         }
 
         protected TestListItem(
@@ -340,7 +391,9 @@ public abstract class TestListAdapter extends BaseAdapter {
                 String[] requiredActions,
                 String[] excludedFeatures,
                 String[] applicableFeatures,
-                String displayMode) {
+                String[] excludedUserTypes,
+                String displayMode,
+                boolean passInEitherMode) {
             this.title = title;
             if (!sInitialLaunch) {
                 testName = setTestNameSuffix(sCurrentDisplayMode, testName);
@@ -352,7 +405,9 @@ public abstract class TestListAdapter extends BaseAdapter {
             this.requiredConfigs = requiredConfigs;
             this.excludedFeatures = excludedFeatures;
             this.applicableFeatures = applicableFeatures;
+            this.excludedUserTypes = excludedUserTypes;
             this.displayMode = displayMode;
+            this.passInEitherMode = passInEitherMode;
         }
 
         boolean isTest() {
@@ -662,6 +717,16 @@ public abstract class TestListAdapter extends BaseAdapter {
         return position;
     }
 
+    /** Gets {@link TestListItem} with the given test name. */
+    public TestListItem getItemByName(String testName) {
+        for (TestListItem item: mRows) {
+            if (item != null && item.testName != null && item.testName.equals(testName)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
     public int getTestResult(int position) {
         TestListItem item = getItem(position);
         return mTestResults.containsKey(item.testName)
@@ -893,6 +958,23 @@ public abstract class TestListAdapter extends BaseAdapter {
                 && mode.equalsIgnoreCase(DisplayMode.FOLDED.toString())
                 && !name.endsWith(DisplayMode.FOLDED.asSuffix())) {
             return name + DisplayMode.FOLDED.asSuffix();
+        }
+        return name;
+    }
+
+    /**
+     * Removes test name suffix. In the unfolded mode, remove the suffix [folded].
+     *
+     * @param mode A string of current display mode.
+     * @param name A string of test name.
+     * @return A string of test name without suffix, [folded], in the unfolded mode. A string of
+     *     input test name in the folded mode.
+     */
+    public static String removeTestNameSuffix(String mode, String name) {
+        if (name != null
+                && mode.equalsIgnoreCase(DisplayMode.UNFOLDED.toString())
+                && name.endsWith(DisplayMode.FOLDED.asSuffix())) {
+            return name.substring(0, name.length() - DisplayMode.FOLDED.asSuffix().length());
         }
         return name;
     }

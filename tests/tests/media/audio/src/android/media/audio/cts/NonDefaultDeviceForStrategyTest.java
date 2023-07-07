@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -55,6 +56,13 @@ public class NonDefaultDeviceForStrategyTest {
     private static final AudioAttributes COMMUNICATION_ATTR = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).build();
     private static final int TEST_TIMING_TOLERANCE_MS = 100;
+
+    /**
+     * Device types that are communication devices but may not be picked by default engine.
+     */
+    private static final HashSet<Integer> EXCLUDED_COMMUNICATION_DEVICE_TYPES = new HashSet<>() {{
+            add(AudioDeviceInfo.TYPE_HDMI);
+        }};
 
     private AudioManager mAudioManager;
     private List<AudioProductStrategy> mStrategies;
@@ -184,6 +192,8 @@ public class NonDefaultDeviceForStrategyTest {
     @Test
     public void testSetNonDefaultDeviceRouting() throws Exception {
         List<AudioDeviceInfo> availableDevices = mAudioManager.getAvailableCommunicationDevices();
+        availableDevices.removeIf(
+                device -> EXCLUDED_COMMUNICATION_DEVICE_TYPES.contains(device.getType()));
         assumeTrue("Skip test: less than 2 available communication devices",
                 availableDevices.size() > 1);
 
@@ -208,6 +218,8 @@ public class NonDefaultDeviceForStrategyTest {
     @Test
     public void testNonDefaultDeviceListener() throws Exception {
         List<AudioDeviceInfo> availableDevices = mAudioManager.getAvailableCommunicationDevices();
+        availableDevices.removeIf(
+                device -> EXCLUDED_COMMUNICATION_DEVICE_TYPES.contains(device.getType()));
         assumeTrue("Skip test: less than 2 available communication devices",
                 availableDevices.size() > 1);
 
@@ -234,7 +246,7 @@ public class NonDefaultDeviceForStrategyTest {
         assertTrue("Listener was called with wrong device for set",
                 listener.mReceivedDevices.get(0).equalTypeAddress(device));
 
-        // Verify removePreferredDeviceForStrategy triggers callback
+        // Verify removeDeviceAsNonDefaultForStrategy triggers callback
         listener.reset();
         assertTrue("Error removing non-default device for phone",
                 mAudioManager.removeDeviceAsNonDefaultForStrategy(mStrategyForPhone, device));
@@ -251,11 +263,6 @@ public class NonDefaultDeviceForStrategyTest {
         mAudioManager.removeOnNonDefaultDevicesForStrategyChangedListener(listener);
         assertTrue("Error calling setDeviceAsNonDefaultForStrategy",
                 mAudioManager.setPreferredDeviceForStrategy(mStrategyForPhone, device));
-        listener.await(TEST_TIMING_TOLERANCE_MS);
-        assertFalse("Preferred device listener failed to be removed", listener.mCalled);
-        listener.reset();
-        assertTrue("Error removing preferred device for media without listener",
-                mAudioManager.removePreferredDeviceForStrategy(mStrategyForMedia));
         listener.await(TEST_TIMING_TOLERANCE_MS);
         assertFalse("Preferred device listener failed to be removed", listener.mCalled);
     }

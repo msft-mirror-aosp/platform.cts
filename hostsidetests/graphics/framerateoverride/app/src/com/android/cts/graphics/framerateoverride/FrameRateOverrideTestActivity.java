@@ -32,8 +32,6 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -188,14 +186,16 @@ public class FrameRateOverrideTestActivity extends Activity {
                     mSurface != null, isResumed()),
                     timeRemainingMillis > 0);
             mLock.wait(timeRemainingMillis);
-            assertTrue("Activity was unexpectedly destroyed", !isDestroyed());
+            assertTrue(
+                    "Activity was unexpectedly destroyed", !isDestroyed());
             nowNanos = System.nanoTime();
         }
     }
 
     // Returns true if we encounter a precondition violation, false otherwise.
     private boolean waitForPreconditionViolation() throws InterruptedException {
-        assertTrue("Activity was unexpectedly destroyed", !isDestroyed());
+        assertTrue(
+                "Activity was unexpectedly destroyed", !isDestroyed());
         long nowNanos = System.nanoTime();
         long endTimeNanos = nowNanos + PRECONDITION_VIOLATION_WAIT_TIMEOUT_NANOSECONDS;
         while (mSurface != null && isResumed()) {
@@ -204,7 +204,8 @@ public class FrameRateOverrideTestActivity extends Activity {
                 break;
             }
             mLock.wait(timeRemainingMillis);
-            assertTrue("Activity was unexpectedly destroyed", !isDestroyed());
+            assertTrue(
+                    "Activity was unexpectedly destroyed", !isDestroyed());
             nowNanos = System.nanoTime();
         }
         return mSurface == null || !isResumed();
@@ -426,59 +427,6 @@ public class FrameRateOverrideTestActivity extends Activity {
                 float initialRefreshRate) throws InterruptedException, IOException;
     }
 
-    class SurfaceSetFrameRateTest implements TestScenario {
-        private void setPreferredRefreshRate(float refreshRate) {
-            mHandler.post(() -> {
-                Window window = getWindow();
-                WindowManager.LayoutParams params = window.getAttributes();
-                params.preferredRefreshRate = refreshRate;
-                window.setAttributes(params);
-            });
-        }
-
-        @Override
-        public void test(FrameRateObserver frameRateObserver,
-                float initialRefreshRate) throws InterruptedException {
-            Log.i(TAG, "Starting testFrameRateOverride");
-            float halfFrameRate = initialRefreshRate / 2;
-
-            waitForRefreshRateChange(initialRefreshRate);
-            frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Initial");
-
-            Log.i(TAG, String.format("Setting Frame Rate to %.2f with default compatibility",
-                    halfFrameRate));
-            mSurface.setFrameRate(halfFrameRate, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
-                    Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
-            waitForRefreshRateChange(halfFrameRate);
-            frameRateObserver.observe(initialRefreshRate, halfFrameRate, "setFrameRate(default)");
-
-            Log.i(TAG, String.format("Setting Frame Rate to %.2f with fixed source compatibility",
-                    halfFrameRate));
-            mSurface.setFrameRate(halfFrameRate, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
-                    Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
-            waitForRefreshRateChange(halfFrameRate);
-            frameRateObserver.observe(initialRefreshRate, halfFrameRate,
-                    "setFrameRate(fixed source)");
-
-            Log.i(TAG, "Resetting Frame Rate setting");
-            mSurface.setFrameRate(0, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
-                    Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
-            waitForRefreshRateChange(initialRefreshRate);
-            frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Reset");
-
-            Log.i(TAG, String.format("Setting preferredRefreshRate to %.2f", halfFrameRate));
-            setPreferredRefreshRate(halfFrameRate);
-            waitForRefreshRateChange(halfFrameRate);
-            frameRateObserver.observe(initialRefreshRate, halfFrameRate, "preferredRefreshRate");
-
-            Log.i(TAG, String.format("Resetting preferredRefreshRate setting"));
-            setPreferredRefreshRate(0);
-            waitForRefreshRateChange(initialRefreshRate);
-            frameRateObserver.observe(initialRefreshRate, initialRefreshRate,
-                    "preferredRefreshRate reset");
-        }
-    }
-
     class GameModeTest implements TestScenario {
         private UiDevice mUiDevice;
         GameModeTest(UiDevice uiDevice) {
@@ -506,37 +454,6 @@ public class FrameRateOverrideTestActivity extends Activity {
             mUiDevice.executeShellCommand(String.format("cmd game reset %s", getPackageName()));
             waitForRefreshRateChange(initialRefreshRate);
             frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Reset");
-        }
-    }
-
-    class PreferredRefreshRateFrameTest implements TestScenario {
-        private void setPreferredRefreshRate(float refreshRate) {
-            mHandler.post(() -> {
-                Window window = getWindow();
-                WindowManager.LayoutParams params = window.getAttributes();
-
-                // Use preferred[Min|Max]DisplayRefreshRate instead of preferredRefreshRate for SF
-                // to switch the frame rate based on DM policy
-                params.preferredMinDisplayRefreshRate = refreshRate;
-                params.preferredMaxDisplayRefreshRate = refreshRate;
-                window.setAttributes(params);
-            });
-        }
-
-        @Override
-        public void test(FrameRateObserver frameRateObserver,
-                float initialRefreshRate) throws InterruptedException {
-            Log.i(TAG, "Starting testFrameRateOverride");
-            float halfFrameRate = initialRefreshRate / 2;
-
-            waitForRefreshRateChange(initialRefreshRate);
-            frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Initial");
-
-            Log.i(TAG, String.format("Setting preferredRefreshRateFrame to %.2f", halfFrameRate));
-            setPreferredRefreshRate(halfFrameRate);
-            waitForRefreshRateChange(halfFrameRate);
-            frameRateObserver.observe(initialRefreshRate, halfFrameRate,
-                    "preferredRefreshRateFrame");
         }
     }
 

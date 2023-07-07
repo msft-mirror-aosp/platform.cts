@@ -16,6 +16,7 @@
 
 package android.jobscheduler.cts;
 
+import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.net.NetworkCapabilities.TRANSPORT_ETHERNET;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 
@@ -37,6 +38,7 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.NetworkPolicyManager;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
@@ -159,8 +161,10 @@ public class NetworkingHelper {
         if (!mHasEthernet) return false;
         Network[] networks = mConnectivityManager.getAllNetworks();
         for (Network network : networks) {
-            if (mConnectivityManager.getNetworkCapabilities(network)
-                    .hasTransport(TRANSPORT_ETHERNET)) {
+            NetworkCapabilities networkCapabilities =
+                    mConnectivityManager.getNetworkCapabilities(network);
+            if (networkCapabilities != null
+                    && networkCapabilities.hasTransport(TRANSPORT_ETHERNET)) {
                 return true;
             }
         }
@@ -193,7 +197,9 @@ public class NetworkingHelper {
         }
         final NetworkCapabilities networkCapabilities =
                 mConnectivityManager.getNetworkCapabilities(network);
-        return networkCapabilities != null && networkCapabilities.hasTransport(TRANSPORT_WIFI);
+        return networkCapabilities != null
+                && networkCapabilities.hasTransport(TRANSPORT_WIFI)
+                && networkCapabilities.hasCapability(NET_CAPABILITY_VALIDATED);
     }
 
     boolean isWifiEnabled() {
@@ -236,7 +242,9 @@ public class NetworkingHelper {
                     if (on) {
                         Network[] networks = mConnectivityManager.getAllNetworks();
                         for (Network network : networks) {
-                            if (mConnectivityManager.getNetworkCapabilities(network)
+                            NetworkCapabilities networkCapabilities =
+                                    mConnectivityManager.getNetworkCapabilities(network);
+                            if (networkCapabilities != null && networkCapabilities
                                     .hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                                 return false;
                             }
@@ -254,12 +262,17 @@ public class NetworkingHelper {
     }
 
     /**
-     * Ensures that restrict background data usage policy is turned off.
-     * If the policy is on, it interferes with tests that relies on metered connection.
+     * Sets Data Saver to the desired on/off state.
      */
     void setDataSaverEnabled(boolean enabled) throws Exception {
         SystemUtil.runShellCommand(mInstrumentation,
                 enabled ? RESTRICT_BACKGROUND_ON_CMD : RESTRICT_BACKGROUND_OFF_CMD);
+        final NetworkPolicyManager networkPolicyManager =
+                mContext.getSystemService(NetworkPolicyManager.class);
+        waitUntil("Data saver " + (enabled ? "not enabled" : "still enabled"),
+                () -> enabled == SystemUtil.runWithShellPermissionIdentity(
+                        () -> networkPolicyManager.getRestrictBackground(),
+                        Manifest.permission.MANAGE_NETWORK_POLICY));
     }
 
     private void setLocationMode(String mode) throws Exception {
@@ -300,6 +313,7 @@ public class NetworkingHelper {
             NetworkRequest nr = new NetworkRequest.Builder().clearCapabilities().build();
             NetworkCapabilities nc = new NetworkCapabilities.Builder()
                     .addTransportType(TRANSPORT_WIFI)
+                    .addCapability(NET_CAPABILITY_VALIDATED)
                     .build();
             NetworkTracker tracker = new NetworkTracker(nc, enable, mConnectivityManager);
             mConnectivityManager.registerNetworkCallback(nr, tracker);

@@ -54,6 +54,7 @@ import org.junit.Test;
  *     atest CtsWindowManagerDeviceTestCases:TaskFragmentOrganizerTest
  */
 @Presubmit
+@android.server.wm.annotation.Group2
 public class TaskFragmentOrganizerTest extends TaskFragmentOrganizerTestBase {
     private final ComponentName mLaunchingActivity = new ComponentName(mContext,
             WindowMetricsActivityTests.MetricsActivity.class);

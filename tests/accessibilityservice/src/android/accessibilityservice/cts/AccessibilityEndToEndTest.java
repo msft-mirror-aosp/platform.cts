@@ -41,6 +41,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -131,6 +132,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class performs end-to-end testing of the accessibility feature by
@@ -197,8 +199,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @After
     public void tearDown() throws Exception {
         sUiAutomation.dropShellPermissionIdentity();
-        // Reset isAccessibilityTool property to default (true), in case modified by tests.
-        setAccessibilityTool(true);
     }
 
     @MediumTest
@@ -962,7 +962,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Button buttonWithTooltip = mActivity.findViewById(R.id.buttonWithTooltip);
         final int[] buttonWithTooltipLocation = new int[2];
         buttonWithTooltip.getLocationOnScreen(buttonWithTooltipLocation);
-        final int touchableSize = 48;
+        final int touchableSize = resources.getDimensionPixelSize(
+                R.dimen.button_touchable_width_increment_amount);
         final int hoverRight = buttonWithTooltipLocation[0] + touchableSize / 2;
         final int hoverLeft = buttonLocation[0] + button.getWidth() + touchableSize / 2;
         final int hoverMiddle = (hoverLeft + hoverRight) / 2;
@@ -1020,8 +1021,9 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             throws Throwable {
         mActivity.waitForEnterAnimationComplete();
 
-        final int touchableSize = 48;
         final Resources resources = sInstrumentation.getTargetContext().getResources();
+        final int touchableSize = resources.getDimensionPixelSize(
+                R.dimen.button_touchable_width_increment_amount);
         final String targetResourceName = resources.getResourceName(R.id.buttonDelegated);
         final View textView = mActivity.findViewById(R.id.delegateText);
         final Button target = mActivity.findViewById(R.id.buttonDelegated);
@@ -1076,27 +1078,44 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_visibleToAccessibilityTool() throws Throwable {
-        // Relevant view structure:
-        //   containerView (LinearLayout, accessibilityDataPrivate=auto)
-        //     adpView (LinearLayout, accessibilityDataPrivate=true)
-        //       innerContainerView (LinearLayout, accessibilityDataPrivate=auto)
-        //         innerView (Button, accessibilityDataPrivate=auto)
-        // Only adpView sets accessibilityDataPrivate=true in the layout XML.
-        // Inner views should inherit true from their (grand)parent view.
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_nodeMatchesViewProperty() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(true);
         try {
-            setAccessibilityTool(true);
-            // Needed for performAction(ACTION_ACCESSIBILITY_FOCUS)
-            enableTouchExploration(true);
-            final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+            final AccessibilityNodeInfo root = service.getRootInActiveWindow();
+
+            final AccessibilityNodeInfo nonAdsNode = root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.containerView)).get(0);
+            final AccessibilityNodeInfo adsNode = root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.adsView)).get(0);
+
+            assertThat(nonAdsNode.isAccessibilityDataSensitive()).isFalse();
+            assertThat(adsNode.isAccessibilityDataSensitive()).isTrue();
+        } finally {
+            service.disableSelfAndRemove();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_visibleToAccessibilityTool() throws Throwable {
+        // Relevant view structure:
+        //   containerView (LinearLayout, accessibilityDataSensitive=auto)
+        //     adsView (LinearLayout, accessibilityDataSensitive=true)
+        //       innerContainerView (LinearLayout, accessibilityDataSensitive=auto)
+        //         innerView (Button, accessibilityDataSensitive=auto)
+        // Only adsView sets accessibilityDataSensitive=true in the layout XML.
+        // Inner views should inherit true from their (grand)parent view.
+        final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(true);
+        try {
+            final AccessibilityNodeInfo root = service.getRootInActiveWindow();
 
             final String containerViewName = mActivity.getResources().getResourceName(
                     R.id.containerView);
 
-            final String adpViewName = mActivity.getResources().getResourceName(R.id.adpView);
-            final String adpViewText = mActivity.findViewById(
-                    R.id.adpView).getContentDescription().toString();
+            final String adsViewName = mActivity.getResources().getResourceName(R.id.adsView);
+            final String adsViewText = mActivity.findViewById(
+                    R.id.adsView).getContentDescription().toString();
 
             final String innerContainerViewName = mActivity.getResources().getResourceName(
                     R.id.innerContainerView);
@@ -1111,39 +1130,38 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // Search for the Views' nodes using various techniques:
 
             // ByViewId
-            assertThat(root.findAccessibilityNodeInfosByViewId(adpViewName)).hasSize(1);
+            assertThat(root.findAccessibilityNodeInfosByViewId(adsViewName)).hasSize(1);
             assertThat(root.findAccessibilityNodeInfosByViewId(innerContainerViewName)).hasSize(1);
             assertThat(root.findAccessibilityNodeInfosByViewId(innerViewName)).hasSize(1);
             // ByText
-            assertThat(root.findAccessibilityNodeInfosByText(adpViewText)).hasSize(1);
+            assertThat(root.findAccessibilityNodeInfosByText(adsViewText)).hasSize(1);
             assertThat(root.findAccessibilityNodeInfosByText(innerContainerViewText)).hasSize(1);
             assertThat(root.findAccessibilityNodeInfosByText(innerViewText)).hasSize(1);
             // Event propagation and findFocus
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> assertTrue(root.findAccessibilityNodeInfosByViewId(adpViewName).get(
-                            0).performAction(ACTION_ACCESSIBILITY_FOCUS)),
-                    filterForEventTypeWithResource(TYPE_VIEW_ACCESSIBILITY_FOCUSED, adpViewName),
-                    DEFAULT_TIMEOUT_MS);
-            assertThat(sUiAutomation.findFocus(
+            service.setEventFilter(
+                    filterForEventTypeWithResource(TYPE_VIEW_ACCESSIBILITY_FOCUSED, adsViewName));
+            assertThat(root.findAccessibilityNodeInfosByViewId(adsViewName).get(0)
+                    .performAction(ACTION_ACCESSIBILITY_FOCUS)).isTrue();
+            service.waitOnEvent(DEFAULT_TIMEOUT_MS,
+                    "Expected TYPE_VIEW_ACCESSIBILITY_FOCUSED event");
+            assertThat(service.findFocus(
                     AccessibilityNodeInfo.FOCUS_ACCESSIBILITY).getContentDescription()).isEqualTo(
-                    adpViewText);
+                    adsViewText);
             // Parent view's getChild()
             final AccessibilityNodeInfo parent = root.findAccessibilityNodeInfosByViewId(
                     containerViewName).get(0);
             assertThat(parent.getChildCount()).isEqualTo(1);
             assertThat(parent.getChild(0)).isNotNull();
         } finally {
-            enableTouchExploration(false);
+            service.disableSelfAndRemove();
         }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_canObserveHoverEvent() throws Throwable {
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_canObserveHoverEvent() {
+        final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(true);
         try {
-            setAccessibilityTool(true);
-            enableTouchExploration(true);
-
             final long time = SystemClock.uptimeMillis();
             final View view = mActivity.findViewById(R.id.innerView);
             final int[] viewLocation = new int[2];
@@ -1151,223 +1169,301 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             final int x = viewLocation[0] + view.getWidth() / 2;
             final int y = viewLocation[1] + view.getHeight() / 2;
 
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(time, true, x, y),
+            service.setEventFilter(
                     filterForEventTypeWithResource(
                             AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
                             sInstrumentation.getTargetContext().getResources()
-                                    .getResourceName(R.id.innerView)),
-                    DEFAULT_TIMEOUT_MS);
+                                    .getResourceName(R.id.innerView)));
+            injectHoverEvent(time, true, x, y);
+            service.waitOnEvent(DEFAULT_TIMEOUT_MS, "Expected TYPE_VIEW_HOVER_ENTER event");
         } finally {
-            enableTouchExploration(false);
+            service.disableSelfAndRemove();
         }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_checkAdpProperty_topDown() {
-        // Accessing the View#isAccessibilityDataPrivate() property causes both the View & its
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_checkAdsProperty_topDown() {
+        // Accessing the View#isAccessibilityDataSensitive() property causes both the View & its
         // parent hierarchy to cache their values.
         // Assert that the property is as expected when starting from the top-most view.
-        assertThat(
-                mActivity.findViewById(R.id.containerView).isAccessibilityDataPrivate()).isFalse();
-        assertThat(mActivity.findViewById(R.id.adpView).isAccessibilityDataPrivate()).isTrue();
-        assertThat(mActivity.findViewById(
-                R.id.innerContainerView).isAccessibilityDataPrivate()).isTrue();
-        assertThat(mActivity.findViewById(R.id.innerView).isAccessibilityDataPrivate()).isTrue();
+        assertThat(mActivity.findViewById(R.id.containerView).isAccessibilityDataSensitive())
+                .isFalse();
+        assertThat(mActivity.findViewById(R.id.adsView).isAccessibilityDataSensitive()).isTrue();
+        assertThat(mActivity.findViewById(R.id.innerContainerView).isAccessibilityDataSensitive())
+                .isTrue();
+        assertThat(mActivity.findViewById(R.id.innerView).isAccessibilityDataSensitive()).isTrue();
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_checkAdpProperty_bottomUp() {
-        // Accessing the View#isAccessibilityDataPrivate() property causes both the View & its
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_checkAdsProperty_bottomUp() {
+        // Accessing the View#isAccessibilityDataSensitive() property causes both the View & its
         // parent hierarchy to cache their values.
         // Assert that the property is as expected when starting from the bottom-most view.
-        assertThat(mActivity.findViewById(R.id.innerView).isAccessibilityDataPrivate()).isTrue();
-        assertThat(mActivity.findViewById(
-                R.id.innerContainerView).isAccessibilityDataPrivate()).isTrue();
-        assertThat(mActivity.findViewById(R.id.adpView).isAccessibilityDataPrivate()).isTrue();
-        assertThat(
-                mActivity.findViewById(R.id.containerView).isAccessibilityDataPrivate()).isFalse();
+        assertThat(mActivity.findViewById(R.id.innerView).isAccessibilityDataSensitive()).isTrue();
+        assertThat(mActivity.findViewById(R.id.innerContainerView).isAccessibilityDataSensitive())
+                .isTrue();
+        assertThat(mActivity.findViewById(R.id.adsView).isAccessibilityDataSensitive()).isTrue();
+        assertThat(mActivity.findViewById(R.id.containerView).isAccessibilityDataSensitive())
+                .isFalse();
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
             "android.view.accessibility.AccessibilityNodeInfo#findAccessibilityNodeInfosByViewId",
             "android.view.accessibility.AccessibilityNodeInfo#findAccessibilityNodeInfosByText",
             "android.view.accessibility.AccessibilityNodeInfo#getChild"})
-    public void testAccessibilityDataPrivate_hiddenFromSearches() {
-        setAccessibilityTool(false);
-        final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
-        final String adpViewName = mActivity.getResources().getResourceName(R.id.adpView);
-        final String adpViewText = mActivity.getString(R.string.adp_desc);
+    public void testAccessibilityDataSensitive_hiddenFromSearches() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            final AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            final String adsViewName = mActivity.getResources().getResourceName(R.id.adsView);
+            final String adsViewText = mActivity.getString(R.string.ads_desc);
 
-        assertThat(root.findAccessibilityNodeInfosByViewId(adpViewName)).isEmpty();
-        assertThat(root.findAccessibilityNodeInfosByText(adpViewText)).isEmpty();
-        Deque<AccessibilityNodeInfo> deque = new ArrayDeque<>();
-        deque.add(root);
-        while (!deque.isEmpty()) {
-            AccessibilityNodeInfo node = deque.removeFirst();
-            assertThat(node.getContentDescription()).isNotEqualTo(adpViewText);
-            for (int i = node.getChildCount() - 1; i >= 0; i--) {
-                deque.addLast(node.getChild(i));
+            assertThat(root.findAccessibilityNodeInfosByViewId(adsViewName)).isEmpty();
+            assertThat(root.findAccessibilityNodeInfosByText(adsViewText)).isEmpty();
+            Deque<AccessibilityNodeInfo> deque = new ArrayDeque<>();
+            deque.add(root);
+            while (!deque.isEmpty()) {
+                AccessibilityNodeInfo node = deque.removeFirst();
+                assertThat(node.getContentDescription()).isNotEqualTo(adsViewText);
+                for (int i = node.getChildCount() - 1; i >= 0; i--) {
+                    deque.addLast(node.getChild(i));
+                }
+            }
+        } finally {
+            service.disableSelfAndRemove();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
+            "android.accessibilityservice.AccessibilityService#findFocus"})
+    public void testAccessibilityDataSensitive_hiddenFromFindFocus() {
+        StubEventCapturingAccessibilityService toolService = null;
+        InstrumentedAccessibilityService nonToolService = null;
+        try {
+            toolService = getServiceForA11yToolTests(true);
+            nonToolService = getServiceForA11yToolTests(false);
+
+            // Set up initial focus on the ADS view.
+            toolService.setEventFilter(filterForEventType(TYPE_VIEW_ACCESSIBILITY_FOCUSED));
+            assertThat(mActivity.findViewById(R.id.adsView).performAccessibilityAction(
+                    ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
+            toolService.waitOnEvent(DEFAULT_TIMEOUT_MS,
+                    "Expected TYPE_VIEW_ACCESSIBILITY_FOCUSED event");
+
+            assertThat(toolService.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY))
+                    .isNotNull();
+            assertThat(nonToolService.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY))
+                    .isNull();
+        } finally {
+            if (toolService != null) {
+                toolService.disableSelfAndRemove();
+            }
+            if (nonToolService != null) {
+                nonToolService.disableSelfAndRemove();
             }
         }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
-            "android.accessibilityservice.AccessibilityService#findFocus"})
-    public void testAccessibilityDataPrivate_hiddenFromFindFocus() throws Throwable {
-        try {
-            // Set up initial a11y focus on the ADP view while UIAutomation isAccessibilityTool.
-            setAccessibilityTool(true);
-            // Needed for performAction(ACTION_ACCESSIBILITY_FOCUS)
-            enableTouchExploration(true);
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> assertTrue(
-                            mActivity.findViewById(R.id.adpView).performAccessibilityAction(
-                                    ACTION_ACCESSIBILITY_FOCUS, null)),
-                    filterForEventType(TYPE_VIEW_ACCESSIBILITY_FOCUSED),
-                    DEFAULT_TIMEOUT_MS);
-            assertThat(
-                    sUiAutomation.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)).isNotNull();
-
-            // Finding a11y focus should return null after UIAutomation !isAccessibilityTool.
-            setAccessibilityTool(false);
-            // Re-enable touch exploration after setAccessibilityTool(), which resets sUiAutomation.
-            enableTouchExploration(true);
-            assertThat(sUiAutomation.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)).isNull();
-        } finally {
-            enableTouchExploration(false);
-        }
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
             "android.view.accessibility.AccessibilityNodeInfo#findAccessibilityNodeInfosByViewId",
             "android.view.accessibility.AccessibilityNodeInfo#getChild"})
-    public void testAccessibilityDataPrivate_excludedFromParent() {
-        setAccessibilityTool(false);
-        final AccessibilityNodeInfo parentContainer =
-                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                        mActivity.getResources().getResourceName(R.id.containerView)).get(0);
+    public void testAccessibilityDataSensitive_excludedFromParent() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            final AccessibilityNodeInfo parentContainer =
+                    service.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                            mActivity.getResources().getResourceName(R.id.containerView)).get(0);
 
-        assertThat(parentContainer.getChildCount()).isEqualTo(0);
-        assertThat(parentContainer.getChild(0)).isNull();
+            assertThat(parentContainer.getChildCount()).isEqualTo(0);
+            assertThat(parentContainer.getChild(0)).isNull();
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
             "android.view.accessibility.AccessibilityNodeInfo#findAccessibilityNodeInfosByViewId"})
-    public void testAccessibilityDataPrivate_innerChildHidden() {
-        setAccessibilityTool(false);
+    public void testAccessibilityDataSensitive_innerChildHidden() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
 
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
+        try {
+            assertThat(service.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
             "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
-    public void testAccessibilityDataPrivate_hiddenFromEventPropagation() {
-        setAccessibilityTool(false);
-        final View innerView = mActivity.findViewById(R.id.innerView);
-        innerView.setOnClickListener(v -> {
-            // empty, but necessary for performClick to return true
-        });
-        assertTrue(innerView.isAccessibilityDataPrivate());
-        assertTrue(innerView.isClickable());
+    public void testAccessibilityDataSensitive_hiddenFromEventPropagation() {
+        final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            final View innerView = mActivity.findViewById(R.id.innerView);
+            innerView.setOnClickListener(v -> {
+                // empty, but necessary for performClick to return true
+            });
+            assertTrue(innerView.isAccessibilityDataSensitive());
+            assertTrue(innerView.isClickable());
 
-        sInstrumentation.runOnMainSync(() -> {
-            try {
-                sUiAutomation.executeAndWaitForEvent(
-                        () -> assertTrue(innerView.performClick()),
-                        filterForEventType(TYPE_VIEW_CLICKED),
-                        DEFAULT_TIMEOUT_MS);
-                fail("Received TYPE_VIEW_CLICKED event from accessibilityDataPrivate view.");
-            } catch (TimeoutException ignored) {
-                // timeout is expected
-            }
-        });
+            service.setEventFilter(filterForEventType(TYPE_VIEW_CLICKED));
+            sInstrumentation.runOnMainSync(() -> assertThat(innerView.performClick()).isTrue());
+            assertThrows("Received TYPE_VIEW_CLICKED event from accessibilityDataSensitive view.",
+                    AssertionError.class,
+                    () -> service.waitOnEvent(DEFAULT_TIMEOUT_MS, "(expected to timeout)"));
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_hiddenIfFilterTouchesWhenObscured() {
-        setAccessibilityTool(false);
-        View containerView = mActivity.findViewById(R.id.containerView);
-        assertThat(containerView.isAccessibilityDataPrivate()).isFalse();
-        assertThat(containerView.getFilterTouchesWhenObscured()).isFalse();
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_hiddenIfFilterTouchesWhenObscured() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            View containerView = mActivity.findViewById(R.id.containerView);
+            assertThat(containerView.isAccessibilityDataSensitive()).isFalse();
+            assertThat(containerView.getFilterTouchesWhenObscured()).isFalse();
 
-        mActivity.findViewById(R.id.containerView).setFilterTouchesWhenObscured(true);
+            mActivity.findViewById(R.id.containerView).setFilterTouchesWhenObscured(true);
 
-        assertThat(containerView.isAccessibilityDataPrivate()).isTrue();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.containerView))).isEmpty();
+            assertThat(containerView.isAccessibilityDataSensitive()).isTrue();
+            assertThat(service.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.containerView))).isEmpty();
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
-            "android.view.View#setAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_changingValueUpdatesChildren_noFirst() {
-        setAccessibilityTool(false);
-        // The view starts as ADP=true as defined in the XML.
-        View adpView = mActivity.findViewById(R.id.adpView);
-        assertThat(adpView.isAccessibilityDataPrivate()).isTrue();
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
+            "android.view.View#setAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_changingValueUpdatesChildren_noFirst() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            final AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            // The view starts as ADS=true as defined in the XML.
+            View adsView = mActivity.findViewById(R.id.adsView);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
 
-        // Set to NO, ensure we can find this view & all (grand)children.
-        adpView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_NO);
-        assertThat(adpView.isAccessibilityDataPrivate()).isFalse();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.adpView))).isNotEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerContainerView))).isNotEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerView))).isNotEmpty();
+            // Set to NO, ensure we can find this view & all (grand)children.
+            adsView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_NO);
+            assertThat(adsView.isAccessibilityDataSensitive()).isFalse();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.adsView))).isNotEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(
+                            R.id.innerContainerView))).isNotEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerView))).isNotEmpty();
 
-        // Set back to YES, ensure this view & all (grand)children are hidden.
-        adpView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_YES);
-        assertThat(adpView.isAccessibilityDataPrivate()).isTrue();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.adpView))).isEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerContainerView))).isEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
+            // Set back to YES, ensure this view & all (grand)children are hidden.
+            adsView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.adsView))).isEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerContainerView))).isEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
     @Test
-    @ApiTest(apis = {"android.view.View#isAccessibilityDataPrivate",
-            "android.view.View#setAccessibilityDataPrivate"})
-    public void testAccessibilityDataPrivate_changingValueUpdatesChildren_yesFirst() {
-        setAccessibilityTool(false);
-        // The view starts as ADP=true as defined in the XML.
-        View adpView = mActivity.findViewById(R.id.adpView);
-        assertThat(adpView.isAccessibilityDataPrivate()).isTrue();
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive",
+            "android.view.View#setAccessibilityDataSensitive"})
+    public void testAccessibilityDataSensitive_changingValueUpdatesChildren_yesFirst() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            final AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            // The view starts as AccessibilityDataSensitive=true as defined in the XML.
+            View adsView = mActivity.findViewById(R.id.adsView);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
 
-        // Explicitly set to YES, ensure this view & all (grand)children are hidden.
-        adpView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_YES);
-        assertThat(adpView.isAccessibilityDataPrivate()).isTrue();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.adpView))).isEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerContainerView))).isEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
+            // Explicitly set to YES, ensure this view & all (grand)children are hidden.
+            adsView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.adsView))).isEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerContainerView))).isEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerView))).isEmpty();
 
-        // Set to NO, ensure we can find this view & all (grand)children.
-        adpView.setAccessibilityDataPrivate(View.ACCESSIBILITY_DATA_PRIVATE_NO);
-        assertThat(adpView.isAccessibilityDataPrivate()).isFalse();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.adpView))).isNotEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerContainerView))).isNotEmpty();
-        assertThat(sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
-                mActivity.getResources().getResourceName(R.id.innerView))).isNotEmpty();
+            // Set to NO, ensure we can find this view & all (grand)children.
+            adsView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_NO);
+            assertThat(adsView.isAccessibilityDataSensitive()).isFalse();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.adsView))).isNotEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(
+                            R.id.innerContainerView))).isNotEmpty();
+            assertThat(root.findAccessibilityNodeInfosByViewId(
+                    mActivity.getResources().getResourceName(R.id.innerView))).isNotEmpty();
+        } finally {
+            service.disableSelfAndRemove();
+        }
     }
 
-    // TODO(b/240199303): Use a new activity with FLAG_SECURE to test the window & views are ADP
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityManager#isRequestFromAccessibilityTool"})
+    public void testAccessibilityDataSensitive_requestIsFromAccessibilityTool_TrueForTool() {
+        checkIsRequestFromAccessibilityTool(true);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityManager#isRequestFromAccessibilityTool"})
+    public void testAccessibilityDataSensitive_requestIsFromAccessibilityTool_FalseForNonTool() {
+        checkIsRequestFromAccessibilityTool(false);
+    }
+
+    private void checkIsRequestFromAccessibilityTool(boolean serviceIsAccessibilityTool) {
+        final InstrumentedAccessibilityService service =
+            getServiceForA11yToolTests(serviceIsAccessibilityTool);
+        try {
+            final View view = mActivity.findViewById(R.id.listview);
+            final String viewId = mActivity.getResources().getResourceName(R.id.listview);
+            final AccessibilityManager accessibilityManager =
+                    (AccessibilityManager) sInstrumentation.getContext().getSystemService(
+                            Service.ACCESSIBILITY_SERVICE);
+
+            final Object waitLock = new Object();
+            final AtomicReference<Boolean> fromTool = new AtomicReference<>();
+            view.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                @Override
+                public void onInitializeAccessibilityNodeInfo(View host,
+                        AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(host, info);
+                    synchronized (waitLock) {
+                        fromTool.set(accessibilityManager.isRequestFromAccessibilityTool());
+                        waitLock.notifyAll();
+                    }
+                }
+            });
+
+            // Trigger node creation from the service-under-test.
+            service.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(viewId);
+
+            TestUtils.waitOn(waitLock,
+                    () -> fromTool.get() != null && fromTool.get() == serviceIsAccessibilityTool,
+                    DEFAULT_TIMEOUT_MS,
+                    "Expected isRequestFromAccessibilityTool to be "
+                        + serviceIsAccessibilityTool);
+        } finally {
+            service.disableSelfAndRemove();
+        }
+    }
 
     @Test
     @ApiTest(apis = {
@@ -1560,18 +1656,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(nodeInfo.hasRequestInitialAccessibilityFocus()).isTrue();
     }
 
-    @Test
-    @ApiTest(apis = {
-            "android.view.accessibility.AccessibilityNodeInfo"
-                    + "#setRequestTouchPassthrough",
-            "android.view.accessibility.AccessibilityNodeInfo"
-                    + "#hasRequestTouchPassthrough"})
-    public void testSetRequestTouchPassthrough() {
-        final View testView = mActivity.findViewById(R.id.buttonLayout);
-        final AccessibilityNodeInfo nodeInfo = testView.createAccessibilityNodeInfo();
-        nodeInfo.setRequestTouchPassthrough(true);
-        assertThat(nodeInfo.hasRequestTouchPassthrough()).isTrue();
-    }
 
     @AsbSecurityTest(cveBugId = {243378132})
     @Test
@@ -1643,6 +1727,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
         service.setMotionEventSources(requestedSource);
+        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
         final Object waitObject = new Object();
         final AtomicInteger eventCount = new AtomicInteger(0);
         service.setOnMotionEventListener(motionEvent -> {
@@ -1664,6 +1749,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
         // Stop listening to events for this source, then inject 1 more event to the input filter.
         service.setMotionEventSources(0 /* no sources */);
+        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(0);
         sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
         // Assert we only received the original 2.
         try {
@@ -1836,37 +1922,28 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     /**
-     * Reconnect {@link #sUiAutomation} with {@link AccessibilityServiceInfo#isAccessibilityTool()}
-     * set to the provided value, unless already set.
+     * Returns a service for testing how accessibility tools or non-tools react to the
+     * {@link View#isAccessibilityDataSensitive} property.
      *
-     * This method requires disconnecting and reconnecting a new UiAutomation instance because
-     * {@link AccessibilityServiceInfo#isAccessibilityTool()} is not a dynamically configurable
-     * property.
+     * @return {@link StubA11yToolAccessibilityService} when <code>isAccessibilityTool</code> is
+     * true, otherwise returns {@link StubNonA11yToolAccessibilityService}.
      */
-    private static void setAccessibilityTool(boolean isAccessibilityTool) {
-        if (sUiAutomation.getServiceInfo().isAccessibilityTool() != isAccessibilityTool) {
-            // Get a new UiAutomation instance, which destroys the old instance and connects to
-            // a new instance.
-            final int flags = isAccessibilityTool ? 0 : UiAutomation.FLAG_NOT_ACCESSIBILITY_TOOL;
-            sUiAutomation = sInstrumentation.getUiAutomation(flags);
-
-            // Destroying the old UiAutomation instance triggers the activity's ViewRootImpl's
-            // AccessibilityStateChangeListener to unregister its
-            // AccessibilityInteractionConnection, since AM#isEnabled() is now false, which makes
-            // the activity's ViewRootImpl unavailable to a11y.
-            //
-            // Connecting a new UiAutomation instance will trigger ViewRootImpl to become available
-            // to a11y again, but this happens asynchronously, so we wait until
-            // getRootInActiveWindow() returns a non-null instance which implies that the activity
-            // is once again available to a11y.
-            try {
-                TestUtils.waitUntil("getRootInActiveWindow() still null",
-                        (int) DEFAULT_TIMEOUT_MS / 1000,
-                        () -> sUiAutomation.getRootInActiveWindow() != null);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    private StubEventCapturingAccessibilityService getServiceForA11yToolTests(
+            boolean isAccessibilityTool) {
+        final StubEventCapturingAccessibilityService service;
+        if (isAccessibilityTool) {
+            service = InstrumentedAccessibilityService.enableService(
+                    StubA11yToolAccessibilityService.class);
+        } else {
+            service = InstrumentedAccessibilityService.enableService(
+                    StubNonA11yToolAccessibilityService.class);
         }
+        final AccessibilityServiceInfo info = service.getServiceInfo();
+        if (info == null || info.isAccessibilityTool() != isAccessibilityTool) {
+            service.disableSelfAndRemove();
+            fail("Expected service to have isAccessibilityTool=" + isAccessibilityTool);
+        }
+        return service;
     }
 
     private static MotionEvent matchHover(int action, int x, int y) {

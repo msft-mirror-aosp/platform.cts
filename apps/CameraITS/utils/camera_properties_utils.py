@@ -34,6 +34,14 @@ SOLID_COLOR_TEST_PATTERN = 1
 COLOR_BARS_TEST_PATTERN = 2
 USE_CASE_STILL_CAPTURE = 2
 DEFAULT_AE_TARGET_FPS_RANGE = (15, 30)
+COLOR_SPACES = [
+    'SRGB', 'LINEAR_SRGB', 'EXTENDED_SRGB',
+    'LINEAR_EXTENDED_SRGB', 'BT709', 'BT2020',
+    'DCI_P3', 'DISPLAY_P3', 'NTSC_1953', 'SMPTE_C',
+    'ADOBE_RGB', 'PRO_PHOTO_RGB', 'ACES', 'ACESCG',
+    'CIE_XYZ', 'CIE_LAB', 'BT2020_HLG', 'BT2020_PQ'
+]
+SETTINGS_OVERRIDE_ZOOM = 1
 
 
 def legacy(props):
@@ -385,6 +393,17 @@ def jpeg_quality(props):
       'android.jpeg.quality' in props['camera.characteristics.requestKeys'])
 
 
+def jpeg_orientation(props):
+  """Returns whether a device supports JPEG orientation."""
+  return ('camera.characteristics.requestKeys' in props) and (
+      'android.jpeg.orientation' in props['camera.characteristics.requestKeys'])
+
+
+def sensor_orientation(props):
+  """Returns the sensor orientation of the camera."""
+  return props['android.sensor.orientation']
+
+
 def zoom_ratio_range(props):
   """Returns whether a device supports zoom capabilities.
 
@@ -396,6 +415,18 @@ def zoom_ratio_range(props):
   """
   return 'android.control.zoomRatioRange' in props and props[
       'android.control.zoomRatioRange'] is not None
+
+def low_latency_zoom(props):
+  """Returns whether a device supports low latency zoom via settings override.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports SETTINGS_OVERRIDE_ZOOM.
+  """
+  return ('android.control.availableSettingsOverrides') in props and (
+      SETTINGS_OVERRIDE_ZOOM in props['android.control.availableSettingsOverrides'])
 
 
 def sync_latency(props):
@@ -604,7 +635,7 @@ def tonemap_mode(props, mode):
     Return:
         Boolean.
     """
-    return 'android.edge.availableToneMapModes' in props and mode in props[
+    return 'android.tonemap.availableToneMapModes' in props and mode in props[
         'android.tonemap.availableToneMapModes']
 
 
@@ -645,6 +676,17 @@ def stream_use_case(props):
   """
   return 'android.request.availableCapabilities' in props and 19 in props[
       'android.request.availableCapabilities']
+
+def cropped_raw_stream_use_case(props):
+  """Returns whether a device supports the CROPPED_RAW stream use case.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+     Boolean. True if the device supports the CROPPED_RAW stream use case.
+  """
+  return stream_use_case(props) and 6 in props['android.scaler.availableStreamUseCases']
 
 
 def intrinsic_calibration(props):
@@ -904,3 +946,48 @@ def linear_tonemap(props):
   return ('android.tonemap.availableToneMapModes' in props and
           (0 in props.get('android.tonemap.availableToneMapModes') or
            3 in props.get('android.tonemap.availableToneMapModes')))
+
+
+def get_reprocess_formats(props):
+  """Retrieve the list of supported reprocess formats.
+
+  Args:
+    props: The camera properties.
+
+  Returns:
+    A list of supported reprocess formats.
+  """
+  reprocess_formats = []
+  if yuv_reprocess(props):
+    reprocess_formats.append('yuv')
+  if private_reprocess(props):
+    reprocess_formats.append('private')
+  return reprocess_formats
+
+
+def color_space_to_int(color_space):
+  """Returns the integer ordinal of a named color space.
+
+  Args:
+    color_space: The color space string.
+
+  Returns:
+    Int. Ordinal of the color space.
+  """
+  if color_space == 'UNSPECIFIED':
+    return -1
+
+  return COLOR_SPACES.index(color_space)
+
+
+def autoframing(props):
+  """Returns whether a device supports autoframing.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.control.autoframing is supported.
+  """
+  return 'android.control.autoframingAvailable' in props and props[
+    'android.control.autoframingAvailable'] == 1

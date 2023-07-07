@@ -23,6 +23,8 @@ import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.bluetooth.Bluetooth;
 import com.android.bedstead.nene.broadcasts.Broadcasts;
 import com.android.bedstead.nene.context.Context;
+import com.android.bedstead.nene.content.Content;
+import com.android.bedstead.nene.credentials.Credentials;
 import com.android.bedstead.nene.device.Device;
 import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.nene.flags.Flags;
@@ -35,6 +37,7 @@ import com.android.bedstead.nene.packages.Packages;
 import com.android.bedstead.nene.permissions.Permissions;
 import com.android.bedstead.nene.resources.Resources;
 import com.android.bedstead.nene.roles.Roles;
+import com.android.bedstead.nene.services.Services;
 import com.android.bedstead.nene.settings.Settings;
 import com.android.bedstead.nene.systemproperties.SystemProperties;
 import com.android.bedstead.nene.ui.Ui;
@@ -175,6 +178,21 @@ public final class TestApis {
     @Experimental
     public static Logcat logcat() {
         return Logcat.sInstance;
+    }
+
+    /** Access Test APIs related to credential manager. */
+    public static Credentials credentials() {
+        return Credentials.sInstance;
+    }
+
+    /** Access Test APIs related to content. */
+    public static Content content() {
+        return Content.sInstance;
+    }
+
+    /** Access Test APIs related to system services. */
+    public static Services services() {
+        return Services.sInstance;
     }
 
     /** @deprecated Use statically */

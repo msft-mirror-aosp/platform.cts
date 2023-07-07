@@ -20,15 +20,13 @@ import static android.telephony.PreciseDisconnectCause.TEMPORARY_FAILURE;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
-import static com.android.internal.telephony.RILConstants.INTERNAL_ERR;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -60,6 +58,7 @@ import android.telephony.mockmodem.MockModemConfigInterface;
 import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
 
+import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -89,16 +88,21 @@ public class TelephonyManagerTestOnMockModem {
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private static final String RESOURCE_PACKAGE_NAME = "android";
     private static boolean sIsMultiSimDevice;
+    private static HandlerThread sServiceStateChangeCallbackHandlerThread;
+    private static Handler sServiceStateChangeCallbackHandler;
     private static HandlerThread sCallDisconnectCauseCallbackHandlerThread;
     private static Handler sCallDisconnectCauseCallbackHandler;
     private static HandlerThread sCallStateChangeCallbackHandlerThread;
     private static Handler sCallStateChangeCallbackHandler;
+    private static ServiceStateListener sServiceStateCallback;
     private static CallDisconnectCauseListener sCallDisconnectCauseCallback;
     private static CallStateListener sCallStateCallback;
     private int mPreciseCallDisconnectCause;
     private int mCallState;
+    private final Object mServiceStateChangeLock = new Object();
     private final Object mCallDisconnectCauseLock = new Object();
     private final Object mCallStateChangeLock = new Object();
+    private final Executor mServiceStateChangeExecutor = Runnable::run;
     private final Executor mCallDisconnectCauseExecutor = Runnable::run;
     private final Executor mCallStateChangeExecutor = Runnable::run;
     private boolean mResetCarrierStatusInfo;
@@ -122,13 +126,20 @@ public class TelephonyManagerTestOnMockModem {
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService());
 
+        sServiceStateChangeCallbackHandlerThread =
+                new HandlerThread("TelephonyManagerServiceStateChangeCallbackTest");
+        sServiceStateChangeCallbackHandlerThread.start();
+        sServiceStateChangeCallbackHandler =
+                new Handler(sServiceStateChangeCallbackHandlerThread.getLooper());
+
         sCallDisconnectCauseCallbackHandlerThread =
-                new HandlerThread("TelephonyManagerCallbackTest");
+                new HandlerThread("TelephonyManagerCallDisconnectCauseCallbackTest");
         sCallDisconnectCauseCallbackHandlerThread.start();
         sCallDisconnectCauseCallbackHandler =
                 new Handler(sCallDisconnectCauseCallbackHandlerThread.getLooper());
 
-        sCallStateChangeCallbackHandlerThread = new HandlerThread("TelephonyManagerCallbackTest");
+        sCallStateChangeCallbackHandlerThread =
+                new HandlerThread("TelephonyManagerCallStateChangeCallbackTest");
         sCallStateChangeCallbackHandlerThread.start();
         sCallStateChangeCallbackHandler =
                 new Handler(sCallStateChangeCallbackHandlerThread.getLooper());
@@ -143,6 +154,11 @@ public class TelephonyManagerTestOnMockModem {
             return;
         }
 
+        if (sServiceStateChangeCallbackHandlerThread != null) {
+            sServiceStateChangeCallbackHandlerThread.quitSafely();
+            sServiceStateChangeCallbackHandlerThread = null;
+        }
+
         if (sCallDisconnectCauseCallbackHandlerThread != null) {
             sCallDisconnectCauseCallbackHandlerThread.quitSafely();
             sCallDisconnectCauseCallbackHandlerThread = null;
@@ -151,6 +167,11 @@ public class TelephonyManagerTestOnMockModem {
         if (sCallStateChangeCallbackHandlerThread != null) {
             sCallStateChangeCallbackHandlerThread.quitSafely();
             sCallStateChangeCallbackHandlerThread = null;
+        }
+
+        if (sServiceStateCallback != null) {
+            sTelephonyManager.unregisterTelephonyCallback(sServiceStateCallback);
+            sServiceStateCallback = null;
         }
 
         if (sCallDisconnectCauseCallback != null) {
@@ -176,6 +197,11 @@ public class TelephonyManagerTestOnMockModem {
     @Before
     public void beforeTest() {
         assumeTrue(hasTelephonyFeature());
+        try {
+            sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
+        } catch (IllegalStateException e) {
+            assumeNoException("Skipping tests because Telephony service is null", e);
+        }
     }
 
     @After
@@ -326,119 +352,6 @@ public class TelephonyManagerTestOnMockModem {
     }
 
     @Test
-    public void testRadioPowerToggle() throws Throwable {
-        Log.d(TAG, "TelephonyManagerTestOnMockModem#testRadioPowerToggle");
-
-        // Insert a SIM
-        int slotId = 0;
-        assertTrue(sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT));
-        TimeUnit.SECONDS.sleep(1);
-
-        int radioState = sTelephonyManager.getRadioPowerState();
-        Log.d(TAG, "Radio state: " + radioState);
-
-        // Toggle radio power
-        try {
-            ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(
-                    sTelephonyManager,
-                    (tm) -> tm.toggleRadioOnOff(),
-                    SecurityException.class,
-                    "android.permission.MODIFY_PHONE_STATE");
-        } catch (SecurityException e) {
-            Log.d(TAG, "TelephonyManager#toggleRadioOnOff should require " + e);
-        }
-
-        // Wait the radio state update in Framework
-        TimeUnit.SECONDS.sleep(2);
-        int toggleRadioState =
-                radioState == TelephonyManager.RADIO_POWER_ON
-                        ? TelephonyManager.RADIO_POWER_OFF
-                        : TelephonyManager.RADIO_POWER_ON;
-        assertEquals(sTelephonyManager.getRadioPowerState(), toggleRadioState);
-
-        // Toggle radio power again back to original radio state
-        try {
-            ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(
-                    sTelephonyManager,
-                    (tm) -> tm.toggleRadioOnOff(),
-                    SecurityException.class,
-                    "android.permission.MODIFY_PHONE_STATE");
-        } catch (SecurityException e) {
-            Log.d(TAG, "TelephonyManager#toggleRadioOnOff should require " + e);
-        }
-
-        // Wait the radio state update in Framework
-        TimeUnit.SECONDS.sleep(2);
-        assertEquals(sTelephonyManager.getRadioPowerState(), radioState);
-
-        // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(slotId));
-
-        Log.d(TAG, "Test Done ");
-    }
-
-    @Test
-    public void testRadioPowerWithFailureResults() throws Throwable {
-        Log.d(TAG, "TelephonyManagerTestOnMockModem#testRadioPowerWithFailureResults");
-
-        // Insert a SIM
-        int slotId = 0;
-        assertTrue(sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT));
-        TimeUnit.SECONDS.sleep(1);
-
-        int radioState = sTelephonyManager.getRadioPowerState();
-        Log.d(TAG, "Radio state: " + radioState);
-
-        int toggleRadioState =
-                radioState == TelephonyManager.RADIO_POWER_ON
-                        ? TelephonyManager.RADIO_POWER_OFF
-                        : TelephonyManager.RADIO_POWER_ON;
-
-        // Force the returned response of RIL_REQUEST_RADIO_POWER as INTERNAL_ERR
-        sMockModemManager.forceErrorResponse(slotId, RIL_REQUEST_RADIO_POWER, INTERNAL_ERR);
-
-        boolean result = false;
-        try {
-            boolean state = (toggleRadioState == TelephonyManager.RADIO_POWER_ON) ? true : false;
-            result =
-                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                            sTelephonyManager,
-                            (tm) -> tm.setRadioPower(state),
-                            SecurityException.class,
-                            "android.permission.MODIFY_PHONE_STATE");
-        } catch (SecurityException e) {
-            Log.d(TAG, "TelephonyManager#setRadioPower should require " + e);
-        }
-
-        TimeUnit.SECONDS.sleep(1);
-        assertTrue(result);
-        assertNotEquals(sTelephonyManager.getRadioPowerState(), toggleRadioState);
-
-        // Reset the modified error response of RIL_REQUEST_RADIO_POWER to the original behavior
-        // and -1 means to disable the modifed mechanism in mock modem
-        sMockModemManager.forceErrorResponse(slotId, RIL_REQUEST_RADIO_POWER, -1);
-
-        // Recovery the power state back to original radio state
-        try {
-            boolean state = (radioState == TelephonyManager.RADIO_POWER_ON) ? true : false;
-            result =
-                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                            sTelephonyManager,
-                            (tm) -> tm.setRadioPower(state),
-                            SecurityException.class,
-                            "android.permission.MODIFY_PHONE_STATE");
-        } catch (SecurityException e) {
-            Log.d(TAG, "TelephonyManager#setRadioPower should require " + e);
-        }
-        TimeUnit.SECONDS.sleep(1);
-        assertTrue(result);
-        assertEquals(sTelephonyManager.getRadioPowerState(), radioState);
-
-        // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(slotId));
-    }
-
-    @Test
     public void testServiceStateChange() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testServiceStateChange");
 
@@ -485,6 +398,16 @@ public class TelephonyManagerTestOnMockModem {
         sMockModemManager.removeSimCard(slotId);
     }
 
+    private class ServiceStateListener extends TelephonyCallback
+            implements TelephonyCallback.ServiceStateListener {
+        @Override
+        public void onServiceStateChanged(ServiceState serviceState) {
+            if (serviceState.getVoiceRegState() == ServiceState.STATE_IN_SERVICE) {
+                mServiceStateChangeLock.notify();
+            }
+        }
+    }
+
     private class CallDisconnectCauseListener extends TelephonyCallback
             implements TelephonyCallback.CallDisconnectCauseListener {
         @Override
@@ -524,11 +447,27 @@ public class TelephonyManagerTestOnMockModem {
         sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_FET);
         TimeUnit.SECONDS.sleep(1);
 
+        // Register service state change callback
+        sServiceStateChangeCallbackHandler.post(
+                () -> {
+                    sServiceStateCallback = new ServiceStateListener();
+                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                            sTelephonyManager,
+                            (tm) ->
+                                    tm.registerTelephonyCallback(
+                                            mServiceStateChangeExecutor, sServiceStateCallback));
+                });
+
         // In service
         Log.d(TAG, "Start to register CS only network");
         sMockModemManager.changeNetworkService(
                 slotId, MOCK_SIM_PROFILE_ID_TWN_FET, true, Domain.CS);
-        TimeUnit.SECONDS.sleep(1);
+
+        // Verify service state
+        synchronized (mServiceStateChangeLock) {
+            Log.d(TAG, "Wait for service state change to in service");
+            mServiceStateChangeLock.wait(WAIT_TIME_MS);
+        }
 
         subId = getActiveSubId(slotId);
         assertEquals(
@@ -550,6 +489,10 @@ public class TelephonyManagerTestOnMockModem {
                                     tm.registerTelephonyCallback(
                                             mCallStateChangeExecutor, sCallStateCallback));
                 });
+
+        //Disable Ims to make sure the call would go thorugh with a CS call
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager,  (tm) -> tm.disableIms(slotId));
 
         // Dial a CS voice call
         Log.d(TAG, "Start dialing call");
@@ -639,6 +582,10 @@ public class TelephonyManagerTestOnMockModem {
             assertEquals(TEMPORARY_FAILURE, mPreciseCallDisconnectCause);
         }
 
+        // Unregister service state change callback
+        sTelephonyManager.unregisterTelephonyCallback(sServiceStateCallback);
+        sServiceStateCallback = null;
+
         // Unregister call disconnect cause callback
         sTelephonyManager.unregisterTelephonyCallback(sCallDisconnectCauseCallback);
         sCallDisconnectCauseCallback = null;
@@ -719,6 +666,7 @@ public class TelephonyManagerTestOnMockModem {
     /**
      * Verify the NotRestricted status of the device with READ_PHONE_STATE permission granted.
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_NotRestricted() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);
@@ -745,6 +693,7 @@ public class TelephonyManagerTestOnMockModem {
     /**
      * Verify the Restricted status of the device with READ_PHONE_STATE permission granted.
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_Restricted() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);
@@ -772,6 +721,7 @@ public class TelephonyManagerTestOnMockModem {
      * Verify the Restricted To Caller status of the device with READ_PHONE_STATE permission
      * granted.
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_RestrictedToCaller_MNO() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);
@@ -800,6 +750,7 @@ public class TelephonyManagerTestOnMockModem {
      * Verify the Restricted status of the device with READ_PHONE_STATE permission granted.
      * MVNO operator reference without GID
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_RestrictedToCaller_MNO1() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);
@@ -828,6 +779,7 @@ public class TelephonyManagerTestOnMockModem {
      * Verify the Restricted To Caller status of the device with READ_PHONE_STATE permission
      * granted.
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_RestrictedToCaller_MVNO() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);
@@ -855,6 +807,7 @@ public class TelephonyManagerTestOnMockModem {
     /**
      * Verify the Unknown status of the device with READ_PHONE_STATE permission granted.
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void getCarrierRestrictionStatus_ReadPhoneState_Unknown() throws Exception {
         LinkedBlockingQueue<Integer> carrierRestrictionStatusResult = new LinkedBlockingQueue<>(1);

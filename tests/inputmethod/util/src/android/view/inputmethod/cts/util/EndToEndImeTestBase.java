@@ -33,10 +33,13 @@ import android.platform.test.annotations.AppModeInstant;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -48,14 +51,27 @@ public class EndToEndImeTestBase {
     @Rule
     public TestName mTestName = new TestName();
 
+    protected final CtsTouchUtils mCtsTouchUtils = new CtsTouchUtils(
+            InstrumentationRegistry.getInstrumentation().getTargetContext());
+
     /** Returns a unique marker based on the concrete class name and elapsed time. */
     protected String createUniqueMarker() {
         return getClass().getName() + "/" + SystemClock.elapsedRealtimeNanos();
     }
 
-    // Command to enable / disable verbose ImeTracker logging.
+    /** Command to get verbose ImeTracker logging state. */
+    private static final String GET_VERBOSE_IME_TRACKER_LOGGING_CMD =
+            "getprop persist.debug.imetracker";
+
+    /** Command to set verbose ImeTracker logging state. */
     private static final String SET_VERBOSE_IME_TRACKER_LOGGING_CMD =
             "setprop persist.debug.imetracker";
+
+    /**
+     * Whether verbose ImeTracker logging was enabled prior to running the tests,
+     * used to handle reverting the state when the test run ends.
+     */
+    private static boolean sWasVerboseImeTrackerLoggingEnabled;
 
     /**
      * Enters touch mode when instrumenting.
@@ -163,17 +179,31 @@ public class EndToEndImeTestBase {
     /**
      * Enables verbose logging in {@link android.view.inputmethod.ImeTracker}.
      */
-    @Before
-    public void enableVerboseImeTrackerLogging() {
-        setVerboseImeTrackerLogging(true);
+    @BeforeClass
+    public static void enableVerboseImeTrackerLogging() {
+        sWasVerboseImeTrackerLoggingEnabled = getVerboseImeTrackerLogging();
+        if (!sWasVerboseImeTrackerLoggingEnabled) {
+            setVerboseImeTrackerLogging(true);
+        }
     }
 
     /**
-     * Disables verbose logging in {@link android.view.inputmethod.ImeTracker}.
+     * Reverts verbose logging in {@link android.view.inputmethod.ImeTracker} to the previous value.
      */
-    @After
-    public void disableVerboseImeTrackerLogging() {
-        setVerboseImeTrackerLogging(false);
+    @AfterClass
+    public static void revertVerboseImeTrackerLogging() {
+        if (!sWasVerboseImeTrackerLoggingEnabled) {
+            setVerboseImeTrackerLogging(false);
+        }
+    }
+
+    /**
+     * Gets the verbose logging state in {@link android.view.inputmethod.ImeTracker}.
+     *
+     * @return {@code true} iff verbose logging is enabled.
+     */
+    private static boolean getVerboseImeTrackerLogging() {
+        return SystemUtil.runShellCommand(GET_VERBOSE_IME_TRACKER_LOGGING_CMD).trim().equals("1");
     }
 
     /**
@@ -184,7 +214,7 @@ public class EndToEndImeTestBase {
      * @implNote This must use {@link ActivityManager#notifySystemPropertiesChanged()} to listen
      *           for changes to the system property for the verbose ImeTracker logging.
      */
-    private void setVerboseImeTrackerLogging(boolean enabled) {
+    private static void setVerboseImeTrackerLogging(boolean enabled) {
         final var context = InstrumentationRegistry.getInstrumentation().getContext();
         final var am = context.getSystemService(ActivityManager.class);
 

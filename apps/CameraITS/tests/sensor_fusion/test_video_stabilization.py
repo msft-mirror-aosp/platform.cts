@@ -40,6 +40,7 @@ _NUM_ROTATIONS = 24
 _RADS_TO_DEGS = 180/math.pi
 _SEC_TO_NSEC = 1E9
 _START_FRAME = 30  # give 3A 1s to warm up
+_TABLET_SERVO_SPEED = 20
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 _VIDEO_QUALITIES_TESTED = ('CIF:3', '480P:4', '720P:5', '1080P:6', 'QVGA:7',
@@ -50,7 +51,7 @@ _SIZE_TO_PROFILE = {'176x144': 'QCIF:2', '352x288': 'CIF:3',
                     '320x240': 'QVGA:7'}
 
 
-def _collect_data(cam, video_profile, video_quality, rot_rig):
+def _collect_data(cam, tablet_device, video_profile, video_quality, rot_rig):
   """Capture a new set of data from the device.
 
   Captures camera frames while the user is moving the device in the prescribed
@@ -58,6 +59,7 @@ def _collect_data(cam, video_profile, video_quality, rot_rig):
 
   Args:
     cam: camera object
+    tablet_device: boolean; based on config.yml
     video_profile: str; number of video profile
     video_quality: str; key string for video quality. ie. 1080P
     rot_rig: dict with 'cntl' and 'ch' defined
@@ -69,11 +71,23 @@ def _collect_data(cam, video_profile, video_quality, rot_rig):
   props = cam.get_camera_properties()
   props = cam.override_with_hidden_physical_camera_props(props)
 
+  serial_port = None
+  if rot_rig['cntl'].lower() == sensor_fusion_utils.ARDUINO_STRING.lower():
+    # identify port
+    serial_port = sensor_fusion_utils.serial_port_def(
+        sensor_fusion_utils.ARDUINO_STRING)
+    # send test cmd to Arduino until cmd returns properly
+    sensor_fusion_utils.establish_serial_comm(serial_port)
   # Start camera vibration
+  if tablet_device:
+    servo_speed = _TABLET_SERVO_SPEED
+  else:
+    servo_speed = _ARDUINO_SERVO_SPEED
+
   p = multiprocessing.Process(
       target=sensor_fusion_utils.rotation_rig,
       args=(rot_rig['cntl'], rot_rig['ch'], _NUM_ROTATIONS,
-            _ARDUINO_ANGLES, _ARDUINO_SERVO_SPEED, _ARDUINO_MOVE_TIME,))
+            _ARDUINO_ANGLES, servo_speed, _ARDUINO_MOVE_TIME, serial_port))
   p.start()
 
   cam.start_sensor_events()
@@ -141,15 +155,11 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
       if rot_rig['cntl'].lower() != 'arduino':
         raise AssertionError(f'You must use an arduino controller for {_NAME}.')
 
-      if camera_fov > opencv_processing_utils.FOV_THRESH_WFOV:
-        excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES['UW']
-      else:
-        excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES['W']
+      # Create list of video qualities to test
+      excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES
       excluded_qualities = [
           _SIZE_TO_PROFILE[s] for s in excluded_sizes if s in _SIZE_TO_PROFILE
       ]
-
-      # Create list of video qualities to test
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug('Supported video qualities: %s', supported_video_qualities)
@@ -172,7 +182,7 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
 
         # Record video
         recording_obj = _collect_data(
-            cam, video_profile, video_quality, rot_rig)
+            cam, self.tablet_device, video_profile, video_quality, rot_rig)
 
         # Grab the video from the save location on DUT
         self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])

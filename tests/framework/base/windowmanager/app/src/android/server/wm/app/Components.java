@@ -137,7 +137,6 @@ public class Components extends ComponentsBase {
             component("SingleSecondaryHomeActivity");
     public static final ComponentName SINGLE_TASK_ACTIVITY = component("SingleTaskActivity");
     public static final ComponentName SINGLE_TOP_ACTIVITY = component("SingleTopActivity");
-    public static final ComponentName SLOW_CREATE_ACTIVITY = component("SlowCreateActivity");
     public static final ComponentName SPLASHSCREEN_ACTIVITY = component("SplashscreenActivity");
     public static final ComponentName DISABLE_PREVIEW_ACTIVITY =
             component("DisablePreviewActivity");
@@ -279,18 +278,6 @@ public class Components extends ComponentsBase {
     public static final ComponentName OVERLAY_TEST_SERVICE =
             component("OverlayTestService");
 
-    public static final ComponentName BACKGROUND_IMAGE_ACTIVITY =
-            component("BackgroundImageActivity");
-
-    public static final ComponentName BLUR_ACTIVITY =
-            component("BlurActivity");
-
-    public static final ComponentName BLUR_ATTRIBUTES_ACTIVITY =
-            component("BlurAttributesActivity");
-
-    public static final ComponentName BAD_BLUR_ACTIVITY =
-            component("BadBlurActivity");
-
     public static final ComponentName KEEP_CLEAR_RECTS_ACTIVITY =
             component("KeepClearRectsActivity");
 
@@ -421,6 +408,7 @@ public class Components extends ComponentsBase {
 
     /** Extra key constants for {@link android.server.wm.app.FontScaleActivity}. */
     public static class FontScaleActivity {
+        public static final String EXTRA_FONT_SCALE = "fontScale";
         public static final String EXTRA_FONT_PIXEL_SIZE = "fontPixelSize";
         public static final String EXTRA_FONT_ACTIVITY_DPI = "fontActivityDpi";
     }
@@ -479,15 +467,6 @@ public class Components extends ComponentsBase {
         public static final String EXTRA_FINISH_POINT = "finish_point";
         public static final String FINISH_POINT_ON_PAUSE = "on_pause";
         public static final String FINISH_POINT_ON_STOP = "on_stop";
-    }
-
-    /**
-     * Extra constants for {@link android.server.wm.app.BlurActivity}.
-     */
-    public static class BlurActivity {
-        public static final String EXTRA_NO_BLUR_BACKGROUND_COLOR = "no_blur_background_color";
-        public static final String EXTRA_BACKGROUND_BLUR_RADIUS_PX = "background_blur_radius";
-        public static final String EXTRA_BLUR_BEHIND_RADIUS_PX = "blur_behind_radius";
     }
 
     /**
@@ -677,6 +656,7 @@ public class Components extends ComponentsBase {
         public static final String KEY_RESIZE_DISPLAY = "resize_display";
         public static final String KEY_SHOW_SYSTEM_DECORATIONS = "show_system_decorations";
         public static final String KEY_PRESENTATION_DISPLAY = "presentation_display";
+        public static final String KEY_SUPPORTS_TOUCH = "supports_touch";
         // Value constants of {@link #KEY_COMMAND}.
         public static final String COMMAND_CREATE_DISPLAY = "create_display";
         public static final String COMMAND_DESTROY_DISPLAY = "destroy_display";

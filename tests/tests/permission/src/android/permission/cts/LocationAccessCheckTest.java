@@ -18,7 +18,6 @@ package android.permission.cts;
 
 import static android.Manifest.permission.ACCESS_BACKGROUND_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
-import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
 import static android.app.AppOpsManager.OPSTR_FINE_LOCATION;
 import static android.app.AppOpsManager.OP_FLAGS_ALL_TRUSTED;
 import static android.content.Context.BIND_AUTO_CREATE;
@@ -63,6 +62,7 @@ import android.os.Process;
 import android.permission.cts.appthataccesseslocation.IAccessLocationOnCommand;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.SystemUserOnly;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
@@ -219,7 +219,7 @@ public class LocationAccessCheckTest {
     @AfterClass
     public static void cleanupAfterClass() throws Throwable {
         resetDelays();
-        uninstallBackgroundAccessApp();
+        uninstallTestApp();
         disallowNotificationAccess();
     }
 
@@ -399,21 +399,13 @@ public class LocationAccessCheckTest {
     }
 
     public static void installBackgroundAccessApp() throws Exception {
-        installBackgroundAccessApp(false);
-    }
-
-    private static void installBackgroundAccessApp(boolean isDowngrade) throws Exception {
-        String command = "pm install -r -g ";
-        if (isDowngrade) {
-            command = command + "-d ";
-        }
-        String output = runShellCommand(command + TEST_APP_LOCATION_BG_ACCESS_APK);
+        String output = runShellCommand("pm install -r -g " + TEST_APP_LOCATION_BG_ACCESS_APK);
         assertTrue(output.contains("Success"));
         // Wait for user sensitive to be updated, which is checked by LocationAccessCheck.
         Thread.sleep(5000);
     }
 
-    public static void uninstallBackgroundAccessApp() {
+    public static void uninstallTestApp() {
         unbindService();
         runShellCommand("pm uninstall " + TEST_APP_PKG);
     }
@@ -438,7 +430,7 @@ public class LocationAccessCheckTest {
             if (!valueWasSet) {
                 throw new IllegalStateException("Could not set " + propertyName + " to " + value);
             }
-        }, WRITE_DEVICE_CONFIG);
+        });
     }
 
 
@@ -447,10 +439,6 @@ public class LocationAccessCheckTest {
         runShellCommand("pm install -r -g " + TEST_APP_LOCATION_FG_ACCESS_APK);
         // Wait for user sensitive to be updated, which is checked by LocationAccessCheck.
         Thread.sleep(5000);
-    }
-
-    private static void uninstallForegroundAccessApp() {
-        runShellCommand("pm uninstall " + TEST_APP_LOCATION_FG_ACCESS_APK);
     }
 
     /**
@@ -585,7 +573,7 @@ public class LocationAccessCheckTest {
     private static void resetPermissionController() throws Throwable {
         unbindService();
         PermissionUtils.resetPermissionControllerJob(sUiAutomation, PERMISSION_CONTROLLER_PKG,
-                LOCATION_ACCESS_CHECK_JOB_ID, UNEXPECTED_TIMEOUT_MILLIS,
+                LOCATION_ACCESS_CHECK_JOB_ID, 45000,
                 ACTION_SET_UP_LOCATION_ACCESS_CHECK, LocationAccessCheckOnBootReceiver);
     }
 
@@ -678,7 +666,7 @@ public class LocationAccessCheckTest {
 
         eventually(() -> assertNotNull(getNotification(true)), EXPECTED_TIMEOUT_MILLIS);
 
-        uninstallBackgroundAccessApp();
+        uninstallTestApp();
 
         // Wait until package permission controller has cleared the state
         Thread.sleep(2000);
@@ -701,7 +689,7 @@ public class LocationAccessCheckTest {
 
         eventually(() -> assertNotNull(getNotification(false)), EXPECTED_TIMEOUT_MILLIS);
 
-        uninstallBackgroundAccessApp();
+        uninstallTestApp();
         // wait for permission controller (broadcast receiver) to clean up things
         Thread.sleep(5000);
         waitForBroadcasts();
@@ -731,7 +719,7 @@ public class LocationAccessCheckTest {
             // We don't expect a notification, but try to trigger one anyway
             assertNull(getNotification(false));
         } finally {
-            installBackgroundAccessApp(true);
+            installBackgroundAccessApp();
         }
     }
 
@@ -796,6 +784,8 @@ public class LocationAccessCheckTest {
     }
 
     @Test
+    // Mark as flaky until b/286874765 is fixed
+    @FlakyTest
     @AsbSecurityTest(cveBugId = 141028068)
     public void testOpeningLocationSettingsDoesNotTriggerAccess() throws Throwable {
         assumeNotPlayManaged();

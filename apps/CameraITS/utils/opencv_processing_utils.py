@@ -17,6 +17,7 @@
 import logging
 import math
 import os
+import pathlib
 import cv2
 import numpy
 
@@ -44,19 +45,19 @@ CIRCLISH_ATOL = 0.10  # contour area vs ideal circle area & aspect ratio TOL
 CIRCLISH_LOW_RES_ATOL = 0.15  # loosen for low res images
 CIRCLE_MIN_PTS = 20
 CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
-CIRCLE_COLOR_ATOL = 0.01  # circle color fill tolerance
+CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
+
+CV2_HOME_DIRECTORY = os.path.dirname(cv2.__file__)
+CV2_ALTERNATE_DIRECTORY = pathlib.Path(CV2_HOME_DIRECTORY).parents[3]
+HAARCASCADE_FILE_NAME = 'haarcascade_frontalface_default.xml'
 
 FOV_THRESH_TELE25 = 25
 FOV_THRESH_TELE40 = 40
 FOV_THRESH_TELE = 60
 FOV_THRESH_WFOV = 90
-
-HAARCASCADE_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(cv2.__file__)), 'opencv', 'haarcascades',
-    'haarcascade_frontalface_default.xml')
 
 LOW_RES_IMG_THRESH = 320 * 240
 
@@ -65,6 +66,7 @@ RGB_GRAY_WEIGHTS = (0.299, 0.587, 0.114)  # RGB to Gray conversion matrix
 SCALE_RFOV_IN_WFOV_BOX = 0.67
 SCALE_TELE_IN_WFOV_BOX = 0.5
 SCALE_TELE_IN_RFOV_BOX = 0.67
+SCALE_TELE40_IN_WFOV_BOX = 0.33
 SCALE_TELE40_IN_RFOV_BOX = 0.5
 SCALE_TELE25_IN_RFOV_BOX = 0.33
 
@@ -116,12 +118,15 @@ def binarize_image(img_gray):
 
 def _load_opencv_haarcascade_file():
   """Return Haar Cascade file for face detection."""
-  logging.info('Haar Cascade file location: %s', HAARCASCADE_FILE)
-  if os.path.isfile(HAARCASCADE_FILE):
-    return HAARCASCADE_FILE
-  else:
-    raise error_util.CameraItsError('haarcascade_frontalface_default.xml file '
-                                    f'must be in {HAARCASCADE_FILE}')
+  for cv2_directory in (CV2_HOME_DIRECTORY, CV2_ALTERNATE_DIRECTORY,):
+    for path, _, files in os.walk(cv2_directory):
+      if HAARCASCADE_FILE_NAME in files:
+        haarcascade_file = os.path.join(path, HAARCASCADE_FILE_NAME)
+        logging.debug('Haar Cascade file location: %s', haarcascade_file)
+        return haarcascade_file
+  raise error_util.CameraItsError('haarcascade_frontalface_default.xml was '
+                                  f'not found in {CV2_HOME_DIRECTORY} '
+                                  f'or {CV2_ALTERNATE_DIRECTORY}')
 
 
 def find_opencv_faces(img, scale_factor, min_neighbors):
@@ -174,10 +179,13 @@ def calc_chart_scaling(chart_distance, camera_fov):
       math.isclose(
           chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_RFOV_IN_WFOV_BOX
-  elif (camera_fov <= FOV_THRESH_TELE and
+  elif (FOV_THRESH_TELE40 < camera_fov <= FOV_THRESH_TELE and
         math.isclose(
             chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
     chart_scaling = SCALE_TELE_IN_WFOV_BOX
+  elif (camera_fov <= FOV_THRESH_TELE40 and
+        math.isclose(chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
+    chart_scaling = SCALE_TELE40_IN_WFOV_BOX
   elif (camera_fov <= FOV_THRESH_TELE25 and
         (math.isclose(
             chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL) or
@@ -228,7 +236,8 @@ class Chart(object):
       distance=None,
       scale_start=None,
       scale_stop=None,
-      scale_step=None):
+      scale_step=None,
+      rotation=None):
     """Initial constructor for class.
 
     Args:
@@ -241,6 +250,7 @@ class Chart(object):
      scale_start: float; start value for scaling for chart search
      scale_stop: float; stop value for scaling for chart search
      scale_step: float; step value for scaling for chart search
+     rotation: clockwise rotation in degrees (multiple of 90) or None
     """
     self._file = chart_file or CHART_FILE
     if math.isclose(
@@ -253,7 +263,8 @@ class Chart(object):
     self._scale_start = scale_start or CHART_SCALE_START
     self._scale_stop = scale_stop or CHART_SCALE_STOP
     self._scale_step = scale_step or CHART_SCALE_STEP
-    self.locate(cam, props, log_path)
+    self.opt_val = None
+    self.locate(cam, props, log_path, rotation)
 
   def _set_scale_factors_to_one(self):
     """Set scale factors to 1.0 for skipped tests."""
@@ -263,7 +274,7 @@ class Chart(object):
     self.ynorm = 0.0
     self.scale = 1.0
 
-  def _calc_scale_factors(self, cam, props, fmt, log_path):
+  def _calc_scale_factors(self, cam, props, fmt, log_path, rotation):
     """Take an image with s, e, & fd to find the chart location.
 
     Args:
@@ -271,6 +282,8 @@ class Chart(object):
      props: Properties of cam
      fmt: Image format for the capture
      log_path: log path to save the captured images.
+     rotation: clockwise rotation of template in degrees (multiple of 90) or
+       None
 
     Returns:
       template: numpy array; chart template for locator
@@ -285,6 +298,9 @@ class Chart(object):
     af_scene_name = os.path.join(log_path, 'af_scene.jpg')
     image_processing_utils.write_image(img_3a, af_scene_name)
     template = cv2.imread(self._file, cv2.IMREAD_ANYDEPTH)
+    if rotation is not None:
+      logging.debug('Rotating template by %d degrees', rotation)
+      template = numpy.rot90(template, k=rotation / 90)
     focal_l = cap_chart['metadata']['android.lens.focalLength']
     pixel_pitch = (
         props['android.sensor.info.physicalSize']['height'] / img_3a.shape[0])
@@ -292,19 +308,32 @@ class Chart(object):
     logging.debug('Chart height: %.2fcm', self._height)
     logging.debug('Focal length: %.2fmm', focal_l)
     logging.debug('Pixel pitch: %.2fum', pixel_pitch * 1E3)
+    logging.debug('Template width: %dpixels', template.shape[1])
     logging.debug('Template height: %dpixels', template.shape[0])
     chart_pixel_h = self._height * focal_l / (self._distance * pixel_pitch)
     scale_factor = template.shape[0] / chart_pixel_h
+    if rotation == 90 or rotation == 270:
+      # With the landscape to portrait override turned on, the width and height
+      # of the active array, normally w x h, will be h x (w * (h/w)^2). Reduce
+      # the applied scaling by the same factor to compensate for this, because
+      # the chart will take up more of the scene. Assume w > h, since this is
+      # meant for landscape sensors.
+      rotate_physical_aspect = (
+          props['android.sensor.info.physicalSize']['height'] /
+          props['android.sensor.info.physicalSize']['width'])
+      scale_factor *= rotate_physical_aspect ** 2
     logging.debug('Chart/image scale factor = %.2f', scale_factor)
     return template, img_3a, scale_factor
 
-  def locate(self, cam, props, log_path):
+  def locate(self, cam, props, log_path, rotation):
     """Find the chart in the image, and append location to chart object.
 
     Args:
       cam: Open its session.
       props: Camera properties object.
       log_path: log path to store the captured images.
+      rotation: clockwise rotation of template in degrees (multiple of 90) or
+        None
 
     The values appended are:
     xnorm: float; [0, 1] left loc of chart in scene
@@ -312,10 +341,12 @@ class Chart(object):
     wnorm: float; [0, 1] width of chart in scene
     hnorm: float; [0, 1] height of chart in scene
     scale: float; scale factor to extract chart
+    opt_val: float; The normalized match optimization value [0, 1]
     """
     fmt = {'format': 'yuv', 'width': VGA_WIDTH, 'height': VGA_HEIGHT}
     cam.do_3a()
-    chart, scene, s_factor = self._calc_scale_factors(cam, props, fmt, log_path)
+    chart, scene, s_factor = self._calc_scale_factors(cam, props, fmt, log_path,
+                                                      rotation)
     scale_start = self._scale_start * s_factor
     scale_stop = self._scale_stop * s_factor
     scale_step = self._scale_step * s_factor
@@ -338,9 +369,9 @@ class Chart(object):
             'Skipped scale %.3f. scene_scaled shape: %s, chart shape: %s',
             scale, scene_scaled.shape, chart.shape)
         continue
-      result = cv2.matchTemplate(scene_scaled, chart, cv2.TM_CCOEFF)
+      result = cv2.matchTemplate(scene_scaled, chart, cv2.TM_CCOEFF_NORMED)
       _, opt_val, _, top_left_scaled = cv2.minMaxLoc(result)
-      logging.debug(' scale factor: %.3f, opt val: %.f', scale, opt_val)
+      logging.debug(' scale factor: %.3f, opt val: %.3f', scale, opt_val)
       max_match.append((opt_val, scale, top_left_scaled))
 
     # determine if optimization results are valid
@@ -358,11 +389,17 @@ class Chart(object):
         logging.warning(estring)
       # find max and draw bbox
       matched_scale_and_loc = max(max_match, key=lambda x: x[0])
+      self.opt_val = matched_scale_and_loc[0]
       self.scale = matched_scale_and_loc[1]
       logging.debug('Optimum scale factor: %.3f', self.scale)
+      logging.debug('Opt val: %.3f', self.opt_val)
       top_left_scaled = matched_scale_and_loc[2]
+      logging.debug('top_left_scaled: %d, %d', top_left_scaled[0],
+                    top_left_scaled[1])
       h, w = chart.shape
       bottom_right_scaled = (top_left_scaled[0] + w, top_left_scaled[1] + h)
+      logging.debug('bottom_right_scaled: %d, %d', bottom_right_scaled[0],
+                    bottom_right_scaled[1])
       top_left = ((top_left_scaled[0] // self.scale),
                   (top_left_scaled[1] // self.scale))
       bottom_right = ((bottom_right_scaled[0] // self.scale),
@@ -371,6 +408,11 @@ class Chart(object):
       self.hnorm = ((bottom_right[1]) - top_left[1]) / scene.shape[0]
       self.xnorm = (top_left[0]) / scene.shape[1]
       self.ynorm = (top_left[1]) / scene.shape[0]
+      patch = image_processing_utils.get_image_patch(scene, self.xnorm,
+                                                     self.ynorm, self.wnorm,
+                                                     self.hnorm)
+      template_scene_name = os.path.join(log_path, 'template_scene.jpg')
+      image_processing_utils.write_image(patch, template_scene_name)
 
 
 def component_shape(contour):

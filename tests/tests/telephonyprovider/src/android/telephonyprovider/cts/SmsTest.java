@@ -17,6 +17,7 @@
 package android.telephonyprovider.cts;
 
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
+import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -68,6 +69,7 @@ public class SmsTest {
     @Before
     public void setupTestEnvironment() {
         assumeTelephony();
+        assumeMessaging();
         cleanup();
         mContentResolver = getInstrumentation().getContext().getContentResolver();
         mSmsTestHelper = new SmsTestHelper();
@@ -128,7 +130,7 @@ public class SmsTest {
 
     @Test
     public void testInsertSmsFromSubid_verifySmsFromNotOtherSubId() {
-        int subId = 1;
+        int subId = -1;
 
         ContentValues values = new ContentValues();
         values.put(Telephony.Sms.BODY, TEST_SMS_BODY);

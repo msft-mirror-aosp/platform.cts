@@ -44,12 +44,17 @@ public abstract class JavaMidiTestModule extends MidiTestModule {
     public static final byte MIDICMD_PROGRAMCHANGE = 12;
     public static final byte MIDICMD_CHANNELPRESS = 13;
     public static final byte MIDICMD_PITCHWHEEL = 14;
+
     public static final byte MIDICMD_SYSEX = (byte) 0xF0;
     public static final byte MIDICMD_EOSYSEX = (byte) 0xF7; // (byte)0b11110111;    // 0xF7
+
+    // Active Sensing messages should be ignored.
+    public static final byte MIDICMD_SYSACTIVESENSING = (byte) 0xFE;
 
     // In some instances, Bluetooth MIDI in particular, it is possible to overrun
     // the bandwidth, resulting in lost data. In this case, slow the data stream
     // down.
+    private static final int THROTTLE_MAX_PACKET_SIZE = 15;
     private static final int THROTTLE_PERIOD_MS = 10;
 
     private static final int MESSAGE_MAX_BYTES = 4096;
@@ -240,20 +245,40 @@ public abstract class JavaMidiTestModule extends MidiTestModule {
                 break;  // bail
             }
 
-            if (bytes[offset + index] != mMatchStream.get(mReceiveStreamPos)) {
-                matches = false;
-                if (DEBUG) {
-                    int gotValue = bytes[offset + index] & 0x000000FF;
-                    int expectedValue = mMatchStream.get(mReceiveStreamPos) & 0x000000FF;
-                    Log.i(TAG, "---- mismatch @"
-                            + index
-                            + " [0x" + Integer.toHexString(gotValue)
-                            + " : 0x" + Integer.toHexString(expectedValue)
-                            + "]");
+            if (bytes[offset + index] == MIDICMD_SYSACTIVESENSING) {
+                if (bytes[offset + index] == mMatchStream.get(mReceiveStreamPos)) {
+                    Log.d(TAG, "matched active sensing message");
+                    mReceiveStreamPos++;
+                } else {
+                    Log.d(TAG, "skipping active sensing message");
                 }
-                break;
+            } else {
+                // Check for "Warm Up" message
+                if ((mReceiveStreamPos == 0)
+                        && (bytes[offset + index] != makeMIDICmd(MIDICMD_CONTROL, 0))) {
+                    // advance the match stream past the "warm-up" message
+                    mReceiveStreamPos += mWarmUpMsg.length;
+                    if (DEBUG) {
+                        Log.d(TAG, "skipping warm-up message");
+                    }
+                }
+
+                if (bytes[offset + index] != mMatchStream.get(mReceiveStreamPos)) {
+                    matches = false;
+                    if (DEBUG) {
+                        int gotValue = bytes[offset + index] & 0x000000FF;
+                        int expectedValue = mMatchStream.get(mReceiveStreamPos) & 0x000000FF;
+                        Log.i(TAG, "---- mismatch @"
+                                + index
+                                + " [0x" + Integer.toHexString(gotValue)
+                                + " : 0x" + Integer.toHexString(expectedValue)
+                                + "]");
+                    }
+                    break;
+                } else {
+                    mReceiveStreamPos++;
+                }
             }
-            mReceiveStreamPos++;
         }
 
         if (DEBUG) {
@@ -271,8 +296,9 @@ public abstract class JavaMidiTestModule extends MidiTestModule {
         try {
             if (throttle) {
                 try {
-                    for (int index = 0; index < length; index++) {
-                        inputPort.send(bytes, offset + index, 1);
+                    for (int index = 0; index < length; index += THROTTLE_MAX_PACKET_SIZE) {
+                        int packetSize = Math.min(length - index, THROTTLE_MAX_PACKET_SIZE);
+                        inputPort.send(bytes, offset + index, packetSize);
                         Thread.sleep(THROTTLE_PERIOD_MS);
                     }
                 } catch (InterruptedException ex) {
@@ -300,13 +326,13 @@ public abstract class JavaMidiTestModule extends MidiTestModule {
                 // Send a warm-up message...
                 logByteArray("warm-up: ", mWarmUpMsg, 0, mWarmUpMsg.length);
                 portSend(mIODevice.mSendPort, mWarmUpMsg, 0, mWarmUpMsg.length,
-                        false /* throttle */);
+                        mDeviceType == TESTID_BTLOOPBACK);
                 for (TestMessage msg : mTestMessages) {
                     if (DEBUG) {
                         logByteArray("send: ", msg.mMsgBytes, 0, msg.mMsgBytes.length);
                     }
                     portSend(mIODevice.mSendPort, msg.mMsgBytes, 0, msg.mMsgBytes.length,
-                            false /* throttle */);
+                            mDeviceType == TESTID_BTLOOPBACK);
                     totalSent += msg.mMsgBytes.length;
                 }
             }
@@ -409,15 +435,6 @@ public abstract class JavaMidiTestModule extends MidiTestModule {
             synchronized (mTestLock) {
                 if (!mTestRunning) {
                     return;
-                }
-
-                // Check for "Warm Up" message
-                if (mReceiveStreamPos == 0 && msg[offset] != makeMIDICmd(MIDICMD_CONTROL, 0)) {
-                    // advance the match stream past the "warm-up" message
-                    mReceiveStreamPos += mWarmUpMsg.length;
-                    if (DEBUG) {
-                        Log.i(TAG, "---- No Warm Up Message Detected.");
-                    }
                 }
 
                 mTestMismatched = !matchStream(msg, offset, count);

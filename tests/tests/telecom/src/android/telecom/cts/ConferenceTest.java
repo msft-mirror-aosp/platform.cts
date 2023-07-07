@@ -63,19 +63,33 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
     private MockConnection mConnection1, mConnection2;
     MockInCallService mInCallService;
     Conference mConferenceObject;
-    MockConference mConferenceVerficationObject;
+    MockConference mConferenceVerificationObject;
 
     @Override
     protected void setUp() throws Exception {
+        boolean isSetUpComplete = false;
         super.setUp();
         if (mShouldTestTelecom) {
-            addOutgoingCalls();
-            addConferenceCall(mCall1, mCall2);
-            mConferenceVerficationObject = verifyConferenceForOutgoingCall();
-            // Use vanilla conference object so that the CTS coverage tool detects the usage.
-            mConferenceObject = mConferenceVerficationObject;
-            verifyConferenceObject(mConferenceObject, mConnection1, mConnection2);
+            try {
+                addOutgoingCalls();
+                addConferenceCall(mCall1, mCall2);
+                mConferenceVerificationObject = verifyConferenceForOutgoingCall();
+                // Use vanilla conference object so that the CTS coverage tool detects the usage.
+                mConferenceObject = mConferenceVerificationObject;
+                verifyConferenceObject(mConferenceObject, mConnection1, mConnection2);
+                isSetUpComplete = true;
+            } finally {
+                // Force tearDown if setUp errors out to ensure unused listeners are cleaned up.
+                if (!isSetUpComplete) {
+                    tearDown();
+                }
+            }
         }
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
     }
 
     public void testConferenceCreate() {
@@ -426,7 +440,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         extras.putString(TEST_EXTRA_KEY_1, TEST_EXTRA_VALUE_1);
         extras.putInt(TEST_EXTRA_KEY_2, TEST_EXTRA_VALUE_2);
         conf.putExtras(extras);
-        mConferenceVerficationObject.mOnExtrasChanged.waitForCount(1);
+        mConferenceVerificationObject.mOnExtrasChanged.waitForCount(1);
 
         Bundle changedExtras = mConferenceObject.getExtras();
         assertTrue(changedExtras.containsKey(TEST_EXTRA_KEY_1));
@@ -502,8 +516,10 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         final Call conf = mInCallService.getLastConferenceCall();
         assertCallState(conf, Call.STATE_ACTIVE);
 
-        mOnCallEndpointChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
-        CallEndpoint endpoint = (CallEndpoint) mOnCallEndpointChangedCounter.getArgs(0)[0];
+        mConferenceVerificationObject.mCurrentCallEndpoint
+                .waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        CallEndpoint endpoint = (CallEndpoint) mConferenceVerificationObject
+                .mCurrentCallEndpoint.getArgs(0)[0];
         assertEquals(endpoint, mConferenceObject.getCurrentCallEndpoint());
     }
 

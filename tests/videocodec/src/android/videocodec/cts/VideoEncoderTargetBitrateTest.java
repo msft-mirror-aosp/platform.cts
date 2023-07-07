@@ -29,6 +29,7 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.RawResource;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -65,6 +66,7 @@ import java.util.Queue;
  */
 @RunWith(Parameterized.class)
 public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBase {
+    private static final String LOG_TAG = VideoEncoderTargetBitrateTest.class.getSimpleName();
     private static final int KEY_FRAME_INTERVAL = 1;
     private static final int FRAME_LIMIT = 300;
     private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
@@ -81,7 +83,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
         for (Object[] arg : exhaustiveArgsList) {
             resources.add((CompressedResource) arg[2]);
         }
-        decodeStreamsToYuv(resources, RES_YUV_MAP);
+        decodeStreamsToYuv(resources, RES_YUV_MAP, LOG_TAG);
     }
 
     @AfterClass
@@ -105,13 +107,18 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
 
     private static void addParams(int width, int height, CompressedResource res) {
         final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC};
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
         final int[] bitRates = new int[]{5000000, 8000000, 10000000};
         final int[] maxBFramesPerSubGop = new int[]{0, 1};
         final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
         for (String mediaType : mediaTypes) {
             for (int bitRate : bitRates) {
                 for (int maxBFrames : maxBFramesPerSubGop) {
+                    if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                            && !mediaType.equals((MediaFormat.MIMETYPE_VIDEO_HEVC))
+                            && maxBFrames != 0) {
+                        continue;
+                    }
                     for (int bitRateMode : bitRateModes) {
                         // mediaType, cfg, resource file, test label
                         String label = String.format("%dkbps_%dx%d_maxb-%d_%s", bitRate / 1000,
@@ -125,7 +132,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() {
         addParams(1920, 1080, BIRTHDAY_FULLHD_LANDSCAPE);
         addParams(1080, 1920, SELFIEGROUP_FULLHD_PORTRAIT);
@@ -165,6 +172,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
         }
     }
 
+    @CddTest(requirements = {"5.2/C-5-2", "5.2/C-6-1"})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE_MODE"})
     @Test
     public void testEncoderBitRateModeSupport() throws IOException, InterruptedException {
@@ -175,7 +183,7 @@ public class VideoEncoderTargetBitrateTest extends VideoEncoderValidationTestBas
                 areFormatsSupported(mCodecName, mMediaType, formats));
         RawResource res = RES_YUV_MAP.getOrDefault(mCRes.uniqueLabel(), null);
         assertNotNull("no raw resource found for testing config : " + mEncCfgParams[0] + mTestConfig
-                + mTestEnv, res);
+                + mTestEnv + DIAGNOSTICS, res);
         encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, true, false);
         assertEquals("encoder did not encode the requested number of frames \n"
                 + mTestConfig + mTestEnv, FRAME_LIMIT, mOutputCount);

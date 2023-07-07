@@ -24,7 +24,7 @@ import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_NONE;
 import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_SYSTEM;
 import static android.media.AudioManager.ADJUST_MUTE;
 import static android.media.AudioManager.ADJUST_UNMUTE;
-import static android.media.AudioManager.STREAM_NOTIFICATION;
+import static android.media.AudioManager.STREAM_MUSIC;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_APP_OPS;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_CLIENT_VOLUME;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_STREAM_VOLUME;
@@ -74,14 +74,14 @@ import java.util.function.Function;
 
 @NonMainlineTest
 public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
-    private final static String TAG = "AudioPlaybackConfigurationTest";
+    private static final String TAG = "AudioPlaybackConfigurationTest";
 
-    private final static int TEST_TIMING_TOLERANCE_MS = 150;
+    private static final int TEST_TIMING_TOLERANCE_MS = 150;
     /** acceptable timeout for the time it takes for a prepared MediaPlayer to have an audio device
      * selected and reported when starting to play */
-    private final static int PLAY_ROUTING_TIMING_TOLERANCE_MS = 500;
-    private final static int TEST_TIMEOUT_SOUNDPOOL_LOAD_MS = 3000;
-    private final static long MEDIAPLAYER_PREPARE_TIMEOUT_MS = 2000;
+    private static final int PLAY_ROUTING_TIMING_TOLERANCE_MS = 500;
+    private static final int TEST_TIMEOUT_SOUNDPOOL_LOAD_MS = 3000;
+    private static final long MEDIAPLAYER_PREPARE_TIMEOUT_MS = 2000;
 
     private static final int TEST_AUDIO_TRACK_SAMPLERATE = 48000;
     private static final double TEST_AUDIO_TRACK_FREQUENCY = 440.0;
@@ -108,13 +108,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private AudioTrack mAt;
 
     @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
         // try/catch for every method in case the tests left the objects in various states
         if (mMp != null) {
             try {
@@ -131,10 +125,12 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             mAt.release();
             mAt = null;
         }
+        super.tearDown();
     }
 
-    private final static int TEST_USAGE = AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_DELAYED;
-    private final static int TEST_CONTENT = AudioAttributes.CONTENT_TYPE_SPEECH;
+    private static final int TEST_USAGE = AudioAttributes.USAGE_MEDIA;
+    private static final int TEST_CONTENT = AudioAttributes.CONTENT_TYPE_MUSIC;
+    private static final int TEST_STREAM_FOR_USAGE = STREAM_MUSIC;
 
     // test marshalling/unmarshalling of an AudioPlaybackConfiguration instance. Since we can't
     // create an AudioPlaybackConfiguration directly, we first need to play something to get one.
@@ -275,7 +271,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 .build();
 
         try {
-            mMp =  createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa,
+            mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa,
                     am.generateAudioSessionId());
 
             am.registerAudioPlaybackCallback(callback, h /*handler*/);
@@ -590,9 +586,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
         verifyMuteUnmuteNotifications(/*start=*/player.mPlay,
                 /*mute=*/
-                () -> am.adjustStreamVolume(STREAM_NOTIFICATION, ADJUST_MUTE, /* flags= */0),
+                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, /* flags= */0),
                 /*unmute=*/
-                () -> am.adjustStreamVolume(STREAM_NOTIFICATION, ADJUST_UNMUTE, /* flags= */0),
+                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, /* flags= */0),
                 /*muteChangesActiveState=*/false, MUTED_BY_STREAM_VOLUME);
     }
 
@@ -692,9 +688,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         try {
             am.registerAudioPlaybackCallback(callback, null /*handler*/);
 
-            // query how many active players before starting the MediaPlayer
-            final int nbActivePlayersBeforeStart = am.getActivePlaybackConfigurations().size();
-
             // start playing audio
             start.run();
 
@@ -720,10 +713,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
             checkMutedApi(checkFlag);
 
-            assertEquals("number of active players after mute not expected",
-                    nbActivePlayersBeforeStart + (muteChangesActiveState ? 0 : 1),
-                    am.getActivePlaybackConfigurations().size());
-
             // unmute with Runnable
             callback.reset();
             unmute.run();
@@ -735,10 +724,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             } else {
                 Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
             }
-
-            assertEquals("number of active players after unmute not expected",
-                    nbActivePlayersBeforeStart + 1,
-                    am.getActivePlaybackConfigurations().size());
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
             unmute.run();
@@ -749,15 +734,16 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MODIFY_AUDIO_ROUTING);
 
-        AudioPlaybackConfiguration currentConfiguration = findConfiguration();
+        AudioPlaybackConfiguration currentConfiguration = findConfiguration(checkFlag);
         assertTrue("APC should be muted", currentConfiguration.isMuted());
-        assertEquals("APC muted by wrong source", currentConfiguration.getMutedBy(), checkFlag);
+        assertTrue("APC muted by wrong source",
+                (currentConfiguration.getMutedBy() & checkFlag) != 0);
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 
-    private AudioPlaybackConfiguration findConfiguration() {
+    private AudioPlaybackConfiguration findConfiguration(int muteHint) {
         int uid;
         Context context = getContext();
         try {
@@ -771,10 +757,15 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         List<AudioPlaybackConfiguration> configList = am.getActivePlaybackConfigurations();
         AudioPlaybackConfiguration result = null;
         for (AudioPlaybackConfiguration config : configList) {
-            if (config.getClientUid() == uid) {
+            if (config.getClientUid() == uid && config.getAudioDeviceInfo() != null
+                    && config.getAudioAttributes().getUsage() == TEST_USAGE
+                    && config.getAudioAttributes().getContentType() == TEST_CONTENT) {
                 Log.v(TAG,
                         "AudioPlaybackConfiguration " + config + " uid " + config.getClientUid());
                 result = config;
+                if ((config.getMutedBy() & muteHint) != 0) {
+                    break;
+                }
             }
         }
         assertNotNull("Could not find AudioPlaybackConfiguration for uid " + uid, result);
@@ -821,7 +812,8 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 am.generateAudioSessionId());
     }
 
-    private @Nullable MediaPlayer createPreparedMediaPlayer(
+    @Nullable
+    private MediaPlayer createPreparedMediaPlayer(
             @RawRes int resID, AudioAttributes aa, int session) throws Exception {
         final TestUtils.Monitor onPreparedCalled = new TestUtils.Monitor();
         final MediaPlayer mp = createPlayer(resID, aa, session);

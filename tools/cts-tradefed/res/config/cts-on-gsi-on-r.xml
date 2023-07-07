@@ -29,4 +29,41 @@
 
     <!-- Excluded test cases start-->
 
+    <!-- CtsMediaMiscTestCases: b/278880281: excluding all high resolution test cases. -->
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testAVCVideoCodecReclaimHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testHEVCVideoCodecReclaimHighResolution" />
+
+    <!-- CtsIdentityTestCases: b/282102975: excluding tests to be disabled. -->
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.AttestationTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.EphemeralKeyTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
+
+    <!-- CtsKeystoreTestCases: b/262010816  -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.ECDSASignatureTest" />
+    <!-- CtsKeystoreTestCases: b/264546541 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.NoAttestKeyTest" />
+    <!-- CtsMediaMiscTestCases: b/261813452 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.HeifWriterTest" />
+
 </configuration>

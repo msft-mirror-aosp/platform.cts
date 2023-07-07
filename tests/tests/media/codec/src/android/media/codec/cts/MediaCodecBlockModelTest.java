@@ -28,6 +28,7 @@ import android.media.MediaCodec.CodecException;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.cts.MediaCodecAsyncHelper;
 import android.media.cts.MediaCodecBlockModelHelper;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
@@ -41,6 +42,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -92,6 +94,7 @@ public class MediaCodecBlockModelTest {
     @Presubmit
     @SmallTest
     @RequiresDevice
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testDecodeShortVideo() throws InterruptedException {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
@@ -112,6 +115,7 @@ public class MediaCodecBlockModelTest {
     @Presubmit
     @SmallTest
     @RequiresDevice
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testDecodeShortAudio() throws InterruptedException {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
@@ -132,6 +136,7 @@ public class MediaCodecBlockModelTest {
     @Presubmit
     @SmallTest
     @RequiresDevice
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testEncodeShortAudio() throws InterruptedException {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
@@ -145,6 +150,7 @@ public class MediaCodecBlockModelTest {
     @Presubmit
     @SmallTest
     @RequiresDevice
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testEncodeShortVideo() throws InterruptedException {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
@@ -297,18 +303,18 @@ public class MediaCodecBlockModelTest {
 
             List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
 
-            final LinkedBlockingQueue<MediaCodecBlockModelHelper.SlotEvent> queue =
+            final LinkedBlockingQueue<MediaCodecAsyncHelper.SlotEvent> queue =
                 new LinkedBlockingQueue<>();
             mediaCodec.setCallback(new MediaCodec.Callback() {
                 @Override
                 public void onInputBufferAvailable(MediaCodec codec, int index) {
-                    queue.offer(new MediaCodecBlockModelHelper.SlotEvent(true, index));
+                    queue.offer(new MediaCodecAsyncHelper.SlotEvent(true, index));
                 }
 
                 @Override
                 public void onOutputBufferAvailable(
                         MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-                    queue.offer(new MediaCodecBlockModelHelper.SlotEvent(false, index));
+                    queue.offer(new MediaCodecAsyncHelper.SlotEvent(false, index));
                 }
 
                 @Override
@@ -329,7 +335,7 @@ public class MediaCodecBlockModelTest {
             boolean signaledEos = false;
             int frameIndex = 0;
             while (!eos && !Thread.interrupted()) {
-                MediaCodecBlockModelHelper.SlotEvent event;
+                MediaCodecAsyncHelper.SlotEvent event;
                 try {
                     event = queue.take();
                 } catch (InterruptedException e) {

@@ -18,7 +18,6 @@ package android.autofillservice.cts.inline;
 
 import static android.autofillservice.cts.activities.WebViewActivity.HTML_NAME_PASSWORD;
 import static android.autofillservice.cts.activities.WebViewActivity.HTML_NAME_USERNAME;
-import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 
@@ -35,12 +34,12 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.SaveRequest;
-import android.support.test.uiautomator.UiObject2;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.ViewStructure.HtmlInfo;
 
 import androidx.test.filters.FlakyTest;
+import androidx.test.uiautomator.UiObject2;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -75,7 +74,7 @@ public class InlineWebViewActivityTest extends AbstractWebViewTestCase<WebViewAc
 
     @Override
     protected void enableService() {
-        Helper.enableAutofillService(getContext(), SERVICE_NAME);
+        Helper.enableAutofillService(SERVICE_NAME);
     }
 
     @Override

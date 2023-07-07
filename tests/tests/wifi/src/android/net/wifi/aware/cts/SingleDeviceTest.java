@@ -19,11 +19,16 @@ package android.net.wifi.aware.cts;
 import static android.Manifest.permission.OVERRIDE_WIFI_CONFIG;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.net.wifi.aware.AwarePairingConfig.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC;
+import static android.net.wifi.aware.Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_128;
+import static android.net.wifi.aware.Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256;
+import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_JOINED;
+import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_STARTED;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
+import android.annotation.NonNull;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -69,7 +74,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -83,6 +87,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -265,6 +270,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onClusterIdChanged(int clusterEventType, MacAddress clusterId) {
+            super.onClusterIdChanged(clusterEventType, clusterId);
             mClusterId = clusterId;
             mClusterEventType = clusterEventType;
             mBlockerClusterIdCallback.countDown();
@@ -332,6 +338,13 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         static final int ON_SESSION_SUSPEND_FAILED = 11;
         static final int ON_SESSION_RESUME_SUCCEEDED = 12;
         static final int ON_SESSION_RESUME_FAILED = 13;
+        static final int ON_PAIRING_SETUP_SUCCEEDED = 14;
+        static final int ON_PAIRING_SETUP_FAILED = 15;
+        static final int ON_PAIRING_SETUP_REQUEST_RECEIVED = 16;
+        static final int ON_PAIRING_VERIFICATION_SUCCEEDED = 17;
+        static final int ON_PAIRING_VERIFICATION_FAILED = 18;
+        static final int ON_BOOTSTRAPPING_SUCCEEDED = 19;
+        static final int ON_BOOTSTRAPPING_FAILED = 20;
 
         private final Object mLocalLock = new Object();
         private final ArrayDeque<Integer> mCallbackQueue = new ArrayDeque<>();
@@ -354,80 +367,140 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onPublishStarted(PublishDiscoverySession session) {
+            super.onPublishStarted(session);
             mPublishDiscoverySession = session;
             processCallback(ON_PUBLISH_STARTED);
         }
 
         @Override
         public void onSubscribeStarted(SubscribeDiscoverySession session) {
+            super.onSubscribeStarted(session);
             mSubscribeDiscoverySession = session;
             processCallback(ON_SUBSCRIBE_STARTED);
         }
 
         @Override
         public void onSessionConfigUpdated() {
+            super.onSessionConfigUpdated();
             processCallback(ON_SESSION_CONFIG_UPDATED);
         }
 
         @Override
         public void onSessionConfigFailed() {
+            super.onSessionConfigFailed();
             processCallback(ON_SESSION_CONFIG_FAILED);
         }
 
         @Override
         public void onSessionTerminated() {
+            super.onSessionTerminated();
             processCallback(ON_SESSION_TERMINATED);
         }
 
         @Override
         public void onSessionSuspendSucceeded() {
+            super.onSessionSuspendSucceeded();
             processCallback(ON_SESSION_SUSPEND_SUCCEEDED);
         }
 
         @Override
         public void onSessionSuspendFailed(int reason) {
+            super.onSessionSuspendFailed(reason);
             processCallback(ON_SESSION_SUSPEND_FAILED);
         }
 
         @Override
         public void onSessionResumeSucceeded() {
+            super.onSessionResumeSucceeded();
             processCallback(ON_SESSION_RESUME_SUCCEEDED);
         }
 
         @Override
         public void onSessionResumeFailed(int reason) {
+            super.onSessionResumeFailed(reason);
             processCallback(ON_SESSION_RESUME_FAILED);
         }
 
         @Override
         public void onServiceDiscovered(PeerHandle peerHandle, byte[] serviceSpecificInfo,
                 List<byte[]> matchFilter) {
+            super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
             processCallback(ON_SERVICE_DISCOVERED);
         }
 
         @Override
         public void onServiceDiscovered(ServiceDiscoveryInfo info) {
+            super.onServiceDiscovered(info);
             processCallback(ON_SERVICE_DISCOVERED);
         }
 
         @Override
         public void onMessageSendSucceeded(int messageId) {
+            super.onMessageSendSucceeded(messageId);
             processCallback(ON_MESSAGE_SEND_SUCCEEDED);
         }
 
         @Override
         public void onMessageSendFailed(int messageId) {
+            super.onMessageSendFailed(messageId);
             processCallback(ON_MESSAGE_SEND_FAILED);
         }
 
         @Override
         public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
+            super.onMessageReceived(peerHandle, message);
             processCallback(ON_MESSAGE_RECEIVED);
         }
 
         @Override
         public void onServiceLost(PeerHandle peerHandle, int reason) {
+            super.onServiceLost(peerHandle, reason);
             processCallback(ON_SESSION_DISCOVERED_LOST);
+        }
+
+        @Override
+        public void onPairingSetupRequestReceived(@NonNull PeerHandle peerHandle, int requestId) {
+            super.onPairingSetupRequestReceived(peerHandle, requestId);
+            processCallback(ON_PAIRING_SETUP_REQUEST_RECEIVED);
+        }
+
+        @Override
+        public void onPairingSetupSucceeded(@NonNull PeerHandle peerHandle,
+                @NonNull String alias) {
+            super.onPairingSetupSucceeded(peerHandle, alias);
+            processCallback(ON_PAIRING_SETUP_SUCCEEDED);
+
+        }
+
+        @Override
+        public void onPairingSetupFailed(@NonNull PeerHandle peerHandle) {
+            super.onPairingSetupFailed(peerHandle);
+            processCallback(ON_PAIRING_SETUP_FAILED);
+        }
+
+        @Override
+        public void onPairingVerificationSucceed(@NonNull PeerHandle peerHandle,
+                @NonNull String alias) {
+            super.onPairingVerificationSucceed(peerHandle, alias);
+            processCallback(ON_PAIRING_VERIFICATION_SUCCEEDED);
+        }
+
+        @Override
+        public void onPairingVerificationFailed(@NonNull PeerHandle peerHandle) {
+            super.onPairingVerificationFailed(peerHandle);
+            processCallback(ON_PAIRING_VERIFICATION_FAILED);
+        }
+
+        @Override
+        public void onBootstrappingSucceeded(@NonNull PeerHandle peerHandle, int method) {
+            super.onBootstrappingSucceeded(peerHandle, method);
+            processCallback(ON_BOOTSTRAPPING_SUCCEEDED);
+        }
+
+        @Override
+        public void onBootstrappingFailed(@NonNull PeerHandle peerHandle) {
+            super.onBootstrappingFailed(peerHandle);
+            processCallback(ON_BOOTSTRAPPING_FAILED);
         }
 
         /**
@@ -552,7 +625,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         mWifiLock = mWifiManager.createWifiLock(TAG);
         mWifiLock.acquire();
         if (!mWifiManager.isWifiEnabled()) {
-            SystemUtil.runShellCommand("svc wifi enable");
+            ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
         }
 
         mConnectivityManager = (ConnectivityManager) getContext().getSystemService(
@@ -624,6 +697,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             ShellIdentityUtils.invokeWithShellPermissions(() ->
                     mWifiAwareManager.enableInstantCommunicationMode(false));
         }
+        if (characteristics.isAwarePairingSupported()) {
+            assertTrue(((characteristics.getSupportedPairingCipherSuites()
+                    & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_128) != 0)
+                    || ((characteristics.getSupportedPairingCipherSuites()
+                    & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256) != 0));
+        }
     }
 
     /**
@@ -659,7 +738,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         // 1. Disable Wi-Fi
         WifiAwareStateBroadcastReceiver receiver1 = new WifiAwareStateBroadcastReceiver();
         mContext.registerReceiver(receiver1, intentFilter);
-        SystemUtil.runShellCommand("svc wifi disable");
+        ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(false));
 
         assertTrue("Timeout waiting for Wi-Fi Aware to change status",
                 receiver1.waitForStateChange());
@@ -674,7 +753,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         // 2. Enable Wi-Fi
         WifiAwareStateBroadcastReceiver receiver2 = new WifiAwareStateBroadcastReceiver();
         mContext.registerReceiver(receiver2, intentFilter);
-        SystemUtil.runShellCommand("svc wifi enable");
+        ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
 
         assertTrue("Timeout waiting for Wi-Fi Aware to change status",
                 receiver2.waitForStateChange());
@@ -731,8 +810,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             MacAddress clusterId = identityL.getClusterId();
             assertNotNull("Wi-Fi Aware cluster ID: iteration " + i, clusterId);
             int clusterEventType = identityL.getClusterEventType();
-            assertEquals("Wi-Fi Aware cluster event type: iteration " + i,
-                    IdentityChangedListener.CLUSTER_CHANGE_EVENT_STARTED, clusterEventType);
+            if (clusterEventType != CLUSTER_CHANGE_EVENT_STARTED
+                    && clusterEventType != CLUSTER_CHANGE_EVENT_JOINED) {
+                fail("Wi-Fi Aware cluster event type: iteration " + i
+                        + ", invalid cluster event type");
+            }
             byte[] mac = identityL.getMac();
             assertNotNull("Wi-Fi Aware discovery MAC: iteration " + i, mac);
 
@@ -961,7 +1043,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful publish with a suspendable session when device supports suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPublishSuccessWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1006,7 +1088,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to publish with a suspendable session when device doesn't support
      * suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPublishFailureWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1038,7 +1120,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a publish session.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSuspendResumeSuccessWithPublishSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1260,7 +1342,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful subscribe with a suspendable session when device supports suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSubscribeSuccessWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1306,7 +1388,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to subscribe with a suspendable session when device doesn't support
      * suspension.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSubscribeFailureWithSuspendableSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1339,7 +1421,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a subscribe session.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testSuspendResumeSuccessWithSubscribeSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1744,6 +1826,40 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 mLock.wait(WAIT_FOR_AWARE_CHANGE_SECS * 1000);
             }
             assertTrue(enabled.get());
+            attachAndGetSession();
+            if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+                return;
+            }
+            AtomicBoolean called = new AtomicBoolean(false);
+            AtomicBoolean canBeCreated = new AtomicBoolean(false);
+            AtomicReference<Set<WifiManager.InterfaceCreationImpact>>
+                    interfacesWhichWillBeDeleted = new AtomicReference<>(null);
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiManager.reportCreateInterfaceImpact(
+                            WifiManager.WIFI_INTERFACE_TYPE_DIRECT, true,
+                            Executors.newSingleThreadScheduledExecutor(),
+                            (canBeCreatedLocal, interfacesWhichWillBeDeletedLocal) -> {
+                                synchronized (mLock) {
+                                    canBeCreated.set(canBeCreatedLocal);
+                                    called.set(true);
+                                    interfacesWhichWillBeDeleted
+                                            .set(interfacesWhichWillBeDeletedLocal);
+                                    mLock.notify();
+                                }
+                            }));
+            synchronized (mLock) {
+                mLock.wait(WAIT_FOR_AWARE_CHANGE_SECS * 1000);
+            }
+            assertTrue(called.get());
+            if (canBeCreated.get()) {
+                for (WifiManager.InterfaceCreationImpact entry
+                        : interfacesWhichWillBeDeleted.get()) {
+                    int interfaceType = entry.getInterfaceType();
+                    assertEquals(WifiManager.WIFI_INTERFACE_TYPE_AWARE, interfaceType);
+                    Set<String> packages = entry.getPackages();
+                    assertTrue(packages.isEmpty());
+                }
+            }
         } finally {
             mWifiAwareManager.setOpportunisticModeEnabled(false);
         }
@@ -1763,6 +1879,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             };
             Executor executor = Executors.newSingleThreadScheduledExecutor();
             WifiAwareSession session = attachAndGetSession();
+            if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+                // Shell doesn't have permission before T.
+                assertThrows(SecurityException.class, () -> session
+                        .getMasterPreference(executor, result));
+                assertThrows(SecurityException.class, () -> session
+                        .setMasterPreference(254));
+                return;
+            }
             session.getMasterPreference(executor, result);
             synchronized (mLock) {
                 mLock.wait(WAIT_FOR_AWARE_CHANGE_SECS * 1000);

@@ -219,6 +219,7 @@
 
         <activity android:name="android.security.cts.ActivityManagerTest$ActivityOptionsActivity" />
         <activity android:name="android.security.cts.ActivityManagerTest$BaseActivity" />
+        <activity android:name="android.security.cts.ActivityManagerTest$WaitEnterAnimActivity" />
 
         <activity android:name="android.security.cts.PackageInstallerTest$BackgroundLaunchActivity"
             android:exported="true" />
@@ -240,6 +241,9 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
+        <activity android:name="android.security.cts.CVE_2023_20953.PocActivity"
+            android:exported="true" />
+
         <activity android:name="android.security.cts.CVE_2021_0642.PocActivity"
             android:exported="true">
             <intent-filter>
@@ -259,6 +263,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <service android:name="android.security.cts.AttributionSourceService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="AttributionSourceService"
+            android:process=":attributionSourceServiceProcess">
+        </service>
 
     </application>
 

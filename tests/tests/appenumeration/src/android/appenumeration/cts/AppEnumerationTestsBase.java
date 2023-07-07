@@ -75,6 +75,8 @@ public class AppEnumerationTestsBase {
     static PackageManager sPm;
 
     static final long DEFAULT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
+    static final long DEFAULT_TIMEOUT_WAIT_FOR_READY_MS = TimeUnit.SECONDS.toMillis(30);
+
 
     @Rule
     public TestName name = new TestName();
@@ -129,7 +131,7 @@ public class AppEnumerationTestsBase {
                 sResponseHandler);
         intent.putExtra(EXTRA_REMOTE_CALLBACK, callback);
         if (waitForReady) {
-            AmUtils.waitForBroadcastIdle();
+            AmUtils.waitForBroadcastBarrier();
             startAndWaitForCommandReady(intent);
         } else {
             final ActivityOptions options = ActivityOptions.makeBasic();
@@ -137,9 +139,12 @@ public class AppEnumerationTestsBase {
             sContext.startActivity(intent, options.toBundle());
         }
         return () -> {
-            if (!latch.block(DEFAULT_TIMEOUT_MS)) {
+            final long latchTimeout =
+                    waitForReady ? DEFAULT_TIMEOUT_WAIT_FOR_READY_MS : DEFAULT_TIMEOUT_MS;
+            if (!latch.block(latchTimeout)) {
                 throw new TimeoutException(
-                        "Latch timed out while awaiting a response from " + sourcePackageName);
+                        "Latch timed out while awaiting a response from " + sourcePackageName
+                                + " after " + latchTimeout + "ms");
             }
             final Bundle bundle = resultReference.get();
             if (bundle != null && bundle.containsKey(EXTRA_ERROR)) {

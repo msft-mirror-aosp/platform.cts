@@ -55,26 +55,36 @@ public class ImsUtils {
     private static final String TAG = "ImsUtils";
 
     public static boolean shouldTestTelephony() {
+        try {
+            InstrumentationRegistry.getInstrumentation().getContext()
+                    .getSystemService(TelephonyManager.class)
+                    .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
+        } catch (IllegalStateException e) {
+            return false;
+        }
         final PackageManager pm = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
     }
 
     public static boolean shouldTestImsService() {
+        boolean hasIms = InstrumentationRegistry.getInstrumentation().getContext()
+                .getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS);
+        return shouldTestTelephony() && hasIms;
+    }
+
+    public static boolean shouldTestImsCall() {
         final PackageManager pm = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager();
-        boolean hasTelephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
-        boolean hasIms = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS);
-        return hasTelephony && hasIms;
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS)
+                && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
     }
 
     public static boolean shouldTestImsSingleRegistration() {
-        final PackageManager pm = InstrumentationRegistry.getInstrumentation().getContext()
-                .getPackageManager();
-        boolean hasTelephony = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
-        boolean hasSingleReg = pm.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION);
-        return hasTelephony && hasSingleReg;
+        boolean hasSingleReg = InstrumentationRegistry.getInstrumentation().getContext()
+                .getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION);
+        return shouldTestTelephony() && hasSingleReg;
     }
 
     public static int getPreferredActiveSubId() {

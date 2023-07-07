@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.util;
 
+import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.displayCutout;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -25,20 +26,20 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import static org.junit.Assert.assertFalse;
 
 import android.app.Activity;
+import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.graphics.Insets;
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import android.util.Size;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.WindowInsets;
 import android.view.WindowMetrics;
 import android.view.inputmethod.InputMethodManager;
 
@@ -133,6 +134,15 @@ public final class TestUtils {
 
     public static boolean isInputMethodPickerShown(@NonNull InputMethodManager imm) {
         return SystemUtil.runWithShellPermissionIdentity(imm::isInputMethodPickerShown);
+    }
+
+    /** Returns {@code true} if the default display supports split screen multi-window. */
+    public static boolean supportsSplitScreenMultiWindow() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final DisplayManager dm = context.getSystemService(DisplayManager.class);
+        final Display defaultDisplay = dm.getDisplay(DEFAULT_DISPLAY);
+        return ActivityTaskManager.supportsSplitScreenMultiWindow(
+                context.createDisplayContext(defaultDisplay));
     }
 
     /**
@@ -437,21 +447,21 @@ public final class TestUtils {
     public static void injectNavBarToHomeGestureEvents(
             @NonNull Activity activity, int toolType) {
         WindowMetrics metrics = activity.getWindowManager().getCurrentWindowMetrics();
-        Size size = getScreenSize(metrics);
-        int screenHeight = size.getHeight();
-        int screenWidth = size.getWidth();
 
-        int startY = screenHeight; // bottom of screen
-        int startX = screenWidth / 2; // center
-        int endY = screenHeight - screenHeight / 3; // move a third of the screen up
+        var bounds = new Rect(metrics.getBounds());
+        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(displayCutout()));
+
+        int startY = bounds.bottom;
+        int startX = bounds.centerX();
+        int endY = bounds.bottom - bounds.height() / 3; // move a third of the screen up
         int endX = startX;
-        int number = 10;
+        int steps = 10;
 
-        final float incrementX = ((float) (endX - startX)) / (number - 1);
-        final float incrementY = ((float) (endY - startY)) / (number - 1);
+        final float incrementX = ((float) (endX - startX)) / (steps - 1);
+        final float incrementY = ((float) (endY - startY)) / (steps - 1);
 
         // Inject stylus ACTION_MOVE & finally ACTION_UP.
-        for (int i = 0; i < number; i++) {
+        for (int i = 0; i < steps; i++) {
             long time = SystemClock.uptimeMillis();
             float x = startX + incrementX * i;
             float y = startY + incrementY * i;
@@ -467,23 +477,12 @@ public final class TestUtils {
                     time, time, MotionEvent.ACTION_MOVE, x, y, toolType),
                     true /* sync */);
 
-            if (i == number - 1) {
+            if (i == steps - 1) {
                 // ACTION_UP
                 injectMotionEvent(getMotionEvent(
                         time, time, MotionEvent.ACTION_UP, x, y, toolType),
                         true /* sync */);
             }
         }
-    }
-
-    private static Size getScreenSize(WindowMetrics windowMetrics) {
-        WindowInsets windowInsets = windowMetrics.getWindowInsets();
-        final Insets insetsWithCutout = windowInsets
-                .getInsetsIgnoringVisibility(displayCutout());
-        final int insetsWidth = insetsWithCutout.left + insetsWithCutout.right;
-        final int insetsHeight = insetsWithCutout.top + insetsWithCutout.bottom;
-
-        Rect bounds = windowMetrics.getBounds();
-        return new Size(bounds.width() - insetsWidth, bounds.height() - insetsHeight);
     }
 }

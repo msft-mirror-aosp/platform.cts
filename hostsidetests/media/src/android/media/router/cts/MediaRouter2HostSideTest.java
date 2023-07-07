@@ -23,6 +23,7 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_3_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_3_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKAGE;
 
@@ -56,6 +57,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_1_APK);
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_2_APK);
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_3_APK);
+        installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK);
         installTestApp(testInfo, MEDIA_ROUTER_TEST_APK);
     }
 
@@ -65,6 +67,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_2_PACKAGE);
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_3_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK);
         device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE);
     }
 
@@ -99,17 +102,6 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
                 "setRouteListingPreference_propagatesToManager");
-    }
-
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
-    @AppModeFull
-    @RequiresDevice
-    @Test
-    public void testSetRouteListingPreference_withIllegalComponentName_throws() throws Exception {
-        runDeviceTests(
-                MEDIA_ROUTER_TEST_PACKAGE,
-                DEVICE_SIDE_TEST_CLASS,
-                "setRouteListingPreference_withIllegalComponentName_throws");
     }
 
     @AppModeFull
@@ -154,6 +146,53 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
                 "newRouteListingPreference_withInvalidCustomSubtext_throws");
+    }
+
+    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void getRoutes_dependingOnPermissions_returnsExpectedSystemRoutes() throws Exception {
+        // Bluetooth permissions must be manually granted.
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_SCAN",
+                /* enabled= */ true);
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_CONNECT",
+                /* enabled= */ true);
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE, DEVICE_SIDE_TEST_CLASS, "getRoutes_returnDeviceRoute");
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_SCAN",
+                /* enabled= */ false);
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_CONNECT",
+                /* enabled= */ false);
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "getRoutes_returnsDefaultDevice");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRouter2"})
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void selfScanOnlyProvider_notScannedByAnotherApp() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "selfScanOnlyProvider_notScannedByAnotherApp");
+    }
+
+    private void setPermissionEnabled(String packageName, String permission, boolean enabled)
+            throws DeviceNotAvailableException {
+        String action = enabled ? "grant" : "revoke";
+        getDevice().executeShellCommand("pm %s %s %s".formatted(action, packageName, permission));
     }
 
     private static void installTestApp(TestInformation testInfo, String apkName)

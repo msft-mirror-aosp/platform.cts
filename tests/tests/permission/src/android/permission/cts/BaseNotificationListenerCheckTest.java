@@ -16,7 +16,6 @@
 
 package android.permission.cts;
 
-import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
 import static android.os.Process.myUserHandle;
 import static android.permission.cts.TestUtils.eventually;
 
@@ -164,7 +163,7 @@ public class BaseNotificationListenerCheckTest {
             if (!valueWasSet) {
                 throw new  IllegalStateException("Could not set " + propertyName + " to " + value);
             }
-        }, WRITE_DEVICE_CONFIG);
+        });
     }
 
     /**
@@ -284,7 +283,7 @@ public class BaseNotificationListenerCheckTest {
      */
     private static void resetPermissionController() throws Throwable {
         PermissionUtils.resetPermissionControllerJob(sUiAutomation, PERMISSION_CONTROLLER_PKG,
-                NOTIFICATION_LISTENER_CHECK_JOB_ID, UNEXPECTED_TIMEOUT_MILLIS,
+                NOTIFICATION_LISTENER_CHECK_JOB_ID, 45000,
                 ACTION_SET_UP_NOTIFICATION_LISTENER_CHECK, NotificationListenerOnBootReceiver);
     }
 

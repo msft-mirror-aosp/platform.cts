@@ -15,8 +15,10 @@
  */
 
 package android.photopicker.cts;
-
-import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
+import static android.photopicker.cts.PhotoPickerCloudUtils.disableCloudMediaAndClearAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig;
+import static android.photopicker.cts.PhotoPickerCloudUtils.isCloudMediaEnabled;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.REGEX_PACKAGE_NAME;
@@ -40,24 +42,30 @@ import static org.mockito.ArgumentMatchers.eq;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.net.Uri;
+import android.os.Build;
 import android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import android.photopicker.cts.cloudproviders.CloudProviderPrimary;
 import android.photopicker.cts.cloudproviders.CloudProviderPrimary.CloudMediaSurfaceControllerImpl;
 import android.provider.MediaStore;
 import android.util.Pair;
 
+import androidx.annotation.Nullable;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,6 +75,7 @@ import java.util.List;
  * End-to-end coverage for video preview controls is present in {@link PhotoPickerTest}
  */
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
 
     private MediaGenerator mCloudPrimaryMediaGenerator;
@@ -83,17 +92,45 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
     private CloudMediaSurfaceControllerImpl mSurfaceControllerListener;
     // This is required to assert the order in which the APIs are called.
     private InOrder mAssertInOrder;
+    private static boolean sCloudMediaPreviouslyEnabled;
+    private static String sPreviouslyAllowedCloudProviders;
+    @Nullable
+    private static String sPreviouslySetCloudProvider;
+
+    @BeforeClass
+    public static void setUpBeforeClass() throws IOException {
+        // Store the current CMP configs, so that we can reset them at the end of the test.
+        sCloudMediaPreviouslyEnabled = isCloudMediaEnabled();
+        if (sCloudMediaPreviouslyEnabled) {
+            sPreviouslyAllowedCloudProviders = getAllowedProvidersDeviceConfig();
+        }
+        sPreviouslySetCloudProvider = getCurrentCloudProvider();
+
+        // This is a self-instrumentation test, so both "target" package name and "own" package name
+        // should be the same (android.photopicker.cts).
+        enableCloudMediaAndSetAllowedCloudProviders(sTargetPackageName);
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        // Reset CloudMedia configs.
+        if (sCloudMediaPreviouslyEnabled) {
+            enableCloudMediaAndSetAllowedCloudProviders(sPreviouslyAllowedCloudProviders);
+        } else {
+            disableCloudMediaAndClearAllowedCloudProviders();
+        }
+        setCloudProvider(sPreviouslySetCloudProvider);
+    }
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-
         mCloudPrimaryMediaGenerator = PickerProviderMediaGenerator.getMediaGenerator(
                 mContext, CloudProviderPrimary.AUTHORITY);
         mCloudPrimaryMediaGenerator.resetAll();
         mCloudPrimaryMediaGenerator.setMediaCollectionId(COLLECTION_1);
 
-        setCloudProvider(mContext, CloudProviderPrimary.AUTHORITY);
+        setCloudProvider(CloudProviderPrimary.AUTHORITY);
         assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
                 CloudProviderPrimary.AUTHORITY)).isTrue();
 
@@ -111,7 +148,7 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
         if (mCloudPrimaryMediaGenerator != null) {
-            setCloudProvider(mContext, null);
+            setCloudProvider(null);
         }
     }
 

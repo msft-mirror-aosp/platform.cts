@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -53,6 +54,7 @@ import android.content.IntentSender;
 import android.content.pm.ApkChecksum;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.DataLoaderParams;
+import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.SessionParams;
@@ -170,6 +172,8 @@ public class PackageManagerShellCommandTest {
     private static final String TEST_VERIFIER_DISABLED = "HelloVerifierDisabled.apk";
 
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
+
+    private static final String SHELL_PACKAGE_NAME = "com.android.shell";
 
     static final long DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS = 3 * 1000;
     static final long VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS = 10 * 1000;
@@ -659,6 +663,7 @@ public class PackageManagerShellCommandTest {
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_INHERIT_EXISTING);
+            params.installFlags |= PackageManager.INSTALL_REPLACE_EXISTING;
             params.setAppPackageName(TEST_APP_PACKAGE);
             params.setDontKillApp(true);
 
@@ -670,6 +675,7 @@ public class PackageManagerShellCommandTest {
 
             final CompletableFuture<Boolean> result = new CompletableFuture<>();
             final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
             session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
                 @Override
                 public void send(int code, Intent intent, String resolvedType,
@@ -677,16 +683,18 @@ public class PackageManagerShellCommandTest {
                         String requiredPermission, Bundle options) throws RemoteException {
                     boolean dontKillApp =
                             (session.getInstallFlags() & PackageManager.INSTALL_DONT_KILL_APP) != 0;
-                    result.complete(dontKillApp);
                     status.complete(
                             intent.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                    result.complete(dontKillApp);
                 }
             }));
 
             // We are adding split. OK to have the flag.
             assertTrue(result.get());
             // Verify that the return status is set
-            assertEquals(PackageInstaller.STATUS_SUCCESS, (int) status.get());
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_SUCCESS, (int) status.get());
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
@@ -950,8 +958,7 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_SDK1);
         assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
 
-        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                getPackageCertDigest(TEST_SDK1_PACKAGE));
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
         // Install and uninstall.
         installPackage(TEST_USING_SDK1);
@@ -1013,6 +1020,54 @@ public class PackageManagerShellCommandTest {
     }
 
     @Test
+    public void testAppUsingSdkInstallGroupInstall() throws Exception {
+        // Install/uninstall the sdk to grab its certDigest.
+        installPackage(TEST_SDK1);
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+        String sdkCertDigest = getPackageCertDigest(TEST_SDK1_PACKAGE);
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        // Try to install without required SDK1.
+        installPackage(TEST_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
+
+        // Parent session
+        String parentSessionId = createSession("--multi-package");
+
+        // Required SDK1.
+        String sdkSessionId = createSession("");
+        addSplits(sdkSessionId, new String[] { createApkPath(TEST_SDK1) });
+
+        // The app.
+        String appSessionId = createSession("");
+        addSplits(appSessionId, new String[] { createApkPath(TEST_USING_SDK1) });
+
+        overrideUsesSdkLibraryCertificateDigest(sdkCertDigest);
+
+        // Add both child sessions to the primary session and commit.
+        assertEquals("Success\n", executeShellCommand(
+                "pm install-add-session " + parentSessionId + " " + sdkSessionId + " "
+                        + appSessionId));
+        commitSession(parentSessionId);
+
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+        assertTrue(isAppInstalled(TEST_SDK_USER_PACKAGE));
+
+        // Check resolution API.
+        getUiAutomation().adoptShellPermissionIdentity();
+        try {
+            ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_SDK_USER_PACKAGE,
+                    PackageManager.ApplicationInfoFlags.of(GET_SHARED_LIBRARY_FILES));
+            assertEquals(1, appInfo.sharedLibraryInfos.size());
+            SharedLibraryInfo libInfo = appInfo.sharedLibraryInfos.get(0);
+            assertEquals("com.test.sdk1", libInfo.getName());
+            assertEquals(1, libInfo.getLongVersion());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testInstallFailsMismatchingCertificate() throws Exception {
         // Install the required SDK1.
         installPackage(TEST_SDK1);
@@ -1028,8 +1083,7 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_SDK1);
         assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
 
-        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                getPackageCertDigest(TEST_SDK1_PACKAGE));
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
         // Install the package.
         installPackage(TEST_USING_SDK1);
@@ -1061,8 +1115,7 @@ public class PackageManagerShellCommandTest {
 
         // Install and uninstall the user package.
         {
-            setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                    getPackageCertDigest(TEST_SDK1_PACKAGE));
+            overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
             installPackage(TEST_USING_SDK1_AND_SDK2);
 
@@ -1106,8 +1159,7 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_SDK1);
         installPackage(TEST_SDK2);
 
-        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                getPackageCertDigest(TEST_SDK1_PACKAGE));
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
         installPackage(TEST_USING_SDK1_AND_SDK2);
 
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "0");
@@ -1140,8 +1192,7 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_SDK1);
         assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
 
-        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                getPackageCertDigest(TEST_SDK1_PACKAGE));
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
         // Now install the required SDK3.
         installPackage(TEST_SDK3_USING_SDK1);
@@ -1218,8 +1269,7 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_SDK1);
         assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
 
-        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest",
-                getPackageCertDigest(TEST_SDK1_PACKAGE));
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
         // Install and uninstall.
         installPackage(TEST_SDK3_USING_SDK1);
@@ -1395,10 +1445,6 @@ public class PackageManagerShellCommandTest {
     @Test
     @LargeTest
     public void testPackageVerifierReject() throws Exception {
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
         runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
@@ -1453,10 +1499,6 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_VERIFIER_REJECT);
         assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
 
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
         runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
@@ -1480,10 +1522,6 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_VERIFIER_REJECT);
         assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
 
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
         runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
@@ -1512,10 +1550,6 @@ public class PackageManagerShellCommandTest {
         installPackage(TEST_VERIFIER_DELAYED_REJECT);
         assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
 
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
 
         runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
@@ -1649,10 +1683,6 @@ public class PackageManagerShellCommandTest {
 
     @Test
     public void testPackageVerifierWithOneVerifierDisabledAtRunTime() throws Exception {
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         installPackage(TEST_VERIFIER_REJECT);
         assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
         runPackageVerifierTest("Failure [INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed",
@@ -1686,10 +1716,6 @@ public class PackageManagerShellCommandTest {
 
     @Test
     public void testPackageVerifierWithOneVerifierDisabledAtManifest() throws Exception {
-        // PackageManager.verifyPendingInstall() call only works with user 0 as verifier is expected
-        // to be user 0. So skip the test if it is not user 0.
-        // TODO(b/232317379) Fix this in proper way
-        assumeTrue(getContext().getUserId() == UserHandle.USER_SYSTEM);
         // The second verifier package is disabled in its manifest
         installPackage(TEST_VERIFIER_REJECT);
         assertTrue(isAppInstalled(TEST_VERIFIER_PACKAGE));
@@ -1803,19 +1829,45 @@ public class PackageManagerShellCommandTest {
     @Test
     public void testCreateUserCurAsType() throws Exception {
         assumeTrue(UserManager.supportsMultipleUsers());
-        Pattern pattern = Pattern.compile("Success: created user id (\\d+)\\R*");
-        String commandResult = executeShellCommand("pm create-user --profileOf cur "
-                + "--user-type android.os.usertype.profile.CLONE test");
-        Matcher matcher = pattern.matcher(commandResult);
-        assertTrue(matcher.find());
-        commandResult = executeShellCommand("pm remove-user " + matcher.group(1));
-        assertEquals("Success: removed user\n", commandResult);
-        commandResult = executeShellCommand("pm create-user --profileOf current "
-                + "--user-type android.os.usertype.profile.CLONE test");
-        matcher = pattern.matcher(commandResult);
-        assertTrue(matcher.find());
-        commandResult = executeShellCommand("pm remove-user " + matcher.group(1));
-        assertEquals("Success: removed user\n", commandResult);
+        final String oldPropertyValue = getSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY);
+        setSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY, "1");
+        try {
+            Pattern pattern = Pattern.compile("Success: created user id (\\d+)\\R*");
+            String commandResult = executeShellCommand("pm create-user --profileOf cur "
+                    + "--user-type android.os.usertype.profile.CLONE test");
+            Matcher matcher = pattern.matcher(commandResult);
+            assertTrue(matcher.find());
+            commandResult = executeShellCommand("pm remove-user " + matcher.group(1));
+            assertEquals("Success: removed user\n", commandResult);
+            commandResult = executeShellCommand("pm create-user --profileOf current "
+                    + "--user-type android.os.usertype.profile.CLONE test");
+            matcher = pattern.matcher(commandResult);
+            assertTrue(matcher.find());
+            commandResult = executeShellCommand("pm remove-user " + matcher.group(1));
+            assertEquals("Success: removed user\n", commandResult);
+        } finally {
+            if (!oldPropertyValue.isEmpty()) {
+                setSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY, oldPropertyValue);
+            }
+        }
+    }
+
+    @Test
+    public void testShellInitiatingPkgName() throws Exception {
+        installPackage(TEST_HW5);
+        InstallSourceInfo installSourceInfo = getPackageManager()
+                .getInstallSourceInfo(TEST_APP_PACKAGE);
+        assertEquals(SHELL_PACKAGE_NAME, installSourceInfo.getInitiatingPackageName());
+        assertNull(installSourceInfo.getInstallingPackageName());
+    }
+
+    @Test
+    public void testShellInitiatingPkgNameSetInstallerPkgName() throws Exception {
+        installPackageWithInstallerPkgName(TEST_HW5, CTS_PACKAGE_NAME);
+        InstallSourceInfo installSourceInfo = getPackageManager()
+                .getInstallSourceInfo(TEST_APP_PACKAGE);
+        assertEquals(SHELL_PACKAGE_NAME, installSourceInfo.getInitiatingPackageName());
+        assertEquals(CTS_PACKAGE_NAME, installSourceInfo.getInstallingPackageName());
     }
 
     static class FullyRemovedBroadcastReceiver extends BroadcastReceiver {
@@ -1837,16 +1889,23 @@ public class PackageManagerShellCommandTest {
             }
         }
         public void assertBroadcastReceived() throws Exception {
-            executeShellCommand("am wait-for-broadcast-barrier");
-            assertTrue(mUserReceivedBroadcast.get(2, TimeUnit.SECONDS));
+            // Make sure broadcast has been sent from PackageManager
+            executeShellCommand("pm wait-for-handler --timeout 2000");
+            // Make sure broadcast has been dispatched from the queue
+            executeShellCommand(String.format(
+                    "am wait-for-broadcast-dispatch -a %s -d package:%s",
+                    Intent.ACTION_PACKAGE_FULLY_REMOVED, mTargetPackage));
+            // Checks that broadcast is delivered here
+            assertTrue(mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
         }
         public void assertBroadcastNotReceived() throws Exception {
-            try {
-                executeShellCommand("am wait-for-broadcast-barrier");
-                assertFalse(mUserReceivedBroadcast.get(2, TimeUnit.SECONDS));
-            } catch (TimeoutException ignored) {
-                // expected
-            }
+            // Make sure broadcast has been sent from PackageManager
+            executeShellCommand("pm wait-for-handler --timeout 2000");
+            executeShellCommand(String.format(
+                    "am wait-for-broadcast-dispatch -a %s -d package:%s",
+                    Intent.ACTION_PACKAGE_FULLY_REMOVED, mTargetPackage));
+            assertThrows(TimeoutException.class,
+                    () -> mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
         }
     }
 
@@ -1951,6 +2010,15 @@ public class PackageManagerShellCommandTest {
         }
     }
 
+    /**
+     * SDK package is signed by build system. In theory we could try to extract the signature,
+     * and patch the app manifest. This property allows us to override in runtime, which is much
+     * easier.
+     */
+    private void overrideUsesSdkLibraryCertificateDigest(String sdkCertDigest) throws Exception {
+        setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest", sdkCertDigest);
+    }
+
     static String getSplits(String packageName) throws IOException {
         final String commandResult = executeShellCommand("pm dump " + packageName);
         final String prefix = "    splits=[";
@@ -1980,6 +2048,13 @@ public class PackageManagerShellCommandTest {
         File file = new File(createApkPath(baseName));
         String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
         assertTrue(result, result.startsWith(expectedResultStartsWith));
+    }
+
+    private void installPackageWithInstallerPkgName(String baseName, String installerName)
+            throws IOException {
+        File file = new File(createApkPath(baseName));
+        assertEquals("Success\n", executeShellCommand(
+                "pm " + mInstall + "-i " + installerName + " -t -g " + file.getPath()));
     }
 
     private void updatePackage(String packageName, String baseName) throws IOException {
@@ -2089,6 +2164,10 @@ public class PackageManagerShellCommandTest {
 
     public static void setSystemProperty(String name, String value) throws Exception {
         assertEquals("", executeShellCommand("setprop " + name + " " + value));
+    }
+
+    private static String getSystemProperty(String prop) throws Exception {
+        return executeShellCommand("getprop " + prop).replace("\n", "");
     }
 
     private void disablePackage(String packageName) {

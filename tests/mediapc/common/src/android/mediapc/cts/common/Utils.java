@@ -68,19 +68,33 @@ public class Utils {
     static {
         // with a default-media-performance-class that can be configured through a command line
         // argument.
-        android.os.Bundle args = InstrumentationRegistry.getArguments();
-        String mediaPerfClassArg = args.getString(MEDIA_PERF_CLASS_KEY);
-        if (mediaPerfClassArg != null) {
-            Log.d(TAG, "Running the tests with performance class set to " + mediaPerfClassArg);
-            sPc = Integer.parseInt(mediaPerfClassArg);
-        } else {
-            sPc = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)
-                    ? Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                    : SystemProperties.getInt("ro.odm.build.media_performance_class", 0);
+        android.os.Bundle args;
+        try {
+            args = InstrumentationRegistry.getArguments();
+        } catch (Exception e) {
+            args = null;
         }
-        Log.d(TAG, "performance class is " + sPc);
+        if (args != null) {
+            String mediaPerfClassArg = args.getString(MEDIA_PERF_CLASS_KEY);
+            if (mediaPerfClassArg != null) {
+                Log.d(TAG, "Running the tests with performance class set to " + mediaPerfClassArg);
+                sPc = Integer.parseInt(mediaPerfClassArg);
+            } else {
+                sPc = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)
+                        ? Build.VERSION.MEDIA_PERFORMANCE_CLASS
+                        : SystemProperties.getInt("ro.odm.build.media_performance_class", 0);
+            }
+            Log.d(TAG, "performance class is " + sPc);
+        } else {
+            sPc = 0;
+        }
 
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        Context context;
+        try {
+            context = InstrumentationRegistry.getInstrumentation().getContext();
+        } catch (Exception e) {
+            context = null;
+        }
         // When used from ItsService, context will be null
         if (context != null) {
             WindowManager windowManager = context.getSystemService(WindowManager.class);
@@ -122,10 +136,18 @@ public class Utils {
         return sPc == Build.VERSION_CODES.TIRAMISU;
     }
 
+    public static boolean isBeforeTPerfClass() {
+        return sPc < Build.VERSION_CODES.TIRAMISU;
+    }
+
+    public static boolean isUPerfClass() {
+        return sPc == Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    }
+
     /**
      * Latest defined media performance class.
      */
-    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.TIRAMISU;
+    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
     public static boolean isHandheld() {
         // handheld nature is not exposed to package manager, for now
@@ -195,6 +217,14 @@ public class Utils {
                 && meetsAvcCodecPreconditions(/* isEncoder */ false);
     }
 
+    private static boolean meetsMemoryPrecondition() {
+        if (isBeforeTPerfClass()) {
+            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
+        } else {
+            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_T_MB;
+        }
+    }
+
     public static int getPerfClass() {
         return sPc;
     }
@@ -212,7 +242,7 @@ public class Utils {
         // If device doesn't advertise performance class, check if this can be ruled out as a
         // candidate for performance class tests.
         if (!isHandheld()
-                || TOTAL_MEMORY_MB < MIN_MEMORY_PERF_CLASS_CANDIDATE_MB
+                || !meetsMemoryPrecondition()
                 || DISPLAY_DPI < MIN_DISPLAY_CANDIDATE_DPI
                 || DISPLAY_LONG_PIXELS < MIN_DISPLAY_LONG_CANDIDATE_PIXELS
                 || DISPLAY_SHORT_PIXELS < MIN_DISPLAY_SHORT_CANDIDATE_PIXELS

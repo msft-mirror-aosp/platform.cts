@@ -16,6 +16,8 @@
 package android.input.cts
 
 import android.graphics.PointF
+import android.server.wm.WindowManagerStateHelper
+import android.view.Display.DEFAULT_DISPLAY
 import android.view.Gravity
 import android.view.InputEvent
 import android.view.MotionEvent
@@ -57,8 +59,10 @@ class PointerCancelTest {
             activity = it
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
-        instrumentation.uiAutomation.syncInputTransactions()
         verifier = EventVerifier(activity::getInputEvent)
+
+        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)
+        instrumentation.uiAutomation.syncInputTransactions()
     }
 
     /**
@@ -86,7 +90,7 @@ class PointerCancelTest {
                 pointerInFloating.y + view.height / 2 + 1)
 
         val eventsInFloating = LinkedBlockingQueue<InputEvent>()
-        view.setOnTouchListener { v, event ->
+        view.setOnTouchListener { _, event ->
             eventsInFloating.add(MotionEvent.obtain(event))
         }
         val verifierForFloating = EventVerifier { eventsInFloating.poll(5, TimeUnit.SECONDS) }

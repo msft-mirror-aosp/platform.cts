@@ -1135,6 +1135,7 @@ public final class DeviceConfigApiTests {
      */
     @Test
     public void testSetSyncDisabledMode() {
+        DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
         assertEquals(SYNC_DISABLED_MODE_NONE, DeviceConfig.getSyncDisabledMode());
         DeviceConfig.setSyncDisabledMode(RESET_MODE_PACKAGE_DEFAULTS);
         assertEquals(RESET_MODE_PACKAGE_DEFAULTS, DeviceConfig.getSyncDisabledMode());
@@ -1163,14 +1164,15 @@ public final class DeviceConfigApiTests {
 
         DeviceConfig.setMonitorCallback(CONTEXT.getContentResolver(),
                 Executors.newSingleThreadExecutor(), callback);
-        // Reading properties triggers the monitor callback function.
-        DeviceConfig.getString(NAMESPACE1, KEY1, null);
         try {
             DeviceConfig.setProperties(new Properties.Builder(NAMESPACE1)
                     .setString(KEY1, VALUE1).setString(KEY2, VALUE2).build());
         } catch (DeviceConfig.BadConfigException e) {
             fail("Callback set strings" + e.toString());
         }
+
+        // Reading properties triggers the monitor callback function.
+        DeviceConfig.getString(NAMESPACE1, KEY1, null);
 
         try {
             if (!latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
@@ -1182,6 +1184,7 @@ public final class DeviceConfigApiTests {
         }
         assertEquals(callback.onNamespaceUpdateCalls, 1);
         assertEquals(callback.onDeviceConfigAccessCalls, 1);
+        DeviceConfig.clearMonitorCallback(CONTEXT.getContentResolver());
     }
 
     /**

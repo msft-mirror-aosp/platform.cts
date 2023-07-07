@@ -45,6 +45,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
+import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil
 import java.io.File
@@ -86,7 +87,11 @@ open class PackageInstallerTestBase {
         const val INSTALL_REQUEST_UPDATE_OWNERSHIP = 0x02000000
 
         val context: Context = InstrumentationRegistry.getTargetContext()
+        val testUserId: Int = context.user.identifier
     }
+
+    @get:Rule
+    val disableAnimationsRule = DisableAnimationRule()
 
     @get:Rule
     val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
@@ -110,7 +115,8 @@ open class PackageInstallerTestBase {
 
             if (status == STATUS_PENDING_USER_ACTION) {
                 val activityIntent = intent.getParcelableExtra(EXTRA_INTENT, Intent::class.java)
-                activityIntent!!.addFlags(FLAG_ACTIVITY_CLEAR_TASK or FLAG_ACTIVITY_NEW_TASK)
+                Assert.assertEquals(activityIntent!!.extras!!.keySet().size, 1)
+                activityIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK or FLAG_ACTIVITY_NEW_TASK)
                 installDialogStarter.activity.startActivityForResult(activityIntent)
             }
 
@@ -159,8 +165,8 @@ open class PackageInstallerTestBase {
             ?: SessionResult(null /* status */, null /* preapproval */, "Fail to poll result")
     }
 
-    protected fun startInstallationViaSessionNoPrompt(): CompletableFuture<Int> {
-        return startInstallationViaSession(
+    protected fun startInstallationViaSessionNoPrompt() {
+        startInstallationViaSession(
                 0 /* installFlags */,
                 TEST_APK_NAME,
                 null /* packageSource */,
@@ -168,9 +174,8 @@ open class PackageInstallerTestBase {
         )
     }
 
-    protected fun startInstallationViaSessionWithPackageSource(packageSource: Int?):
-            CompletableFuture<Int> {
-        return startInstallationViaSession(0 /* installFlags */, TEST_APK_NAME, packageSource)
+    protected fun startInstallationViaSessionWithPackageSource(packageSource: Int?) {
+        startInstallationViaSession(0 /* installFlags */, TEST_APK_NAME, packageSource)
     }
 
     protected fun createSession(
@@ -215,19 +220,28 @@ open class PackageInstallerTestBase {
 
     protected fun commitSession(
             session: Session,
-            expectedPrompt: Boolean = true
-    ): CompletableFuture<Int> {
-        var intent = Intent(INSTALL_ACTION_CB).setPackage(context.getPackageName())
+            expectedPrompt: Boolean = true,
+            needFuture: Boolean = false
+    ): CompletableFuture<Int>? {
+        var intent = Intent(INSTALL_ACTION_CB)
+                .setPackage(context.getPackageName())
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         val pendingIntent = PendingIntent.getBroadcast(
                 context, 0 /* requestCode */, intent, FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
 
+        var dialog: CompletableFuture<Int>? = null
+
         if (!expectedPrompt) {
             session.commit(pendingIntent.intentSender)
-            return CompletableFuture<Int>()
+            return dialog
         }
 
         // Commit session
-        val dialog = FutureResultActivity.doAndAwaitStart {
+        if (needFuture) {
+            dialog = FutureResultActivity.doAndAwaitStart {
+                session.commit(pendingIntent.intentSender)
+            }
+        } else {
             session.commit(pendingIntent.intentSender)
         }
 
@@ -270,33 +284,35 @@ open class PackageInstallerTestBase {
         apkName: String = TEST_APK_NAME,
         packageSource: Int? = null,
         expectedPrompt: Boolean = true,
+        needFuture: Boolean = false,
         paramsBlock: (PackageInstaller.SessionParams) -> Unit = {}
-    ): CompletableFuture<Int> {
+    ): CompletableFuture<Int>? {
         val (_, session) = createSession(installFlags, false, packageSource, paramsBlock)
         writeSession(session, apkName)
-        return commitSession(session, expectedPrompt)
+        return commitSession(session, expectedPrompt, needFuture)
     }
 
     protected fun writeAndCommitSession(
             apkName: String,
             session: Session,
             expectedPrompt: Boolean = true
-    ): CompletableFuture<Int> {
+    ) {
         writeSession(session, apkName)
-        return commitSession(session, expectedPrompt)
+        commitSession(session, expectedPrompt)
     }
 
     protected fun startInstallationViaMultiPackageSession(
         installFlags: Int,
-        vararg apkNames: String
-    ): CompletableFuture<Int> {
+        vararg apkNames: String,
+        needFuture: Boolean = false
+    ): CompletableFuture<Int>? {
         val (sessionId, session) = createSession(installFlags, true, null)
         for (apkName in apkNames) {
             val (childSessionId, childSession) = createSession(installFlags, false, null)
             writeSession(childSession, apkName)
             session.addChildSessionId(childSessionId)
         }
-        return commitSession(session)
+        return commitSession(session, needFuture = needFuture)
     }
 
     /**
@@ -361,7 +377,7 @@ open class PackageInstallerTestBase {
      * Sets the given secure setting to the provided value.
      */
     fun setSecureSetting(secureSetting: String, value: Int) {
-        uiDevice.executeShellCommand("settings put secure $secureSetting $value")
+        uiDevice.executeShellCommand("settings put --user $testUserId secure $secureSetting $value")
     }
 
     fun setSecureFrp(secureFrp: Boolean) {
@@ -378,6 +394,7 @@ open class PackageInstallerTestBase {
     }
 
     @After
+    @Before
     fun uninstallTestPackage() {
         uninstallPackage(TEST_APK_PACKAGE_NAME)
     }
@@ -391,6 +408,7 @@ open class PackageInstallerTestBase {
     }
 
     fun installPackage(apkName: String, extraArgs: String = "") {
+        Log.d(TAG, "installPackage(): apkName=$apkName, extraArgs='$extraArgs'")
         uiDevice.executeShellCommand("pm install $extraArgs " +
                 File(TEST_APK_LOCATION, apkName).canonicalPath)
     }

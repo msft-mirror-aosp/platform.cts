@@ -16,7 +16,6 @@
 
 package android.app.cts.broadcasts;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -29,9 +28,9 @@ import android.provider.DeviceConfig;
 
 import com.android.app.cts.broadcasts.ICommandReceiver;
 import com.android.compatibility.common.util.AmUtils;
-import com.android.compatibility.common.util.DeviceConfigStateHelper;
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
-import org.junit.Ignore;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,23 +39,26 @@ import java.util.List;
 @RunWith(BroadcastsTestRunner.class)
 public class BroadcastDeferralTest extends BaseBroadcastTest {
 
-    @Ignore("b/266656325")
+    @ClassRule
+    public static final DeviceConfigStateChangerRule sFreezerTimeoutRule =
+            new DeviceConfigStateChangerRule(getContext(),
+                    DeviceConfig.NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT,
+                    KEY_FREEZE_DEBOUNCE_TIMEOUT,
+                    String.valueOf(SHORT_FREEZER_TIMEOUT_MS));
+
     @Test
     public void testFgBroadcastDeliveryToFrozenApp_withDeferUntilActive() throws Exception {
         assumeTrue(isModernBroadcastQueueEnabled());
+        assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
-        try (DeviceConfigStateHelper deviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT)) {
-            deviceConfigStateHelper.set(KEY_FREEZE_DEBOUNCE_TIMEOUT,
-                    String.valueOf(SHORT_FREEZER_TIMEOUT_MS));
-
+        try {
             final Intent intent = new Intent(TEST_ACTION1)
                     .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                     .putExtra(TEST_EXTRA1, TEST_VALUE1)
                     .setPackage(HELPER_PKG2);
             final Bundle options = BroadcastOptions.makeBasic()
-                    .setDeferUntilActive(true)
+                    .setDeferralPolicy(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE)
                     .toBundle();
             int testPid = -1;
             TestServiceConnection connection2 = bindToHelperService(HELPER_PKG2);
@@ -112,19 +114,15 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
         }
     }
 
-    @Ignore("b/266656325")
     @Test
     public void testFgBroadcastDeliveryToFrozenApp() throws Exception {
         assumeTrue(isModernBroadcastQueueEnabled());
+        assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
         ICommandReceiver cmdReceiver1;
         ICommandReceiver cmdReceiver2;
-        try (DeviceConfigStateHelper deviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT)) {
-            deviceConfigStateHelper.set(KEY_FREEZE_DEBOUNCE_TIMEOUT,
-                    String.valueOf(SHORT_FREEZER_TIMEOUT_MS));
-
+        try {
             final Intent intent = new Intent(TEST_ACTION1)
                     .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                     .putExtra(TEST_EXTRA1, TEST_VALUE1)
@@ -146,10 +144,9 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
             waitForProcessFreeze(testPid, SHORT_FREEZER_TIMEOUT_MS * 2);
             cmdReceiver1.sendBroadcast(intent, null);
 
-            // Flush all broadcasts and verify that the test process is not frozen anymore since
-            // it should have been unfrozen to deliver the broadcast.
+            // Flush all broadcasts and verify that the broadcast was delivered to the process
+            // before we bind to it.
             AmUtils.waitForBroadcastBarrier();
-            assertFalse("Process should not be frozen; pid=" + testPid, isProcessFrozen(testPid));
 
             final long timestampMs = SystemClock.elapsedRealtime();
             connection2 = bindToHelperService(HELPER_PKG2);

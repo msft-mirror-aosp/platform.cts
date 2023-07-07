@@ -48,7 +48,9 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     private GrammaticalInflectionManager mGrammaticalInflectionManager;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
+
         final Context context = InstrumentationRegistry.getContext();
         mGrammaticalInflectionManager = context.getSystemService(
                 GrammaticalInflectionManager.class);
@@ -56,12 +58,8 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
 
     @After
     public void tearDown() throws Exception {
-        // clear gender value and wait the configuration change
-        TestJournalProvider.TestJournalContainer.start();
-        launchActivity(TEST_APP_MAIN_ACTIVITY);
         mGrammaticalInflectionManager.setRequestedApplicationGrammaticalGender(
                 GRAMMATICAL_GENDER_NOT_SPECIFIED);
-        assertActivityLifecycle(TEST_APP_MAIN_ACTIVITY, true /* relaunch */);
     }
 
     @Test
@@ -104,5 +102,10 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
         assertActivityLifecycle(TEST_APP_HANDLE_CONFIG_CHANGE, false /* relaunch */);
         assertThat(mGrammaticalInflectionManager.getApplicationGrammaticalGender())
                 .isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetApplicationGender_setInvalidValue_throwException() {
+        mGrammaticalInflectionManager.setRequestedApplicationGrammaticalGender(Integer.MIN_VALUE);
     }
 }

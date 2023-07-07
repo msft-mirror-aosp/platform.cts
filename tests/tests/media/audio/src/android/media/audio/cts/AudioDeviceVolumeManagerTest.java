@@ -20,22 +20,28 @@ import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.media.AudioDeviceAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
 import android.media.VolumeInfo;
+import android.media.audio.cts.AudioTestUtil.SleepAssertIntEquals;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.NonMainlineTest;
-
 
 @NonMainlineTest
 public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
 
     private static final String TAG = "AudioDeviceVolumeManagerTest";
     private AudioDeviceVolumeManager mADVmgr;
+    private boolean mUseFixedVolume;
+    private boolean mIsTelevision;
+    private boolean mIsSingleVolume;
+    private boolean mSkipRingerTests;
 
     private static final AudioDeviceAttributes BT_DEV = new AudioDeviceAttributes(
             AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "bla");
@@ -49,9 +55,19 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING,
+                        Manifest.permission.STATUS_BAR_SERVICE);
         mADVmgr = (AudioDeviceVolumeManager) getContext().getSystemService(
                 Context.AUDIO_DEVICE_VOLUME_SERVICE);
+        mUseFixedVolume = getContext().getResources().getBoolean(
+                Resources.getSystem().getIdentifier("config_useFixedVolume", "bool", "android"));
+        PackageManager packageManager = getContext().getPackageManager();
+        mIsTelevision = packageManager != null
+                && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
+        mIsSingleVolume = getContext().getResources().getBoolean(
+                Resources.getSystem().getIdentifier("config_single_volume", "bool", "android"));
+        mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
     }
 
     @Override
@@ -99,6 +115,9 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
     @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setDeviceVolume",
             "android.media.AudioDeviceVolumeManager#getDeviceVolume"})
     public void testSetGetVolume() throws Exception {
+        if (mSkipRingerTests) {
+            return;
+        }
         AudioManager am = getContext().getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -110,14 +129,33 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         final VolumeInfo volMin = new VolumeInfo.Builder(volMedia).setVolumeIndex(minIndex).build();
         final VolumeInfo volMid = new VolumeInfo.Builder(volMedia).setVolumeIndex(midIndex).build();
 
+        // safe media can block the raising to volMid, disable it
+        am.disableSafeMediaVolume();
+
+        // verify set volume is what get returns
         mADVmgr.setDeviceVolume(volMin, BT_DEV);
-        Thread.sleep(VOLUME_UPDATE_TIME_MAX_MS);
-        VolumeInfo resVI = mADVmgr.getDeviceVolume(volMid, BT_DEV);
-        assertEquals(volMin.getVolumeIndex(), resVI.getVolumeIndex());
+        final SleepAssertIntEquals checkVol = new SleepAssertIntEquals(
+                5000 /*maxWaitMs*/, 50 /*periodMs*/, getContext());
+        checkVol.assertEqualsSleep(
+                volMin.getVolumeIndex() /*expected*/,
+                () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
+                "After setting min volume:");
 
         mADVmgr.setDeviceVolume(volMid, BT_DEV);
-        Thread.sleep(VOLUME_UPDATE_TIME_MAX_MS);
-        resVI = mADVmgr.getDeviceVolume(volMid, BT_DEV);
-        assertEquals(volMid.getVolumeIndex(), resVI.getVolumeIndex());
+        checkVol.assertEqualsSleep(
+                volMid.getVolumeIndex() /*expected*/,
+                () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
+                "After setting mid volume:");
+
+        // verify the range is set, and is correct
+        final VolumeInfo currentVol = mADVmgr.getDeviceVolume(volMid, BT_DEV);
+        assertFalse("Returned min volume index is not set",
+                VolumeInfo.INDEX_NOT_SET == currentVol.getMinVolumeIndex());
+        assertFalse("Returned max volume index is not set",
+                VolumeInfo.INDEX_NOT_SET == currentVol.getMaxVolumeIndex());
+        assertEquals("Min possible volume index unexpected:", volMid.getMinVolumeIndex(),
+                currentVol.getMinVolumeIndex());
+        assertEquals("Max possible volume index unexpected:", volMid.getMaxVolumeIndex(),
+                currentVol.getMaxVolumeIndex());
     }
 }

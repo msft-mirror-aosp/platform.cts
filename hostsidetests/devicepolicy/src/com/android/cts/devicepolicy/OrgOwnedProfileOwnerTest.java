@@ -23,6 +23,7 @@ import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
@@ -31,17 +32,21 @@ import android.stats.devicepolicy.EventId;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for organization-owned Profile Owner.
  */
 // We need managed users to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
-public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
+public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String DEVICE_ADMIN_PKG = DeviceAndProfileOwnerTest.DEVICE_ADMIN_PKG;
     private static final String DEVICE_ADMIN_APK = DeviceAndProfileOwnerTest.DEVICE_ADMIN_APK;
     private static final String CERT_INSTALLER_PKG = DeviceAndProfileOwnerTest.CERT_INSTALLER_PKG;
@@ -71,6 +76,9 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     protected int mUserId;
     private static final String DISALLOW_CONFIG_LOCATION = "no_config_location";
     private static final String CALLED_FROM_PARENT = "calledFromParent";
+
+    @Rule
+    public DeviceJUnit4ClassRunner.TestLogData mLogger = new DeviceJUnit4ClassRunner.TestLogData();
 
     @Override
     public void setUp() throws Exception {
@@ -251,6 +259,11 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
             // Turn logging on.
             runDeviceTestsAsUser(packageName, testClassName,
                     "testEnablingSecurityLogging", mUserId);
+
+            // Ensure user is initialized before rebooting, otherwise it won't start.
+            waitForUserInitialized(mUserId);
+            // Wait until idle so that the flag is persisted to disk.
+            waitForBroadcastIdle();
             // Reboot to ensure ro.organization_owned is set to true in logd and logging is on.
             rebootAndWaitUntilReady();
             waitForUserUnlock(mUserId);
@@ -271,6 +284,17 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
             if (stayAwake != null) {
                 getDevice().setSetting("global", "stay_on_while_plugged_in", stayAwake);
             }
+        }
+    }
+
+    private void waitForUserInitialized(int userId) throws Exception {
+        final long start = System.nanoTime();
+        final long deadline = start + TimeUnit.MINUTES.toNanos(5);
+        while ((getUserFlags(userId) & FLAG_INITIALIZED) == 0) {
+            if (System.nanoTime() > deadline) {
+                fail("Timed out waiting for user to become initialized");
+            }
+            RunUtil.getDefault().sleep(100);
         }
     }
 
@@ -523,9 +547,7 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
         try {
             toggleQuietMode(true);
-            waitForUserStopped(mUserId);
             toggleQuietMode(false);
-            waitForUserUnlock(mUserId);
             // Ensure the DPC has handled the broadcast
             waitForBroadcastIdle();
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
@@ -554,9 +576,7 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
         try {
             toggleQuietMode(true);
-            waitForUserStopped(mUserId);
             toggleQuietMode(false);
-            waitForUserUnlock(mUserId);
             // Ensure the DPC has handled the broadcast
             waitForBroadcastIdle();
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
@@ -667,6 +687,16 @@ public class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private void toggleQuietMode(boolean quietModeEnable) throws Exception {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
                 quietModeEnable ? "testEnableQuietMode" : "testDisableQuietMode", mPrimaryUserId);
+
+        boolean keepProfilesRunning = executeShellCommand("dumpsys device_policy")
+                .contains("Keep profiles running: true");
+        if (!keepProfilesRunning) {
+            if (quietModeEnable) {
+                waitForUserStopped(mUserId);
+            } else {
+                waitForUserUnlock(mUserId);
+            }
+        }
     }
 
     private void setAndStartLauncher(String component) throws Exception {

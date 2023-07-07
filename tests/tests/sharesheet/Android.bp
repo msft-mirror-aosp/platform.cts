@@ -29,7 +29,7 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "mockito-target-minus-junit4",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
     ],
 
     libs: [
@@ -47,6 +47,7 @@ android_test {
         ":CtsSharesheetExcludeTester",
         ":CtsSharesheetActivityLabelTester",
         ":CtsSharesheetIntentFilterLabelTester",
+        ":CtsSharesheetAlternateType",
     ],
     per_testcase_directory: true,
 }

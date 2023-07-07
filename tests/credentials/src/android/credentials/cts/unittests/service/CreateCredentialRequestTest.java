@@ -102,18 +102,7 @@ public class CreateCredentialRequestTest {
                 data);
         final CreateCredentialRequest request2 = TestUtils.cloneParcelable(request1);
         assertThat(request2.getType()).isEqualTo(request1.getType());
-        assertThat(request2.getCallingAppInfo().getPackageName()).isEqualTo(
-                request1.getCallingAppInfo().getPackageName());
 
-        final SigningInfo signing1 = request1.getCallingAppInfo().getSigningInfo();
-        final SigningInfo signing2 = request2.getCallingAppInfo().getSigningInfo();
-        assertThat(signing2.getApkContentsSigners()).isEqualTo(signing1.getApkContentsSigners());
-        assertThat(signing2.getSigningCertificateHistory()).isEqualTo(
-                signing1.getSigningCertificateHistory());
-        assertThat(signing2.hasPastSigningCertificates()).isEqualTo(
-                signing1.hasPastSigningCertificates());
-        assertThat(signing2.hasMultipleSigners()).isEqualTo(signing2.hasMultipleSigners());
-
-        TestUtils.assertEquals(request2.getData(), request1.getData());
+        TestUtils.assertEquals(request2.getCallingAppInfo(), request1.getCallingAppInfo());
     }
 }

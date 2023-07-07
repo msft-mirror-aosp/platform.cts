@@ -40,8 +40,6 @@ android_test {
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
-        "NotificationListener/src/com/android/test/notificationlistener/INotificationUriAccessService.aidl",
-        "NotificationListener/src/com/android/test/notificationlistener/INLSControlService.aidl",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -70,14 +68,8 @@ android_test {
         ":CtsBadProviderStubs",
         ":CtsCantSaveState1",
         ":CtsCantSaveState2",
-        ":NotificationApp",
-        ":NotificationProvider",
-        ":NotificationListener",
         ":StorageDelegator",
         ":CtsActivityManagerApi29",
-        ":NotificationTrampoline",
-        ":NotificationTrampolineApi30",
-        ":NotificationTrampolineApi32",
         ":WallpaperTest",
     ],
     per_testcase_directory: true,
@@ -164,7 +156,7 @@ android_test {
         "android.test.base",
     ],
     static_libs: [
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",
@@ -205,7 +197,7 @@ android_test {
         "android.test.base",
     ],
     static_libs: [
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",

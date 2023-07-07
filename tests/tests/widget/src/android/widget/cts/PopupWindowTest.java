@@ -16,6 +16,8 @@
 
 package android.widget.cts;
 
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -78,6 +80,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Before;
@@ -100,7 +103,9 @@ public class PopupWindowTest {
     private static final int CONTENT_SIZE_DP = 30;
     private static final boolean IGNORE_BOTTOM_DECOR = true;
 
-    private Instrumentation mInstrumentation;
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final UserHelper mUserHelper = new UserHelper(mInstrumentation.getTargetContext());
+
     private Context mContext;
     private PopupWindowCtsActivity mActivity;
     private PopupWindow mPopupWindow;
@@ -115,10 +120,10 @@ public class PopupWindowTest {
             new ActivityTestRule<>(PopupWindowCtsActivity.class);
 
     @Before
-    public void setup() {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    public void setup() throws Throwable {
         mContext = InstrumentationRegistry.getContext();
         mActivity = mActivityRule.getActivity();
+        assertTrue("Window did not become visible", waitForWindowOnTop(mActivity.getWindow()));
     }
 
     @Test
@@ -1623,12 +1628,14 @@ public class PopupWindowTest {
         long eventTime = SystemClock.uptimeMillis();
         MotionEvent event = MotionEvent.obtain(downTime, eventTime,
                 MotionEvent.ACTION_DOWN, x, y, 0);
+        mUserHelper.injectDisplayIdIfNeeded(event);
         mInstrumentation.sendPointerSync(event);
         verify(onTouchListener, times(1)).onTouch(any(View.class), any(MotionEvent.class));
 
         downTime = SystemClock.uptimeMillis();
         eventTime = SystemClock.uptimeMillis();
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
+        mUserHelper.injectDisplayIdIfNeeded(event);
         mInstrumentation.sendPointerSync(event);
         verify(onTouchListener, times(2)).onTouch(any(View.class), any(MotionEvent.class));
 
@@ -1636,6 +1643,7 @@ public class PopupWindowTest {
         downTime = SystemClock.uptimeMillis();
         eventTime = SystemClock.uptimeMillis();
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN, x, y, 0);
+        mUserHelper.injectDisplayIdIfNeeded(event);
         mInstrumentation.sendPointerSync(event);
         verify(onTouchListener, times(2)).onTouch(any(View.class), any(MotionEvent.class));
     }

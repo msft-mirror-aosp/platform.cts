@@ -21,6 +21,7 @@ import static android.provider.MediaStore.PickerMediaColumns;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import android.content.ContentResolver;
@@ -33,6 +34,7 @@ import android.net.Uri;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 
+import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
 import java.io.ByteArrayOutputStream;
@@ -44,6 +46,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Photo Picker Utility methods for PhotoPicker result assertions.
@@ -60,18 +63,33 @@ public class ResultsAssertionsUtils {
         assertThat(auth).isEqualTo("picker");
     }
 
-    public static void assertPersistedGrant(Uri uri, ContentResolver resolver) {
+    public static void assertPersistedReadGrants(Uri uri, ContentResolver resolver) {
         resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
         final List<UriPermission> uriPermissions = resolver.getPersistedUriPermissions();
-        final List<Uri> uris = new ArrayList<>();
+        final List<Uri> readUris = new ArrayList<>();
         for (UriPermission perm : uriPermissions) {
             if (perm.isReadPermission()) {
-                uris.add(perm.getUri());
+                readUris.add(perm.getUri());
             }
         }
+        assertThat(readUris).contains(uri);
+    }
 
-        assertThat(uris).contains(uri);
+    public static void assertPersistedWriteGrants(Uri uri, ContentResolver resolver) {
+        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        final List<UriPermission> uriPermissions = resolver.getPersistedUriPermissions();
+        final List<Uri> writeUris = new ArrayList<>();
+        for (UriPermission perm : uriPermissions) {
+            if (perm.isWritePermission()) {
+                writeUris.add(perm.getUri());
+            }
+        }
+        assertThat(writeUris).contains(uri);
+    }
+
+    public static void assertNoPersistedWriteGrant(Uri uri, ContentResolver resolver) {
+        assertThrows(SecurityException.class, () -> resolver.takePersistableUriPermission(uri,
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
     }
 
     public static void assertMimeType(Uri uri, String expectedMimeType) throws Exception {
@@ -107,11 +125,39 @@ public class ResultsAssertionsUtils {
         }
     }
 
+    public static void assertExtension(@NonNull Uri uri,
+            @NonNull Map<String, String> mimeTypeToExpectedExtensionMap) {
+        assertThat(uri).isNotNull();
+
+        final ContentResolver resolver =
+                InstrumentationRegistry.getTargetContext().getContentResolver();
+        final String[] projection =
+                new String[]{ PickerMediaColumns.MIME_TYPE, PickerMediaColumns.DISPLAY_NAME };
+
+        try (Cursor c = resolver.query(
+                uri, projection, /* queryArgs */ null, /* cancellationSignal */ null)) {
+            assertThat(c).isNotNull();
+            assertThat(c.moveToFirst()).isTrue();
+
+            final String mimeType = c.getString(c.getColumnIndex(PickerMediaColumns.MIME_TYPE));
+            final String expectedExtension = mimeTypeToExpectedExtensionMap.get(mimeType);
+
+            final String displayName =
+                    c.getString(c.getColumnIndex(PickerMediaColumns.DISPLAY_NAME));
+            final String[] displayNameParts = displayName.split("\\.");
+            final String resultExtension = displayNameParts[displayNameParts.length - 1];
+
+            assertWithMessage("Unexpected picker file extension")
+                    .that(resultExtension)
+                    .isEqualTo(expectedExtension);
+        }
+    }
+
     private static void assertVideoRedactedReadOnlyAccess(Uri uri, ContentResolver resolver)
             throws Exception {
         // The location is redacted
         // TODO(b/201505595): Make this method work for test_video.mp4. Currently it works only for
-        //  test_video_dng.mp4
+        //  test_video_mj2.mp4
         try (InputStream in = resolver.openInputStream(uri);
                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             FileUtils.copy(in, out);

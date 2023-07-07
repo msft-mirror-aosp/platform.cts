@@ -18,6 +18,7 @@ package android.media.tv.interactive.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
 import android.app.Instrumentation;
@@ -52,15 +53,19 @@ import android.media.tv.TvContentRating;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
+import android.media.tv.TvRecordingClient;
 import android.media.tv.TvRecordingInfo;
 import android.media.tv.TvTrackInfo;
 import android.media.tv.TvView;
 import android.media.tv.interactive.TvInteractiveAppManager;
+import android.media.tv.interactive.TvInteractiveAppService;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SharedMemory;
 import android.tv.cts.R;
@@ -77,12 +82,14 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -108,6 +115,8 @@ public class TvInteractiveAppServiceTest {
     private TvInputManager mTvInputManager;
     private TvInputInfo mTvInputInfo;
     private StubTvInputService2.StubSessionImpl2 mInputSession;
+    private StubTvInputService2.StubRecordingSessionImpl mRecordingSession;
+    private TvRecordingClient mTvRecordingClient;
 
     @Rule
     public RequiredFeatureRule featureRule = new RequiredFeatureRule(
@@ -115,6 +124,38 @@ public class TvInteractiveAppServiceTest {
 
     private final MockCallback mCallback = new MockCallback();
     private final MockTvInputCallback mTvInputCallback = new MockTvInputCallback();
+    private final TvRecordingClient.RecordingCallback mRecordingCallback =
+            new TvRecordingClient.RecordingCallback() {
+                @Override
+                public void onConnectionFailed(String inputId) {
+                    super.onConnectionFailed(inputId);
+                }
+
+                @Override
+                public void onDisconnected(String inputId) {
+                    super.onDisconnected(inputId);
+                }
+
+                @Override
+                public void onTuned(Uri channelUri) {
+                    super.onTuned(channelUri);
+                }
+
+                @Override
+                public void onRecordingStopped(Uri recordedProgramUri) {
+                    super.onRecordingStopped(recordedProgramUri);
+                }
+
+                @Override
+                public void onError(int error) {
+                    super.onError(error);
+                }
+
+                @Override
+                public void onEvent(String inputId, String eventType, Bundle eventArgs) {
+                    super.onEvent(inputId, eventType, eventArgs);
+                }
+            };
 
     public static class MockCallback extends TvInteractiveAppView.TvInteractiveAppCallback {
         private int mRequestCurrentChannelUriCount = 0;
@@ -124,43 +165,64 @@ public class TvInteractiveAppServiceTest {
         private int mRequestSigningCount = 0;
         private int mRequestStartRecordingCount = 0;
         private int mRequestStopRecordingCount = 0;
+        private int mRequestScheduleRecordingCount = 0;
         private int mSetTvRecordingInfoCount = 0;
         private int mRequestTvRecordingInfoCount = 0;
         private int mRequestTvRecordingInfoListCount = 0;
+        private int mRequestAvailableSpeedsCount = 0;
+        private int mRequestTimeShiftModeCount = 0;
+        private int mSendTimeShiftCommandCount = 0;
 
         private String mIAppServiceId = null;
         private Integer mState = null;
         private Integer mErr = null;
         private Uri mBiIAppUri = null;
         private String mBiIAppId = null;
+        private String mInputId = null;
+        private Uri mChannelUri = null;
         private Uri mProgramUri = null;
         private String mRecordingId = null;
         private String mRequestId = null;
         private TvRecordingInfo mTvRecordingInfo = null;
         private Integer mRecordingType = null;
+        private Long mStartTime = null;
+        private Long mDuration = null;
+        private Integer mRepeatedDays = null;
+        private Bundle mParams = null;
+        private String mTimeShiftCommandType = null;
 
         private void resetValues() {
             mRequestCurrentChannelUriCount = 0;
             mRequestCurrentVideoBoundsCount = 0;
             mRequestStartRecordingCount = 0;
             mRequestStopRecordingCount = 0;
+            mRequestScheduleRecordingCount = 0;
             mStateChangedCount = 0;
             mBiIAppCreatedCount = 0;
             mRequestSigningCount = 0;
             mSetTvRecordingInfoCount = 0;
             mRequestTvRecordingInfoCount = 0;
             mRequestTvRecordingInfoListCount = 0;
+            mRequestAvailableSpeedsCount = 0;
+            mRequestTimeShiftModeCount = 0;
 
             mIAppServiceId = null;
             mState = null;
             mErr = null;
             mBiIAppUri = null;
             mBiIAppId = null;
+            mInputId = null;
+            mChannelUri = null;
             mProgramUri = null;
             mRecordingId = null;
             mRequestId = null;
             mTvRecordingInfo = null;
             mRecordingType = null;
+            mStartTime = null;
+            mDuration = null;
+            mRepeatedDays = null;
+            mParams = null;
+            mTimeShiftCommandType = null;
         }
 
         @Override
@@ -207,6 +269,14 @@ public class TvInteractiveAppServiceTest {
         }
 
         @Override
+        public void onTimeShiftCommandRequest(String id, String type, Bundle bundle) {
+            super.onTimeShiftCommandRequest(id, type, bundle);
+            mSendTimeShiftCommandCount++;
+            mTimeShiftCommandType = type;
+            mParams = bundle;
+        }
+
+        @Override
         public void onRequestCurrentChannelLcn(String id) {
             super.onRequestCurrentChannelLcn(id);
         }
@@ -237,8 +307,8 @@ public class TvInteractiveAppServiceTest {
         }
 
         @Override
-        public void onRequestStartRecording(String requestId, String inputId, Uri programUri) {
-            super.onRequestStartRecording(requestId, inputId, programUri);
+        public void onRequestStartRecording(String id, String requestId, Uri programUri) {
+            super.onRequestStartRecording(id, requestId, programUri);
             mRequestStartRecordingCount++;
             mProgramUri = programUri;
             mRequestId = requestId;
@@ -249,6 +319,35 @@ public class TvInteractiveAppServiceTest {
             super.onRequestStopRecording(id, recordingId);
             mRequestStopRecordingCount++;
             mRecordingId = recordingId;
+        }
+
+        @Override
+        public void onRequestScheduleRecording(String id, String requestId,
+                String inputId, Uri channelUri, Uri programUri, Bundle params) {
+            super.onRequestScheduleRecording(
+                    id, requestId, inputId, channelUri, programUri, params);
+            mRequestScheduleRecordingCount++;
+            mRequestId = requestId;
+            mInputId = inputId;
+            mChannelUri = channelUri;
+            mProgramUri = programUri;
+            mParams = params;
+        }
+
+        @Override
+        public void onRequestScheduleRecording(String id, String requestId,
+                String inputId, Uri channelUri, long startTime, long duration, int repeated,
+                Bundle params) {
+            super.onRequestScheduleRecording(
+                    id, requestId, inputId, channelUri, startTime, duration, repeated, params);
+            mRequestScheduleRecordingCount++;
+            mRequestId = requestId;
+            mInputId = inputId;
+            mChannelUri = channelUri;
+            mStartTime = startTime;
+            mDuration = duration;
+            mRepeatedDays = repeated;
+            mParams = params;
         }
 
         @Override
@@ -273,6 +372,18 @@ public class TvInteractiveAppServiceTest {
             mRequestTvRecordingInfoListCount++;
             mRecordingType = type;
         }
+
+        @Override
+        public void onRequestAvailableSpeeds(String id) {
+            super.onRequestAvailableSpeeds(id);
+            mRequestAvailableSpeedsCount++;
+        }
+
+        @Override
+        public void onRequestTimeShiftMode(String id) {
+            super.onRequestTimeShiftMode(id);
+            mRequestTimeShiftModeCount++;
+        }
     }
 
     public static class MockTvInputCallback extends TvView.TvInputCallback {
@@ -294,6 +405,19 @@ public class TvInteractiveAppServiceTest {
         public void onSignalStrengthUpdated(String inputId, int strength) {
             super.onSignalStrengthUpdated(inputId, strength);
         }
+
+        public void onCueingMessageAvailability(String inputId, boolean available) {
+            super.onCueingMessageAvailability(inputId, available);
+        }
+
+        public void onTimeShiftMode(String inputId, int mode) {
+            super.onTimeShiftMode(inputId, mode);
+        }
+
+        public void onAvailableSpeeds(String inputId, float[] speeds) {
+            super.onAvailableSpeeds(inputId, speeds);
+        }
+
         public void onTuned(String inputId, Uri uri) {
             super.onTuned(inputId, uri);
         }
@@ -337,6 +461,17 @@ public class TvInteractiveAppServiceTest {
         mTvView.setInteractiveAppNotificationEnabled(true);
     }
 
+    private void linkTvRecordingClient() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mTvRecordingClient = new TvRecordingClient(
+                mActivity, "tag", mRecordingCallback, new Handler(Looper.getMainLooper()));
+        mTvRecordingClient.tune(mTvInputInfo.getId(), CHANNEL_0);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> StubTvInputService2.sStubRecordingSession != null);
+        mRecordingSession = StubTvInputService2.sStubRecordingSession;
+        mTvRecordingClient.setTvInteractiveAppView(mTvIAppView, "recording_id1");
+    }
+
     private Executor getExecutor() {
         return Runnable::run;
     }
@@ -348,7 +483,11 @@ public class TvInteractiveAppServiceTest {
     }
 
     private static Uri createTestUri() {
-        return Uri.parse("content://com.example/");
+        return createTestUri("content://com.example/");
+    }
+
+    private static Uri createTestUri(String uriString) {
+        return Uri.parse(uriString);
     }
 
     private static TvRecordingInfo createMockRecordingInfo(String recordingId) {
@@ -384,6 +523,8 @@ public class TvInteractiveAppServiceTest {
                 .isEqualTo(actual.getName());
         assertThat(expected.getContentRatings())
                 .isEqualTo(actual.getContentRatings());
+        assertThat(expected.getProgramUri())
+                .isEqualTo(actual.getProgramUri());
     }
 
     @Before
@@ -451,9 +592,58 @@ public class TvInteractiveAppServiceTest {
                 mTvView.reset();
             }
         });
+        if (mTvRecordingClient != null) {
+            mTvRecordingClient.release();
+        }
         mInstrumentation.waitForIdleSync();
         mActivity = null;
         mActivityScenario.close();
+    }
+
+    @Test
+    public void testNotifyRecordingTuned() throws Throwable {
+        linkTvRecordingClient();
+        mRecordingSession.notifyTuned(CHANNEL_0);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingTunedCount > 0);
+        assertThat(mSession.mTunedUri).isEqualTo(CHANNEL_0);
+        assertThat(mSession.mRecordingId).isEqualTo("recording_id1");
+    }
+
+    @Test
+    public void testRecordingConnectionFailed() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mTvRecordingClient = new TvRecordingClient(
+                mActivity, "tag", mRecordingCallback, new Handler(Looper.getMainLooper()));
+        mTvRecordingClient.setTvInteractiveAppView(mTvIAppView, "recording_id2");
+        String invalidInputId = "___invalid_input_id___";
+        mTvRecordingClient.tune(invalidInputId, CHANNEL_0);
+
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingConnectionFailedCount > 0);
+        assertThat(mSession.mRecordingConnectionFailedCount).isEqualTo(1);
+        assertThat(mSession.mInputId).isEqualTo(invalidInputId);
+        assertThat(mSession.mRecordingId).isEqualTo("recording_id2");
+    }
+
+    @Test
+    public void testRecordingDisconnected() throws Throwable {
+        linkTvRecordingClient();
+        mTvRecordingClient.getSessionCallback().onSessionReleased(null);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingDisconnected > 0);
+        assertThat(mSession.mRecordingDisconnected).isEqualTo(1);
+        assertThat(mSession.mInputId).isEqualTo(mTvInputInfo.getId());
+        assertThat(mSession.mRecordingId).isEqualTo("recording_id1");
+    }
+
+    @Test
+    public void testRecordingError() throws Throwable {
+        linkTvRecordingClient();
+        mRecordingSession.notifyError(TvInputManager.RECORDING_ERROR_UNKNOWN);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingErrorCount > 0);
+
+        assertThat(mSession.mRecordingErrorCount).isEqualTo(1);
+        assertThat(mSession.mRecordingId).isEqualTo("recording_id1");
+        assertThat(mSession.mRecordingError).isEqualTo(TvInputManager.RECORDING_ERROR_UNKNOWN);
     }
 
     @Test
@@ -486,7 +676,6 @@ public class TvInteractiveAppServiceTest {
         assertThat(mSession.mRecordingStartedCount).isEqualTo(1);
         assertThat(mSession.mRecordingId).isEqualTo(recordingId);
         assertThat(mSession.mRequestId).isEqualTo("request_1");
-        // TODO: test schedule recording
     }
 
     @Test
@@ -498,6 +687,18 @@ public class TvInteractiveAppServiceTest {
         PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingStoppedCount > 0);
         assertThat(mSession.mRecordingStoppedCount).isEqualTo(1);
         assertThat(mSession.mRecordingId).isEqualTo(recordingId);
+    }
+
+    @Test
+    public void testNotifyRecordingScheduled() throws Throwable {
+        final String recordingId = "testRecording2";
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mTvIAppView.notifyRecordingScheduled(recordingId, "request_2");
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingScheduledCount > 0);
+        assertThat(mSession.mRecordingScheduledCount).isEqualTo(1);
+        assertThat(mSession.mRecordingId).isEqualTo(recordingId);
+        assertThat(mSession.mRequestId).isEqualTo("request_2");
     }
 
     @Test
@@ -811,8 +1012,9 @@ public class TvInteractiveAppServiceTest {
         File tmpFile = File.createTempFile("cts_tv_interactive_app", "tias_test");
         ParcelFileDescriptor fd =
                 ParcelFileDescriptor.open(tmpFile, ParcelFileDescriptor.MODE_READ_WRITE);
+        Bundle testBundle = createTestBundle();
         AdRequest adRequest = new AdRequest(
-                567, AdRequest.REQUEST_TYPE_START, fd, 787L, 989L, 100L, "MMM", new Bundle());
+                567, AdRequest.REQUEST_TYPE_START, fd, 787L, 989L, 100L, "MMM", testBundle);
         mSession.requestAd(adRequest);
         mInstrumentation.waitForIdleSync();
         PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mAdRequestCount > 0);
@@ -826,10 +1028,33 @@ public class TvInteractiveAppServiceTest {
         assertThat(mInputSession.mAdRequest.getStopTimeMillis()).isEqualTo(989L);
         assertThat(mInputSession.mAdRequest.getEchoIntervalMillis()).isEqualTo(100L);
         assertThat(mInputSession.mAdRequest.getMediaFileType()).isEqualTo("MMM");
-        assertNotNull(mInputSession.mAdRequest.getMetadata());
+        assertThat(mInputSession.mAdRequest.getUri()).isEqualTo(null);
+        assertBundlesAreEqual(mInputSession.mAdRequest.getMetadata(), testBundle);
 
         fd.close();
         tmpFile.delete();
+    }
+
+    @Test
+    public void testAdRequestWithUri() throws Throwable {
+        linkTvView();
+        Uri testUri = createTestUri();
+        Bundle testBundle = createTestBundle();
+        AdRequest adRequest = new AdRequest(567, AdRequest.REQUEST_TYPE_START, testUri, 787L, 989L,
+                100L, testBundle);
+        mSession.requestAd(adRequest);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mAdRequestCount > 0);
+
+        assertThat(mInputSession.mAdRequestCount).isEqualTo(1);
+        assertThat(mInputSession.mAdRequest.getId()).isEqualTo(567);
+        assertThat(mInputSession.mAdRequest.getRequestType())
+                .isEqualTo(AdRequest.REQUEST_TYPE_START);
+        assertThat(mInputSession.mAdRequest.getStartTimeMillis()).isEqualTo(787L);
+        assertThat(mInputSession.mAdRequest.getStopTimeMillis()).isEqualTo(989L);
+        assertThat(mInputSession.mAdRequest.getEchoIntervalMillis()).isEqualTo(100L);
+        assertBundlesAreEqual(mInputSession.mAdRequest.getMetadata(), testBundle);
+        assertThat(mInputSession.mAdRequest.getUri()).isEqualTo(testUri);
     }
 
     @Test
@@ -852,11 +1077,17 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
-    public void testNotifyAdBuffer() throws Throwable {
+    public void testNotifyAdBufferReady() throws Throwable {
         linkTvView();
-        AdBuffer testAdBuffer = new AdBuffer(0, "mimeType", SharedMemory.create("test", 8), 0, 0, 0,
-                0);
-        mSession.notifyAdBuffer(testAdBuffer);
+        SharedMemory sm = SharedMemory.create("test", 5);
+        ByteBuffer byteBuffer = sm.mapReadWrite();
+        byte[] data = new byte[] {77, -25, 103, 96, 127};
+        byteBuffer.put(data);
+        byteBuffer.flip();
+        SharedMemory.unmap(byteBuffer);
+
+        AdBuffer testAdBuffer = new AdBuffer(0, "mimeType", sm, 0, 0, 0, 0);
+        mSession.notifyAdBufferReady(testAdBuffer);
         mInstrumentation.waitForIdleSync();
         PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mAdBufferCount > 0);
 
@@ -868,6 +1099,8 @@ public class TvInteractiveAppServiceTest {
         assertThat(mInputSession.mAdBuffer.getPresentationTimeUs())
                 .isEqualTo(testAdBuffer.getPresentationTimeUs());
         assertThat(mInputSession.mAdBuffer.getFlags()).isEqualTo(testAdBuffer.getFlags());
+
+        assertSharedMemoryDataEquals(mInputSession.mAdBuffer.getSharedMemory(), sm);
     }
 
     @Test
@@ -980,6 +1213,69 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    public void testRequestScheduleRecordingWithProgram() throws Throwable {
+        final Uri testChannelUri = createTestUri("content://com.example/channel");
+        final Uri testProgramUri = createTestUri("content://com.example/program");
+        final Bundle testBundle = createTestBundle();
+        mSession.requestScheduleRecording(
+                "request_id2", "inputId1", testChannelUri, testProgramUri, testBundle);
+        mCallback.resetValues();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestScheduleRecordingCount > 0);
+
+        assertThat(mCallback.mRequestScheduleRecordingCount).isEqualTo(1);
+        assertThat(mCallback.mRequestId).isEqualTo("request_id2");
+        assertThat(mCallback.mInputId).isEqualTo("inputId1");
+        assertThat(mCallback.mChannelUri).isEqualTo(testChannelUri);
+        assertThat(mCallback.mProgramUri).isEqualTo(testProgramUri);
+        assertBundlesAreEqual(mCallback.mParams, testBundle);
+    }
+
+    @Test
+    public void testRequestScheduleRecordingWithTime() throws Throwable {
+        final Uri testChannelUri = createTestUri("content://com.example/channel");
+        final long startTime = 374280000L;
+        final long duration = 3600000L;
+        final int repeated = TvRecordingInfo.MONDAY | TvRecordingInfo.FRIDAY;
+        final Bundle testBundle = createTestBundle();
+        mSession.requestScheduleRecording(
+                "request_id3", "inputId2", testChannelUri, startTime, duration, repeated,
+                testBundle);
+        mCallback.resetValues();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestScheduleRecordingCount > 0);
+
+        assertThat(mCallback.mRequestScheduleRecordingCount).isEqualTo(1);
+        assertThat(mCallback.mRequestId).isEqualTo("request_id3");
+        assertThat(mCallback.mInputId).isEqualTo("inputId2");
+        assertThat(mCallback.mChannelUri).isEqualTo(testChannelUri);
+        assertThat(mCallback.mStartTime).isEqualTo(startTime);
+        assertThat(mCallback.mDuration).isEqualTo(duration);
+        assertThat(mCallback.mRepeatedDays).isEqualTo(repeated);
+        assertBundlesAreEqual(mCallback.mParams, testBundle);
+    }
+
+    @Test
+    public void testRequestAvailableSpeeds() throws Throwable {
+        mSession.requestAvailableSpeeds();
+        mCallback.resetValues();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestAvailableSpeedsCount > 0);
+
+        assertThat(mCallback.mRequestAvailableSpeedsCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testRequestTimeShiftMode() throws Throwable {
+        mSession.requestTimeShiftMode();
+        mCallback.resetValues();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestTimeShiftModeCount > 0);
+
+        assertThat(mCallback.mRequestTimeShiftModeCount).isEqualTo(1);
+    }
+
+    @Test
     public void testRequestTvRecordingInfo() throws Throwable {
         String mockRecordingId = "testRecordingId";
         mSession.requestTvRecordingInfo(mockRecordingId);
@@ -1004,6 +1300,8 @@ public class TvInteractiveAppServiceTest {
     public void testSetTvRecordingInfo() throws Throwable {
         String mockRecordingId = "testRecordingId";
         TvRecordingInfo mockRecordingInfo = createMockRecordingInfo(mockRecordingId);
+        mockRecordingInfo.setDescription("modifiedDescription");
+        mockRecordingInfo.setName("modifiedName");
         mSession.setTvRecordingInfo(mockRecordingId, mockRecordingInfo);
         mCallback.resetValues();
         mInstrumentation.waitForIdleSync();
@@ -1045,6 +1343,21 @@ public class TvInteractiveAppServiceTest {
     public void testSendPlaybackCommandRequest() throws Throwable {
         mSession.sendPlaybackCommandRequest(mStubInfo.getId(), createTestBundle());
         mInstrumentation.waitForIdleSync();
+    }
+
+    @Test
+    public void testSendTimeShiftCommandRequest() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        Bundle testBundle = createTestBundle();
+        mSession.sendTimeShiftCommandRequest(
+                TvInteractiveAppService.TIME_SHIFT_COMMAND_TYPE_RESUME, testBundle);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mSendTimeShiftCommandCount > 0);
+
+        assertThat(mCallback.mSendTimeShiftCommandCount).isEqualTo(1);
+        assertThat(mCallback.mTimeShiftCommandType)
+                .isEqualTo(TvInteractiveAppService.TIME_SHIFT_COMMAND_TYPE_RESUME);
+        assertBundlesAreEqual(mCallback.mParams, testBundle);
     }
 
     @Test
@@ -1263,16 +1576,26 @@ public class TvInteractiveAppServiceTest {
         assertThat(request.getRequestId()).isEqualTo(8);
         assertThat(request.getOption()).isEqualTo(BroadcastInfoRequest.REQUEST_OPTION_REPEAT);
         assertThat(request.getIntervalMillis()).isEqualTo(8000);
+        assertThat(request.getSelector()).isEqualTo(null);
     }
 
     @Test
     public void testTimelineRequestWithSelector() throws Throwable {
-        // TODO: verify values
         linkTvView();
 
-        TimelineRequest request = new TimelineRequest(8, BroadcastInfoRequest.REQUEST_OPTION_REPEAT,
-                8000, "selector");
-        request.getSelector();
+        TimelineRequest requestSent = new TimelineRequest(10,
+                BroadcastInfoRequest.REQUEST_OPTION_AUTO_UPDATE, 2532, "selector1");
+        mSession.requestBroadcastInfo(requestSent);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mBroadcastInfoRequestCount > 0);
+
+        TimelineRequest request = (TimelineRequest) mInputSession.mBroadcastInfoRequest;
+        assertThat(mInputSession.mBroadcastInfoRequestCount).isEqualTo(1);
+        assertThat(request.getType()).isEqualTo(TvInputManager.BROADCAST_INFO_TYPE_TIMELINE);
+        assertThat(request.getRequestId()).isEqualTo(requestSent.getRequestId());
+        assertThat(request.getOption()).isEqualTo(requestSent.getOption());
+        assertThat(request.getIntervalMillis()).isEqualTo(requestSent.getIntervalMillis());
+        assertThat(request.getSelector()).isEqualTo(requestSent.getSelector());
     }
 
     @Test
@@ -1462,22 +1785,85 @@ public class TvInteractiveAppServiceTest {
 
     @Test
     public void testTableResponseWithByteArray() throws Throwable {
-        // TODO: verify values
         linkTvView();
 
-        TableResponse response = new TableResponse(7, 77, BroadcastInfoResponse.RESPONSE_RESULT_OK,
-                new byte[5], 777, 7777);
-        response.getTableByteArray();
+        byte[] bytes = new byte[] {-1, 22, 54};
+        TableResponse responseSent = new TableResponse
+                .Builder(23, 42, BroadcastInfoResponse.RESPONSE_RESULT_OK, 675, 3)
+                .setTableByteArray(bytes)
+                .build();
+        mInputSession.notifyBroadcastInfoResponse(responseSent);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mBroadcastInfoResponseCount > 0);
+
+        TableResponse responseReceived = (TableResponse) mSession.mBroadcastInfoResponse;
+        assertThat(mSession.mBroadcastInfoResponseCount).isEqualTo(1);
+        assertThat(responseReceived.getType()).isEqualTo(responseSent.getType());
+        assertThat(responseReceived.getRequestId()).isEqualTo(responseSent.getRequestId());
+        assertThat(responseReceived.getSequence()).isEqualTo(responseSent.getSequence());
+        assertThat(responseReceived.getResponseResult())
+                .isEqualTo(responseSent.getResponseResult());
+        assertThat(responseReceived.getVersion()).isEqualTo(responseSent.getVersion());
+        assertThat(responseReceived.getSize()).isEqualTo(responseSent.getSize());
+        assertArrayEquals(responseSent.getTableByteArray(), responseReceived.getTableByteArray());
     }
 
     @Test
     public void testTableResponseWithSharedMemory() throws Throwable {
-        // TODO: verify values
         linkTvView();
 
-        TableResponse response = new TableResponse(7, 77, BroadcastInfoResponse.RESPONSE_RESULT_OK,
-                SharedMemory.create("test", 8), 777, 7777);
-        response.getTableSharedMemory();
+        SharedMemory sm = SharedMemory.create("test", 5);
+        ByteBuffer byteBuffer = sm.mapReadWrite();
+        byte[] bytes = new byte[] {-3, -67, 0, 98, 23};
+        byteBuffer.put(bytes);
+        byteBuffer.flip();
+        SharedMemory.unmap(byteBuffer);
+
+        TableResponse responseSent = new TableResponse
+                .Builder(23, 42, BroadcastInfoResponse.RESPONSE_RESULT_OK, 675, 3)
+                .setTableSharedMemory(sm)
+                .build();
+        mInputSession.notifyBroadcastInfoResponse(responseSent);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mBroadcastInfoResponseCount > 0);
+
+        TableResponse responseReceived = (TableResponse) mSession.mBroadcastInfoResponse;
+        assertThat(mSession.mBroadcastInfoResponseCount).isEqualTo(1);
+        assertThat(responseReceived.getType()).isEqualTo(responseSent.getType());
+        assertThat(responseReceived.getRequestId()).isEqualTo(responseSent.getRequestId());
+        assertThat(responseReceived.getSequence()).isEqualTo(responseSent.getSequence());
+        assertThat(responseReceived.getResponseResult())
+                .isEqualTo(responseSent.getResponseResult());
+        assertThat(responseReceived.getVersion()).isEqualTo(responseSent.getVersion());
+        assertThat(responseReceived.getSize()).isEqualTo(responseSent.getSize());
+
+        assertSharedMemoryDataEquals(responseReceived.getTableSharedMemory(),
+                responseReceived.getTableSharedMemory());
+    }
+
+    @Test
+    public void testTableResponseWithUri() throws Throwable {
+        linkTvView();
+
+        Uri testUri = createTestUri();
+        TableResponse responseSent = new TableResponse
+                .Builder(838, 52, BroadcastInfoResponse.RESPONSE_RESULT_OK, 7543, 232)
+                .setTableUri(testUri)
+                .build();
+        mInputSession.notifyBroadcastInfoResponse(responseSent);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mBroadcastInfoResponseCount > 0);
+
+        TableResponse responseReceived = (TableResponse) mSession.mBroadcastInfoResponse;
+        assertThat(mSession.mBroadcastInfoResponseCount).isEqualTo(1);
+        assertThat(responseReceived.getType()).isEqualTo(responseSent.getType());
+        assertThat(responseReceived.getRequestId()).isEqualTo(responseSent.getRequestId());
+        assertThat(responseReceived.getSequence()).isEqualTo(responseSent.getSequence());
+        assertThat(responseReceived.getResponseResult())
+                .isEqualTo(responseSent.getResponseResult());
+        assertThat(responseReceived.getVersion()).isEqualTo(responseSent.getVersion());
+        assertThat(responseReceived.getSize()).isEqualTo(responseSent.getSize());
+        assertThat(responseSent.getTableUri()).isEqualTo(responseReceived.getTableUri());
     }
 
     @Test
@@ -1571,5 +1957,22 @@ public class TvInteractiveAppServiceTest {
         } else {
             assertThat(actual).isEqualTo(expected);
         }
+    }
+
+    private static void assertSharedMemoryDataEquals(SharedMemory actual, SharedMemory expected)
+            throws Exception {
+        if (expected != null && actual != null) {
+            Assert.assertArrayEquals(getSharedMemoryData(actual), getSharedMemoryData(expected));
+        } else {
+            assertThat(actual).isEqualTo(expected);
+        }
+    }
+
+    private static byte[] getSharedMemoryData(SharedMemory sm) throws Exception {
+        ByteBuffer byteBuffer = sm.mapReadOnly();
+        byte[] data = new byte[byteBuffer.remaining()];
+        byteBuffer.get(data);
+        SharedMemory.unmap(byteBuffer);
+        return data;
     }
 }

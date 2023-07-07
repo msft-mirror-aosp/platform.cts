@@ -21,11 +21,13 @@ import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static android.app.AppOpsManager.OPSTR_SCHEDULE_EXACT_ALARM;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.alarmmanager.alarmtestapp.cts.TestAlarmReceiver;
 import android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler;
+import android.alarmmanager.alarmtestapp.cts.common.FgsTester;
 import android.alarmmanager.util.AlarmManagerDeviceConfigHelper;
 import android.alarmmanager.util.Utils;
 import android.app.AlarmManager;
@@ -37,7 +39,6 @@ import android.content.IntentFilter;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.DeviceConfig;
-import android.provider.Settings;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
@@ -85,13 +86,17 @@ public class BackgroundRestrictedAlarmsTest {
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
 
     private volatile int mAlarmCount;
+    private volatile String mFgsResult;
 
     private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             mAlarmCount = intent.getIntExtra(TestAlarmReceiver.EXTRA_ALARM_COUNT, 1);
-            Log.d(TAG, "Received action " + intent.getAction()
-                    + " elapsed: " + SystemClock.elapsedRealtime());
+            mFgsResult = intent.getStringExtra(FgsTester.EXTRA_FGS_START_RESULT);
+            Log.d(TAG, "Received Action: " + intent.getAction()
+                    + ", alarmCount: " + mAlarmCount
+                    + ", fgsResult " + mFgsResult
+                    + " at elapsed: " + SystemClock.elapsedRealtime());
 
         }
     };
@@ -110,7 +115,7 @@ public class BackgroundRestrictedAlarmsTest {
         mActivityManagerDeviceConfigStateHelper
                 .set("bg_auto_restricted_bucket_on_bg_restricted", "false");
         SystemUtil.runWithShellPermissionIdentity(() ->
-                DeviceConfig.setSyncDisabledMode(Settings.Config.SYNC_DISABLED_MODE_UNTIL_REBOOT));
+                DeviceConfig.setSyncDisabledMode(DeviceConfig.SYNC_DISABLED_MODE_UNTIL_REBOOT));
         AppOpsUtils.setOpMode(TEST_APP_PACKAGE, OPSTR_RUN_ANY_IN_BACKGROUND, MODE_IGNORED);
         makeUidIdle();
         setAppStandbyBucket("active");
@@ -129,9 +134,10 @@ public class BackgroundRestrictedAlarmsTest {
     private void scheduleAlarmClock(long triggerRTC) {
         AlarmManager.AlarmClockInfo alarmInfo = new AlarmManager.AlarmClockInfo(triggerRTC, null);
 
-        final Intent setAlarmClockIntent = new Intent(TestAlarmScheduler.ACTION_SET_ALARM_CLOCK);
-        setAlarmClockIntent.setComponent(mAlarmScheduler);
-        setAlarmClockIntent.putExtra(TestAlarmScheduler.EXTRA_ALARM_CLOCK_INFO, alarmInfo);
+        final Intent setAlarmClockIntent = new Intent(TestAlarmScheduler.ACTION_SET_ALARM_CLOCK)
+                .setComponent(mAlarmScheduler)
+                .putExtra(TestAlarmScheduler.EXTRA_TEST_FGS, true)
+                .putExtra(TestAlarmScheduler.EXTRA_ALARM_CLOCK_INFO, alarmInfo);
         mContext.sendBroadcast(setAlarmClockIntent);
     }
 
@@ -194,12 +200,13 @@ public class BackgroundRestrictedAlarmsTest {
         Thread.sleep(waitInterval);
         assertTrue("AlarmClock did not go off as scheduled when under restrictions",
                 waitForAlarms(1, DEFAULT_WAIT));
+        assertEquals("Fgs start wasn't successful from AlarmClock", "", mFgsResult);
     }
 
     @After
     public void tearDown() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(() ->
-                DeviceConfig.setSyncDisabledMode(Settings.Config.SYNC_DISABLED_MODE_NONE));
+                DeviceConfig.setSyncDisabledMode(DeviceConfig.SYNC_DISABLED_MODE_NONE));
         deleteAlarmManagerConstants();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
         mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();

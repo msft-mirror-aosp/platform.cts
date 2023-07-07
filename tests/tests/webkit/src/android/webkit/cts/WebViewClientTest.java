@@ -27,6 +27,7 @@ import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SafeBrowsingResponse;
@@ -41,7 +42,6 @@ import android.webkit.cts.WebViewSyncLoader.WaitForLoadedClient;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
@@ -139,12 +139,6 @@ public class WebViewClientTest extends SharedWebViewTest {
         return environment;
     }
 
-    private void startServer() {
-        assertNull(mWebServer);
-        mWebServer = getTestEnvironment().getWebServer();
-        mWebServer.start(SslMode.INSECURE);
-    }
-
     /**
      * This should remain functionally equivalent to
      * androidx.webkit.WebViewClientCompatTest#testShouldOverrideUrlLoadingDefault. Modifications
@@ -183,10 +177,9 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     // Verify shouldoverrideurlloading called on webview called via onCreateWindow
     // TODO(sgurun) upstream this test to Aw.
-    @FlakyTest(bugId = 253448914)
     @Test
     public void testShouldOverrideUrlLoadingOnCreateWindow() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         // WebViewClient for main window
         final MockWebViewClient mainWebViewClient = new MockWebViewClient();
         // WebViewClient for child window
@@ -198,56 +191,70 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         final WebView childWebView = mOnUiThread.createWebView();
 
-        WebViewOnUiThread childWebViewOnUiThread = new WebViewOnUiThread(childWebView);
-        mOnUiThread.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onCreateWindow(
-                WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                childWebView.setWebViewClient(childWebViewClient);
-                childWebView.getSettings().setJavaScriptEnabled(true);
-                transport.setWebView(childWebView);
-                getTestEnvironment().addContentView(childWebView, new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.FILL_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT));
-                resultMsg.sendToTarget();
-                return true;
-            }
-        });
-        {
-          final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
-          mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_TAG_URL));
+        try {
+            WebViewOnUiThread childWebViewOnUiThread = new WebViewOnUiThread(childWebView);
+            mOnUiThread.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public boolean onCreateWindow(
+                        WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                    childWebView.setWebViewClient(childWebViewClient);
+                    childWebView.getSettings().setJavaScriptEnabled(true);
+                    transport.setWebView(childWebView);
+                    getTestEnvironment().addContentView(childWebView, new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.FILL_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT));
+                    resultMsg.sendToTarget();
+                    return true;
+                }
+            });
+            {
+                final int childCallCount = childWebViewClient
+                        .getShouldOverrideUrlLoadingCallCount();
+                mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_TAG_URL));
 
-          new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-              @Override
-              protected boolean check() {
-                  return childWebViewClient.hasOnPageFinishedCalled();
-              }
-          }.run();
-          new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-              @Override
-              protected boolean check() {
-                  return childWebViewClient.getShouldOverrideUrlLoadingCallCount() > childCallCount;
-              }
-          }.run();
-          assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
-                  childWebViewClient.getLastShouldOverrideUrl());
+                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                    @Override
+                    protected boolean check() {
+                        return childWebViewClient.hasOnPageFinishedCalled();
+                    }
+                }.run();
+                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                    @Override
+                    protected boolean check() {
+                        return childWebViewClient
+                                .getShouldOverrideUrlLoadingCallCount() > childCallCount;
+                    }
+                }.run();
+                assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
+                        childWebViewClient.getLastShouldOverrideUrl());
+            }
+
+            final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
+            final int mainCallCount = mainWebViewClient.getShouldOverrideUrlLoadingCallCount();
+            clickOnLinkUsingJs("link", childWebViewOnUiThread);
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return childWebViewClient
+                            .getShouldOverrideUrlLoadingCallCount() > childCallCount;
+                }
+            }.run();
+            assertEquals(mainCallCount, mainWebViewClient.getShouldOverrideUrlLoadingCallCount());
+            // PAGE_WITH_LINK_URL has a link to BLANK_PAGE_URL (an arbitrary page
+            // also controlled by the test server)
+            assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL),
+                    childWebViewClient.getLastShouldOverrideUrl());
+
+        } finally {
+            WebkitUtils.onMainThreadSync(() -> {
+                ViewParent parent = childWebView.getParent();
+                if (parent instanceof ViewGroup) {
+                    ((ViewGroup) parent).removeView(childWebView);
+                }
+                childWebView.destroy();
+            });
         }
-
-        final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
-        final int mainCallCount = mainWebViewClient.getShouldOverrideUrlLoadingCallCount();
-        clickOnLinkUsingJs("link", childWebViewOnUiThread);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return childWebViewClient.getShouldOverrideUrlLoadingCallCount() > childCallCount;
-            }
-        }.run();
-        assertEquals(mainCallCount, mainWebViewClient.getShouldOverrideUrlLoadingCallCount());
-        // PAGE_WITH_LINK_URL has a link to BLANK_PAGE_URL (an arbitrary page also controlled by the
-        // test server)
-        assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL),
-                childWebViewClient.getLastShouldOverrideUrl());
     }
 
     private void clickOnLinkUsingJs(final String linkId, WebViewOnUiThread webViewOnUiThread) {
@@ -260,7 +267,7 @@ public class WebViewClientTest extends SharedWebViewTest {
     public void testLoadPage() throws Exception {
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
 
         assertFalse(webViewClient.hasOnPageStartedCalled());
@@ -303,7 +310,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         List<HttpHeader> headers = new ArrayList<HttpHeader>();
         headers.add(HttpHeader.create(headerName, headerValue));
 
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.setResponse(path, page, headers);
         assertFalse(webViewClient.hasOnReceivedLoginRequest());
         mOnUiThread.loadUrlAndWaitForCompletion(url);
@@ -342,7 +349,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      */
     @Test
     public void testOnReceivedErrorForSubresource() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
@@ -357,7 +364,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     @Test
     public void testOnReceivedHttpError() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
@@ -370,7 +377,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     @Test
     public void testOnFormResubmission() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
         final WebSettings settings = mOnUiThread.getSettings();
@@ -396,7 +403,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     @Test
     public void testDoUpdateVisitedHistory() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
@@ -415,7 +422,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     @Test
     public void testOnReceivedHttpAuthRequest() throws Exception {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
@@ -455,7 +462,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     @Test
     public void testOnScaleChanged() throws Throwable {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
@@ -518,7 +525,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         TestClient client = new TestClient();
         mOnUiThread.setWebViewClient(client);
 
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String mainUrl = mWebServer.setResponse(mainPath, mainPage, null);
         mOnUiThread.loadUrlAndWaitForCompletion(mainUrl, headers);
         // Inspect the fields of the saved WebResourceRequest
@@ -567,7 +574,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         TestClient client = new TestClient();
         mOnUiThread.setWebViewClient(client);
 
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String interceptUrl = mWebServer.getAbsoluteUrl(interceptPath);
         // JavaScript which makes a synchronous AJAX request and logs and returns the status
         String js =
@@ -624,7 +631,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      */
     @Test
     public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         final String ORIGINAL_URL = mOnUiThread.getUrl();
@@ -659,7 +666,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      */
     @Test
     public void testOnSafeBrowsingHitProceed() throws Throwable {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         final String ORIGINAL_URL = mOnUiThread.getUrl();
@@ -683,7 +690,7 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     private void testOnSafeBrowsingCode(String expectedUrl, int expectedThreatType)
             throws Throwable {
-        startServer();
+        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         final String ORIGINAL_URL = mOnUiThread.getUrl();

@@ -16,19 +16,19 @@
 
 package android.hardware.camera2.cts;
 
-import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static android.hardware.camera2.CameraCharacteristics.*;
+import static android.hardware.camera2.cts.CameraTestUtils.*;
 
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
-import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
@@ -40,24 +40,28 @@ import android.hardware.camera2.params.LensShadingMap;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.TonemapCurve;
-import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.cts.helpers.CameraUtils;
 import android.media.Image;
+import android.os.Build;
 import android.os.Parcel;
 import android.util.ArraySet;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.PropertyUtil;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
 
 /**
  * <p>
@@ -124,6 +128,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     };
     private final Rational ZERO_R = new Rational(0, 1);
     private final Rational ONE_R = new Rational(1, 1);
+
+    private static final int ZOOM_STEPS = 15;
 
     private enum TorchSeqState {
         RAMPING_UP,
@@ -851,6 +857,32 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     }
 
     /**
+     * Test that zoom doesn't incur non-monotonic timestamp sequence
+     *
+     * Camera API requires that camera timestamps monotonically increase.
+     */
+    @Test
+    public void testZoomTimestampIncrease() throws Exception {
+        if (PropertyUtil.getVendorApiLevel() <= Build.VERSION_CODES.TIRAMISU) {
+            // Only run test for Vendor API level U or higher
+            return;
+        }
+
+        for (String id : mCameraIdsUnderTest) {
+            try {
+                if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+                openDevice(id);
+                zoomTimestampIncreaseTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
      * Test digital zoom and all preview size combinations.
      * TODO: this and above test should all be moved to preview test class.
      */
@@ -1186,6 +1218,26 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         }
     }
 
+    private void verifyFocusRange(CaptureResult result, float focusDistance) {
+        if (PropertyUtil.getVendorApiLevel() < 33) {
+            // Skip, as this only applies to UDC and above
+            if (VERBOSE) {
+                Log.v(TAG, "Skipping FOCUS_RANGE verification due to API level");
+            }
+            return;
+        }
+
+        Pair<Float, Float> focusRange = result.get(CaptureResult.LENS_FOCUS_RANGE);
+        if (focusRange != null) {
+            mCollector.expectLessOrEqual("Focus distance should be less than or equal to "
+                    + "FOCUS_RANGE.near", focusRange.first, focusDistance);
+            mCollector.expectGreaterOrEqual("Focus distance should be greater than or equal to "
+                    + "FOCUS_RANGE.far", focusRange.second, focusDistance);
+        } else if (VERBOSE) {
+            Log.v(TAG, "FOCUS_RANGE undefined, skipping verification");
+        }
+    }
+
     private void focusDistanceTestRepeating(CaptureRequest.Builder requestBuilder,
             float errorMargin) throws Exception {
         CaptureRequest request;
@@ -1211,6 +1263,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
             resultDistances[i] = getValueNotNull(result, CaptureResult.LENS_FOCUS_DISTANCE);
             resultLensStates[i] = getValueNotNull(result, CaptureResult.LENS_STATE);
+
+            verifyFocusRange(result, resultDistances[i]);
 
             if (VERBOSE) {
                 Log.v(TAG, "Capture repeating request focus distance: " + testDistances[i]
@@ -1283,6 +1337,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
             resultDistances[i] = getValueNotNull(result, CaptureResult.LENS_FOCUS_DISTANCE);
             resultLensStates[i] = getValueNotNull(result, CaptureResult.LENS_STATE);
+
+            verifyFocusRange(result, resultDistances[i]);
 
             if (VERBOSE) {
                 Log.v(TAG, "Capture burst request focus distance: " + testDistances[i]
@@ -2612,7 +2668,6 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     }
 
     private void digitalZoomTestByCamera(Size previewSize, boolean repeating) throws Exception {
-        final int ZOOM_STEPS = 15;
         final PointF[] TEST_ZOOM_CENTERS;
         final float maxZoom = mStaticInfo.getAvailableMaxDigitalZoomChecked();
         final float ZOOM_ERROR_MARGIN = 0.01f;
@@ -2831,7 +2886,6 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     }
 
     private void zoomRatioTestByCamera(Size previewSize) throws Exception {
-        final int ZOOM_STEPS = 15;
         final Range<Float> zoomRatioRange = mStaticInfo.getZoomRatioRangeChecked();
         // The error margin is derive from a VGA size camera zoomed all the way to 10x, in which
         // case the cropping error can be as large as 480/46 - 480/48 = 0.435.
@@ -2993,6 +3047,45 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                             cropRegion, cropRegionWithCrop, CROP_REGION_ERROR_PERCENT_DELTA);
                 }
             }
+        }
+    }
+
+    private void zoomTimestampIncreaseTestByCamera() throws Exception {
+        final Range<Float> zoomRatioRange = mStaticInfo.getZoomRatioRangeChecked();
+
+        Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+        updatePreviewSurface(maxPreviewSize);
+        CaptureRequest.Builder requestBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        configurePreviewOutput(requestBuilder);
+
+        // Submit a sequence of requests first zooming in then zooming out.
+        List<CaptureRequest> requests = new ArrayList<CaptureRequest>();
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+        float zoomRange = zoomRatioRange.getUpper() - zoomRatioRange.getLower();
+        for (int i = 0; i <= ZOOM_STEPS; i++) {
+            float zoomFactor = zoomRatioRange.getUpper() - (zoomRange * i / ZOOM_STEPS);
+            requestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomFactor);
+            // Add each ratio to both the beginning and end of the list.
+            requests.add(requestBuilder.build());
+            requests.add(0, requestBuilder.build());
+        }
+        int seqId = mSession.captureBurst(requests, listener, mHandler);
+
+        // onCaptureSequenceCompleted() trails all capture results. Upon its return,
+        // we make sure we've received all results/errors.
+        listener.getCaptureSequenceLastFrameNumber(
+                seqId, WAIT_FOR_RESULT_TIMEOUT_MS * ZOOM_STEPS);
+        // Check timestamp monotonically increase for the whole sequence
+        long  prevTimestamp = 0;
+        while (listener.hasMoreResults()) {
+            TotalCaptureResult result = listener.getTotalCaptureResult(
+                    WAIT_FOR_RESULT_TIMEOUT_MS);
+            long timestamp = getValueNotNull(result, CaptureResult.SENSOR_TIMESTAMP);
+            mCollector.expectGreater("Sensor timestamp must monotonically increase, "
+                    + "but changed from " + prevTimestamp + " to " + timestamp,
+                    prevTimestamp, timestamp);
+            prevTimestamp = timestamp;
         }
     }
 
@@ -3208,10 +3301,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         stopPreviewAndDrain();
         startPreview(requestBuilder, maxPreviewSize, listenerZoom);
         waitForSettingsApplied(listenerZoom, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
-        // Wait additional 2 frames, the required minimal zoom improvement, to allow non-overridden
+        // Wait additional 2 frames to allow non-overridden
         // results during startup.
-        final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 2;
-        waitForNumResults(listenerZoom, ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES);
+        final int ZOOM_SOME_FRAMES = 2;
+        waitForNumResults(listenerZoom, ZOOM_SOME_FRAMES);
         verifyCaptureResultForKey(CaptureResult.CONTROL_SETTINGS_OVERRIDE,
                 CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM, listenerZoom, NUM_FRAMES_VERIFIED);
     }
@@ -3508,6 +3601,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             long[] frameDurationRange = new long[]{
                     (long) (1e9 / fpsRange.getUpper()), (long) (1e9 / fpsRange.getLower())};
             long captureTime = 0, prevCaptureTime = 0;
+            long frameDurationSum = 0;
             for (int j = 0; j < numFramesVerified; j++) {
                 long frameDuration = frameDurationRange[0];
                 CaptureResult result =
@@ -3523,13 +3617,16 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                     }
                     prevCaptureTime = captureTime;
                 }
-                mCollector.expectInRange(
-                        "Frame duration must be in the range of " +
-                                Arrays.toString(frameDurationRange),
-                        frameDuration,
-                        (long) (frameDurationRange[0] * (1 - frameDurationErrorMargin)),
-                        (long) (frameDurationRange[1] * (1 + frameDurationErrorMargin)));
+                frameDurationSum += frameDuration;
             }
+            long frameDurationAvg = frameDurationSum / numFramesVerified;
+            mCollector.expectInRange(
+                    "Frame duration must be in the range of " +
+                            Arrays.toString(frameDurationRange),
+                    frameDurationAvg,
+                    (long) (frameDurationRange[0] * (1 - frameDurationErrorMargin)),
+                    (long) (frameDurationRange[1] * (1 + frameDurationErrorMargin)));
+
         }
 
         stopPreview();

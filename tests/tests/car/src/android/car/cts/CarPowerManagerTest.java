@@ -32,6 +32,7 @@ import android.car.hardware.power.CarPowerPolicy;
 import android.car.hardware.power.CarPowerPolicyFilter;
 import android.car.hardware.power.PowerComponent;
 import android.car.test.ApiCheckerRule.Builder;
+import android.car.view.DisplayHelper;
 import android.platform.test.annotations.AppModeFull;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Log;
@@ -61,8 +62,8 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
     private static final int DISPLAY_WAIT_TIME_MS = 2000;
     private static final int NO_WAIT = 0;
 
-    private static final int DISPLAY_POWER_MODE_ON = 0;
-    private static final int DISPLAY_POWER_MODE_OFF = 1;
+    private static final int DISPLAY_POWER_MODE_OFF = 0;
+    private static final int DISPLAY_POWER_MODE_ON = 1;
     private static final int DISPLAY_POWER_MODE_ALWAYS_ON = 2;
 
     private static String sDefaultDisplayPowerModeValue;
@@ -283,7 +284,10 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
         for (OccupantZoneInfo zoneInfo : mCarOccupantZoneManager.getAllOccupantZones()) {
             Display display = mCarOccupantZoneManager.getDisplayForOccupant(
                     zoneInfo, DISPLAY_TYPE_MAIN);
-            int displayId = display.getDisplayId();
+            int displayPort = DisplayHelper.getPhysicalPort(display);
+            if (displayPort == DisplayHelper.INVALID_PORT) {
+                continue;
+            }
             int newMode = mode;
             if (zoneInfo.occupantType == CarOccupantZoneManager.OCCUPANT_TYPE_DRIVER) {
                 newMode = DISPLAY_POWER_MODE_ALWAYS_ON;
@@ -291,7 +295,7 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
             if (value.length() != 0) {
                 value.append(",");
             }
-            value.append(displayId).append(":").append(newMode);
+            value.append(displayPort).append(":").append(newMode);
         }
 
         executeShellCommand(

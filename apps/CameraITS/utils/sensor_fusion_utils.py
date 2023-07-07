@@ -44,6 +44,8 @@ ARDUINO_SERVO_SPEED_MIN = 1
 ARDUINO_SPEED_START_BYTE = 253
 ARDUINO_START_BYTE = 255
 ARDUINO_START_NUM_TRYS = 5
+ARDUINO_START_TIMEOUT = 300  # seconds
+ARDUINO_STRING = 'Arduino'
 ARDUINO_TEST_CMD = (b'\x01', b'\x02', b'\x03')
 ARDUINO_VALID_CH = ('1', '2', '3', '4', '5', '6')
 ARDUINO_VIDS = (0x2341, 0x2a03)
@@ -235,8 +237,13 @@ def establish_serial_comm(port):
   trys = 1
   hex_test = convert_to_hex(ARDUINO_TEST_CMD)
   logging.debug(' test tx: %s %s %s', hex_test[0], hex_test[1], hex_test[2])
-  while trys <= ARDUINO_START_NUM_TRYS:
-    cmd_read = arduino_loopback_cmd(port, ARDUINO_TEST_CMD)
+  start = time.time()
+  while time.time() < start + ARDUINO_START_TIMEOUT:
+    try:
+      cmd_read = arduino_loopback_cmd(port, ARDUINO_TEST_CMD)
+    except serial.serialutil.SerialException as _:
+      logging.debug('Port in use, trying again...')
+      continue
     hex_read = convert_to_hex(cmd_read)
     logging.debug(' test rx: %s %s %s', hex_read[0], hex_read[1], hex_read[2])
     if cmd_read != list(ARDUINO_TEST_CMD):
@@ -245,7 +252,8 @@ def establish_serial_comm(port):
       logging.debug(' Arduino comm established after %d try(s)', trys)
       break
   else:
-    raise AssertionError(f'Arduino comm not established after {trys} tries')
+    raise AssertionError(f'Arduino comm not established after {trys} tries '
+                         f'and {ARDUINO_START_TIMEOUT} seconds')
 
 
 def convert_to_hex(cmd):
@@ -289,13 +297,12 @@ def arduino_rotate_servo(ch, angles, move_time, serial_port):
 
 
 def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
-                 move_time):
+                 move_time, arduino_serial_port):
   """Rotate the phone n times using rotate_cntl and rotate_ch defined.
 
   rotate_ch is hard wired and must be determined from physical setup.
-
-  First initialize the port and send a test string defined by ARDUINO_TEST_CMD
-  to establish communications. Then rotate servo motor to origin position.
+  If using Arduino, serial port must be initialized and communication must be
+  established before rotation.
 
   Args:
     rotate_cntl: str to identify as 'arduino' or 'canakit' controller.
@@ -304,26 +311,19 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
     angles: list of ints; servo angle to move to.
     servo_speed: int number of move speed between [1, 255].
     move_time: int time required to allow for arduino movement.
+    arduino_serial_port: optional initialized serial port object
   """
 
   logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
-  if rotate_cntl.lower() == 'arduino':
-    # identify port
-    arduino_serial_port = serial_port_def('Arduino')
-
-    # send test cmd to Arduino until cmd returns properly
-    establish_serial_comm(arduino_serial_port)
-
+  if arduino_serial_port:
     # initialize servo at origin
     logging.debug('Moving servo to origin')
     arduino_rotate_servo_to_angle(rotate_ch, 0, arduino_serial_port, 1)
 
     # set servo speed
     set_servo_speed(rotate_ch, servo_speed, arduino_serial_port, delay=0)
-
   elif rotate_cntl.lower() == 'canakit':
     canakit_serial_port = serial_port_def('Canakit')
-
   else:
     logging.info('No rotation rig defined. Manual test: rotate phone by hand.')
 

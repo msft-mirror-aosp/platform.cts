@@ -50,6 +50,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.SparseArray;
 import android.view.nano.DisplayInfoProto;
+import android.view.nano.InsetsSourceProto;
 import android.view.nano.ViewProtoEnums;
 
 import androidx.annotation.NonNull;
@@ -979,7 +980,7 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
-    private Stream<WindowState> getMatchingWindows(Predicate<WindowState> condition) {
+    public Stream<WindowState> getMatchingWindows(Predicate<WindowState> condition) {
         return mWindowStates.stream().filter(condition);
     }
 
@@ -1014,14 +1015,8 @@ public class WindowManagerState {
         return new ArrayList<>(mWindowStates);
     }
 
-    List<WindowState> getMatchingWindowType(int type) {
+    public List<WindowState> getMatchingWindowType(int type) {
         return getMatchingWindows(ws -> type == ws.mType).collect(Collectors.toList());
-    }
-
-    List<String> getMatchingWindowTokens(final String windowName) {
-        return getMatchingWindows(ws -> windowName.equals(ws.getName()))
-                .map(WindowState::getToken)
-                .collect(Collectors.toList());
     }
 
     List<WindowState> getAllNavigationBarStates() {
@@ -1631,6 +1626,13 @@ public class WindowManagerState {
         int getActivityType() {
             return mTaskType;
         }
+
+        @Override
+        public String toString() {
+            return "Task[id=" + mTaskId + ", display=" + mDisplayId
+                    + ", mOrigActivity=" + mOrigActivity + ", realActivity=" + mRealActivity
+                    + ", activities=" + mActivities + "]";
+        }
     }
 
     public static class TaskFragment extends ActivityContainer {
@@ -1688,6 +1690,11 @@ public class WindowManagerState {
         private WindowContainer mParent;
         private boolean mEnableRecentsScreenshot;
         private int mLastDropInputMode;
+        private boolean mShouldSendCompatFakeFocus;
+        private int mOverrideOrientation;
+        private boolean mShouldForceRotateForCameraCompat;
+        private boolean mShouldRefreshActivityForCameraCompat;
+        private boolean mShouldRefreshActivityViaPauseForCameraCompat;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
@@ -1705,7 +1712,13 @@ public class WindowManagerState {
             translucent = proto.translucent;
             mEnableRecentsScreenshot = proto.enableRecentsScreenshot;
             mLastDropInputMode = proto.lastDropInputMode;
+            mShouldSendCompatFakeFocus = proto.shouldSendCompatFakeFocus;
+            mOverrideOrientation = proto.overrideOrientation;
             mParent = parent;
+            mShouldForceRotateForCameraCompat = proto.shouldForceRotateForCameraCompat;
+            mShouldRefreshActivityForCameraCompat = proto.shouldRefreshActivityForCameraCompat;
+            mShouldRefreshActivityViaPauseForCameraCompat =
+                    proto.shouldRefreshActivityViaPauseForCameraCompat;
         }
 
         @NonNull
@@ -1756,6 +1769,30 @@ public class WindowManagerState {
             return mLastDropInputMode;
         }
 
+        public boolean getShouldSendCompatFakeFocus() {
+            return mShouldSendCompatFakeFocus;
+        }
+
+        public int getUiMode() {
+            return mFullConfiguration.uiMode;
+        }
+
+        public int getOverrideOrientation() {
+            return mOverrideOrientation;
+        }
+
+        public boolean getShouldForceRotateForCameraCompat() {
+            return mShouldForceRotateForCameraCompat;
+        }
+
+        public boolean getShouldRefreshActivityForCameraCompat() {
+            return mShouldRefreshActivityForCameraCompat;
+        }
+
+        public boolean getShouldRefreshActivityViaPauseForCameraCompat() {
+            return mShouldRefreshActivityViaPauseForCameraCompat;
+        }
+
         @Override
         public Rect getBounds() {
             if (mBounds == null) {
@@ -1770,6 +1807,11 @@ public class WindowManagerState {
 
         public Rect getAppBounds() {
             return mFullConfiguration.windowConfiguration.getAppBounds();
+        }
+
+        @Override
+        public String toString() {
+            return "Activity[name=" + name + ", state=" + state + ", visible=" + visible + "]";
         }
     }
 
@@ -2103,6 +2145,7 @@ public class WindowManagerState {
         private int mRequestedHeight;
         private List<Rect> mKeepClearRects;
         private List<Rect> mUnrestrictedKeepClearRects;
+        private List<InsetsSource> mMergedLocalInsetsSources;
 
         WindowState(WindowStateProto proto) {
             super(proto.windowContainer);
@@ -2135,7 +2178,7 @@ public class WindowManagerState {
             } else if (proto.animatingExit) {
                 mWindowType = WINDOW_TYPE_EXITING;
             } else if (mName.startsWith(DEBUGGER_WINDOW_PREFIX)) {
-                mWindowType = WINDOW_TYPE_STARTING;
+                mWindowType = WINDOW_TYPE_DEBUGGER;
                 mName = mName.substring(DEBUGGER_WINDOW_PREFIX.length());
             } else {
                 mWindowType = 0;
@@ -2152,6 +2195,10 @@ public class WindowManagerState {
             mUnrestrictedKeepClearRects = new ArrayList();
             for (RectProto r : proto.unrestrictedKeepClearAreas) {
                 mUnrestrictedKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
+            }
+            mMergedLocalInsetsSources = new ArrayList();
+            for (InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
+                mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
         }
 
@@ -2231,6 +2278,10 @@ public class WindowManagerState {
             return mUnrestrictedKeepClearRects;
         }
 
+        List<InsetsSource> getMergedLocalInsetsSources() {
+            return mMergedLocalInsetsSources;
+        }
+
         private String getWindowTypeSuffix(int windowType) {
             switch (windowType) {
                 case WINDOW_TYPE_STARTING:
@@ -2296,5 +2347,75 @@ public class WindowManagerState {
     int defaultMinimalDisplaySizeForSplitScreen(int displayId) {
         return dpToPx(ActivityTaskManager.DEFAULT_MINIMAL_SPLIT_SCREEN_DISPLAY_SIZE_DP,
                 getDisplay(displayId).getDpi());
+    }
+
+    static class InsetsSource {
+        private String mType;
+        private Rect mFrame;
+        private Rect mVisibleFrame;
+        private boolean mVisible;
+
+        InsetsSource(InsetsSourceProto proto) {
+            mType = proto.type;
+            mFrame = new Rect(
+                    proto.frame.left, proto.frame.top, proto.frame.right, proto.frame.bottom);
+            if (proto.visibleFrame != null) {
+                mVisibleFrame = new Rect(proto.visibleFrame.left, proto.visibleFrame.top,
+                        proto.visibleFrame.right, proto.visibleFrame.bottom);
+            }
+            mVisible = proto.visible;
+        }
+
+        String getType() {
+            return mType;
+        }
+
+        Rect getFrame() {
+            return mFrame;
+        }
+
+        Rect getVisibleFrame() {
+            return mVisibleFrame;
+        }
+
+        boolean isVisible() {
+            return mVisible;
+        }
+
+        boolean isCaptionBar() {
+            return mType.contains("captionBar");
+        }
+
+        void insetGivenFrame(Rect inOutFrame) {
+            if (inOutFrame.left == mFrame.left && inOutFrame.right == mFrame.right) {
+                if (inOutFrame.top == mFrame.top) {
+                    inOutFrame.top = mFrame.bottom;
+                    return;
+                }
+                if (inOutFrame.bottom == mFrame.bottom) {
+                    inOutFrame.bottom = mFrame.top;
+                    return;
+                }
+            }
+            if (inOutFrame.top == mFrame.top && inOutFrame.bottom == mFrame.bottom) {
+                if (inOutFrame.left == mFrame.left) {
+                    inOutFrame.left = mFrame.right;
+                    return;
+                }
+                if (inOutFrame.right == mFrame.right) {
+                    inOutFrame.right = mFrame.left;
+                    return;
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "InsetsSource: {type=" + mType
+                    + " frame=" + mFrame
+                    + " visibleFrame=" + mVisibleFrame
+                    + " visible=" + mVisible
+                    + "}";
+        }
     }
 }

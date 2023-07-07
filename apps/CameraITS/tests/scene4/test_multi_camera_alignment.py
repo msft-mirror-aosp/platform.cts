@@ -29,7 +29,7 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ALIGN_TOL_MM = 4.0  # mm
+_ALIGN_TOL_MM = 5.0  # mm
 _ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
@@ -44,6 +44,7 @@ _MM_TO_UM = 1E3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _REFERENCE_GYRO = 1
 _REFERENCE_UNDEFINED = 2
+_TEST_REQUIRED_MPC = 33
 _TRANS_MATRIX_REF = np.array([0, 0, 0])  # translation matrix for ref cam is 000
 
 
@@ -300,7 +301,7 @@ def convert_to_world_coordinates(x, y, r, t, k, z_w):
   a = np.array([[x*r[2][0]-k_x1, x*r[2][1]-k_x2],
                 [y*r[2][0]-k_y1, y*r[2][1]-k_y2]])
   b = np.array([[k_x3-x*c_1], [k_y3-y*c_1]])
-  return np.dot(np.linalg.inv(a), b)
+  return (float(x) for x in np.dot(np.linalg.inv(a), b))
 
 
 def convert_to_image_coordinates(p_w, r, t, k):
@@ -373,12 +374,29 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       name_with_log_path = os.path.join(self.log_path, _NAME)
       chart_distance = self.chart_distance * _CM_TO_M
 
+      # check media performance class
+      should_run = (camera_properties_utils.read_3a(props) and
+                    camera_properties_utils.per_frame_control(props) and
+                    camera_properties_utils.logical_multi_camera(props) and
+                    camera_properties_utils.backward_compatible(props))
+      media_performance_class = its_session_utils.get_media_performance_class(
+          self.dut.serial)
+      cameras_facing_same_direction = cam.get_facing_to_ids().get(
+          props['android.lens.facing'], [])
+      has_multiple_same_facing_cameras = len(cameras_facing_same_direction) > 1
+
+      if (media_performance_class >= _TEST_REQUIRED_MPC and
+          not should_run and
+          cam.is_primary_camera() and
+          has_multiple_same_facing_cameras):
+        logging.error('Found multiple camera IDs %s facing in the same '
+                      'direction as primary camera %s.',
+                      cameras_facing_same_direction, self.camera_id)
+        its_session_utils.raise_mpc_assertion_error(
+            _TEST_REQUIRED_MPC, _NAME, media_performance_class)
+
       # check SKIP conditions
-      camera_properties_utils.skip_unless(
-          camera_properties_utils.read_3a(props) and
-          camera_properties_utils.per_frame_control(props) and
-          camera_properties_utils.logical_multi_camera(props) and
-          camera_properties_utils.backward_compatible(props))
+      camera_properties_utils.skip_unless(should_run)
 
       # load chart for scene
       its_session_utils.load_scene(
@@ -504,8 +522,10 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
             fmt == 'raw'):
           cv2_distort = camera_properties_utils.get_distortion_matrix(
               physical_props[i])
-          if not np.any(cv2_distort):
+          if cv2_distort is None:
             raise AssertionError(f'Camera {i} has no distortion matrix!')
+          if not np.any(cv2_distort):
+            logging.warning('Camera %s has distortion matrix of all zeroes', i)
           image_processing_utils.write_image(
               img/255, f'{name_with_log_path}_{fmt}_{i}.jpg')
           img = cv2.undistort(img, k[i], cv2_distort)

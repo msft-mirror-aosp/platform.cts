@@ -23,6 +23,10 @@
 #include <aaudio/AAudio.h>
 #include <gtest/gtest.h>
 
+constexpr int kNumFrames = 256;
+constexpr int64_t kMillisPerNanos = 1000000;
+constexpr int64_t kMillisPerMicros = 1000;
+
 void tryOpeningStream(aaudio_direction_t direction, aaudio_performance_mode_t performanceMode) {
     AAudioStreamBuilder *builder = nullptr;
     ASSERT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&builder));
@@ -36,6 +40,32 @@ void tryOpeningStream(aaudio_direction_t direction, aaudio_performance_mode_t pe
     ASSERT_EQ(direction, AAudioStream_getDirection(stream));
 
     ASSERT_EQ(AAUDIO_OK, AAudioStream_requestStart(stream));
+
+    int channelCount = AAudioStream_getChannelCount(stream);
+    ASSERT_GT(channelCount, 0);
+
+    std::unique_ptr<float[]> buffer(new float[kNumFrames * channelCount]);
+
+    if (direction == AAUDIO_DIRECTION_INPUT) {
+        ASSERT_EQ(kNumFrames,
+                  AAudioStream_read(stream, buffer.get(), kNumFrames, 500 * kMillisPerNanos));
+    } else {
+        ASSERT_EQ(kNumFrames,
+                  AAudioStream_write(stream, buffer.get(), kNumFrames, 500 * kMillisPerNanos));
+        // Total_frames_transferred is the number of frames consumed by the audio endpoint.
+        // Wait until the data is consumed by the audio endpoint.
+        // Wait in 10ms increments up to 50 times.
+        constexpr int kMaxRetries = 50;
+        constexpr int kTimeBetweenRetriesMillis = 10;
+        int numRetries = 0;
+        int framesRead = AAudioStream_getFramesRead(stream);
+        while (numRetries < kMaxRetries && framesRead < kNumFrames) {
+            usleep(kTimeBetweenRetriesMillis * kMillisPerMicros);
+            framesRead = AAudioStream_getFramesRead(stream);
+            numRetries++;
+        }
+    }
+
     ASSERT_EQ(AAUDIO_OK, AAudioStream_requestStop(stream));
 
     // Cleanup

@@ -20,9 +20,12 @@ import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.platform.test.annotations.Presubmit;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,6 +41,8 @@ import java.util.concurrent.TimeUnit;
  * <p>Build/Install/Run: atest CtsWindowManagerDeviceTestCases:ActivityCaptureCallbackTests
  */
 @Presubmit
+@ApiTest(apis = {"android.app.Activity#registerScreenCaptureCallback",
+        "android.app.Activity#unregisterScreenCaptureCallback"})
 public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     private PrimaryActivity mPrimaryActivity;
 
@@ -66,6 +71,8 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     /** Test multi-window activities, both callbacks are invoked. */
     @Test
     public void testScreencaptureInvokeCallbackOnAllVisibleActivities() {
+        assumeTrue(supportsMultiDisplay());
+
         final WindowManagerState.DisplayContent newDisplay =
                 createManagedExternalDisplaySession().createVirtualDisplay();
         final SecondaryActivity secondaryActivity =
@@ -82,6 +89,8 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     /** Test screenshotting only one display. */
     @Test
     public void testScreencaptureInvokeCallbackOnOneDisplay() {
+        assumeTrue(supportsMultiDisplay());
+
         final WindowManagerState.DisplayContent newDisplay =
                 createManagedExternalDisplaySession().createVirtualDisplay();
         final SecondaryActivity secondaryActivity =
@@ -96,6 +105,8 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     /** Test multi-window activities, only registered callback is invoked. */
     @Test
     public void testScreencaptureInvokeCallbackOnRegisteredVisibleActivities() {
+        assumeTrue(supportsMultiDisplay());
+
         mPrimaryActivity.unregisterScreencaptureCallback();
         final WindowManagerState.DisplayContent newDisplay =
                 createManagedExternalDisplaySession().createVirtualDisplay();

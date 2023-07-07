@@ -26,15 +26,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
-import android.content.Intent.EXTRA_INTENT
-import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.EXTRA_STATUS
 import android.content.pm.PackageInstaller.EXTRA_STATUS_MESSAGE
 import android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID
-import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.STATUS_SUCCESS
 import android.content.pm.PackageInstaller.SessionParams
 import android.content.pm.PackageManager
@@ -43,23 +39,20 @@ import android.os.PersistableBundle
 import android.os.SystemClock
 import android.provider.DeviceConfig
 import android.provider.Settings
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.StaleObjectException
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.Until
 import android.text.Html
 import android.util.Log
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FreezeRotationRule
-import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.modules.utils.build.SdkLevel
 import com.google.common.truth.Truth.assertThat
 import java.io.File
@@ -79,8 +72,6 @@ abstract class BasePermissionTest {
         private const val TAG = "BasePermissionTest"
 
         private const val INSTALL_ACTION_CALLBACK = "BasePermissionTest.install_callback"
-        private const val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
-        private const val INSTALL_BUTTON_ID = "button1"
 
         const val APK_DIRECTORY = "/data/local/tmp/cts/permission3"
 
@@ -121,34 +112,23 @@ abstract class BasePermissionTest {
     @get:Rule
     val freezeRotationRule = FreezeRotationRule()
 
-    @get:Rule
-    val activityRule = ActivityTestRule(StartForFutureActivity::class.java, false, false)
-
     var activityScenario: ActivityScenario<StartForFutureActivity>? = null
-
-    @get:Rule
-    val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
 
     data class SessionResult(val status: Int?)
 
     /** If a status was received the value of the status, otherwise null */
     private var installSessionResult = LinkedBlockingQueue<SessionResult>()
 
-    private val installSessionResultReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val status = intent.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID)
-            val msg = intent.getStringExtra(EXTRA_STATUS_MESSAGE)
-            Log.d(TAG, "status: $status, msg: $msg")
+    private val installSessionResultReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val status = intent.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID)
+                val msg = intent.getStringExtra(EXTRA_STATUS_MESSAGE)
+                Log.d(TAG, "status: $status, msg: $msg")
 
-            if (status == STATUS_PENDING_USER_ACTION) {
-                val activityIntent = intent.getParcelableExtra(EXTRA_INTENT, Intent::class.java)
-                activityIntent!!.addFlags(FLAG_ACTIVITY_CLEAR_TASK or FLAG_ACTIVITY_NEW_TASK)
-                installDialogStarter.activity.startActivityForResult(activityIntent)
+                installSessionResult.offer(SessionResult(status))
             }
-
-            installSessionResult.offer(SessionResult(status))
         }
-    }
 
     private var screenTimeoutBeforeTest: Long = 0L
 
@@ -171,16 +151,15 @@ abstract class BasePermissionTest {
 
     @Before
     fun registerInstallSessionResultReceiver() {
-        context.registerReceiver(installSessionResultReceiver,
-            IntentFilter(INSTALL_ACTION_CALLBACK), RECEIVER_EXPORTED)
+        context.registerReceiver(
+            installSessionResultReceiver, IntentFilter(INSTALL_ACTION_CALLBACK), RECEIVER_EXPORTED)
     }
 
     @After
     fun unregisterInstallSessionResultReceiver() {
         try {
             context.unregisterReceiver(installSessionResultReceiver)
-        } catch (ignored: IllegalArgumentException) {
-        }
+        } catch (ignored: IllegalArgumentException) {}
     }
 
     @After
@@ -269,20 +248,22 @@ abstract class BasePermissionTest {
 
     protected fun installPackageViaSession(
         apkName: String,
-        appMetadata: PersistableBundle? = null
+        appMetadata: PersistableBundle? = null,
+        packageSource: Int? = null
     ) {
-        val (sessionId, session) = createPackageInstallerSession()
-        writePackageInstallerSession(session, apkName)
-        if (appMetadata != null) {
-            setAppMetadata(session, appMetadata)
+        val (sessionId, session) = createPackageInstallerSession(packageSource)
+        runWithShellPermissionIdentity {
+            writePackageInstallerSession(session, apkName)
+            if (appMetadata != null) {
+                setAppMetadata(session, appMetadata)
+            }
+            commitPackageInstallerSession(session)
+
+            // No need to click installer UI here due to running in shell permission identity and
+            // not needing user interaciton to complete install. Install should have succeeded.
+            val result = getInstallSessionResult()
+            assertThat(result.status).isEqualTo(STATUS_SUCCESS)
         }
-        commitPackageInstallerSession(session)
-
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-        // Install should have succeeded
-        val result = getInstallSessionResult()
-        assertThat(result.status).isEqualTo(STATUS_SUCCESS)
     }
 
     protected fun uninstallPackage(packageName: String, requireSuccess: Boolean = true) {
@@ -294,23 +275,23 @@ abstract class BasePermissionTest {
 
     protected fun waitFindObject(selector: BySelector): UiObject2 {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObject(selector, t) })!!
+        return findObjectWithRetry({ t -> UiAutomatorUtils2.waitFindObject(selector, t) })!!
     }
 
     protected fun waitFindObject(selector: BySelector, timeoutMillis: Long): UiObject2 {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObject(selector, t) },
+        return findObjectWithRetry({ t -> UiAutomatorUtils2.waitFindObject(selector, t) },
                 timeoutMillis)!!
     }
 
     protected fun waitFindObjectOrNull(selector: BySelector): UiObject2? {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObjectOrNull(selector, t) })
+        return findObjectWithRetry({ t -> UiAutomatorUtils2.waitFindObjectOrNull(selector, t) })
     }
 
     protected fun waitFindObjectOrNull(selector: BySelector, timeoutMillis: Long): UiObject2? {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObjectOrNull(selector, t) },
+        return findObjectWithRetry({ t -> UiAutomatorUtils2.waitFindObjectOrNull(selector, t) },
                 timeoutMillis)
     }
 
@@ -366,6 +347,11 @@ abstract class BasePermissionTest {
         waitForIdle()
     }
 
+    protected fun pressDPadDown() {
+        uiDevice.pressDPadDown()
+        waitForIdle()
+    }
+
     protected fun waitForIdle() = uiAutomation.waitForIdle(IDLE_TIMEOUT_MILLIS, TIMEOUT_MILLIS)
 
     protected fun startActivityForFuture(
@@ -392,9 +378,14 @@ abstract class BasePermissionTest {
             PackageManager.DONT_KILL_APP)
     }
 
-    private fun createPackageInstallerSession(): Pair<Int, PackageInstaller.Session> {
+    private fun createPackageInstallerSession(
+        packageSource: Int? = null
+    ): Pair<Int, PackageInstaller.Session> {
         // Create session
         val sessionParam = SessionParams(SessionParams.MODE_FULL_INSTALL)
+        if (packageSource != null) {
+            sessionParam.setPackageSource(packageSource)
+        }
 
         val sessionId = packageInstaller.createSession(sessionParam)
         val session = packageInstaller.openSession(sessionId)!!
@@ -406,27 +397,22 @@ abstract class BasePermissionTest {
         val apkFile = File(APK_DIRECTORY, apkName)
         // Write data to session
         apkFile.inputStream().use { fileOnDisk ->
-            session.openWrite(apkName, 0, -1).use { sessionFile ->
-                fileOnDisk.copyTo(sessionFile)
-            }
+            session
+                .openWrite(/* name= */ apkName, /* offsetBytes= */ 0, /* lengthBytes= */ -1)
+                .use { sessionFile -> fileOnDisk.copyTo(sessionFile) }
         }
     }
 
-    private fun commitPackageInstallerSession(session: PackageInstaller.Session):
-        CompletableFuture<Int> {
-        // Commit session
-        val dialog = FutureResultActivity.doAndAwaitStart {
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, 0, Intent(INSTALL_ACTION_CALLBACK).setPackage(context.packageName),
+    private fun commitPackageInstallerSession(session: PackageInstaller.Session) {
+        // PendingIntent that triggers a INSTALL_ACTION_CALLBACK broadcast that gets received by
+        // installSessionResultReceiver when install actions occur with this session
+        val installActionPendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent(INSTALL_ACTION_CALLBACK).setPackage(context.packageName),
                 FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
-            session.commit(pendingIntent.intentSender)
-        }
-
-        // The system should have asked us to launch the installer
-        val result = getInstallSessionResult()
-        Assert.assertEquals(STATUS_PENDING_USER_ACTION, result.status)
-
-        return dialog
+        session.commit(installActionPendingIntent.intentSender)
     }
 
     private fun setAppMetadata(session: PackageInstaller.Session, data: PersistableBundle) {
@@ -438,29 +424,9 @@ abstract class BasePermissionTest {
         }
     }
 
-    /**
-     * Wait for session's install result and return it
-     */
+    /** Wait for session's install result and return it */
     private fun getInstallSessionResult(timeout: Long = PACKAGE_INSTALLER_TIMEOUT): SessionResult {
         return installSessionResult.poll(timeout, TimeUnit.MILLISECONDS)
             ?: SessionResult(null /* status */)
-    }
-
-    /**
-     * Click a button in the UI of the installer app
-     *
-     * @param resId The resource ID of the button to click
-     */
-    private fun clickInstallerUIButton(resId: String) {
-        val startTime = System.currentTimeMillis()
-        while (startTime + PACKAGE_INSTALLER_TIMEOUT > System.currentTimeMillis()) {
-            try {
-                uiDevice.wait(Until.findObject(By.res(PACKAGE_INSTALLER_PACKAGE_NAME, resId)), 1000)
-                    .click()
-                return
-            } catch (ignore: Throwable) {
-            }
-        }
-        Assert.fail("Failed to click the button: $resId")
     }
 }

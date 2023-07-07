@@ -36,8 +36,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
 
-import androidx.test.filters.FlakyTest;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -107,7 +105,6 @@ public class KeyguardTransitionTests extends ActivityManagerTestBase {
                 mWmState.getDefaultDisplayLastTransition());
     }
 
-    @FlakyTest(bugId = 238776938)
     @Test
     public void testDismissKeyguard() {
         createManagedLockScreenSession().gotoKeyguard();
@@ -128,7 +125,6 @@ public class KeyguardTransitionTests extends ActivityManagerTestBase {
                 mWmState.getDefaultDisplayLastTransition());
     }
 
-    @FlakyTest(bugId = 238776938)
     @Test
     public void testNewDismissKeyguardActivityDuringOccluded() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -180,7 +176,7 @@ public class KeyguardTransitionTests extends ActivityManagerTestBase {
     @Test
     public void testNewActivityDuringOccludedWithAttr() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        launchActivity(SHOW_WHEN_LOCKED_ATTR_NO_PREVIEW_ACTIVITY);
+        launchActivityInFullscreen(SHOW_WHEN_LOCKED_ATTR_NO_PREVIEW_ACTIVITY);
         lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ATTR_NO_PREVIEW_ACTIVITY);
         launchActivity(SHOW_WHEN_LOCKED_WITH_DIALOG_NO_PREVIEW_ACTIVITY);
         mWmState.computeState(SHOW_WHEN_LOCKED_WITH_DIALOG_NO_PREVIEW_ACTIVITY);

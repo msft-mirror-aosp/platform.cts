@@ -147,6 +147,8 @@ public class UninstallTest {
         mUiDevice.pressBack();
         // return to home/launcher to prevent from being obscured by systemui or other alert window
         mUiDevice.pressHome();
+        // Wait for device idle
+        mUiDevice.waitForIdle();
 
         mContext.startActivity(intent);
 
@@ -194,22 +196,24 @@ public class UninstallTest {
         }
     }
 
-    private void waitFor(SearchCondition<UiObject2> condition)
+    private UiObject2 waitFor(SearchCondition<UiObject2> condition)
             throws IOException, InterruptedException {
         final long OneSecond = TimeUnit.SECONDS.toMillis(1);
         final long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < TIMEOUT_MS) {
             try {
-                if (mUiDevice.wait(condition, OneSecond) == null) {
+                var result = mUiDevice.wait(condition, OneSecond);
+                if (result == null) {
                     continue;
                 }
-                return;
+                return result;
             } catch (Throwable e) {
                 Thread.sleep(OneSecond);
             }
         }
         dumpWindowHierarchy();
         fail("Unable to wait for the uninstaller activity");
+        return null;
     }
 
     @Test
@@ -218,11 +222,8 @@ public class UninstallTest {
 
         startUninstall();
 
-        waitFor(Until.findObject(By.text("Do you want to uninstall this app?")));
-
         assertNotNull("Uninstall prompt not shown",
-                mUiDevice.wait(Until.findObject(By.text("Do you want to uninstall this app?")),
-                        TIMEOUT_MS));
+                waitFor(Until.findObject(By.textContains("Do you want to uninstall this app?"))));
         // The app's name should be shown to the user.
         assertNotNull(mUiDevice.findObject(By.text("Empty Test App")));
 

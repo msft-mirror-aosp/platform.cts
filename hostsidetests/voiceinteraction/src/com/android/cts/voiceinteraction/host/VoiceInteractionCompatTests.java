@@ -18,6 +18,8 @@ package com.android.cts.voiceinteraction.host;
 
 import android.compat.cts.CompatChangeGatingTestCase;
 
+import com.android.tradefed.device.DeviceNotAvailableException;
+
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
@@ -34,33 +36,41 @@ public class VoiceInteractionCompatTests extends CompatChangeGatingTestCase {
 
     public void testEnforceHotwordPhraseIdChangeEnabled() throws Exception {
         setCompatConfig(
-                /*enabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
-                /*disabledChanges*/ ImmutableSet.of(),
+                /* enabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* disabledChanges= */ ImmutableSet.of(),
                 VOICE_INTERACTION_SERVICES_PACKAGE_NAME);
 
-        runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdEnabled",
-                /*enabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
-                /*disabledChanges*/ ImmutableSet.of());
+                /* enabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* disabledChanges= */ ImmutableSet.of(),
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
 
-        runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdEnabled_rejectNotMatchingPhraseId",
-                /*enabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
-                /*disabledChanges*/ ImmutableSet.of());
+                /* enabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* disabledChanges= */ ImmutableSet.of(),
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
 
-        runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdEnabled_rejectPhraseIdNotSet",
-                /*enabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
-                /*disabledChanges*/ ImmutableSet.of());
+                /* enabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* disabledChanges= */ ImmutableSet.of(),
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
 
-        runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdEnabled_acceptMatchingPhraseId",
-                /*enabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
-                /*disabledChanges*/ ImmutableSet.of());
+                /* enabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* disabledChanges= */ ImmutableSet.of(),
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
     }
 
     public void testEnforceHotwordPhraseIdChangeDisabled() throws Exception {
@@ -69,28 +79,66 @@ public class VoiceInteractionCompatTests extends CompatChangeGatingTestCase {
                 /*disabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
                 VOICE_INTERACTION_SERVICES_PACKAGE_NAME);
 
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
+                ".VoiceInteractionCompatTests",
+                "enforceHotwordPhraseIdDisabled",
+                /* enabledChanges= */ ImmutableSet.of(),
+                /* disabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
+
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
+                ".VoiceInteractionCompatTests",
+                "enforceHotwordPhraseIdDisabled_acceptNotMatchingPhraseId",
+                /* enabledChanges= */ ImmutableSet.of(),
+                /* disabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
+
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
+                ".VoiceInteractionCompatTests",
+                "enforceHotwordPhraseIdDisabled_acceptPhraseIdNotSet",
+                /* enabledChanges= */ ImmutableSet.of(),
+                /* disabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
+
+        runDeviceCompatTestReported(TEST_APP_PACKAGE_NAME,
+                ".VoiceInteractionCompatTests",
+                "enforceHotwordPhraseIdDisabled_acceptMatchingPhraseId",
+                /* enabledChanges= */ ImmutableSet.of(),
+                /* disabledChanges= */ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET,
+                /* reportedEnabledChanges= */ ImmutableSet.of(),
+                /* reportedDisabledChanges= */ ImmutableSet.of());
+    }
+
+    /**
+     * This test assumes that ENFORCE_HOTWORD_PHRASE_ID is disabled
+     */
+    // TODO(nambur): move default tests to device side only
+    public void testDefaultPhraseIdEnforcementBehavior() throws DeviceNotAvailableException {
         runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdDisabled",
                 /*enabledChanges*/ ImmutableSet.of(),
-                /*disabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET);
+                /*disabledChanges*/ ImmutableSet.of());
 
         runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdDisabled_acceptNotMatchingPhraseId",
                 /*enabledChanges*/ ImmutableSet.of(),
-                /*disabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET);
+                /*disabledChanges*/ ImmutableSet.of());
 
         runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdDisabled_acceptPhraseIdNotSet",
                 /*enabledChanges*/ ImmutableSet.of(),
-                /*disabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET);
+                /*disabledChanges*/ ImmutableSet.of());
 
         runDeviceCompatTest(TEST_APP_PACKAGE_NAME,
                 ".VoiceInteractionCompatTests",
                 "enforceHotwordPhraseIdDisabled_acceptMatchingPhraseId",
                 /*enabledChanges*/ ImmutableSet.of(),
-                /*disabledChanges*/ ENFORCE_HOTWORD_PHRASE_ID_CHANGES_SET);
+                /*disabledChanges*/ ImmutableSet.of());
     }
 }

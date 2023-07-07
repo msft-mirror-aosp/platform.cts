@@ -56,12 +56,17 @@ class InstallInfoTest : PackageInstallerTestBase() {
 
     @Test
     fun testInstallInfoOfClusterPackage() {
-        val apk = File(context.filesDir.canonicalPath)
+        // Copy the test APK to an unique folder.
+        val clusterDir = File(context.filesDir, "testInstallInfoOfClusterPackage")
+        File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(
+                target = File(clusterDir, TEST_APK_NAME), overwrite = true)
+        val apk = File(clusterDir.canonicalPath)
         val installInfo = pi.readInstallInfo(apk, 0)
 
         // The test APKs do not include native binaries or dex metadata. Thus, the total size of
         // the cluster package should be equal to sum of size of each APKs in the folder.
-        val expectedSize = apk.listFiles()!!.sumOf(File::length)
+        val expectedSize = apk.listFiles()!!
+            .filter { file -> file.isFile() && file.getPath().endsWith(".apk") }.sumOf(File::length)
 
         assertEquals(TEST_APK_PACKAGE_NAME, installInfo.packageName)
         assertEquals(PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL, installInfo.installLocation)

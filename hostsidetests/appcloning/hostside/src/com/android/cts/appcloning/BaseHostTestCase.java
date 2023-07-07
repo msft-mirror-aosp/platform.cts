@@ -16,6 +16,9 @@
 
 package com.android.cts.appcloning;
 
+
+import static org.junit.Assert.assertNotNull;
+
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -26,6 +29,11 @@ import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.common.collect.Iterables;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 
@@ -33,6 +41,7 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
     private int mCurrentUserId = NativeDevice.INVALID_USER_ID;
     private static final String ERROR_MESSAGE_TAG = "[ERROR]";
     protected static ITestDevice sDevice = null;
+    private static final String MEDIA_PROVIDER_MODULE_NAME = "android.providers.media.module";
 
     protected static void setDevice(ITestDevice device) {
         sDevice = device;
@@ -71,8 +80,8 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
         return deviceSdkLevel.isDeviceAtLeastT();
     }
 
-    protected static boolean isAtLeastU() throws DeviceNotAvailableException {
-        DeviceSdkLevel deviceSdkLevel = new DeviceSdkLevel(sDevice);
+    protected static boolean isAtLeastU(ITestDevice device) throws DeviceNotAvailableException {
+        DeviceSdkLevel deviceSdkLevel = new DeviceSdkLevel(device);
         return deviceSdkLevel.isDeviceAtLeastU();
     }
 
@@ -151,5 +160,76 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
          * Similar to {@link BooleanSupplier#getAsBoolean} but has {@code throws Exception}.
          */
         boolean getAsBoolean() throws Exception;
+    }
+
+    protected static String getPublicVolumeExcluding(String excludingVolume) throws Exception {
+        List<String> volList = splitMultiLineOutput(sDevice.executeShellCommand("sm list-volumes"));
+
+        // list volumes will result in something like
+        // private mounted null
+        // public:7,281 mounted 3080-17E8
+        // emulated;0 mounted null
+        // and we are interested in 3080-17E8
+        for (String volume: volList) {
+            if (volume.contains("public")
+                    && (excludingVolume == null || !volume.contains(excludingVolume))) {
+                //public:7,281 mounted 3080-17E8
+                String[] splits = volume.split(" ");
+                //Return the last snippet, that is 3080-17E8
+                return splits[splits.length - 1];
+            }
+        }
+        return null;
+    }
+
+    protected static boolean partitionDisks() {
+        try {
+            List<String> diskNames = splitMultiLineOutput(sDevice
+                    .executeShellCommand("sm list-disks"));
+            if (!diskNames.isEmpty() && !Iterables.getLast(diskNames).isEmpty()) {
+                sDevice.executeShellCommand("sm partition "
+                        + Iterables.getLast(diskNames) + " public");
+                return true;
+            }
+        } catch (Exception ignored) {
+            //ignored
+        }
+        return false;
+    }
+
+    protected String getMediaProviderProcess(String userId) throws Exception {
+        String processUserPrefix = "u" + userId;
+        List<String> mediaProcessList = splitMultiLineOutput(sDevice
+                .executeShellCommand("ps -A -o user,name,pid | grep -i "
+                        + MEDIA_PROVIDER_MODULE_NAME));
+        // Media Process list will be something like:
+        // u0_a246      com.google.android.providers.media.module 21403
+        // u10_a246     com.google.android.providers.media.module 25576
+        for (String mediaProcess : mediaProcessList) {
+            if (mediaProcess.startsWith(processUserPrefix)) {
+                //u0_a246      com.google.android.providers.media.module 21403
+                String[] splits = mediaProcess.split(" ");
+                //Return the last snippet, that is 21403
+                return splits[splits.length - 1];
+            }
+        }
+        return null;
+    }
+
+    protected boolean isUserVolumeMounted(String userId) throws Exception {
+        String mountStatus = sDevice
+                .executeShellCommand("dumpsys mount | grep mountUserId=" + userId);
+        // Mount Status will be something like:
+        // type=EMULATED diskId=null partGuid= mountFlags=PRIMARY|VISIBLE_FOR_WRITE mountUserId=11
+        // state=MOUNTED
+        assertNotNull("No Volumes Found for user " + userId, mountStatus);
+        return mountStatus.contains("state=MOUNTED");
+    }
+
+    private static List<String> splitMultiLineOutput(String input) throws Exception {
+        if (input == null) {
+            return new ArrayList<>();
+        }
+        return Arrays.asList(input.split("\\r?\\n"));
     }
 }

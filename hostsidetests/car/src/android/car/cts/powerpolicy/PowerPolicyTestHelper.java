@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.tradefed.log.LogUtil.CLog;
 
+import java.util.Set;
+
 public final class PowerPolicyTestHelper {
     private final CpmsFrameworkLayerStateInfo mFrameCpms;
     private final CpmsSystemLayerStateInfo mSystemCpms;
@@ -118,7 +120,7 @@ public final class PowerPolicyTestHelper {
 
     public void checkTotalRegisteredPolicies(int totalNum) {
         assertWithMessage(TOTAL_REGISTERED_POLICIES_ASSERT_MSG)
-                .that(mSystemCpms.getRegisteredPolicies().size() == totalNum).isTrue();
+                .that(mSystemCpms.getRegisteredPolicies().size()).isEqualTo(totalNum);
     }
 
     public void checkCurrentPowerComponents(PowerPolicyDef expected) throws Exception {
@@ -139,5 +141,24 @@ public final class PowerPolicyTestHelper {
     public void checkPowerPolicyGroups(PowerPolicyGroups expected) {
         assertWithMessage("checkPowerPolicyGroups")
                 .that(expected.equals(mFrameCpms.getPowerPolicyGroups())).isTrue();
+    }
+
+    public int getNumberOfRegisteredPolicies() {
+        return mSystemCpms.getTotalRegisteredPolicies();
+    }
+
+    public void checkPowerPolicyGroupsDefined(PowerPolicyGroups policyGroups) {
+        assertWithMessage("Groups cannot be null").that(policyGroups).isNotNull();
+        Set<String> groupIds = policyGroups.getGroupIds();
+        for (String groupId : groupIds) {
+            PowerPolicyGroups.PowerPolicyGroupDef groupDef = policyGroups.getGroup(groupId);
+            assertWithMessage("Group definition cannot be null").that(groupDef).isNotNull();
+            assertWithMessage("Group is not defined").that(
+                    mFrameCpms.getPowerPolicyGroups().containsGroup(groupId, groupDef)).isTrue();
+        }
+    }
+
+    public String getCurrentPolicyId() {
+        return mFrameCpms.getCurrentPolicyId();
     }
 }

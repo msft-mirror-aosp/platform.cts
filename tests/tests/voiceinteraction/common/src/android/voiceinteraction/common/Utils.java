@@ -15,16 +15,27 @@
  */
 package android.voiceinteraction.common;
 
+import static android.service.voice.HotwordAudioStream.KEY_AUDIO_STREAM_COPY_BUFFER_LENGTH_BYTES;
+
 import android.app.VoiceInteractor.PickOptionRequest.Option;
 import android.content.LocusId;
+import android.media.AudioFormat;
+import android.media.AudioTimestamp;
 import android.os.Bundle;
 import android.os.Parcel;
+import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
+import android.os.PersistableBundle;
+import android.service.voice.HotwordAudioStream;
+import android.service.voice.HotwordDetectedResult;
 import android.util.Log;
 
 import com.android.compatibility.common.util.PropertyUtil;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +88,17 @@ public class Utils {
 
     /** Indicate which test scenario for testing. */
     public static final int EXTRA_HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_CRASH = 1;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_ON_UPDATE_STATE_UNEXPECTED_CALLBACK = 2;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_SEND_OVER_MAX_INIT_STATUS = 3;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_SEND_CUSTOM_INIT_STATUS = 4;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_ENABLE_AUDIO_EGRESS = 5;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_CLEAR_SOFTWARE_DETECTION_JOB = 6;
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_NO_NEED_ACTION_DURING_DETECTION = 7;
+    // test scenario to verify the HotwordDetectionService was created after a given time
+    // This can be used to verify the service was restarted or recreated.
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_SEND_SUCCESS_IF_CREATED_AFTER = 8;
+    // Check the HotwordDetectionService can read audio and the data is not zero
+    public static final int EXTRA_HOTWORD_DETECTION_SERVICE_CAN_READ_AUDIO_DATA_IS_NOT_ZERO = 9;
 
     /** Indicate to start a new activity for testing. */
     public static final int ACTIVITY_NEW = 0;
@@ -161,6 +183,17 @@ public class Utils {
     public static final String KEY_TEST_RESULT = "testResult";
     public static final String KEY_TEST_SCENARIO = "testScenario";
     public static final String KEY_DETECTION_DELAY_MS = "detectionDelayMs";
+    public static final String KEY_DETECTION_REJECTED = "detection_rejected";
+    public static final String KEY_INITIALIZATION_STATUS = "initialization_status";
+    /**
+     * It only works when the test scenario is
+     * {@link #EXTRA_HOTWORD_DETECTION_SERVICE_ENABLE_AUDIO_EGRESS}
+     *
+     * Type: Boolean
+     */
+    public static final String KEY_AUDIO_EGRESS_USE_ILLEGAL_COPY_BUFFER_SIZE =
+            "useIllegalCopyBufferSize";
+    public static final String KEY_TIMESTAMP_MILLIS = "timestamp_millis";
 
     public static final String VOICE_INTERACTION_KEY_CALLBACK = "callback";
     public static final String VOICE_INTERACTION_KEY_CONTROL = "control";
@@ -199,6 +232,99 @@ public class Utils {
                     + PROXY_VOICE_INTERACTION_SERVICE_CLASS_NAME;
     public static final String VOICE_INTERACTION_SERVICE_BINDING_HELPER_CLASS_NAME =
             "android.voiceinteraction.service.VoiceInteractionServiceBindingHelper";
+
+    private static final String KEY_FAKE_DATA = "fakeData";
+    private static final String VALUE_FAKE_DATA = "fakeData";
+
+    private static final long FRAME_POSITION = 0;
+    private static final long NANO_TIME_NS = 1000;
+
+    private static final byte[] FAKE_HOTWORD_AUDIO_DATA =
+            new byte[]{'h', 'o', 't', 'w', 'o', 'r', 'd', '!'};
+
+    private static final HotwordAudioStream HOTWORD_AUDIO_STREAM =
+            new HotwordAudioStream.Builder(createFakeAudioFormat(), createFakeAudioStream())
+                    .setInitialAudio(FAKE_HOTWORD_AUDIO_DATA)
+                    .setMetadata(createFakePersistableBundleData())
+                    .setTimestamp(createFakeAudioTimestamp())
+                    .build();
+
+    private static final HotwordAudioStream HOTWORD_AUDIO_STREAM_WRONG_COPY_BUFFER_SIZE =
+            new HotwordAudioStream.Builder(createFakeAudioFormat(), createFakeAudioStream())
+                    .setInitialAudio(FAKE_HOTWORD_AUDIO_DATA)
+                    .setMetadata(createFakePersistableBundleData(0))
+                    .setTimestamp(createFakeAudioTimestamp())
+                    .build();
+
+    public static final HotwordDetectedResult AUDIO_EGRESS_DETECTED_RESULT =
+            new HotwordDetectedResult.Builder().setAudioStreams(
+                    List.of(HOTWORD_AUDIO_STREAM)).build();
+
+    public static final HotwordDetectedResult AUDIO_EGRESS_DETECTED_RESULT_WRONG_COPY_BUFFER_SIZE =
+            new HotwordDetectedResult.Builder().setAudioStreams(
+                    List.of(HOTWORD_AUDIO_STREAM_WRONG_COPY_BUFFER_SIZE)).build();
+
+    /**
+     * Returns the PersistableBundle data that is used for testing.
+     */
+    private static PersistableBundle createFakePersistableBundleData() {
+        return createFakePersistableBundleData(/* copyBufferSize= */ -1);
+    }
+
+    /**
+     * Returns the PersistableBundle data that is used for testing.
+     */
+    private static PersistableBundle createFakePersistableBundleData(int copyBufferSize) {
+        // TODO : Add more data for testing
+        PersistableBundle persistableBundle = new PersistableBundle();
+        persistableBundle.putString(KEY_FAKE_DATA, VALUE_FAKE_DATA);
+        if (copyBufferSize > -1) {
+            persistableBundle.putInt(KEY_AUDIO_STREAM_COPY_BUFFER_LENGTH_BYTES, copyBufferSize);
+        }
+        return persistableBundle;
+    }
+
+    /**
+     * Returns the AudioFormat data that is used for testing.
+     */
+    private static AudioFormat createFakeAudioFormat() {
+        return new AudioFormat.Builder()
+                .setSampleRate(32000)
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setChannelMask(AudioFormat.CHANNEL_IN_MONO).build();
+    }
+
+    /**
+     * Returns the ParcelFileDescriptor data that is used for testing.
+     */
+    private static ParcelFileDescriptor createFakeAudioStream() {
+        ParcelFileDescriptor[] tempParcelFileDescriptors = null;
+        try {
+            tempParcelFileDescriptors = ParcelFileDescriptor.createPipe();
+            try (OutputStream fos =
+                         new ParcelFileDescriptor.AutoCloseOutputStream(
+                                 tempParcelFileDescriptors[1])) {
+                fos.write(FAKE_HOTWORD_AUDIO_DATA, 0, 8);
+            } catch (IOException e) {
+                Log.w(TAG, "Failed to pipe audio data : ", e);
+                throw new IllegalStateException();
+            }
+            return tempParcelFileDescriptors[0];
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to create a pipe : " + e);
+        }
+        throw new IllegalStateException();
+    }
+
+    /**
+     * Returns the AudioTimestamp for test
+     */
+    private static AudioTimestamp createFakeAudioTimestamp() {
+        final AudioTimestamp timestamp = new AudioTimestamp();
+        timestamp.framePosition = FRAME_POSITION;
+        timestamp.nanoTime = NANO_TIME_NS;
+        return timestamp;
+    }
 
     public static final String toBundleString(Bundle bundle) {
         if (bundle == null) {
@@ -245,7 +371,7 @@ public class Utils {
 
     public static final void addErrorResult(final Bundle testinfo, final String msg) {
         testinfo.getStringArrayList(testinfo.getString(Utils.TESTCASE_TYPE))
-            .add(TEST_ERROR + " " + msg);
+                .add(TEST_ERROR + " " + msg);
     }
 
     public static boolean await(CountDownLatch latch) {

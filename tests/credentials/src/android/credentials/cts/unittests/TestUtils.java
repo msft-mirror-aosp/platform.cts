@@ -19,6 +19,7 @@ package android.credentials.cts.unittests;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.slice.Slice;
+import android.content.pm.SigningInfo;
 import android.credentials.CredentialDescription;
 import android.credentials.CredentialOption;
 import android.os.Bundle;
@@ -26,8 +27,11 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.service.credentials.Action;
+import android.service.credentials.BeginCreateCredentialRequest;
+import android.service.credentials.CallingAppInfo;
 import android.service.credentials.CreateEntry;
 import android.service.credentials.CredentialEntry;
+import android.service.credentials.RemoteEntry;
 
 import java.util.Random;
 
@@ -39,12 +43,19 @@ public class TestUtils {
         assertEquals(a.getCandidateQueryData(), b.getCandidateQueryData());
         assertEquals(a.getCredentialRetrievalData(), b.getCredentialRetrievalData());
         assertThat(a.isSystemProviderRequired()).isEqualTo(b.isSystemProviderRequired());
+        assertThat(a.getAllowedProviders()).containsExactlyElementsIn(b.getAllowedProviders());
+    }
+
+    public static void assertEquals(BeginCreateCredentialRequest a,
+            BeginCreateCredentialRequest b) {
+        assertThat(a.getType()).isEqualTo(b.getType());
+        assertEquals(a.getData(), b.getData());
+        assertEquals(a.getCallingAppInfo(), b.getCallingAppInfo());
     }
 
     public static void assertEquals(CredentialDescription a, CredentialDescription b) {
-        assertThat(a.getType()).isEqualTo(b.getType());
-        assertThat(a.getFlattenedRequestString()).isEqualTo(b.getFlattenedRequestString());
-        assertThat(a.getCredentialEntries()).isSameInstanceAs(b.getCredentialEntries());
+        assertThat(a).isEqualTo(b);
+        assertThat(a.getCredentialEntries()).hasSize(b.getCredentialEntries().size());
     }
 
     public static void assertEquals(Slice a, Slice b) {
@@ -57,6 +68,10 @@ public class TestUtils {
     }
 
     public static void assertEquals(CreateEntry a, CreateEntry b) {
+        assertEquals(a.getSlice(), b.getSlice());
+    }
+
+    public static void assertEquals(RemoteEntry a, RemoteEntry b) {
         assertEquals(a.getSlice(), b.getSlice());
     }
 
@@ -74,6 +89,20 @@ public class TestUtils {
         for (String key : b.keySet()) {
             assertThat(b.get(key)).isEqualTo(a.get(key));
         }
+    }
+
+    public static void assertEquals(SigningInfo a, SigningInfo b) {
+        assertThat(b.getApkContentsSigners()).isEqualTo(a.getApkContentsSigners());
+        assertThat(b.getSigningCertificateHistory()).isEqualTo(
+                a.getSigningCertificateHistory());
+        assertThat(b.hasPastSigningCertificates()).isEqualTo(
+                a.hasPastSigningCertificates());
+        assertThat(b.hasMultipleSigners()).isEqualTo(a.hasMultipleSigners());
+    }
+
+    public static void assertEquals(CallingAppInfo a, CallingAppInfo b) {
+        assertThat(a.getPackageName()).isEqualTo(b.getPackageName());
+        assertEquals(a.getSigningInfo(), b.getSigningInfo());
     }
 
     public static <T extends Parcelable> T cloneParcelable(T obj) {

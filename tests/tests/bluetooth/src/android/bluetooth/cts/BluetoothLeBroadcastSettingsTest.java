@@ -37,7 +37,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +59,6 @@ public class BluetoothLeBroadcastSettingsTest {
             BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
 
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private boolean mIsBroadcastSourceSupported;
     private boolean mIsBroadcastAssistantSupported;
@@ -64,10 +66,8 @@ public class BluetoothLeBroadcastSettingsTest {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
@@ -89,21 +89,18 @@ public class BluetoothLeBroadcastSettingsTest {
             assertTrue("Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
+
+        Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
     }
 
     @After
     public void tearDown() {
-        if (mHasBluetooth) {
-            mAdapter = null;
-            TestUtils.dropPermissionAsShellUid();
-        }
+        TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testCreateBroadcastSettingsFromBuilder() {
-        if (shouldSkipTest()) {
-            return;
-        }
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
                         .setProgramInfo(TEST_PROGRAM_INFO).build();
@@ -134,11 +131,9 @@ public class BluetoothLeBroadcastSettingsTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void testCreateBroadcastSettingsFromCopy() {
-        if (shouldSkipTest()) {
-            return;
-        }
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
                         .setProgramInfo(TEST_PROGRAM_INFO).build();
@@ -170,10 +165,6 @@ public class BluetoothLeBroadcastSettingsTest {
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
-    }
-
-    private boolean shouldSkipTest() {
-        return !mHasBluetooth || (!mIsBroadcastSourceSupported && !mIsBroadcastAssistantSupported);
     }
 
     static BluetoothLeBroadcastSubgroupSettings createBroadcastSubgroupSettings() {

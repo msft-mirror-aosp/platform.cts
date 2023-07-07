@@ -33,14 +33,14 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.safetycenter.SafetyCenterIssue
 import android.safetycenter.SafetyCenterManager
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiObjectNotFoundException
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiObjectNotFoundException
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
@@ -77,6 +77,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Ignore
@@ -134,6 +135,7 @@ class AutoRevokeTest {
         assertThat(
                 runShellCommandOrThrow("cmd statusbar collapse"),
                 equalTo(""))
+        clearNotifications()
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         if ("false".equals(runShellCommandOrThrow("cmd lock_settings get-disabled"))) {
@@ -440,6 +442,7 @@ class AutoRevokeTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     @Test
     fun testAutoRevoke_showsUpInSafetyCenter() {
+        assumeTrue(deviceSupportsSafetyCenter())
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
@@ -478,6 +481,7 @@ class AutoRevokeTest {
     @Test
     @Ignore
     fun testAutoRevoke_goToUnusedAppsPage_removesSafetyCenterIssue() {
+        assumeTrue(deviceSupportsSafetyCenter())
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
@@ -529,6 +533,11 @@ class AutoRevokeTest {
 
     private fun isAutomotiveDevice(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+    }
+
+    private fun deviceSupportsSafetyCenter(): Boolean {
+        return context.resources.getBoolean(
+            Resources.getSystem().getIdentifier("config_enableSafetyCenter", "bool", "android"))
     }
 
     private fun installApp() {
@@ -585,7 +594,15 @@ class AutoRevokeTest {
 
     private fun clickUninstallIcon() {
         val rowSelector = By.text(supportedAppPackageName)
-        val rowItem = waitFindObject(rowSelector).parent.parent
+
+        val rowItem = if (isAutomotiveDevice()) {
+            val rowItemSelector = By.res("com.android.permissioncontroller:" +
+                    "id/car_ui_first_action_container")
+                    .hasDescendant(rowSelector)
+            waitFindObject(rowItemSelector).parent
+        } else {
+            waitFindObject(rowSelector).parent.parent
+        }
 
         val uninstallSelector = if (isAutomotiveDevice()) {
             By.res("com.android.permissioncontroller:id/car_ui_secondary_action")

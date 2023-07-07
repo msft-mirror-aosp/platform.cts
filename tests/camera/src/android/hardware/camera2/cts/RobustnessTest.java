@@ -108,7 +108,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Tests exercising edge cases in camera setup, configuration, and usage.
@@ -225,28 +224,6 @@ public class RobustnessTest extends Camera2AndroidTestCase {
      * Test for making sure the mandatory stream combinations work as expected.
      */
     private void testMandatoryOutputCombinations(boolean maxResolution) throws Exception {
-        final int AVAILABILITY_TIMEOUT_MS = 10;
-        final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
-                new LinkedBlockingQueue<>();
-        CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
-             @Override
-            public void onPhysicalCameraUnavailable(String cameraId, String physicalCameraId) {
-                unavailablePhysicalCamEventQueue.offer(new Pair<>(cameraId, physicalCameraId));
-            }
-        };
-
-        mCameraManager.registerAvailabilityCallback(ac, mHandler);
-        Set<Pair<String, String>> unavailablePhysicalCameras = new HashSet<Pair<String, String>>();
-        Pair<String, String> candidatePhysicalIds =
-                unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                java.util.concurrent.TimeUnit.MILLISECONDS);
-        while (candidatePhysicalIds != null) {
-            unavailablePhysicalCameras.add(candidatePhysicalIds);
-            candidatePhysicalIds =
-                unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                java.util.concurrent.TimeUnit.MILLISECONDS);
-        }
-        mCameraManager.unregisterAvailabilityCallback(ac);
         CameraCharacteristics.Key<MandatoryStreamCombination []> ck =
                 CameraCharacteristics.SCALER_MANDATORY_STREAM_COMBINATIONS;
 
@@ -284,22 +261,10 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 if (mStaticInfo.isLogicalMultiCamera()) {
                     Set<String> physicalCameraIds =
                             mStaticInfo.getCharacteristics().getPhysicalCameraIds();
-                    boolean skipTest = false;
                     for (String physicalId : physicalCameraIds) {
                         if (Arrays.asList(mCameraIdsUnderTest).contains(physicalId)) {
                             // If physicalId is advertised in camera ID list, do not need to test
                             // its stream combination through logical camera.
-                            skipTest = true;
-                        }
-                        for (Pair<String, String> unavailPhysicalCam : unavailablePhysicalCameras) {
-                            if (unavailPhysicalCam.first.equals(id) ||
-                                    unavailPhysicalCam.second.equals(physicalId)) {
-                                // This particular physical camera isn't available. Skip.
-                                skipTest = true;
-                                break;
-                            }
-                        }
-                        if (skipTest) {
                             continue;
                         }
                         StaticMetadata physicalStaticInfo = mAllStaticInfo.get(physicalId);
@@ -524,11 +489,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 mCollector.addMessage("SCALER_RAW_CROP_REGION should not be null " +
                         "when CROPPED_RAW stream use case is used.");
             }
-            if (!preCorrectionActiveArrayRect.contains(rawCropRegion)) {
-                mCollector.addMessage("RAW_CROP_REGION should be within pre correction active " +
-                        "array region, RAW_CROP_REGION is " + rawCropRegion.flattenToString() +
-                        " pre correction active array is " +
-                        preCorrectionActiveArrayRect.flattenToString());
+            if (!(preCorrectionActiveArrayRect.width() >= rawCropRegion.width()
+                    && preCorrectionActiveArrayRect.height() >= rawCropRegion.height())) {
+                mCollector.addMessage("RAW_CROP_REGION dimensions should be <= pre correction"
+                        + " array dimensions. SCALER_RAW_CROP_REGION : "
+                        + rawCropRegion.flattenToString() + " pre correction active array is "
+                        + preCorrectionActiveArrayRect.flattenToString());
             }
         }
     }
@@ -1873,8 +1839,10 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                     chars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION);
             openDevice(id);
             try {
-                verifyBasicSensorPixelModes(id, defaultStreamConfigMap, /*maxResolution*/ false);
-                verifyBasicSensorPixelModes(id, maxStreamConfigMap, /*maxResolution*/ true);
+                verifyBasicSensorPixelModes(id, maxStreamConfigMap, defaultStreamConfigMap,
+                        /*maxResolution*/ false);
+                verifyBasicSensorPixelModes(id, maxStreamConfigMap, defaultStreamConfigMap,
+                        /*maxResolution*/ true);
             } finally {
                 closeDevice(id);
             }
@@ -2132,22 +2100,39 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED);
     }
 
-    private void verifyBasicSensorPixelModes(String id, StreamConfigurationMap configs,
-            boolean maxResolution) throws Exception {
+    private boolean configsContain(StreamConfigurationMap configs, int format, Size size) {
+        Size[] sizes = configs.getOutputSizes(format);
+        if (sizes == null) {
+            return false;
+        }
+        return Arrays.asList(sizes).contains(size);
+    }
+
+    private void verifyBasicSensorPixelModes(String id, StreamConfigurationMap maxResConfigs,
+            StreamConfigurationMap defaultConfigs, boolean maxResolution) throws Exception {
         // Go through StreamConfiguration map, set up OutputConfiguration and add the opposite
         // sensorPixelMode.
         final int MIN_RESULT_COUNT = 3;
-        if (!maxResolution) {
-            assertTrue("Default stream config map must be present for id: " + id, configs != null);
-        }
-        if (configs == null) {
+        assertTrue("Default stream config map must be present for id: " + id,
+            defaultConfigs != null);
+        if (maxResConfigs == null) {
             Log.i(TAG, "camera id " + id + " has no StreamConfigurationMap for max resolution " +
                 ", skipping verifyBasicSensorPixelModes");
             return;
         }
+        StreamConfigurationMap chosenConfigs = maxResolution ? maxResConfigs : defaultConfigs;
+        StreamConfigurationMap otherConfigs = maxResolution ? defaultConfigs : maxResConfigs;
         OutputConfiguration outputConfig = null;
-        for (int format : configs.getOutputFormats()) {
-            Size targetSize = CameraTestUtils.getMaxSize(configs.getOutputSizes(format));
+        for (int format : chosenConfigs.getOutputFormats()) {
+            Size targetSize = CameraTestUtils.getMaxSize(chosenConfigs.getOutputSizes(format));
+            if (configsContain(otherConfigs, format, targetSize)) {
+                // Since both max res and default stream configuration maps contain this size,
+                // both sensor pixel modes are valid.
+                Log.v(TAG, "camera id " + id + " 'other' configs with maxResolution" +
+                    maxResolution + " contains the format: " + format + " size: " + targetSize +
+                    " skipping");
+                continue;
+            }
             // Create outputConfiguration with this size and format
             SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
             SurfaceTexture textureTarget = null;
@@ -2175,19 +2160,22 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 CameraCaptureSession session =
                         CameraTestUtils.configureCameraSessionWithConfig(mCamera, outputs,
                                 sessionListener, mHandler);
-
-                verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce()).
+                String desc = "verifyBasicSensorPixelModes : Format : " + format + " size: " +
+                        targetSize.toString() + " maxResolution : " + maxResolution;
+                verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce().description(desc)).
                         onConfigureFailed(any(CameraCaptureSession.class));
-                verify(sessionListener, never()).onConfigured(any(CameraCaptureSession.class));
+                verify(sessionListener, never().description(desc)).
+                        onConfigured(any(CameraCaptureSession.class));
 
                 // Remove the invalid sensor pixel mode, session configuration should succeed
                 sessionListener = mock(CameraCaptureSession.StateCallback.class);
                 outputConfig.removeSensorPixelModeUsed(invalidSensorPixelMode);
                 CameraTestUtils.configureCameraSessionWithConfig(mCamera, outputs,
                         sessionListener, mHandler);
-                verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce()).
+                verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce().description(desc)).
                         onConfigured(any(CameraCaptureSession.class));
-                verify(sessionListener, never()).onConfigureFailed(any(CameraCaptureSession.class));
+                verify(sessionListener, never().description(desc)).
+                        onConfigureFailed(any(CameraCaptureSession.class));
             } finally {
                 if (textureTarget != null) {
                     textureTarget.release();
@@ -3173,12 +3161,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 mMaxYuvSizes[VGA] = vgaSize;
                 mMaxJpegSizes[VGA] = vgaSize;
 
+                // Check for 720p size for PRIVATE and YUV
+                // 720p is not mandatory for JPEG so it is not checked
                 final Size s720pSize = new Size(1280, 720);
                 mMaxPrivSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.PRIVATE),
                         s720pSize);
                 mMaxYuvSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.YUV_420_888),
-                        s720pSize);
-                mMaxJpegSizes[S720P] = getMaxSize(configs.getOutputSizes(ImageFormat.JPEG),
                         s720pSize);
 
                 final Size s1440pSize = new Size(1920, 1440);

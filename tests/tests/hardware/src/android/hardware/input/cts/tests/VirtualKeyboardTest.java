@@ -16,8 +16,11 @@
 
 package android.hardware.input.cts.tests;
 
+import static android.view.Display.DEFAULT_DISPLAY;
+
 import static org.junit.Assert.assertThrows;
 
+import android.hardware.display.VirtualDisplay;
 import android.hardware.input.VirtualKeyEvent;
 import android.hardware.input.VirtualKeyboard;
 import android.hardware.input.VirtualKeyboardConfig;
@@ -35,22 +38,27 @@ import java.util.Arrays;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class VirtualKeyboardTest extends VirtualDeviceTestCase {
+    private static final String TAG = "VirtualKeyboardTest";
 
     private static final String DEVICE_NAME = "CtsVirtualKeyboardTestDevice";
     private VirtualKeyboard mVirtualKeyboard;
 
     @Override
     void onSetUpVirtualInputDevice() {
+        mVirtualKeyboard = createVirtualKeyboard(mVirtualDisplay.getDisplay().getDisplayId());
+    }
+
+    VirtualKeyboard createVirtualKeyboard(int displayId) {
         final VirtualKeyboardConfig keyboardConfig =
                 new VirtualKeyboardConfig.Builder()
                         .setVendorId(VENDOR_ID)
                         .setProductId(PRODUCT_ID)
                         .setInputDeviceName(DEVICE_NAME)
-                        .setAssociatedDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
+                        .setAssociatedDisplayId(displayId)
                         .setLanguageTag(VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG)
                         .setLayoutType(VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE)
                         .build();
-        mVirtualKeyboard = mVirtualDevice.createVirtualKeyboard(keyboardConfig);
+        return mVirtualDevice.createVirtualKeyboard(keyboardConfig);
     }
 
     @Override
@@ -111,6 +119,11 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
     }
 
     @Test
+    public void keyEvent_nullEvent_throwsNpe() {
+        assertThrows(NullPointerException.class, () -> mVirtualKeyboard.sendKeyEvent(null));
+    }
+
+    @Test
     public void rejectsUnsupportedKeyCodes() {
         assertThrows(
                 IllegalArgumentException.class,
@@ -120,5 +133,18 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
                                         .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
                                         .setAction(VirtualKeyEvent.ACTION_DOWN)
                                         .build()));
+    }
+
+    @Test
+    public void createVirtualKeyboard_defaultDisplay_throwsException() {
+        assertThrows(SecurityException.class, () -> createVirtualKeyboard(DEFAULT_DISPLAY));
+    }
+
+    @Test
+    public void createVirtualKeyboard_unownedDisplay_throwsException() {
+        VirtualDisplay unownedDisplay = createUnownedVirtualDisplay();
+        assertThrows(SecurityException.class,
+                () -> createVirtualKeyboard(unownedDisplay.getDisplay().getDisplayId()));
+        unownedDisplay.release();
     }
 }
