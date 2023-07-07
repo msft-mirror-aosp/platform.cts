@@ -32,12 +32,18 @@ import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
+import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.reflect.KClass
 
 open class NotificationTemplateTestBase : AndroidTestCase() {
 
     // Used to give time to visually inspect or attach a debugger before the checkViews block
     protected var waitBeforeCheckingViews: Long = 0
+
+    override fun setUp() {
+        super.setUp()
+        CtsAppTestUtils.turnScreenOn(InstrumentationRegistry.getInstrumentation(), mContext)
+    }
 
     protected fun checkIconView(views: RemoteViews, iconCheck: (ImageView) -> Unit) {
         checkViews(views) {
@@ -146,4 +152,7 @@ open class NotificationTemplateTestBase : AndroidTestCase() {
 
     @BoolRes
     protected fun getAndroidRBool(boolName: String): Int = getAndroidRes("bool", boolName)
+
+    @DimenRes
+    protected fun getAndroidRDimen(dimenName: String): Int = getAndroidRes("dimen", dimenName)
 }

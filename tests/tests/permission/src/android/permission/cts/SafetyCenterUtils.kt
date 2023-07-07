@@ -26,11 +26,11 @@ import android.os.UserHandle
 import android.provider.DeviceConfig
 import android.safetycenter.SafetyCenterIssue
 import android.safetycenter.SafetyCenterManager
-import android.support.test.uiautomator.By
 import androidx.annotation.RequiresApi
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.UiAutomatorUtils.waitFindObject
+import com.android.compatibility.common.util.UiAutomatorUtils2.waitFindObject
 import com.android.safetycenter.internaldata.SafetyCenterIds
 import com.android.safetycenter.internaldata.SafetyCenterIssueId
 import com.android.safetycenter.internaldata.SafetyCenterIssueKey
@@ -67,7 +67,7 @@ object SafetyCenterUtils {
     @JvmStatic
     fun assertSafetyCenterStarted() {
         // CollapsingToolbar title can't be found by text, so using description instead.
-        waitFindObject(By.desc("Security & Privacy"))
+        waitFindObject(By.desc("Security & privacy"))
     }
 
     @JvmStatic
@@ -84,6 +84,16 @@ object SafetyCenterUtils {
                     /* value = */ value,
                     /* makeDefault = */ false)
             check(valueWasSet) { "Could not set $propertyName to $value" }
+        }
+    }
+
+    @JvmStatic
+    fun deleteDeviceConfigPrivacyProperty(
+        propertyName: String,
+        uiAutomation: UiAutomation = instrumentation.uiAutomation
+    ) {
+        runWithShellPermissionIdentity(uiAutomation) {
+            DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_PRIVACY, propertyName)
         }
     }
 
