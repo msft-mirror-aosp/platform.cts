@@ -29,13 +29,38 @@
 
     <!-- Excluded test cases start-->
 
-    <!-- CtsMediaV2TestCases: b/257492672, b/257492847, b/258826057, b/241293905, b/257493109 -->
-    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderTest#testReconfigure" />
-    <!-- CtsOsTestCases: b/257553257 -->
-    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.VibratorTest#testVibrateWaveformWithFrequencyStartsAndFinishesVibration" />
-    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.VibratorTest#testVibratorFrequencyProfileSupportedFrequencyRange" />
-    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.VibratorTest#testVibratorFrequencyProfileMeasurementInterval" />
-    <!-- CtsKeystoreTestCases: b/258826404 -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.NoAttestKeyTest#testEcAttestKeyFail" />
+    <!-- CtsMediaV2TestCases: b/252207438, b/258877705, b/258904052, b/252207634 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testFlush" />
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testSimpleDecodeToSurfaceNative" />
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderTest#testFlushNative" />
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderTest#testSimpleDecode" />
+    <!-- CtsOsTestCases: b/258878398 -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.VibratorManagerTest#testCombinedVibrationWaveformWithFrequencyStartsAndFinishesVibration" />
+    <!-- CtsVideoCodecTestCases: b/260170023 -->
+    <option name="compatibility:exclude-filter" value="CtsVideoCodecTestCases android.videocodec.cts.VideoDecoderValidationTest#testDecodeAndValidate" />
+    <!-- CtsMediaMiscTestCases: b/278880281: excluding all high resolution test cases. -->
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureLowHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceNonsecureVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceSecureVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsNonsecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testReclaimResourceMixVsSecureHighLowResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testAVCVideoCodecReclaimHighResolution" />
+    <option name="compatibility:exclude-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ResourceManagerTest#testHEVCVideoCodecReclaimHighResolution" />
+
+    <!-- CtsNativeMediaAAudioTestCases: b/261824947 -->
+    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests" />
 
 </configuration>

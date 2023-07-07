@@ -27,7 +27,12 @@ import android.os.Parcel;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,6 +42,13 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseSettingsTest {
 
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testDefaultSettings() {
@@ -47,6 +59,7 @@ public class AdvertiseSettingsTest {
         assertTrue(settings.isConnectable());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testDescribeContents() {
@@ -54,6 +67,7 @@ public class AdvertiseSettingsTest {
         assertEquals(0, settings.describeContents());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testReadWriteParcel() {
@@ -62,6 +76,7 @@ public class AdvertiseSettingsTest {
         AdvertiseSettings settings = new AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(false)
+                .setDiscoverable(false)
                 .setTimeout(timeoutMillis)
                 .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
                 .setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT)
@@ -74,9 +89,11 @@ public class AdvertiseSettingsTest {
                 settingsFromParcel.getTxPowerLevel());
         assertEquals(timeoutMillis, settingsFromParcel.getTimeout());
         assertFalse(settings.isConnectable());
+        assertFalse(settings.isDiscoverable());
         assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT, settings.getOwnAddressType());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testIllegalTimeout() {

@@ -17,7 +17,6 @@
 package android.permission.cts;
 
 import static android.Manifest.permission.MANAGE_EXTERNAL_STORAGE;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_MEDIA_STORAGE;
 
 import android.app.UiAutomation;
@@ -53,17 +52,16 @@ public class ProviderPermissionTest extends AndroidTestCase {
 
     private static final String TAG = ProviderPermissionTest.class.getSimpleName();
 
-    private static final List<Uri> CONTACT_URIS = new ArrayList<Uri>() {{
-        add(Contacts.People.CONTENT_URI); // Deprecated.
-        add(ContactsContract.Contacts.CONTENT_FILTER_URI);
-        add(ContactsContract.Contacts.CONTENT_GROUP_URI);
-        add(ContactsContract.Contacts.CONTENT_LOOKUP_URI);
-        add(ContactsContract.CommonDataKinds.Email.CONTENT_URI);
-        add(ContactsContract.CommonDataKinds.Email.CONTENT_FILTER_URI);
-        add(ContactsContract.Directory.CONTENT_URI);
-        add(ContactsContract.Directory.ENTERPRISE_CONTENT_URI);
-        add(ContactsContract.Profile.CONTENT_URI);
-    }};
+    private static final List<Uri> CONTACT_URIS = List.of(
+            Contacts.People.CONTENT_URI, // Deprecated.
+            ContactsContract.Contacts.CONTENT_FILTER_URI,
+            ContactsContract.Contacts.CONTENT_GROUP_URI,
+            ContactsContract.Contacts.CONTENT_LOOKUP_URI,
+            ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+            ContactsContract.CommonDataKinds.Email.CONTENT_FILTER_URI,
+            ContactsContract.Directory.CONTENT_URI,
+            ContactsContract.Directory.ENTERPRISE_CONTENT_URI,
+            ContactsContract.Profile.CONTENT_URI);
 
     /**
      * Verify that reading contacts requires permissions.
@@ -252,21 +250,17 @@ public class ProviderPermissionTest extends AndroidTestCase {
                     pkg.packageName) == PackageManager.PERMISSION_GRANTED;
 
             if (!isSystem && hasFrontDoor && grantedMedia) {
-                final boolean requestsManageStorage = contains(pkg.requestedPermissions,
+                final boolean requestsStorage = contains(pkg.requestedPermissions,
                         MANAGE_EXTERNAL_STORAGE);
-                final boolean requestsWriteStorage = contains(pkg.requestedPermissions,
-                        WRITE_EXTERNAL_STORAGE);
-                if (!requestsManageStorage && !requestsWriteStorage) {
+                if (!requestsStorage) {
                     fail("Found " + pkg.packageName + " holding WRITE_MEDIA_STORAGE permission "
-                            + "without also requesting MANAGE/WRITE_EXTERNAL_STORAGE; these permissions "
+                            + "without also requesting MANAGE_EXTERNAL_STORAGE; these permissions "
                             + "must be requested together");
                 }
 
-                final boolean grantedManageStorage = pm.checkPermission(MANAGE_EXTERNAL_STORAGE,
+                final boolean grantedStorage = pm.checkPermission(MANAGE_EXTERNAL_STORAGE,
                         pkg.packageName) == PackageManager.PERMISSION_GRANTED;
-                final boolean grantedWriteStorage = pm.checkPermission(WRITE_EXTERNAL_STORAGE,
-                        pkg.packageName) == PackageManager.PERMISSION_GRANTED;
-                if (grantedManageStorage) {
+                if (grantedStorage) {
                     final int flags;
                     ui.adoptShellPermissionIdentity("android.permission.GET_RUNTIME_PERMISSIONS");
                     try {
@@ -281,24 +275,6 @@ public class ProviderPermissionTest extends AndroidTestCase {
                             | PackageManager.FLAG_PERMISSION_SYSTEM_FIXED)) != 0;
                     if (isFixed) {
                         fail("Found " + pkg.packageName + " holding MANAGE_EXTERNAL_STORAGE in a "
-                                + "fixed state; this permission must be revokable by the user");
-                    }
-                }
-                if (grantedWriteStorage) {
-                    final int flags;
-                    ui.adoptShellPermissionIdentity("android.permission.GET_RUNTIME_PERMISSIONS");
-                    try {
-                        flags = pm.getPermissionFlags(WRITE_EXTERNAL_STORAGE, pkg.packageName,
-                                android.os.Process.myUserHandle());
-                    } finally {
-                        ui.dropShellPermissionIdentity();
-                    }
-
-                    final boolean isFixed = (flags & (PackageManager.FLAG_PERMISSION_USER_FIXED
-                            | PackageManager.FLAG_PERMISSION_POLICY_FIXED
-                            | PackageManager.FLAG_PERMISSION_SYSTEM_FIXED)) != 0;
-                    if (isFixed) {
-                        fail("Found " + pkg.packageName + " holding WRITE_EXTERNAL_STORAGE in a "
                                 + "fixed state; this permission must be revokable by the user");
                     }
                 }

@@ -31,6 +31,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR"/>
 
     <!-- For FileIntegrityManager -->
@@ -217,6 +219,7 @@
 
         <activity android:name="android.security.cts.ActivityManagerTest$ActivityOptionsActivity" />
         <activity android:name="android.security.cts.ActivityManagerTest$BaseActivity" />
+        <activity android:name="android.security.cts.ActivityManagerTest$WaitEnterAnimActivity" />
 
         <activity android:name="android.security.cts.PackageInstallerTest$BackgroundLaunchActivity"
             android:exported="true" />
@@ -260,6 +263,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <service android:name="android.security.cts.AttributionSourceService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="AttributionSourceService"
+            android:process=":attributionSourceServiceProcess">
+        </service>
 
     </application>
 

@@ -19,6 +19,7 @@ package android.permission3.cts
 import android.Manifest
 import android.os.Build
 import androidx.test.filters.SdkSuppress
+import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assume
 import org.junit.Test
@@ -29,6 +30,7 @@ import org.junit.Test
  * treats them as one group and therefore their permission state must always be equal.
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+@CddTest(requirement = "9.1/C-0-1")
 class MediaPermissionTest : BaseUsePermissionTest() {
     private fun assertStorageAndMediaPermissionState(state: Boolean) {
         for (permission in STORAGE_AND_MEDIA_PERMISSIONS) {
@@ -130,10 +132,13 @@ class MediaPermissionTest : BaseUsePermissionTest() {
         installPackage(APP_APK_PATH_LATEST)
         requestAppPermissions(
             Manifest.permission.READ_MEDIA_VIDEO,
-            Manifest.permission.READ_MEDIA_IMAGES
-        ) {
-            clickPermissionRequestAllowButton()
-        }
+            Manifest.permission.READ_MEDIA_IMAGES) {
+                if (isPhotoPickerPermissionPromptEnabled()) {
+                    clickPermissionRequestAllowAllButton()
+                } else {
+                    clickPermissionRequestAllowButton()
+                }
+            }
         assertAppHasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, false)
         assertAppHasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, false)
         assertAppHasPermission(Manifest.permission.READ_MEDIA_AUDIO, false)

@@ -22,6 +22,8 @@ import static junit.framework.TestCase.assertSame;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assert.assertThrows;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -43,8 +45,6 @@ import android.media.TimedText;
 import android.media.audiofx.AudioEffect;
 import android.media.audiofx.Visualizer;
 import android.media.cts.MediaPlayerTestBase;
-import android.media.cts.NonMediaMainlineTest;
-import android.media.cts.Preconditions;
 import android.media.cts.TestMediaDataSource;
 import android.media.cts.TestUtils.Monitor;
 import android.media.cts.Utils;
@@ -64,6 +64,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.Preconditions;
 
 import junit.framework.AssertionFailedError;
 
@@ -101,7 +103,7 @@ import java.util.stream.Stream;
  */
 @SmallTest
 @RequiresDevice
-@NonMediaMainlineTest
+@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class MediaPlayerTest extends MediaPlayerTestBase {
@@ -759,8 +761,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     @Test
     public void testSetNextMediaPlayer() throws Exception {
-        final int TOTAL_TIMEOUT_MS = PLAYBACK_DURATION_MS * 4 + ANR_DETECTION_TIME_MS
-                        + 5000 /* listener latency(ms) */;
+        final int ITERATIONS = 3;
+        // the +1 is for the trailing test of setNextMediaPlayer(null)
+        final int TOTAL_TIMEOUT_MS = PLAYBACK_DURATION_MS * (ITERATIONS + 1)
+                        + ANR_DETECTION_TIME_MS + 5000 /* listener latency(ms) */;
         initMediaPlayer(mMediaPlayer);
 
         final Monitor mTestCompleted = new Monitor();
@@ -789,7 +793,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         timer.start();
 
         try {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < ITERATIONS; i++) {
 
                 initMediaPlayer(mMediaPlayer2);
                 mOnCompletionCalled.reset();
@@ -829,6 +833,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             }
 
             // Now test that setNextMediaPlayer(null) works. 1 is still playing, 2 is done
+            // this is the final "+1" in our time calculations above
             mOnCompletionCalled.reset();
             mOnInfoCalled.reset();
             initMediaPlayer(mMediaPlayer2);
@@ -931,7 +936,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
                         mContext.getPackageName(), getInstrumentation(), true /* on */);
             }
 
-            mp1 = new MediaPlayer();
+            mp1 = new MediaPlayer(mContext);
             mp1.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
             AssetFileDescriptor afd = getAssetFileDescriptorFor(res1);
@@ -941,7 +946,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
             int session = mp1.getAudioSessionId();
 
-            mp2 = new MediaPlayer();
+            mp2 = new MediaPlayer(mContext);
             mp2.setAudioSessionId(session);
             mp2.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
@@ -2619,4 +2624,11 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
+
+    @Presubmit
+    @Test
+    public void testConstructorWithNullContextFails() {
+        assertThrows(NullPointerException.class, () -> new MediaPlayer(/*context=*/null));
+    }
+
 }

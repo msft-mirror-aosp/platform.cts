@@ -113,7 +113,6 @@ public class EncryptionAppTest extends InstrumentationTestCase {
         mDevice.waitForIdle();
 
         // Set a PIN for this user
-        mDevice.executeShellCommand("settings put global require_password_to_decrypt 0");
         mDevice.executeShellCommand("locksettings set-disabled false");
         String output = mDevice.executeShellCommand("locksettings set-pin 1234");
         assertTrue("set-pin failed. Output: " + output, output.contains("1234"));
@@ -132,7 +131,6 @@ public class EncryptionAppTest extends InstrumentationTestCase {
         // Clear PIN for this user
         mDevice.executeShellCommand("locksettings clear --old 1234");
         mDevice.executeShellCommand("locksettings set-disabled true");
-        mDevice.executeShellCommand("settings delete global require_password_to_decrypt");
     }
 
     public void testLockScreen() throws Exception {
@@ -187,15 +185,10 @@ public class EncryptionAppTest extends InstrumentationTestCase {
         };
         mDe.registerReceiver(receiver, new IntentFilter(Intent.ACTION_USER_UNLOCKED));
 
-        // Dismiss keyguard should have kicked off immediate broadcast, retry if not receive.
-        int retry = 5;
         dismissKeyguard();
-        while (!latch.await(1, TimeUnit.MINUTES)) {
-            retry -= 1;
-            if (retry == 0) break;
-            dismissKeyguard();
-        }
-        assertTrue("User unlock failed.", retry > 0);
+
+        // Dismiss keyguard should have kicked off immediate broadcast
+        assertTrue("USER_UNLOCKED", latch.await(1, TimeUnit.MINUTES));
 
         // And we should now be fully unlocked; we run immediately like this to
         // avoid missing BOOT_COMPLETED due to instrumentation being torn down.

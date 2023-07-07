@@ -16,12 +16,14 @@
 
 package android.media.codec.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.annotation.TargetApi;
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -29,27 +31,30 @@ import android.media.MediaMuxer;
 import android.media.MediaPlayer;
 import android.media.cts.InputSurface;
 import android.media.cts.MediaStubActivity;
+import android.media.cts.MediaTestBase;
 import android.media.cts.OutputSurface;
-import android.media.cts.Preconditions;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.test.ActivityInstrumentationTestCase2;
 import android.util.Log;
 import android.view.Surface;
 
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.MediaCodecInfo.CodecProfileLevel;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.Preconditions;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Test for the integration of MediaMuxer and MediaCodec's encoder.
@@ -64,10 +69,34 @@ import java.util.concurrent.CountDownLatch;
  * <p>It also tests the way the codec config buffers need to be passed from the MediaCodec to the
  * MediaMuxer.
  */
+@ApiTest(apis = {"android.opengl.GLES20#GL_FRAGMENT_SHADER",
+        "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface",
+        "android.media.MediaFormat#KEY_BIT_RATE",
+        "android.media.MediaFormat#KEY_COLOR_FORMAT",
+        "android.media.MediaFormat#KEY_FRAME_RATE",
+        "android.media.MediaFormat#KEY_I_FRAME_INTERVAL",
+        "android.media.MediaFormat#KEY_SAMPLE_RATE",
+        "android.media.MediaFormat#KEY_CHANNEL_COUNT",
+        "android.media.MediaFormat#KEY_PROFILE",
+        "android.media.MediaFormat#KEY_AAC_PROFILE",
+        "android.media.MediaExtractor#setDataSource",
+        "android.media.MediaExtractor#getTrackCount",
+        "android.media.MediaExtractor#getTrackFormat",
+        "android.media.MediaExtractor#selectTrack",
+        "android.media.MediaExtractor#readSampleData",
+        "android.media.MediaExtractor#getSampleTime",
+        "android.media.MediaExtractor#getSampleFlags",
+        "android.media.MediaExtractor#advance",
+        "android.media.MediaExtractor#release",
+        "android.media.MediaMuxer#start",
+        "android.media.MediaMuxer#stop",
+        "android.media.MediaMuxer#addTrack",
+        "android.media.MediaMuxer#writeSampleData",
+        "android.media.MediaMuxer#release"})
 @TargetApi(18)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-public class ExtractDecodeEditEncodeMuxTest
-        extends ActivityInstrumentationTestCase2<MediaStubActivity> {
+@RunWith(AndroidJUnit4.class)
+public class ExtractDecodeEditEncodeMuxTest extends MediaTestBase {
 
     private static final String TAG = ExtractDecodeEditEncodeMuxTest.class.getSimpleName();
     private static final boolean VERBOSE = false; // lots of logging
@@ -128,11 +157,19 @@ public class ExtractDecodeEditEncodeMuxTest
 
     private String mOutputVideoMimeType;
 
-    public ExtractDecodeEditEncodeMuxTest() {
-        super(MediaStubActivity.class);
+    @Override
+    @Before
+    public void setUp() throws Throwable {
+        super.setUp();
     }
 
-    @CddTest(requirements = {"5.2", "5.3"})
+    @Override
+    @After
+    public void tearDown() {
+        super.tearDown();
+    }
+
+    @Test
     public void testExtractDecodeEditEncodeMuxQCIF() throws Throwable {
         if(!setSize(176, 144)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -141,7 +178,7 @@ public class ExtractDecodeEditEncodeMuxTest
         TestWrapper.runTest(this);
     }
 
-    @CddTest(requirements = {"5.2", "5.3"})
+    @Test
     public void testExtractDecodeEditEncodeMuxQVGA() throws Throwable {
         if(!setSize(320, 240)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -150,7 +187,7 @@ public class ExtractDecodeEditEncodeMuxTest
         TestWrapper.runTest(this);
     }
 
-    @CddTest(requirements = {"5.2", "5.3"})
+    @Test
     public void testExtractDecodeEditEncodeMux720p() throws Throwable {
         if(!setSize(1280, 720)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -159,7 +196,7 @@ public class ExtractDecodeEditEncodeMuxTest
         TestWrapper.runTest(this);
     }
 
-    @CddTest(requirements = {"5.2", "5.3"})
+    @Test
     public void testExtractDecodeEditEncodeMux2160pHevc() throws Throwable {
         if(!setSize(3840, 2160)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -168,7 +205,7 @@ public class ExtractDecodeEditEncodeMuxTest
         TestWrapper.runTest(this);
     }
 
-    @CddTest(requirements = {"5.1.1", "5.1.2"})
+    @Test
     public void testExtractDecodeEditEncodeMuxAudio() throws Throwable {
         if(!setSize(1280, 720)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -177,7 +214,7 @@ public class ExtractDecodeEditEncodeMuxTest
         TestWrapper.runTest(this);
     }
 
-    @CddTest(requirements = {"5.1.1", "5.1.2", "5.2", "5.3"})
+    @Test
     public void testExtractDecodeEditEncodeMuxAudioVideo() throws Throwable {
         if(!setSize(1280, 720)) return;
         setSource("video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz.mp4");

@@ -33,15 +33,16 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.safetycenter.SafetyCenterIssue
 import android.safetycenter.SafetyCenterManager
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiObjectNotFoundException
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Switch
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiObjectNotFoundException
+import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FreezeRotationRule
@@ -91,6 +92,7 @@ private const val BLUETOOTH_CONNECT = "android.permission.BLUETOOTH_CONNECT"
  * Test for auto revoke
  */
 @RunWith(AndroidJUnit4::class)
+@CddTest(requirements = ["3.5.2"])
 class AutoRevokeTest {
     private val context: Context = InstrumentationRegistry.getTargetContext()
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -133,7 +135,7 @@ class AutoRevokeTest {
         assertThat(
                 runShellCommandOrThrow("cmd statusbar collapse"),
                 equalTo(""))
-
+        clearNotifications()
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         if ("false".equals(runShellCommandOrThrow("cmd lock_settings get-disabled"))) {
@@ -162,7 +164,7 @@ class AutoRevokeTest {
 
     @AppModeFull(reason = "Uses separate apps for testing")
     @Test
-    @Ignore("b/201545116")
+    @CddTest(requirement = "3.5.2/C-1-2")
     fun testUnusedApp_getsPermissionRevoked() {
         assumeFalse(
                 "Watch doesn't provide a unified way to check notifications. it depends on UX",
@@ -170,8 +172,7 @@ class AutoRevokeTest {
         withUnusedThresholdMs(3L) {
             withDummyApp {
                 // Setup
-                startAppAndAcceptPermission()
-                killDummyApp()
+                setupApp()
                 Thread.sleep(5) // wait longer than the unused threshold
 
                 // Run
@@ -195,6 +196,7 @@ class AutoRevokeTest {
 
     @AppModeFull(reason = "Uses separate apps for testing")
     @Test
+    @CddTest(requirement = "3.5.1/C-1-1")
     fun testUnusedApp_uninstallApp() {
         assumeFalse(
             "Unused apps screen may be unavailable on TV",
@@ -202,8 +204,7 @@ class AutoRevokeTest {
         withUnusedThresholdMs(3L) {
             withDummyAppNoUninstallAssertion {
                 // Setup
-                startAppAndAcceptPermission()
-                killDummyApp()
+                setupApp()
                 Thread.sleep(5) // wait longer than the unused threshold
 
                 // Run
@@ -251,15 +252,13 @@ class AutoRevokeTest {
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
+    @CddTest(requirement = "3.5.2/C-1-2")
     @Test
     fun testUsedApp_doesntGetPermissionRevoked() {
         withUnusedThresholdMs(100_000L) {
             withDummyApp {
                 // Setup
-                startApp()
-                clickPermissionAllow()
-                assertPermission(PERMISSION_GRANTED)
-                killDummyApp()
+                setupApp()
                 Thread.sleep(5)
 
                 // Run
@@ -313,6 +312,7 @@ class AutoRevokeTest {
                 goBack()
                 goBack()
                 goBack()
+
                 // Run with threshold where events would be cleaned up
                 withUnusedThresholdMs(0) {
                     runPermissionEventCleanupJob(context)
@@ -333,58 +333,37 @@ class AutoRevokeTest {
         assumeFalse(isHibernationEnabledForPreSApps())
         withUnusedThresholdMs(3L) {
             withDummyApp(preMinVersionApkPath, preMinVersionAppPackageName) {
-                withDummyApp {
-                    startApp(preMinVersionAppPackageName)
-                    clickPermissionAllow()
-                    assertPermission(PERMISSION_GRANTED, preMinVersionAppPackageName)
+                grantPermission(preMinVersionAppPackageName)
+                assertPermission(PERMISSION_GRANTED, preMinVersionAppPackageName)
+                startApp(preMinVersionAppPackageName)
+                killDummyApp(preMinVersionAppPackageName)
+                Thread.sleep(20)
 
-                    killDummyApp(preMinVersionAppPackageName)
+                // Run
+                runAppHibernationJob(context, LOG_TAG)
+                Thread.sleep(500)
 
-                    startApp()
-                    clickPermissionAllow()
-                    assertPermission(PERMISSION_GRANTED)
-
-                    killDummyApp()
-                    Thread.sleep(20)
-
-                    // Run
-                    runAppHibernationJob(context, LOG_TAG)
-                    Thread.sleep(500)
-
-                    // Verify
-                    assertPermission(PERMISSION_DENIED)
-                    assertPermission(PERMISSION_GRANTED, preMinVersionAppPackageName)
-                }
+                // Verify
+                assertPermission(PERMISSION_GRANTED, preMinVersionAppPackageName)
             }
         }
     }
 
-    private fun isHibernationEnabledForPreSApps(): Boolean {
-        return runWithShellPermissionIdentity(
-            ThrowingSupplier {
-                DeviceConfig.getBoolean(
-                    DeviceConfig.NAMESPACE_APP_HIBERNATION,
-                    "app_hibernation_targets_pre_s_apps",
-                    false
-                )
-            }
-        )
-    }
-
     @AppModeFull(reason = "Uses separate apps for testing")
+    @CddTest(requirements = ["3.5.1/C-1-2,C-1-4"])
     @Test
     fun testAutoRevoke_userAllowlisting() {
         assumeFalse(context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE))
         withUnusedThresholdMs(4L) {
             withDummyApp {
                 // Setup
+                grantPermission()
+                assertPermission(PERMISSION_GRANTED)
                 startApp()
-                clickPermissionAllow()
                 assertAllowlistState(false)
 
                 // Verify
-                waitFindObject(byTextIgnoreCase("Request allowlist")).click()
-                waitFindObject(byTextIgnoreCase("Permissions")).click()
+                goToPermissions()
                 val autoRevokeEnabledToggle = getAllowlistToggle()
                 assertTrue(autoRevokeEnabledToggle.isChecked())
 
@@ -415,12 +394,8 @@ class AutoRevokeTest {
         withUnusedThresholdMs(TimeUnit.DAYS.toMillis(30)) {
             withDummyApp {
                 // Setup
-                goToPermissions()
-                click("Calendar")
-                click("Allow")
-                goBack()
-                goBack()
-                goBack()
+                grantPermission()
+                assertPermission(PERMISSION_GRANTED)
 
                 // Run
                 runAppHibernationJob(context, LOG_TAG)
@@ -433,6 +408,8 @@ class AutoRevokeTest {
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
+    @ApiTest(apis = ["android.content.pm.PackageManager#isAutoRevokeWhitelisted",
+        "android.content.pm.PackageManager#setAutoRevokeWhitelisted"])
     @Test
     fun testAutoRevoke_allowlistingApis() {
         withDummyApp {
@@ -469,9 +446,7 @@ class AutoRevokeTest {
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
-                    startAppAndAcceptPermission()
-
-                    killDummyApp()
+                    setupApp()
 
                     // Run
                     runAppHibernationJob(context, LOG_TAG)
@@ -504,14 +479,13 @@ class AutoRevokeTest {
     @AppModeFull(reason = "Uses separate apps for testing")
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     @Test
+    @Ignore
     fun testAutoRevoke_goToUnusedAppsPage_removesSafetyCenterIssue() {
         assumeTrue(deviceSupportsSafetyCenter())
         withSafetyCenterEnabled {
             withUnusedThresholdMs(3L) {
                 withDummyApp {
-                    startAppAndAcceptPermission()
-
-                    killDummyApp()
+                    setupApp()
 
                     // Run
                     runAppHibernationJob(context, LOG_TAG)
@@ -545,6 +519,18 @@ class AutoRevokeTest {
         }
     }
 
+    private fun isHibernationEnabledForPreSApps(): Boolean {
+        return runWithShellPermissionIdentity(
+            ThrowingSupplier {
+                DeviceConfig.getBoolean(
+                    DeviceConfig.NAMESPACE_APP_HIBERNATION,
+                    "app_hibernation_targets_pre_s_apps",
+                    false
+                )
+            }
+        )
+    }
+
     private fun isAutomotiveDevice(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
     }
@@ -575,14 +561,18 @@ class AutoRevokeTest {
         uninstallApp(supportedAppPackageName)
     }
 
-    private fun startApp() {
-        startApp(supportedAppPackageName)
+    /**
+     * Grants the calendar permission and then uses the app
+     */
+    private fun setupApp() {
+        grantPermission()
+        assertPermission(PERMISSION_GRANTED)
+        startApp()
+        killDummyApp()
     }
 
-    private fun startAppAndAcceptPermission() {
-        startApp()
-        clickPermissionAllow()
-        assertPermission(PERMISSION_GRANTED)
+    private fun startApp() {
+        startApp(supportedAppPackageName)
     }
 
     private fun goBack() {
@@ -602,24 +592,17 @@ class AutoRevokeTest {
         awaitAppState(pkg, greaterThan(IMPORTANCE_TOP_SLEEPING))
     }
 
-    private fun clickPermissionAllow() {
-        if (isAutomotiveDevice()) {
-            waitFindObject(By.text(Pattern.compile(
-                    Pattern.quote(mPermissionControllerResources.getString(
-                            mPermissionControllerResources.getIdentifier(
-                                    "grant_dialog_button_allow", "string",
-                                    "com.android.permissioncontroller"))),
-                    Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE))).click()
-        } else {
-            waitFindObject(By.res("com.android.permissioncontroller:id/permission_allow_button"))
-                    .click()
-        }
-        waitForIdle()
-    }
-
     private fun clickUninstallIcon() {
         val rowSelector = By.text(supportedAppPackageName)
-        val rowItem = waitFindObject(rowSelector).parent.parent
+
+        val rowItem = if (isAutomotiveDevice()) {
+            val rowItemSelector = By.res("com.android.permissioncontroller:" +
+                    "id/car_ui_first_action_container")
+                    .hasDescendant(rowSelector)
+            waitFindObject(rowItemSelector).parent
+        } else {
+            waitFindObject(rowSelector).parent.parent
+        }
 
         val uninstallSelector = if (isAutomotiveDevice()) {
             By.res("com.android.permissioncontroller:id/car_ui_secondary_action")
@@ -648,6 +631,13 @@ class AutoRevokeTest {
         action: () -> Unit
     ) {
         withAppNoUninstallAssertion(apk, packageName, action)
+    }
+
+    private fun grantPermission(
+        packageName: String = supportedAppPackageName,
+        permission: String = READ_CALENDAR
+    ) {
+        instrumentation.uiAutomation.grantRuntimePermission(packageName, permission)
     }
 
     private fun assertPermission(

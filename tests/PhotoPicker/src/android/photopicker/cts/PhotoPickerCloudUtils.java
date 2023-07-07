@@ -17,8 +17,8 @@
 package android.photopicker.cts;
 
 import static android.Manifest.permission.READ_DEVICE_CONFIG;
+import static android.Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG;
 import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
-import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
@@ -38,6 +38,8 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
+
+import com.android.modules.utils.build.SdkLevel;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,7 +86,7 @@ public class PhotoPickerCloudUtils {
     public static void initCloudProviderWithImage(
             Context context, PickerProviderMediaGenerator.MediaGenerator mediaGenerator,
             String authority, Pair<String, String>... mediaPairs) throws Exception {
-        setCloudProvider(context, authority);
+        PhotoPickerBaseTest.setCloudProvider(authority);
         assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(context.getContentResolver(),
                 authority)).isTrue();
 
@@ -126,11 +128,17 @@ public class PhotoPickerCloudUtils {
                 .isEqualTo(allowedPackagesJoined);
 
         writeDeviceConfigProp(KEY_CLOUD_MEDIA_FEATURE_ENABLED, true);
+        assertWithMessage("Failed to update the cloud media feature device config")
+                .that(isCloudMediaEnabled())
+                .isTrue();
     }
 
 
     static void disableCloudMediaAndClearAllowedCloudProviders() {
         writeDeviceConfigProp(KEY_CLOUD_MEDIA_FEATURE_ENABLED, false);
+        assertWithMessage("Failed to update the cloud media feature device config")
+                .that(isCloudMediaEnabled())
+                .isFalse();
 
         deleteDeviceConfigProp(KEY_ALLOWED_CLOUD_PROVIDERS);
         assertWithMessage("Failed to delete the allowed cloud providers device config")
@@ -158,7 +166,11 @@ public class PhotoPickerCloudUtils {
     }
 
     private static void writeDeviceConfigProp(@NonNull String name, @NonNull String value) {
-        getUiAutomation().adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG);
+        if (SdkLevel.isAtLeastU()) {
+            getUiAutomation().adoptShellPermissionIdentity(WRITE_ALLOWLISTED_DEVICE_CONFIG);
+        } else {
+            getUiAutomation().adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG);
+        }
         try {
             DeviceConfig.setProperty(NAMESPACE_STORAGE_NATIVE_BOOT, name, value,
                     /* makeDefault*/ false);

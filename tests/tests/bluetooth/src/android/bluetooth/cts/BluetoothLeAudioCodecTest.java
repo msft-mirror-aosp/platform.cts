@@ -23,7 +23,12 @@ import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,6 +74,13 @@ public class BluetoothLeAudioCodecTest {
         BluetoothLeAudioCodecConfig.FRAME_DURATION_10000
     };
 
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetCodecNameAndType() {
         try {
@@ -94,6 +106,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetCodecPriority() {
         for (int priorityIdx = 0; priorityIdx < mCodecPriorityArray.length; priorityIdx++) {
@@ -108,6 +121,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetSampleRate() {
         for (int sampleRateIdx = 0; sampleRateIdx < mSampleRateArray.length; sampleRateIdx++) {
@@ -122,6 +136,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetBitsPerSample() {
         for (int bitsPerSampleIdx = 0; bitsPerSampleIdx < mBitsPerSampleArray.length;
@@ -137,6 +152,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetChannelCount() {
         for (int channelCountIdx = 0; channelCountIdx < mChannelCountArray.length;
@@ -152,6 +168,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetFrameDuration() {
         for (int frameDurationIdx = 0; frameDurationIdx < mFrameDurationArray.length;
@@ -167,6 +184,7 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetOctetsPerFrame() {
         final int octetsPerFrame = 100;
@@ -178,6 +196,7 @@ public class BluetoothLeAudioCodecTest {
         assertEquals(octetsPerFrame, leAudioCodecConfig.getOctetsPerFrame());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetMinOctetsPerFrame() {
         final int minOctetsPerFrame = 100;
@@ -189,6 +208,7 @@ public class BluetoothLeAudioCodecTest {
         assertEquals(minOctetsPerFrame, leAudioCodecConfig.getMinOctetsPerFrame());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testGetMaxOctetsPerFrame() {
         final int maxOctetsPerFrame = 100;
@@ -200,6 +220,7 @@ public class BluetoothLeAudioCodecTest {
         assertEquals(maxOctetsPerFrame, leAudioCodecConfig.getMaxOctetsPerFrame());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testDescribeContents() {
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
@@ -207,6 +228,7 @@ public class BluetoothLeAudioCodecTest {
         assertEquals(0, leAudioCodecConfig.describeContents());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testReadWriteParcel() {
         final int octetsPerFrame = 100;
@@ -239,6 +261,7 @@ public class BluetoothLeAudioCodecTest {
         assertEquals(octetsPerFrame, leAudioCodecConfigFromParcel.getOctetsPerFrame());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void testBuilderWithExistingObject() {
         final int octetsPerFrame = 100;

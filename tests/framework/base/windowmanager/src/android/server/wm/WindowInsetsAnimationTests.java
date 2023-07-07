@@ -62,6 +62,7 @@ import java.util.List;
  *     atest CtsWindowManagerDeviceTestCases:WindowInsetsAnimationTests
  */
 @Presubmit
+@android.server.wm.annotation.Group2
 public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
 
     @Before
@@ -258,7 +259,8 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
 
         waitForOrFail("Waiting until animation done", () -> mActivity.mCallback.animationDone);
 
-        assertFalse(getWmState().isWindowVisible("StatusBar"));
+        mWmState.computeState();
+        assertFalse(mWmState.isWindowVisible("StatusBar"));
         verify(mActivity.mCallback).onPrepare(any());
         verify(mActivity.mCallback).onStart(any(), any());
         verify(mActivity.mCallback, atLeastOnce()).onProgress(any(), any());

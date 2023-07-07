@@ -54,7 +54,6 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
     // i.e. AudioFrequencyActivity <- RefMicActivity
     private OnBtnClickListener mBtnClickListener = new OnBtnClickListener();
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,6 +120,11 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
     @Override
     public boolean requiresReportLog() {
         return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
     }
 
     void enableLayout(int layoutId, boolean enable) {

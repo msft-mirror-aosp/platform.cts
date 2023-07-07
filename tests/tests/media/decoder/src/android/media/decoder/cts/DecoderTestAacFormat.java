@@ -27,7 +27,6 @@ import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.cts.Preconditions;
 import android.media.decoder.cts.DecoderTest.AudioParameter;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
@@ -39,6 +38,7 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -83,9 +83,9 @@ public class DecoderTestAacFormat {
                         AudioFormat.CHANNEL_OUT_QUAD | AudioFormat.CHANNEL_OUT_FRONT_CENTER},
                 {"noise_6ch_44khz_aot5_dr_sbr_sig2_mp4.m4a", 6, AudioFormat.CHANNEL_OUT_5POINT1},
         };
-
-        for (Object [] sample: samples) {
-            for (String codecName : DecoderTest.codecsFor((String)sample[0] /* resource */)) {
+        for (Object[] sample: samples) {
+            for (String codecName : DecoderTest.codecsFor((String)sample[0] /* resource */,
+                    DecoderTest.CODEC_DEFAULT)) {
                 // verify correct number of channels is observed without downmixing
                 AudioParameter chanParams = new AudioParameter();
                 decodeUpdateFormat(codecName, (String) sample[0] /*resource*/, chanParams,

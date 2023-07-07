@@ -33,6 +33,7 @@ import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
 import android.test.MoreAsserts;
+import android.text.TextUtils;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -239,6 +240,28 @@ public class TestUtils {
                     privateKey instanceof RSAKey);
             assertEquals("Private and public key must have the same RSA modulus",
                     ((RSAKey) publicKey).getModulus(), ((RSAKey) privateKey).getModulus());
+        } else if ("XDH".equalsIgnoreCase(keyAlgorithm)) {
+            // TODO This block should verify that public and private keys are instance of
+            //  java.security.interfaces.XECKey, And below code should be uncommented once
+            //  com.android.org.conscrypt.OpenSSLX25519PublicKey implements XECKey (b/214203951)
+            /*assertTrue("XDH public key must be instance of XECKey: "
+                            + publicKey.getClass().getName(),
+                    publicKey instanceof XECKey);
+            assertTrue("XDH private key must be instance of XECKey: "
+                            + privateKey.getClass().getName(),
+                    privateKey instanceof XECKey);*/
+            assertFalse("XDH public key must not be instance of RSAKey: "
+                            + publicKey.getClass().getName(),
+                    publicKey instanceof RSAKey);
+            assertFalse("XDH private key must not be instance of RSAKey: "
+                            + privateKey.getClass().getName(),
+                    privateKey instanceof RSAKey);
+            assertFalse("XDH public key must not be instanceof ECKey: "
+                            + publicKey.getClass().getName(),
+                    publicKey instanceof ECKey);
+            assertFalse("XDH private key must not be instanceof ECKey: "
+                            + privateKey.getClass().getName(),
+                    privateKey instanceof ECKey);
         } else {
             fail("Unsuported key algorithm: " + keyAlgorithm);
         }
@@ -514,15 +537,15 @@ public class TestUtils {
         }
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(pkcs8EncodedForm);
 
-        try {
-            return KeyFactory.getInstance("EC").generatePrivate(privateKeySpec);
-        } catch (InvalidKeySpecException e) {
+        String[] algorithms = new String[] {"EC", "RSA", "XDH"};
+        for (String algo : algorithms) {
             try {
-                return KeyFactory.getInstance("RSA").generatePrivate(privateKeySpec);
-            } catch (InvalidKeySpecException e2) {
-                throw new InvalidKeySpecException("The key is neither EC nor RSA", e);
+                return KeyFactory.getInstance(algo).generatePrivate(privateKeySpec);
+            } catch (InvalidKeySpecException e) {
             }
         }
+        throw new InvalidKeySpecException(
+                "The key should be one of " + Arrays.toString(algorithms));
     }
 
     public static X509Certificate getRawResX509Certificate(Context context, int resId) throws Exception {
@@ -1139,6 +1162,10 @@ public class TestUtils {
 
     public static boolean isAttestationSupported() {
         return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.O;
+    }
+
+    public static boolean isPropertyEmptyOrUnknown(String property) {
+        return TextUtils.isEmpty(property) || property.equals(Build.UNKNOWN);
     }
 
     public static boolean hasSecureLockScreen(Context context) {

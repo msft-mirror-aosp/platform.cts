@@ -25,16 +25,13 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
+import com.android.tradefed.util.RunInterruptedException;
+import com.android.tradefed.util.RunUtil;
 
 
 abstract class BaseHostTestCase extends BaseHostJUnit4Test {
     private int mCurrentUserId = NativeDevice.INVALID_USER_ID;
     private static final String ERROR_MESSAGE_TAG = "[ERROR]";
-    protected static ITestDevice sDevice = null;
-
-    protected static void setDevice(ITestDevice device) {
-        sDevice = device;
-    }
 
     protected String executeShellCommand(String cmd, Object... args) throws Exception {
         return getDevice().executeShellCommand(String.format(cmd, args));
@@ -48,15 +45,17 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
         return getDevice().isPackageInstalled(packageName, userId);
     }
 
-    // TODO (b/174775905) remove after exposing the check from ITestDevice.
-    protected static boolean isHeadlessSystemUserMode() throws DeviceNotAvailableException {
-        String result = sDevice
-                .executeShellCommand("getprop ro.fw.mu.headless_system_user").trim();
-        return "true".equalsIgnoreCase(result);
+    protected static boolean isHeadlessSystemUserMode(ITestDevice device)
+            throws DeviceNotAvailableException {
+        return device.isHeadlessSystemUserMode();
     }
 
-    protected static boolean isAtLeastS() throws DeviceNotAvailableException {
-        return sDevice.getApiLevel() >= 31 /* BUILD.VERSION_CODES.S */;
+    protected static boolean isAtLeastS(ITestDevice device) throws DeviceNotAvailableException {
+        return device.getApiLevel() >= 31 /* BUILD.VERSION_CODES.S */;
+    }
+
+    protected static boolean isAtLeastU(ITestDevice device) throws DeviceNotAvailableException {
+        return device.getApiLevel() >= 34;
     }
 
     protected static void eventually(ThrowingRunnable r, long timeoutMillis) {
@@ -69,8 +68,8 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
             } catch (Throwable e) {
                 if (System.currentTimeMillis() - start < timeoutMillis) {
                     try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ignored) {
+                        RunUtil.getDefault().sleep(100);
+                    } catch (RunInterruptedException ignored) {
                         throw new RuntimeException(e);
                     }
                 } else {
@@ -98,12 +97,13 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
         return (stderr == null || stderr.trim().isEmpty());
     }
 
-    protected static boolean supportsMultipleUsers() throws DeviceNotAvailableException {
-        return sDevice.getMaxNumberOfUsersSupported() > 1;
+    protected static boolean supportsMultipleUsers(ITestDevice device)
+            throws DeviceNotAvailableException {
+        return device.getMaxNumberOfUsersSupported() > 1;
     }
 
-    protected static boolean usesSdcardFs() throws Exception {
-        CommandResult out = sDevice.executeShellV2Command("cat /proc/mounts");
+    protected static boolean usesSdcardFs(ITestDevice device) throws Exception {
+        CommandResult out = device.executeShellV2Command("cat /proc/mounts");
         assertThat(isSuccessful(out)).isTrue();
         for (String line : out.getStdout().split("\n")) {
             String[] split = line.split(" ");

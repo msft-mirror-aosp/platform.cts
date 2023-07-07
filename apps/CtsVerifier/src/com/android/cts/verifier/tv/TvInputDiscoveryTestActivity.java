@@ -164,8 +164,8 @@ public class TvInputDiscoveryTestActivity extends TvAppVerifierActivity
         mVerifyTuneItem = createAndAttachAutoItem(R.string.tv_input_discover_test_verify_tune);
         mVerifyOverlayViewItem = createAndAttachAutoItem(
                 R.string.tv_input_discover_test_verify_overlay_view);
-        mVerifyOverlayViewSizeChanged = createAndAttachAutoItem(
-                R.string.tv_input_discover_test_verify_size_changed);
+        mVerifyOverlayViewSizeChanged =
+                createAndAttachAutoItem(R.string.tv_input_discover_test_verify_size_changed);
         mGoToEpgItem = createAndAttachUserItem(R.string.tv_input_discover_test_go_to_epg,
                 R.string.tv_launch_epg, this);
         mVerifyEpgItem = createAndAttachUserItem(R.string.tv_input_discover_test_verify_epg,

@@ -120,31 +120,33 @@ public class ItsTestActivity extends DialogTestListActivity {
     private ArrayTestListAdapter mAdapter;
 
     // Scenes
-    private static final ArrayList<String> mSceneIds = new ArrayList<String> () {{
-            add("scene0");
-            add("scene1_1");
-            add("scene1_2");
-            add("scene2_a");
-            add("scene2_b");
-            add("scene2_c");
-            add("scene2_d");
-            add("scene2_e");
-            add("scene3");
-            add("scene4");
-            add("scene5");
-            add("scene6");
-            add("sensor_fusion");
-        }};
+    private static final List<String> mSceneIds = List.of(
+            "scene0",
+            "scene1_1",
+            "scene1_2",
+            "scene2_a",
+            "scene2_b",
+            "scene2_c",
+            "scene2_d",
+            "scene2_e",
+            "scene2_f",
+            "scene3",
+            "scene4",
+            "scene5",
+            "scene6",
+            "scene_extensions/scene_hdr",
+            "scene_extensions/scene_night",
+            "sensor_fusion");
+
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
-    private static final ArrayList<String> mHiddenPhysicalCameraSceneIds =
-            new ArrayList<String> () {{
-                    add("scene0");
-                    add("scene1_1");
-                    add("scene1_2");
-                    add("scene2_a");
-                    add("scene4");
-                    add("sensor_fusion");
-            }};
+    private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(
+            "scene0",
+            "scene1_1",
+            "scene1_2",
+            "scene2_a",
+            "scene4",
+            "sensor_fusion");
+
     // TODO: cache the following in saved bundle
     private Set<ResultKey> mAllScenes = null;
     // (camera, scene) -> (pass, fail)
@@ -608,8 +610,16 @@ public class ItsTestActivity extends DialogTestListActivity {
         return "Camera: " + cam + ", " + scene;
     }
 
+    // CtsVerifier has a "Folded" toggle that selectively surfaces some tests.
+    // To separate the tests in folded and unfolded states, CtsVerifier adds a [folded]
+    // suffix to the test id in its internal database depending on the state of the "Folded"
+    // toggle button. However, CameraITS has tests that it needs to persist across both folded
+    // and unfolded states.To get the test results to persist, we need CtsVerifier to store and
+    // look up the same test id regardless of the toggle button state.
+    // TODO(b/282804139): Update CTS tests to allow activities to write tests that persist
+    // across the states
     protected String testId(String cam, String scene) {
-        return "Camera_ITS_" + cam + "_" + scene;
+        return "Camera_ITS_" + cam + "_" + scene + "[folded]";
     }
 
     protected boolean isFoldableDevice() {
@@ -737,7 +747,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else {
             Log.d(TAG, "register ITS result receiver");
             IntentFilter filter = new IntentFilter(ACTION_ITS_RESULT);
-            registerReceiver(mResultsReceiver, filter);
+            registerReceiver(mResultsReceiver, filter, Context.RECEIVER_EXPORTED);
             mReceiverRegistered = true;
         }
     }
@@ -757,5 +767,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         setContentView(R.layout.its_main);
         setInfoResources(R.string.camera_its_test, R.string.camera_its_test_info, -1);
         setPassFailButtonClickListeners();
+        // Changing folded state can incorrectly enable pass button
+        ItsTestActivity.this.getPassButton().setEnabled(false);
     }
 }

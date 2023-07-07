@@ -21,7 +21,11 @@ import static org.junit.Assert.assertEquals;
 import android.bluetooth.BluetoothGattService;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,15 +40,20 @@ public class BluetoothGattServiceTest {
 
     @Before
     public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+
         mBluetoothGattService = new BluetoothGattService(TEST_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void test_getInstanceId() {
         assertEquals(mBluetoothGattService.getInstanceId(), 0);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void test_getType() {
         assertEquals(mBluetoothGattService.getType(), BluetoothGattService.SERVICE_TYPE_PRIMARY);

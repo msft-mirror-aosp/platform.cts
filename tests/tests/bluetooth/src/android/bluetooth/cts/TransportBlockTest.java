@@ -19,11 +19,17 @@ package android.bluetooth.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.le.TransportBlock;
+import android.content.Context;
 import android.os.Parcel;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,6 +43,16 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class TransportBlockTest {
 
+    private Context mContext;
+
+    @Before
+    public void setUp() {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testInit() {
@@ -50,6 +66,7 @@ public class TransportBlockTest {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testInitEmpty() {
@@ -62,6 +79,7 @@ public class TransportBlockTest {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testTotalBytes() {
@@ -77,6 +95,7 @@ public class TransportBlockTest {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testGetValues() {
@@ -97,6 +116,7 @@ public class TransportBlockTest {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testToByteArray() {

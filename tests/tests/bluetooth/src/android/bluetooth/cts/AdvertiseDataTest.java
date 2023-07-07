@@ -28,7 +28,11 @@ import android.os.ParcelUuid;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,9 +53,12 @@ public class AdvertiseDataTest {
 
     @Before
     public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
         mAdvertiseDataBuilder = new AdvertiseData.Builder();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testEmptyData() {
@@ -69,6 +76,7 @@ public class AdvertiseDataTest {
         assertTrue(dataFromParcel.getServiceUuids().isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testEmptyServiceUuid() {
@@ -83,6 +91,7 @@ public class AdvertiseDataTest {
         assertTrue(dataFromParcel.getServiceUuids().isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testEmptyManufacturerData() {
@@ -100,6 +109,7 @@ public class AdvertiseDataTest {
         TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testEmptyServiceData() {
@@ -117,6 +127,7 @@ public class AdvertiseDataTest {
         TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getServiceData().get(uuid));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testServiceUuid() {
@@ -136,6 +147,7 @@ public class AdvertiseDataTest {
         assertTrue(dataFromParcel.getServiceUuids().contains(uuid2));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testServiceSolicitationUuids() {
@@ -158,6 +170,7 @@ public class AdvertiseDataTest {
         assertTrue(dataFromParcel.getServiceSolicitationUuids().contains(uuid2));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testManufacturerData() {
@@ -182,6 +195,7 @@ public class AdvertiseDataTest {
                 dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testServiceData() {
@@ -200,6 +214,7 @@ public class AdvertiseDataTest {
         TestUtils.assertArrayEquals(serviceData, dataFromParcel.getServiceData().get(uuid));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testTransportDiscoveryData() {
@@ -235,6 +250,7 @@ public class AdvertiseDataTest {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testIncludeTxPower() {
@@ -247,6 +263,7 @@ public class AdvertiseDataTest {
         assertEquals(dataFromParcel.getIncludeTxPowerLevel(), true);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void testDescribeContents() {

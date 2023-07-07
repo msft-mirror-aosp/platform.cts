@@ -59,9 +59,15 @@ public class BuildTest extends TestCase {
      * Verify that the CPU ABI fields on device match the permitted ABIs defined by CDD.
      */
     public void testCpuAbi_valuesMatchPermitted() throws Exception {
+        for (String abi : Build.SUPPORTED_ABIS) {
+            if (abi.endsWith("-hwasan")) {
+                // HWASan builds are not official builds and support *-hwasan ABIs.
+                return;
+            }
+        }
         // The permitted ABIs are listed in https://developer.android.com/ndk/guides/abis.
         Set<String> just32 = new HashSet<>(Arrays.asList("armeabi", "armeabi-v7a", "x86"));
-        Set<String> just64 = new HashSet<>(Arrays.asList("x86_64", "arm64-v8a"));
+        Set<String> just64 = new HashSet<>(Arrays.asList("x86_64", "arm64-v8a", "riscv64"));
         Set<String> all = new HashSet<>();
         all.addAll(just32);
         all.addAll(just64);
@@ -266,7 +272,9 @@ public class BuildTest extends TestCase {
                     // should at least be a conscious decision.
                     assertEquals(10000, fieldValue);
                 } else {
-                    if (activeCodenames.contains(fieldName)) {
+                    // Remove all underscores to match build level codenames, e.g. S_V2 is Sv2.
+                    String fieldNameWithoutUnderscores = fieldName.replaceAll("_", "");
+                    if (activeCodenames.contains(fieldNameWithoutUnderscores)) {
                         // This is the current development version. Note that fieldName can
                         // become < CUR_DEVELOPMENT before CODENAME becomes "REL", so we
                         // can't assertEquals(CUR_DEVELOPMENT, fieldValue) here.
@@ -276,12 +284,10 @@ public class BuildTest extends TestCase {
                         assertTrue("Expected " + fieldName + " value to be < " + CUR_DEVELOPMENT
                                 + ", got " + fieldValue, fieldValue < CUR_DEVELOPMENT);
                     }
-                    // Remove all underscores to match build level codenames, e.g. S_V2 is Sv2.
-                    String name = fieldName.replaceAll("_", "");
-                    declaredCodenames.add(name);
-                    assertTrue("Expected " + name
+                    declaredCodenames.add(fieldNameWithoutUnderscores);
+                    assertTrue("Expected " + fieldNameWithoutUnderscores
                                         + " to be declared in Build.VERSION.KNOWN_CODENAMES",
-                            knownCodenames.contains(name));
+                            knownCodenames.contains(fieldNameWithoutUnderscores));
                 }
             }
         }
@@ -311,11 +317,15 @@ public class BuildTest extends TestCase {
                 "First SDK version " + Build.VERSION.DEVICE_INITIAL_SDK_INT
                         + " is invalid; must be at least VERSION_CODES.BASE",
                 Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.BASE);
-        assertTrue(
-                "Current SDK version " + Build.VERSION.SDK_INT
-                        + " must be at least first SDK version "
-                        + Build.VERSION.DEVICE_INITIAL_SDK_INT,
-                Build.VERSION.SDK_INT >= Build.VERSION.DEVICE_INITIAL_SDK_INT);
+
+        // During development of a new release SDK_INT is less than DEVICE_INITIAL_SDK_INT
+        if (Build.VERSION.CODENAME.equals("REL")) {
+            assertTrue(
+                    "Current SDK version " + Build.VERSION.SDK_INT
+                            + " must be at least first SDK version "
+                            + Build.VERSION.DEVICE_INITIAL_SDK_INT,
+                    Build.VERSION.SDK_INT >= Build.VERSION.DEVICE_INITIAL_SDK_INT);
+        }
     }
 
     /**

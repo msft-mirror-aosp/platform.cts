@@ -17,8 +17,6 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -32,7 +30,8 @@ import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
-
+import com.android.tradefed.util.RunInterruptedException;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Set of tests for Managed Profile use cases.
  */
-public class ManagedProfileTest extends BaseManagedProfileTest {
+public final class ManagedProfileTest extends BaseManagedProfileTest {
 
     private static final String DEVICE_OWNER_PKG = "com.android.cts.deviceowner";
     private static final String DEVICE_OWNER_APK = "CtsDeviceOwnerApp.apk";
@@ -124,22 +123,9 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
     }
 
     @Test
-    public void testOverrideApn() throws Exception {
-        assumeHasTelephonyFeature();
-
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
-                "testAddGetRemoveOverrideApn", mProfileUserId);
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
-                "testUpdateOverrideApn", mProfileUserId);
-    }
-
-    @Test
     public void testCannotCallMethodsOnParentProfile() throws Exception {
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ParentProfileTest",
                 "testCannotWipeParentProfile", mProfileUserId);
-
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ParentProfileTest",
-                "testCannotCallAutoTimeMethodsOnParentProfile", mProfileUserId);
 
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ParentProfileTest",
                 "testCannotCallSetDefaultSmsApplicationOnParentProfile", mProfileUserId);
@@ -382,29 +368,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
-    // TODO(b/149580605): Fix this flaky test.
-    @Test
-    @FlakyTest
-    @Ignore
-    public void testBasicCheck() throws Exception {
-        // Install SimpleApp in work profile only and check activity in it can be launched.
-        installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
-    }
-
-    @Test
-    public void testBluetoothSharingRestriction() throws Exception {
-        assumeHasBluetoothFeature();
-
-        // Primary profile should be able to use bluetooth sharing.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BluetoothSharingRestrictionPrimaryProfileTest",
-                "testBluetoothSharingAvailable", mPrimaryUserId);
-
-        // Managed profile owner should be able to control it via DISALLOW_BLUETOOTH_SHARING.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BluetoothSharingRestrictionTest",
-                "testOppDisabledWhenRestrictionSet", mProfileUserId);
-    }
-
     @Test
     public void testProfileOwnerOnPersonalDeviceCannotGetDeviceIdentifiers() throws Exception {
         // The Profile Owner should have access to all device identifiers.
@@ -529,7 +492,7 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                     "startSwitchToOtherProfileIntent", mProfileUserId);
 
             // TODO(b/223178698): Investigate potential increase in latency
-            Thread.sleep(30000);
+            RunUtil.getDefault().sleep(30000);
 
             assertResolverActivityInForeground(mProfileUserId);
         } finally {
@@ -572,7 +535,7 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
                     "startSwitchToOtherProfileIntent_chooser", mProfileUserId);
 
-            Thread.sleep(30000);
+            RunUtil.getDefault().sleep(30000);
 
             assertChooserActivityInForeground(mProfileUserId);
         } finally {
@@ -616,8 +579,8 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                 return;
             }
             try {
-                Thread.sleep(100);
-            } catch (InterruptedException e){
+                RunUtil.getDefault().sleep(100);
+            } catch (RunInterruptedException e){
                 e.printStackTrace();
                 Thread.currentThread().interrupt();
             }

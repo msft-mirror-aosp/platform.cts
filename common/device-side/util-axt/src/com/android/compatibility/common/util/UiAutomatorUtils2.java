@@ -42,7 +42,13 @@ public class UiAutomatorUtils2 {
     private static final String LOG_TAG = "UiAutomatorUtils";
 
     /** Default swipe deadzone percentage. See {@link UiScrollable}. */
-    private static final double DEFAULT_SWIPE_DEADZONE_PCT = 0.1;
+    private static final double DEFAULT_SWIPE_DEADZONE_PCT_TV       = 0.1f;
+    private static final double DEFAULT_SWIPE_DEADZONE_PCT_ALL      = 0.25f;
+    /**
+     * On Wear, some cts tests like CtsPermission3TestCases that run on
+     * low performance device. Keep 0.05 to have better matching.
+     */
+    private static final double DEFAULT_SWIPE_DEADZONE_PCT_WEAR     = 0.05f;
 
     /** Minimum view height accepted (before needing to scroll more). */
     private static final float MIN_VIEW_HEIGHT_DP = 8;
@@ -78,6 +84,16 @@ public class UiAutomatorUtils2 {
                 ApplicationProvider.getApplicationContext().getResources().getDisplayMetrics()));
     }
 
+    private static double getSwipeDeadZonePct() {
+        if (FeatureUtil.isTV()) {
+            return DEFAULT_SWIPE_DEADZONE_PCT_TV;
+        } else if (FeatureUtil.isWatch()) {
+            return DEFAULT_SWIPE_DEADZONE_PCT_WEAR;
+        } else {
+            return DEFAULT_SWIPE_DEADZONE_PCT_ALL;
+        }
+    }
+
     public static UiObject2 waitFindObjectOrNull(BySelector selector, long timeoutMs)
             throws UiObjectNotFoundException {
         UiObject2 view = null;
@@ -89,9 +105,13 @@ public class UiAutomatorUtils2 {
 
         final int minViewHeightPx = convertDpToPx(MIN_VIEW_HEIGHT_DP);
 
+        int viewHeight = -1;
         while (view == null && start + timeoutMs > System.currentTimeMillis()) {
             try {
                 view = getUiDevice().wait(Until.findObject(selector), 1000);
+                if (view != null) {
+                    viewHeight = view.getVisibleBounds().height();
+                }
             } catch (StaleObjectException exception) {
                 // UiDevice.wait() may cause StaleObjectException if the {@link View} attached to
                 // UiObject2 is no longer in the view tree.
@@ -100,9 +120,8 @@ public class UiAutomatorUtils2 {
                 continue;
             }
 
-            if (view == null || view.getVisibleBounds().height() < minViewHeightPx) {
-                final double deadZone = !(FeatureUtil.isWatch() || FeatureUtil.isTV())
-                        ? 0.25 : DEFAULT_SWIPE_DEADZONE_PCT;
+            if (view == null || viewHeight < minViewHeightPx) {
+                final double deadZone = getSwipeDeadZonePct();
                 UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
                 scrollable.setSwipeDeadZonePercentage(deadZone);
                 if (scrollable.exists()) {

@@ -38,9 +38,9 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityTaskManager;
+import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.res.Configuration;
 import android.graphics.Point;
@@ -50,14 +50,15 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.SparseArray;
 import android.view.nano.DisplayInfoProto;
+import android.view.nano.InsetsSourceProto;
 import android.view.nano.ViewProtoEnums;
-import android.window.DisplayAreaOrganizer;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.server.wm.nano.ActivityRecordProto;
 import com.android.server.wm.nano.AppTransitionProto;
+import com.android.server.wm.nano.BackNavigationProto;
 import com.android.server.wm.nano.ConfigurationContainerProto;
 import com.android.server.wm.nano.DisplayAreaProto;
 import com.android.server.wm.nano.DisplayContentProto;
@@ -132,6 +133,9 @@ public class WindowManagerState {
     /** @see WindowManager.LayoutParams */
     private static final int TYPE_NOTIFICATION_SHADE = 2040;
 
+    /** Whether accessibility services should be suppressed when taking the WindowManager dump. */
+    private boolean mSuppressAccessibilityServices = true;
+
     private RootWindowContainer mRoot = null;
     // Displays in z-order with the top most at the front of the list, starting with primary.
     private final List<DisplayContent> mDisplays = new ArrayList<>();
@@ -159,6 +163,7 @@ public class WindowManagerState {
     private boolean mDisplayFrozen;
     private boolean mSanityCheckFocusedWindow = true;
     private boolean mWindowFramesValid;
+    private BackNavigationState mBackNavigationState;
 
     static String appStateToString(int appState) {
         switch (appState) {
@@ -361,9 +366,15 @@ public class WindowManagerState {
         }
     }
 
+    public void setSuppressAccessibilityServices(boolean suppressAccessibilityServices) {
+        mSuppressAccessibilityServices = suppressAccessibilityServices;
+    }
+
     private byte[] executeShellCommand(String cmd) {
         try {
-            ParcelFileDescriptor pfd = getInstrumentation().getUiAutomation()
+            ParcelFileDescriptor pfd = getInstrumentation().getUiAutomation(
+                    mSuppressAccessibilityServices ? 0
+                            : UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
                     .executeShellCommand(cmd);
             byte[] buf = new byte[512];
             int bytesRead;
@@ -445,6 +456,8 @@ public class WindowManagerState {
         }
         mDisplayFrozen = state.displayFrozen;
         mWindowFramesValid = state.windowFramesValid;
+
+        mBackNavigationState = new BackNavigationState(state.backNavigation);
     }
 
     private void reset() {
@@ -615,6 +628,10 @@ public class WindowManagerState {
         return mKeyguardServiceDelegateState;
     }
 
+    public BackNavigationState getBackNavigationState() {
+        return mBackNavigationState;
+    }
+
     public boolean containsRootTasks(int windowingMode, int activityType) {
         return countRootTasks(windowingMode, activityType) > 0;
     }
@@ -773,6 +790,10 @@ public class WindowManagerState {
         }
 
         return false;
+    }
+
+    public boolean isTaskDisplayAreaIgnoringOrientationRequest(ComponentName activityName) {
+        return getTaskDisplayArea(activityName).isIgnoringOrientationRequest();
     }
 
     public boolean containsStartedActivities() {
@@ -959,7 +980,7 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
-    private Stream<WindowState> getMatchingWindows(Predicate<WindowState> condition) {
+    public Stream<WindowState> getMatchingWindows(Predicate<WindowState> condition) {
         return mWindowStates.stream().filter(condition);
     }
 
@@ -976,6 +997,15 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
+    public boolean allActivitiesResumed() {
+        for (Task rootTask : mRootTasks) {
+            final Activity nonResumedActivity =
+                    rootTask.getActivity((a) -> !a.state.equals(STATE_RESUMED));
+            if (nonResumedActivity != null) return false;
+        }
+        return true;
+    }
+
     public boolean hasNotificationShade() {
         computeState();
         return !getMatchingWindowType(TYPE_NOTIFICATION_SHADE).isEmpty();
@@ -985,14 +1015,8 @@ public class WindowManagerState {
         return new ArrayList<>(mWindowStates);
     }
 
-    List<WindowState> getMatchingWindowType(int type) {
+    public List<WindowState> getMatchingWindowType(int type) {
         return getMatchingWindows(ws -> type == ws.mType).collect(Collectors.toList());
-    }
-
-    List<String> getMatchingWindowTokens(final String windowName) {
-        return getMatchingWindows(ws -> windowName.equals(ws.getName()))
-                .map(WindowState::getToken)
-                .collect(Collectors.toList());
     }
 
     List<WindowState> getAllNavigationBarStates() {
@@ -1225,27 +1249,23 @@ public class WindowManagerState {
             //                    don't treat them as regular root tasks
             collectDescendantsOfTypeIf(Task.class, t -> t.isRootTask(), this,
                     mRootTasks);
-            ArrayList<Task> rootOrganizedTasks = new ArrayList<>();
-            for (int i = mRootTasks.size() -1; i >= 0; --i) {
+
+            ArrayList<Task> nonOrganizedRootTasks = new ArrayList<>();
+            for (int i = 0; i < mRootTasks.size(); i++) {
                 final Task task = mRootTasks.get(i);
-                // Skip tasks created by an organizer
                 if (task.mCreatedByOrganizer) {
-                    mRootTasks.remove(task);
-                    rootOrganizedTasks.add(task);
+                    // Get all tasks inside the root-task created by an organizer
+                    List<Task> nonOrganizedDescendants = new ArrayList<>();
+                    collectDescendantsOfTypeIf(Task.class, t -> !t.mCreatedByOrganizer, task,
+                            nonOrganizedDescendants);
+                    nonOrganizedRootTasks.addAll(nonOrganizedDescendants);
+                } else {
+                    nonOrganizedRootTasks.add(task);
                 }
             }
-            // Add root tasks controlled by an organizer
-            while (rootOrganizedTasks.size() > 0) {
-                final Task task = rootOrganizedTasks.remove(0);
-                for (int i = task.mChildren.size() - 1; i >= 0; i--) {
-                    final Task child = (Task) task.mChildren.get(i);
-                    if (!child.mCreatedByOrganizer) {
-                        mRootTasks.add(child);
-                    } else {
-                        rootOrganizedTasks.add(child);
-                    }
-                }
-            }
+
+            mRootTasks.clear();
+            mRootTasks.addAll(nonOrganizedRootTasks);
         }
 
         boolean containsActivity(ComponentName activityName) {
@@ -1273,14 +1293,6 @@ public class WindowManagerState {
                     .that(result.size()).isAtMost(1);
 
             return result.stream().findFirst().orElse(null);
-        }
-
-        List<DisplayArea> getTaskDisplayAreas(ComponentName activityName) {
-            final List<DisplayArea> taskDisplayAreas = getAllTaskDisplayAreas();
-
-            return taskDisplayAreas.stream()
-                    .filter(tda -> tda.containsActivity(activityName))
-                    .collect(Collectors.toList());
         }
 
         List<DisplayArea> getAllChildDisplayAreas() {
@@ -1614,13 +1626,18 @@ public class WindowManagerState {
         int getActivityType() {
             return mTaskType;
         }
+
+        @Override
+        public String toString() {
+            return "Task[id=" + mTaskId + ", display=" + mDisplayId
+                    + ", mOrigActivity=" + mOrigActivity + ", realActivity=" + mRealActivity
+                    + ", activities=" + mActivities + "]";
+        }
     }
 
     public static class TaskFragment extends ActivityContainer {
         public int mDisplayId;
         Task mParentTask;
-        ArrayList<Task> mTasks = new ArrayList<>();
-        ArrayList<TaskFragment> mTaskFragments = new ArrayList<>();
         ArrayList<Activity> mActivities = new ArrayList<>();
         int mTaskFragmentType;
 
@@ -1632,18 +1649,7 @@ public class WindowManagerState {
             mMinWidth = proto.minWidth;
             mMinHeight = proto.minHeight;
 
-            collectChildrenOfType(Task.class, this, mTasks);
-            collectChildrenOfType(TaskFragment.class, this, mTaskFragments);
             collectChildrenOfType(Activity.class, this, mActivities);
-        }
-
-        public List<Task> getTasks() {
-            return mTasks;
-        }
-
-        /** Returns non-Task TaskFragment children. */
-        public List<TaskFragment> getTaskFragments() {
-            return mTaskFragments;
         }
 
         public List<Activity> getActivities() {
@@ -1656,30 +1662,11 @@ public class WindowManagerState {
                     return activity;
                 }
             }
-            for (TaskFragment taskFragment : mTaskFragments) {
-                final Activity activity = taskFragment.getActivity(predicate);
-                if (activity != null) {
-                    return activity;
-                }
-            }
-            for (Task task : mTasks) {
-                final Activity activity = task.getActivity(predicate);
-                if (activity != null) {
-                    return activity;
-                }
-            }
             return null;
         }
 
         public int getActivityCount() {
-            int count = mActivities.size();
-            for (TaskFragment taskFragment : mTaskFragments) {
-                count += taskFragment.getActivityCount();
-            }
-            for (Task task : mTasks) {
-                count += task.getActivityCount();
-            }
-            return count;
+            return mActivities.size();
         }
 
         @Override
@@ -1698,10 +1685,16 @@ public class WindowManagerState {
         float minAspectRatio;
         boolean providesMaxBounds;
         int procId = -1;
+        boolean isAnimating;
         public boolean translucent;
         private WindowContainer mParent;
         private boolean mEnableRecentsScreenshot;
         private int mLastDropInputMode;
+        private boolean mShouldSendCompatFakeFocus;
+        private int mOverrideOrientation;
+        private boolean mShouldForceRotateForCameraCompat;
+        private boolean mShouldRefreshActivityForCameraCompat;
+        private boolean mShouldRefreshActivityViaPauseForCameraCompat;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
@@ -1715,10 +1708,17 @@ public class WindowManagerState {
             if (proto.procId != 0) {
                 procId = proto.procId;
             }
+            isAnimating = proto.isAnimating;
             translucent = proto.translucent;
             mEnableRecentsScreenshot = proto.enableRecentsScreenshot;
             mLastDropInputMode = proto.lastDropInputMode;
+            mShouldSendCompatFakeFocus = proto.shouldSendCompatFakeFocus;
+            mOverrideOrientation = proto.overrideOrientation;
             mParent = parent;
+            mShouldForceRotateForCameraCompat = proto.shouldForceRotateForCameraCompat;
+            mShouldRefreshActivityForCameraCompat = proto.shouldRefreshActivityForCameraCompat;
+            mShouldRefreshActivityViaPauseForCameraCompat =
+                    proto.shouldRefreshActivityViaPauseForCameraCompat;
         }
 
         @NonNull
@@ -1749,6 +1749,10 @@ public class WindowManagerState {
             return inSizeCompatMode;
         }
 
+        public boolean isAnimating() {
+            return isAnimating;
+        }
+
         public float getMinAspectRatio() {
             return minAspectRatio;
         }
@@ -1765,6 +1769,30 @@ public class WindowManagerState {
             return mLastDropInputMode;
         }
 
+        public boolean getShouldSendCompatFakeFocus() {
+            return mShouldSendCompatFakeFocus;
+        }
+
+        public int getUiMode() {
+            return mFullConfiguration.uiMode;
+        }
+
+        public int getOverrideOrientation() {
+            return mOverrideOrientation;
+        }
+
+        public boolean getShouldForceRotateForCameraCompat() {
+            return mShouldForceRotateForCameraCompat;
+        }
+
+        public boolean getShouldRefreshActivityForCameraCompat() {
+            return mShouldRefreshActivityForCameraCompat;
+        }
+
+        public boolean getShouldRefreshActivityViaPauseForCameraCompat() {
+            return mShouldRefreshActivityViaPauseForCameraCompat;
+        }
+
         @Override
         public Rect getBounds() {
             if (mBounds == null) {
@@ -1779,6 +1807,11 @@ public class WindowManagerState {
 
         public Rect getAppBounds() {
             return mFullConfiguration.windowConfiguration.getAppBounds();
+        }
+
+        @Override
+        public String toString() {
+            return "Activity[name=" + name + ", state=" + state + ", visible=" + visible + "]";
         }
     }
 
@@ -1813,12 +1846,14 @@ public class WindowManagerState {
 
         boolean aodShowing = false;
         boolean keyguardShowing = false;
+        boolean mKeyguardGoingAway = false;
         SparseArray<Boolean> mKeyguardOccludedStates = new SparseArray<>();
 
         KeyguardControllerState(KeyguardControllerProto proto) {
             if (proto != null) {
                 aodShowing = proto.aodShowing;
                 keyguardShowing = proto.keyguardShowing;
+                mKeyguardGoingAway = proto.keyguardGoingAway;
                 for (int i = 0;  i < proto.keyguardPerDisplay.length; i++) {
                     mKeyguardOccludedStates.append(proto.keyguardPerDisplay[i].displayId,
                             proto.keyguardPerDisplay[i].keyguardOccluded);
@@ -1901,6 +1936,7 @@ public class WindowManagerState {
         private final boolean mIsRootDisplayArea;
         private final int mFeatureId;
         private final boolean mIsOrganized;
+        private final boolean mIsIgnoringOrientationRequest;
         private ArrayList<Activity> mActivities;
         private final ArrayList<WindowState> mWindows = new ArrayList<>();
 
@@ -1910,6 +1946,7 @@ public class WindowManagerState {
             mIsRootDisplayArea = proto.isRootDisplayArea;
             mFeatureId = proto.featureId;
             mIsOrganized = proto.isOrganized;
+            mIsIgnoringOrientationRequest = proto.isIgnoringOrientationRequest;
             if (mIsTaskDisplayArea) {
                 mActivities = new ArrayList<>();
                 collectDescendantsOfType(Activity.class, this, mActivities);
@@ -1935,6 +1972,10 @@ public class WindowManagerState {
 
         public Rect getAppBounds() {
             return mFullConfiguration.windowConfiguration.getAppBounds();
+        }
+
+        public boolean isIgnoringOrientationRequest() {
+            return mIsIgnoringOrientationRequest;
         }
 
         @Override
@@ -2104,6 +2145,7 @@ public class WindowManagerState {
         private int mRequestedHeight;
         private List<Rect> mKeepClearRects;
         private List<Rect> mUnrestrictedKeepClearRects;
+        private List<InsetsSource> mMergedLocalInsetsSources;
 
         WindowState(WindowStateProto proto) {
             super(proto.windowContainer);
@@ -2136,7 +2178,7 @@ public class WindowManagerState {
             } else if (proto.animatingExit) {
                 mWindowType = WINDOW_TYPE_EXITING;
             } else if (mName.startsWith(DEBUGGER_WINDOW_PREFIX)) {
-                mWindowType = WINDOW_TYPE_STARTING;
+                mWindowType = WINDOW_TYPE_DEBUGGER;
                 mName = mName.substring(DEBUGGER_WINDOW_PREFIX.length());
             } else {
                 mWindowType = 0;
@@ -2153,6 +2195,10 @@ public class WindowManagerState {
             mUnrestrictedKeepClearRects = new ArrayList();
             for (RectProto r : proto.unrestrictedKeepClearAreas) {
                 mUnrestrictedKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
+            }
+            mMergedLocalInsetsSources = new ArrayList();
+            for (InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
+                mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
         }
 
@@ -2232,6 +2278,10 @@ public class WindowManagerState {
             return mUnrestrictedKeepClearRects;
         }
 
+        List<InsetsSource> getMergedLocalInsetsSources() {
+            return mMergedLocalInsetsSources;
+        }
+
         private String getWindowTypeSuffix(int windowType) {
             switch (windowType) {
                 case WINDOW_TYPE_STARTING:
@@ -2259,6 +2309,32 @@ public class WindowManagerState {
         }
     }
 
+    static class BackNavigationState {
+        private boolean mAnimationInProgress;
+        private int mLastBackType;
+        private boolean mShowWallpaper;
+
+        BackNavigationState(BackNavigationProto proto) {
+            if (proto != null) {
+                mAnimationInProgress = proto.animationInProgress;
+                mLastBackType = proto.lastBackType;
+                mShowWallpaper = proto.showWallpaper;
+            }
+        }
+
+        boolean isAnimationInProgress() {
+            return mAnimationInProgress;
+        }
+
+        int getLastBackType() {
+            return mLastBackType;
+        }
+
+        boolean isShowWallpaper() {
+            return mShowWallpaper;
+        }
+    }
+
     static int dpToPx(float dp, int densityDpi) {
         return (int) (dp * densityDpi / DENSITY_DEFAULT + 0.5f);
     }
@@ -2271,5 +2347,75 @@ public class WindowManagerState {
     int defaultMinimalDisplaySizeForSplitScreen(int displayId) {
         return dpToPx(ActivityTaskManager.DEFAULT_MINIMAL_SPLIT_SCREEN_DISPLAY_SIZE_DP,
                 getDisplay(displayId).getDpi());
+    }
+
+    static class InsetsSource {
+        private String mType;
+        private Rect mFrame;
+        private Rect mVisibleFrame;
+        private boolean mVisible;
+
+        InsetsSource(InsetsSourceProto proto) {
+            mType = proto.type;
+            mFrame = new Rect(
+                    proto.frame.left, proto.frame.top, proto.frame.right, proto.frame.bottom);
+            if (proto.visibleFrame != null) {
+                mVisibleFrame = new Rect(proto.visibleFrame.left, proto.visibleFrame.top,
+                        proto.visibleFrame.right, proto.visibleFrame.bottom);
+            }
+            mVisible = proto.visible;
+        }
+
+        String getType() {
+            return mType;
+        }
+
+        Rect getFrame() {
+            return mFrame;
+        }
+
+        Rect getVisibleFrame() {
+            return mVisibleFrame;
+        }
+
+        boolean isVisible() {
+            return mVisible;
+        }
+
+        boolean isCaptionBar() {
+            return mType.contains("captionBar");
+        }
+
+        void insetGivenFrame(Rect inOutFrame) {
+            if (inOutFrame.left == mFrame.left && inOutFrame.right == mFrame.right) {
+                if (inOutFrame.top == mFrame.top) {
+                    inOutFrame.top = mFrame.bottom;
+                    return;
+                }
+                if (inOutFrame.bottom == mFrame.bottom) {
+                    inOutFrame.bottom = mFrame.top;
+                    return;
+                }
+            }
+            if (inOutFrame.top == mFrame.top && inOutFrame.bottom == mFrame.bottom) {
+                if (inOutFrame.left == mFrame.left) {
+                    inOutFrame.left = mFrame.right;
+                    return;
+                }
+                if (inOutFrame.right == mFrame.right) {
+                    inOutFrame.right = mFrame.left;
+                    return;
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "InsetsSource: {type=" + mType
+                    + " frame=" + mFrame
+                    + " visibleFrame=" + mVisibleFrame
+                    + " visible=" + mVisible
+                    + "}";
+        }
     }
 }

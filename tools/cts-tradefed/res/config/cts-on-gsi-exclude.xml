@@ -14,6 +14,10 @@
      limitations under the License.
 -->
 <configuration description="Excluded tests depending on APKs not in gsi_$arch">
+    <!--
+        Please remember to update cts-on-gsi-include-apks.xml when
+        this file is modified. See comments there for how.
+    -->
 
     <!-- No Calendar -->
     <option name="compatibility:exclude-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testCalendarAddAppointment" />
@@ -104,6 +108,9 @@
     <!-- b/259733096 Performance tests are disabled in GSI builds -->
     <option name="compatibility:exclude-filter" value="CtsVideoTestCases android.video.cts.CodecEncoderPerformanceTest" />
 
+    <!-- b/279554698 Performance tests are disabled in GSI builds -->
+    <option name="compatibility:exclude-filter" value="CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest#testPerf" />
+
     <!-- b/203177211 -->
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoRemotelyAccessibleListeningUdpPorts" />
 
@@ -115,16 +122,7 @@
     <option name="compatibility:exclude-filter" value="CtsHdmiCecHostTestCases android.hdmicec.cts.tv.HdmiCecRoutingControlTest" />
     <option name="compatibility:exclude-filter" value="CtsHdmiCecHostTestCases android.hdmicec.cts.tv.HdmiCecTvOneTouchPlayTest" />
 
-    <!-- b/234409652 Stable API does not exist to enforce this requirement on variable geometry devices -->
-    <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice"/>
-
-    <!-- b/235453601 -->
-    <option name="compatibility:exclude-filter" value="CtsMediaPerformanceClassTestCases android.mediapc.cts.MultiDecoderPerfTest" />
-
-    <!-- b/238155422 -->
-    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAirplaneMode" />
-
-    <!-- b/192113622, b/203031609, b/204402327, b/204615046, b/204860049, b/243105391  Remove tests for S "optional" algorithms for GRF devices -->
+    <!-- b/192113622, b/203031609, b/204402327, b/204615046, b/204860049  Remove tests for S "optional" algorithms for GRF devices -->
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecAlgorithmImplTest#testChaCha20Poly1305" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Tcp4" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Tcp6" />
@@ -133,8 +131,23 @@
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Udp4UdpEncap" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Tcp4UdpEncap" />
 
-    <!-- b/279852956 Temporarily exclude the regreastion test issues caused by upgrading -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.WindowUntrustedTouchTest#testAfterSettingThresholdGreaterThan1ViaSettings_previousThresholdIsUsed" />
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.KeepClearRectsTests#testSetKeepClearRectsOnDisplaySingleWindow" />
+    <!-- b/285247534 Remove WM Extension tests on GSI -->
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
+
+    <!-- b/284917528 -->
+    <option name="compatibility:exclude-filter" value="MicrodroidHostTestCases" />
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp" />
+    <option name="compatibility:exclude-filter" value="odsign_e2e_tests" />
+
+    <!-- b/285455242 Temporarily exclude some save save UI tests failing due to layout issue -->
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.MultiScreenLoginTest#testSaveBothFieldsAtOnceNoClientStateOnSecondRequest" />
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.MultipleFragmentLoginTest#loginOnTwoFragments" />
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.MultiScreenLoginTest#testSaveEachFieldSeparately" />
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.SessionLifecycleTest#testDatasetAuthResponseWhileAutofilledAppIsLifecycled" />
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.SessionLifecycleTest#testSaveRemainsWhenAutofilledAppIsKilled" />
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.MultiScreenLoginTest#testSaveBothFieldsAtOnceWithClientStateOnBothRequests" />
+
+    <!-- b/284365711, b/285449475 -->
+    <option name="compatibility:exclude-filter" value="CtsBluetoothMultiDevicesTestCases BluetoothMultiDevicesTest" />
 
 </configuration>

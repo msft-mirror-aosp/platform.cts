@@ -24,9 +24,11 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.FeatureFlagUtils;
 import android.util.Log;
@@ -34,6 +36,8 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.window.embedding.SplitController;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,12 +59,19 @@ public class SettingsMultiPaneDeepLinkTest {
 
     @Before
     public void setUp() throws Exception {
+        Context targetContext = InstrumentationRegistry.getInstrumentation()
+                .getTargetContext();
         boolean isFlagEnabled =
-                FeatureFlagUtils.isEnabled(InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext(), "settings_support_large_screen");
-        boolean isSplitSupported = SplitController.getInstance().isSplitSupported();
-        mIsSplitSupported = isFlagEnabled && isSplitSupported;
+                FeatureFlagUtils.isEnabled(targetContext, "settings_support_large_screen");
+        final boolean shouldEnableLargeScreenOptimization =
+                SystemProperties.getBoolean("persist.settings.large_screen_opt.enabled", true);
+        boolean isSplitSupported = SplitController.getInstance(targetContext)
+                .getSplitSupportStatus() == SplitController.SplitSupportStatus.SPLIT_AVAILABLE;
+        mIsSplitSupported = isFlagEnabled && isSplitSupported
+                && shouldEnableLargeScreenOptimization;
         Log.d(TAG, "isFlagEnabled : " + isFlagEnabled);
+        Log.d(TAG, "shouldEnableLargeScreenOptimization: "
+                + shouldEnableLargeScreenOptimization);
         Log.d(TAG, "isSplitSupported : " + isSplitSupported);
         Log.d(TAG, "mIsSplitSupported : " + mIsSplitSupported);
         mDeepLinkIntentResolveInfo = InstrumentationRegistry.getInstrumentation().getContext()
@@ -85,6 +96,7 @@ public class SettingsMultiPaneDeepLinkTest {
                                 .hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 
+    @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_protectedWithPermission() throws Exception {
         assertTrue("The Activity to handle the Intent ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY must"
@@ -92,6 +104,7 @@ public class SettingsMultiPaneDeepLinkTest {
                 DEEP_LINK_PERMISSION.equals(mDeepLinkIntentResolveInfo.activityInfo.permission));
     }
 
+    @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitSupported_deepLinkHomeEnabled() throws Exception {
         assumeTrue(mIsSplitSupported);
@@ -101,6 +114,7 @@ public class SettingsMultiPaneDeepLinkTest {
                 mDeepLinkIntentResolveInfo != null);
     }
 
+    @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled() throws Exception {
         assumeFalse(mIsSplitSupported);
@@ -110,6 +124,7 @@ public class SettingsMultiPaneDeepLinkTest {
                 mDeepLinkIntentResolveInfo == null);
     }
 
+    @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_receiveMultiPaneDeepLinkIntent_shouldStartActivity()
                 throws Exception {

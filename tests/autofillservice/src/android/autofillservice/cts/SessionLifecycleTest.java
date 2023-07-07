@@ -55,13 +55,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.support.test.uiautomator.UiObject2;
 import android.util.Log;
 import android.view.autofill.AutofillValue;
-import android.view.View;
+
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.Timeout;
 
@@ -167,6 +166,8 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
     @Test
     public void testDatasetAuthResponseWhileAutofilledAppIsLifecycled() throws Exception {
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+        assumeTrue("Device state is not REAR_DISPLAY",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
         final ActivityManager activityManager = (ActivityManager) getContext()
                 .getSystemService(Context.ACTIVITY_SERVICE);
         assumeFalse(activityManager.isLowRamDevice());

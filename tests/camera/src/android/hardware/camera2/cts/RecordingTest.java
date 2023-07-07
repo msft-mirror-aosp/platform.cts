@@ -73,7 +73,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -196,7 +198,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
 
     /**
      * <p>
-     * Test basic video stabilitzation camera recording.
+     * Test basic video stabilization camera recording.
      * </p>
      * <p>
      * This test covers the typical basic use case of camera recording with video
@@ -1201,7 +1203,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                     // Map to store  max_fps and preview fps for each video size
                     HashMap<Integer, Integer> previewRateMap = new HashMap();
                     for (Range<Integer> r : highSpeedFpsRangesForSize ) {
-                        if (r.getLower() != r.getUpper()) {
+                        if (!Objects.equals(r.getLower(), r.getUpper())) {
                             if (previewRateMap.containsKey(r.getUpper())) {
                                 Log.w(TAG, "previewFps for max_fps already exists.");
                             } else {
@@ -2184,9 +2186,11 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
         assertNotNull("Recording surface must be non-null!", mRecordingSurface);
 
         if (useIntermediateSurface) {
+            Optional<Long> usage = getSurfaceUsage(mRecordingSurface);
             mIntermediateReader = ImageReader.newInstance(
                     mVideoSize.getWidth(), mVideoSize.getHeight(),
-                    ImageFormat.PRIVATE, /*maxImages*/3, HardwareBuffer.USAGE_VIDEO_ENCODE);
+                    ImageFormat.PRIVATE, /*maxImages*/3,
+                    usage.orElse(HardwareBuffer.USAGE_VIDEO_ENCODE));
 
             mIntermediateSurface = mIntermediateReader.getSurface();
             mIntermediateWriter = ImageWriter.newInstance(mRecordingSurface, /*maxImages*/3,

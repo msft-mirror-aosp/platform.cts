@@ -49,7 +49,7 @@ import com.android.cts.verifier.audio.audiolib.StatUtils;
 /**
  * CtsVerifier Audio Loopback Latency Test
  */
-@CddTest(requirement = "5.10/C-1-2,C-1-5")
+@CddTest(requirements = {"5.10/C-1-2,C-1-5", "5.6/H-1-3"})
 public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String TAG = "AudioLoopbackLatencyActivity";
 
@@ -117,7 +117,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final double CONFIDENCE_THRESHOLD_WIRED = 0.6;
 
     public static final double LATENCY_NOT_MEASURED = 0.0;
-    public static final double LATENCY_BASIC = 500.0;
+    public static final double LATENCY_BASIC = 300.0;
     public static final double LATENCY_PRO_AUDIO_AT_LEAST_ONE = 25.0;
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
@@ -186,6 +186,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             return mTestRun && mMeanLatencyMS > 1.0 && mMeanConfidence >= mRequiredConfidence;
         }
 
+        boolean has24BitHardwareSupport() {
+            return (mNativeAnalyzerThread != null)
+                    && mNativeAnalyzerThread.has24BitHardwareSupport();
+        }
+
         String getResultString() {
             String result;
 
@@ -206,11 +211,13 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         "Test Finished\nMean Latency:%.2f ms\n"
                                 + "Mean Absolute Deviation: %.2f\n"
                                 + "Confidence: %.2f\n"
-                                + "Low Latency Path: %s",
+                                + "Low Latency Path: %s\n"
+                                + "24 Bit Hardware Support: %s",
                         mMeanLatencyMS,
                         mMeanAbsoluteDeviation,
                         mMeanConfidence,
-                        mNativeAnalyzerThread.isLowLatencyStream() ? mYesString : mNoString);
+                        mNativeAnalyzerThread.isLowLatencyStream() ? mYesString : mNoString,
+                        mNativeAnalyzerThread.has24BitHardwareSupport() ? mYesString : mNoString);
             }
 
             return result;
@@ -224,7 +231,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         private static final String KEY_IS_PERIPHERAL_ATTACHED = "is_peripheral_attached";
         private static final String KEY_INPUT_PERIPHERAL_NAME = "input_peripheral";
         private static final String KEY_OUTPUT_PERIPHERAL_NAME = "output_peripheral";
-        private static final String KEY_TEST_PERIPHERAL = "test_peripheral";
+        private static final String KEY_TEST_PERIPHERAL_NAME = "test_peripheral_name";
 
         void recordTestResults(CtsVerifierReportLog reportLog) {
             reportLog.addValue(
@@ -252,7 +259,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     ResultUnit.NONE);
 
             reportLog.addValue(
-                    KEY_TEST_PERIPHERAL,
+                    KEY_TEST_PERIPHERAL_NAME,
                     mDeviceName,
                     ResultType.NEUTRAL,
                     ResultUnit.NONE);
@@ -297,8 +304,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         Resources resources = getResources();
         mYesString = resources.getString(R.string.audio_general_yes);
         mNoString = resources.getString(R.string.audio_general_no);
-        mPassString = resources.getString(R.string.audio_general_pass);
-        mFailString = resources.getString(R.string.audio_general_fail);
+        mPassString = resources.getString(R.string.audio_general_teststatus_pass);
+        mFailString = resources.getString(R.string.audio_general_teststatus_fail);
         mNotTestedString = resources.getString(R.string.audio_general_not_tested);
         mNotRequiredString = resources.getString(R.string.audio_general_not_required);
         mRequiredString = resources.getString(R.string.audio_general_required);
@@ -313,7 +320,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
         // Media Performance Class
         ((TextView) findViewById(R.id.audio_loopback_mpc)).setText(
-                (mClaimsMediaPerformance ? mYesString : mNoString));
+                (mClaimsMediaPerformance ? String.valueOf(Build.VERSION.MEDIA_PERFORMANCE_CLASS)
+                        : mNoString));
 
         // MMAP
         ((TextView) findViewById(R.id.audio_loopback_mmap)).setText(
@@ -507,6 +515,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     }
 
     @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
     public String getReportFileName() { return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME; }
 
     @Override
@@ -521,6 +534,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String KEY_TEST_MMAP = "supports_mmap";
     private static final String KEY_TEST_MMAPEXCLUSIVE = "supports_mmap_exclusive";
     private static final String KEY_LEVEL = "level";
+    private static final String KEY_HAS_24_BIT_HARDWARE_SUPPORT =
+            "has_24_bit_hardware_support";
 
     private void recordRouteResults(int routeIndex) {
         if (mTestSpecs[routeIndex].mTestRun) {
@@ -563,6 +578,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     ResultType.NEUTRAL,
                     ResultUnit.NONE);
 
+            reportLog.addValue(
+                    KEY_HAS_24_BIT_HARDWARE_SUPPORT,
+                    mNativeAnalyzerThread.has24BitHardwareSupport(),
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
             mTestSpecs[routeIndex].recordTestResults(reportLog);
 
             reportLog.submit();
@@ -571,8 +592,20 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     @Override
     public void recordTestResults() {
+        // Look for a valid route with the minimum latency.
+        int bestRoute = -1;
+        double minLatency = Double.MAX_VALUE;
         for (int route = 0; route < NUM_TEST_ROUTES; route++) {
-            recordRouteResults(route);
+            if (mTestSpecs[route].isMeasurementValid()) {
+                if (mTestSpecs[route].mMeanLatencyMS < minLatency) {
+                    bestRoute = route;
+                    minLatency = mTestSpecs[route].mMeanLatencyMS;
+                }
+            }
+        }
+        // Record a single result.
+        if (bestRoute >= 0) {
+            recordRouteResults(bestRoute);
         }
     }
 
@@ -670,7 +703,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         mTestSpecs[TESTROUTE_ANALOG_JACK].isMeasurementValid()
                                 ? mTestSpecs[TESTROUTE_ANALOG_JACK].mMeanLatencyMS :  0.0,
                         mTestSpecs[TESTROUTE_USB].isMeasurementValid()
-                                ? mTestSpecs[TESTROUTE_USB].mMeanLatencyMS : 0.0);
+                                ? mTestSpecs[TESTROUTE_USB].mMeanLatencyMS : 0.0,
+                        mTestSpecs[TESTROUTE_ANALOG_JACK].has24BitHardwareSupport(),
+                        mTestSpecs[TESTROUTE_USB].has24BitHardwareSupport());
 
         getPassButton().setEnabled(pass);
 
@@ -754,61 +789,139 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             return mResultsString;
         }
 
+        static final int RESULTCODE_NONE = 0;
+        static final int RESULTCODE_PASS = 1;
+        static final int RESULTCODE_FAIL_NOINTERNAL = 2;
+        static final int RESULTCODE_FAIL_BASIC = 3;
+        static final int RESULTCODE_FAIL_MPC = 4;
+        static final int RESULTCODE_FAIL_PROONEPATH = 5;
+        static final int RESULTCODE_FAIL_PROLIMITS_ANALOG = 6;
+        static final int RESULTCODE_FAIL_PROLIMITS_USB = 7;
+        static final int RESULTCODE_FAIL_24BIT = 8;
+        static final int RESULTCODE_FAIL_PRO_NOWIRED = 9;
+        int mResultCode = 0;
+
         private boolean checkLatency(double measured, double limit) {
             return measured == LATENCY_NOT_MEASURED || measured <= limit;
+        }
+
+        private void setResultCode(boolean pass, int code) {
+            // only set the first non-none result code
+            Log.i(TAG, "setResultCode(" + pass + ", " + code + ")");
+            if (!pass && mResultCode == RESULTCODE_NONE) {
+                mResultCode = code;
+            }
+        }
+
+        public String getResultCodeText() {
+            Resources resources = getResources();
+            switch (mResultCode) {
+                case RESULTCODE_NONE:
+                    return resources.getString(R.string.audio_loopback_resultcode_none);
+                case RESULTCODE_PASS:
+                    return resources.getString(R.string.audio_loopback_resultcode_pass);
+                case RESULTCODE_FAIL_NOINTERNAL:
+                    return resources.getString(
+                            R.string.audio_loopback_resultcode_nointernal);
+                case RESULTCODE_FAIL_BASIC:
+                    return resources.getString(
+                            R.string.audio_loopback_resultcode_failbasic);
+                case RESULTCODE_FAIL_MPC:
+                    return resources.getString(R.string.audio_loopback_resultcode_failmpc);
+                case RESULTCODE_FAIL_PROONEPATH:
+                    return resources.getString(R.string.audio_loopback_resultcode_failpro);
+                case RESULTCODE_FAIL_PROLIMITS_ANALOG:
+                    return resources.getString(R.string.audio_loopback_resultcode_failproanalog);
+                case RESULTCODE_FAIL_PROLIMITS_USB:
+                    return resources.getString(R.string.audio_loopback_resultcode_failprousb);
+                case RESULTCODE_FAIL_24BIT:
+                    return resources.getString(R.string.audio_loopback_resultcode_fail24bit);
+                case RESULTCODE_FAIL_PRO_NOWIRED:
+                    return resources.getString(
+                            R.string.audio_loopback_resultcode_failproaudiowired);
+                default:
+                    // this should never happen
+                    return resources.getString(R.string.audio_loopback_resultcode_invalid);
+            }
         }
 
         public boolean evaluate(boolean proAudio,
                                        int mediaPerformanceClass,
                                        double deviceLatency,
                                        double analogLatency,
-                                       double usbLatency) {
+                                       double usbLatency,
+                                       boolean analog24BitHardwareSupport,
+                                       boolean usb24BitHardwareSupport) {
+
+            Log.i(TAG, "evaluate()");
+            mResultCode = RESULTCODE_NONE;
 
             // Required to test the Mic/Speaker path
             boolean internalPathRun = deviceLatency != LATENCY_NOT_MEASURED;
+            Log.i(TAG, "  internalPathRun:" + internalPathRun);
+            setResultCode(internalPathRun, RESULTCODE_FAIL_NOINTERNAL);
 
             // All devices must be under the basic limit.
             boolean basicPass = checkLatency(deviceLatency, LATENCY_BASIC)
                     && checkLatency(analogLatency, LATENCY_BASIC)
                     && checkLatency(usbLatency, LATENCY_BASIC);
+            Log.i(TAG, "  basicPass:" + basicPass);
+            setResultCode(basicPass, RESULTCODE_FAIL_BASIC);
 
             // For Media Performance Class T the RT latency must be <= 80 msec on one path.
             boolean mpcAtLeastOnePass = (mediaPerformanceClass < MPC_T)
                     || checkLatency(deviceLatency, LATENCY_MPC_AT_LEAST_ONE)
                     || checkLatency(analogLatency, LATENCY_MPC_AT_LEAST_ONE)
                     || checkLatency(usbLatency, LATENCY_MPC_AT_LEAST_ONE);
+            Log.i(TAG, "  mpcAtLeastOnePass:" + mpcAtLeastOnePass);
+            setResultCode(mpcAtLeastOnePass, RESULTCODE_FAIL_MPC);
 
             // For ProAudio, the RT latency must be <= 25 msec on one path.
             boolean proAudioAtLeastOnePass = !proAudio
                     || checkLatency(deviceLatency, LATENCY_PRO_AUDIO_AT_LEAST_ONE)
                     || checkLatency(analogLatency, LATENCY_PRO_AUDIO_AT_LEAST_ONE)
                     || checkLatency(usbLatency, LATENCY_PRO_AUDIO_AT_LEAST_ONE);
+            Log.i(TAG, "  proAudioAtLeastOnePass:" + proAudioAtLeastOnePass);
+            setResultCode(proAudioAtLeastOnePass, RESULTCODE_FAIL_PROONEPATH);
 
-            String supplementalText = "";
             // For ProAudio, analog and USB have specific limits
             boolean proAudioLimitsPass = !proAudio;
             if (proAudio) {
                 if (analogLatency > 0.0) {
                     proAudioLimitsPass = analogLatency <= LATENCY_PRO_AUDIO_ANALOG;
+                    setResultCode(proAudioLimitsPass, RESULTCODE_FAIL_PROLIMITS_ANALOG);
                 } else if (usbLatency > 0.0) {
                     // USB audio must be supported if 3.5mm jack not supported
                     proAudioLimitsPass =  usbLatency <= LATENCY_PRO_AUDIO_USB;
+                    setResultCode(proAudioLimitsPass, RESULTCODE_FAIL_PROLIMITS_USB);
                 }
             }
 
+            if (!proAudioLimitsPass) {
+                setResultCode(false, RESULTCODE_FAIL_PRO_NOWIRED);
+            }
+
+            // For Media Performance Class T, usb and analog should support >=24 bit audio.
+            boolean has24BitHardwareSupportPass = (mediaPerformanceClass < MPC_T)
+                    || analog24BitHardwareSupport  || usb24BitHardwareSupport;
+            Log.i(TAG, "  has24BitHardwareSupportPass:" + has24BitHardwareSupportPass);
+            setResultCode(has24BitHardwareSupportPass, RESULTCODE_FAIL_24BIT);
+
             boolean pass =
-                    internalPathRun &&
-                    basicPass &&
-                    mpcAtLeastOnePass &&
-                    proAudioAtLeastOnePass &&
-                    proAudioLimitsPass;
+                    internalPathRun
+                    && basicPass
+                    && mpcAtLeastOnePass
+                    && proAudioAtLeastOnePass
+                    && proAudioLimitsPass
+                    && has24BitHardwareSupportPass;
+            Log.i(TAG, "  pass:" + pass);
 
             // Build the results explanation
             StringBuilder sb = new StringBuilder();
             if (proAudio) {
                 sb.append("[Pro Audio]");
             } else if (mediaPerformanceClass != MPC_NONE) {
-                sb.append("[MPC %d]" + mediaPerformanceClass);
+                sb.append("[MPC " + mediaPerformanceClass + "]");
             } else {
                 sb.append("[Basic Audio]");
             }
@@ -824,8 +937,10 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     ? String.format("%.2fms ", usbLatency)
                     : (mNotTestedString + " - " + mNotRequiredString)));
 
-            sb.append(supplementalText);
             mResultsString = sb.toString();
+            if (mResultCode > RESULTCODE_PASS) {
+                mResultsString = mResultsString + "\n" + getResultCodeText();
+            }
 
             return pass;
         }

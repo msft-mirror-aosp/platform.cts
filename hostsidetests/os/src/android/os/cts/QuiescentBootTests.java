@@ -20,9 +20,8 @@ import static android.os.PowerManagerInternalProto.Wakefulness.WAKEFULNESS_ASLEE
 import static android.os.PowerManagerInternalProto.Wakefulness.WAKEFULNESS_AWAKE;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.os.PowerManagerInternalProto.Wakefulness;
 
@@ -39,7 +38,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -86,13 +84,6 @@ public class QuiescentBootTests extends BaseHostJUnit4Test {
     public void testQuiescentBoot_asleepAfterQuiescentReboot() throws Exception {
         mDevice.reboot(REBOOT_REASON_QUIESCENT);
         assertEquals("Expected to boot into sleep state.", WAKEFULNESS_ASLEEP, getWakefulness());
-    }
-
-    @Test
-    public void testQuiescentBoot_awakeAfterReboot() throws Exception {
-        mDevice.reboot(REBOOT_REASON_QUIESCENT);
-        mDevice.reboot();
-        assertEquals("Expected to boot in awake state.", WAKEFULNESS_AWAKE, getWakefulness());
     }
 
     @Test
