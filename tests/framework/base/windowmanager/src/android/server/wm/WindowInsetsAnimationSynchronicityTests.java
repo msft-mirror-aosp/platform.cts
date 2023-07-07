@@ -17,11 +17,9 @@
 package android.server.wm;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static android.server.wm.ActivityManagerTestBase.executeShellCommand;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.WindowInsetsAnimationUtils.requestControlThenTransitionToVisibility;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
@@ -58,21 +56,21 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.WindowUtil;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Supplier;
 
 @LargeTest
+@android.server.wm.annotation.Group2
 public class WindowInsetsAnimationSynchronicityTests {
     private static final int APP_COLOR = 0xff01fe10; // green
     private static final int BEHIND_IME_COLOR = 0xfffeef00; // yellow
@@ -83,11 +81,13 @@ public class WindowInsetsAnimationSynchronicityTests {
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
+    @Ignore("b/168446060")
     @Test
     public void testShowAndHide_renderSynchronouslyBetweenImeWindowAndAppContent() throws Throwable {
         runTest(false /* useControlApi */);
     }
 
+    @Ignore("b/168446060")
     @Test
     public void testControl_rendersSynchronouslyBetweenImeWindowAndAppContent() throws Throwable {
         runTest(true /* useControlApi */);

@@ -16,14 +16,14 @@
 
 package android.permission.cts;
 
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+
 import android.app.UiAutomation;
 import android.os.Process;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Assert;
 
@@ -151,21 +151,55 @@ public class TestUtils {
             UiAutomation automation) {
         String runJobCmd = "cmd jobscheduler run -u " + Process.myUserHandle().getIdentifier()
                 + " -f " + packageName + " " + jobId;
+        try {
+            String result = runShellCommand(automation, runJobCmd);
+            Log.v(LOG_TAG, "jobscheduler run job command output: " + result);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        // waiting state is expected after completion for the periodic jobs.
+        awaitJobUntilRequestedState(packageName, jobId, timeout, automation, "waiting");
+    }
+
+    public static void awaitJobUntilRequestedState(
+            String packageName,
+            int jobId,
+            long timeout,
+            UiAutomation automation,
+            String requestedState) {
         String statusCmd = "cmd jobscheduler get-job-state -u "
                 + Process.myUserHandle().getIdentifier() + " " + packageName + " " + jobId;
+        try {
+            eventually(() -> {
+                String jobState = runShellCommand(automation, statusCmd).trim();
+                Assert.assertTrue("The job doesn't have requested state " + requestedState
+                        + " yet, current state: " + jobState, jobState.startsWith(requestedState));
+            }, timeout);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        SystemUtil.runWithShellPermissionIdentity(automation, () -> {
-            SystemUtil.runShellCommand(automation, runJobCmd);
-            Thread.sleep(500);
-            try {
-                eventually(() -> Assert.assertEquals(
-                        "The job is probably still running",
-                        "waiting",
-                        SystemUtil.runShellCommand(automation, statusCmd).trim()),
-                        timeout);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
-        });
+    public static void awaitJobUntilRequestedState(
+            String packageName,
+            int jobId,
+            long timeout,
+            UiAutomation automation,
+            String requestedState1,
+            String requestedState2) {
+        String statusCmd = "cmd jobscheduler get-job-state -u "
+                + Process.myUserHandle().getIdentifier() + " " + packageName + " " + jobId;
+        try {
+            eventually(() -> {
+                String jobState = runShellCommand(automation, statusCmd).trim();
+                boolean jobInEitherRequestedState = jobState.startsWith(requestedState1)
+                        || jobState.startsWith(requestedState2);
+                Assert.assertTrue("The job doesn't have requested state "
+                        + "(" + requestedState1 + " or " + requestedState2 + ")"
+                        + " yet, current state: " + jobState, jobInEitherRequestedState);
+            }, timeout);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }

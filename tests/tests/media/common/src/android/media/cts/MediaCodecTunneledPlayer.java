@@ -52,12 +52,15 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
     /** State of the player when playback is paused. */
     private static final int STATE_PAUSED = 5;
 
-    private Boolean mThreadStarted = false;
+    private final Object mThreadStartedLock = new Object();
+    private boolean mThreadStarted = false;
     private byte[] mSessionId;
     private CodecState mAudioTrackState;
     private int mMediaFormatHeight;
     private int mMediaFormatWidth;
-    private Integer mState;
+    private Float mMediaFormatFrameRate;
+    private final Object mStateLock = new Object();
+    private int mState;
     private long mDeltaTimeUs;
     private long mDurationUs;
     private Map<Integer, CodecState> mAudioCodecStates;
@@ -88,12 +91,12 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
             @Override
             public void run() {
                 while (true) {
-                    synchronized (mThreadStarted) {
+                    synchronized (mThreadStartedLock) {
                         if (mThreadStarted == false) {
                             break;
                         }
                     }
-                    synchronized (mState) {
+                    synchronized (mStateLock) {
                         if (mState == STATE_PLAYING) {
                             doSomeWork();
                             if (mAudioTrackState != null) {
@@ -109,6 +112,10 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
                 }
             }
         });
+    }
+
+    public void setFrameRate(float frameRate) {
+        mMediaFormatFrameRate = frameRate;
     }
 
     public void setAudioDataSource(Uri uri, Map<String, String> headers) {
@@ -285,6 +292,9 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
                 return false;
             }
         }
+        if (isVideo && mMediaFormatFrameRate != null) {
+            format.setFloat(MediaFormat.KEY_FRAME_RATE, mMediaFormatFrameRate);
+        }
         codec.configure(
                 format,
                 isVideo ? mSurfaceHolder.getSurface() : null, null, 0);
@@ -338,7 +348,7 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
         }
         mState = STATE_PLAYING;
 
-        synchronized (mThreadStarted) {
+        synchronized (mThreadStartedLock) {
             mThreadStarted = true;
             mThread.start();
         }
@@ -360,7 +370,7 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
             throw new IllegalStateException("Expected STATE_PLAYING, got " + mState);
         }
 
-        synchronized (mState) {
+        synchronized (mStateLock) {
             for (CodecState state : mVideoCodecStates.values()) {
                 state.pause();
             }
@@ -381,7 +391,7 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
             throw new IllegalStateException("Expected STATE_PAUSED, got " + mState);
         }
 
-        synchronized (mState) {
+        synchronized (mStateLock) {
             for (CodecState state : mVideoCodecStates.values()) {
                 state.play();
             }
@@ -478,7 +488,7 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
         mDurationUs = -1;
         mState = STATE_IDLE;
 
-        synchronized (mThreadStarted) {
+        synchronized (mThreadStartedLock) {
             mThreadStarted = false;
         }
         try {
@@ -726,16 +736,10 @@ public class MediaCodecTunneledPlayer implements MediaTimeProvider {
         return mAudioCodecStates.entrySet().iterator().next().getValue().getFramesWritten();
     }
 
-    public void stopWritingToAudioTrack(boolean stopWriting) {
-        for (CodecState state : mAudioCodecStates.values()) {
-            state.stopWritingToAudioTrack(stopWriting);
-        }
-    }
-
     /** Configure underrun simulation on audio codecs. */
-    public void simulateAudioUnderrun(boolean enabled) {
+    public void stopDrainingAudioOutputBuffers(boolean enabled) {
         for (CodecState state: mAudioCodecStates.values()) {
-            state.simulateUnderrun(enabled);
+            state.stopDrainingOutputBuffers(enabled);
         }
     }
 
