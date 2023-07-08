@@ -29,22 +29,22 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.DeviceConfig
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
-import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.test.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.ThrowingSupplier
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
@@ -80,6 +80,7 @@ const val JOB_RUN_WAIT_TIME = 3000L
 
 const val CMD_EXPAND_NOTIFICATIONS = "cmd statusbar expand-notifications"
 const val CMD_COLLAPSE = "cmd statusbar collapse"
+const val CMD_CLEAR_NOTIFS = "service call notification 1"
 
 const val APK_PATH_S_APP = "/data/local/tmp/cts/hibernation/CtsAutoRevokeSApp.apk"
 const val APK_PACKAGE_NAME_S_APP = "android.hibernation.cts.autorevokesapp"
@@ -245,13 +246,22 @@ fun goHome() {
 }
 
 /**
+ * Clear notifications from shade
+ */
+fun clearNotifications() {
+    runWithShellPermissionIdentity {
+        runShellCommandOrThrow(CMD_CLEAR_NOTIFS)
+    }
+}
+
+/**
  * Open the "unused apps" notification which is sent after the hibernation job.
  */
 fun openUnusedAppsNotification() {
     val notifSelector = By.textContains("unused app")
     if (hasFeatureWatch()) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        expandNotificationsWatch(UiAutomatorUtils.getUiDevice())
+        expandNotificationsWatch(UiAutomatorUtils2.getUiDevice())
         waitFindObject(uiAutomation, notifSelector).click()
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.text("Open")).click()
@@ -271,7 +281,7 @@ fun openUnusedAppsNotification() {
             wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
                 assertTrue(
                     "Unused apps page did not open after tapping notification.",
-                    UiAutomatorUtils.getUiDevice().wait(
+                    UiAutomatorUtils2.getUiDevice().wait(
                         Until.hasObject(By.pkg(permissionPkg).depth(0)), VIEW_WAIT_TIMEOUT
                     )
                 )
@@ -319,7 +329,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
     UiObject2 {
     var view: UiObject2? = null
     val start = System.currentTimeMillis()
-    val uiDevice = UiAutomatorUtils.getUiDevice()
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
 
     var isAtEnd = false
     var wasScrolledUpAlready = false
@@ -364,7 +374,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
 
 fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 {
     try {
-        return UiAutomatorUtils.waitFindObject(selector)
+        return UiAutomatorUtils2.waitFindObject(selector)
     } catch (e: RuntimeException) {
         val ui = uiAutomation.rootInActiveWindow
 
@@ -383,7 +393,7 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
             // Auto dismiss occasional system dialogs to prevent interfering with the test
             android.util.Log.w(AutoRevokeTest.LOG_TAG, "Ignoring exception", e)
             okCloseButton.click()
-            return UiAutomatorUtils.waitFindObject(selector)
+            return UiAutomatorUtils2.waitFindObject(selector)
         } else {
             throw e
         }

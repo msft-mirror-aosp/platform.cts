@@ -36,6 +36,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_5;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_SELF_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
 
@@ -44,15 +45,16 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2Manager;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.os.ConditionVariable;
-import android.os.PowerManager;
 import android.platform.test.annotations.LargeTest;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -69,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,9 +93,9 @@ public class MediaRouter2DeviceTest {
 
     private MediaRouter2 mRouter2;
     private MediaRouter2Manager mRouter2Manager;
-    private PowerManager.WakeLock mWakeLock;
     private Context mContext;
     private ComponentName mPlaceholderComponentName;
+    private Activity mScreenOnActivity;
 
     @Before
     public void setUp() throws Exception {
@@ -103,27 +106,28 @@ public class MediaRouter2DeviceTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         mRouter2Manager = MediaRouter2Manager.getInstance(mContext);
-        PowerManager powerManager = mContext.getSystemService(PowerManager.class);
-        // MediaRouter does not perform scanning when the screen is off, so we need to turn on the
-        // screen, and keep it on, to run this test. We use the deprecated FULL_WAKE_LOCK because
-        // the test does not use activities, which would enable the use of the recommended approach.
-        mWakeLock =
-                powerManager.newWakeLock(
-                        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                        "MediaRouterCts:MediaRouter2DeviceTest");
-        mWakeLock.setReferenceCounted(false);
-        mWakeLock.acquire();
         mPlaceholderComponentName = new ComponentName(mContext, PlaceholderActivity.class);
+
+        // Launch ScreenOnActivity while tests are running for scanning to work. MediaRouter2 blocks
+        // app scan requests while the screen is off for resource saving.
+        Intent intent = new Intent(/* context= */ mContext, ScreenOnActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mScreenOnActivity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
     }
 
     @After
     public void tearDown() {
-        mWakeLock.release();
+        // mScreenOnActivity may be null if we failed to launch the activity. The NPE would not
+        // change the outcome of the test, but it would misdirect attention, away from the root
+        // cause of the failure.
+        if (mScreenOnActivity != null) {
+            mScreenOnActivity.finish();
+        }
     }
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
-    public void deduplicationIds_propagateAcrossApps() {
+    public void deduplicationIds_propagateAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -161,7 +165,7 @@ public class MediaRouter2DeviceTest {
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
-    public void deviceType_propagatesAcrossApps() {
+    public void deviceType_propagatesAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -299,7 +303,7 @@ public class MediaRouter2DeviceTest {
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
-    public void visibilityAndAllowedPackages_propagateAcrossApps() {
+    public void visibilityAndAllowedPackages_propagateAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -328,7 +332,7 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    public void getRoutes_returnsDefaultDevice() {
+    public void getRoutes_returnsDefaultDevice() throws TimeoutException {
         assertThat(
                         waitForAndGetRoutes(
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
@@ -339,7 +343,7 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    public void getRoutes_returnDeviceRoute() {
+    public void getRoutes_returnDeviceRoute() throws TimeoutException {
         assertThat(
                         waitForAndGetRoutes(
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
@@ -349,6 +353,22 @@ public class MediaRouter2DeviceTest {
                 .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
     }
 
+    @ApiTest(apis = {"android.media.MediaRouter2"})
+    @Test
+    public void selfScanOnlyProvider_notScannedByAnotherApp() {
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+
+        assertThrows(
+                TimeoutException.class,
+                () ->
+                        waitForAndGetRoutes(
+                                preference,
+                                /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY)));
+    }
+
     /**
      * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
      * that includes all the given {@code expectedRouteIds}.
@@ -356,7 +376,8 @@ public class MediaRouter2DeviceTest {
      * <p>Will only wait for up to {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
      */
     private Map<String, MediaRoute2Info> waitForAndGetRoutes(
-            RouteDiscoveryPreference preference, Set<String> expectedRouteIds) {
+            RouteDiscoveryPreference preference, Set<String> expectedRouteIds)
+            throws TimeoutException {
         ConditionVariable condition = new ConditionVariable();
         MediaRouter2.RouteCallback routeCallback =
                 new MediaRouter2.RouteCallback() {
@@ -379,8 +400,12 @@ public class MediaRouter2DeviceTest {
                         .map(MediaRoute2Info::getOriginalId)
                         .collect(Collectors.toSet());
         try {
-            if (!currentRoutes.containsAll(expectedRouteIds)) {
-                Truth.assertThat(condition.block(ROUTE_UPDATE_MAX_WAIT_MS)).isTrue();
+            if (!currentRoutes.containsAll(expectedRouteIds)
+                    && !condition.block(ROUTE_UPDATE_MAX_WAIT_MS)) {
+                throw new TimeoutException(
+                        "Failed to get expected routes after "
+                                + ROUTE_UPDATE_MAX_WAIT_MS
+                                + " milliseconds.");
             }
             return mRouter2.getRoutes().stream()
                     .collect(Collectors.toMap(MediaRoute2Info::getOriginalId, Function.identity()));

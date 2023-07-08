@@ -46,6 +46,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
+import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.util.Log;
@@ -55,6 +56,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
@@ -99,6 +101,7 @@ public class PerformanceTest {
     private static final int NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY = 8;
     private static final long FRAME_DURATION_NS_30FPS = 33333333L;
     private static final int NUM_ZOOM_STEPS = 10;
+    private static final String HAS_ACTIVITY_ARG_KEY = "has-activity";
 
     private DeviceReportLog mReportLog;
 
@@ -123,6 +126,33 @@ public class PerformanceTest {
 
     @Rule
     public final Camera2AndroidTestRule mTestRule = new Camera2AndroidTestRule(mContext);
+
+    // b/284352937: Display an activity with SurfaceView so that camera's effect on refresh
+    // rate takes precedence.
+    //
+    // - If no activity is displayed, home screen would vote for a completely different refresh
+    // rate. Some examples are 24hz and 144hz. These doesn't reflect the actual refresh rate
+    // when camera runs with a SurfaceView.
+    // - The testSurfaceViewJitterReduction needs to read timestamps for each output image. If
+    // we directly connect camera to SurfaceView, we won't have access to timestamps.
+    //
+    // So the solution is that if no activity already exists, create an activity with SurfaceView,
+    // but not connect it to camera.
+    @Rule
+    public final ActivityTestRule<Camera2SurfaceViewCtsActivity> mActivityRule =
+            createActivityRuleIfNeeded();
+
+    private static ActivityTestRule<Camera2SurfaceViewCtsActivity> createActivityRuleIfNeeded() {
+        Bundle bundle = InstrumentationRegistry.getArguments();
+        byte hasActivity = bundle.getByte(HAS_ACTIVITY_ARG_KEY);
+
+        // If the caller already has an activity, do not create the ActivityTestRule.
+        if (hasActivity != 0) {
+            return null;
+        } else {
+            return new ActivityTestRule<>(Camera2SurfaceViewCtsActivity.class);
+        }
+    }
 
     /**
      * Test camera launch KPI: the time duration between a camera device is
@@ -1069,6 +1099,7 @@ public class PerformanceTest {
                         ResultType.HIGHER_BETTER, ResultUnit.FRAMES);
             } finally {
                 mTestRule.closeDefaultImageReader();
+                mTestRule.closeDevice(id);
                 closePreviewSurface();
             }
             mReportLog.submit(mInstrumentation);

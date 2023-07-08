@@ -34,24 +34,26 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_APP_HIBERNATION
 import android.provider.Settings
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DisableAnimationRule
+import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FreezeRotationRule
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
+import com.android.compatibility.common.util.UiDumpUtils
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers
@@ -123,6 +125,7 @@ class AppHibernationIntegrationTest {
         assertThat(
             runShellCommandOrThrow("cmd statusbar collapse"),
             CoreMatchers.equalTo(""))
+        clearNotifications()
 
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
@@ -337,20 +340,30 @@ class AppHibernationIntegrationTest {
             val title = res.getString(
                 res.getIdentifier("unused_apps_switch", "string", settingsPackage))
 
-            // Settings can have multiple scrollable containers so all of them should be
-            // searched.
-            var toggleFound = UiAutomatorUtils.waitFindObjectOrNull(By.text(title)) != null
-            var i = 0
-            var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
-            while (!toggleFound && scrollableObject.waitForExists(WAIT_TIME_MS)) {
-                // The following line should work for both handhold and car Settings.
-                toggleFound =
-                    scrollableObject.scrollTextIntoView(title) ||
-                        UiAutomatorUtils.waitFindObjectOrNull(By.text(title)) != null
-                scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
+            // Attempt standard search first (only uses first scrollable instance)
+            var toggleFound = UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
+
+            if (!toggleFound) {
+                // Settings can have multiple scrollable containers so all of them should be
+                // searched.
+                var i = 0
+                var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
+                // Assert that at least one scrollable exists on screen
+                var scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
+                    assertTrue("No scrollable exists on screen", scrollableExists)
+                }
+                while (!toggleFound && scrollableExists) {
+                    toggleFound = scrollableObject.scrollTextIntoView(title) ||
+                        UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
+                    scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
+                    scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                }
             }
 
-            assertTrue("Remove permissions and free up space toggle not found", toggleFound)
+            wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
+                assertTrue("Remove permissions and free up space toggle not found", toggleFound)
+            }
         }
     }
 

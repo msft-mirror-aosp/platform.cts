@@ -33,6 +33,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.ListView;
 
+import com.android.compatibility.common.util.BatteryUtils;
 import com.android.cts.verifier.TestListActivity.DisplayMode;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -146,6 +147,10 @@ public class ManifestTestListAdapter extends TestListAdapter {
 
     private static final String TEST_DISPLAY_MODE_META_DATA = "display_mode";
 
+    private static final String TEST_PASS_MODE = "test_pass_mode";
+
+    private static final String CONFIG_BATTERY_SUPPORTED = "config_battery_supported";
+
     private static final String CONFIG_NO_EMULATOR = "config_no_emulator";
 
     private static final String CONFIG_VOICE_CAPABLE = "config_voice_capable";
@@ -167,6 +172,13 @@ public class ManifestTestListAdapter extends TestListAdapter {
     /** The config to represent that a test is needed to run in the multiple display modes
      * (i.e. both unfolded and folded) */
     private static final String MULTIPLE_DISPLAY_MODE = "multi_display_mode";
+
+    /** The config to represent that a test is only needed to run in the folded display mode. */
+    private static final String FOLDED_DISPLAY_MODE = "folded_display_mode";
+
+    /** The config to represent that a test is marked as pass when it passes either in folded mode
+     * or in unfolded mode. */
+    private static final String EITHER_MODE = "either_mode";
 
     /**
      * The user is not a {@link UserManager#isProfile() profile} and is running in the background,
@@ -290,10 +302,11 @@ public class ManifestTestListAdapter extends TestListAdapter {
             String[] excludedUserTypes = getExcludedUserTypes(info.activityInfo.metaData);
             String[] applicableFeatures = getApplicableFeatures(info.activityInfo.metaData);
             String displayMode = getDisplayMode(info.activityInfo.metaData);
+            boolean passInEitherMode = getTestPassMode(info.activityInfo.metaData, displayMode);
 
             TestListItem item = TestListItem.newTest(title, testName, intent, requiredFeatures,
                      requiredConfigs, requiredActions, excludedFeatures, applicableFeatures,
-                     excludedUserTypes, displayMode);
+                     excludedUserTypes, displayMode, passInEitherMode);
 
             String testCategory = getTestCategory(mContext, info.activityInfo.metaData);
             addTestToCategory(testsByCategory, testCategory, item);
@@ -367,6 +380,21 @@ public class ManifestTestListAdapter extends TestListAdapter {
         }
         String displayMode = metaData.getString(TEST_DISPLAY_MODE_META_DATA);
         return displayMode == null ? MULTIPLE_DISPLAY_MODE : displayMode;
+    }
+
+    /**
+     * Gets the configuration of the test pass mode per test.
+     *
+     * @param metaData Given metadata of the test pass mode.
+     * @return A boolean representing whether the test can be marked as pass when it passes either
+     * in the folded mode or in the unfolded mode.
+     */
+    static boolean getTestPassMode(Bundle metaData, String displayMode) {
+        if (metaData == null || !displayMode.equals(MULTIPLE_DISPLAY_MODE)) {
+            return false;
+        }
+        String testPassMode = metaData.getString(TEST_PASS_MODE);
+        return testPassMode != null && testPassMode.equals(EITHER_MODE);
     }
 
     static String getTitle(Context context, ActivityInfo activityInfo) {
@@ -478,6 +506,11 @@ public class ManifestTestListAdapter extends TestListAdapter {
                                     exception);
                         }
                         break;
+                    case CONFIG_BATTERY_SUPPORTED:
+                        if (!BatteryUtils.hasBattery()) {
+                            return false;
+                        }
+                        break;
                     case CONFIG_QUICK_SETTINGS_SUPPORTED:
                         if (!getSystemResourceFlag(context, "config_quickSettingsSupported")) {
                             return false;
@@ -511,6 +544,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
                 return currentMode.equals(DisplayMode.UNFOLDED.toString());
             case MULTIPLE_DISPLAY_MODE:
                 return true;
+            case FOLDED_DISPLAY_MODE:
+                return currentMode.equals(DisplayMode.FOLDED.toString());
             default:
                 return false;
         }

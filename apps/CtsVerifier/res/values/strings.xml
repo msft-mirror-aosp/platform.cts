@@ -905,6 +905,7 @@
         \nGo setting mode, set Bluetooth to unpair other device.
     </string>
 
+    <string name="ble_mtu_unexpected_message">Unexpected MTU request</string>
     <string name="ble_mtu_mismatch_message">MTU is not correct.(Request:%1$d, Actual:%2$d)</string>
     <string name="ble_mtu_fail_message">MTU test: failed to receive data</string>
 
@@ -1619,9 +1620,9 @@
     <string name="camera_orientation">Camera Orientation</string>
     <string name="co_info">This test verifies the orientation capabilities of
     camera preview and capture.\n - The left view shows a preview window rotated
-    clockwise by a given magnitude of degrees.\n - The right view, after taking
+    by a given magnitude of degrees.\n - The right view, after taking
     a photo, shows the captured image.\n - For each camera and orientation, both
-    the left and right views should appear rotated clockwise by the amount of
+    the left and right views should appear rotated by the amount of
     degrees specified. Choose \"Pass\" if this is the case. Otherwise, choose
     \"Fail\".\n - For front-facing cameras, the test will horizontally mirror
     the captured image prior to rotation, in attempt to make the left and right
@@ -1633,7 +1634,6 @@
     <string name="co_format_label">Oriented photo</string>
     <string name="co_camera_label">Camera:</string>
     <string name="co_orientation_label">Orientation</string>
-    <string name="co_orientation_direction_label">clockwise</string>
     <string name="co_instruction_heading_label">Instruction:</string>
     <string name="co_instruction_text_photo_label">Take a photo</string>
     <string name="co_instruction_text_passfail_label">Choose \"Pass\" if the left view is oriented the same as the right view. Otherwise, choose \"Fail\".</string>
@@ -2389,7 +2389,7 @@
         particular ringer mode states works properly.
     </string>
     <string name="ringer_mode_pass_test">These tests are handled by CTS.</string>
-    <string name="test_sound_effects">Test touch sound</string>
+    <string name="test_sound_effects">Test Tap &amp; click sounds</string>
     <string name="test_vibrate_notification">Test vibrate notification</string>
     <string name="test_vibrate_ringer">Test vibrate ringer</string>
     <string name="test_access_ringer_mode">Test access ringer mode</string>
@@ -2397,7 +2397,7 @@
     <string name="test_volume_dnd_affected_stream">Test volume change</string>
     <string name="test_mute_dnd_affected_streams">Test mute streams</string>
     <string name="test_ringer_manager">Test RingtoneManager</string>
-    <string name="enable_sound_effects">Please enable touch sound in Sound settings.</string>
+    <string name="enable_sound_effects">Please enable Tap &amp; click sounds in Sound settings.</string>
     <string name="attention_ready">I\'m done</string>
     <string name="attention_filter_any">Please enable \"Do not disturb\" by tapping the Quick Settings tile.</string>
     <string name="attention_filter_all">Please disable \"Do not disturb\" by tapping the Quick Settings tile.</string>
@@ -2649,6 +2649,8 @@ When the buttons are enabled, pass this test if the information in the dialog wa
     <string name="nls_block_group">Please block the linked notification channel group and return here.</string>
     <string name="nls_channel_settings_with_filter_instructions">In the following dialog, please take a note of which channel settings are visible. Then turn on vibration for the channel and press \"Done\".</string>
     <string name="nls_channel_settings_with_filter_verification">Were the channel settings shown in a bottom sheet instead of the normal \"full-screen\" settings? Were sound and vibration the only available options?</string>
+    <string name="nls_channel_settings_with_filter_instructions_no_vibrator">In the following dialog, please take a note of which channel settings are visible. Then add a sound for the channel and press \"Done\".</string>
+    <string name="nls_channel_settings_with_filter_verification_no_vibrator">Were the channel settings shown in a bottom sheet instead of the normal \"full-screen\" settings? Was sound the only available option?</string>
     <string name="nls_disable_service">Please disable \"Notification Listener for CTS Verifier\"
         under Apps > Gear Icon > Special Access > Notification Access and return here.</string>
     <string name="nls_start_settings">Launch Settings</string>
@@ -4205,7 +4207,7 @@ You should be prompted to select credentials; choose the ones you just installed
         Then press Go to open the WiFi page in Settings.
         Confirm that:\n\n
         - You cannot add a new WiFi configuration.\n
-        - The UI indicates that this is disabled due to admin policy.\n
+        - Tapping on the disabled network shows a dialog explaining the admin restriction.\n
         \n
         Use the Back button to return to this page.
     </string>
@@ -4217,7 +4219,8 @@ You should be prompted to select credentials; choose the ones you just installed
         - You cannot share an admin configured WiFi config.\n
         - Sharing option is disabled in Settings.\n
         \n
-        Use the Back button to return to this page.
+        Use the Back button to return to this page.\n
+        NOTE: If the device does not support Wi-Fi sharing please skip this test and mark it as passing.
     </string>
     <string name="device_owner_wifi_security_level_restriction">Set WiFi security level restriction</string>
     <string name="device_owner_wifi_security_level_restriction_info">
@@ -4425,7 +4428,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Strings used for policy transparency test -->
     <string name="device_profile_owner_policy_transparency_test">Policy transparency test</string>
     <string name="device_profile_owner_policy_transparency_test_info">
-        This test checks that if an admin has enforced a policy, we let the user know about this.\nSet the short and long support messages before proceeding with the tests.
+        This test checks that if an admin has enforced a policy, we let the user know about this.\nSet the short support message before proceeding with the tests.
     </string>
     <string name="policy_transparency_open_settings_label">Open settings</string>
     <string name="policy_transparency_short_support_msg_label">Set short support message</string>
@@ -5759,9 +5762,9 @@ You should be prompted to select credentials; choose the ones you just installed
         This time is defined as the \"cold start latency\". To pass this test, a maximum
         cold start latency time of 500ms or less is REQUIRED, while a time of 100ms or less
         is STRONGLY RECOMMENDED. (See <a href="https://source.android.com/compatibility/android-cdd#5_6_audio_latency">Android CDD § 5.6. Audio Latency</a>)
-        \n\nTo run this test, it is required to have touch-sounds disabled in the device
-        \"Sound &amp; Vibration\" settings
-        panel.
+        \n\nTo run this test, it is required to have Tap &amp; click sounds disabled in the device
+        \"Sound &amp; Vibration\" settings panel. Note that in some versions of Android, this setting
+        may be called \"Touch sounds\".
         \n\nThe \"Java API\" and \"Native API\" allow for capturing performance data from the
         two streaming APIs. The cold start latency measurement need only pass for one API.
         The Native API generally gives the best performance.
@@ -5786,9 +5789,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_coldstart_outputlbl">Output Cold Start Latency</string>
     <string name="audio_coldstart_inputlbl">Input Cold Start Latency</string>
     <string name="audio_coldstart_touchsounds_message">
-        Touch sounds are ENABLED. Please DISABLE touch sounds in the \"Sound &amp; Vibration\" settings panel.
+        Tap &amp; click sounds are ENABLED. Please DISABLE Tap &amp; click in the \"Sound &amp; Vibration\" settings panel.
+        \nNote that in some versions of Android, this setting may be called \"Touch sounds\".
     </string>
-    <string name="audio_coldstart_notouchsounds_message">Touch sound are DISABLED.</string>
+    <string name="audio_coldstart_notouchsounds_message">Tap &amp; click sounds are DISABLED.</string>
 
     <!-- Audio Frequency Line Test -->
     <string name="audio_frequency_line_test">Audio Frequency Line Test</string>
@@ -5953,10 +5957,12 @@ Follow the instructions on the screen to measure the frequency response for the 
         The Acoustic Coupling Factor (ACF) will be computed for each case. A successful test expects ACF less than 0.4 for AEC ON,
         and ACF greater than 0.6 for AEC OFF.
         This test requires a quiet environment, and no headphones or similar connected.
-        This test must pass in devices where AEC functionality is mandatory or any device which implements AEC.
+        This test must pass on any device which implements AEC.
     </string>
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
+    <string name="audio_aec_no_aec_support">No AEC Support.</string>
+    <string name="audio_aec_no_aec_pass">AEC is not supported on this device. Test may pass.</string>
 
     <!-- Audio Connection Test -->
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
@@ -7002,6 +7008,7 @@ Follow the instructions on the screen to measure the frequency response for the 
 
     <!-- Strings for ControlsPanelVerifierActivity -->
     <string name="controls_panel_test">Controls Panel tests</string>
+    <string name="controls_panel_not_supported">This feature is not supported in this device due to multi-window not being supported. Pass this test.</string>
     <string name="controls_panel_install_test">0. Install helper app</string>
     <string name="controls_panel_install_test_info">This test helps install the helper app that will be used for all subsequent tests in this group.</string>
     <string name="controls_panel_install_test_instructions">You should have received a helper app apk with this CTS

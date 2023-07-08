@@ -33,14 +33,14 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.safetycenter.SafetyCenterIssue
 import android.safetycenter.SafetyCenterManager
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiObjectNotFoundException
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiObjectNotFoundException
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
@@ -135,6 +135,7 @@ class AutoRevokeTest {
         assertThat(
                 runShellCommandOrThrow("cmd statusbar collapse"),
                 equalTo(""))
+        clearNotifications()
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         if ("false".equals(runShellCommandOrThrow("cmd lock_settings get-disabled"))) {

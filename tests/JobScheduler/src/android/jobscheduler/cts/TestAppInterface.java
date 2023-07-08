@@ -101,7 +101,7 @@ class TestAppInterface implements AutoCloseable {
         stopFgs();
         mContext.unregisterReceiver(mReceiver);
         AppOpsUtils.reset(TEST_APP_PACKAGE);
-        SystemUtil.runShellCommand("am compat --reset-all" + TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("am compat --reset-all " + TEST_APP_PACKAGE);
         mTestJobStates.clear();
         forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
@@ -201,6 +201,11 @@ class TestAppInterface implements AutoCloseable {
     void forceStopApp() {
         SystemUtil.runShellCommand("am force-stop"
                 + " --user " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE);
+    }
+
+    void setTestPackageRestricted(boolean restricted) throws Exception {
+        AppOpsUtils.setOpMode(TEST_APP_PACKAGE, "RUN_ANY_IN_BACKGROUND",
+                restricted ? AppOpsManager.MODE_IGNORED : AppOpsManager.MODE_ALLOWED);
     }
 
     void cancelJob() throws Exception {

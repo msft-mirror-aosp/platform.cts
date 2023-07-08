@@ -23,6 +23,7 @@ import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELES
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
+import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.hasSupportForColorFormat;
@@ -75,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 /**
@@ -224,13 +226,16 @@ public class CodecEncoderSurfaceTest {
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRate,
             int frameRate, int bitDepth, int maxBFrames) {
-        return new EncoderConfigParams.Builder(mediaType)
+        EncoderConfigParams.Builder foreman = new EncoderConfigParams.Builder(mediaType)
                 .setBitRate(bitRate)
                 .setFrameRate(frameRate)
                 .setColorFormat(COLOR_FormatSurface)
                 .setInputBitDepth(bitDepth)
-                .setMaxBFrames(maxBFrames)
-                .build();
+                .setMaxBFrames(maxBFrames);
+        if (bitDepth == 10) {
+            foreman.setProfile(Objects.requireNonNull(PROFILE_HLG_MAP.get(mediaType))[0]);
+        }
+        return foreman.build();
     }
 
     @After
@@ -360,11 +365,14 @@ public class CodecEncoderSurfaceTest {
                             testArgs[3] =
                                     getVideoEncoderCfgParams(mediaType, br, fps, toneMap ? 8 : 10,
                                             maxBFrame);
+                            if (toneMap && (colorFormat == COLOR_FormatYUVP010)) {
+                                colorFormat = COLOR_FormatYUV420Flexible;
+                            }
                             testArgs[4] = colorFormat;  // color format
                             testArgs[5] = arg[5];   // tone map
                             testArgs[6] = usePersistentSurface;
                             testArgs[7] = String.format("%dkbps_%dfps_%s_%s_%s", br / 1000, fps,
-                                    colorFormatToString(colorFormat, 10),
+                                    colorFormatToString(colorFormat, toneMap ? 8 : 10),
                                     toneMap ? "tonemapyes" : "tonemapno",
                                     usePersistentSurface ? "persistentsurface" : "surface");
                             exhaustiveArgsList.add(testArgs);

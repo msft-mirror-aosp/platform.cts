@@ -26,6 +26,7 @@ import static android.app.ActivityManager.STOP_USER_ON_SWITCH_TRUE;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
+import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.Process.myUserHandle;
 
@@ -131,7 +132,7 @@ public final class Users {
             try {
                 UserReference user =
                         ShellCommand.builder("cmd car_service get-initial-user")
-                        .executeAndParseOutput(i -> find(Integer.parseInt(i.trim())));
+                                .executeAndParseOutput(i -> find(Integer.parseInt(i.trim())));
 
                 if (user.exists()) {
                     return user;
@@ -492,12 +493,20 @@ public final class Users {
         }
     }
 
-    /** See {@link UserManager#getRemainingCreatableProfileCount(String)} */
+    /** Checks if a profile of type {@code userType} can be created. */
     @Experimental
-    public int getRemainingCreatableProfileCount(UserType userType) {
-        try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
-            return sUserManager.getRemainingCreatableProfileCount(userType.name());
+    public boolean canCreateProfile(UserType userType) {
+        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
+        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return sUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
+            }
         }
+
+        // For S and older versions, we need to keep the previous behavior by returning true here
+        // so that the check can pass.
+        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
+        return true;
     }
 
     /** See {@link UserManager#isHeadlessSystemUserMode()}. */
@@ -575,7 +584,8 @@ public final class Users {
         }
 
         try (PermissionContext p =
-                     TestApis.permissions().withPermission(CREATE_USERS, QUERY_USERS)) {
+                     TestApis.permissions().withPermission(CREATE_USERS)
+                             .withPermissionOnVersionAtLeast(Versions.U, QUERY_USERS)) {
             return sUserManager.getUsers(
                     /* excludePartial= */ false,
                     /* excludeDying= */ true,

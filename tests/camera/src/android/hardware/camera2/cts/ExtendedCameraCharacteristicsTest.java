@@ -70,6 +70,7 @@ import android.media.ImageReader;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassEvaluator.CameraExtensionRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator.DynamicRangeTenBitsRequirement;
+import android.mediapc.cts.common.PerformanceClassEvaluator.FaceDetectionRequirement;
 import android.mediapc.cts.common.RequiredMeasurement;
 import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.RequirementConstants;
@@ -194,6 +195,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO;
     private static final int DYNAMIC_RANGE_TEN_BIT =
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
+    private static final int FACE_DETECTION_MODE_SIMPLE =
+            CameraCharacteristics.STATISTICS_FACE_DETECT_MODE_SIMPLE;
+    private static final int FACE_DETECTION_MODE_FULL =
+            CameraCharacteristics.STATISTICS_FACE_DETECT_MODE_FULL;
     private static final int MONOCHROME =
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MONOCHROME;
     private static final int HIGH_SPEED_FPS_LOWER_MIN = 30;
@@ -505,11 +510,20 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         Size[] jpegSizes = staticInfo.getJpegOutputSizesChecked();
         assertTrue("Primary cameras must support JPEG formats",
                 jpegSizes != null && jpegSizes.length > 0);
+        int minEuclidDistSquare = Integer.MAX_VALUE;
+        Size closestJpegSizeToVga = VGA;
         for (Size jpegSize : jpegSizes) {
             mCollector.expectTrue(
                     "Primary camera's JPEG size must be at least 1080p, but is "
                     + jpegSize, jpegSize.getWidth() * jpegSize.getHeight()
                         >= FULLHD.getWidth() * FULLHD.getHeight());
+            int widthDist = jpegSize.getWidth() - VGA.getWidth();
+            int heightDist = jpegSize.getHeight() - VGA.getHeight();
+            int euclidDistSquare = widthDist * widthDist + heightDist * heightDist;
+            if (euclidDistSquare < minEuclidDistSquare) {
+                closestJpegSizeToVga = jpegSize;
+                minEuclidDistSquare = euclidDistSquare;
+            }
         }
 
         CameraDevice camera = null;
@@ -528,7 +542,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             outputConfigs.add(new OutputConfiguration(jpegSurface));
 
             // isSessionConfigurationSupported will return true for JPEG sizes smaller
-            // than 1080P, due to framework rouding up to closest supported size (1080p).
+            // than 1080P, due to framework rouding up to closest supported size.
             CameraTestUtils.SessionConfigSupport sessionConfigSupport =
                     CameraTestUtils.isSessionConfigSupported(
                             camera, mHandler, outputConfigs, /*inputConfig*/ null,
@@ -539,7 +553,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     sessionConfigSupport.configSupported);
 
             // Session creation for JPEG sizes smaller than 1080p will succeed, and the
-            // result JPEG image dimension is rounded up to closest supported size (1080p).
+            // result JPEG image dimension is rounded up to closest supported size.
             CaptureRequest.Builder request =
                     camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             request.addTarget(jpegSurface);
@@ -574,8 +588,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             byte[] data = CameraTestUtils.getDataFromImage(image);
             assertTrue("Invalid image data", data != null && data.length > 0);
 
-            CameraTestUtils.validateJpegData(data, FULLHD.getWidth(), FULLHD.getHeight(),
-                    null /*filePath*/);
+            CameraTestUtils.validateJpegData(data, closestJpegSizeToVga.getWidth(),
+                    closestJpegSizeToVga.getHeight(), null /*filePath*/);
         } finally {
             if (camera != null) {
                 camera.close();
@@ -3309,27 +3323,39 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
          */
         public static PrimaryCameraHwLevelReq createPrimaryCameraHwLevelReq() {
             RequiredMeasurement<Integer> rearCameraHwlLevel = RequiredMeasurement
-                .<Integer>builder()
-                .setId(RequirementConstants.REAR_CAMERA_HWL_LEVEL)
-                .setPredicate(CAM_HW_LEVEL_GTE)
-                .addRequiredValue(Build.VERSION_CODES.R,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.S,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.TIRAMISU,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .build();
+                    .<Integer>builder()
+                    .setId(RequirementConstants.REAR_CAMERA_HWL_LEVEL)
+                    .setPredicate(CAM_HW_LEVEL_GTE)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.R,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.S,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.TIRAMISU,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .build();
             RequiredMeasurement<Integer> frontCameraHwlLevel = RequiredMeasurement
-                .<Integer>builder()
-                .setId(RequirementConstants.FRONT_CAMERA_HWL_LEVEL)
-                .setPredicate(CAM_HW_LEVEL_GTE)
-                .addRequiredValue(Build.VERSION_CODES.R,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                .addRequiredValue(Build.VERSION_CODES.S,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.TIRAMISU,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .build();
+                    .<Integer>builder()
+                    .setId(RequirementConstants.FRONT_CAMERA_HWL_LEVEL)
+                    .setPredicate(CAM_HW_LEVEL_GTE)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.R,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.S,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.TIRAMISU,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .build();
             return new PrimaryCameraHwLevelReq(RequirementConstants.R7_5__H_1_3,
                     rearCameraHwlLevel, frontCameraHwlLevel);
         }
@@ -3384,11 +3410,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             "2.2.7.2/7.5/H-1-13",
             "2.2.7.2/7.5/H-1-14"})
     public void testCameraPerfClassCharacteristics() throws Exception {
-        if (mAdoptShellPerm) {
-            // Skip test for system camera. Performance class is only applicable for public camera
-            // ids.
-            return;
-        }
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.PrimaryCameraRequirement primaryRearReq =
                 pce.addPrimaryRearCameraReq();
@@ -3683,34 +3707,60 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
     @CddTest(requirements = {
-            "2.2.7.2/7.5/H-1-15",
-            "2.2.7.2/7.5/H-1-16"})
+            "2.2.7.2/7.5/H-1-16",
+            "2.2.7.2/7.5/H-1-17"})
     public void testCameraUPerfClassCharacteristics() throws Exception {
-        if (mAdoptShellPerm) {
-            // Skip test for system camera. Performance class is only applicable for public camera
-            // ids.
-            return;
-        }
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
         DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
+        FaceDetectionRequirement faceDetectionReq = pce.addR7_5__H_1_17();
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 mCameraIdsUnderTest);
         String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
                 mCameraIdsUnderTest);
 
-        // H-1-15
-        verifyExtensionForCamera(primaryRearId, CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
-                cameraExtensionReq);
-        verifyExtensionForCamera(primaryFrontId, CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
-                cameraExtensionReq);
-
         // H-1-16
         verifyDynamicRangeTenBits(primaryRearId,
                 DynamicRangeTenBitsRequirement.PRIMARY_REAR_CAMERA, dynamicRangeTenBitsReq);
         verifyDynamicRangeTenBits(primaryFrontId,
                 DynamicRangeTenBitsRequirement.PRIMARY_FRONT_CAMERA, dynamicRangeTenBitsReq);
+
+        // H-1-17
+        verifyFaceDetection(primaryRearId,
+                FaceDetectionRequirement.PRIMARY_REAR_CAMERA, faceDetectionReq);
+        verifyFaceDetection(primaryFrontId,
+                FaceDetectionRequirement.PRIMARY_FRONT_CAMERA, faceDetectionReq);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Check camera extension characteristics for Android 14 Performance class requirements
+     * as specified in CDD camera section 7.5
+     */
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {
+            "2.2.7.2/7.5/H-1-15"})
+    public void testCameraUPerfClassExtensionCharacteristics() throws Exception {
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
+
+        String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
+                mCameraIdsUnderTest);
+        String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
+                mCameraIdsUnderTest);
+
+        verifyExtensionForCamera(primaryRearId, CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
+                cameraExtensionReq);
+        verifyExtensionForCamera(primaryFrontId, CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
+                cameraExtensionReq);
 
         pce.submitAndCheck();
     }
@@ -3764,6 +3814,25 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 staticInfo.isCapabilitySupported(DYNAMIC_RANGE_TEN_BIT);
 
         req.setDynamicRangeTenBitsSupported(facing, dynamicRangeTenBitsSupported);
+    }
+
+    /**
+     * Verify face detection requirements for a camera id
+     */
+    private void verifyFaceDetection(String cameraId, int facing, FaceDetectionRequirement req) {
+        if (cameraId == null) {
+            req.setFaceDetectionSupported(facing, false);
+            return;
+        }
+
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+        int[] availableFaceDetectionModes = staticInfo.getAvailableFaceDetectModesChecked();
+        assertNotNull(availableFaceDetectionModes);
+        int[] supportedFaceDetectionModes = {FACE_DETECTION_MODE_SIMPLE, FACE_DETECTION_MODE_FULL};
+        boolean faceDetectionSupported = arrayContainsAnyOf(availableFaceDetectionModes,
+                supportedFaceDetectionModes);
+
+        req.setFaceDetectionSupported(facing, faceDetectionSupported);
     }
 
     /**

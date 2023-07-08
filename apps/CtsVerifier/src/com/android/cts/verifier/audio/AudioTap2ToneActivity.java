@@ -164,8 +164,8 @@ public class AudioTap2ToneActivity
 
         String mediaPerformanceClassString;
         int mpc = Build.VERSION.MEDIA_PERFORMANCE_CLASS;
-        if (mpc == Build.VERSION_CODES.TIRAMISU) {
-            mediaPerformanceClassString = "T";
+        if (mpc >= Build.VERSION_CODES.TIRAMISU) {
+            mediaPerformanceClassString = "T (or greater)";
         } else if (mpc == Build.VERSION_CODES.S)  {
             mediaPerformanceClassString = "S";
         } else if (mpc == Build.VERSION_CODES.R) {
@@ -509,7 +509,7 @@ public class AudioTap2ToneActivity
     private static final String SECTION_TAP_2_TONE_LATENCY = "tap_to_tone_latency";
     private static final String KEY_LATENCY_MIN = "latency_min_";
     private static final String KEY_LATENCY_MAX = "latency_max_";
-    private static final String KEY_LATENCY_AVE = "latency_max_";
+    private static final String KEY_LATENCY_AVE = "latency_ave_";
     private static final String KEY_LATENCY_NUM_MEASUREMENTS = "latency_num_measurements_";
 
     private void reportTestResultForApi(int api) {

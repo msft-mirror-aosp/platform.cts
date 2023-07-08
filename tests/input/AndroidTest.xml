@@ -35,4 +35,8 @@
         <!-- test-timeout unit is ms, value = 10 min -->
         <option name="test-timeout" value="600000" />
     </test>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- TODO(b/285554134): Remove once underlying issue is fixed-->
+        <option name="run-command" value="wm set-ignore-orientation-request false" />
+    </target_preparer>
 </configuration>

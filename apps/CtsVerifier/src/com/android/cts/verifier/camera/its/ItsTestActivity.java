@@ -135,6 +135,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene5",
             "scene6",
             "scene_extensions/scene_hdr",
+            "scene_extensions/scene_night",
             "sensor_fusion");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
@@ -766,5 +767,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         setContentView(R.layout.its_main);
         setInfoResources(R.string.camera_its_test, R.string.camera_its_test_info, -1);
         setPassFailButtonClickListeners();
+        // Changing folded state can incorrectly enable pass button
+        ItsTestActivity.this.getPassButton().setEnabled(false);
     }
 }

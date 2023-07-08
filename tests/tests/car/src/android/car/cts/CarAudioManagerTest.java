@@ -86,9 +86,11 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
 
     private static final long WAIT_TIMEOUT_MS = 5_000;
 
-    private static final Pattern ZONE_PATTERN = Pattern.compile("CarAudioZone\\(.*:(\\d?)\\)");
-    private static final Pattern VOLUME_GROUP_PATTERN =
-            Pattern.compile("CarVolumeGroup\\((\\d?)\\)");
+    private static final Pattern ZONE_PATTERN = Pattern.compile(
+            "CarAudioZone\\(.*:(\\d?)\\) isPrimary\\? (.*?)\n.*Current Config Id: (\\d?)");
+    private static final Pattern VOLUME_GROUP_PATTERN = Pattern.compile(
+            "CarVolumeGroup\\((\\d?)\\)\n.*Name\\((.*?)\\)\n.*Zone Id\\((\\d?)\\)\n"
+                    + ".*Configuration Id\\((\\d?)\\)");
     private static final Pattern ZONE_CONFIG_PATTERN = Pattern.compile(
             "CarAudioZoneConfig\\((.*?):(\\d?)\\) of zone (\\d?) isDefault\\? (.*?)");
 
@@ -287,9 +289,22 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         Matcher matchZone = ZONE_PATTERN.matcher(mCarAudioServiceDump);
         assertWithMessage("No CarAudioZone in dump").that(matchZone.find()).isTrue();
         mZoneId = Integer.parseInt(matchZone.group(1));
+        int currentConfigId = Integer.parseInt(matchZone.group(3));
+        readFirstVolumeGroup(mZoneId, currentConfigId);
+    }
+
+    private void readFirstVolumeGroup(int zoneId, int currentConfigId) {
         Matcher matchGroup = VOLUME_GROUP_PATTERN.matcher(mCarAudioServiceDump);
-        assertWithMessage("No CarVolumeGroup in dump").that(matchGroup.find()).isTrue();
-        mVolumeGroupId = Integer.parseInt(matchGroup.group(1));
+        boolean findVolumeGroup = false;
+        while (matchGroup.find()) {
+            if (Integer.parseInt(matchGroup.group(3)) == zoneId
+                    && Integer.parseInt(matchGroup.group(4)) == currentConfigId) {
+                mVolumeGroupId = Integer.parseInt(matchGroup.group(1));
+                findVolumeGroup = true;
+                break;
+            }
+        }
+        assertWithMessage("No CarVolumeGroup in dump").that(findVolumeGroup).isTrue();
     }
 
     private void setVolumeGroupMute(int zoneId, int groupId, boolean mute) {
@@ -337,6 +352,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {
             "android.car.media.CarAudioManager#unregisterCarVolumeCallback(CarVolumeCallback)"})
     public void unregisterCarVolumeCallback_withoutPermission_receivesCallback() {
+        assumeDynamicRoutingIsEnabled();
         mCallback = new SyncCarVolumeCallback();
         runWithCarControlAudioVolumePermission(
                 () -> mCarAudioManager.registerCarVolumeCallback(mCallback));
@@ -539,6 +555,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
             + "#requestMediaAudioOnPrimaryZone(OccupantZoneInfo, Executor, "
             + "MediaAudioRequestStatusCallback)"})
     public void requestMediaAudioOnPrimaryZone() throws Exception {
+        assumeDynamicRoutingIsEnabled();
         int passengerAudioZoneId = assumePassengerWithValidAudioZone();
         setupMediaAudioRequestCallback();
         OccupantZoneInfo info =
@@ -562,6 +579,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
             + "#requestMediaAudioOnPrimaryZone(OccupantZoneInfo,"
             + "Executor, MediaAudioRequestStatusCallback)"})
     public void requestMediaAudioOnPrimaryZone_withoutApprover() throws Exception {
+        assumeDynamicRoutingIsEnabled();
         assumeNoPrimaryZoneAudioMediaApprovers();
         int passengerAudioZoneId = assumePassengerWithValidAudioZone();
         OccupantZoneInfo info =
