@@ -15,6 +15,8 @@
  */
 package android.media.misc.cts;
 
+import static android.Manifest.permission.MEDIA_CONTENT_CONTROL;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -24,13 +26,13 @@ import android.media.MediaCommunicationManager;
 import android.media.MediaSession2;
 import android.media.Session2CommandGroup;
 import android.media.Session2Token;
-import android.os.Process;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,6 +65,12 @@ public class MediaCommunicationManagerTest {
         mManager = mContext.getSystemService(MediaCommunicationManager.class);
     }
 
+    @After
+    public void tearDown() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
+    }
+
     @Test
     public void testGetVersion() {
         assertNotNull("Missing MediaCommunicationManager", mManager);
@@ -71,6 +79,11 @@ public class MediaCommunicationManagerTest {
 
     @Test
     public void testGetSession2Tokens() throws Exception {
+        // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(MEDIA_CONTENT_CONTROL);
+
         Executor executor = Executors.newSingleThreadExecutor();
 
         assertNotNull("Missing MediaCommunicationManager", mManager);
@@ -92,6 +105,11 @@ public class MediaCommunicationManagerTest {
 
     @Test
     public void testManagerSessionCallback() throws Exception {
+        // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(MEDIA_CONTENT_CONTROL);
+
         Executor executor = Executors.newSingleThreadExecutor();
 
         assertNotNull("Missing MediaCommunicationManager", mManager);
