@@ -65,8 +65,6 @@ public final class ReportUtils {
      */
     public static List<EventMetricData> getEventMetricDataList(ConfigMetricsReportList reportList)
             throws Exception {
-        assertThat(reportList.getReportsCount()).isEqualTo(1);
-        ConfigMetricsReport report = reportList.getReports(0);
         return getEventMetricDataList(reportList, /*reportIndex*/ 0);
     }
 
@@ -212,8 +210,8 @@ public final class ReportUtils {
     public static ConfigMetricsReportList getReportList(
             ITestDevice device, ExtensionRegistry extensionRegistry) throws Exception {
         try {
-            String cmd = String.join(" ", DUMP_REPORT_CMD, ConfigUtils.CONFIG_ID_STRING,
-                    "--include_current_bucket", "--proto");
+            String cmd = String.join(" ", DUMP_REPORT_CMD, ConfigUtils.SHELL_UID_STRING,
+                    ConfigUtils.CONFIG_ID_STRING, "--include_current_bucket", "--proto");
             ConfigMetricsReportList reportList = DeviceUtils.getShellCommandOutput(
                     device, ConfigMetricsReportList.parser(), extensionRegistry, cmd);
             return reportList;
