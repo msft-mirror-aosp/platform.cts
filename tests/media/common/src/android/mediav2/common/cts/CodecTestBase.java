@@ -125,6 +125,8 @@ public abstract class CodecTestBase {
                 || ApiLevelUtil.codenameEquals("VanillaIceCream");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
+    public static final boolean FIRST_SDK_IS_AT_LEAST_V =
+            ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
