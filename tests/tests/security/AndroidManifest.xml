@@ -200,7 +200,14 @@
             android:grantUriPermissions="true"
             android:process=":badprovider" />
 
-        <activity android:name="android.security.cts.CVE_2022_20143.PocActivity"
+        <activity android:name="android.security.cts.AutomaticZenRuleTests.PocActivity"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.action.AUTOMATIC_ZEN_RULE"/>
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.security.cts.AutomaticZenRuleTests.SecondPocActivity"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.app.action.AUTOMATIC_ZEN_RULE"/>
@@ -241,6 +248,15 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
+        <service
+            android:name="android.security.cts.CVE_2022_20129.PocService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService"/>
+            </intent-filter>
+        </service>
+
         <activity android:name="android.security.cts.CVE_2023_20953.PocActivity"
             android:exported="true" />
 
@@ -264,12 +280,22 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.security.cts.CVE_2023_20916.PocActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <service android:name="android.security.cts.AttributionSourceService"
             android:enabled="true"
             android:exported="true"
             android:label="AttributionSourceService"
             android:process=":attributionSourceServiceProcess">
         </service>
+
+        <activity android:name="android.security.cts.CVE_2022_20429.PocActivity" />
 
     </application>
 
