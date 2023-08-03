@@ -130,6 +130,10 @@ class AppHibernationIntegrationTest {
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         runShellCommandOrThrow("input keyevent 82")
+        runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
+
+        resetJob(context)
+        bypassBatterySavingRestrictions(context)
     }
 
     @After
@@ -139,6 +143,7 @@ class AppHibernationIntegrationTest {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
         }
+        resetBatterySavingRestrictions(context)
     }
 
     @Test

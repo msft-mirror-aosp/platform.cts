@@ -30,12 +30,10 @@ import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
-import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.IntentDrivenTestActivity.ButtonInfo;
@@ -59,7 +57,6 @@ import com.android.cts.verifier.features.FeatureUtil;
         "9.11.1/C-6-2", // setRequiredPasswordComplexity behaviour
         "9.11.1/C-8-1", // setRequiredPasswordComplexity behaviour
 })
-@ApiTest(apis = {"android.os.UserManager.DISALLOW_CELLULAR_2G"})
 public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListActivity {
     private static final String TAG = "DeviceOwnerPositiveTestActivity";
 
@@ -88,7 +85,6 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
     private static final String DISALLOW_USB_FILE_TRANSFER_ID = "DISALLOW_USB_FILE_TRANSFER";
     private static final String SET_USER_ICON_TEST_ID = "SET_USER_ICON";
     private static final String DISALLOW_DATA_ROAMING_ID = "DISALLOW_DATA_ROAMING";
-    private static final String DISALLOW_CELLULAR_2G_ID = "DISALLOW_CELLULAR_2G";
     private static final String DISALLOW_FACTORY_RESET_ID = "DISALLOW_FACTORY_RESET";
     private static final String POLICY_TRANSPARENCY_TEST_ID = "POLICY_TRANSPARENCY";
     private static final String ENTERPRISE_PRIVACY_TEST_ID = "ENTERPRISE_PRIVACY";
@@ -385,28 +381,6 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                     }));
         }
 
-        TelephonyManager tm = getSystemService(TelephonyManager.class);
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
-                && tm.isRadioInterfaceCapabilitySupported(
-                        TelephonyManager.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK)) {
-            adapter.add(createInteractiveTestItem(this, DISALLOW_CELLULAR_2G_ID,
-                    R.string.disallow_cellular_2g,
-                    R.string.device_owner_disallow_cellular_2g_info,
-                    new ButtonInfo[] {
-                            new ButtonInfo(
-                                    R.string.device_owner_user_restriction_set,
-                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                            UserManager.DISALLOW_CELLULAR_2G, true)),
-                            new ButtonInfo(
-                                    R.string.device_owner_settings_go,
-                                    new Intent(Settings.ACTION_WIRELESS_SETTINGS)),
-                            new ButtonInfo(
-                                    R.string.device_owner_user_restriction_unset,
-                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                            UserManager.DISALLOW_CELLULAR_2G, false))
-                    }));
-        }
-
         // DISALLOW_FACTORY_RESET
         adapter.add(createInteractiveTestItem(this, DISALLOW_FACTORY_RESET_ID,
                 R.string.device_owner_disallow_factory_reset,
@@ -652,6 +626,7 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
 
         // Customize lock screen message
         if (FeatureUtil.isSwipeToUnlockSupported(this)
+                && FeatureUtil.isCustomizeLockScreenMessageSupported(this)
                 && Utils.isLockscreenSupported(this)) {
             adapter.add(TestListItem.newTest(this,
                     R.string.device_owner_customize_lockscreen_message,
@@ -682,7 +657,7 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         }
 
         // setRequiredPasswordComplexity
-        if (Utils.isLockscreenSupported(this)) {
+        if (Utils.isLockscreenSupported(this) && FeatureUtil.isPasswordSupported(this)) {
             adapter.add(createInteractiveTestItem(this, SET_REQUIRED_PASSWORD_COMPLEXITY_ID,
                     R.string.device_owner_required_password_complexity_test,
                     R.string.device_owner_required_password_complexity_test_info,

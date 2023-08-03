@@ -42,7 +42,7 @@ SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
 DEFAULT_TABLET_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
-ELEVEN_BIT_TABLET_BRIGHTNESS = 1536
+ELEVEN_BIT_TABLET_BRIGHTNESS = 1024  # 50% brightness for Xiaomi tablets
 ELEVEN_BIT_TABLET_NAMES = ('nabu',)
 LEGACY_TABLET_BRIGHTNESS = 96
 LEGACY_TABLET_NAME = 'dragon'
@@ -792,6 +792,35 @@ class ItsSession(object):
     if not data['strValue']:
       raise error_util.CameraItsError('No supported extensions')
     return [int(x) for x in str(data['strValue'][1:-1]).split(', ') if x]
+
+  def get_supported_extension_sizes(self, camera_id, extension, image_format):
+    """Get all supported camera sizes for this camera, extension, and format.
+
+    Sorts in ascending order according to area, i.e.
+    ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
+
+    Args:
+      camera_id: int; device ID
+      extension: int; the integer value of the extension.
+      image_format: int; the integer value of the format.
+    Returns:
+      List of sizes supported for this camera, extension, and format.
+    """
+    cmd = {
+        'cmdName': 'getSupportedExtensionSizes',
+        'cameraId': camera_id,
+        'extension': extension,
+        'format': image_format
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'supportedExtensionSizes':
+      raise error_util.CameraItsError('Invalid command response')
+    if not data[_STR_VALUE]:
+      raise error_util.CameraItsError('No supported extensions')
+    return data[_STR_VALUE].split(';')
 
   def get_display_size(self):
     """Get the display size of the screen.

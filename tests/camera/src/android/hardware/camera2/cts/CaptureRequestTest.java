@@ -44,6 +44,7 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.Image;
 import android.os.Build;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeFull;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -677,6 +678,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Test focus distance control.
      */
     @Test
+    @AppModeFull(reason = "PropertyUtil methods don't work for instant apps")
     public void testFocusDistanceControl() throws Exception {
         for (String id : mCameraIdsUnderTest) {
             try {
@@ -862,9 +864,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Camera API requires that camera timestamps monotonically increase.
      */
     @Test
+    @AppModeFull(reason = "PropertyUtil methods don't work for instant apps")
     public void testZoomTimestampIncrease() throws Exception {
-        if (PropertyUtil.getVendorApiLevel() <= Build.VERSION_CODES.TIRAMISU) {
-            // Only run test for Vendor API level U or higher
+        if (PropertyUtil.getVendorApiLevel() <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Only run test for Vendor API level V or higher
             return;
         }
 
