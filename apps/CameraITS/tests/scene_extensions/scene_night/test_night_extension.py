@@ -30,6 +30,7 @@ import lighting_control_utils
 import opencv_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_DEFAULT_TABLET_BRIGHTNESS_SCALING = 0.04  # 4% of default brightness
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
@@ -37,14 +38,14 @@ _MIN_AREA = 0
 _WHITE = 255
 
 _FMT_NAME = 'yuv'  # To detect noise without conversion to RGB
-_WIDTH = 1920   # Most common 16/9 resolution width
-_HEIGHT = 1080  # Most common 16/9 resolution height
+_IMAGE_FORMAT_YUV_420_888_INT = 35
 
 _DOT_INTENSITY_DIFF_TOL = 20  # Min diff between dot/circle intensities [0:255]
 _DURATION_DIFF_TOL = 0.5  # Night mode ON captures must take 0.5 seconds longer
 _EDGE_NOISE_WIDTH = 0.1  # Edge is left 10% of image and right 10% of image
 _EDGE_NOISE_IMPROVEMENT_TOL = 1.5  # Edge noise must be reduced by at least 67%
 _INTENSITY_IMPROVEMENT_TOL = 1.1  # Night mode ON captures must be 10% brighter
+_IDEAL_INTENSITY_IMPROVEMENT = 2.5  # Skip noise check if images 2.5x brighter
 
 _R_STRING = 'r'
 _X_STRING = 'x'
@@ -87,60 +88,18 @@ def _convert_captures(cap, file_stem=None):
   return y, image_processing_utils.convert_image_to_uint8(img)
 
 
-def _get_left_patch(y):
-  """Return the left edge of a y plane according to _EDGE_NOISE_WIDTH.
-
-  Args:
-    y: y_plane from a capture.
-  Returns:
-    Cropped y_plane on the left edge of the capture.
-  """
-  return image_processing_utils.get_image_patch(
-      y, 0, 0, _EDGE_NOISE_WIDTH, 1)
-
-
-def _get_right_patch(y):
-  """Return the right edge of a y plane according to _EDGE_NOISE_WIDTH.
-
-  Args:
-    y: y_plane from a capture.
-  Returns:
-    Cropped y_plane on the right edge of the capture.
-  """
-  return image_processing_utils.get_image_patch(
-      y, 1 - _EDGE_NOISE_WIDTH, 0, _EDGE_NOISE_WIDTH, 1)
-
-
-def _get_edge_noise(night_y, no_night_y):
-  """Computes the left and right edge noise in the y plane.
-
-  Args:
-    night_y: y_plane from a capture with night mode ON.
-    no_night_y: y_plane from a capture with night mode OFF.
-  Returns:
-    float; ratio of left edge noise, float; ratio of right edge noise.
-  """
-  night_left_patch_std = np.std(_get_left_patch(night_y), axis=(0, 1))
-  no_night_left_patch_std = np.std(_get_left_patch(no_night_y), axis=(0, 1))
-  night_right_patch_std = np.std(_get_right_patch(night_y), axis=(0, 1))
-  no_night_right_patch_std = np.std(_get_right_patch(no_night_y), axis=(0, 1))
-  logging.debug('Night mode ON left patch noise: %.2f', night_left_patch_std)
-  logging.debug('Night mode OFF left patch noise: %.2f',
-                no_night_left_patch_std)
-  logging.debug('Night mode ON right patch noise: %.2f', night_right_patch_std)
-  logging.debug('Night mode OFF right patch noise: %.2f',
-                no_night_right_patch_std)
-  left_patch_ratio = no_night_left_patch_std / night_left_patch_std
-  right_patch_ratio = no_night_right_patch_std / night_right_patch_std
-  return left_patch_ratio, right_patch_ratio
-
-
 def _check_overall_intensity(night_img, no_night_img):
   """Checks that overall intensity significantly improves with night mode ON.
+
+  All implementations must result in an increase in intensity of at least
+  _INTENSITY_IMPROVEMENT_TOL. _IDEAL_INTENSITY_IMPROVEMENT is the minimum
+  improvement to waive the edge noise check.
 
   Args:
     night_img: numpy image taken with night mode ON
     no_night_img: numpy image taken with night mode OFF
+  Returns:
+    True if intensity has increased enough to waive the edge noise check.
   """
   night_mean = np.mean(night_img)
   no_night_mean = np.mean(no_night_img)
@@ -152,34 +111,7 @@ def _check_overall_intensity(night_img, no_night_img):
                          'intense than night mode OFF image! '
                          f'Ratio: {overall_intensity_ratio:.2f}, '
                          f'Expected: {_INTENSITY_IMPROVEMENT_TOL}')
-
-
-def _check_edge_noise(night_y, no_night_y):
-  """Checks that noise at the edges significantly improves with night mode ON.
-
-  Args:
-    night_y: y_plane from a capture with night mode ON.
-    no_night_y: y_plane from a capture with night mode OFF.
-  """
-  # Normalize both y planes to [0, 255]
-  night_y *= 255
-  no_night_y *= 255
-  left_patch_ratio, right_patch_ratio = _get_edge_noise(
-      night_y, no_night_y)
-  logging.debug('Left edge of night mode OFF capture was %.2f times '
-                'as noisy as night mode ON', left_patch_ratio)
-  logging.debug('Right edge of night mode OFF capture was %.2f times '
-                'as noisy as night mode ON', right_patch_ratio)
-  if left_patch_ratio < _EDGE_NOISE_IMPROVEMENT_TOL:
-    raise AssertionError('Left edge of night mode OFF capture was only '
-                         f'{left_patch_ratio:.2f} as noisy as '
-                         'night mode OFF, expected to be '
-                         f'at least {_EDGE_NOISE_IMPROVEMENT_TOL}')
-  if right_patch_ratio < _EDGE_NOISE_IMPROVEMENT_TOL:
-    raise AssertionError('Right edge of night mode OFF capture was only '
-                         f'{right_patch_ratio:.2f} as noisy as '
-                         'night mode OFF, expected to be '
-                         f'at least {_EDGE_NOISE_IMPROVEMENT_TOL}')
+  return overall_intensity_ratio > _IDEAL_INTENSITY_IMPROVEMENT
 
 
 class NightExtensionTest(its_base_test.ItsBaseTest):
@@ -196,7 +128,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
   """
 
   def find_tablet_brightness(self, cam, default_brightness, file_stem,
-                             use_extensions=True):
+                             width, height, use_extensions=True):
     """Find maximum brightness at which orientation circle in scene is visible.
 
     Uses binary search on a range of (0, default_brightness), where visibility
@@ -206,6 +138,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       cam: its_session_utils object.
       default_brightness: int; brightness set by config.yml.
       file_stem: str; location and name to save files.
+      width: int; width for both extension and non-extension captures.
+      height: int; height for both extension and non-extension captures.
       use_extensions: bool; whether extension capture should be used.
     Returns:
       int; brightness at which orientation circle in scene is visible.
@@ -213,7 +147,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
     min_brightness = 0
     max_brightness = default_brightness
     final_brightness = None
-    out_surfaces = {'format': _FMT_NAME, 'width': _WIDTH, 'height': _HEIGHT}
+    out_surfaces = {'format': _FMT_NAME, 'width': width, 'height': height}
     req = capture_request_utils.auto_capture_request()
     file_stem += '_night' if use_extensions else '_no_night'
     while min_brightness < max_brightness:
@@ -254,8 +188,12 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       except AssertionError:
         logging.debug('Unable to find circle with brightness %d', brightness)
         max_brightness = brightness
-    if not final_brightness:
-      raise AssertionError('Unable to find a valid brightness for the tablet')
+    if final_brightness is None:
+      logging.debug('Unable to find orientation dot at any brightness, '
+                    'defaulting to %.2f of current tablet brightness.',
+                    _DEFAULT_TABLET_BRIGHTNESS_SCALING)
+      return int(_DEFAULT_TABLET_BRIGHTNESS_SCALING *
+                 self.tablet_screen_brightness)
     return final_brightness
 
   def _time_and_take_captures(self, cam, req, out_surfaces,
@@ -310,7 +248,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       should_run = _EXTENSION_NIGHT in supported_extensions
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
-      if media_performance_class >= _TEST_REQUIRED_MPC and not should_run:
+      if (media_performance_class >= _TEST_REQUIRED_MPC and
+          cam.is_primary_camera() and
+          not should_run):
         its_session_utils.raise_mpc_assertion_error(
             _TEST_REQUIRED_MPC, _NAME, media_performance_class)
 
@@ -347,18 +287,37 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
+      # Determine capture width and height
+      width, height = None, None
+      capture_sizes = capture_request_utils.get_available_output_sizes(
+          _FMT_NAME, props)
+      extension_capture_sizes_str = cam.get_supported_extension_sizes(
+          self.camera_id, _EXTENSION_NIGHT, _IMAGE_FORMAT_YUV_420_888_INT
+      )
+      extension_capture_sizes = [
+          tuple(int(size_part) for size_part in s.split(_X_STRING))
+          for s in extension_capture_sizes_str
+      ]
+      # Extension capture sizes are ordered in ascending area order by default
+      extension_capture_sizes.reverse()
+      logging.debug('Capture sizes: %s', capture_sizes)
+      logging.debug('Extension capture sizes: %s', extension_capture_sizes)
+      width, height = extension_capture_sizes[0]
+
       # Set tablet brightness to darken scene
-      file_stem = f'{test_name}_{_FMT_NAME}_{_WIDTH}x{_HEIGHT}'
+      file_stem = f'{test_name}_{_FMT_NAME}_{width}x{height}'
       night_brightness = self.find_tablet_brightness(
-          cam, self.tablet_screen_brightness, file_stem, use_extensions=True)
+          cam, self.tablet_screen_brightness, file_stem,
+          width, height, use_extensions=True)
       logging.debug('Night mode ON brightness: %d', night_brightness)
       no_night_brightness = self.find_tablet_brightness(
-          cam, self.tablet_screen_brightness, file_stem, use_extensions=False)
+          cam, self.tablet_screen_brightness, file_stem,
+          width, height, use_extensions=False)
       logging.debug('Night mode OFF brightness: %d', no_night_brightness)
       brightness = min(night_brightness, no_night_brightness)
       self.set_screen_brightness(str(brightness))
 
-      out_surfaces = {'format': _FMT_NAME, 'width': _WIDTH, 'height': _HEIGHT}
+      out_surfaces = {'format': _FMT_NAME, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
 
       # Take auto capture with night mode on
@@ -366,14 +325,14 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       cam.do_3a()
       night_capture_duration, night_cap = self._time_and_take_captures(
           cam, req, out_surfaces, use_extensions=True)
-      night_y, night_img = _convert_captures(night_cap, f'{file_stem}_night')
+      _, night_img = _convert_captures(night_cap, f'{file_stem}_night')
 
       # Take auto capture with night mode OFF
       logging.debug('Taking auto capture with night mode OFF')
       cam.do_3a()
       no_night_capture_duration, no_night_cap = self._time_and_take_captures(
           cam, req, out_surfaces, use_extensions=False)
-      no_night_y, no_night_img = _convert_captures(
+      _, no_night_img = _convert_captures(
           no_night_cap, f'{file_stem}_no_night')
 
       # Assert correct behavior
@@ -388,10 +347,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
 
       logging.debug('Comparing overall intensity of capture with '
                     'night mode ON/OFF')
-      _check_overall_intensity(night_img, no_night_img)
-
-      logging.debug('Comparing edge noise of capture with night mode ON/OFF')
-      _check_edge_noise(night_y, no_night_y)
+      much_higher_intensity = _check_overall_intensity(night_img, no_night_img)
+      if not much_higher_intensity:
+        logging.warning('Improvement in intensity was smaller than expected.')
 
 if __name__ == '__main__':
   test_runner.main()

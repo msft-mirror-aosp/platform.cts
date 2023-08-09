@@ -23,7 +23,6 @@ import static android.Manifest.permission.READ_PHONE_NUMBERS;
 import static android.Manifest.permission.READ_PHONE_STATE;
 import static android.Manifest.permission.READ_SMS;
 import static android.Manifest.permission.WRITE_CALL_LOG;
-import static android.app.role.RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP;
 import static android.app.role.RoleManager.ROLE_SMS;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
@@ -54,7 +53,6 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.UserHandle;
 import android.provider.CallLog;
 import android.provider.Settings;
 import android.provider.Telephony;
@@ -80,6 +78,7 @@ import com.android.bedstead.nene.DefaultDialerContext;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.testapp.TestApp;
@@ -87,7 +86,6 @@ import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestInCallService;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.eventlib.events.CustomEvent;
 
 import org.junit.Before;
@@ -98,8 +96,8 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @RequireFeature(FEATURE_TELEPHONY)
 @RunWith(BedsteadJUnit4.class)
@@ -150,18 +148,17 @@ public final class WorkProfileTelephonyTest {
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-3-1"})
-    public void sendTextMessage_fromWorkProfile_allManagedSubscriptions_smsSentSuccessfully() {
+    public void sendTextMessage_fromWorkProfile_allManagedSubscriptions_smsSentSuccessfully()
+        throws ExecutionException, InterruptedException, TimeoutException {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
         UserReference workProfileUser = sDeviceState.workProfile();
-        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser)) {
-            dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
-                    ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    smsApp.packageName());
+        dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
+                ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
+        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
+             RoleContext c = smsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS, workProfileUser)) {
             Intent sentIntent = new Intent(SMS_SENT_INTENT_ACTION).setPackage(smsApp.packageName());
             PendingIntent sentPendingIntent = PendingIntent.getBroadcast(
                     TestApis.context().instrumentedContext(), 0, sentIntent,
@@ -176,8 +173,6 @@ public final class WorkProfileTelephonyTest {
                     SMS_SENT_INTENT_ACTION).whereResultCode().isEqualTo(
                     Activity.RESULT_OK)).eventOccurred();
         } finally {
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    previousDefaultSmsPackage);
             sDeviceState.profileOwner(
                     WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
@@ -193,47 +188,57 @@ public final class WorkProfileTelephonyTest {
     @Test
     @CddTest(requirements = {"7.4.1.4/C-1-1", "7.4.1.4/C-3-2"})
     public void sendTextMessage_fromPersonalProfile_allManagedSubscriptions_errorUserNotAllowed()
-            throws ExecutionException, InterruptedException {
+            throws ExecutionException, InterruptedException, TimeoutException {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
         UserReference primaryUser = sDeviceState.primaryUser();
-        try (TestAppInstance smsApp = sSmsApp.install(primaryUser)) {
-            setPackageAsSmsRoleHolderForUser(smsApp.packageName(), primaryUser.userHandle());
+        UserReference workProfileUser = sDeviceState.workProfile();
+        try (TestAppInstance personalSmsApp = sSmsApp.install(primaryUser);
+             RoleContext c1 = personalSmsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS,
+                     primaryUser)) {
             dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
                     ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-            Intent sentIntent = new Intent(SMS_SENT_INTENT_ACTION).setPackage(smsApp.packageName());
-            PendingIntent sentPendingIntent = PendingIntent.getBroadcast(
-                    TestApis.context().instrumentedContext(), 1, sentIntent,
-                    PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
-            smsApp.registerReceiver(new IntentFilter(SMS_SENT_INTENT_ACTION),
-                    Context.RECEIVER_EXPORTED_UNAUDITED);
-            TestAppActivityReference activityReference =
-                    smsApp.activities().query().whereActivity().exported().isTrue().get();
-            // Launch an activity here to bring the default sms app to foreground, we only show the
-            // switch to managed profile dialog for sms, when sms app is foreground.
-            ActivityContext.runWithContext(activity -> {
-                Intent intent = new Intent().addFlags(FLAG_ACTIVITY_NEW_TASK).setComponent(
-                        activityReference.component().componentName());
-                activity.startActivity(intent, new Bundle());
-            });
+            try (TestAppInstance workSmsApp = sSmsApp.install(workProfileUser);
+                 RoleContext c2 = workSmsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS,
+                         workProfileUser)) {
+                Intent sentIntent = new Intent(SMS_SENT_INTENT_ACTION).setPackage(
+                        personalSmsApp.packageName());
+                PendingIntent sentPendingIntent = PendingIntent.getBroadcast(
+                        TestApis.context().instrumentedContext(), 1, sentIntent,
+                        PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
+                personalSmsApp.registerReceiver(new IntentFilter(SMS_SENT_INTENT_ACTION),
+                        Context.RECEIVER_EXPORTED_UNAUDITED);
+                TestAppActivityReference activityReference = personalSmsApp.activities().query()
+                        .whereActivity().exported().isTrue().get();
+                // Launch an activity here to bring the default sms app to foreground, we only
+                // show the
+                // switch to managed profile dialog for sms, when sms app is foreground.
+                ActivityContext.runWithContext(activity -> {
+                    Intent intent = new Intent().addFlags(FLAG_ACTIVITY_NEW_TASK).setComponent(
+                            activityReference.component().componentName());
+                    activity.startActivity(intent, new Bundle());
+                });
 
-            smsApp.smsManager().sendTextMessage(mDestinationNumber, null, "test", sentPendingIntent,
-                    null);
+                personalSmsApp.smsManager().sendTextMessage(mDestinationNumber, null, "test",
+                        sentPendingIntent,
+                        null);
 
-            assertThat(smsApp.events().broadcastReceived().whereIntent().action().isEqualTo(
-                    SMS_SENT_INTENT_ACTION).whereResultCode().isEqualTo(
-                    SmsManager.RESULT_USER_NOT_ALLOWED)).eventOccurred();
-            Poll.forValue("Foreground activity", () -> TestApis.activities().foregroundActivity())
-                    .toBeEqualTo(INTENT_FORWARDER_COMPONENT).errorOnFail().await();
-        } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
-                    new ManagedSubscriptionsPolicy(
-                            ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
-            setPackageAsSmsRoleHolderForUser(previousDefaultSmsPackage, primaryUser.userHandle());
+                assertThat(
+                        personalSmsApp.events().broadcastReceived()
+                                .whereIntent().action().isEqualTo(SMS_SENT_INTENT_ACTION)
+                                .whereResultCode().isEqualTo(SmsManager.RESULT_USER_NOT_ALLOWED))
+                        .eventOccurred();
+                Poll.forValue("Foreground activity",
+                        () -> TestApis.activities().foregroundActivity()).toBeEqualTo(
+                        INTENT_FORWARDER_COMPONENT).errorOnFail().await();
+            } finally {
+                sDeviceState.profileOwner(
+                        WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+                        new ManagedSubscriptionsPolicy(
+                                ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
+            }
         }
     }
 
@@ -247,15 +252,13 @@ public final class WorkProfileTelephonyTest {
     public void allManagedSubscriptions_accessWorkMessageFromPersonalProfile_fails() {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
         UserReference workProfileUser = sDeviceState.workProfile();
-        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser)) {
-            dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
-                    ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    smsApp.packageName());
+        dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
+                ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
+        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
+             RoleContext c = smsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS, workProfileUser)) {
             ContentValues smsValues = new ContentValues();
             smsValues.put(Telephony.Sms.ADDRESS, mDestinationNumber);
             smsValues.put(Telephony.Sms.BODY, "This is a test message.");
@@ -278,8 +281,6 @@ public final class WorkProfileTelephonyTest {
                 }
             }
         } finally {
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    previousDefaultSmsPackage);
             sDeviceState.profileOwner(
                     WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
@@ -293,17 +294,16 @@ public final class WorkProfileTelephonyTest {
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-3-1"})
-    public void allManagedSubscriptions_accessWorkMessageFromWorkProfile_works() {
+    public void allManagedSubscriptions_accessWorkMessageFromWorkProfile_works()
+        throws ExecutionException, InterruptedException, TimeoutException  {
         assumeSmsCapableDevice();
-        String previousDefaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(sContext);
         RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
                 WORK_PROFILE).devicePolicyManager();
         UserReference workProfileUser = sDeviceState.workProfile();
-        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser)) {
-            dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
-                    ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    smsApp.packageName());
+        dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
+                ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
+        try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
+             RoleContext c = smsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS, workProfileUser)) {
             String insertMessageBody =
                     "This is a test message with timestamp : " + System.currentTimeMillis();
             ContentValues smsValues = new ContentValues();
@@ -331,8 +331,6 @@ public final class WorkProfileTelephonyTest {
                 }
             }
         } finally {
-            dpm.setDefaultSmsApplication(sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                    previousDefaultSmsPackage);
             sDeviceState.profileOwner(
                     WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
@@ -553,18 +551,6 @@ public final class WorkProfileTelephonyTest {
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
-    }
-
-    private void setPackageAsSmsRoleHolderForUser(String packageName, UserHandle userHandle)
-            throws ExecutionException, InterruptedException {
-        CompletableFuture<Boolean> roleUpdateFuture = new CompletableFuture<>();
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            mRoleManager.addRoleHolderAsUser(ROLE_SMS, packageName,
-                    MANAGE_HOLDERS_FLAG_DONT_KILL_APP, userHandle, sContext.getMainExecutor(),
-                    roleUpdateFuture::complete);
-        });
-        // Wait for the future to complete.
-        roleUpdateFuture.get();
     }
 
     private String getDefaultDialerPackage() {
