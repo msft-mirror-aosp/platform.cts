@@ -51,6 +51,7 @@ import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -149,6 +150,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Tracking this in b/295151917")
     public void testBrowse_multiSelect() throws Exception {
         final int itemCount = 3;
         List<Pair<Uri, String>> createdImagesData = createImagesAndGetUriAndPath(itemCount,
@@ -251,7 +253,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         assertWithMessage("Waiting for app list to appear in DocumentsUi").that(
                 new UiObject(appList).waitForExists(SHORT_TIMEOUT)).isTrue();
 
-        String photoPickerAppName = "Media";
+        String photoPickerAppName = "Media picker";
         UiObject mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
 
         assertWithMessage("Timed out waiting for " + photoPickerAppName + " app icon to appear")

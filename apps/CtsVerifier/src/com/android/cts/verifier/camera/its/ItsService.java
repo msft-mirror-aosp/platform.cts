@@ -944,6 +944,11 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedExtensions(cameraId);
+                } else if ("getSupportedExtensionSizes".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    int extension = cmdObj.getInt("extension");
+                    int format = cmdObj.getInt("format");
+                    doGetSupportedExtensionSizes(cameraId, extension, format);
                 } else if ("doBasicRecording".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -1209,6 +1214,35 @@ public class ItsService extends Service implements SensorEventListener {
                         }
                     }
                     listener.onCaptureAvailable(i, physicalCameraId);
+                } finally {
+                    if (i != null) {
+                        i.close();
+                    }
+                }
+            }
+        };
+    }
+
+    public ImageReader.OnImageAvailableListener
+            createExtensionAvailableListener(final CaptureCallback listener) {
+        return new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader reader) {
+                Image i = null;
+                try {
+                    i = reader.acquireNextImage();
+                    String physicalCameraId = new String();
+                    for (int idx = 0; idx < mOutputImageReaders.length; idx++) {
+                        if (mOutputImageReaders[idx] == reader) {
+                            physicalCameraId = mPhysicalStreamMap.get(idx);
+                            break;
+                        }
+                    }
+                    listener.onCaptureAvailable(i, physicalCameraId);
+                    synchronized(mCountCallbacksRemaining) {
+                        mCountCallbacksRemaining.decrementAndGet();
+                        mCountCallbacksRemaining.notify();
+                    }
                 } finally {
                     if (i != null) {
                         i.close();
@@ -2333,6 +2367,23 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    private void doGetSupportedExtensionSizes(
+            String id, int extension, int format) throws ItsException {
+        try {
+            CameraExtensionCharacteristics chars =
+                    mCameraManager.getCameraExtensionCharacteristics(id);
+            List<Size> extensionSizes = chars.getExtensionSupportedSizes(extension, format);
+            String response = extensionSizes.stream()
+                .distinct()
+                .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .map(Size::toString)
+                .collect(Collectors.joining(";"));
+            mSocketRunnableObj.sendResponse("supportedExtensionSizes", response);
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to get supported extensions sizes list", e);
+        }
+    }
+
     private class MediaCodecListener extends MediaCodec.Callback {
         private final MediaMuxer mMediaMuxer;
         private final Object mCondition;
@@ -2967,7 +3018,8 @@ public class ItsService extends Service implements SensorEventListener {
                 if (backgroundRequest && i == numSurfaces - 1) {
                     readerListener = createAvailableListenerDropper();
                 } else {
-                    readerListener = createAvailableListener(mCaptureCallback);
+                    // When image is available, decrements mCountCallbacksRemaining
+                    readerListener = createExtensionAvailableListener(mCaptureCallback);
                 }
                 mOutputImageReaders[i].setOnImageAvailableListener(readerListener,
                         mSaveHandlers[i]);
@@ -2977,7 +3029,8 @@ public class ItsService extends Service implements SensorEventListener {
             captureBuilder.addTarget(mOutputImageReaders[0].getSurface());
             mExtensionSession.capture(captureBuilder.build(), new HandlerExecutor(mResultHandler),
                     mExtCaptureResultListener);
-            mCountCallbacksRemaining.set(1);
+            // Two callbacks: one for onCaptureResultAvailable and one for onImageAvailable
+            mCountCallbacksRemaining.set(2);
             long timeout = TIMEOUT_CALLBACK * 1000;
             waitForCallbacks(timeout);
 
