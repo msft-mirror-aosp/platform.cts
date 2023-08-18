@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package android.media.misc.cts;
+package android.voicerecognition.cts;
 
-import android.media.cts.WorkDirBase;
-
-class WorkDir extends WorkDirBase {
-    public static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaMiscTestCases-2.2");
-    }
+enum ModelDownloadCallback {
+    ON_PROGRESS,
+    ON_SUCCESS,
+    ON_SCHEDULED,
+    ON_ERROR
 }
