@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2023 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,27 +17,34 @@ package {
 }
 
 android_test {
-    name: "CtsAdminPackageInstallerTestCases",
+    name: "CtsStorageAccessTestCases",
     defaults: ["cts_defaults"],
-    resource_dirs: ["res"],
-    srcs: ["src/**/*.java"],
+
     static_libs: [
-        "ub-uiautomator",
-        "androidx.test.rules",
-        "androidx.legacy_legacy-support-v4",
-        "cts-install-lib",
-        "Harrier",
-        "Nene",
+        // Among other things compatibility-device-util-axt "includes": androidx.test.core,
+        // androidx.core_core, androidx.test.ext.junit, androidx.test.rules,
+        // androidx.test.uiautomator_uiautomator
+        "compatibility-device-util-axt",
     ],
-    libs: ["android.test.base"],
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+    ],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt"
+    ],
+
+    // Need to run this on Android R and above.
+    min_sdk_version: "30",
     sdk_version: "test_current",
-    // Tag this module as a cts test artifact
+    dex_preopt: { enabled: false },
+    optimize: { enabled: false },
+
+    // Tag this module as a CTS and MTS test artifact.
     test_suites: [
         "cts",
         "general-tests",
+        "mts-documentsui",
     ],
-    data: [
-        ":CtsEmptyTestApp",
-    ],
-    per_testcase_directory: true,
 }

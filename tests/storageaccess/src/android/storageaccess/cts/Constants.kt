@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-package android.media.misc.cts;
+@file:JvmName("Constants")
 
-import android.media.cts.WorkDirBase;
+package android.storageaccess.cts
 
-class WorkDir extends WorkDirBase {
-    public static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaMiscTestCases-2.2");
-    }
-}
+const val DEBUG = false
