@@ -944,6 +944,11 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedExtensions(cameraId);
+                } else if ("getSupportedExtensionSizes".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    int extension = cmdObj.getInt("extension");
+                    int format = cmdObj.getInt("format");
+                    doGetSupportedExtensionSizes(cameraId, extension, format);
                 } else if ("doBasicRecording".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -1209,6 +1214,35 @@ public class ItsService extends Service implements SensorEventListener {
                         }
                     }
                     listener.onCaptureAvailable(i, physicalCameraId);
+                } finally {
+                    if (i != null) {
+                        i.close();
+                    }
+                }
+            }
+        };
+    }
+
+    public ImageReader.OnImageAvailableListener
+            createExtensionAvailableListener(final CaptureCallback listener) {
+        return new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader reader) {
+                Image i = null;
+                try {
+                    i = reader.acquireNextImage();
+                    String physicalCameraId = new String();
+                    for (int idx = 0; idx < mOutputImageReaders.length; idx++) {
+                        if (mOutputImageReaders[idx] == reader) {
+                            physicalCameraId = mPhysicalStreamMap.get(idx);
+                            break;
+                        }
+                    }
+                    listener.onCaptureAvailable(i, physicalCameraId);
+                    synchronized(mCountCallbacksRemaining) {
+                        mCountCallbacksRemaining.decrementAndGet();
+                        mCountCallbacksRemaining.notify();
+                    }
                 } finally {
                     if (i != null) {
                         i.close();
@@ -1683,15 +1717,22 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
-    private static long getReaderUsage(int format) {
+    private static long getReaderUsage(int format, boolean has10bitOutput) {
         // Private image format camera readers will default to ZSL usage unless
         // explicitly configured to use a common consumer such as display.
-        return (format == ImageFormat.PRIVATE) ? HardwareBuffer.USAGE_COMPOSER_OVERLAY :
-                HardwareBuffer.USAGE_CPU_READ_OFTEN;
+        // We don't support the ZSL use case within the 10-bit use case.
+        return (format == ImageFormat.PRIVATE && has10bitOutput) ?
+                HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
     }
 
     private void prepareImageReaders(Size[] outputSizes, int[] outputFormats, Size inputSize,
             int inputFormat, int maxInputBuffers) {
+        prepareImageReaders(outputSizes, outputFormats, inputSize,
+                inputFormat, maxInputBuffers, /*has10bitOutput*/ false);
+    }
+
+    private void prepareImageReaders(Size[] outputSizes, int[] outputFormats, Size inputSize,
+            int inputFormat, int maxInputBuffers, boolean has10bitOutput) {
         closeImageReaders();
         mOutputImageReaders = new ImageReader[outputSizes.length];
         for (int i = 0; i < outputSizes.length; i++) {
@@ -1700,18 +1741,19 @@ public class ItsService extends Service implements SensorEventListener {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
-                        getReaderUsage(outputFormats[i]));
+                        getReaderUsage(outputFormats[i], has10bitOutput));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i]));
+                        MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i],
+                            has10bitOutput));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
-                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat));
+                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat, has10bitOutput));
         }
     }
 
@@ -2235,7 +2277,8 @@ public class ItsService extends Service implements SensorEventListener {
             }
         }
 
-        prepareImageReaders(outputSizes, outputFormats, inputSize, inputFormat, maxInputBuffers);
+        prepareImageReaders(outputSizes, outputFormats, inputSize, inputFormat, maxInputBuffers,
+                is10bitOutputPresent);
 
         return is10bitOutputPresent;
     }
@@ -2330,6 +2373,23 @@ public class ItsService extends Service implements SensorEventListener {
             mSocketRunnableObj.sendResponse("supportedExtensions", extensionsList.toString());
         } catch (CameraAccessException e) {
             throw new ItsException("Failed to get supported extensions list", e);
+        }
+    }
+
+    private void doGetSupportedExtensionSizes(
+            String id, int extension, int format) throws ItsException {
+        try {
+            CameraExtensionCharacteristics chars =
+                    mCameraManager.getCameraExtensionCharacteristics(id);
+            List<Size> extensionSizes = chars.getExtensionSupportedSizes(extension, format);
+            String response = extensionSizes.stream()
+                .distinct()
+                .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .map(Size::toString)
+                .collect(Collectors.joining(";"));
+            mSocketRunnableObj.sendResponse("supportedExtensionSizes", response);
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to get supported extensions sizes list", e);
         }
     }
 
@@ -2967,7 +3027,8 @@ public class ItsService extends Service implements SensorEventListener {
                 if (backgroundRequest && i == numSurfaces - 1) {
                     readerListener = createAvailableListenerDropper();
                 } else {
-                    readerListener = createAvailableListener(mCaptureCallback);
+                    // When image is available, decrements mCountCallbacksRemaining
+                    readerListener = createExtensionAvailableListener(mCaptureCallback);
                 }
                 mOutputImageReaders[i].setOnImageAvailableListener(readerListener,
                         mSaveHandlers[i]);
@@ -2977,7 +3038,8 @@ public class ItsService extends Service implements SensorEventListener {
             captureBuilder.addTarget(mOutputImageReaders[0].getSurface());
             mExtensionSession.capture(captureBuilder.build(), new HandlerExecutor(mResultHandler),
                     mExtCaptureResultListener);
-            mCountCallbacksRemaining.set(1);
+            // Two callbacks: one for onCaptureResultAvailable and one for onImageAvailable
+            mCountCallbacksRemaining.set(2);
             long timeout = TIMEOUT_CALLBACK * 1000;
             waitForCallbacks(timeout);
 

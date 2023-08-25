@@ -856,7 +856,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         launchActivity(PIP_ACTIVITY);
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
-        int defaultDisplayWindowingMode = getDefaultDisplayWindowingMode(PIP_ACTIVITY);
+        int defaultDisplayWindowingMode = getDisplayAreaWindowingMode(PIP_ACTIVITY);
 
         // Launch second PIP activity
         launchActivity(PIP_ACTIVITY2, extraString(EXTRA_ENTER_PIP, "true"));
@@ -879,12 +879,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         launchHomeActivity();
         // Launch an auto pip activity
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"));
-        waitForEnterPip(PIP_ACTIVITY);
+        waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
 
         // Relaunch the activity to fullscreen to trigger the activity to exit and re-enter pip
         launchActivity(PIP_ACTIVITY);
         waitForExitPipToFullscreen(PIP_ACTIVITY);
+        waitAndAssertActivityState(PIP_ACTIVITY, STATE_RESUMED, "Activity should be resumed");
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         mWmState.assertVisibility(TEST_ACTIVITY, false);
@@ -898,12 +899,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Launch an auto pip activity
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"));
-        waitForEnterPip(PIP_ACTIVITY);
+        waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
 
         // Relaunch the activity to fullscreen to trigger the activity to exit and re-enter pip
         launchActivity(PIP_ACTIVITY);
         waitForExitPipToFullscreen(PIP_ACTIVITY);
+        waitAndAssertActivityState(PIP_ACTIVITY, STATE_RESUMED, "Activity should be resumed");
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         mWmState.assertVisibility(TEST_ACTIVITY, true);
@@ -1840,10 +1842,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertTrue(displayRect.contains(pinnedStackBounds));
     }
 
-    private int getDefaultDisplayWindowingMode(ComponentName activityName) {
-        Task task = mWmState.getTaskByActivity(activityName);
-        return mWmState.getDisplay(task.mDisplayId)
-                .getWindowingMode();
+    private int getDisplayAreaWindowingMode(ComponentName activityName) {
+        return mWmState.getTaskDisplayArea(activityName).getWindowingMode();
     }
 
     /**

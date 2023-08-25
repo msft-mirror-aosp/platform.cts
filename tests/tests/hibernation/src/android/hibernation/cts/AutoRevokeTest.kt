@@ -143,6 +143,9 @@ class AutoRevokeTest {
             // picker" which may cover another UI elements on freeform window configuration.
             runShellCommandOrThrow("input keyevent 82")
         }
+        runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
+        resetJob(context)
+        bypassBatterySavingRestrictions(context)
 
         if (isAutomotiveDevice()) {
             supportedApkPath = APK_PATH_S_APP
@@ -160,6 +163,7 @@ class AutoRevokeTest {
     @After
     fun cleanUp() {
         goHome()
+        resetBatterySavingRestrictions(context)
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
@@ -357,10 +361,12 @@ class AutoRevokeTest {
         withUnusedThresholdMs(4L) {
             withDummyApp {
                 // Setup
+                val pm = context.packageManager
                 grantPermission()
                 assertPermission(PERMISSION_GRANTED)
-                startApp()
-                assertAllowlistState(false)
+                runWithShellPermissionIdentity {
+                    assertFalse(pm.isAutoRevokeWhitelisted(supportedAppPackageName))
+                }
 
                 // Verify
                 goToPermissions()
@@ -381,8 +387,9 @@ class AutoRevokeTest {
                 Thread.sleep(500L)
 
                 // Verify
-                startApp()
-                assertAllowlistState(true)
+                runWithShellPermissionIdentity {
+                    assertTrue(pm.isAutoRevokeWhitelisted(supportedAppPackageName))
+                }
                 assertPermission(PERMISSION_GRANTED)
             }
         }
