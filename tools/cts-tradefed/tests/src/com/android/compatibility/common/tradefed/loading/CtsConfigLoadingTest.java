@@ -60,6 +60,7 @@ public class CtsConfigLoadingTest {
                     Arrays.asList(
                             // modifications to the list below must be reviewed
                             "abuse",
+                            "adservices",
                             "art",
                             "auth",
                             "auto",
@@ -85,6 +86,8 @@ public class CtsConfigLoadingTest {
                             "mocking",
                             "networking",
                             "neuralnetworks",
+                            "packagemanager",
+                            "permissions",
                             "print",
                             "renderscript",
                             "security",
