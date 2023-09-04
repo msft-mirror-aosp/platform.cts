@@ -2554,7 +2554,7 @@
         \nPull down the notification shade and look for the NotifPrivacyTest notification.
         \nFail the test if it can be found without unlocking the device.
         \n\nGo back when ready to Pass/Fail the step.</string>
-    <string name="np_public_version_text">NotifPrivacyTefst: REDACTED</string>
+    <string name="np_public_version_text">NotifPrivacyTest: REDACTED</string>
     <string name="np_private_version_text">NotifPrivacyTest: EXPOSED</string>
     <string name="notif_privacy_test">Notification Privacy Test</string>
     <string name="notif_privacy_info">This test checks that Notification privacy is correctly
@@ -4462,7 +4462,7 @@ You should be prompted to select credentials; choose the ones you just installed
         Set \'%s\' user restriction by turning on the switch below.
     </string>
     <string name="disallow_add_user">Disallow add user</string>
-    <string name="disallow_add_user_action">Adding a new user</string>
+    <string name="disallow_add_user_action">Accessing the multiple users settings page, or if the device allows access to the page, then attempting to add a new user </string>
     <string name="disallow_adjust_volume">Disallow adjust volume</string>
     <string name="disallow_adjust_volume_action">Adjusting the volume\n
         NOTE: If the device does not support volume adjustment in Settings app please skip this test and mark it as passing.\n</string>
@@ -5717,7 +5717,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_results_text">Results...</string>
     <string name="audio_loopback_test_all_paths">Please test all supported paths.</string>
     <string name="audio_loopback_test_not_required">Test not required for this device.</string>
-    <string name="audio_loopback_test_non_handheld">This device is not a handheld. Test can pass.</string>
+    <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
+    <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
     in a quiet room. Press the Start button and allow the test to proceed.</string>
 
