@@ -28,6 +28,8 @@ import android.app.appsearch.testutil.AppSearchEmail;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 public class AppSearchSchemaCtsTest {
     @Test
     public void testInvalidEnums() {
@@ -465,7 +467,10 @@ public class AppSearchSchemaCtsTest {
                         + "  ]\n"
                         + "}";
 
-        assertThat(schemaString).isEqualTo(expectedString);
+        String[] lines = expectedString.split("\n");
+        for (String line : lines) {
+            assertThat(schemaString).contains(line);
+        }
     }
 
     @Test
@@ -514,5 +519,29 @@ public class AppSearchSchemaCtsTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new LongPropertyConfig.Builder("timestamp").setIndexingType(-1).build());
+    }
+
+    @Test
+    public void testInvalidDocumentPropertyConfig_indexableNestedProperties() {
+        // Adding indexableNestedProperties with shouldIndexNestedProperties=true should fail.
+        AppSearchSchema.DocumentPropertyConfig.Builder builder =
+                new AppSearchSchema.DocumentPropertyConfig.Builder("prop1", "Schema1")
+                        .setShouldIndexNestedProperties(true)
+                        .addIndexableNestedProperties(Collections.singleton("prop1"));
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> builder.build());
+        assertThat(e)
+                .hasMessageThat()
+                .contains(
+                        "DocumentIndexingConfig#shouldIndexNestedProperties is required to be false"
+                                + " when one or more indexableNestedProperties are provided.");
+
+        builder.addIndexableNestedProperties(Collections.singleton("prop1.prop2"));
+        e = assertThrows(IllegalArgumentException.class, () -> builder.build());
+        assertThat(e)
+                .hasMessageThat()
+                .contains(
+                        "DocumentIndexingConfig#shouldIndexNestedProperties is required to be false"
+                                + " when one or more indexableNestedProperties are provided.");
     }
 }

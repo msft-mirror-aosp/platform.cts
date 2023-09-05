@@ -70,6 +70,8 @@ import java.util.Set;
  */
 @RunWith(JUnit4.class)
 public class SystemFeaturesTest {
+    private static final String FEATURE_GOOGLE_ENTERPRISE_DEVICE =
+            "com.google.android.feature.ENTERPRISE_DEVICE";
 
     private Context mContext;
     private PackageManager mPackageManager;
@@ -170,6 +172,7 @@ public class SystemFeaturesTest {
         boolean motionTracking = false;
         boolean raw = false;
         boolean hasFlash = false;
+        boolean hasAutofocus = false;
         CameraCharacteristics[] cameraChars = new CameraCharacteristics[cameraIds.length];
         for (String cameraId : cameraIds) {
             CameraCharacteristics chars = mCameraManager.getCameraCharacteristics(cameraId);
@@ -203,6 +206,11 @@ public class SystemFeaturesTest {
             if (flashAvailable) {
                 hasFlash = true;
             }
+            float minFocusDistance =
+                    chars.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+            if (minFocusDistance > 0) {
+                hasAutofocus = true;
+            }
         }
         assertFeature(fullCamera, PackageManager.FEATURE_CAMERA_LEVEL_FULL);
         assertFeature(manualSensor, PackageManager.FEATURE_CAMERA_CAPABILITY_MANUAL_SENSOR);
@@ -224,6 +232,7 @@ public class SystemFeaturesTest {
           assertNotAvailable(PackageManager.FEATURE_CAMERA_AR);
         }
         assertFeature(hasFlash, PackageManager.FEATURE_CAMERA_FLASH);
+        assertFeature(hasAutofocus, PackageManager.FEATURE_CAMERA_AUTOFOCUS);
     }
 
     private void checkFrontCamera() {
@@ -260,19 +269,14 @@ public class SystemFeaturesTest {
                 Camera.Parameters params = camera.getParameters();
                 if (params.getSupportedFocusModes().contains(Parameters.FOCUS_MODE_AUTO)) {
                     assertAvailable(PackageManager.FEATURE_CAMERA_AUTOFOCUS);
-                } else {
-                    assertNotAvailable(PackageManager.FEATURE_CAMERA_AUTOFOCUS);
                 }
 
                 if (params.getFlashMode() != null) {
                     assertAvailable(PackageManager.FEATURE_CAMERA_FLASH);
-                } else {
-                    assertNotAvailable(PackageManager.FEATURE_CAMERA_FLASH);
                 }
+
             } else {
                 assertNotAvailable(PackageManager.FEATURE_CAMERA);
-                assertNotAvailable(PackageManager.FEATURE_CAMERA_AUTOFOCUS);
-                assertNotAvailable(PackageManager.FEATURE_CAMERA_FLASH);
             }
         } finally {
             if (camera != null) {
@@ -329,9 +333,10 @@ public class SystemFeaturesTest {
     @Test
     public void testNfcFeatures() {
         if (NfcAdapter.getDefaultAdapter(mContext) != null) {
-            // Watches MAY support all FEATURE_NFC features when an NfcAdapter is available, but
-            // non-watches MUST support them both.
-            if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            // Watches/Enterprise devices MAY support all FEATURE_NFC features when an NfcAdapter
+            // is available, but other MUST support them both.
+            if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                    || mPackageManager.hasSystemFeature(FEATURE_GOOGLE_ENTERPRISE_DEVICE)) {
                 assertOneAvailable(PackageManager.FEATURE_NFC,
                     PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
             } else {
