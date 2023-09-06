@@ -151,6 +151,58 @@ public class CompilationTest extends BaseHostJUnit4Test {
         checkDexoptStatus(dump, Pattern.quote(filename), "run-from-apk");
     }
 
+    @Test
+    public void testCompileSecondaryDexUnsupportedClassLoader() throws Exception {
+        String filename = "secondary-unsupported-clc.jar";
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("createAndLoadSecondaryDexUnsupportedClassLoader")
+                              .addInstrumentationArg("secondary-dex-filename", filename);
+        assertThat(runDeviceTests(options)).isTrue();
+
+        // "speed" should be downgraded to "verify" because the CLC is unsupported.
+        mUtils.assertCommandSucceeds(
+                "pm compile --secondary-dex -m speed -f " + STATUS_CHECKER_PKG);
+        String dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
+        checkDexoptStatus(dump, Pattern.quote(filename), "verify");
+    }
+
+    @Test
+    public void testSecondaryDexReporting() throws Exception {
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("testSecondaryDexReporting")
+                              .setDisableHiddenApiCheck(true);
+        assertThat(runDeviceTests(options)).isTrue();
+
+        String dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_1.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_2.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_3.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_4.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_1.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_2.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_3.apk");
+
+        // Check that ART Service doesn't crash on various operations after invalid dex paths and
+        // class loader contexts are reported.
+        mUtils.assertCommandSucceeds(
+                "pm compile --secondary-dex -m verify -f " + STATUS_CHECKER_PKG);
+        mUtils.assertCommandSucceeds("pm art clear-app-profiles " + STATUS_CHECKER_PKG);
+        mUtils.assertCommandSucceeds("pm art cleanup");
+    }
+
+    @Test
+    public void testGetDexFileOutputPaths() throws Exception {
+        mUtils.assertCommandSucceeds("pm compile -m verify -f " + STATUS_CHECKER_PKG);
+
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("testGetDexFileOutputPaths")
+                              .setDisableHiddenApiCheck(true);
+        assertThat(runDeviceTests(options)).isTrue();
+    }
+
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
         // Matches the dump output typically being:
         //     /data/user/0/android.compilation.cts.statuscheckerapp/secondary.jar
