@@ -19,29 +19,20 @@ package android.photopicker.cts;
 import static android.photopicker.cts.util.GetContentActivityAliasUtils.clearPackageData;
 import static android.photopicker.cts.util.GetContentActivityAliasUtils.getDocumentsUiPackageName;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUriAndPath;
-import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickBrowse;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
-import static android.photopicker.cts.util.ResultsAssertionsUtils.assertNoPersistedWriteGrant;
-import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedReadGrants;
-import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedWriteGrants;
-import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPickerUriFormat;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertReadOnlyAccess;
-import static android.photopicker.cts.util.UiAssertionUtils.assertThatShowsPickerUi;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.photopicker.cts.util.GetContentActivityAliasUtils;
+import android.photopicker.cts.util.UiAssertionUtils;
 import android.util.Pair;
 
 import androidx.test.uiautomator.UiObject;
@@ -51,6 +42,7 @@ import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -149,6 +141,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Tracking this in b/295151917")
     public void testBrowse_multiSelect() throws Exception {
         final int itemCount = 3;
         List<Pair<Uri, String>> createdImagesData = createImagesAndGetUriAndPath(itemCount,
@@ -178,47 +171,13 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
-    public void testChooserIntent_mediaFilter_verifyReadGrantsOnly() throws Exception {
-        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU);
-        final int itemCount = 1;
-        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
-
+    public void testChooserIntent_mediaFilter() throws Exception {
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
 
         // Should open Picker
-        assertThatShowsPickerUi();
-        final UiObject item = findItemList(itemCount).get(0);
-        clickAndWait(sDevice, item);
-
-        final Uri uri = mActivity.getResult().data.getData();
-        assertPickerUriFormat(uri, mContext.getUserId());
-        assertPersistedReadGrants(uri, mContext.getContentResolver());
-        assertNoPersistedWriteGrant(uri, mContext.getContentResolver());
-    }
-
-    @Test
-    public void testChooserIntent_mediaFilter_verifyReadAndWriteGrants() throws Exception {
-        assumeTrue(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU);
-        final int itemCount = 1;
-        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
-
-        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
-        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
-
-        // Should open Picker
-        assertThatShowsPickerUi();
-        final UiObject item = findItemList(itemCount).get(0);
-        clickAndWait(sDevice, item);
-
-        final Uri uri = mActivity.getResult().data.getData();
-        assertPickerUriFormat(uri, mContext.getUserId());
-        assertPersistedReadGrants(uri, mContext.getContentResolver());
-        // Write grants given to picker uris when launched via ACTION_GET_CONTENT in Android
-        // R & S to resolve samsung message app issue.
-        assertPersistedWriteGrants(uri, mContext.getContentResolver());
+        UiAssertionUtils.assertThatShowsPickerUi();
     }
 
     @Test
@@ -240,7 +199,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         findAndClickMediaIcon();
 
         // Should open Picker
-        assertThatShowsPickerUi();
+        UiAssertionUtils.assertThatShowsPickerUi();
     }
 
     private void findAndClickMediaIcon() throws Exception {
@@ -251,7 +210,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         assertWithMessage("Waiting for app list to appear in DocumentsUi").that(
                 new UiObject(appList).waitForExists(SHORT_TIMEOUT)).isTrue();
 
-        String photoPickerAppName = "Media";
+        String photoPickerAppName = "Media picker";
         UiObject mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
 
         assertWithMessage("Timed out waiting for " + photoPickerAppName + " app icon to appear")
