@@ -26,8 +26,10 @@ import android.text.Layout;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.method.Touch;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -114,17 +116,20 @@ public class TouchTest {
     @Test
     public void testOnTouchEvent() throws Throwable {
         // Create a string that is wider than the screen.
-        int rootViewWidth = mActivity.getWindow().getDecorView().getWidth();
+        DisplayMetrics metrics = mActivity.getResources().getDisplayMetrics();
+        int screenWidth = metrics.widthPixels;
+        int touchSlop = ViewConfiguration.get(mActivity).getScaledTouchSlop();
         TextPaint paint = mTextView.getPaint();
         String text = LONG_TEXT;
         int textWidth = Math.round(paint.measureText(text));
-        while (textWidth < rootViewWidth) {
+        while (textWidth < screenWidth + touchSlop) {
             text += LONG_TEXT;
             textWidth = Math.round(paint.measureText(text));
         }
 
         // Drag the difference between the text width and the screen width.
-        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth);
+        int dragAmount = Math.min(screenWidth, textWidth - screenWidth);
+        assertTrue(dragAmount > touchSlop);
         final String finalText = text;
         final SpannableString spannable = new SpannableString(finalText);
         mActivityRule.runOnUiThread(() -> {
