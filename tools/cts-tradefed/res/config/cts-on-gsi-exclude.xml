@@ -217,4 +217,9 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.CustomAudienceTest#testGetCustomAudienceService_lowRamDevice_throwsIllegalStateException" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testMeasurementApiDisabled_lowRamDevice" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testGetTopics_lowRamDevice" />
+
+    <!-- b/212223944 -->
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
+
 </configuration>
