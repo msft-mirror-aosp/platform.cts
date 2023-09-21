@@ -28,11 +28,6 @@ import static org.junit.Assume.assumeThat;
 
 import android.app.UiAutomation;
 import android.car.Car;
-import android.car.annotation.ApiRequirements;
-import android.car.test.ApiCheckerRule.IgnoreInvalidApi;
-import android.car.test.ApiCheckerRule.SupportedVersionTest;
-import android.car.test.ApiCheckerRule.UnsupportedVersionTest;
-import android.car.test.ApiCheckerRule.UnsupportedVersionTest.Behavior;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.car.user.CarUserManager;
 import android.car.user.CarUserManager.UserLifecycleEvent;
@@ -74,9 +69,6 @@ public final class CarServiceHelperServiceUpdatableTest extends AbstractCarTestC
 
     @Test
     @ApiTest(apis = {"com.android.internal.car.CarServiceHelperService#dump(PrintWriter,String[])"})
-    @IgnoreInvalidApi(reason = "Class not in classpath as it's indirectly tested using dumpsys")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.TIRAMISU_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.TIRAMISU_0)
     public void testCarServiceHelperServiceDump() throws Exception {
         assumeSystemServerDumpSupported();
 
@@ -89,9 +81,6 @@ public final class CarServiceHelperServiceUpdatableTest extends AbstractCarTestC
     @ApiTest(apis = {
             "com.android.internal.car.CarServiceHelperServiceUpdatable#dump(PrintWriter,String[])"
     })
-    @IgnoreInvalidApi(reason = "Class not in classpath as it's indirectly tested using dumpsys")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.TIRAMISU_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.TIRAMISU_0)
     public void testCarServiceHelperServiceDump_carServiceProxy() throws Exception {
         assumeSystemServerDumpSupported();
 
@@ -104,9 +93,6 @@ public final class CarServiceHelperServiceUpdatableTest extends AbstractCarTestC
     @ApiTest(apis = {
             "com.android.internal.car.CarServiceHelperServiceUpdatable#dump(PrintWriter,String[])"
     })
-    @IgnoreInvalidApi(reason = "Class not in classpath as it's indirectly tested using dumpsys")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.TIRAMISU_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.TIRAMISU_0)
     public void testCarServiceHelperServiceDump_serviceStacks() throws Exception {
         assumeSystemServerDumpSupported();
 
@@ -117,20 +103,9 @@ public final class CarServiceHelperServiceUpdatableTest extends AbstractCarTestC
 
     @Test
     @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_CREATED"})
-    @SupportedVersionTest(unsupportedVersionTest =
-            "testSendUserLifecycleEventAndOnUserCreated_unsupportedVersion")
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testSendUserLifecycleEventAndOnUserCreated_supportedVersion() throws Exception {
         testSendUserLifecycleEventAndOnUserCreated(/*onSupportedVersion=*/ true);
-    }
-
-    @Test
-    @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_CREATED"})
-    @UnsupportedVersionTest(behavior = Behavior.EXPECT_PASS,
-            supportedVersionTest = "testSendUserLifecycleEventAndOnUserCreated_supportedVersion")
-    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    public void testSendUserLifecycleEventAndOnUserCreated_unsupportedVersion() throws Exception {
-        testSendUserLifecycleEventAndOnUserCreated(/*onSupportedVersion=*/ false);
     }
 
     private void testSendUserLifecycleEventAndOnUserCreated(boolean onSupportedVersion)
@@ -169,20 +144,9 @@ public final class CarServiceHelperServiceUpdatableTest extends AbstractCarTestC
 
     @Test
     @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_REMOVED"})
-    @SupportedVersionTest(unsupportedVersionTest =
-            "testSendUserLifecycleEventAndOnUserRemoved_unsupportedVersion")
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testSendUserLifecycleEventAndOnUserRemoved_supportedVersion() throws Exception {
         testSendUserLifecycleEventAndOnUserRemoved(/*onSupportedVersion=*/ true);
-    }
-
-    @Test
-    @ApiTest(apis = {"android.car.user.CarUserManager#USER_LIFECYCLE_EVENT_TYPE_REMOVED"})
-    @UnsupportedVersionTest(behavior = Behavior.EXPECT_PASS,
-            supportedVersionTest = "testSendUserLifecycleEventAndOnUserRemoved_supportedVersion")
-    @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    public void testSendUserLifecycleEventAndOnUserRemoved_unsupportedVersion() throws Exception {
-        testSendUserLifecycleEventAndOnUserRemoved(/*onSupportedVersion=*/ false);
     }
 
     private static void assumeSystemServerDumpSupported() throws IOException {

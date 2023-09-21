@@ -93,6 +93,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.eventlib.events.CustomEvent;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -104,6 +105,7 @@ import java.util.concurrent.TimeoutException;
 
 @RequireFeature(FEATURE_TELEPHONY)
 @RunWith(BedsteadJUnit4.class)
+@Ignore // because work profile telephony is disabled for Android U
 public final class WorkProfileTelephonyTest {
 
     @ClassRule @Rule
@@ -256,8 +258,8 @@ public final class WorkProfileTelephonyTest {
 
     @EnsureGlobalSettingSet(key =
             Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value = "1")
-    @EnsureHasWorkProfile(isOrganizationOwned = true)
     @RequireRunOnInitialUser
+    @EnsureHasWorkProfile(isOrganizationOwned = true)
     @Postsubmit(reason = "new test")
     @Test
     @CddTest(requirements = {"7.4.1.4/C-3-1"})

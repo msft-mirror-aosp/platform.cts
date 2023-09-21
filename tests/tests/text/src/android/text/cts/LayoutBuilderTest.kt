@@ -16,6 +16,7 @@
 package android.text.cts
 
 import android.graphics.text.LineBreakConfig
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.test.suitebuilder.annotation.SmallTest
 import android.text.BoringLayout
 import android.text.Layout
@@ -31,12 +32,14 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.text.style.LeadingMarginSpan
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
 class LayoutBuilderTest {
     private val BORING_TEXT = "hello, world."
     private val STATIC_LAYOUT_TEXT = SpannableString("hello, world").apply {
@@ -78,7 +81,7 @@ class LayoutBuilderTest {
         assertThat(layout.lineSpacingMultiplier).isEqualTo(1.0f)
         assertThat(layout.spacingAdd).isEqualTo(0.0f)
         assertThat(layout.lineSpacingAmount).isEqualTo(0.0f)
-        assertThat(layout.isIncludeFontPadding).isTrue()
+        assertThat(layout.isFontPaddingIncluded).isTrue()
         assertThat(layout.isFallbackLineSpacingEnabled).isFalse()
         assertThat(layout.ellipsizedWidth).isEqualTo(WIDTH)
         assertThat(layout.ellipsize).isNull()
@@ -106,7 +109,7 @@ class LayoutBuilderTest {
         assertThat(layout.lineSpacingMultiplier).isEqualTo(1.0f)
         assertThat(layout.spacingAdd).isEqualTo(0.0f)
         assertThat(layout.lineSpacingAmount).isEqualTo(0.0f)
-        assertThat(layout.isIncludeFontPadding).isTrue()
+        assertThat(layout.isFontPaddingIncluded).isTrue()
         assertThat(layout.isFallbackLineSpacingEnabled).isFalse()
         assertThat(layout.ellipsizedWidth).isEqualTo(WIDTH)
         assertThat(layout.ellipsize).isNull()
@@ -185,14 +188,14 @@ class LayoutBuilderTest {
     @Test
     fun buildLayout_SetGetIncludePadding() {
         val boringLayout = makeBuilder(BORING_TEXT)
-                .setIncludeFontPadding(true)
+                .setFontPaddingIncluded(true)
                 .build()
-        assertThat(boringLayout.isIncludeFontPadding).isTrue()
+        assertThat(boringLayout.isFontPaddingIncluded).isTrue()
 
         val staticLayout = makeBuilder(STATIC_LAYOUT_TEXT)
-                .setIncludeFontPadding(true)
+                .setFontPaddingIncluded(true)
                 .build()
-        assertThat(staticLayout.isIncludeFontPadding).isTrue()
+        assertThat(staticLayout.isFontPaddingIncluded).isTrue()
     }
 
     @Test

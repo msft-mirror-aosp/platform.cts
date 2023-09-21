@@ -46,6 +46,7 @@ CIRCLISH_LOW_RES_ATOL = 0.15  # loosen for low res images
 CIRCLE_MIN_PTS = 20
 CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
 CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
+CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
@@ -484,7 +485,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
 
   # convert to gray-scale image and binarize using adaptive/global threshold
   if use_adaptive_threshold:
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_gray = cv2.cvtColor(img.astype(numpy.uint8), cv2.COLOR_BGR2GRAY)
     img_bw = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                    cv2.THRESH_BINARY, CV2_THRESHOLD_BLOCK_SIZE,
                                    CV2_THRESHOLD_CONSTANT)
@@ -520,6 +521,36 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
           math.isclose(1.0, aspect_ratio, abs_tol=CIRCLE_AR_ATOL) and
           num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH and
           math.isclose(1.0, fill, abs_tol=CIRCLE_COLOR_ATOL)):
+        radii = [
+            image_processing_utils.distance(
+                (shape['ctx'], shape['cty']), numpy.squeeze(point))
+            for point in contour
+        ]
+        minimum_radius, maximum_radius = min(radii), max(radii)
+        logging.debug('Minimum radius: %.2f, maximum radius: %.2f',
+                      minimum_radius, maximum_radius)
+        if circle:
+          old_circle_center = (circle['x'], circle['y'])
+          new_circle_center = (shape['ctx'], shape['cty'])
+          # Based on image height
+          center_distance_atol = img_size[0]*CIRCLE_LOCATION_VARIATION_RTOL
+          if math.isclose(
+              image_processing_utils.distance(
+                  old_circle_center, new_circle_center),
+              0,
+              abs_tol=center_distance_atol
+          ) and maximum_radius - minimum_radius < circle['radius_spread']:
+            logging.debug('Replacing the previously found circle. '
+                          'Circle located at %s has a smaller radius spread '
+                          'than the previously found circle at %s. '
+                          'Current radius spread: %.2f, '
+                          'previous radius spread: %.2f',
+                          new_circle_center, old_circle_center,
+                          maximum_radius - minimum_radius,
+                          circle['radius_spread'])
+            circle_contours.pop()
+            circle = {}
+            num_circles -= 1
         circle_contours.append(contour)
 
         # Populate circle dictionary
@@ -530,6 +561,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
         circle['h'] = float(shape['height'])
         circle['x_offset'] = (shape['ctx'] - img_size[1]//2) / circle['w']
         circle['y_offset'] = (shape['cty'] - img_size[0]//2) / circle['h']
+        circle['radius_spread'] = maximum_radius - minimum_radius
         logging.debug('Num pts: %d', num_pts)
         logging.debug('Aspect ratio: %.3f', aspect_ratio)
         logging.debug('Circlish value: %.3f', circlish)
@@ -558,6 +590,9 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
     img_name_parts = img_name.split('.')
     image_processing_utils.write_image(
         img/255, f'{img_name_parts[0]}_contours.{img_name_parts[1]}', True)
+    if not use_adaptive_threshold:
+      return find_circle(
+          img, img_name, min_area, color, use_adaptive_threshold=True)
     raise AssertionError('More than 1 circle detected. '
                          'Background of scene may be too complex.')
 

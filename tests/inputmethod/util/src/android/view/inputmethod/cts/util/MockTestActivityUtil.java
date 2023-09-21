@@ -19,6 +19,7 @@ package android.view.inputmethod.cts.util;
 import static android.content.Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import android.Manifest;
@@ -133,7 +134,7 @@ public final class MockTestActivityUtil {
         final StringBuilder commandBuilder = new StringBuilder();
         if (instant) {
             // Override app-links domain verification.
-            runShellCommand(
+            runShellCommandOrThrow(
                     String.format("pm set-app-links-user-selection --user cur --package %s true %s",
                             TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
             final Uri uri = formatStringIntentParam(TEST_ACTIVITY_URI, extras);
@@ -149,7 +150,7 @@ public final class MockTestActivityUtil {
         }
 
         runWithShellPermissionIdentity(() -> {
-            runShellCommand(commandBuilder.toString());
+            runShellCommandOrThrow(commandBuilder.toString());
         });
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         BySelector activitySelector = By.pkg(TEST_ACTIVITY.getPackageName()).depth(0);
@@ -187,9 +188,10 @@ public final class MockTestActivityUtil {
         if (instant) {
             // Override app-links domain verification.
             runShellCommand(
-                    String.format("pm set-app-links-user-selection --user cur --package %s true %s",
-                            TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
+                    String.format("pm set-app-links-user-selection --user %s --package %s true %s",
+                            userId, TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
             intent.setAction(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE);
+            intent.setData(TEST_ACTIVITY_URI);
         } else {
             intent.setAction(Intent.ACTION_MAIN);
         }

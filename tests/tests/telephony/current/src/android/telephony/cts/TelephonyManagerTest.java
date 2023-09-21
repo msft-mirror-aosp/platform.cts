@@ -1144,14 +1144,14 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
-        PhoneAccountHandle defaultAccount = telecomManager
-                .getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
+        List<PhoneAccountHandle> callCapableAccounts = telecomManager
+                .getCallCapablePhoneAccounts();
         try {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(
                         android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             PhoneAccountHandle phoneAccountHandle = mTelephonyManager.getPhoneAccountHandle();
-            assertEquals(phoneAccountHandle, defaultAccount);
+            assertTrue(callCapableAccounts.contains(phoneAccountHandle));
         } catch (SecurityException e) {
             fail("TelephonyManager#getPhoneAccountHandle requires READ_PRIVILEGED_PHONE_STATE");
         } finally {
@@ -5821,7 +5821,7 @@ public class TelephonyManagerTest {
             implements TelephonyCallback.ServiceStateListener,
             TelephonyCallback.RadioPowerStateListener {
         private static final long TIMEOUT_TO_WAIT_FOR_DESIRED_STATE =
-                TimeUnit.SECONDS.toMillis(15);
+                TimeUnit.SECONDS.toMillis(20);
         private final Object mPowerStateLock = new Object();
         private final Object mServiceStateLock = new Object();
         ServiceState mServiceState;
@@ -5864,7 +5864,7 @@ public class TelephonyManagerTest {
                 mDesireRadioPowerState = desiredRadioState;
                 /**
                  * Since SST sets waiting time up to 10 seconds for the power off radio, the
-                 * RadioStateIntent timer extends the wait time up to 15 seconds here as well.
+                 * RadioStateIntent timer extends the wait time up to 20 seconds here as well.
                  */
                 waitForDesiredState(mPowerStateLock, desiredRadioState,
                         () -> mRadioPowerState, true);

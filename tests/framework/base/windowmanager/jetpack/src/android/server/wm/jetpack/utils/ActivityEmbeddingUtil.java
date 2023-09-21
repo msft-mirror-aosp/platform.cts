@@ -16,29 +16,31 @@
 
 package android.server.wm.jetpack.utils;
 
-import static android.server.wm.jetpack.utils.ExtensionUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.utils.ExtensionUtil.assumeExtensionSupportedDevice;
-import static android.server.wm.jetpack.utils.ExtensionUtil.getExtensionWindowLayoutInfo;
-import static android.server.wm.jetpack.utils.ExtensionUtil.getWindowExtensions;
-import static android.server.wm.jetpack.utils.ExtensionUtil.isExtensionVersionAtLeast;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getActivityBounds;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getMaximumActivityBounds;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getResumedActivityById;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.isActivityResumed;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityFromActivity;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static java.util.Objects.requireNonNull;
 
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
+import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.util.Log;
 import android.util.Pair;
 import android.view.WindowMetrics;
@@ -61,7 +63,6 @@ import com.android.compatibility.common.util.PollingCheck;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Utility class for activity embedding tests.
@@ -127,7 +128,7 @@ public class ActivityEmbeddingUtil {
      * A wrapper to create {@link SplitPairRule} builder with extensions core functional interface
      * to prevent ambiguous issue when using lambda expressions.
      * <p>
-     * It requires the vendor API version at least {@link ExtensionUtil#EXTENSION_VERSION_2}.
+     * It requires the vendor API version at least {@link ExtensionsUtil#EXTENSION_VERSION_2}.
      */
     @NonNull
     public static SplitPairRule.Builder createSplitPairRuleBuilder(
@@ -346,7 +347,8 @@ public class ActivityEmbeddingUtil {
         }
         waitAndAssertResumed(resumedActivities);
 
-        final Pair<Rect, Rect> expectedBoundsPair = getExpectedBoundsPair(primaryActivity,
+        final Pair<Rect, Rect> expectedBoundsPair = getExpectedBoundsPair(
+                shouldExpandContainers ? requireNonNull(secondaryActivity) : primaryActivity,
                 splitAttributes);
 
         final ActivityEmbeddingComponent activityEmbeddingComponent = getWindowExtensions()
@@ -379,7 +381,8 @@ public class ActivityEmbeddingUtil {
     private static void waitForActivityBoundsEquals(@NonNull Activity activity,
             @NonNull Rect bounds) {
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS,
-                () -> getActivityBounds(activity).equals(bounds));
+                () -> getActivityBounds(activity).equals(bounds),
+                "Expected bounds: " + bounds + ", actual bounds:" + getActivityBounds(activity));
     }
 
     private static boolean waitForResumed(
@@ -488,23 +491,23 @@ public class ActivityEmbeddingUtil {
 
     /** Returns the expected bounds of the primary and secondary containers */
     @NonNull
-    private static Pair<Rect, Rect> getExpectedBoundsPair(@NonNull Activity primaryActivity,
+    private static Pair<Rect, Rect> getExpectedBoundsPair(@NonNull Activity activity,
             @NonNull SplitAttributes splitAttributes) {
         SplitType splitType = splitAttributes.getSplitType();
 
-        final Rect parentBounds = getMaximumActivityBounds(primaryActivity);
+        final Rect parentBounds = getMaximumActivityBounds(activity);
         if (splitType instanceof SplitType.ExpandContainersSplitType) {
             return new Pair<>(new Rect(parentBounds), new Rect(parentBounds));
         }
 
         int layoutDir = (splitAttributes.getLayoutDirection() == LayoutDirection.LOCALE)
-                ? primaryActivity.getResources().getConfiguration().getLayoutDirection()
+                ? activity.getResources().getConfiguration().getLayoutDirection()
                 : splitAttributes.getLayoutDirection();
         final boolean isPrimaryRightOrBottomContainer = isPrimaryRightOrBottomContainer(layoutDir);
 
         FoldingFeature foldingFeature;
         try {
-            foldingFeature = getFoldingFeature(getExtensionWindowLayoutInfo(primaryActivity));
+            foldingFeature = getFoldingFeature(getExtensionWindowLayoutInfo(activity));
         } catch (InterruptedException e) {
             foldingFeature = null;
         }
@@ -650,7 +653,7 @@ public class ActivityEmbeddingUtil {
     public static void assumeActivityEmbeddingSupportedDevice() {
         assumeExtensionSupportedDevice();
         assumeTrue("Device does not support ActivityEmbedding",
-                Objects.requireNonNull(getWindowExtensions())
+                requireNonNull(getWindowExtensions())
                         .getActivityEmbeddingComponent() != null);
     }
 

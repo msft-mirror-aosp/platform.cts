@@ -19,11 +19,14 @@ package com.android.bedstead.nene;
 import com.android.bedstead.nene.accessibility.Accessibility;
 import com.android.bedstead.nene.accounts.Accounts;
 import com.android.bedstead.nene.activities.Activities;
+import com.android.bedstead.nene.adb.Adb;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.bluetooth.Bluetooth;
 import com.android.bedstead.nene.broadcasts.Broadcasts;
+import com.android.bedstead.nene.certificates.Certificates;
 import com.android.bedstead.nene.context.Context;
 import com.android.bedstead.nene.content.Content;
+import com.android.bedstead.nene.context.Context;
 import com.android.bedstead.nene.credentials.Credentials;
 import com.android.bedstead.nene.device.Device;
 import com.android.bedstead.nene.devicepolicy.DevicePolicy;
@@ -41,8 +44,10 @@ import com.android.bedstead.nene.services.Services;
 import com.android.bedstead.nene.settings.Settings;
 import com.android.bedstead.nene.systemproperties.SystemProperties;
 import com.android.bedstead.nene.telecom.Telecom;
+import com.android.bedstead.nene.telephony.Telephony;
 import com.android.bedstead.nene.ui.Ui;
 import com.android.bedstead.nene.users.Users;
+import com.android.bedstead.nene.wallpaper.Wallpaper;
 import com.android.bedstead.nene.wifi.Wifi;
 
 /**
@@ -77,7 +82,7 @@ public final class TestApis {
 
     /** Access Test APIs relating to Settings. */
     public static Settings settings() {
-        return Settings.sInstance;
+        return Settings.INSTANCE;
     }
 
     /** Access Test APIs related to System Properties. */
@@ -194,6 +199,26 @@ public final class TestApis {
     /** Access Test APIs related to system services. */
     public static Services services() {
         return Services.sInstance;
+    }
+
+    /** Access Test APIs related to adb. */
+    public static Adb adb() {
+        return Adb.INSTANCE;
+    }
+
+    /** Access Test APIs related to certificates. */
+    public static Certificates certificates() {
+        return Certificates.sInstance;
+    }
+
+    /** Access Test APIs related to wallpaper. */
+    public static Wallpaper wallpaper() {
+        return Wallpaper.INSTANCE;
+    }
+
+    /** Access Test APIs related to telephony. */
+    public static Telephony telephony() {
+        return Telephony.INSTANCE;
     }
 
     /** @deprecated Use statically */

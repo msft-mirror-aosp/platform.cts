@@ -30,7 +30,6 @@ import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.car.Car;
-import android.car.annotation.ApiRequirements;
 import android.car.app.CarActivityManager;
 import android.car.app.CarTaskViewController;
 import android.car.app.CarTaskViewControllerCallback;
@@ -38,7 +37,6 @@ import android.car.app.ControlledRemoteCarTaskView;
 import android.car.app.ControlledRemoteCarTaskViewCallback;
 import android.car.app.ControlledRemoteCarTaskViewConfig;
 import android.car.cts.R;
-import android.car.test.ApiCheckerRule;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -59,7 +57,6 @@ import com.android.compatibility.common.util.ShellUtils;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -81,8 +78,6 @@ public class CarTaskViewControllerTest {
     private final ComponentName mTestActivity =
             new ComponentName(mTargetContext, TestActivity.class);
     private final UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
-    @Rule
-    public final ApiCheckerRule mApiCheckerRule = new ApiCheckerRule.Builder().build();
 
     private TestCarTaskViewControllerCallback mCallback;
     private TestActivity mHostActivity;
@@ -95,6 +90,8 @@ public class CarTaskViewControllerTest {
     @Before
     public void setUp() {
         Car car = Car.createCar(mContext);
+        mUiAutomation.adoptShellPermissionIdentity(
+                Car.PERMISSION_MANAGE_CAR_SYSTEM_UI /* for CAM.getCarTaskViewController */);
 
         mCarActivityManager =
                 (CarActivityManager) car.getCarManager(Car.CAR_ACTIVITY_SERVICE);
@@ -117,19 +114,23 @@ public class CarTaskViewControllerTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         if (mHostActivity != null) {
             mHostActivity.finishAndRemoveTask();
+            mHostActivity.waitForDestroyed();
             mHostActivity = null;
         }
         if (EmbeddedTestActivity1.sInstance != null) {
             EmbeddedTestActivity1.sInstance.finishAndRemoveTask();
+            EmbeddedTestActivity1.sInstance.waitForDestroyed();
             EmbeddedTestActivity1.sInstance = null;
         }
         if (EmbeddedTestActivity2.sInstance != null) {
             EmbeddedTestActivity2.sInstance.finishAndRemoveTask();
+            EmbeddedTestActivity2.sInstance.waitForDestroyed();
             EmbeddedTestActivity2.sInstance = null;
         }
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     @Test
@@ -156,16 +157,10 @@ public class CarTaskViewControllerTest {
     }
 
     @Test
-    // TODO(b/295368210): Enable these once the methods from hidden base class are properly
-    // recognized.
-    // @ApiTest(apis = {
-    //         "android.car.app.ControlledRemoteCarTaskView#isInitialized",
-    //         "android.car.app.ControlledRemoteCarTaskView#getTaskInfo"
-    // })
-    @NonApiTest(exemptionReasons = {}, justification = "Infra doesn't support methods in hidden "
-            + "base class")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_1,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
+    @ApiTest(apis = {
+            "android.car.app.ControlledRemoteCarTaskView#isInitialized",
+            "android.car.app.ControlledRemoteCarTaskView#getTaskInfo"
+    })
     public void createMultipleControlledRemoteCarTaskView_startsTheTask() {
         // Act
         CarTaskViewTestHolder taskViewCallback =
@@ -222,15 +217,7 @@ public class CarTaskViewControllerTest {
     }
 
     @Test
-    // TODO(b/295368210): Enable these once the methods from hidden base class are properly
-    // recognized.
-    // @ApiTest(apis = {
-    //        "android.car.app.ControlledRemoteCarTaskView#release"
-    // })
-    @NonApiTest(exemptionReasons = {}, justification = "Infra doesn't support methods in hidden "
-            + "base class")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_1,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
+    @ApiTest(apis = {"android.car.app.ControlledRemoteCarTaskView#release"})
     public void releaseControlledCarTaskView_releasesTaskView() throws Exception {
         // Arrange
         CarTaskViewTestHolder taskViewCallback =
@@ -366,8 +353,6 @@ public class CarTaskViewControllerTest {
 
     @Test
     @NonApiTest(exemptionReasons = {}, justification = "No CDD Requirement")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     public void remoteCarTaskView_receivesTouchInput() throws Exception {
         // Arrange
         CarTaskViewTestHolder carTaskViewHolder =

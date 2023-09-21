@@ -29,6 +29,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
+import android.view.Display;
 import android.window.WindowInfosListenerForTest;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
@@ -41,6 +42,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
@@ -169,7 +171,9 @@ public class CtsWindowInfoUtils {
                 if (!windowInfo.isVisible) {
                     continue;
                 }
-                if (windowInfo.windowToken == windowToken) {
+                // only wait for default display.
+                if (windowInfo.windowToken == windowToken
+                        && windowInfo.displayId == Display.DEFAULT_DISPLAY) {
                     return predicate.test(windowInfo);
                 }
             }
@@ -207,7 +211,7 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Waits until the window specified by windowTokenSupplier is present, not occluded, and hasn't
+     * Waits until the window specified by the predicate is present, not occluded, and hasn't
      * had geometry changes for 200ms.
      *
      * The window is considered occluded if any part of another window is above it, excluding
@@ -228,7 +232,7 @@ public class CtsWindowInfoUtils {
      * reached. False otherwise.
      */
     public static boolean waitForWindowOnTop(int timeout, @NonNull TimeUnit unit,
-            @NonNull Supplier<IBinder> windowTokenSupplier)
+                                             @NonNull Predicate<WindowInfo> predicate)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -252,15 +256,10 @@ public class CtsWindowInfoUtils {
                     return;
                 }
 
-                IBinder windowToken = windowTokenSupplier.get();
-                if (windowToken == null) {
-                    return;
-                }
-
                 WindowInfo targetWindowInfo = null;
                 ArrayList<WindowInfo> aboveWindowInfos = new ArrayList<>();
                 for (var windowInfo : windowInfos) {
-                    if (windowInfo.windowToken == windowToken) {
+                    if (predicate.test(windowInfo)) {
                         targetWindowInfo = windowInfo;
                         break;
                     }
@@ -305,36 +304,140 @@ public class CtsWindowInfoUtils {
                         latch.countDown();
                     }
                 };
-                mTimer.schedule(mTask, 200);
+                mTimer.schedule(mTask, 200 * HW_TIMEOUT_MULTIPLIER);
             }
         };
 
-        var waitForWindow = new ThrowingRunnable() {
-            @Override
-            public void run() throws InterruptedException {
-                var listener = new WindowInfosListenerForTest();
-                try {
-                    listener.addWindowInfosListener(windowNotOccluded);
-                    latch.await(timeout, unit);
-                } finally {
-                    listener.removeWindowInfosListener(windowNotOccluded);
-                }
+        runWithSurfaceFlingerPermission(() -> {
+            var listener = new WindowInfosListenerForTest();
+            try {
+                listener.addWindowInfosListener(windowNotOccluded);
+                latch.await(timeout, unit);
+            } finally {
+                listener.removeWindowInfosListener(windowNotOccluded);
             }
-        };
+        });
 
+        return satisfied.get();
+    }
+
+    private interface InterruptableRunnable {
+        void run() throws InterruptedException;
+    };
+
+    private static void runWithSurfaceFlingerPermission(@NonNull InterruptableRunnable runnable)
+            throws InterruptedException {
         Set<String> shellPermissions =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation()
                         .getAdoptedShellPermissions();
         if (shellPermissions.isEmpty()) {
-            SystemUtil.runWithShellPermissionIdentity(waitForWindow,
+            SystemUtil.runWithShellPermissionIdentity(runnable::run,
                     Manifest.permission.ACCESS_SURFACE_FLINGER);
         } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
-            waitForWindow.run();
+            runnable.run();
         } else {
             throw new IllegalStateException(
                     "waitForWindowOnTop called with adopted shell permissions that don't include "
                             + "ACCESS_SURFACE_FLINGER");
         }
+    }
+
+    /**
+     * Waits until the window specified by windowTokenSupplier is present, not occluded, and hasn't
+     * had geometry changes for 200ms.
+     *
+     * The window is considered occluded if any part of another window is above it, excluding
+     * trusted overlays.
+     *
+     * <p>
+     * <strong>Note:</strong>If the caller has any adopted shell permissions, they must include
+     * android.permission.ACCESS_SURFACE_FLINGER.
+     * </p>
+     *
+     * @param timeout             The amount of time to wait for the window to be visible.
+     * @param unit                The units associated with timeout.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The
+     *                            supplier is called each time window infos change. If the
+     *                            supplier returns null, the window is assumed not visible
+     *                            yet.
+     * @return True if the window satisfies the visibility requirements before the timeout is
+     * reached. False otherwise.
+     */
+    public static boolean waitForWindowOnTop(int timeout, @NonNull TimeUnit unit,
+            @NonNull Supplier<IBinder> windowTokenSupplier)
+            throws InterruptedException {
+        return waitForWindowOnTop(timeout, unit, windowInfo -> {
+            IBinder windowToken = windowTokenSupplier.get();
+            return windowToken != null && windowInfo.windowToken == windowToken;
+        });
+    }
+
+    /**
+     * Waits until the set of windows and their geometries are unchanged for 200ms.
+     *
+     * <p>
+     * <strong>Note:</strong>If the caller has any adopted shell permissions, they must include
+     * android.permission.ACCESS_SURFACE_FLINGER.
+     * </p>
+     *
+     * @param timeout The amount of time to wait for the window to be visible.
+     * @param unit    The units associated with timeout.
+     * @return True if window geometry becomes stable before the timeout is reached. False
+     * otherwise.
+     */
+    public static boolean waitForStableWindowGeometry(int timeout, @NonNull TimeUnit unit)
+            throws InterruptedException {
+        var latch = new CountDownLatch(1);
+        var satisfied = new AtomicBoolean();
+
+        var timer = new Timer();
+        TimerTask[] task = {null};
+
+        var previousBounds = new HashMap<IBinder, Rect>();
+        var currentBounds = new HashMap<IBinder, Rect>();
+
+        Consumer<List<WindowInfo>> consumer = windowInfos -> {
+            if (satisfied.get()) {
+                return;
+            }
+
+            currentBounds.clear();
+            for (var windowInfo : windowInfos) {
+                currentBounds.put(windowInfo.windowToken, windowInfo.bounds);
+            }
+
+            if (currentBounds.equals(previousBounds)) {
+                // No changes detected. Let the previously scheduled timer task continue.
+                return;
+            }
+
+            previousBounds.clear();
+            previousBounds.putAll(currentBounds);
+
+            // Something has changed. Cancel the previous timer task and schedule a new task
+            // to countdown the latch in 200ms.
+            if (task[0] != null) {
+                task[0].cancel();
+            }
+            task[0] = new TimerTask() {
+                @Override
+                public void run() {
+                    satisfied.set(true);
+                    latch.countDown();
+                }
+            };
+            timer.schedule(task[0], 200 * HW_TIMEOUT_MULTIPLIER);
+        };
+
+        runWithSurfaceFlingerPermission(() -> {
+            var listener = new WindowInfosListenerForTest();
+            try {
+                listener.addWindowInfosListener(consumer);
+                latch.await(timeout, unit);
+            } finally {
+                listener.removeWindowInfosListener(consumer);
+            }
+        });
 
         return satisfied.get();
     }
@@ -352,7 +455,8 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier) throws InterruptedException {
+            @NonNull Supplier<IBinder> windowTokenSupplier, boolean useGlobalInjection)
+            throws InterruptedException {
         Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
             return false;
@@ -360,7 +464,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
@@ -378,7 +482,8 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindow(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
+            boolean useGlobalInjection)
             throws InterruptedException {
         Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
@@ -387,7 +492,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + (offset != null ? offset.x : 0),
                 bounds.top + (offset != null ? offset.y : 0));
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
@@ -436,15 +541,16 @@ public class CtsWindowInfoUtils {
         return bounds;
     }
 
-    private static void sendTap(Instrumentation instrumentation, Point coord) {
+    private static void sendTap(Instrumentation instrumentation, Point coord,
+            boolean useGlobalInjection) {
         // Get anchor coordinates on the screen
         final long downTime = SystemClock.uptimeMillis();
 
-        UiAutomation uiAutomation = instrumentation.getUiAutomation();
         CtsTouchUtils ctsTouchUtils = new CtsTouchUtils(instrumentation.getTargetContext());
-        ctsTouchUtils.injectDownEvent(uiAutomation, downTime, coord.x, coord.y, true, null);
-        ctsTouchUtils.injectUpEvent(uiAutomation, downTime, false, coord.x, coord.y,
-                true, null);
+        ctsTouchUtils.injectDownEvent(instrumentation, downTime, coord.x, coord.y,
+                /* eventInjectionListener= */ null, useGlobalInjection);
+        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y,
+                /*waitForAnimations=*/ true, null, useGlobalInjection);
 
         instrumentation.waitForIdleSync();
     }

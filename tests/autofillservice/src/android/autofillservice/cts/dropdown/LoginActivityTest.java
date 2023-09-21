@@ -52,7 +52,6 @@ import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.S
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.isConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
-import static android.autofillservice.cts.testcore.Timeouts.RESPONSE_DELAY_MS;
 import static android.content.Context.CLIPBOARD_SERVICE;
 import static android.service.autofill.FillRequest.FLAG_MANUAL_REQUEST;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_ADDRESS;
@@ -1665,55 +1664,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         saveGoesAway(DismissType.TOUCH_OUTSIDE);
     }
 
-    @Test
-    public void testSaveUiWhenAutoFocusedToANewEditText() throws Exception {
-        enableService();
-
-        // Set expectations.
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .setSaveInfoFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
-                .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
-                .build());
-        sReplier.addResponse(new CannedFillResponse.Builder(CannedFillResponse.ResponseType.DELAY)
-                .addDataset(new CannedDataset.Builder()
-                        .setField("single_edit_text", "dude")
-                        .setPresentation(createPresentation("The Dude"))
-                        .build())
-                .build());
-
-        // Trigger auto-fill.
-        mActivity.onUsername(View::requestFocus);
-
-        // Validation check.
-        mUiBot.assertNoDatasetsEver();
-
-        // Wait for onFill() before proceeding, otherwise the fields might be changed before
-        // the session started
-        sReplier.getNextFillRequest();
-
-        // Set credentials...
-        mActivity.onUsername((v) -> v.setText("malkovich"));
-        mActivity.onPassword((v) -> v.setText("malkovich"));
-
-        // ...and login, which will display an edit text which will be auto-focused
-        mActivity.login(true);
-
-        // The new edit text will trigger a new fill request.
-        sReplier.getNextFillRequest();
-
-        // Delayed response triggers additional fill request.
-        sReplier.getNextFillRequest();
-
-        // Assert that saveUi is showing.
-        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_PASSWORD);
-
-        // Wait so that Fill Service has time to return the fill response.
-        SystemClock.sleep(RESPONSE_DELAY_MS);
-
-        // Assert that saveUi is still showing.
-        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_PASSWORD);
-    }
-
     private void saveGoesAway(DismissType dismissType) throws Exception {
         enableService();
 
@@ -2316,17 +2266,19 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         final FillRequest fillRequest = sReplier.getNextFillRequest();
 
-        // Assert it only has 1 root view with 10 "leaf" nodes:
+        // Assert it only has 1 root view with 12 "leaf" nodes:
         // 1.text view for app title
-        // 2.username text label
-        // 3.username text field
-        // 4.password text label
-        // 5.password text field
-        // 6.output text field
-        // 7.clear button
-        // 8.save button
-        // 9.login button
-        // 10.cancel button
+        // 2.invisible layout
+        // 3.edit text in the invisible layout
+        // 4.username text label
+        // 5.username text field
+        // 6.password text label
+        // 7.password text field
+        // 8.output text field
+        // 9.clear button
+        // 10.save button
+        // 11.login button
+        // 12.cancel button
         //
         // But it also has an intermediate container (for username) that should be included because
         // it has a resource id.
@@ -2334,7 +2286,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // get activity title
         final CharSequence activityTitle = mActivity.getPackageName() + "/"
                 + getActivityTitle(InstrumentationRegistry.getInstrumentation(), mActivity);
-        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 12, activityTitle);
+        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 14, activityTitle);
 
         // Make sure container with a resource id was included:
         final ViewNode usernameContainer = findNodeByResourceId(fillRequest.structure,

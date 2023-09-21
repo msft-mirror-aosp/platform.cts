@@ -121,9 +121,7 @@ import static android.view.Surface.ROTATION_90;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
 import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -131,7 +129,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-
 import static java.lang.Integer.toHexString;
 
 import android.accessibilityservice.AccessibilityService;
@@ -139,7 +136,6 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.ActivityTaskManager;
-import android.app.DreamManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.app.WallpaperManager;
@@ -157,7 +153,6 @@ import android.graphics.Rect;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
@@ -208,12 +203,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -688,25 +685,12 @@ public abstract class ActivityManagerTestBase {
         }
     }
 
-    public static void wakeUpAndUnlock(Context context) {
-        final KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
-        final PowerManager powerManager = context.getSystemService(PowerManager.class);
-        final DreamManager dreamManager = context.getSystemService(DreamManager.class);
-        if (keyguardManager == null || powerManager == null) {
-            return;
-        }
-
-        if (keyguardManager.isKeyguardLocked() || !powerManager.isInteractive()
-                || (dreamManager != null
-                && SystemUtil.runWithShellPermissionIdentity(dreamManager::isDreaming))) {
-            pressWakeupButton();
-            pressUnlockButton();
-        }
-    }
-
     @Before
     public void setUp() throws Exception {
-        wakeUpAndUnlock(mContext);
+        UiDeviceUtils.wakeUpAndUnlock(mContext);
+        if (isKeyguardLocked()) {
+            unlockUnexpectedLockedKeyguard();
+        }
 
         launchHomeActivityNoWait();
         // TODO(b/242933292): Consider removing all the tasks belonging to android.server.wm
@@ -741,7 +725,7 @@ public abstract class ActivityManagerTestBase {
         // activities but home are cleaned up from the root task at the end of each test. Am force
         // stop shell commands might be asynchronous and could interrupt the task cleanup
         // process if executed first.
-        wakeUpAndUnlock(mContext);
+        UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
         removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
         stopTestPackage(TEST_PACKAGE);
@@ -760,6 +744,20 @@ public abstract class ActivityManagerTestBase {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
+    }
+
+    /** This should only be called if keyguard is still locked unexpectedly. */
+    private void unlockUnexpectedLockedKeyguard() {
+        logE("Try to recover unexpected locked keyguard");
+        // To clear the credential immediately, the screen need to be turned on.
+        pressWakeupButton();
+        if (supportsSecureLock()) {
+            removeLockCredential();
+        }
+        // Off/on to refresh the keyguard state.
+        pressSleepButton();
+        pressWakeupButton();
+        pressUnlockButton();
     }
 
     /**
@@ -801,13 +799,18 @@ public abstract class ActivityManagerTestBase {
         }
     }
 
-    protected ComponentName getDefaultSecondaryHomeComponent() {
-        assumeTrue(supportsMultiDisplay());
+    protected Intent createHomeIntent(String category) {
         int resId = Resources.getSystem().getIdentifier(
                 "config_secondaryHomePackage", "string", "android");
         final Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_SECONDARY_HOME);
+        intent.addCategory(category);
         intent.setPackage(mContext.getResources().getString(resId));
+        return intent;
+    }
+
+    protected ComponentName getDefaultSecondaryHomeComponent() {
+        assumeTrue(supportsMultiDisplay());
+        final Intent intent = createHomeIntent(Intent.CATEGORY_SECONDARY_HOME);
         final ResolveInfo resolveInfo =
                 mContext.getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull("Should have default secondary home activity", resolveInfo);
@@ -1387,8 +1390,14 @@ public abstract class ActivityManagerTestBase {
 
     protected boolean supportsMultiWindow() {
         Display defaultDisplay = mDm.getDisplay(DEFAULT_DISPLAY);
-        return ActivityTaskManager.supportsSplitScreenMultiWindow(
-                mContext.createDisplayContext(defaultDisplay));
+        return supportsMultiWindow(mContext.createDisplayContext(defaultDisplay));
+    }
+
+    /**
+     * Returns true if the Context supports multi-window-mode
+     */
+    protected final boolean supportsMultiWindow(Context context) {
+        return ActivityTaskManager.supportsSplitScreenMultiWindow(context);
     }
 
     /** Returns true if the default display supports split screen multi-window. */
@@ -1747,6 +1756,11 @@ public abstract class ActivityManagerTestBase {
         }
 
         public LockScreenSession disableLockScreen() {
+            // Lock credentials need to be cleared before disabling the lock.
+            if (mLockCredentialSet) {
+                removeLockCredential();
+                mLockCredentialSet = false;
+            }
             setLockDisabled(true);
             return this;
         }
@@ -1870,7 +1884,7 @@ public abstract class ActivityManagerTestBase {
          * @param lockDisabled true if should disable, false otherwise.
          */
         protected void setLockDisabled(boolean lockDisabled) {
-            runCommandAndPrintOutput("locksettings set-disabled " + oldIfNeeded() + lockDisabled);
+            runCommandAndPrintOutput("locksettings set-disabled " + lockDisabled);
         }
 
         @NonNull
@@ -2883,15 +2897,7 @@ public abstract class ActivityManagerTestBase {
                 // Try to recover the bad state of device to avoid subsequent test failures.
                 if (isKeyguardLocked()) {
                     mLastError.addSuppressed(new IllegalStateException("Keyguard is locked"));
-                    // To clear the credential immediately, the screen need to be turned on.
-                    pressWakeupButton();
-                    if (supportsSecureLock()) {
-                        removeLockCredential();
-                    }
-                    // Off/on to refresh the keyguard state.
-                    pressSleepButton();
-                    pressWakeupButton();
-                    pressUnlockButton();
+                    unlockUnexpectedLockedKeyguard();
                 }
                 final String overlayDisplaySettings = Settings.Global.getString(
                         mContext.getContentResolver(), Settings.Global.OVERLAY_DISPLAY_DEVICES);
@@ -3488,5 +3494,20 @@ public abstract class ActivityManagerTestBase {
     public WindowManagerState.Activity getActivityWaitState(ComponentName activityName) {
         mWmState.computeState(new WaitForValidActivityState(activityName));
         return mWmState.getActivity(activityName);
+    }
+
+    /**
+     * Inset given frame if the insets source exist.
+     *
+     * @param windowState The window which have the insets source.
+     * @param predicate Inset source predicate.
+     * @param inOutBounds In/out the given frame from the inset source.
+     */
+    public static void insetGivenFrame(WindowManagerState.WindowState windowState,
+            Predicate<WindowManagerState.InsetsSource> predicate, Rect inOutBounds) {
+        Optional<WindowManagerState.InsetsSource> insetsOptional =
+                windowState.getMergedLocalInsetsSources().stream().filter(
+                        predicate).findFirst();
+        insetsOptional.ifPresent(insets -> insets.insetGivenFrame(inOutBounds));
     }
 }

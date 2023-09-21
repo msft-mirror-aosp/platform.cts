@@ -59,6 +59,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   patch = image_processing_utils.get_image_patch(
       img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   rgb_means_yuv = image_processing_utils.compute_image_means(patch)
+  logging.debug('%s YUV RGB means: %s', raw_fmt, str(rgb_means_yuv))
 
   # RAW shots are 1/2 x 1/2 smaller after conversion to RGB, but patch
   # cropping is relative.
@@ -69,6 +70,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   patch = image_processing_utils.get_image_patch(
       img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   rgb_means_raw = image_processing_utils.compute_image_means(patch)
+  logging.debug('%s RAW RGB means: %s', raw_fmt, str(rgb_means_raw))
 
   rms_diff = image_processing_utils.compute_image_rms_difference_1d(
       rgb_means_yuv, rgb_means_raw)
@@ -136,6 +138,7 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
               'yuv', props, max_size=_MAX_IMG_SIZE)[0]
         out_surfaces = [{'format': raw_fmt},
                         {'format': 'yuv', 'width': w, 'height': h}]
+        cam.do_3a(do_af=False)
         cap_raw, cap_yuv = cam.do_capture(req, out_surfaces)
         msg = convert_and_compare_captures(cap_raw, cap_yuv, props,
                                            log_path, raw_fmt)

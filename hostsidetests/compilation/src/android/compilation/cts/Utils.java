@@ -23,6 +23,7 @@ import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.Pair;
+import com.android.tradefed.util.RunUtil;
 
 import com.google.common.io.ByteStreams;
 
@@ -30,10 +31,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class Utils {
+    private static final Duration SOFT_REBOOT_TIMEOUT = Duration.ofMinutes(3);
+
     private final TestInformation mTestInfo;
 
     public Utils(TestInformation testInfo) throws Exception {
@@ -59,7 +64,9 @@ public class Utils {
             throws Exception {
         // We cannot use `ITestDevice.installPackage` or `SuiteApkInstaller` here because they don't
         // support DM files.
-        List<String> cmd = new ArrayList<>(List.of("install-multiple", "--abi", abi.getName()));
+        List<String> cmd =
+                new ArrayList<>(List.of("adb", "-s", mTestInfo.getDevice().getSerialNumber(),
+                        "install-multiple", "--abi", abi.getName()));
 
         for (Pair<String, String> pair : apkDmResources) {
             String apkResource = pair.first;
@@ -76,8 +83,12 @@ public class Utils {
             }
         }
 
-        String result = mTestInfo.getDevice().executeAdbCommand(cmd.toArray(String[] ::new));
-        assertWithMessage("Failed to install").that(result).isNotNull();
+        // We can't use `INativeDevice.executeAdbCommand`. It only returns stdout on success and
+        // returns null on failure, while we want to get the exact error message.
+        CommandResult result = RunUtil.getDefault().runTimedCmd(
+                mTestInfo.getDevice().getOptions().getAdbCommandTimeout(),
+                cmd.toArray(String[] ::new));
+        assertWithMessage(result.toString()).that(result.getExitCode()).isEqualTo(0);
     }
 
     public void installFromResources(IAbi abi, String apkResource, String dmResource)
@@ -103,7 +114,29 @@ public class Utils {
         return file;
     }
 
+    public void softReboot() throws Exception {
+        // `waitForBootComplete` relies on `dev.bootcomplete`.
+        mTestInfo.getDevice().executeShellCommand("setprop dev.bootcomplete 0");
+        mTestInfo.getDevice().executeShellCommand("setprop ctl.restart zygote");
+        boolean success = mTestInfo.getDevice().waitForBootComplete(SOFT_REBOOT_TIMEOUT.toMillis());
+        assertWithMessage("Soft reboot didn't complete in %ss", SOFT_REBOOT_TIMEOUT.getSeconds())
+                .that(success)
+                .isTrue();
+    }
+
+    public static void dumpContainsDexFile(String dump, String dexFile) {
+        assertThat(dump).containsMatch(dexFileToPattern(dexFile));
+    }
+
+    public static void dumpDoesNotContainDexFile(String dump, String dexFile) {
+        assertThat(dump).doesNotContainMatch(dexFileToPattern(dexFile));
+    }
+
     private String getDmPath(String apkPath) throws Exception {
         return apkPath.replaceAll("\\.apk$", ".dm");
+    }
+
+    private static Pattern dexFileToPattern(String dexFile) {
+        return Pattern.compile(String.format("[\\s/](%s)\\s?", Pattern.quote(dexFile)));
     }
 }

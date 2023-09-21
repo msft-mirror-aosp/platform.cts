@@ -16,13 +16,14 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
@@ -36,6 +37,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
@@ -161,6 +163,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     @AutoAnnotation
+    private static RequireRunOnPrivateProfile requireRunOnPrivateProfile() {
+        return new AutoAnnotation_BedsteadJUnit4_requireRunOnPrivateProfile();
+    }
+
+    @AutoAnnotation
     static RequireRunOnInitialUser requireRunOnInitialUser(OptionalBoolean switchedToUser) {
         return new AutoAnnotation_BedsteadJUnit4_requireRunOnInitialUser(switchedToUser);
     }
@@ -192,6 +199,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     @AutoAnnotation
     private static EnsureHasCloneProfile ensureHasCloneProfile() {
         return new AutoAnnotation_BedsteadJUnit4_ensureHasCloneProfile();
+    }
+
+    @AutoAnnotation
+    private static EnsureHasPrivateProfile ensureHasPrivateProfile() {
+        return new AutoAnnotation_BedsteadJUnit4_ensureHasPrivateProfile();
     }
 
     @AutoAnnotation
@@ -240,26 +252,42 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     static int annotationSorter(Annotation a, Annotation b) {
-        return getAnnotationWeight(a) - getAnnotationWeight(b);
+        return getAnnotationPriority(a) - getAnnotationPriority(b);
     }
 
-    private static int getAnnotationWeight(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            // Special case, not important
-            return AnnotationRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
-        }
-
+    private static int getAnnotationCost(Annotation annotation) {
         if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
-            return AnnotationRunPrecedence.FIRST;
+            return AnnotationPriorityRunPrecedence.MIDDLE;
         }
 
         try {
-            return (int) annotation.annotationType().getMethod("weight").invoke(annotation);
+            return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
-            // Default to PRECEDENCE_NOT_IMPORTANT if no weight is found on the annotation.
-            return AnnotationRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+            // Default to MIDDLE if no cost is found on the annotation.
+            return AnnotationPriorityRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new NeneException("Failed to invoke weight on this annotation: " + annotation, e);
+            throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
+        }
+    }
+
+    private static int getAnnotationPriority(Annotation annotation) {
+        if (annotation instanceof DynamicParameterizedAnnotation) {
+            // Special case, not important
+            return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+        }
+
+        if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
+            return AnnotationPriorityRunPrecedence.FIRST;
+        }
+
+        try {
+            return (int) annotation.annotationType().getMethod("priority").invoke(annotation);
+        } catch (NoSuchMethodException e) {
+            // Default to PRECEDENCE_NOT_IMPORTANT if no priority is found on the annotation.
+            return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new NeneException(
+                    "Failed to invoke priority on this annotation: " + annotation, e);
         }
     }
 
@@ -586,16 +614,32 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Sort methods so that methods with identical bedstead annotations are together.
+     * Sort methods by cost and group the ones with identical bedstead annotations together.
      *
      * <p>This will also ensure that all tests methods which are not annotated for bedstead will
      * run before any tests which are annotated.
      */
     private void sortMethodsByBedsteadAnnotations(List<FrameworkMethod> modifiedTests) {
+        List<Annotation> bedsteadAnnotationsSortedByCost =
+                bedsteadAnnotationsSortedByCost(modifiedTests);
+        Comparator<FrameworkMethod> comparator = ((o1, o2) -> {
+            for (Annotation annotation : bedsteadAnnotationsSortedByCost) {
+                boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
+                boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
+
+                if (o1HasAnnotation && !o2HasAnnotation) {
+                    // o1 goes to the start
+                    return -1;
+                } else if (o2HasAnnotation && !o1HasAnnotation) {
+                    return 1;
+                }
+            }
+            return 0;
+        });
+
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-
-        modifiedTests.sort((o1, o2) -> {
+        comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -607,8 +651,25 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     return -1;
                 }
             }
+
             return 0;
         });
+
+        modifiedTests.sort(comparator);
+    }
+
+    private List<Annotation> bedsteadAnnotationsSortedByCost(List<FrameworkMethod> methods) {
+        Map<Annotation, Integer> annotationCosts = mapAnnotationsCost(methods);
+
+        List<Annotation> annotations = new ArrayList<>(annotationCosts.keySet());
+        annotations.removeIf(
+                annotation ->
+                        !annotation.annotationType()
+                                .getCanonicalName().contains(BEDSTEAD_PACKAGE_NAME));
+
+        annotations.sort(Comparator.comparingInt(annotationCosts::get));
+
+        return annotations;
     }
 
     private List<Annotation> bedsteadAnnotationsSortedByMostCommon(List<FrameworkMethod> methods) {
@@ -637,6 +698,18 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return annotationCounts;
+    }
+
+    private Map<Annotation, Integer> mapAnnotationsCost(List<FrameworkMethod> methods) {
+        Map<Annotation, Integer> annotationCosts = new HashMap<>();
+
+        for (FrameworkMethod method : methods) {
+            for (Annotation annotation : method.getAnnotations()) {
+                annotationCosts.put(annotation, getAnnotationCost(annotation));
+            }
+        }
+
+        return annotationCosts;
     }
 
     private Set<Annotation> getParameterizedAnnotations(FrameworkMethod method) {
@@ -952,6 +1025,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 return requireRunOnTvProfile();
             case CLONE_PROFILE:
                 return requireRunOnCloneProfile();
+            case PRIVATE_PROFILE:
+                return requireRunOnPrivateProfile();
             default:
                 throw new IllegalStateException(
                         "UserType " + userType + " is not compatible with " + annotationName);
@@ -979,6 +1054,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 return ensureHasTvProfile();
             case CLONE_PROFILE:
                 return ensureHasCloneProfile();
+            case PRIVATE_PROFILE:
+                return ensureHasPrivateProfile();
             default:
                 throw new IllegalStateException(
                         "UserType " + userType + " is not compatible with " + annotationName);

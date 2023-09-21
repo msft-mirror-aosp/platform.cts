@@ -443,23 +443,6 @@ java_test_host {
 }
 
 java_test_host {
-    name: "CtsDocumentsHostTestCases",
-    defaults: ["appsecurity_cts_defaults"],
-
-    srcs: [
-        "src/**/*Documents*.java",
-        "src/**/ScopedDirectoryAccessTest.java",
-    ],
-    test_config: "DocumentsTests.xml",
-    data: [
-        // Documents
-        ":CtsDocumentClient",
-        ":CtsDocumentProvider",
-        ":CtsStubIme",
-    ],
-}
-
-java_test_host {
     name: "CtsResumeOnRebootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
@@ -486,6 +469,10 @@ java_test_host {
     ],
     data: [
         ":CtsApkVerityTestPrebuiltFiles",
+    ],
+    static_libs: [
+        "flag-junit-host",
+        "android.security.flags-aconfig-java-host",
     ],
     test_config: "ApkVerityInstallTests.xml",
 }

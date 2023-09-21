@@ -25,21 +25,26 @@ import static android.content.Intent.FLAG_EXCLUDE_STOPPED_PACKAGES;
 import static android.content.pm.ApplicationInfo.FLAG_HAS_CODE;
 import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
+import static android.content.pm.Flags.FLAG_QUARANTINED_ENABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
+import static android.content.pm.PackageManager.FILTER_OUT_QUARANTINED_COMPONENTS;
+import static android.content.pm.PackageManager.FLAG_SUSPEND_QUARANTINED;
 import static android.content.pm.PackageManager.GET_ACTIVITIES;
 import static android.content.pm.PackageManager.GET_META_DATA;
 import static android.content.pm.PackageManager.GET_PERMISSIONS;
 import static android.content.pm.PackageManager.GET_PROVIDERS;
 import static android.content.pm.PackageManager.GET_RECEIVERS;
 import static android.content.pm.PackageManager.GET_SERVICES;
+import static android.content.pm.PackageManager.MATCH_ANY_USER;
 import static android.content.pm.PackageManager.MATCH_APEX;
 import static android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS;
 import static android.content.pm.PackageManager.MATCH_FACTORY_ONLY;
 import static android.content.pm.PackageManager.MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS;
 import static android.content.pm.PackageManager.MATCH_INSTANT;
+import static android.content.pm.PackageManager.MATCH_KNOWN_PACKAGES;
 import static android.content.pm.PackageManager.MATCH_SYSTEM_ONLY;
 import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
 import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.parsePackageDump;
@@ -56,13 +61,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
 import android.annotation.NonNull;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.ActivityThread;
 import android.app.Instrumentation;
@@ -100,6 +105,7 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.content.pm.SharedLibraryInfo;
 import android.content.pm.Signature;
+import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -109,12 +115,16 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -124,6 +134,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 
+import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
@@ -143,7 +154,9 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -227,6 +240,11 @@ public class PackageManagerTest {
     private static final String SHELL_PACKAGE_NAME = "com.android.shell";
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
     private static final String HELLO_WORLD_APK = SAMPLE_APK_BASE + "HelloWorld5.apk";
+    private static final String HELLO_WORLD_DIFF_SIGNER_APK =
+            SAMPLE_APK_BASE + "HelloWorld5DifferentSigner.apk";
+    private static final String HELLO_WORLD_FLAGS_APK =
+            SAMPLE_APK_BASE + "HelloWorld5NonDefaultFlags.apk";
+    private static final String HELLO_WORLD_UPDATED_APK = SAMPLE_APK_BASE + "HelloWorld7.apk";
     private static final String HELLO_WORLD_LOTS_OF_FLAGS_APK =
             SAMPLE_APK_BASE + "HelloWorldLotsOfFlags.apk";
     private static final String MOCK_LAUNCHER_PACKAGE_NAME = "android.content.cts.mocklauncherapp";
@@ -270,6 +288,8 @@ public class PackageManagerTest {
 
     private final ServiceTestRule mServiceTestRule = new ServiceTestRule();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     @Rule
     public AbandonAllPackageSessionsRule mAbandonSessionsRule = new AbandonAllPackageSessionsRule();
 
@@ -383,7 +403,7 @@ public class PackageManagerTest {
         }
     }
 
-    private static void launchMainActivity(String packageName) {
+    public static void launchMainActivity(String packageName) {
         SystemUtil.runShellCommand("am start -W "
                 + "--user current "
                 + "-a android.intent.action.MAIN "
@@ -1593,8 +1613,6 @@ public class PackageManagerTest {
 
     @Test
     public void testGetPackageInfo_ApexSupported_ApexPackage_MatchesApex() throws Exception {
-        assumeTrue("Device doesn't support updating APEX", isUpdatingApexSupported());
-
         final int flags = PackageManager.MATCH_APEX
                 | PackageManager.MATCH_FACTORY_ONLY
                 | PackageManager.GET_SIGNING_CERTIFICATES
@@ -1606,32 +1624,6 @@ public class PackageManagerTest {
 
     @Test
     public void testGetPackageInfo_ApexSupported_ApexPackage_DoesNotMatchApex() {
-        assumeTrue("Device doesn't support updating APEX", isUpdatingApexSupported());
-
-        try {
-            mPackageManager.getPackageInfo(SHIM_APEX_PACKAGE_NAME,
-                    PackageManager.PackageInfoFlags.of(0));
-            fail("NameNotFoundException expected");
-        } catch (NameNotFoundException expected) {
-        }
-    }
-
-    @Test
-    public void testGetPackageInfo_ApexNotSupported_ApexPackage_MatchesApex() {
-        assumeFalse("Device supports updating APEX", isUpdatingApexSupported());
-
-        try {
-            mPackageManager.getPackageInfo(SHIM_APEX_PACKAGE_NAME,
-                    PackageManager.PackageInfoFlags.of(PackageManager.MATCH_APEX));
-            fail("NameNotFoundException expected");
-        } catch (NameNotFoundException expected) {
-        }
-    }
-
-    @Test
-    public void testGetPackageInfo_ApexNotSupported_ApexPackage_DoesNotMatchApex() {
-        assumeFalse("Device supports updating APEX", isUpdatingApexSupported());
-
         try {
             mPackageManager.getPackageInfo(SHIM_APEX_PACKAGE_NAME,
                     PackageManager.PackageInfoFlags.of(0));
@@ -1642,8 +1634,6 @@ public class PackageManagerTest {
 
     @Test
     public void testGetInstalledPackages_ApexSupported_MatchesApex() {
-        assumeTrue("Device doesn't support updating APEX", isUpdatingApexSupported());
-
         final int flags = PackageManager.MATCH_APEX
                 | PackageManager.MATCH_FACTORY_ONLY
                 | PackageManager.GET_SIGNING_CERTIFICATES
@@ -1659,32 +1649,6 @@ public class PackageManagerTest {
 
     @Test
     public void testGetInstalledPackages_ApexSupported_DoesNotMatchApex() {
-        assumeTrue("Device doesn't support updating APEX", isUpdatingApexSupported());
-
-        List<PackageInfo> installedPackages = mPackageManager.getInstalledPackages(
-                PackageManager.PackageInfoFlags.of(0));
-        List<PackageInfo> shimApex = installedPackages.stream().filter(
-                packageInfo -> packageInfo.packageName.equals(SHIM_APEX_PACKAGE_NAME)).collect(
-                Collectors.toList());
-        assertWithMessage("Shim apex wasn't supposed to be found").that(shimApex).isEmpty();
-    }
-
-    @Test
-    public void testGetInstalledPackages_ApexNotSupported_MatchesApex() {
-        assumeFalse("Device supports updating APEX", isUpdatingApexSupported());
-
-        List<PackageInfo> installedPackages = mPackageManager.getInstalledPackages(
-                PackageManager.PackageInfoFlags.of(PackageManager.MATCH_APEX));
-        List<PackageInfo> shimApex = installedPackages.stream().filter(
-                packageInfo -> packageInfo.packageName.equals(SHIM_APEX_PACKAGE_NAME)).collect(
-                Collectors.toList());
-        assertWithMessage("Shim apex wasn't supposed to be found").that(shimApex).isEmpty();
-    }
-
-    @Test
-    public void testGetInstalledPackages_ApexNotSupported_DoesNotMatchApex() {
-        assumeFalse("Device supports updating APEX", isUpdatingApexSupported());
-
         List<PackageInfo> installedPackages = mPackageManager.getInstalledPackages(
                 PackageManager.PackageInfoFlags.of(0));
         List<PackageInfo> shimApex = installedPackages.stream().filter(
@@ -1897,8 +1861,6 @@ public class PackageManagerTest {
 
     @Test
     public void testGetApplicationInfo_ApexSupported_MatchesApex() throws Exception {
-        assumeTrue("Device doesn't support updating APEX", isUpdatingApexSupported());
-
         ApplicationInfo ai = mPackageManager.getApplicationInfo(
                 SHIM_APEX_PACKAGE_NAME,
                 PackageManager.ApplicationInfoFlags.of(PackageManager.MATCH_APEX));
@@ -1917,10 +1879,6 @@ public class PackageManagerTest {
         final ApplicationInfo info = mPackageManager.getApplicationInfo(HELLO_WORLD_PACKAGE_NAME,
                 PackageManager.ApplicationInfoFlags.of(0));
         assertThat(info.icon).isEqualTo((useRoundIcon ? info.roundIconRes : info.iconRes));
-    }
-
-    private boolean isUpdatingApexSupported() {
-        return SystemProperties.getBoolean("ro.apex.updatable", false);
     }
 
     private static void assertShimApexInfoIsCorrect(PackageInfo packageInfo) {
@@ -2127,8 +2085,17 @@ public class PackageManagerTest {
         SystemUtil.runShellCommand("pm uninstall " + packageName);
     }
 
+    private void uninstallPackageForUser(String packageName, int userId) {
+        SystemUtil.runShellCommand("pm uninstall --user " + userId + " " + packageName);
+
+    }
+
     private void uninstallPackageKeepData(String packageName) {
         SystemUtil.runShellCommand("pm uninstall -k " + packageName);
+    }
+
+    private void uninstallPackageKeepDataForUser(String packageName, int userId) {
+        SystemUtil.runShellCommand("pm uninstall -k --user " + userId + " " + packageName);
     }
 
     private static boolean isAppInstalled(String packageName) throws IOException {
@@ -2137,6 +2104,21 @@ public class PackageManagerTest {
         return Arrays.stream(commandResult.split("\\r?\\n")).anyMatch(
                 line -> line.length() > prefixLength && line.substring(prefixLength).equals(
                         packageName));
+    }
+
+    private String executeShellCommand(String command, byte[] input) throws IOException {
+        final ParcelFileDescriptor[] pfds =
+                mInstrumentation.getUiAutomation().executeShellCommandRw(
+                        command);
+        ParcelFileDescriptor stdout = pfds[0];
+        ParcelFileDescriptor stdin = pfds[1];
+        try (FileOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(
+                stdin)) {
+            outputStream.write(input);
+        }
+        try (InputStream inputStream = new ParcelFileDescriptor.AutoCloseInputStream(stdout)) {
+            return new String(FileUtils.readInputStreamFully(inputStream));
+        }
     }
 
     @Test
@@ -2752,8 +2734,30 @@ public class PackageManagerTest {
     }
 
     @Test
-    public void testUninstallWithKeepData() throws Exception {
+    public void testUninstall() throws Exception {
+        final int userId = mContext.getUserId();
         installPackage(HELLO_WORLD_APK);
+        // Test that the installed state is true in the dumpsys
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isEqualTo("true");
+        // Queryable without special flags
+        mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(0));
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        assertThat(isAppInstalled(HELLO_WORLD_PACKAGE_NAME)).isFalse();
+        // Not queryable even MATCH_KNOWN_PACKAGES
+        assertThrows(NameNotFoundException.class,
+                () -> mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                        PackageManager.PackageInfoFlags.of(MATCH_KNOWN_PACKAGES)));
+        // No installed state in dumpsys
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isNull();
+    }
+
+    @Test
+    public void testUninstallWithKeepData() throws Exception {
+        final int userId = mContext.getUserId();
+        installPackage(HELLO_WORLD_APK);
+        // Test that the installed state is true in the dumpsys
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isEqualTo("true");
         PackageInfo packageInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
                 PackageManager.PackageInfoFlags.of(0));
         final String oldDataDir = packageInfo.applicationInfo.dataDir;
@@ -2763,36 +2767,398 @@ public class PackageManagerTest {
                 mContext.getSystemService(StorageStatsManager.class);
         StorageStats stats = storageStatsManager.queryStatsForPackage(
                 packageInfo.applicationInfo.storageUuid, HELLO_WORLD_PACKAGE_NAME,
-                UserHandle.of(UserHandle.myUserId()));
-        assertTrue(stats.getDataBytes() > 0L);
+                UserHandle.of(userId));
+        assertThat(stats.getDataBytes()).isGreaterThan(0L);
 
         uninstallPackageKeepData(HELLO_WORLD_PACKAGE_NAME);
-        assertFalse(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        assertThat(isAppInstalled(HELLO_WORLD_PACKAGE_NAME)).isFalse();
 
-        // Test query with MATCH_UNINSTALLED_PACKAGES
+        // Queryable with MATCH_UNINSTALLED_PACKAGES and MATCH_KNOWN_PACKAGES flags
+        expectThrows(NameNotFoundException.class,
+                () -> mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                        PackageManager.PackageInfoFlags.of(0)));
+        expectThrows(NameNotFoundException.class,
+                () -> mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                        PackageManager.PackageInfoFlags.of(MATCH_ANY_USER)));
+        mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(MATCH_KNOWN_PACKAGES));
         packageInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
                 PackageManager.PackageInfoFlags.of(MATCH_UNINSTALLED_PACKAGES));
-        assertEquals(HELLO_WORLD_PACKAGE_NAME, packageInfo.packageName);
+        assertThat(packageInfo.packageName).isEqualTo(HELLO_WORLD_PACKAGE_NAME);
         // Test that the code path is gone but the signing info is still available
-        assertNull(packageInfo.applicationInfo.getCodePath());
-        assertNotNull(packageInfo.signingInfo);
+        assertThat(packageInfo.applicationInfo.getCodePath()).isNull();
+        assertThat(packageInfo.signingInfo).isNotNull();
         // Test that the app's data directory is preserved and matches dumpsys
         final String newDataDir = packageInfo.applicationInfo.dataDir;
-        assertFalse(newDataDir.isEmpty());
-        assertEquals(oldDataDir, newDataDir);
-        final String appDirInDump = parsePackageDump(HELLO_WORLD_PACKAGE_NAME, "    dataDir=");
-        assertEquals(appDirInDump, newDataDir);
-        assertNotNull(packageInfo.applicationInfo.storageUuid);
+        assertThat(newDataDir).isNotEmpty();
+        assertThat(newDataDir).isEqualTo(oldDataDir);
+        final String appDirInDump = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                "      dataDir=/data/user/" + userId);
+        assertThat("/data/user/" + userId + appDirInDump).isEqualTo(newDataDir);
+        assertThat(packageInfo.applicationInfo.storageUuid).isNotNull();
+        // Test that the installed state is false in the dumpsys
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isEqualTo("false");
         // Verify the stats
         stats = storageStatsManager.queryStatsForPackage(
                 packageInfo.applicationInfo.storageUuid, HELLO_WORLD_PACKAGE_NAME,
                 UserHandle.of(UserHandle.myUserId()));
-        assertTrue(stats.getDataBytes() > 0L);
+        assertThat(stats.getDataBytes()).isGreaterThan(0L);
+        // Re-install the app and verify that the data dir is the same as before
+        installPackage(HELLO_WORLD_APK);
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isEqualTo("true");
+        packageInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(0));
+        assertThat(packageInfo.applicationInfo.dataDir).isEqualTo(oldDataDir);
         // Fully clean up and test that the query fails
         uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        assertThat(getInstalledState(HELLO_WORLD_PACKAGE_NAME, userId)).isNull();
         expectThrows(NameNotFoundException.class,
                 () -> mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
                         PackageManager.PackageInfoFlags.of(MATCH_UNINSTALLED_PACKAGES)));
+    }
+
+    private void assertDataAppExists(String packageName) throws Exception {
+        var packageInfo = mPackageManager.getPackageInfo(packageName, MATCH_KNOWN_PACKAGES);
+        assertThat(packageInfo.applicationInfo.dataDir).isNotNull();
+    }
+
+    @Test
+    public void testInstallArchivedFromArchived() throws Exception {
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        assertEquals("Success\n", SystemUtil.runShellCommand(
+                String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
+                        HELLO_WORLD_APK)));
+        assertThat(SystemUtil.runShellCommand(
+                String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
+
+        byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
+                mInstrumentation.getUiAutomation(),
+                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        // Install a default APK.
+        assertEquals("Success\n", executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackage.length), archivedPackage));
+        assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        // Try to install archived without installer.
+        assertThat(executeShellCommand(
+                String.format("pm install-archived -t -S %s", archivedPackage.length),
+                archivedPackage)).startsWith("Failure [INSTALL_FAILED_SESSION_INVALID: Installer");
+    }
+
+    @Test
+    public void testInstallArchivedUpdate() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
+                mInstrumentation.getUiAutomation(),
+                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+
+        // Try to install archived on top of fully installed app.
+        assertThat(executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackage.length), archivedPackage)).startsWith(
+                "Failure [INSTALL_FAILED_SESSION_INVALID: Archived");
+
+        // Uninstall and retry.
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        assertEquals("Success\n", executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackage.length), archivedPackage));
+        assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        assertDataAppExists(HELLO_WORLD_PACKAGE_NAME);
+        // Wrong signature.
+        assertThat(SystemUtil.runShellCommand(
+                "pm install -t -g " + HELLO_WORLD_DIFF_SIGNER_APK)).startsWith(
+                "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE");
+        // Update fails because we can't derive an existing APK.
+        assertThat(SystemUtil.runShellCommand(
+                "pm install -t -p " + HELLO_WORLD_PACKAGE_NAME + " -g "
+                        + HELLO_WORLD_UPDATED_APK)).startsWith(
+                "Failure [INSTALL_FAILED_INTERNAL_ERROR");
+        // Unarchive/full install succeeds.
+        assertEquals("Success\n", SystemUtil.runShellCommand(
+                "pm install -t -g " + HELLO_WORLD_UPDATED_APK));
+        assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        // Uninstall, keep data.
+        assertEquals("Success\n",
+                SystemUtil.runShellCommand("pm uninstall -k " + HELLO_WORLD_PACKAGE_NAME));
+        // Full uninstall.
+        assertEquals("Success\n",
+                SystemUtil.runShellCommand("pm uninstall " + HELLO_WORLD_PACKAGE_NAME));
+        assertFalse(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+    }
+
+    @Test
+    public void testInstallArchivedCheckFlags() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
+                mInstrumentation.getUiAutomation(),
+                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        // Install a default APK.
+        assertEquals("Success\n", executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackage.length), archivedPackage));
+        assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        String pkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME, "    pkgFlags=[");
+        assertThat(pkgFlags).contains("ALLOW_CLEAR_USER_DATA");
+        assertThat(pkgFlags).contains("ALLOW_BACKUP");
+        String privatePkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                "    privatePkgFlags=[");
+        assertThat(privatePkgFlags).doesNotContain("PRIVATE_FLAG_REQUEST_LEGACY_EXTERNAL_STORAGE");
+        assertThat(privatePkgFlags).doesNotContain("PRIVATE_FLAG_HAS_FRAGILE_USER_DATA");
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        installPackage(HELLO_WORLD_FLAGS_APK);
+        byte[] archivedPackageFlags = SystemUtil.runShellCommandByteOutput(
+                mInstrumentation.getUiAutomation(),
+                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        // Install an APK with non default flags.
+        assertEquals("Success\n", executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackageFlags.length), archivedPackageFlags));
+        assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
+        pkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME, "    pkgFlags=[");
+        assertThat(pkgFlags).contains("ALLOW_CLEAR_USER_DATA");
+        privatePkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                "    privatePkgFlags=[");
+        assertThat(privatePkgFlags).contains("PRIVATE_FLAG_REQUEST_LEGACY_EXTERNAL_STORAGE");
+        assertThat(privatePkgFlags).contains("PRIVATE_FLAG_HAS_FRAGILE_USER_DATA");
+        assertDataAppExists(HELLO_WORLD_PACKAGE_NAME);
+    }
+
+    /**
+     * Test that broadcasts are sent during archival install.
+     */
+    @Test
+    public void testInstallArchivedBroadcasts() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
+                mInstrumentation.getUiAutomation(),
+                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        int currentUser = ActivityManager.getCurrentUser();
+        PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
+        );
+        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addDataScheme("package");
+        mContext.registerReceiver(addedBroadcastReceiver, intentFilter);
+        mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+
+        assertEquals("Success\n", executeShellCommand(
+                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
+                        archivedPackage.length), archivedPackage));
+
+        addedBroadcastReceiver.assertBroadcastReceived();
+        Intent addedIntent = addedBroadcastReceiver.getBroadcastResult();
+        assertNotNull(addedIntent);
+        assertTrue(addedIntent.getExtras().getBoolean(Intent.EXTRA_ARCHIVAL, false));
+        assertFalse(addedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false));
+
+        removedBroadcastReceiver.assertBroadcastReceived();
+        Intent removedIntent = removedBroadcastReceiver.getBroadcastResult();
+        assertNotNull(removedIntent);
+        assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_ARCHIVAL, false));
+        assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false));
+    }
+
+    @Test
+    public void testPackageRemovedBroadcastsSingleUser() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        final int currentUser = ActivityManager.getCurrentUser();
+        final PackageBroadcastReceiver
+                removedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver fullyRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_FULLY_REMOVED
+        );
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
+        intentFilter.addDataScheme("package");
+        mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+        mContext.registerReceiver(fullyRemovedBroadcastReceiver, intentFilter);
+        // Test uninstall -k without --user
+        uninstallPackageKeepData(HELLO_WORLD_PACKAGE_NAME);
+        removedBroadcastReceiver.assertBroadcastReceived();
+        fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
+        removedBroadcastReceiver.reset();
+        // Test uninstall -k with --user
+        installPackage(HELLO_WORLD_APK);
+        uninstallPackageKeepDataForUser(HELLO_WORLD_PACKAGE_NAME, currentUser);
+        removedBroadcastReceiver.assertBroadcastReceived();
+        fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
+        removedBroadcastReceiver.reset();
+        // Test uninstall without -k
+        installPackage(HELLO_WORLD_APK);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        removedBroadcastReceiver.assertBroadcastReceived();
+        fullyRemovedBroadcastReceiver.assertBroadcastReceived();
+        removedBroadcastReceiver.reset();
+        fullyRemovedBroadcastReceiver.reset();
+        // Test uninstall --user without -k
+        installPackage(HELLO_WORLD_APK);
+        uninstallPackageForUser(HELLO_WORLD_PACKAGE_NAME, currentUser);
+        removedBroadcastReceiver.assertBroadcastReceived();
+        fullyRemovedBroadcastReceiver.assertBroadcastReceived();
+        // Clean up
+        mContext.unregisterReceiver(removedBroadcastReceiver);
+        mContext.unregisterReceiver(fullyRemovedBroadcastReceiver);
+    }
+
+    @Test
+    public void testReinstallBroadcastsAfterDeleteKeepData() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        // Test uninstall -k
+        uninstallPackageKeepData(HELLO_WORLD_PACKAGE_NAME);
+        final int currentUser = ActivityManager.getCurrentUser();
+        final PackageBroadcastReceiver
+                replacedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REPLACED
+        );
+        final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
+        );
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_PACKAGE_REPLACED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
+        intentFilter.addDataScheme("package");
+        mContext.registerReceiver(replacedBroadcastReceiver, intentFilter);
+        mContext.registerReceiver(addedBroadcastReceiver, intentFilter);
+        // Reinstall and verify that the correct broadcasts are received
+        installPackage(HELLO_WORLD_APK);
+        replacedBroadcastReceiver.assertBroadcastReceived();
+        final Intent replacedIntent = replacedBroadcastReceiver.getBroadcastResult();
+        assertThat(replacedIntent).isNotNull();
+        assertThat(replacedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false)).isTrue();
+        addedBroadcastReceiver.assertBroadcastReceived();
+        final Intent addedIntent = addedBroadcastReceiver.getBroadcastResult();
+        assertThat(addedIntent).isNotNull();
+        assertThat(addedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false)).isTrue();
+        // Clean up
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        mContext.unregisterReceiver(replacedBroadcastReceiver);
+        mContext.unregisterReceiver(addedBroadcastReceiver);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_QUARANTINED_ENABLED)
+    public void testQasDisabled() throws Exception {
+        testQas(false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_QUARANTINED_ENABLED)
+    public void testQasEnabled() throws Exception {
+        testQas(true);
+    }
+
+    private void testQas(boolean enabled) throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            String[] notset = mPackageManager.setPackagesSuspended(
+                    new String[]{HELLO_WORLD_PACKAGE_NAME}, true, null, null, null,
+                    FLAG_SUSPEND_QUARANTINED);
+            assertEquals("", String.join(",", notset));
+        });
+
+        // Flag treatment.
+        ApplicationInfo appInfo = mPackageManager.getApplicationInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.ApplicationInfoFlags.of(FILTER_OUT_QUARANTINED_COMPONENTS));
+
+        // Default filtration of services.
+        List<ResolveInfo> servicesResult;
+        {
+            Intent intent = new Intent("com.example.helloworld.service");
+            intent.setPackage(HELLO_WORLD_PACKAGE_NAME);
+            servicesResult = mPackageManager.queryIntentServices(intent, 0);
+            if (servicesResult == null) {
+                servicesResult = new ArrayList<>();
+            }
+        }
+
+        // Default filtration of providers.
+        final List<ResolveInfo> providersResult1;
+        {
+            Intent intent = new Intent("com.example.helloworld.provider");
+            intent.setPackage(HELLO_WORLD_PACKAGE_NAME);
+            intent.setComponent(new ComponentName(HELLO_WORLD_PACKAGE_NAME,
+                    "com.example.helloworld.TestContentProvider"));
+            providersResult1 = mPackageManager.queryIntentContentProviders(intent, 0);
+        }
+
+        final List<ResolveInfo> providersResult2;
+        {
+            Intent intent = new Intent("com.example.helloworld.provider");
+            providersResult2 = mPackageManager.queryIntentContentProviders(intent, 0);
+        }
+
+        final List<ResolveInfo> providersResult3;
+        {
+            Intent intent = new Intent("com.example.helloworld.provider");
+            intent.setPackage(HELLO_WORLD_PACKAGE_NAME);
+            providersResult3 = mPackageManager.queryIntentContentProviders(intent, 0);
+        }
+
+        ProviderInfo contentProvider = mPackageManager.resolveContentProvider(
+                "com.example.helloworld.testcontentprovider", 0);
+
+        boolean providerFound = false;
+        {
+            final List<ProviderInfo> result = mPackageManager.queryContentProviders(null, 0, 0);
+            for (int i = 0, size = result == null ? 0 : result.size(); i < size;
+                    ++i) {
+                final ProviderInfo providerInfo = result.get(i);
+                if ("com.example.helloworld.TestContentProvider".equals(providerInfo.name)) {
+                    providerFound = true;
+                    break;
+                }
+            }
+        }
+
+        if (enabled) {
+            assertThat(runCommand("pm list packages -q")).contains(HELLO_WORLD_PACKAGE_NAME);
+            assertFalse(appInfo.enabled);
+            assertTrue(servicesResult.toString(), servicesResult.size() == 0);
+            assertTrue(providersResult1.toString(), providersResult1.size() == 0);
+            assertTrue(providersResult2.toString(), providersResult2.size() == 0);
+            assertTrue(providersResult3.toString(), providersResult3.size() == 0);
+            assertFalse(providerFound);
+        } else {
+            assertThat(runCommand("pm list packages -q")).doesNotContain(HELLO_WORLD_PACKAGE_NAME);
+            assertTrue(appInfo.enabled);
+            assertEquals(servicesResult.toString(), 1, servicesResult.size());
+            assertEquals("com.example.helloworld.TestService",
+                    servicesResult.get(0).serviceInfo.name);
+            assertEquals(providersResult1.toString(), 1, providersResult1.size());
+            assertEquals("com.example.helloworld.TestContentProvider",
+                    providersResult1.get(0).providerInfo.name);
+            assertEquals(providersResult2.toString(), 1, providersResult2.size());
+            assertEquals("com.example.helloworld.TestContentProvider",
+                    providersResult2.get(0).providerInfo.name);
+            assertEquals(providersResult3.toString(), 1, providersResult3.size());
+            assertEquals("com.example.helloworld.TestContentProvider",
+                    providersResult3.get(0).providerInfo.name);
+            assertNotNull(contentProvider);
+            assertEquals("com.example.helloworld.TestContentProvider",
+                    contentProvider.name);
+            assertTrue(providerFound);
+        }
     }
 
     private void sendIntent(IntentSender intentSender) throws IntentSender.SendIntentException {
@@ -2800,5 +3166,24 @@ public class PackageManagerTest {
                 null /* onFinished */, null /* handler */, null /* requiredPermission */,
                 ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
                         ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle());
+    }
+
+    static String getInstalledState(String packageName, int userId) {
+        final String commandResult = SystemUtil.runShellCommand("pm dump " + packageName);
+        final String userStatesLine = Arrays.stream(commandResult.split("\\r?\\n"))
+                .filter(line -> line.startsWith("    User " + userId + ":"))
+                .findFirst()
+                .orElse(null);
+        if (userStatesLine == null) {
+            return null;
+        }
+        final String key = "installed=";
+        final int keyStart = userStatesLine.indexOf(key);
+        if (keyStart < 0) {
+            return null;
+        }
+        final int keyEnd = userStatesLine.indexOf(key) + key.length();
+        final int valueEnd = userStatesLine.indexOf(" ", keyEnd);
+        return userStatesLine.substring(keyEnd, valueEnd);
     }
 }

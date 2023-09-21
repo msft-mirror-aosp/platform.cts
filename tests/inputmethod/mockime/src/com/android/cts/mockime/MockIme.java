@@ -16,9 +16,10 @@
 
 package com.android.cts.mockime;
 
-import static android.server.wm.jetpack.utils.ExtensionUtil.getWindowExtensions;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
 
 import android.content.ComponentName;
@@ -467,6 +468,15 @@ public final class MockIme extends InputMethodService {
                                 .setExplicitlyEnabledInputMethodSubtypes(imeId, subtypeHashCodes);
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
+                    case "setAdditionalInputMethodSubtypes": {
+                        final String imeId = command.getExtras().getString("imeId");
+                        final InputMethodSubtype[] subtypes =
+                                command.getExtras().getParcelableArray("subtypes",
+                                        InputMethodSubtype.class);
+                        getSystemService(InputMethodManager.class)
+                                .setAdditionalInputMethodSubtypes(imeId, subtypes);
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
+                    }
                     case "switchInputMethod": {
                         final String id = command.getExtras().getString("id");
                         try {
@@ -634,6 +644,15 @@ public final class MockIme extends InputMethodService {
                     case "getCurrentWindowMetricsBounds": {
                         return getSystemService(WindowManager.class)
                                 .getCurrentWindowMetrics().getBounds();
+                    }
+                    case "setImeCaptionBarVisible": {
+                        final boolean visible = command.getExtras().getBoolean("visible");
+                        if (visible) {
+                            mView.getRootView().getWindowInsetsController().show(captionBar());
+                        } else {
+                            mView.getRootView().getWindowInsetsController().hide(captionBar());
+                        }
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
                 }
             }

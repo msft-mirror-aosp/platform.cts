@@ -22,7 +22,7 @@ import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
 import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerShown;
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
-import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -103,7 +103,7 @@ public class InputMethodManagerTest {
     @After
     public void resetImes() {
         if (mNeedsImeReset) {
-            runShellCommand("ime reset");
+            runShellCommandOrThrow("ime reset");
             mNeedsImeReset = false;
         }
     }
@@ -166,9 +166,9 @@ public class InputMethodManagerTest {
 
             return layout;
         });
-        waitOnMainUntil(() -> mImManager.isActive(), TIMEOUT);
-        assertTrue(mImManager.isAcceptingText());
-        assertTrue(mImManager.isActive(focusedEditTextRef.get()));
+        final View focusedEditText = focusedEditTextRef.get();
+        waitOnMainUntil(() -> mImManager.hasActiveInputConnection(focusedEditText), TIMEOUT);
+        assertTrue(mImManager.isActive(focusedEditText));
         assertFalse(mImManager.isActive(nonFocusedEditTextRef.get()));
     }
 
@@ -315,9 +315,8 @@ public class InputMethodManagerTest {
                 return viewRef[0];
             });
             // wait until editText becomes active
-            PollingCheck.waitFor(
-                    () -> testActivity.getSystemService(InputMethodManager.class).isActive(
-                            viewRef[0]));
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
+            PollingCheck.waitFor(() -> imm.hasActiveInputConnection(viewRef[0]));
 
             Cleaner.create().register(viewRef[0], receivedSignalCleaned::countDown);
             viewRef[0] = null;
@@ -337,7 +336,7 @@ public class InputMethodManagerTest {
                 return condition.canProceed();
             });
         } catch (AssertionError e) {
-            File heap = new File(mContext.getExternalFilesDir(null), "dump.hprof");
+            File heap = new File("/sdcard/DumpOnFailure", "inputmethod-dump.hprof");
             Debug.dumpHprofData(heap.getAbsolutePath());
             throw new AssertionError("Dumped heap in device at " + heap.getAbsolutePath(), e);
         }
@@ -345,7 +344,7 @@ public class InputMethodManagerTest {
 
     private void enableImes(String... ids) {
         for (String id : ids) {
-            runShellCommand("ime enable " + id);
+            runShellCommandOrThrow("ime enable " + id);
         }
         mNeedsImeReset = true;
     }

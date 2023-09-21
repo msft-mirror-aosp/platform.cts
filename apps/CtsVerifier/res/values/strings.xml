@@ -160,6 +160,25 @@
         If Garage Mode ran as required, the pass button will be enabled.</string>
     <string name="car_component_power_on_policy_check">Verify Component Power On Policy</string>
     <string name="car_component_power_off_policy_check">Verify Component Power Off Policy</string>
+    <string name="car_uxre_test">Car UX Restrictions Test</string>
+    <string name="car_uxre_test_req_distraction_optimization">Requires Distraction Optimization</string>
+    <string name="car_uxre_test_not_req_distraction_optimization">No Distraction Optimization required</string>
+    <string name="car_uxre_test_parked">Parked</string>
+    <string name="car_uxre_test_idling">Idling</string>
+    <string name="car_uxre_test_moving">Moving</string>
+    <string name="car_uxre_test_unknown">Unknown</string>
+    <string name="car_uxre_test_driving_state">Driving state: %s</string>
+    <string name="car_uxre_test_test_pass">Finished, please mark test as passed</string>
+    <string name="car_uxre_test_test_progress">Test in progress</string>
+    <string name="car_uxre_test_desc">
+        For driver: Put the car in driving mode and make sure that the CTS Verifier activity is
+        blocked. Then park the car and make sure the CTS Verifier activity is shown again and mark
+        it as pass; mark it as fail if the CTS Verifier activity does not get blocked.
+        \n\n
+        For passenger: Put the car in driving mode and make sure that the CTS Verifier activity is
+        not blocked. Then park the car and make sure the CTS Verifier activity is still shown and
+        mark it as pass; mark it as fail if the CTS Verifier activity gets blocked.
+    </string>
     <string name="car_power_policy_test">Car Power Policy Test</string>
     <string name="car_power_policy_test_desc">
         This test verifies that Wi-Fi, Bluetooth and Location settings UI behaviors with respect
@@ -2466,7 +2485,7 @@
         Swipe it to either side to dismiss it.\n
         Pass the test if it can be dismissed from the lock screen.</string>
     <string name="non_dismissable_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Try to dismiss it. Verify that it is non-dismissible.\n
+        Swipe it to either side to dismiss it. Verify that it is non-dismissible.\n
         Fail the test if it could be dismissed from the lock screen.</string>
     <string name="fsi_test">Notification Full Screen Intent Test</string>
     <string name="fsi_test_info">This test checks the behavior of Notifications
@@ -5630,6 +5649,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="midiFailedOverrunLbl">Failed - Data Overrun.</string>
     <string name="midiFailedDeviceLbl">Failed - Device Error.</string>
     <string name="midiFailedJNILbl">Failed - JNI Error.</string>
+    <string name="midiFailedSetupLbl">Failed - Error in Setup.</string>
+    <string name="midiFailedSendLbl">Failed - Error during Send.</string>
 
     <!-- Audio general text -->
     <string name="audio_wired_exists">Does this device support wired USB or Analog audio peripherals?</string>
@@ -5682,21 +5703,48 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_record_colon"> record:</string>
 
     <!-- Audio Data Paths Test-->
-    <string name="audio_datapaths_test">Audio Data Paths Test</string>
-    <string name="audio_datapaths_info">This test verifies basic functionality over a set of audio routes
+    <string name="audio_datapaths_internal_test">Audio Data Paths Internal Test</string>
+    <string name="audio_datapaths_internal_info">This test verifies basic functionality over a set of audio routes
         \nTest Setup:
-        \n - It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
-        \n 1. With no audio peripherals connected, adjust the \"Media volume\" to max.
-        \n 2. (If applicable) insert the analog loopback adapter into the 3.5mm headset jack and adjust the \"Media volume\" to max.
-        \n 3. (If applicable) connect a USB audio interface and adjust the \"Media volume\" to max.
-        \n - If the device has a 3.5mm headset jack, insert a loopback adapter in the jack. (See the \"Audio Loopback Latency Test\" for a description).
-        \n - If the device supports audio over USB, connect a USB audio interface with loopback cables. (See the \"Audio Loopback Latency Test\" for a description).
+        \n - It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for the output device.
+        \n   With no audio peripherals connected, adjust the \"Media volume\" to max.
         \n   The test will display valid data paths with an asterix appended to the data path name.
         \nTest Execution:
         \n - Place the device on a flat surface in a quiet room.
         \n - Select the \"Native API\" button.
         \n - Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and recording it\'s presence or absence.
-        Be aware that the test will play tones through the internal speaker even if an analog loopback plug and/or USB loopback device is connected.
+        \n - Select the \"Java API\" button.
+        \n - Press the \"Start\" button to repeat each data path test for the Java API.
+        \nTest Completion:
+        \n - Once each of the data paths and APIs have been measured, the test can be marked successful.
+    </string>
+
+    <string name="audio_datapaths_analog_test">Audio Data Paths Analog Jack Test</string>
+    <string name="audio_datapaths_analog_info">This test verifies basic functionality over a set of audio routes
+        \n\nNote that if the DUT does not have an analog headset port, this test can be skipped.
+        \n\nTest Setup:
+        \n- It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
+        \n - Insert the analog loopback adapter into the 3.5mm headset jack and adjust the \"Media volume\" to max.
+        \n - Leave the loopback adapter in the jack. (See the \"Audio Loopback Latency Test\" for a description).
+        \n   The test will display valid data paths with an asterix appended to the data path name.
+        \nTest Execution:
+        \n - Select the \"Native API\" button.
+        \n - Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and recording it\'s presence or absence.
+        \n - Select the \"Java API\" button.
+        \n - Press the \"Start\" button to repeat each data path test for the Java API.
+        \nTest Completion:
+        \n - Once each of the data paths and APIs have been measured, the test can be marked successful.
+    </string>
+
+    <string name="audio_datapaths_USB_test">Audio Data Paths USB Test</string>
+    <string name="audio_datapaths_USB_info">This test verifies basic functionality over a set of audio routes
+        \nTest Setup:
+        \n - It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
+        \n   Connect a USB audio interface and adjust the \"Media volume\" to max.
+        \n   The test will display valid data paths with an asterix appended to the data path name.
+        \nTest Execution:
+        \n - Select the \"Native API\" button.
+        \n - Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and recording it\'s presence or absence.
         \n - Select the \"Java API\" button.
         \n - Press the \"Start\" button to repeat each data path test for the Java API.
         \nTest Completion:
@@ -5740,7 +5788,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_results_text">Results...</string>
     <string name="audio_loopback_test_all_paths">Please test all supported paths.</string>
     <string name="audio_loopback_test_not_required">Test not required for this device.</string>
-    <string name="audio_loopback_test_non_handheld">This device is not a handheld. Test can pass.</string>
+    <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
+    <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
     in a quiet room. Press the Start button and allow the test to proceed.</string>
 
@@ -5776,6 +5825,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency not met.</string>
     <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
     <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
+    <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
 
     <!-- Audio Cold-Start Latency Test -->

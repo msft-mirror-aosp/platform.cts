@@ -18,6 +18,7 @@ package android.server.wm.window;
 
 import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
+import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
@@ -28,12 +29,9 @@ import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
 import static android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -64,13 +62,14 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -101,6 +100,10 @@ public class WindowInputTests {
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private TestActivity mActivity;
     private InputManager mInputManager;
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
+
     private View mView;
     private final Random mRandom = new Random(1);
 
@@ -108,7 +111,7 @@ public class WindowInputTests {
     private final long EVENT_FLAGS_WAIT_TIME = 2;
 
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         pressWakeupButton();
         pressUnlockButton();
         launchHomeActivityNoWait();
@@ -118,9 +121,12 @@ public class WindowInputTests {
         mActivity = mActivityRule.launchActivity(null);
         mInputManager = mActivity.getSystemService(InputManager.class);
         mInstrumentation.waitForIdleSync();
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
         mClickCount = 0;
     }
 
+    @DebugInputRule.DebugInput(bug = 295885275)
     @Test
     public void testMoveWindowAndTap() throws Throwable {
         final WindowManager wm = mActivity.getWindowManager();
@@ -246,6 +252,8 @@ public class WindowInputTests {
                     mActivity.addWindow(view2, p);
                 });
         mInstrumentation.waitForIdleSync();
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
         assertEquals(0, mClickCount);
@@ -290,6 +298,8 @@ public class WindowInputTests {
                     mActivity.addWindow(overlay, p);
                 });
         mInstrumentation.waitForIdleSync();
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
         assertTrue(touchReceived.get());
@@ -352,6 +362,8 @@ public class WindowInputTests {
                     });
             mInstrumentation.waitForIdleSync();
             waitForWindow(windowName);
+            assertTrue("Failed to reach stable window geometry",
+                    waitForStableWindowGeometry(5, TimeUnit.SECONDS));
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
             // Touch not received due to setFilterTouchesWhenObscured(true)
@@ -546,6 +558,7 @@ public class WindowInputTests {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 295884840)
     @Test
     public void testFlagTouchesWhenPartiallyObscuredByZeroOpacityWindow() throws Throwable {
         final WindowManager.LayoutParams p = new WindowManager.LayoutParams();
@@ -713,7 +726,6 @@ public class WindowInputTests {
     }
 
     @Test
-    @FlakyTest(bugId = 260913895)
     public void testWindowBecomesUnTouchable() throws Throwable {
         final WindowManager wm = mActivity.getWindowManager();
         final WindowManager.LayoutParams p = new WindowManager.LayoutParams();
@@ -740,6 +752,8 @@ public class WindowInputTests {
                     mActivity.addWindow(viewOverlap, p);
                 });
         mInstrumentation.waitForIdleSync();
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
         assertEquals(0, mClickCount);
@@ -806,6 +820,8 @@ public class WindowInputTests {
                     mActivity.addWindow(mView, p);
                 });
         mInstrumentation.waitForIdleSync();
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
 
         mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mView, size + 5, size + 5);
 
@@ -832,7 +848,6 @@ public class WindowInputTests {
     }
 
     @Test
-    @FlakyTest(bugId = 272080751)
     public void testInjectFromThread() throws InterruptedException {
         assertTrue("Window did not become visible", waitForWindowOnTop(mActivity.getWindow()));
 

@@ -17,10 +17,13 @@
 package android.media.mediaediting.cts;
 
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeFull;
+
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
@@ -28,9 +31,17 @@ import androidx.media3.effect.Presentation;
 import androidx.media3.transformer.TransformationRequest;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ApplicationProvider;
+
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.Preconditions;
+
 import com.google.common.collect.ImmutableList;
+
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,14 +49,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Instrumentation tests for transform Video Resolution for given inputs.
  */
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public final class VideoResolutionTest {
   private static final String MEDIA_DIR = WorkDir.getMediaDirString();
@@ -75,37 +83,37 @@ public final class VideoResolutionTest {
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][] {
         // H264
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_3840_2160"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_2560_1920"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_1280_720"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_720_480"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_480_360"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_352_288"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_320_240"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_176_144"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_642_240"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_640_322"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
             "1920_1080_to_642_642"},
         {MimeTypes.VIDEO_H264,
             MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_642W_642H_3S_URI_STRING,
@@ -117,50 +125,50 @@ public final class VideoResolutionTest {
             MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_642W_642H_3S_URI_STRING,
             "642_642_to_354_290"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_720_480"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_480_360"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_352_288"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_176_144"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_642_240"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_640_322"},
         {MimeTypes.VIDEO_H264,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             "320_240_to_642_642"},
         // Hevc
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_3840_2160"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_720_576"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_640_360"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_352_288"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_176_144"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_642_240"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_640_322"},
         {MimeTypes.VIDEO_H265,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
             "1920_1080_to_642_642"},
         {MimeTypes.VIDEO_H265,
             MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_642W_642H_3S_URI_STRING,

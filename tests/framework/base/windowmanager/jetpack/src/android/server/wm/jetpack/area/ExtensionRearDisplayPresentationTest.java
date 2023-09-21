@@ -21,14 +21,11 @@ import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.view.Display.DEFAULT_DISPLAY;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_ACTIVE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
-
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -211,16 +208,19 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                         mDeviceStateManager.requestState(request, null, null));
 
                 waitAndAssert(() -> mCurrentDeviceState == newState);
+
                 // If the state does not put the device into the rear display presentation state,
                 // and the state is not one where the device is folded, the status should be
                 // available.
-                if (!containsValue(mFoldedDeviceStates, mCurrentDeviceState)
-                        && mCurrentDeviceState != mRearDisplayPresentationState) {
+                if (mCurrentDeviceState == mRearDisplayPresentationState) {
                     waitAndAssert(() -> mWindowAreaPresentationStatus.getWindowAreaStatus()
-                            == WindowAreaComponent.STATUS_AVAILABLE);
-                } else {
+                            == WindowAreaComponent.STATUS_ACTIVE);
+                } else if (containsValue(mFoldedDeviceStates, mCurrentDeviceState)) {
                     waitAndAssert(() -> mWindowAreaPresentationStatus.getWindowAreaStatus()
                             == WindowAreaComponent.STATUS_UNAVAILABLE);
+                } else {
+                    waitAndAssert(() -> mWindowAreaPresentationStatus.getWindowAreaStatus()
+                            == WindowAreaComponent.STATUS_AVAILABLE);
                 }
             }
         }
@@ -262,6 +262,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
+        assertNotNull(presentation.getWindow());
         TestPresentationView presentationView = new TestPresentationView(
                 presentation.getPresentationContext());
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
@@ -280,6 +281,22 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         // Since the non-visible and session ended callbacks happen so fast, we check if
         // the list of values received equal what we expected.
         assertEquals(mSessionStateStatusValues, SESSION_LIFECYCLE_VALUES);
+    }
+
+    /**
+     * Tests that attempting to end a rear display presentation session that isn't active, operates
+     * as a no-op instead of throwing an {@link Exception}.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area."
+                    + "WindowAreaComponent#endRearDisplayPresentationSession"})
+    @Test
+    public void testEndRearDisplayPresentationSession_noActiveSession() {
+        assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
+                != WindowAreaComponent.STATUS_ACTIVE);
+        assumeTrue(mCurrentDeviceState != mRearDisplayPresentationState);
+
+        mWindowAreaComponent.endRearDisplayPresentationSession();
     }
 
     /**
@@ -314,12 +331,13 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
+        assertNotNull(presentation.getWindow());
         TestPresentationView presentationView = new TestPresentationView(
                 presentation.getPresentationContext());
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
-        assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressHomeButton();
@@ -366,6 +384,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
+        assertNotNull(presentation.getWindow());
         TestPresentationView presentationView = new TestPresentationView(
                 presentation.getPresentationContext());
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
@@ -453,8 +472,8 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         // Currently when ending rear display presentation session, the display turns off. If this
         // expectation ever changes, we will probably also need to update KeyguardPresentation in
         // SystemUI to ensure that the secondary keyguard is shown.
-        assertNotEquals(Display.STATE_ON,
-                presentation.getPresentationContext().getDisplay().getState());
+        waitAndAssert(() -> Display.STATE_ON
+                != presentation.getPresentationContext().getDisplay().getState());
     }
 
     /**
@@ -514,10 +533,6 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
             pressWakeupButton();
             pressUnlockButton();
         }
-    }
-
-    private boolean isKeyguardLocked() {
-        return mKeyguardManager != null && mKeyguardManager.isKeyguardLocked();
     }
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {

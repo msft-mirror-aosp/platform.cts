@@ -33,6 +33,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
     <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE"/>
+    <uses-permission android:name="android.permission.DUMP"/>
 
     <application android:label="CtsWindowManagerDeviceTestCases"
                  android:requestLegacyExternalStorage="true"
@@ -128,12 +129,12 @@
         <activity android:name="android.server.wm.display.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 
-        <activity android:name="android.server.wm.display.MultiDisplaySystemDecorationTests$ImeTestActivity"
+        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivity"
              android:resizeableActivity="true"
              android:theme="@style/no_starting_window"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.display.MultiDisplaySystemDecorationTests$ImeTestActivity2"/>
-        <activity android:name="android.server.wm.display.MultiDisplaySystemDecorationTests$ImeTestActivityWithBrokenContextWrapper"/>
+        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivity2"/>
+        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
 
         <activity android:name="android.server.wm.display.MultiDisplayClientTests$ClientTestActivity"/>
         <activity android:name="android.server.wm.display.MultiDisplayClientTests$NoRelaunchActivity"
@@ -629,13 +630,6 @@
                   android:exported="true"
                   android:noHistory="true"
                   android:theme="@style/Floating.NoMove"/>
-
-        <activity android:name="android.server.wm.scvh.SurfaceSyncGroupActivity"
-            android:screenOrientation="locked"
-            android:turnScreenOn="true"
-            android:theme="@style/WhiteBackgroundTheme"
-            android:exported="true"/>
-
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

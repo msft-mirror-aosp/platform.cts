@@ -15,16 +15,18 @@
 
 package android.app.appops.cts
 
+import android.app.ActivityManager
+import android.app.ActivityManager.PROCESS_STATE_IMPORTANT_BACKGROUND
 import android.app.AppOpsManager
 import android.app.AppOpsManager.HISTORICAL_MODE_ENABLED_ACTIVE
 import android.app.AppOpsManager.HISTORICAL_MODE_ENABLED_PASSIVE
-import android.app.AppOpsManager.HistoricalOps
+import android.app.AppOpsManager.HISTORY_FLAGS_ALL
 import android.app.AppOpsManager.HISTORY_FLAG_AGGREGATE
 import android.app.AppOpsManager.HISTORY_FLAG_DISCRETE
-import android.app.AppOpsManager.HISTORY_FLAGS_ALL
+import android.app.AppOpsManager.HistoricalOps
+import android.app.AppOpsManager.KEY_BG_STATE_SETTLE_TIME
 import android.app.AppOpsManager.KEY_FG_SERVICE_STATE_SETTLE_TIME
 import android.app.AppOpsManager.KEY_TOP_STATE_SETTLE_TIME
-import android.app.AppOpsManager.KEY_BG_STATE_SETTLE_TIME
 import android.app.AppOpsManager.MODE_ALLOWED
 import android.app.AppOpsManager.MODE_IGNORED
 import android.app.AppOpsManager.OPSTR_CAMERA
@@ -40,22 +42,22 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.FlakyTest
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_PRIVACY
 import android.provider.Settings
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import java.util.function.Consumer
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 
 private const val PACKAGE_NAME = "android.app.appops.cts.appfordiscretetest"
 private const val TIMEOUT_MILLIS = 45000L
@@ -86,13 +88,13 @@ class DiscreteAppopsTest {
     private lateinit var foregroundControlService: IAppOpsForegroundControlService
     private lateinit var serviceConnection: ServiceConnection
 
-    private var wasPermissionsHubEnabled = false
     private var previousDiscreteHistoryCutoffMillis: String? = null
     private var previousDiscreteHistoryQuantizationMillis: String? = null
     private var previousDiscreteHistoryOpFlags: String? = null
     private var previousDiscreteHistoryOpsCslist: String? = null
 
     private lateinit var appOpsManager: AppOpsManager
+    private lateinit var activityManager: ActivityManager
     private val uiDevice = UiDevice.getInstance(instrumentation)
 
     private val testPkgAppOpMode: Int
@@ -105,6 +107,7 @@ class DiscreteAppopsTest {
     @Before
     fun setUpTest() {
         appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+        activityManager = context.getSystemService(ActivityManager::class.java)!!
         runWithShellPermissionIdentity {
             previousDiscreteHistoryCutoffMillis = DeviceConfig.getString(
                     NAMESPACE_PRIVACY, PROPERTY_CUTOFF, null)
@@ -115,11 +118,6 @@ class DiscreteAppopsTest {
             previousDiscreteHistoryOpsCslist = DeviceConfig.getString(
                     NAMESPACE_PRIVACY, PROPERTY_OPS_LIST, null)
 
-            wasPermissionsHubEnabled = DeviceConfig.getBoolean(NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, false)
-
-            DeviceConfig.setProperty(NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, true.toString(), false)
             appOpsManager.clearHistory()
             appOpsManager.resetHistoryParameters()
 
@@ -167,8 +165,6 @@ class DiscreteAppopsTest {
         runWithShellPermissionIdentity {
             appOpsManager.clearHistory()
             appOpsManager.resetHistoryParameters()
-            DeviceConfig.setProperty(NAMESPACE_PRIVACY, PROPERTY_PERMISSIONS_HUB_ENABLED,
-                    wasPermissionsHubEnabled.toString(), false)
         }
         foregroundControlService.cleanup()
         context.unbindService(serviceConnection)
@@ -1128,7 +1124,11 @@ class DiscreteAppopsTest {
                     ComponentName(PACKAGE_NAME,
                             "$PACKAGE_NAME.AppOpsForegroundControlActivity"))
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            if (testPkgAppOpMode == MODE_ALLOWED) {
+            // b/294950507: Make sure the UidState is also foreground to avoid the race condition
+            // between AppOpsService#noteOperationUnchecked and
+            // ActivityManagerService#noteUidProcessState that caused flakiness
+            if (testPkgAppOpMode == MODE_ALLOWED &&
+                activityManager.getUidProcessState(uid) < PROCESS_STATE_IMPORTANT_BACKGROUND) {
                 break
             }
             Thread.sleep(100)

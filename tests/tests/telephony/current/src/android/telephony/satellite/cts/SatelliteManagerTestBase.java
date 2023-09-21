@@ -641,7 +641,7 @@ public class SatelliteManagerTestBase {
             loge("provisionSatellite ex=" + ex);
             return false;
         }
-        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             loge("provisionSatellite failed with errorCode=" + errorCode);
             return false;
         }
@@ -660,7 +660,7 @@ public class SatelliteManagerTestBase {
             loge("deprovisionSatellite ex=" + ex);
             return false;
         }
-        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             loge("deprovisionSatellite failed with errorCode=" + errorCode);
             return false;
         }
@@ -800,7 +800,7 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
 
     protected static void requestSatelliteEnabled(boolean enabled, long timeoutMillis) {
@@ -815,7 +815,21 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
+    }
+
+    protected static int requestSatelliteEnabledWithResult(boolean enabled, long timeoutMillis) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestSatelliteEnabled(
+                enabled, false, getContext().getMainExecutor(), error::offer);
+        Integer errorCode = null;
+        try {
+            errorCode = error.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+        }
+        assertNotNull(errorCode);
+        return errorCode;
     }
 
 
@@ -831,7 +845,7 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
 
     protected static void requestSatelliteEnabled(boolean enabled, boolean demoEnabled,

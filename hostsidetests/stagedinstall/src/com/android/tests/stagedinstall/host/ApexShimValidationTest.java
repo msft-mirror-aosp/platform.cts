@@ -23,9 +23,6 @@ import static com.android.cts.shim.lib.ShimPackage.SHIM_PACKAGE_NAME;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeTrue;
-
-import android.cts.install.lib.host.InstallUtilsHost;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -60,14 +57,12 @@ import java.util.zip.ZipFile;
  *     <li>It doesn't have any pre or post install hooks.</li>
  *     <li>It's {@code apex_payload.img} contains only a regular text file called
  *         {@code hash.txt}.</li>
- *     <li>It's {@code sha512} hash is whitelisted in the {@code hash.txt} of pre-installed on the
+ *     <li>It's {@code sha512} hash is allowlisted in the {@code hash.txt} of pre-installed on the
  *         {@code /system} partition shim apex.</li>
  * </ul>
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class ApexShimValidationTest extends BaseHostJUnit4Test {
-
-    private final InstallUtilsHost mHostUtils = new InstallUtilsHost(this);
 
     private static final String SHIM_APK_CODE_PATH_PREFIX = "/apex/" + SHIM_APEX_PACKAGE_NAME + "/";
     private static final String STAGED_INSTALL_TEST_FILE_NAME = "StagedInstallTest.apk";
@@ -110,7 +105,6 @@ public class ApexShimValidationTest extends BaseHostJUnit4Test {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue("Device doesn't support updating APEX", mHostUtils.isApexUpdateSupported());
         cleanUp();
         mDeapexerZip = getTestInformation().getDependencyFile(DEAPEXER_ZIP_FILE_NAME, false);
         mAllApexesZip = getTestInformation().getDependencyFile(STAGED_INSTALL_TEST_FILE_NAME,

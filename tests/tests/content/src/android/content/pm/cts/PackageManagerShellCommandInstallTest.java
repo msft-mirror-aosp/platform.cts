@@ -32,7 +32,7 @@ import static android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES;
 import static android.content.pm.PackageManager.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 import static android.content.pm.PackageManager.VERIFICATION_ALLOW;
 import static android.content.pm.PackageManager.VERIFICATION_REJECT;
-
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.testng.Assert.expectThrows;
 
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
@@ -79,7 +80,6 @@ import com.android.internal.util.HexDump;
 import libcore.util.HexEncoding;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -337,6 +337,24 @@ public class PackageManagerShellCommandInstallTest {
     public void testAppInstall() throws Exception {
         installPackage(TEST_HW5);
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+    }
+
+    @Test
+    public void testAppInstallInvalidUser() throws Exception {
+        File file = new File(createApkPath(TEST_HW5));
+        // MAX_USER_ID = UserHandle.MAX_SECONDARY_USER_ID
+        // ideally the test environment will not reach 999
+        String result = executeShellCommand(
+                "pm " + mInstall + " --user 999" + " -t -g " + file.getPath());
+        assertThat(result).isEqualTo("Failure [user 999 doesn't exist]\n");
+    }
+
+    @Test
+    public void testAppUnInstallInvalidUser() throws Exception {
+        // MAX_USER_ID = UserHandle.MAX_SECONDARY_USER_ID
+        // ideally the test environment will not reach 999
+        String result = executeShellCommand("pm uninstall --user 999 " + TEST_APP_PACKAGE);
+        assertThat(result).isEqualTo("Failure [user 999 doesn't exist]\n");
     }
 
     @Test
@@ -2057,22 +2075,24 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
-    static class FullyRemovedBroadcastReceiver extends BroadcastReceiver {
+    static class PackageBroadcastReceiver extends BroadcastReceiver {
         private final String mTargetPackage;
         private final int mTargetUserId;
-        private final CompletableFuture<Boolean> mUserReceivedBroadcast = new CompletableFuture<>();
-        FullyRemovedBroadcastReceiver(String packageName, int targetUserId) {
+        private CompletableFuture<Intent> mUserReceivedBroadcast = new CompletableFuture();
+        private final String mAction;
+        PackageBroadcastReceiver(String packageName, int targetUserId, String action) {
             mTargetPackage = packageName;
             mTargetUserId = targetUserId;
+            mAction = action;
+            reset();
         }
         @Override
         public void onReceive(Context context, Intent intent) {
             final String packageName = intent.getData().getEncodedSchemeSpecificPart();
             final int userId = context.getUserId();
-            if (intent.getAction().equals(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+            if (intent.getAction().equals(mAction)
                     && packageName.equals(mTargetPackage) && userId == mTargetUserId) {
-                mUserReceivedBroadcast.complete(true);
-                context.unregisterReceiver(this);
+                mUserReceivedBroadcast.complete(intent);
             }
         }
         public void assertBroadcastReceived() throws Exception {
@@ -2080,19 +2100,25 @@ public class PackageManagerShellCommandInstallTest {
             executeShellCommand("pm wait-for-handler --timeout 2000");
             // Make sure broadcast has been dispatched from the queue
             executeShellCommand(String.format(
-                    "am wait-for-broadcast-dispatch -a %s -d package:%s",
-                    Intent.ACTION_PACKAGE_FULLY_REMOVED, mTargetPackage));
+                    "am wait-for-broadcast-dispatch -a %s -d package:%s", mAction, mTargetPackage));
             // Checks that broadcast is delivered here
-            assertTrue(mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
+            assertNotNull(mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
         }
         public void assertBroadcastNotReceived() throws Exception {
             // Make sure broadcast has been sent from PackageManager
             executeShellCommand("pm wait-for-handler --timeout 2000");
             executeShellCommand(String.format(
-                    "am wait-for-broadcast-dispatch -a %s -d package:%s",
-                    Intent.ACTION_PACKAGE_FULLY_REMOVED, mTargetPackage));
-            Assert.assertThrows(TimeoutException.class,
+                    "am wait-for-broadcast-dispatch -a %s -d package:%s", mAction, mTargetPackage));
+            expectThrows(TimeoutException.class,
                     () -> mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
+        }
+
+        public Intent getBroadcastResult() {
+            return mUserReceivedBroadcast.getNow(null);
+        }
+
+        public void reset() {
+            mUserReceivedBroadcast = new CompletableFuture();
         }
     }
 

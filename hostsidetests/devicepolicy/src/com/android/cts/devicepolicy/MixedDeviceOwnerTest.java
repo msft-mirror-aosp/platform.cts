@@ -138,19 +138,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         super.testDelegatedCertInstaller();
     }
 
-    @FlakyTest(bugId = 137088260)
-    @Test
-    public void testWifi() throws Exception {
-        assumeHasWifiFeature();
-
-        executeDeviceTestMethod(".WifiTest", "testGetWifiMacAddress");
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".WifiTest", "testGetWifiMacAddress");
-        }, new DevicePolicyEventWrapper.Builder(EventId.GET_WIFI_MAC_ADDRESS_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .build());
-    }
-
     @Test
     public void testLockScreenInfo() throws Exception {
         executeDeviceTestClass(".LockScreenInfoTest");
@@ -158,26 +145,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         assertMetricsLogged(getDevice(), () -> {
             executeDeviceTestMethod(".LockScreenInfoTest", "testSetAndGetLockInfo");
         }, new DevicePolicyEventWrapper.Builder(EventId.SET_DEVICE_OWNER_LOCK_SCREEN_INFO_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .build());
-    }
-
-    @Test
-    public void testFactoryResetProtectionPolicy() throws Exception {
-        try {
-            executeDeviceTestMethod(".DeviceFeatureUtils", "testHasFactoryResetProtectionPolicy");
-        } catch (AssertionError e) {
-            // Unable to continue running tests because factory reset protection policy is not
-            // supported on the device
-            return;
-        } catch (Exception e) {
-            // Also skip test in case of other exceptions
-            return;
-        }
-
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestClass(".FactoryResetProtectionPolicyTest");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_FACTORY_RESET_PROTECTION_VALUE)
                 .setAdminPackageName(DEVICE_ADMIN_PKG)
                 .build());
     }
@@ -326,23 +293,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         }
     }
 
-    /**
-     * Test for {@link DevicePolicyManager.setStorageEncryption} and
-     * {@link DevicePolicyManager.getStorageEncryption}.
-     *
-     * <p>This test needs to run as as the device owner user ID since
-     * {@link DevicePolicyManager#setStorageEncryption(ComponentName, boolean)}
-     * is only allowed for system user.
-     */
-    @Override
-    @Test
-    public void testSetStorageEncryption() throws Exception {
-        Map<String, String> params =
-                ImmutableMap.of(IS_SYSTEM_USER_PARAM, String.valueOf(/* isSystemUser= */ true));
-        runDeviceTestsAsUser(
-                DEVICE_ADMIN_PKG, STORAGE_ENCRYPTION_TEST_CLASS, null, mDeviceOwnerUserId, params);
-    }
-
     private void runSecurityLoggingTests(String packageName, String testClassName)
             throws Exception {
         int userId = mDeviceOwnerUserId;
@@ -445,13 +395,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
     public void testPermissionPolicy() throws Exception {
         super.testPermissionPolicy();
-    }
-
-    @Override
-    @Test
-    @IgnoreOnHeadlessSystemUserMode(reason = "Headless system user doesn't launch activities")
-    public void testAutoGrantMultiplePermissionsInGroup() throws Exception {
-        super.testAutoGrantMultiplePermissionsInGroup();
     }
 
     @Override

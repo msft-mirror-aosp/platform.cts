@@ -24,6 +24,7 @@
 
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
+    <uses-permission android:name="android.car.permission.CAR_DRIVING_STATE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
@@ -214,7 +215,9 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest"
-                       android:value="2.2.4/8.3/H-1-1|2.3.4/8.3/T-1-1|2.4.4/8.3/W-SR|8.3/C-SR" />
+                       android:value="2.2.4/8.3/H-1-1|2.3.4/8.3/T-1-1|
+                                      2.4.4/8.3/W-SR-1,8.3/W-SR-2|
+                                      8.3/C-SR-1,C-SR-2" />
             <meta-data android:name="ApiTest" android:value="android.os.PowerManager#isPowerSaveMode" />
         </activity>
 
@@ -4523,6 +4526,9 @@
                 android:name="test_parent"
                 android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
             <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.wifi.aware:android.hardware.wifi.rtt" />
+            <meta-data
                 android:name="display_mode"
                 android:value="single_display_mode" />
             <meta-data
@@ -5819,9 +5825,43 @@
                 android.media.AudioRecord.OnRoutingChangedListener#onRoutingChanged" />
         </activity>
 
-        <activity android:name=".audio.AudioDataPathsActivity"
+        <activity android:name=".audio.AudioDataPathsInternalActivity"
             android:exported="true"
-            android:label="@string/audio_datapaths_test">
+            android:label="@string/audio_datapaths_internal_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsAnalogActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_analog_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_test">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -6253,6 +6293,23 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.car.hardware.power.CarPowerManager#getCurrentPowerPolicy" />
+        </activity>
+
+        <!-- Used for CTS Verifying UX Restrictions on multiple displays. -->
+        <activity android:name=".car.UxRestrictionsTestActivity"
+            android:exported="true"
+            android:label="@string/car_uxre_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_car" />
+            <meta-data android:name="test_required_features"
+                android:value="android.hardware.type.automotive"/>
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest"
+                android:value="Test behavior of ActivityBlockingActivity for UX Restrictions on multiple displays" />
         </activity>
 
         <activity-alias android:name=".car.CarDockActivity2"

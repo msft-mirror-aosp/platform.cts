@@ -19,8 +19,8 @@ package android.view.inputmethod.cts;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
-import static android.server.wm.jetpack.utils.ExtensionUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.utils.ExtensionUtil.isExtensionVersionAtLeast;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
@@ -211,7 +211,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     @Test
     public void testSwitchInputMethod_verifiesEnabledState() throws Exception {
-        SystemUtil.runShellCommand("ime disable " + OTHER_IME_ID);
+        SystemUtil.runShellCommandOrThrow("ime disable " + OTHER_IME_ID);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -1099,6 +1099,51 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         } finally {
             SystemUtil.runCommandAndPrintOnLogcat(TAG, "am compat reset "
                     + DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE + " " + DISAPPROVE_IME_PACKAGE_NAME);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar and then show it again does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideThenShowImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
+            expectImeVisible(TIMEOUT);
         }
     }
 

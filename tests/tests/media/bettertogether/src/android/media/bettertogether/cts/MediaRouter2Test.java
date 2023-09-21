@@ -32,11 +32,8 @@ import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.RO
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID7_STATIC_GROUP;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.STATIC_GROUP_SELECTED_ROUTES_IDS;
-
 import static androidx.test.ext.truth.os.BundleSubject.assertThat;
-
 import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
@@ -102,6 +99,7 @@ import java.util.stream.Collectors;
 @NonMainlineTest
 public class MediaRouter2Test {
     private static final String TAG = "MR2Test";
+    private static final String DEFAULT_ROUTE_ID = "DEFAULT_ROUTE";
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -129,12 +127,14 @@ public class MediaRouter2Test {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mRouter2 = MediaRouter2.getInstance(mContext);
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
 
+        mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
+    }
 
+    private void setUpStubProvider() {
         // In order to make the system bind to the test service,
         // set a non-empty discovery preference while app is in foreground.
         List<String> features = new ArrayList<>();
@@ -160,7 +160,7 @@ public class MediaRouter2Test {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
@@ -195,6 +195,8 @@ public class MediaRouter2Test {
     @UserTest({UserType.PRIMARY_USER, UserType.WORK_PROFILE})
     @Test
     public void testGetRoutes() throws Exception {
+        setUpStubProvider();
+
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(FEATURES_SPECIAL);
         List<MediaRoute2Info> nonSystemRoutes =
                 routes.values().stream()
@@ -253,6 +255,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testTransferToSuccess() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -303,6 +307,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testTransferToFailure() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -350,6 +356,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testTransferToTwice() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -443,6 +451,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testSetOnGetControllerHintsListener() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -507,6 +517,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testSetSessionVolume() throws Exception {
+        setUpStubProvider();
+
         List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -578,6 +590,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testTransferCallbackIsNotCalledAfterUnregistered() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -629,6 +643,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerSelectAndDeselectRoute() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -730,6 +746,8 @@ public class MediaRouter2Test {
     @Test
     public void routingController_getSelectedRoutes_returnsNonFeatureMatchingRoutes()
             throws Exception {
+        setUpStubProvider();
+
         // Set discovery preference to FEATURE_SPECIAL.
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
         MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
@@ -778,6 +796,8 @@ public class MediaRouter2Test {
     @Test
     public void routingController_getSelectableRoutes_returnsNonFeatureMatchingRoutes()
             throws Exception {
+        setUpStubProvider();
+
         // Set discovery preference to FEATURE_SPECIAL.
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
         MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
@@ -826,6 +846,8 @@ public class MediaRouter2Test {
     @Test
     public void routingController_getDeselectableRoutes_returnsNonFeatureMatchingRoutes()
             throws Exception {
+        setUpStubProvider();
+
         // Set discovery preference to FEATURE_SPECIAL.
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
         MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
@@ -873,6 +895,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testRoutingControllerTransferToRoute() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -942,6 +966,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testControllerCallbackUnregister() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -1011,6 +1037,8 @@ public class MediaRouter2Test {
     // TODO: Add tests for onStop() when provider releases the session.
     @Test
     public void testStop() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -1092,6 +1120,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerRelease() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -1181,6 +1211,25 @@ public class MediaRouter2Test {
         for (MediaRoute2Info route : systemController.getSelectedRoutes()) {
             assertThat(route.isSystemRoute()).isTrue();
         }
+    }
+
+    @Test
+    public void getInstance_withoutSystemRoutingPermissions_fetchesOnlyDefaultSystemRoute() {
+        // MR2 needs a LIVE_AUDIO discovery preference to not filter out system routes.
+        mRouter2.registerRouteCallback(
+                mExecutor, mRouterDummyCallback, LIVE_AUDIO_DISCOVERY_PREFERENCE);
+        assertThat(mRouter2.getRoutes())
+                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                .containsExactly(DEFAULT_ROUTE_ID);
+    }
+
+    @Test
+    public void getSystemController_withoutSystemRoutingPermissions_containsOnlyDefaultRoute() {
+        RoutingController systemController = mRouter2.getSystemController();
+        assertThat(systemController.getSelectedRoutes())
+                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                .containsExactly(DEFAULT_ROUTE_ID);
+        assertThat(systemController.getRoutingSessionInfo().getTransferableRoutes()).isEmpty();
     }
 
     @Test

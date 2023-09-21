@@ -20,24 +20,30 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.content.Context;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeFull;
+
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.transformer.TransformationRequest;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ApplicationProvider;
+
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.Preconditions;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 /** Instrumentation tests for checking Transcoding quality for given inputs. */
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public final class TranscodeQualityTest {
   private static final String MEDIA_DIR = WorkDir.getMediaDirString();
@@ -71,22 +77,26 @@ public final class TranscodeQualityTest {
     // should be within CDD requirements on all supported API versions.
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][] {
         {MimeTypes.VIDEO_H264, MimeTypes.VIDEO_H264, 1920, 1080, 30.00f,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING, false},
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
+            false},
         {MimeTypes.VIDEO_H264, MimeTypes.VIDEO_H265, 1920, 1080, 30.00f,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_URI_STRING, false},
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_1920W_1080H_1S_URI_STRING,
+            false},
         {MimeTypes.VIDEO_H264, MimeTypes.VIDEO_H264, 320, 240, 30.00f,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             true},
         {MimeTypes.VIDEO_H264, MimeTypes.VIDEO_H265, 320, 240, 30.00f,
-            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_15S_URI_STRING,
+            MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_320W_240H_5S_URI_STRING,
             false},
         {MimeTypes.VIDEO_H264, MimeTypes.VIDEO_H265, 642, 642, 30.00f,
             MediaEditingUtil.MP4_ASSET_H264_WITH_INCREASING_TIMESTAMPS_642W_642H_3S_URI_STRING,
             false},
         {MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H265, 1920, 1080, 30.00f,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING, false},
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
+            false},
         {MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H264, 1920, 1080, 30.00f,
-            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_URI_STRING, false},
+            MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_1920_1080_1S_URI_STRING,
+            false},
         {MimeTypes.VIDEO_H265, MimeTypes.VIDEO_H265, 720, 480, 30.00f,
             MediaEditingUtil.MP4_ASSET_HEVC_WITH_INCREASING_TIMESTAMPS_720W_480H_1S_URI_STRING,
             false},

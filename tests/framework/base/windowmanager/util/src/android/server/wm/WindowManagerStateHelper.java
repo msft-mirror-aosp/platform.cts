@@ -177,6 +177,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public static boolean isKeyguardShowingAndNotOccluded(WindowManagerState state) {
         return state.getKeyguardControllerState().keyguardShowing
                 && state.getKeyguardServiceDelegateState().isKeyguardAwake()
+                && !state.getKeyguardControllerState().mKeyguardGoingAway
                 && !state.getKeyguardControllerState().aodShowing
                 && !state.getKeyguardControllerState().isKeyguardOccluded(DEFAULT_DISPLAY);
     }
@@ -379,9 +380,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }, message);
     }
 
-    public void waitForFocusedActivity(final String msg, final ComponentName activityName) {
+    public boolean waitForFocusedActivity(final String msg, final ComponentName activityName) {
         final String activityComponentName = getActivityName(activityName);
-        waitFor(msg, wmState -> Objects.equals(activityComponentName, wmState.getFocusedActivity())
+        return waitFor(msg, wmState ->
+                Objects.equals(activityComponentName, wmState.getFocusedActivity())
                 && Objects.equals(activityComponentName, wmState.getFocusedApp()));
     }
 

@@ -41,11 +41,13 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.AppOpsManager;
+import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.UiAutomation;
 import android.app.usage.EventStats;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageEvents.Event;
@@ -138,6 +140,9 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             AppOpsManager.OPSTR_GET_USAGE_STATS + " {1}";
     private static final String APPOPS_RESET_SHELL_COMMAND = "appops reset {0}";
 
+    private static final String PRUNE_PACKAGE_DATA_SHELL_COMMAND =
+            "cmd usagestats delete-package-data {0} -u {1}";
+
     private static final String GET_SHELL_COMMAND = "settings get global ";
 
     private static final String SET_SHELL_COMMAND = "settings put global ";
@@ -202,6 +207,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
     private Context mContext;
     private UiDevice mUiDevice;
+    private UiAutomation mUiAutomation;
     private ActivityManager mAm;
     private UsageStatsManager mUsageStatsManager;
     private KeyguardManager mKeyguardManager;
@@ -214,8 +220,10 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = instrumentation.getContext();
+        mUiDevice = UiDevice.getInstance(instrumentation);
+        mUiAutomation = instrumentation.getUiAutomation();
         mAm = mContext.getSystemService(ActivityManager.class);
         mUsageStatsManager = (UsageStatsManager) mContext.getSystemService(
                 Context.USAGE_STATS_SERVICE);
@@ -246,8 +254,13 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         if (mUiDevice != null) {
             mUiDevice.pressHome();
         }
+
+        // delete any usagestats data that was created for the test packages
+        clearTestPackagesData(mContext.getUserId());
+
         // Destroy the other user if created
         if (mOtherUser != 0) {
+            clearTestPackagesData(mOtherUser);
             stopUser(mOtherUser, true, true);
             removeUser(mOtherUser);
             mOtherUser = 0;
@@ -263,6 +276,8 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
                     REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
                     REVOKE_RUNTIME_PERMISSIONS);
         }
+
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     private static void assertLessThan(long left, long right) {
@@ -279,6 +294,17 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
     private void resetAppOpsMode() throws Exception {
         executeShellCmd(MessageFormat.format(APPOPS_RESET_SHELL_COMMAND, mTargetPackage));
+    }
+
+    private void clearTestPackagesData(int userId) throws Exception {
+        executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, mTargetPackage,
+                userId));
+        executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, TEST_APP_PKG,
+                userId));
+        executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, TEST_APP2_PKG,
+                userId));
+        executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, TEST_APP_API_32_PKG,
+                userId));
     }
 
     private String getSetting(String name) throws Exception {
@@ -462,7 +488,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             SystemClock.sleep(1000);
             stats = getAggregateUsageStats(startTime, endTime, targetPackage);
             assertNotNull(stats);
-            lastTimeAnyComponentUsed = stats.getLastTimeVisible();
+            lastTimeAnyComponentUsed = stats.getLastTimeAnyComponentUsed();
         }
         assertLessThanOrEqual(startTime, lastTimeAnyComponentUsed);
         assertLessThanOrEqual(lastTimeAnyComponentUsed, endTime);
@@ -2151,12 +2177,28 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     @Test
     @AsbSecurityTest(cveBugId = 229633537)
     public void testReportChooserSelection() throws Exception {
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
+
         // attempt to report an event with a null package, should fail.
         try {
             mUsageStatsManager.reportChooserSelection(null, 0,
                     "text/plain", null, "android.intent.action.SEND");
             fail("Able to report a chooser selection with a null package");
-        } catch (IllegalArgumentException expected) { }
+        } catch (NullPointerException expected) { }
+
+        // attempt to report an event with a null contentType, should fail.
+        try {
+            mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                    null, null, "android.intent.action.SEND");
+            fail("Able to report a chooser selection with a null content type");
+        } catch (NullPointerException expected) { }
+
+        // attempt to report an event with a null/empty action, should fail.
+        try {
+            mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                    "text/plain", null, null);
+            fail("Able to report a chooser selection with a null action");
+        } catch (NullPointerException expected) { }
 
         // attempt to report an event with a non-existent package, should fail.
         long startTime = System.currentTimeMillis();
@@ -2172,10 +2214,8 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             }
         }
 
-        // attempt to report an event with a null/empty contentType, should fail.
+        // attempt to report an event with an empty contentType, should fail.
         startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                null, null, "android.intent.action.SEND");
         mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
                 " ", null, "android.intent.action.SEND");
         events = mUsageStatsManager.queryEvents(
@@ -2184,14 +2224,12 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             final Event event = new Event();
             events.getNextEvent(event);
             if (event.mEventType == Event.CHOOSER_ACTION) {
-                fail("Able to report a chooser action event with a null/empty contentType.");
+                fail("Able to report a chooser action event with an empty contentType.");
             }
         }
 
-        // attempt to report an event with a null/empty action, should fail.
+        // attempt to report an event with an empty action, should fail.
         startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                "text/plain", null, null);
         mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
                 "text/plain", null, " ");
         events = mUsageStatsManager.queryEvents(
@@ -2200,7 +2238,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             final Event event = new Event();
             events.getNextEvent(event);
             if (event.mEventType == Event.CHOOSER_ACTION) {
-                fail("Able to report a chooser action event with a null/empty action.");
+                fail("Able to report a chooser action event with an empty action.");
             }
         }
 
@@ -2221,6 +2259,34 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             }
         }
         assertTrue("Couldn't find the reported chooser action event.", foundEvent);
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @Test
+    public void testReportChooserSelectionAccess() throws Exception {
+        try {
+            // only system uid or holders of the REPORT_USAGE_EVENTS should be able to report events
+            mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                    "text/plain", null, "android.intent.action.SEND");
+            fail("Able to report a chooser selection from CTS test");
+        } catch (SecurityException expected) { }
+
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
+        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
+                "text/plain", null, "android.intent.action.SEND");
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @Test
+    public void testReportUserInteractionAccess() throws Exception {
+        try {
+            // only system uid or holders of the REPORT_USAGE_EVENTS should be able to report events
+            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, 0);
+            fail("Able to report a user interaction from CTS test");
+        } catch (SecurityException expected) { }
+
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
+        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, 0);
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")

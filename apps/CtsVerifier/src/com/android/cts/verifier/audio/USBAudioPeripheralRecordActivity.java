@@ -24,6 +24,7 @@ import android.widget.Toast;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
@@ -33,7 +34,7 @@ import org.hyphonate.megaaudio.player.sources.SinAudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
-@CddTest(requirement = "7.8.2.2/H-1-1|7.7.2/C-2-1,C-2-2")
+@CddTest(requirements = {"7.8.2.2/H-1-1", "7.7.2/C-2-1,C-2-2"})
 public class USBAudioPeripheralRecordActivity extends USBAudioPeripheralActivity {
     private static final String TAG = "USBAudioPeripheralRecordActivity";
 
@@ -127,6 +128,8 @@ public class USBAudioPeripheralRecordActivity extends USBAudioPeripheralActivity
         setInfoResources(R.string.usbaudio_record_test, R.string.usbaudio_record_info, -1);
 
         connectUSBPeripheralUI();
+
+        DisplayUtils.setKeepScreenOn(this, true);
     }
 
     //
