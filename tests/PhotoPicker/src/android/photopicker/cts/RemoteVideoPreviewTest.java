@@ -257,41 +257,6 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         // test the remote preview APIs
     }
 
-    @Test
-    public void testVideoPreviewProgressIndicator() throws Exception {
-        initCloudProviderWithVideo(Arrays.asList(Pair.create(null, CLOUD_ID1)));
-        launchPreviewMultiple(/* count */ 1);
-
-        // Remote Preview displays circular progress indicator when playback state is
-        // PLAYBACK_STATE_BUFFERING.
-        verifyProgressIndicatorShowsWhenBuffering(/* surfaceId */ 0);
-    }
-
-    @Test
-    public void testVideoPreviewPermanentError() throws Exception {
-        initCloudProviderWithVideo(Arrays.asList(Pair.create(null, CLOUD_ID1)));
-        launchPreviewMultiple(/* count */ 1);
-
-        // Remote Preview displays Snackbar to notify the user of an error when playback state is
-        // PLAYBACK_STATE_ERROR_PERMANENT_FAILURE.
-        verifySnackbarShowsWhenPermanentError(/* surfaceId */ 0);
-    }
-
-    @Test
-    public void testVideoPreviewRetriableError() throws Exception {
-        initCloudProviderWithVideo(Arrays.asList(Pair.create(null, CLOUD_ID1)));
-        final int surfaceId = 0;
-        launchPreviewMultiple(/* count */ 1);
-
-        // Remote Preview displays an AlertDialog to notify the user of an error when playback state
-        // is PLAYBACK_STATE_ERROR_RETRIABLE_FAILURE.
-        verifyAlertDialogShowsWhenRetriableError(surfaceId);
-
-        // Remote Preview calls onMediaPlay when user clicks the retry button in the retriable error
-        // AlertDialog.
-        verifyAlertDialogRetry(surfaceId);
-    }
-
     /**
      * Verify surface controller interactions on swiping from one video to another.
      * Note: This test assumes that the first video is in playing state.

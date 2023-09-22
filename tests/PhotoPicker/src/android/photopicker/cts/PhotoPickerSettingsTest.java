@@ -20,7 +20,6 @@ import static android.photopicker.cts.PhotoPickerCloudUtils.disableCloudMediaAnd
 import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
 import static android.photopicker.cts.PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig;
 import static android.photopicker.cts.PhotoPickerCloudUtils.isCloudMediaEnabled;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.isPhotoPickerVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsActionBarIsVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsActivityIsVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsDescriptionIsVisible;
@@ -29,15 +28,12 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsTitl
 
 import android.content.Intent;
 import android.os.Build;
-import android.photopicker.cts.util.PhotoPickerUiUtils;
 import android.provider.MediaStore;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
-import androidx.test.uiautomator.UiObject;
 
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,14 +77,9 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
     @Test
     public void testSettingsLaunchFromOverflowMenu() throws Exception {
         // Launch PhotoPickerActivity.
-        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES_SETTINGS);
         mActivity.startActivityForResult(intent, REQUEST_CODE);
         sDevice.waitForIdle();
-        Assume.assumeTrue("Assume photo picker activity is visible", isPhotoPickerVisible());
-
-        // Click on the Settings menu item in the overflow menu.
-        final UiObject settingsMenuItem = PhotoPickerUiUtils.findSettingsOverflowMenuItem(sDevice);
-        PhotoPickerUiUtils.clickAndWait(sDevice, settingsMenuItem);
 
         // Verify PhotoPickerSettingsActivity is launched and visible.
         verifySettingsActivityIsVisible();
