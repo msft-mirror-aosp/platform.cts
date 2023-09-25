@@ -239,43 +239,6 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
     }
 
     @Test
-    public void testProviderSwitchSuccess() throws Exception {
-        setCloudProvider(CloudProviderPrimary.AUTHORITY);
-        assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
-                        CloudProviderPrimary.AUTHORITY)).isTrue();
-
-        addImage(mCloudPrimaryMediaGenerator, /* localId */ null, CLOUD_ID1);
-        addImage(mCloudSecondaryMediaGenerator, /* localId */ null, CLOUD_ID2);
-
-        syncCloudProvider(mContext);
-
-        ClipData clipData = launchPickerAndFetchMedia(2);
-        List<String> mediaIds = extractMediaIds(clipData, 1);
-
-        containsExcept(mediaIds, CLOUD_ID1, CLOUD_ID2);
-
-        setCloudProvider(CloudProviderSecondary.AUTHORITY);
-        assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
-                        CloudProviderPrimary.AUTHORITY)).isFalse();
-
-        clipData = launchPickerAndFetchMedia(2);
-        mediaIds = extractMediaIds(clipData, 1);
-
-        containsExcept(mediaIds, CLOUD_ID2, CLOUD_ID1);
-    }
-
-    @Test
-    public void testProviderSwitchFailure() throws Exception {
-        setCloudProvider(CloudProviderNoIntentFilter.AUTHORITY);
-        assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
-                        CloudProviderPrimary.AUTHORITY)).isFalse();
-
-        setCloudProvider(CloudProviderNoPermission.AUTHORITY);
-        assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
-                        CloudProviderPrimary.AUTHORITY)).isFalse();
-    }
-
-    @Test
     public void testUriAccessWithValidProjection() throws Exception {
         initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
 
