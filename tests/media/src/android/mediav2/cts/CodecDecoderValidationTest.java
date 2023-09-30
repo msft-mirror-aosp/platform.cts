@@ -175,8 +175,9 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
 
                 // video test vectors covering cdd requirements
                 // @CddTest(requirement="5.3.1/C-1-1")
-                {MEDIA_TYPE_MPEG2, new String[]{"bbb_1920x1080_mpeg2_main_high.mp4"}, null, -1.0f,
-                        -1L, -1, -1, 1920, 1080, MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
+                {MEDIA_TYPE_MPEG2, new String[]{"bbb_1920x1080_30fps_mpeg2_main_high.mp4"}, null,
+                        -1.0f, -1L, -1, -1, 1920, 1080,
+                        MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
 
                 // @CddTest(requirement="5.3.2/C-1-1")
                 {MEDIA_TYPE_H263, new String[]{"bbb_352x288_384kbps_30fps_h263_baseline_l3.mp4"},
@@ -819,6 +820,17 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
             }
             Assume.assumeFalse("skip checksum verification due to tone mapping",
                     mSkipChecksumVerification);
+            if (mIsAudio) {
+                int inputPcmEncoding = formats.get(0)
+                        .getInteger(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_16BIT);
+                if (mMediaType.equals(MEDIA_TYPE_RAW)
+                        && inputPcmEncoding != AudioFormat.ENCODING_PCM_16BIT) {
+                    int outputPcmEncoding = mOutFormat.getInteger(MediaFormat.KEY_PCM_ENCODING,
+                            AudioFormat.ENCODING_PCM_16BIT);
+                    Assume.assumeTrue("output pcm encoding is not 16 bit, skipping output"
+                            + " validation", outputPcmEncoding == AudioFormat.ENCODING_PCM_16BIT);
+                }
+            }
             CodecDecoderTest.verify(ref, mRefFile, mRmsError, AudioFormat.ENCODING_PCM_16BIT,
                     mRefCRC, mTestConfig.toString() + mTestEnv.toString());
         }
