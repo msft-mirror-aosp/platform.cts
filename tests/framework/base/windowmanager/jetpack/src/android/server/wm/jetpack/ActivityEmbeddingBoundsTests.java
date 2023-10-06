@@ -22,9 +22,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assertValidS
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilderWithJava8Predicate;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotVisible;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitForFillsTask;
-
-import static org.junit.Assert.assertTrue;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -96,13 +94,12 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             // Shrink the display by 10% to make the activities stacked
             mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
                     (int) (originalDisplaySize.getHeight() * 0.9)));
-            waitForFillsTask(secondaryActivity);
+            waitAndAssertResumedAndFillsTask(secondaryActivity);
             waitAndAssertNotVisible(primaryActivity);
 
             // Return the display to its original size and verify that the activities are split
-            secondaryActivity.resetBoundsChangeCounter();
             mReportedDisplayMetrics.setSize(originalDisplaySize);
-            assertTrue(secondaryActivity.waitForBoundsChange());
+            mInstrumentation.waitForIdleSync();
             assertValidSplit(primaryActivity, secondaryActivity, splitPairRule);
         }
     }
