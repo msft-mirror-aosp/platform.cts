@@ -43,7 +43,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.photopicker.cts.cloudproviders.CloudProviderPrimary;
 
-
 import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.uiautomator.UiObject;
@@ -122,6 +121,7 @@ public class PhotoPickerBannersTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    @Ignore("Tracking this in b/274840171")
     public void testChooseAppBannerOnDismiss() throws Exception {
         // 1. Setting up the 'Choose App' banner.
         setCloudMediaInfoForChooseAppBanner();

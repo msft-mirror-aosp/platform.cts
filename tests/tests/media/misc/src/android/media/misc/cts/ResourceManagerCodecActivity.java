@@ -96,10 +96,18 @@ public class ResourceManagerCodecActivity extends Activity {
 
     private MediaCodec.Callback mCallback = new TestCodecCallback();
 
-    // Get a Codec info for a given mime (mMime, which is either AVC or HEVC)
+    // Get a HW Codec info for a given mime (mMime, which is either AVC or HEVC)
     private MediaCodecInfo getCodecInfo(boolean lookForDecoder) {
         MediaCodecList mcl = new MediaCodecList(MediaCodecList.ALL_CODECS);
         for (MediaCodecInfo info : mcl.getCodecInfos()) {
+            if (info.isSoftwareOnly()) {
+                // not testing the sw codecs for now as currently there are't
+                // any limit on how many concurrent sw codecs can be created.
+                // Allowing too many codecs may lead system into low memory
+                // situation and lmkd will kill the test activity and eventually
+                // failing the test case.
+                continue;
+            }
             boolean isEncoder = info.isEncoder();
             if (lookForDecoder && isEncoder) {
                 // Looking for a decoder, but found an encoder.
@@ -184,7 +192,7 @@ public class ResourceManagerCodecActivity extends Activity {
 
         if (shouldSkip) {
             Log.d(TAG, "test skipped as there's no supported codec.");
-            finishWithResult(RESULT_OK);
+            finishWithResult(ResourceManagerStubActivity.RESULT_CODE_NO_DECODER);
         }
 
         Log.d(TAG, "allocateCodecs returned " + mCodecs.size());
@@ -261,7 +269,7 @@ public class ResourceManagerCodecActivity extends Activity {
         mWorkerThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.e(TAG, "Started the thread");
+                Log.i(TAG, "Started the thread");
                 long start = System.currentTimeMillis();
                 long timeSinceStartedMs = 0;
                 boolean success = true;

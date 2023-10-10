@@ -149,6 +149,8 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
         }
     }
 
+    /** @deprecated not used anymore **/
+    @Deprecated
     @Option(name = HdmiCecConstants.PHYSICAL_ADDRESS_NAME,
             description = "HDMI CEC physical address of the DUT",
             mandatory = false)
@@ -433,6 +435,20 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
         } else {
             throw new Exception("Unsupported final power state!");
         }
+        // We first give 2 seconds to enter the transition state, and then
+        // MAX_SLEEP_TIME_SECONDS to go from the transition state to the final state.
+        do {
+            TimeUnit.SECONDS.sleep(HdmiCecConstants.SLEEP_TIMESTEP_SECONDS);
+            waitTimeSeconds += HdmiCecConstants.SLEEP_TIMESTEP_SECONDS;
+            hdmiCecClient.sendCecMessage(cecClientDevice, CecOperand.GIVE_POWER_STATUS);
+            powerStatus =
+                    CecMessage.getParams(
+                            hdmiCecClient.checkExpectedOutput(
+                                    cecClientDevice, CecOperand.REPORT_POWER_STATUS));
+            if (powerStatus == finalState) {
+                return;
+            }
+        } while (waitTimeSeconds <= HdmiCecConstants.SLEEP_TIME_DELAY_SECONDS);
         do {
             TimeUnit.SECONDS.sleep(HdmiCecConstants.SLEEP_TIMESTEP_SECONDS);
             waitTimeSeconds += HdmiCecConstants.SLEEP_TIMESTEP_SECONDS;
