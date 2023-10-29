@@ -41,6 +41,7 @@ import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceControl;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
 import android.widget.FrameLayout;
 
@@ -234,7 +235,7 @@ public class AttachedSurfaceControlTest {
             if (firstCallback[0] != null) {
                 Assert.assertTrue(firstCallback[0].await(3, TimeUnit.SECONDS));
                 scenario.onActivity(activity -> Assert.assertEquals(transformHintResult[0],
-                    activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
+                        activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
             }
 
             scenario.onActivity(activity -> {
@@ -266,6 +267,8 @@ public class AttachedSurfaceControlTest {
 
         private final CountDownLatch mDrawCompleteLatch = new CountDownLatch(1);
 
+        private boolean mChildScAttached;
+
         GreenAnchorViewWithInsets(Context c, Rect insets) {
             super(c, null, 0, 0);
             mSurfaceControl = new SurfaceControl.Builder()
@@ -277,21 +280,46 @@ public class AttachedSurfaceControlTest {
             canvas.drawColor(Color.GREEN);
             mSurface.unlockCanvasAndPost(canvas);
             mChildBoundingInsets = insets;
+
+            getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    attachChildSc();
+                    getViewTreeObserver().removeOnPreDrawListener(this);
+                    return true;
+                }
+            });
         }
 
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
+            attachChildSc();
+        }
+
+        private void attachChildSc() {
+            if (mChildScAttached) {
+                return;
+            }
+            // This should be called even if buildReparentTransaction fails the first time since
+            // the second call will come from preDrawListener which is called after bounding insets
+            // are updated in VRI.
+            getRootSurfaceControl().setChildBoundingInsets(mChildBoundingInsets);
+
             SurfaceControl.Transaction t =
                     getRootSurfaceControl().buildReparentTransaction(mSurfaceControl);
 
-            getRootSurfaceControl().setChildBoundingInsets(mChildBoundingInsets);
-            t.setLayer(mSurfaceControl, 1)
-                    .setVisibility(mSurfaceControl, true)
-                    .apply();
+            if (t == null) {
+                // TODO (b/286406553) SurfaceControl was not yet setup. Wait until the draw request
+                // to attach since the SurfaceControl will be created by that point. This can be
+                // cleaned up when the bug is fixed.
+                return;
+            }
 
+            t.setLayer(mSurfaceControl, 1).setVisibility(mSurfaceControl, true);
             t.addTransactionCommittedListener(Runnable::run, mDrawCompleteLatch::countDown);
             getRootSurfaceControl().applyTransactionOnDraw(t);
+            mChildScAttached = true;
         }
 
         @Override
@@ -299,6 +327,7 @@ public class AttachedSurfaceControlTest {
             new SurfaceControl.Transaction().reparent(mSurfaceControl, null).apply();
             mSurfaceControl.release();
             mSurface.release();
+            mChildScAttached = false;
 
             super.onDetachedFromWindow();
         }
@@ -335,7 +364,7 @@ public class AttachedSurfaceControlTest {
                     countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
 
             view[0].waitForDrawn();
-            // Do not include system insets because the child SC is not layed out in the system
+            // Do not include system insets because the child SC is not laid out in the system
             // insets
             validateScreenshot(mName, activity[0],
                     new BitmapPixelChecker(Color.GREEN, new Rect(0, 10, 100, 100)),
