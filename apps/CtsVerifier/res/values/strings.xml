@@ -6896,6 +6896,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \nIf the TV device is launched on older Android letters, all tests will be disabled. Press Pass to pass this case.
     </string>
     <string name="is_reference_device_checkbox_text">Is Reference Device</string>
+    <string name="is_manual_pass_text">Pass test manually after test completion</string>
     <string name="uwb_precision">Uwb Precision Test</string>
     <string name="uwb_short_range">Uwb Short Range Test</string>
     <string name="uwb_precision_instruction">
@@ -6945,7 +6946,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n1. Ensure that the test is already started on the reference device.
         \n2. Input the device ID of the reference device (displayed on the reference device) into the provided field and click "Start Test"
         \n3. The test is automatically stopped and passed (or failed) when all the required data is collected
-        \n4. The test is passed if the median RSSI from both DUT and reference device is between -65dBm and -45dBm.
+        \n4. The test is passed if the median RSSI from both DUT and reference device is between -65dBm and -35dBm.
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>
