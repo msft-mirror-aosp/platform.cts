@@ -350,8 +350,8 @@ public class CodecInitializationLatencyTest {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.CodecInitLatencyRequirement r5_1__H_1_Latency =
-            isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7()
-                : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
+                isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7(mMime)
+                    : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
 
         r5_1__H_1_Latency.setCodecInitLatencyMs(initializationLatency);
 
@@ -533,6 +533,13 @@ public class CodecInitializationLatencyTest {
         public long calculateInitLatency() throws Exception {
             MediaCodec.BufferInfo outInfo = new MediaCodec.BufferInfo();
             MediaFormat format = setUpSource(mTestFile);
+            ArrayList<MediaFormat> formats = new ArrayList<>();
+            formats.add(format);
+            // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to
+            // indicate that all decode was not successful
+            if (!areFormatsSupported(mDecoderName, formats)) {
+                return Integer.MAX_VALUE;
+            }
             long enqueueTimeStamp = 0;
             long dequeueTimeStamp = 0;
             long baseTimeStamp = SystemClock.elapsedRealtimeNanos();
