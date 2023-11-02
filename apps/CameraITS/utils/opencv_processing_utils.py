@@ -526,7 +526,8 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
           num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH and
           math.isclose(1.0, fill, abs_tol=CIRCLE_COLOR_ATOL)):
         radii = [
-            math.dist((shape['ctx'], shape['cty']), numpy.squeeze(point))
+            image_processing_utils.distance(
+                (shape['ctx'], shape['cty']), numpy.squeeze(point))
             for point in contour
         ]
         minimum_radius, maximum_radius = min(radii), max(radii)
@@ -538,7 +539,8 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
           # Based on image height
           center_distance_atol = img_size[0]*CIRCLE_LOCATION_VARIATION_RTOL
           if math.isclose(
-              math.dist(old_circle_center, new_circle_center),
+              image_processing_utils.distance(
+                  old_circle_center, new_circle_center),
               0,
               abs_tol=center_distance_atol
           ) and maximum_radius - minimum_radius < circle['radius_spread']:
@@ -638,6 +640,8 @@ def find_center_circle(img, img_name, color, circle_ar_rtol, circlish_rtol,
   # check contours and find the best circle candidates
   circles = []
   img_ctr = [gray.shape[1] // 2, gray.shape[0] // 2]
+  logging.debug('img center x,y: %d, %d', img_ctr[0], img_ctr[1])
+  logging.debug('min area: %d, min circle pts: %d', min_area, min_circle_pts)
   for contour in contours:
     area = cv2.contourArea(contour)
     if area > min_area and len(contour) >= min_circle_pts:
@@ -654,6 +658,8 @@ def find_center_circle(img, img_name, color, circle_ar_rtol, circlish_rtol,
   if not circles:
     raise AssertionError('No circle was detected. Please take pictures '
                          'according to instructions carefully!')
+  else:
+    logging.debug('num of circles found: %s', len(circles))
 
   if debug:
     logging.debug('circles [x, y, r, pi*r**2/area, area]: %s', str(circles))

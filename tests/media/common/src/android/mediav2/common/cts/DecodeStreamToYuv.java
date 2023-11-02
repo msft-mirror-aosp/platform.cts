@@ -108,7 +108,7 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
                 .build();
     }
 
-    static String findDecoderForStream(String mediaType, String file) throws IOException {
+    static MediaFormat getFormatInStream(String mediaType, String file) throws IOException {
         File tmp = new File(file);
         if (!tmp.exists()) {
             throw new FileNotFoundException("Test Setup Error, missing file: " + file);
@@ -128,7 +128,11 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
             throw new IllegalArgumentException(
                     "No track with mediaType: " + mediaType + " found in file: " + file);
         }
-        return findDecoderForFormat(format);
+        return format;
+    }
+
+    static String findDecoderForStream(String mediaType, String file) throws IOException {
+        return findDecoderForFormat(getFormatInStream(mediaType, file));
     }
 
     static String findDecoderForFormat(MediaFormat format) {
@@ -147,8 +151,8 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
             writeImage(img);
             if (mOutputCount == 0) {
                 MediaFormat format = mCodec.getOutputFormat();
-                mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
-                mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
+                mWidth = getWidth(format);
+                mHeight = getHeight(format);
                 int imgFormat = img.getFormat();
                 mBytesPerSample = (ImageFormat.getBitsPerPixel(imgFormat) * 2) / (8 * 3);
             }
