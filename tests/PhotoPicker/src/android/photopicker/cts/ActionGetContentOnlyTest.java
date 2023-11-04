@@ -16,10 +16,11 @@
 
 package android.photopicker.cts;
 
-import static android.photopicker.cts.util.GetContentActivityAliasUtils.clearPackageData;
-import static android.photopicker.cts.util.GetContentActivityAliasUtils.getDocumentsUiPackageName;
+import static android.photopicker.cts.util.PhotoPickerComponentUtils.GET_CONTENT_ACTIVITY_COMPONENT;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUriAndPath;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
+import static android.photopicker.cts.util.PhotoPickerPackageUtils.clearPackageData;
+import static android.photopicker.cts.util.PhotoPickerPackageUtils.getDocumentsUiPackageName;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickBrowse;
@@ -31,7 +32,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
-import android.photopicker.cts.util.GetContentActivityAliasUtils;
+import android.photopicker.cts.util.PhotoPickerComponentUtils;
 import android.photopicker.cts.util.UiAssertionUtils;
 import android.util.Pair;
 
@@ -42,7 +43,6 @@ import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -72,7 +72,8 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
+        PhotoPickerComponentUtils.setState(GET_CONTENT_ACTIVITY_COMPONENT,
+                sGetContentTakeOverActivityAliasState);
     }
 
     @Before
@@ -80,7 +81,8 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         super.setUp();
 
         sDocumentsUiPackageName = getDocumentsUiPackageName();
-        sGetContentTakeOverActivityAliasState = GetContentActivityAliasUtils.enableAndGetOldState();
+        sGetContentTakeOverActivityAliasState = PhotoPickerComponentUtils
+                .enableAndGetOldState(GET_CONTENT_ACTIVITY_COMPONENT);
         clearPackageData(sDocumentsUiPackageName);
     }
 
@@ -141,7 +143,6 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
-    @Ignore("Tracking this in b/295151917")
     public void testBrowse_multiSelect() throws Exception {
         final int itemCount = 3;
         List<Pair<Uri, String>> createdImagesData = createImagesAndGetUriAndPath(itemCount,

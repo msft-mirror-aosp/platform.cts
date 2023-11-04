@@ -101,7 +101,6 @@ import com.android.compatibility.common.util.ReportLog.Metric;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation.MetricListener;
-import com.android.ex.camera2.blocking.BlockingCameraManager;
 import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenException;
 import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
@@ -260,7 +259,7 @@ public class ItsService extends Service implements SensorEventListener {
     private volatile BlockingQueue<Object[]> mSerializerQueue =
             new LinkedBlockingDeque<Object[]>();
 
-    private AtomicInteger mCountCallbacksRemaining = new AtomicInteger();
+    private final AtomicInteger mCountCallbacksRemaining = new AtomicInteger();
     private AtomicInteger mCountRawOrDng = new AtomicInteger();
     private AtomicInteger mCountRaw10 = new AtomicInteger();
     private AtomicInteger mCountRaw12 = new AtomicInteger();
@@ -906,8 +905,6 @@ public class ItsService extends Service implements SensorEventListener {
                     doGetSensorEvents();
                 } else if ("do3A".equals(cmdObj.getString("cmdName"))) {
                     do3A(cmdObj);
-                } else if ("doAutoframing".equals(cmdObj.getString("cmdName"))) {
-                    doAutoframing(cmdObj);
                 } else if ("doCapture".equals(cmdObj.getString("cmdName"))) {
                     doCapture(cmdObj);
                 } else if ("doVibrate".equals(cmdObj.getString("cmdName"))) {
@@ -2021,87 +2018,6 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private void doAutoframing(JSONObject params) throws ItsException {
-        AutoframingResultListener autoframingListener = new AutoframingResultListener();
-        try {
-            CameraCharacteristics c = mCameraCharacteristics;
-            Size[] sizes = ItsUtils.getYuvOutputSizes(c);
-            int[] outputFormats = new int[1];
-            outputFormats[0] = ImageFormat.YUV_420_888;
-            Size[] outputSizes = new Size[1];
-            outputSizes[0] = sizes[0];
-            int width = outputSizes[0].getWidth();
-            int height = outputSizes[0].getHeight();
-
-            prepareImageReaders(outputSizes, outputFormats, /*inputSize*/null, /*inputFormat*/0,
-                    /*maxInputBuffers*/0);
-
-            List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>(1);
-            OutputConfiguration config =
-                    new OutputConfiguration(mOutputImageReaders[0].getSurface());
-            outputConfigs.add(config);
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
-            mCamera.createCaptureSessionByOutputConfigurations(
-                    outputConfigs, sessionListener, mCameraHandler);
-            mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
-
-            // Add a listener that just recycles buffers; they aren't saved anywhere.
-            ImageReader.OnImageAvailableListener readerListener =
-                    createAvailableListenerDropper();
-            mOutputImageReaders[0].setOnImageAvailableListener(readerListener, mSaveHandlers[0]);
-
-            double zoomRatio = params.optDouble(ZOOM_RATIO_KEY);
-
-            mInterlockAutoframing.open();
-            synchronized (mAutoframingStateLock) {
-                mConvergedAutoframing = false;
-            }
-
-            long tstart = System.currentTimeMillis();
-
-            // Keep issuing capture requests until autoframing has converged.
-            while (true) {
-                // Block until the next autoframing frame.
-                if (!mInterlockAutoframing.block(TIMEOUT_AUTOFRAMING * 1000)
-                        || System.currentTimeMillis() - tstart > TIMEOUT_AUTOFRAMING * 1000) {
-                    throw new ItsException(
-                            "Autoframing failed to converge after " + TIMEOUT_AUTOFRAMING
-                                    + " seconds.\n"
-                                    + "Autoframing converge state: " + mConvergedAutoframing + ".");
-                }
-                mInterlockAutoframing.close();
-
-                synchronized (mAutoframingStateLock) {
-                    if (!mConvergedAutoframing) {
-                        CaptureRequest.Builder req = mCamera.createCaptureRequest(
-                                CameraDevice.TEMPLATE_PREVIEW);
-                        req.set(CaptureRequest.CONTROL_AUTOFRAMING,
-                                CaptureRequest.CONTROL_AUTOFRAMING_ON);
-                        if (!Double.isNaN(zoomRatio)) {
-                            req.set(CaptureRequest.CONTROL_ZOOM_RATIO, (float) zoomRatio);
-                        }
-                        req.addTarget(mOutputImageReaders[0].getSurface());
-
-                        mSession.setRepeatingRequest(req.build(), autoframingListener,
-                                mResultHandler);
-                    } else {
-                        mSocketRunnableObj.sendResponse("autoframingConverged", "");
-                        Logt.i(TAG, "Autoframing converged");
-                        break;
-                    }
-                }
-            }
-        } catch (android.hardware.camera2.CameraAccessException e) {
-            throw new ItsException("Access error: ", e);
-        } finally {
-            mSocketRunnableObj.sendResponse("autoframingDone", "");
-            autoframingListener.stop();
-            if (mSession != null) {
-                mSession.close();
-            }
-        }
-    }
-
     private void doVibrate(JSONObject params) throws ItsException {
         try {
             if (mVibrator == null) {
@@ -2714,7 +2630,7 @@ public class ItsService extends Service implements SensorEventListener {
         return previewSize;
     }
 
-    private void configureAndCreateExtensionSession(
+    private Surface configureAndCreateExtensionSession(
             Surface captureSurface,
             int extension,
             CameraExtensionSession.StateCallback stateCallback) throws ItsException {
@@ -2739,6 +2655,7 @@ public class ItsService extends Service implements SensorEventListener {
         } catch (CameraAccessException e) {
             throw new ItsException("Error creating extension session: " + e);
         }
+        return previewSurface;
     }
 
     private void configureAndCreateCaptureSession(int requestTemplate, Surface recordSurface,
@@ -2991,11 +2908,6 @@ public class ItsService extends Service implements SensorEventListener {
             List<CaptureRequest.Builder> requests = ItsSerializer.deserializeRequestList(
                     mCamera, params, "captureRequests");
 
-            // optional background preview requests
-            List<CaptureRequest.Builder> backgroundRequests = ItsSerializer.deserializeRequestList(
-                    mCamera, params, "repeatRequests");
-            boolean backgroundRequest = backgroundRequests.size() > 0;
-
             int numSurfaces = 0;
             int numCaptureSurfaces = 0;
             BlockingExtensionSessionCallback sessionListener =
@@ -3013,28 +2925,42 @@ public class ItsService extends Service implements SensorEventListener {
             JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
 
             prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                    /*inputFormat*/0, /*maxInputBuffers*/0, backgroundRequest);
+                    /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/ false);
             numSurfaces = mOutputImageReaders.length;
-            numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0);
+            numCaptureSurfaces = numSurfaces;
 
-            configureAndCreateExtensionSession(mOutputImageReaders[0].getSurface(), extension,
+            Surface previewSurface = configureAndCreateExtensionSession(
+                    mOutputImageReaders[0].getSurface(),
+                    extension,
                     sessionListener);
 
             mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
 
-            for (int i = 0; i < numSurfaces; i++) {
-                ImageReader.OnImageAvailableListener readerListener;
-                if (backgroundRequest && i == numSurfaces - 1) {
-                    readerListener = createAvailableListenerDropper();
-                } else {
-                    // When image is available, decrements mCountCallbacksRemaining
-                    readerListener = createExtensionAvailableListener(mCaptureCallback);
-                }
-                mOutputImageReaders[i].setOnImageAvailableListener(readerListener,
-                        mSaveHandlers[i]);
+            CaptureRequest.Builder captureBuilder = requests.get(0);
+
+            if (params.optBoolean("waitAE", true)) {
+                // Set repeating request and wait for AE convergence.
+                Logt.i(TAG, "Waiting for AE to converge before taking extensions capture.");
+                captureBuilder.addTarget(previewSurface);
+                ImageReader.OnImageAvailableListener dropperListener =
+                        createAvailableListenerDropper();
+                mOutputImageReaders[0].setOnImageAvailableListener(dropperListener,
+                                                                   mSaveHandlers[0]);
+                mExtensionSession.setRepeatingRequest(captureBuilder.build(),
+                        new HandlerExecutor(mResultHandler),
+                        mExtAEResultListener);
+                mCountCallbacksRemaining.set(1);
+                long timeout = TIMEOUT_CALLBACK * 1000;
+                waitForCallbacks(timeout);
+                mExtensionSession.stopRepeating();
+                captureBuilder.removeTarget(previewSurface);
+                mResultThread.sleep(PIPELINE_WARMUP_TIME_MS);
             }
 
-            CaptureRequest.Builder captureBuilder = requests.get(0);
+            ImageReader.OnImageAvailableListener readerListener =
+                    createExtensionAvailableListener(mCaptureCallback);
+            mOutputImageReaders[0].setOnImageAvailableListener(readerListener,
+                    mSaveHandlers[0]);
             captureBuilder.addTarget(mOutputImageReaders[0].getSurface());
             mExtensionSession.capture(captureBuilder.build(), new HandlerExecutor(mResultHandler),
                     mExtCaptureResultListener);
@@ -3049,6 +2975,8 @@ public class ItsService extends Service implements SensorEventListener {
                 BlockingExtensionSessionCallback.SESSION_CLOSED, TIMEOUT_SESSION_CLOSE);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
+        } catch (InterruptedException e) {
+            throw new ItsException("Unexpected InterruptedException: ", e);
         }
     }
 
@@ -3848,6 +3776,41 @@ public class ItsService extends Service implements SensorEventListener {
                 synchronized(mCountCallbacksRemaining) {
                     mCountCallbacksRemaining.decrementAndGet();
                     mCountCallbacksRemaining.notify();
+                }
+            } catch (ItsException e) {
+                Logt.e(TAG, "Script error: ", e);
+            } catch (Exception e) {
+                Logt.e(TAG, "Script error: ", e);
+            }
+        }
+
+        @Override
+        public void onCaptureFailed(CameraExtensionSession session, CaptureRequest request) {
+            Logt.e(TAG, "Script error: capture failed");
+        }
+    };
+
+    private final ExtensionCaptureResultListener mExtAEResultListener =
+            new ExtensionCaptureResultListener() {
+        @Override
+        public void onCaptureProcessStarted(CameraExtensionSession session,
+                CaptureRequest request) {
+        }
+
+        @Override
+        public void onCaptureResultAvailable(CameraExtensionSession session,
+                CaptureRequest request,
+                TotalCaptureResult result) {
+            try {
+                if (request == null || result == null) {
+                    throw new ItsException("Request/result is invalid");
+                }
+                if (result.get(CaptureResult.CONTROL_AE_STATE) ==
+                    CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                    synchronized(mCountCallbacksRemaining) {
+                        mCountCallbacksRemaining.decrementAndGet();
+                        mCountCallbacksRemaining.notify();
+                    }
                 }
             } catch (ItsException e) {
                 Logt.e(TAG, "Script error: ", e);
