@@ -70,6 +70,7 @@ public class ConnectivityManagerTestOnMockModem {
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
+    private static final String RESOURCE_PACKAGE_NAME = "android";
     private static boolean sIsMultiSimDevice;
 
     private static class CMNetworkCallback extends NetworkCallback {
@@ -207,11 +208,31 @@ public class ConnectivityManagerTestOnMockModem {
     @After
     public void afterTest() {
         // unregister the network call back
-        unregisterNetworkCallback();
+        if (sNetworkCallback != null) {
+            unregisterNetworkCallback();
+        }
     }
 
     private static boolean isMultiSim(TelephonyManager tm) {
         return tm != null && tm.getPhoneCount() > 1;
+    }
+
+    private static boolean isSimHotSwapCapable() {
+        boolean isSimHotSwapCapable = false;
+        int resourceId =
+                getContext()
+                        .getResources()
+                        .getIdentifier("config_hotswapCapable", "bool", RESOURCE_PACKAGE_NAME);
+
+        if (resourceId > 0) {
+            isSimHotSwapCapable = getContext().getResources().getBoolean(resourceId);
+        } else {
+            Log.d(TAG, "Fail to get the resource Id, using default.");
+        }
+
+        Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
+
+        return isSimHotSwapCapable;
     }
 
     private static Context getContext() {
@@ -295,6 +316,8 @@ public class ConnectivityManagerTestOnMockModem {
             Log.d(TAG, "unregisterNetworkCallback");
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "IllegalArgumentException during unregisterNetworkCallback(): ", e);
+        } finally {
+            sNetworkCallback = null;
         }
     }
 
@@ -306,6 +329,8 @@ public class ConnectivityManagerTestOnMockModem {
             })
     public void testNetworkValidated() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testNetworkValidated");
+
+        assumeTrue(isSimHotSwapCapable());
 
         int slotId = 0;
 
