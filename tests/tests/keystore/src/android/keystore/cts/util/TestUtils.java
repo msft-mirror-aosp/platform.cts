@@ -59,6 +59,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.UnrecoverableEntryException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -638,6 +639,17 @@ public class TestUtils {
                 keystoreBacked);
     }
 
+    /** Returns true if a key with the given alias exists. */
+    public static boolean keyExists(String alias) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        try {
+            return keyStore.getEntry(alias, null) != null;
+        } catch (UnrecoverableKeyException e) {
+            return false;
+        }
+    }
+
     public static byte[] drain(InputStream in) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[16 * 1024];
@@ -1211,5 +1223,14 @@ public class TestUtils {
     public static boolean hasSecureLockScreen(Context context) {
         PackageManager pm = context.getPackageManager();
         return (pm != null && pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+    }
+
+    /**
+     * Determines whether running build is GSI or not.
+     * @return true if running build is GSI, false otherwise.
+     */
+    public static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
     }
 }
