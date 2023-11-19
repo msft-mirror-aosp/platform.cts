@@ -37,6 +37,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.CompoundButton;
+import android.widget.SearchView;
 import android.widget.Switch;
 import android.widget.Toast;
 
@@ -53,8 +54,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
     // Records the current display mode.
     // Default is unfolded mode, and it will be changed when clicking the switch button.
     public static volatile String sCurrentDisplayMode = DisplayMode.UNFOLDED.toString();
-    // Flag of launch app to fetch the unfolded/folded tests in main view from AndroidManifest.xml.
-    protected static boolean sInitialLaunch;
 
     private String[] mRequestedPermissions;
 
@@ -69,10 +68,10 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         }
 
         /**
-         * Coverts the mode as suffix with brackets for test name.
+         * Converts the mode as suffix with brackets for test name.
          *
-         * @return A string containing mode with brackets for folded mode; empty string for unfolded
-         *     mode.
+         * @return a string containing mode with brackets for folded mode; empty string for unfolded
+         *     mode
          */
         public String asSuffix() {
             if (name().equals(FOLDED.name())) {
@@ -129,7 +128,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         if (!isTaskRoot()) {
             finish();
         }
-        sInitialLaunch = true;
 
         // Restores the last display mode when launching the app after killing the process.
         if (getCurrentDisplayMode().equals(DisplayMode.FOLDED.toString())) {
@@ -147,7 +145,8 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
             getListView().addFooterView(footer);
         }
 
-        setTestListAdapter(new ManifestTestListAdapter(this, null));
+        setTestListAdapter(
+                new ManifestTestListAdapter(/* context= */ this, /* testParent= */ null));
     }
 
     @Override
@@ -221,6 +220,28 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
                         handleSwitchItemSelected();
                     }
                 });
+
+        SearchView searchView = (SearchView) menu.findItem(R.id.search_test).getActionView();
+        searchView.setOnQueryTextListener(
+                new SearchView.OnQueryTextListener() {
+
+                    public boolean onQueryTextSubmit(String query) {
+                        Log.i(TAG, "Got submitted query: " + query);
+                        handleQueryUpdated(query);
+                        return true;
+                    }
+
+                    public boolean onQueryTextChange(String newText) {
+                        if (newText == null || newText.isEmpty()) {
+                            Log.i(TAG, "Clear filter");
+                            handleQueryUpdated(newText);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+
         return true;
     }
 
@@ -252,7 +273,7 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         new ReportExporter(this, mAdapter).execute();
     }
 
-    // Sets up the flags after switching display mode and reloads tests on UI.
+    /** Sets up the flags after switching display mode and reloads tests on UI. */
     private void handleSwitchItemSelected() {
         setCurrentDisplayMode(sCurrentDisplayMode);
         mAdapter.loadTestResults();
@@ -270,10 +291,21 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         return true;
     }
 
+    /** Triggered when a new query is input. */
+    private void handleQueryUpdated(String query) {
+        if (query != null && !query.isEmpty()) {
+            mAdapter.setTestFilter(query);
+        } else {
+            // Reset the filter as null to show all tests.
+            mAdapter.setTestFilter(/* testFilter= */ null);
+        }
+        mAdapter.loadTestResults();
+    }
+
     /**
      * Sets current display mode to sharedpreferences.
      *
-     * @param mode A string of current display mode.
+     * @param mode a string of current display mode
      */
     private void setCurrentDisplayMode(String mode) {
         SharedPreferences pref = getSharedPreferences(DisplayMode.class.getName(), MODE_PRIVATE);
@@ -283,7 +315,7 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
     /**
      * Gets current display mode from sharedpreferences.
      *
-     * @return A string of current display mode.
+     * @return a string of current display mode
      */
     private String getCurrentDisplayMode() {
         String mode =
