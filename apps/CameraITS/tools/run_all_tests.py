@@ -29,6 +29,7 @@ import image_processing_utils
 import its_session_utils
 import numpy as np
 import yaml
+import lighting_control_utils
 
 YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
@@ -88,6 +89,12 @@ _GROUPED_SCENES = {
         'scene2': ['scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
                    'scene2_f']
 }
+
+# Scene extensions
+_EXTENSIONS_SCENES = (
+    os.path.join('scene_extensions', 'scene_hdr'),
+    os.path.join('scene_extensions', 'scene_night'),
+)
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ['scene5']
@@ -642,6 +649,13 @@ def main():
     if (not s.startswith('scene') and
         not s.startswith(('sensor_fusion', '<scene-name>'))):
       scenes[i] = f'scene{s}'
+    # Handle scene_extensions
+    if s.startswith('extensions'):
+      scenes[i] = f'scene_{s}'
+    if s.startswith('hdr') or s.startswith('night'):
+      scenes[i] = f'scene_extensions/scene_{s}'
+    if s.startswith('scene_hdr') or s.startswith('scene_night'):
+      scenes[i] = f'scene_extensions/{s}'
 
   # Expand GROUPED_SCENES and remove any duplicates
   scenes = [_GROUPED_SCENES[s] if s in _GROUPED_SCENES else s for s in scenes]
@@ -714,9 +728,12 @@ def main():
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
     else:
-      possible_scenes = _AUTO_SCENES if auto_scene_switch else _ALL_SCENES
+      if 'scene_extensions' in scenes:
+        possible_scenes = _EXTENSIONS_SCENES
+      else:
+        possible_scenes = _AUTO_SCENES if auto_scene_switch else _ALL_SCENES
 
-    if '<scene-name>' in scenes:
+    if '<scene-name>' in scenes or 'scene_extensions' in scenes:
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names
@@ -969,6 +986,16 @@ def main():
   if tablet_id:
     cmd = f'adb -s {tablet_id} shell input keyevent KEYCODE_POWER'
     subprocess.Popen(cmd.split())
+
+  # establish connection with lighting controller
+  lighting_cntl = test_params_content.get('lighting_cntl', 'None')
+  lighting_ch = test_params_content.get('lighting_ch', 'None')
+  arduino_serial_port = lighting_control_utils.lighting_control(
+    lighting_cntl, lighting_ch)
+
+  # turn OFF lights
+  lighting_control_utils.set_lighting_state(
+    arduino_serial_port, lighting_ch, 'OFF')
 
   if num_testbeds is not None:
     if testbed_index == _MAIN_TESTBED:

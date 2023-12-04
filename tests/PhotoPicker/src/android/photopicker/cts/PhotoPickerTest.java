@@ -16,8 +16,7 @@
 
 package android.photopicker.cts;
 
-import static android.photopicker.cts.util.GetContentActivityAliasUtils.clearPackageData;
-import static android.photopicker.cts.util.GetContentActivityAliasUtils.getDocumentsUiPackageName;
+import static android.photopicker.cts.util.PhotoPickerComponentUtils.GET_CONTENT_ACTIVITY_COMPONENT;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImageWithUnknownMimeType;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createMj2VideosAndGetUris;
@@ -26,6 +25,8 @@ import static android.photopicker.cts.util.PhotoPickerFilesUtils.createSvgImage;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createVideoWithUnknownMimeType;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createVideosAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
+import static android.photopicker.cts.util.PhotoPickerPackageUtils.clearPackageData;
+import static android.photopicker.cts.util.PhotoPickerPackageUtils.getDocumentsUiPackageName;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.REGEX_PACKAGE_NAME;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
@@ -36,7 +37,7 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.findPreviewAddOrSe
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertContainsMimeType;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertExtension;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertMimeType;
-import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedReadGrants;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPersistedGrant;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPickerUriFormat;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertRedactedReadOnlyAccess;
 
@@ -49,7 +50,7 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.photopicker.cts.util.GetContentActivityAliasUtils;
+import android.photopicker.cts.util.PhotoPickerComponentUtils;
 import android.provider.MediaStore;
 
 import androidx.test.uiautomator.UiObject;
@@ -92,7 +93,8 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        sGetContentTakeOverActivityAliasState = GetContentActivityAliasUtils.enableAndGetOldState();
+        sGetContentTakeOverActivityAliasState = PhotoPickerComponentUtils
+                .enableAndGetOldState(GET_CONTENT_ACTIVITY_COMPONENT);
         clearPackageData(getDocumentsUiPackageName());
     }
 
@@ -107,7 +109,8 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
+        PhotoPickerComponentUtils.setState(GET_CONTENT_ACTIVITY_COMPONENT,
+                sGetContentTakeOverActivityAliasState);
     }
 
     @Test
@@ -123,7 +126,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
 
         final Uri uri = mActivity.getResult().data.getData();
         assertPickerUriFormat(uri, mContext.getUserId());
-        assertPersistedReadGrants(uri, mContext.getContentResolver());
+        assertPersistedGrant(uri, mContext.getContentResolver());
         assertRedactedReadOnlyAccess(uri);
     }
 
@@ -227,7 +230,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < count; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
         }
     }
@@ -275,7 +278,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < count; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
         }
     }
@@ -315,7 +318,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < count; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
         }
     }
@@ -577,7 +580,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < count; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
             assertMimeType(uri, mimeType);
         }
@@ -623,7 +626,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < itemCount; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
             assertContainsMimeType(uri, mimeTypes);
         }
@@ -660,7 +663,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         for (int i = 0; i < itemCount; i++) {
             final Uri uri = clipData.getItemAt(i).getUri();
             assertPickerUriFormat(uri, mContext.getUserId());
-            assertPersistedReadGrants(uri, mContext.getContentResolver());
+            assertPersistedGrant(uri, mContext.getContentResolver());
             assertRedactedReadOnlyAccess(uri);
             assertMimeType(uri, mimeType);
         }

@@ -112,6 +112,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
         logging.debug('testing %s format', fmt)
         test_data = {}
         for i, z in enumerate(z_list):
+          logging.debug('zoom ratio: %.3f', z)
           req['android.control.zoomRatio'] = z
           cam.do_3a(zoom_ratio=z)
           cap = cam.do_capture(
@@ -124,7 +125,10 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           # determine radius tolerance of capture
           cap_fl = cap['metadata']['android.lens.focalLength']
-          radius_tol, offset_tol = test_tols[cap_fl]
+          radius_tol, offset_tol = test_tols.get(
+              cap_fl,
+              (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
+          )
 
           # Find the center circle in img
           circle = zoom_capture_utils.get_center_circle(img, img_name, size, z,

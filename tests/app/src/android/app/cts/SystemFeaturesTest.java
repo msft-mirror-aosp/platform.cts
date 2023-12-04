@@ -206,9 +206,9 @@ public class SystemFeaturesTest {
             if (flashAvailable) {
                 hasFlash = true;
             }
-            float minFocusDistance =
+            Float minFocusDistance =
                     chars.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
-            if (minFocusDistance > 0) {
+            if (minFocusDistance != null && minFocusDistance > 0) {
                 hasAutofocus = true;
             }
         }
@@ -534,8 +534,9 @@ public class SystemFeaturesTest {
      */
     @Test
     public void testTelephonyFeatures() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
-                !mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELECOM)) {
+        if (!(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                && mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELECOM)
+                && mTelephonyManager.isVoiceCapable())) {
                 return;
         }
 

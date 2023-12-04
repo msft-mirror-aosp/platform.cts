@@ -19,6 +19,7 @@ package android.server.wm;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -91,8 +92,13 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchHomeActivity();
         launchActivity(TRANSLUCENT_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
 
+        int expectedWindowingMode = hasAutomotiveSplitscreenMultitaskingFeature()
+                // On auto devices with this feature enabled, the system is in a permanent
+                // split-screen UI where every app opens in MULTI_WINDOW mode.
+                ? WINDOWING_MODE_MULTI_WINDOW
+                : WINDOWING_MODE_FULLSCREEN;
         mWmState.assertFrontStack("Fullscreen stack must be the front stack.",
-                WINDOWING_MODE_FULLSCREEN, ACTIVITY_TYPE_STANDARD);
+                expectedWindowingMode, ACTIVITY_TYPE_STANDARD);
         mWmState.assertVisibility(TRANSLUCENT_ACTIVITY, true);
         mWmState.assertHomeActivityVisible(true);
     }
@@ -196,13 +202,21 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
-
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         testTurnScreenOnActivity(lockScreenSession, activityClient,
                 true /* useWindowFlags */);
         testTurnScreenOnActivity(lockScreenSession, activityClient,
                 false /* useWindowFlags */);
+
+        // On Auto split-screen multi-tasking UI, testTurnScreenOnActivity() can lead to lifecycle
+        // state transitions in Home because of device sleep and also because of config change
+        // (b/308213530).
+        // Wait for the existing TurnScreenOnActivity to finish and the home activity to be in
+        // stopped state as the display is OFF.
+        if (supportsLockScreen()) {
+            mWmState.waitForAllStoppedActivities();
+        }
 
         // Start TURN_SCREEN_ON_ACTIVITY
         launchActivity(TURN_SCREEN_ON_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
@@ -392,7 +406,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
         mWmState.waitAndAssertActivityRemoved(BROADCAST_RECEIVER_ACTIVITY);
 
-        mWmState.assertHomeActivityVisible(false);
+        if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // TODO(b/300009006): remove this if condition when root tasks setup is moved to SysUI.
+            mWmState.assertHomeActivityVisible(false);
+        }
     }
 
     @Test
@@ -615,7 +632,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchActivity(TURN_SCREEN_ON_ATTR_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         mWmState.assertVisibility(TURN_SCREEN_ON_ATTR_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        assertSingleLaunch(TURN_SCREEN_ON_ATTR_ACTIVITY);
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // TODO(b/300009006): remove when root tasks setup is moved to SysUI.
+            waitAndAssertResumedActivity(TURN_SCREEN_ON_ATTR_ACTIVITY);
+        } else {
+            assertSingleLaunch(TURN_SCREEN_ON_ATTR_ACTIVITY);
+        }
     }
 
     @Test
@@ -672,7 +694,13 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchActivity(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         mWmState.assertVisibility(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        assertSingleLaunch(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY);
+
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // TODO(b/300009006): remove when root tasks setup is moved to SysUI.
+            waitAndAssertResumedActivity(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY);
+        } else {
+            assertSingleLaunch(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY);
+        }
     }
 
     @Test
@@ -726,9 +754,16 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         lockScreenSession.sleepDevice();
         separateTestJournal();
         launchActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        // wait for the UI to be stable.
+        mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        assertSingleLaunch(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // TODO(b/300009006): remove when root tasks setup is moved to SysUI.
+            waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        } else {
+            assertSingleLaunch(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        }
 
         lockScreenSession.sleepDevice();
         // We should make sure test activity stopped to prevent a false alarm stop state
@@ -737,12 +772,21 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 "Activity should be stopped");
         separateTestJournal();
         launchActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY, true);
         // Wait more for display state change since turning the display ON may take longer
         // and reported after the activity launch.
         waitForDefaultDisplayState(true /* wantOn */);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        assertSingleStart(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // In the scenario when the Launcher HOME activity hosts the TaskView, the HOME activity
+            // itself will be resumed first before the Test activity resulting in 2 calls to
+            // ON_RESUME rather than 1. Is such case just check if the Test activity is resumed.
+            // TODO(b/300009006): assertSingleStart when fixed.
+            waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        } else {
+            assertSingleStart(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
+        }
     }
 
     @Test

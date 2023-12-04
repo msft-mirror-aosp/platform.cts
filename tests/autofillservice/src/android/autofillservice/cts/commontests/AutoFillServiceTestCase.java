@@ -137,19 +137,22 @@ public final class AutoFillServiceTestCase {
 
         @Override
         protected TestRule getMainTestRule() {
-            try {
-                // Set orientation as portrait before auto-launch an activity,
-                // otherwise some tests might fail due to elements not fitting
-                // in, IME orientation, etc...
-                // Many tests will hold Activity in afterActivityLaunched() by
-                // overriding ActivityRule. If rotating after the activity has
-                // started, these tests will keep the old activity. All actions
-                // on the wrong activity did not happen as expected.
-                getDropdownUiBot().setScreenOrientation(UiBot.PORTRAIT);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            // Don't try to set orientation when device is in half-opened state
+            // The assumeFalse line in @Before would skip the half-opened tests.
+            if(!Helper.isDeviceInState(sContext, Helper.DeviceStateEnum.HALF_FOLDED)) {
+                try {
+                    // Set orientation as portrait before auto-launch an activity,
+                    // otherwise some tests might fail due to elements not fitting
+                    // in, IME orientation, etc...
+                    // Many tests will hold Activity in afterActivityLaunched() by
+                    // overriding ActivityRule. If rotating after the activity has
+                    // started, these tests will keep the old activity. All actions
+                    // on the wrong activity did not happen as expected.
+                    getDropdownUiBot().setScreenOrientation(UiBot.PORTRAIT);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
-
             return getActivityRule();
         }
 
@@ -282,9 +285,6 @@ public final class AutoFillServiceTestCase {
                 new ImeSettings.Builder().setInlineSuggestionsEnabled(true)
                         .setInlineSuggestionViewContentDesc(InlineUiBot.SUGGESTION_STRIP_DESC));
 
-        protected static final RequiredFeatureRule sRequiredFeatureRule =
-                new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL);
-
         private final AutofillTestWatcher mTestWatcher = new AutofillTestWatcher();
 
         private final RetryRule mRetryRule =
@@ -399,6 +399,10 @@ public final class AutoFillServiceTestCase {
         protected final String mPackageName;
         protected final UiBot mUiBot;
 
+        protected static final RuleChain sRequiredFeaturesRule = RuleChain
+                .outerRule(new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL))
+                .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
+
         public BaseTestCase() {
             mPackageName = mContext.getPackageName();
             mUiBot = sDefaultUiBot;
@@ -456,7 +460,7 @@ public final class AutoFillServiceTestCase {
          */
         @NonNull
         protected TestRule getRequiredFeaturesRule() {
-            return sRequiredFeatureRule;
+            return sRequiredFeaturesRule;
         }
 
         /**

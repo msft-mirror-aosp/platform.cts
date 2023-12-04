@@ -30,11 +30,11 @@ import lighting_control_utils
 import opencv_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_DEFAULT_TABLET_BRIGHTNESS_SCALING = 0.04  # 4% of default brightness
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
+_TABLET_BRIGHTNESS = '12'  # Highest minimum brightness on a supported tablet
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
-_MIN_AREA = 0
+_MIN_AREA = 0.001  # Circle must be >= 0.1% of image size
 _WHITE = 255
 
 _FMT_NAME = 'yuv'  # To detect noise without conversion to RGB
@@ -86,41 +86,32 @@ def _convert_captures(cap, file_stem=None):
   return y, image_processing_utils.convert_image_to_uint8(img)
 
 
-def _check_dot_intensity_diff(night_img, night_y, no_night_img, no_night_y):
+def _check_dot_intensity_diff(night_img, night_y):
   """Checks the difference between circle and dot intensities with Night ON.
 
-  The performance with Night OFF is logged for debugging purposes.
   This is an optional check, and a successful result can replace the
   overall intensity check.
 
   Args:
     night_img: numpy image from a capture with night mode ON.
     night_y: y_plane from a capture with night mode ON.
-    no_night_img: numpy image from a capture with night mode OFF.
-    no_night_y: y_plane from a capture with night mode OFF.
 
   Returns:
     True if diff between circle and dot intensities is significant.
   """
-  night_circle = opencv_processing_utils.find_circle(
-      night_img,
-      'night_dot_intensity_check.png',
-      _MIN_AREA,
-      _WHITE,
-  )
+  try:
+    night_circle = opencv_processing_utils.find_circle(
+        night_img,
+        'night_dot_intensity_check.png',
+        _MIN_AREA,
+        _WHITE,
+    )
+  except AssertionError as e:
+    logging.debug(e)
+    return False
   night_circle_center_mean = np.mean(
       night_img[night_circle[_Y_STRING], night_circle[_X_STRING]])
   night_dots = _get_dots_from_circle(night_circle)
-
-  no_night_circle = opencv_processing_utils.find_circle(
-      no_night_img,
-      'no_night_dot_intensity_check.png',
-      _MIN_AREA,
-      _WHITE,
-  )
-  no_night_circle_center_mean = np.mean(
-      no_night_img[no_night_circle[_Y_STRING], no_night_circle[_X_STRING]])
-  no_night_dots = _get_dots_from_circle(no_night_circle)
 
   # Skip the first dot, which is of a different intensity
   night_light_gray_dots_mean = np.mean(
@@ -129,27 +120,14 @@ def _check_dot_intensity_diff(night_img, night_y, no_night_img, no_night_y):
           for i in range(1, len(night_dots))
       ]
   )
-  no_night_light_gray_dots_mean = np.mean(
-      [
-          no_night_y[no_night_dots[i][_Y_STRING], no_night_dots[i][_X_STRING]]
-          for i in range(1, len(no_night_dots))
-      ]
-  )
 
   night_dot_intensity_diff = (
       night_circle_center_mean -
       night_light_gray_dots_mean
   )
-  no_night_dot_intensity_diff = (
-      no_night_circle_center_mean -
-      no_night_light_gray_dots_mean
-  )
   logging.debug('With night extension ON, the difference between white '
                 'circle intensity and non-orientation dot intensity was %.2f.',
                 night_dot_intensity_diff)
-  logging.debug('With night extension OFF, the difference between white '
-                'circle intensity and non-orientation dot intensity was %.2f.',
-                no_night_dot_intensity_diff)
   return night_dot_intensity_diff > _DOT_INTENSITY_DIFF_TOL
 
 
@@ -190,75 +168,6 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
     * takes longer
     * is brighter OR improves appearance of scene artifacts
   """
-
-  def find_tablet_brightness(self, cam, default_brightness, file_stem,
-                             width, height, use_extensions=True):
-    """Find maximum brightness at which orientation circle in scene is visible.
-
-    Uses binary search on a range of (0, default_brightness), where visibility
-    is defined by an intensity comparison with the center of the outer circle.
-
-    Args:
-      cam: its_session_utils object.
-      default_brightness: int; brightness set by config.yml.
-      file_stem: str; location and name to save files.
-      width: int; width for both extension and non-extension captures.
-      height: int; height for both extension and non-extension captures.
-      use_extensions: bool; whether extension capture should be used.
-    Returns:
-      int; brightness at which orientation circle in scene is visible.
-    """
-    min_brightness = 0
-    max_brightness = default_brightness
-    final_brightness = None
-    out_surfaces = {'format': _FMT_NAME, 'width': width, 'height': height}
-    req = capture_request_utils.auto_capture_request()
-    file_stem += '_night' if use_extensions else '_no_night'
-    while min_brightness < max_brightness:
-      brightness = (min_brightness + max_brightness) // 2
-      self.set_screen_brightness(str(brightness))
-
-      if use_extensions:
-        logging.debug('Taking capture with night mode ON at brightness of %d',
-                      brightness)
-        cap = cam.do_capture_with_extensions(
-            req, _EXTENSION_NIGHT, out_surfaces)
-      else:
-        logging.debug('Taking capture with night mode OFF at brightness of %d',
-                      brightness)
-        cap = cam.do_capture(req, out_surfaces)
-      _, img = _convert_captures(cap, f'{file_stem}_brightness={brightness}')
-
-      try:
-        circle = opencv_processing_utils.find_circle(
-            img,
-            f'{file_stem}_center_circle_brightness={brightness}.png',
-            _MIN_AREA, _WHITE)
-        dots = _get_dots_from_circle(circle)
-        # Compare orientation dot to surrounding circle center
-        dot_mean = np.mean(img[dots[0][_Y_STRING], dots[0][_X_STRING]])
-        circle_mean = np.mean(img[circle[_Y_STRING], circle[_X_STRING]])
-        logging.debug('Dot mean: %.2f, center mean: %.2f',
-                      dot_mean, circle_mean)
-        difference = circle_mean - dot_mean
-        if difference < _DOT_INTENSITY_DIFF_TOL:
-          logging.debug('Orientation dot is washed out at brightness %d',
-                        brightness)
-          max_brightness = brightness
-        else:
-          logging.debug('Found orientation dot at brightness %d', brightness)
-          min_brightness = brightness + 1
-          final_brightness = brightness
-      except AssertionError:
-        logging.debug('Unable to find circle with brightness %d', brightness)
-        max_brightness = brightness
-    if final_brightness is None:
-      logging.debug('Unable to find orientation dot at any brightness, '
-                    'defaulting to %.2f of current tablet brightness.',
-                    _DEFAULT_TABLET_BRIGHTNESS_SCALING)
-      return int(_DEFAULT_TABLET_BRIGHTNESS_SCALING *
-                 self.tablet_screen_brightness)
-    return final_brightness
 
   def _time_and_take_captures(self, cam, req, out_surfaces,
                               use_extensions=True):
@@ -334,10 +243,6 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
                              'according to '
                              f'{its_session_utils.TABLET_REQUIREMENTS_URL}.')
 
-      its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, self.chart_distance,
-          log_path=self.log_path)
-
       # Establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, self.lighting_ch)
@@ -345,6 +250,26 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
           arduino_serial_port, self.lighting_ch, 'OFF')
+
+      # Check that tablet is connected and turn it off to validate lighting
+      if self.tablet:
+        lighting_control_utils.turn_off_device(self.tablet)
+      else:
+        raise AssertionError('Test must be run with tablet.')
+
+      # Validate lighting, then setup tablet
+      cam.do_3a(do_af=False)
+      cap = cam.do_capture(
+          capture_request_utils.auto_capture_request(), cam.CAP_YUV)
+      y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
+      its_session_utils.validate_lighting(
+          y_plane, self.scene, state='OFF', log_path=self.log_path,
+          tablet_state='OFF')
+      self.setup_tablet()
+
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          lighting_check=False, log_path=self.log_path)
 
       # Tap tablet to remove gallery buttons
       if self.tablet:
@@ -369,18 +294,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       width, height = extension_capture_sizes[0]
 
       # Set tablet brightness to darken scene
-      file_stem = f'{test_name}_{_FMT_NAME}_{width}x{height}'
-      night_brightness = self.find_tablet_brightness(
-          cam, self.tablet_screen_brightness, file_stem,
-          width, height, use_extensions=True)
-      logging.debug('Night mode ON brightness: %d', night_brightness)
-      no_night_brightness = self.find_tablet_brightness(
-          cam, self.tablet_screen_brightness, file_stem,
-          width, height, use_extensions=False)
-      logging.debug('Night mode OFF brightness: %d', no_night_brightness)
-      brightness = min(night_brightness, no_night_brightness)
-      self.set_screen_brightness(str(brightness))
+      self.set_screen_brightness(_TABLET_BRIGHTNESS)
 
+      file_stem = f'{test_name}_{_FMT_NAME}_{width}x{height}'
       out_surfaces = {'format': _FMT_NAME, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
 
@@ -396,7 +312,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       cam.do_3a()
       no_night_capture_duration, no_night_cap = self._time_and_take_captures(
           cam, req, out_surfaces, use_extensions=False)
-      no_night_y, no_night_img = _convert_captures(
+      _, no_night_img = _convert_captures(
           no_night_cap, f'{file_stem}_no_night')
 
       # Assert correct behavior
@@ -413,7 +329,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
                     'expected values from the scene')
       # Normalize y planes to [0:255]
       dot_intensities_acceptable = _check_dot_intensity_diff(
-          night_img, night_y * 255, no_night_img, no_night_y * 255)
+          night_img, night_y * 255)
 
       if not dot_intensities_acceptable:
         logging.debug('Comparing overall intensity of capture with '
