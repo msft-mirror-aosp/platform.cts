@@ -425,6 +425,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     @ApiTest(apis = {"android.inputmethodservice.InputMethodService#showSoftInput"})
     @Test
     public void testSoftInputStateAlwaysVisibleFocusEditorAfterLaunch() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
@@ -955,6 +956,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
     @Test
     public void testUnfocusedEditor_stateHidden_hidesIme() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_HIDDEN);
         expectImeHidden(stream);
@@ -963,6 +965,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
     @Test
     public void testUnfocusedEditor_stateAlwaysHidden_hidesIme() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         expectImeHidden(stream);
@@ -973,6 +976,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     @ApiTest(apis = {"android.inputmethodservice.InputMethodService#onStartInput",
             "android.inputmethodservice.InputMethodService#showSoftInput"})
     public void testUnfocusedEditor_stateVisible() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_VISIBLE);
         // The previous IME should be finished
@@ -998,6 +1002,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     @ApiTest(apis = {"android.inputmethodservice.InputMethodService#onStartInput",
             "android.inputmethodservice.InputMethodService#showSoftInput"})
     public void testUnfocusedEditor_stateAlwaysVisible() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // The previous IME should be finished
@@ -1023,6 +1028,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     @ApiTest(apis = {"android.inputmethodservice.InputMethodService#onStartInput",
             "android.inputmethodservice.InputMethodService#showSoftInput"})
     public void testUnfocusedEditor_stateUnchanged() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_UNCHANGED);
         // The previous IME should be finished
