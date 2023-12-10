@@ -55,6 +55,8 @@ import android.car.hardware.property.CarPropertyManager.CarPropertyEventCallback
 import android.car.hardware.property.CruiseControlCommand;
 import android.car.hardware.property.CruiseControlState;
 import android.car.hardware.property.CruiseControlType;
+import android.car.hardware.property.DriverDistractionState;
+import android.car.hardware.property.DriverDistractionWarning;
 import android.car.hardware.property.DriverDrowsinessAttentionState;
 import android.car.hardware.property.DriverDrowsinessAttentionWarning;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
@@ -343,6 +345,20 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             DriverDrowsinessAttentionWarning.NO_WARNING,
                             DriverDrowsinessAttentionWarning.WARNING)
                     .build();
+    private static final ImmutableSet<Integer> DRIVER_DISTRACTION_STATES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            DriverDistractionState.OTHER,
+                            DriverDistractionState.NOT_DISTRACTED,
+                            DriverDistractionState.DISTRACTED)
+                    .build();
+    private static final ImmutableSet<Integer> DRIVER_DISTRACTION_WARNINGS =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            DriverDistractionWarning.OTHER,
+                            DriverDistractionWarning.NO_WARNING,
+                            DriverDistractionWarning.WARNING)
+                    .build();
 
     private static final ImmutableSet<Integer> ERROR_STATES =
             ImmutableSet.<Integer>builder()
@@ -447,7 +463,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED,
                             VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED,
-                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED)
+                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED)
                     .build();
     private static final ImmutableList<Integer>
             PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS_PROPERTIES =
@@ -455,7 +473,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED,
                             VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED,
-                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED)
+                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED)
                     .build();
     private static final ImmutableList<Integer>
             PERMISSION_READ_DRIVER_MONITORING_STATES_PROPERTIES = ImmutableList.<Integer>builder()
@@ -463,7 +483,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.HANDS_ON_DETECTION_DRIVER_STATE,
                             VehiclePropertyIds.HANDS_ON_DETECTION_WARNING,
                             VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_STATE,
-                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING)
+                            VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_STATE,
+                            VehiclePropertyIds.DRIVER_DISTRACTION_WARNING)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CAR_ENERGY_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -1152,6 +1174,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
              getDriverDrowsinessAttentionStateVerifier(),
              getDriverDrowsinessAttentionWarningEnabledVerifier(),
              getDriverDrowsinessAttentionWarningVerifier(),
+             getDriverDistractionSystemEnabledVerifier(),
+             getDriverDistractionStateVerifier(),
+             getDriverDistractionWarningEnabledVerifier(),
+             getDriverDistractionWarningVerifier(),
              getWheelTickVerifier(),
              getInfoVinVerifier(),
              getInfoMakeVerifier(),
@@ -1833,6 +1859,112 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionWarningAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DROWSINESS_ATTENTION_WARNINGS, ERROR_STATES);
+    }
+
+    private VehiclePropertyVerifier<Boolean> getDriverDistractionSystemEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class, mCarPropertyManager)
+                .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS)
+                .addReadPermission(Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS)
+                .addWritePermission(Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionSystemEnabledIfSupported() {
+        getDriverDistractionSystemEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getDriverDistractionStateVerifier() {
+        ImmutableSet<Integer> possibleEnumValues = ImmutableSet.<Integer>builder()
+                .addAll(DRIVER_DISTRACTION_STATES)
+                .addAll(ERROR_STATES)
+                .build();
+
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_STATE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class, mCarPropertyManager)
+                .setAllPossibleEnumValues(possibleEnumValues)
+                .setDependentOnProperty(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED,
+                        ImmutableSet.of(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS,
+                                Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS))
+                .verifyErrorStates()
+                .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_STATES)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionStateVerifierIfSupported() {
+        getDriverDistractionStateVerifier().verify();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionStateAndErrorStateDontIntersect() {
+        verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_STATES, ERROR_STATES);
+    }
+
+    private VehiclePropertyVerifier<Boolean> getDriverDistractionWarningEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class, mCarPropertyManager)
+                .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS)
+                .addReadPermission(Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS)
+                .addWritePermission(Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionWarningEnabledIfSupported() {
+        getDriverDistractionWarningEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getDriverDistractionWarningVerifier() {
+        ImmutableSet<Integer> possibleEnumValues = ImmutableSet.<Integer>builder()
+                .addAll(DRIVER_DISTRACTION_WARNINGS)
+                .addAll(ERROR_STATES)
+                .build();
+
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_WARNING,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class, mCarPropertyManager)
+                .setAllPossibleEnumValues(possibleEnumValues)
+                .setDependentOnProperty(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED,
+                        ImmutableSet.of(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS,
+                                Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS))
+                .verifyErrorStates()
+                .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_STATES)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionWarningIfSupported() {
+        getDriverDistractionWarningVerifier().verify();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testDriverDistractionWarningAndErrorStateDontIntersect() {
+        verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_WARNINGS, ERROR_STATES);
     }
 
     public VehiclePropertyVerifier<Long[]> getWheelTickVerifier() {
