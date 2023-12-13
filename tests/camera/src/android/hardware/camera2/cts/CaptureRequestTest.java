@@ -109,6 +109,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     private static final float FOCUS_DISTANCE_ERROR_PERCENT_UNCALIBRATED = 0.25f;
     // 10 percent error margin for approximate device
     private static final float FOCUS_DISTANCE_ERROR_PERCENT_APPROXIMATE = 0.10f;
+    // 1 percent boundary margin for focus range verify
+    private static final float FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT = 0.01f;
     private static final int ANTI_FLICKERING_50HZ = 1;
     private static final int ANTI_FLICKERING_60HZ = 2;
     // 5 percent error margin for resulting crop regions
@@ -1234,10 +1236,15 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
         Pair<Float, Float> focusRange = result.get(CaptureResult.LENS_FOCUS_RANGE);
         if (focusRange != null) {
+            // Prevent differences in floating point precision between manual request and HAL
+            // result, some margin need to be considered for focusRange.near and far check
+            float focusRangeNear = focusRange.first  * (1.0f + FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT);
+            float focusRangeFar  = focusRange.second * (1.0f - FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT);
+
             mCollector.expectLessOrEqual("Focus distance should be less than or equal to "
-                    + "FOCUS_RANGE.near", focusRange.first, focusDistance);
+                    + "FOCUS_RANGE.near (with margin)", focusRangeNear, focusDistance);
             mCollector.expectGreaterOrEqual("Focus distance should be greater than or equal to "
-                    + "FOCUS_RANGE.far", focusRange.second, focusDistance);
+                    + "FOCUS_RANGE.far (with margin)", focusRangeFar, focusDistance);
         } else if (VERBOSE) {
             Log.v(TAG, "FOCUS_RANGE undefined, skipping verification");
         }
@@ -3222,6 +3229,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 CameraMetadata.CONTROL_AUTOFRAMING_ON};
         final int zoomSteps = 5;
         final float zoomErrorMargin = 0.05f;
+        final int kMaxNumFrames = 200;
         Size maxPreviewSize = mOrderedPreviewSizes.get(0); // Max preview size.
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -3252,17 +3260,34 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                         CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
 
                 if (mode == CameraMetadata.CONTROL_AUTOFRAMING_ON) {
-                    if (expectedZoomRatio == 0.0f) {
-                        expectedZoomRatio = resultZoomRatio;
-                    }
-                    assertTrue("Autoframing state should be FRAMING or CONVERGED when AUTOFRAMING"
-                            + "is ON",
+                    int numFrames = 0;
+                    while (numFrames < kMaxNumFrames) {
+                        result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                        autoframingState = getValueNotNull(result,
+                                CaptureResult.CONTROL_AUTOFRAMING_STATE);
+                        assertTrue("Autoframing state should be FRAMING or CONVERGED when "
+                            + "AUTOFRAMING is ON",
                             autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_FRAMING
                                     || autoframingState
                                             == CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED);
-                    assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
+
+                        assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
                             videoStabilizationMode
                                     == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+
+                        resultZoomRatio = getValueNotNull(result, CaptureResult.CONTROL_ZOOM_RATIO);
+                        if (autoframingState ==
+                                CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED) {
+                            break;
+                        }
+                        numFrames++;
+                    }
+                    assertTrue("Autoframing state didn't converge within " + kMaxNumFrames
+                            + " frames", numFrames < kMaxNumFrames);
+
+                    if (expectedZoomRatio == 0.0f) {
+                        expectedZoomRatio = resultZoomRatio;
+                    }
                 } else {
                     expectedZoomRatio = testZoomRatio;
                     assertTrue("Autoframing state should be INACTIVE when AUTOFRAMING is OFF",

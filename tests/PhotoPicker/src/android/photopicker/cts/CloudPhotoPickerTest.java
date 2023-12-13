@@ -18,11 +18,9 @@ package android.photopicker.cts;
 
 import static android.photopicker.cts.PhotoPickerCloudUtils.addImage;
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
-import static android.photopicker.cts.PhotoPickerCloudUtils.disableCloudMediaAndClearAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.disableDeviceConfigSync;
 import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
-import static android.photopicker.cts.PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig;
-import static android.photopicker.cts.PhotoPickerCloudUtils.isCloudMediaEnabled;
 import static android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
@@ -72,6 +70,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
+    private static final String TAG = CloudPhotoPickerTest.class.getSimpleName();
     private final List<Uri> mUriList = new ArrayList<>();
     private MediaGenerator mCloudPrimaryMediaGenerator;
     private MediaGenerator mCloudSecondaryMediaGenerator;
@@ -83,19 +82,14 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
 
     private static final String CLOUD_ID1 = "CLOUD_ID1";
     private static final String CLOUD_ID2 = "CLOUD_ID2";
-    private static boolean sCloudMediaPreviouslyEnabled;
-    private static String sPreviouslyAllowedCloudProviders;
     @Nullable
-    private static String sPreviouslySetCloudProvider;
+    private static DeviceStatePreserver sDeviceStatePreserver;
 
     @BeforeClass
     public static void setUpBeforeClass() throws IOException {
-        // Store the current CMP configs, so that we can reset them at the end of the test.
-        sCloudMediaPreviouslyEnabled = isCloudMediaEnabled();
-        if (sCloudMediaPreviouslyEnabled) {
-            sPreviouslyAllowedCloudProviders = getAllowedProvidersDeviceConfig();
-        }
-        sPreviouslySetCloudProvider = getCurrentCloudProvider();
+        sDeviceStatePreserver = new DeviceStatePreserver(sDevice);
+        sDeviceStatePreserver.saveCurrentCloudProviderState();
+        disableDeviceConfigSync();
 
         // This is a self-instrumentation test, so both "target" package name and "own" package name
         // should be the same (android.photopicker.cts).
@@ -104,13 +98,7 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
 
     @AfterClass
     public static void tearDownClass() throws Exception {
-        // Reset CloudMedia configs.
-        if (sCloudMediaPreviouslyEnabled) {
-            enableCloudMediaAndSetAllowedCloudProviders(sPreviouslyAllowedCloudProviders);
-        } else {
-            disableCloudMediaAndClearAllowedCloudProviders();
-        }
-        setCloudProvider(sPreviouslySetCloudProvider);
+        sDeviceStatePreserver.restoreCloudProviderState();
     }
     @Before
     public void setUp() throws Exception {

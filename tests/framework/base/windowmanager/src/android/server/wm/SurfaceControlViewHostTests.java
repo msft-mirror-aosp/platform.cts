@@ -53,6 +53,7 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.Point;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -64,6 +65,7 @@ import android.server.wm.shared.ICrossProcessSurfaceControlViewHostTestService;
 import android.util.ArrayMap;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.SurfaceControl;
 import android.view.SurfaceControlViewHost;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -613,7 +615,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         assertTrue("Failed to tap on embedded parent",
                 tapOnWindow(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        null /* offset */));
+                        new Point(1, 1) /* offset */));
         // When tapping on the parent embedded window, it should gain focus.
         assertWindowFocused(mEmbeddedView, true);
         // assert child embedded window does not have focus.
@@ -787,13 +789,23 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
 
         });
-        surfaceCreated.await();
+        assertTrue("Failed to wait for SurfaceView created",
+                surfaceCreated.await(5, TimeUnit.SECONDS));
 
         // Make a copy of the SurfacePackage and release the original package.
         SurfacePackage surfacePackage = mVr.getSurfacePackage();
         SurfacePackage copy = new SurfacePackage(surfacePackage);
         surfacePackage.release();
-        mSurfaceView.setChildSurfacePackage(copy);
+
+        CountDownLatch surfacePackageReparented = new CountDownLatch(1);
+        mActivityRule.runOnUiThread(() -> {
+            mSurfaceView.setChildSurfacePackage(copy);
+            SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+            t.addTransactionCommittedListener(Runnable::run, surfacePackageReparented::countDown);
+            mSurfaceView.getRootSurfaceControl().applyTransactionOnDraw(t);
+        });
+        assertTrue("Failed to wait for surface package to get reparented",
+                surfacePackageReparented.await(5, TimeUnit.SECONDS));
 
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
