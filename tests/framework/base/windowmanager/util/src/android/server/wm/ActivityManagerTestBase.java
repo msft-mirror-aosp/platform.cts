@@ -637,6 +637,14 @@ public abstract class ActivityManagerTestBase {
             // state.
             mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
         });
+
+        // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
+        // the systemUI might have a few tasks that need to be displayed all the time.
+        // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
+        // restarts can interfere with the test state. To avoid that, its better to wait for all
+        // the activities to come in the resumed state.
+        mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
+                + "be either empty or resumed");
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -1302,7 +1310,12 @@ public abstract class ActivityManagerTestBase {
 
     /** Checks whether the display dimension is close to square. */
     protected boolean isCloseToSquareDisplay() {
-        final Resources resources = mContext.getResources();
+        return isCloseToSquareDisplay(mContext);
+    }
+
+    /** Checks whether the display dimension is close to square. */
+    public static boolean isCloseToSquareDisplay(Context context) {
+        final Resources resources = context.getResources();
         final float closeToSquareMaxAspectRatio;
         try {
             closeToSquareMaxAspectRatio = resources.getFloat(resources.getIdentifier(
@@ -1312,7 +1325,8 @@ public abstract class ActivityManagerTestBase {
             return false;
         }
         final DisplayMetrics displayMetrics = new DisplayMetrics();
-        mDm.getDisplay(DEFAULT_DISPLAY).getRealMetrics(displayMetrics);
+        context.getSystemService(DisplayManager.class).getDisplay(DEFAULT_DISPLAY)
+                .getRealMetrics(displayMetrics);
         final int w = displayMetrics.widthPixels;
         final int h = displayMetrics.heightPixels;
         final float aspectRatio = Math.max(w, h) / (float) Math.min(w, h);

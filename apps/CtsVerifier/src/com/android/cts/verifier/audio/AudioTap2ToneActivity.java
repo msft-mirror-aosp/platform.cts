@@ -146,11 +146,26 @@ public class AudioTap2ToneActivity
 
     private double[] mLatencyMillis = new double[NUM_TEST_PHASES];
 
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, "tap_to_tone_latency");
+    }
+
     // ReportLog Schema
     // Note that each key will be suffixed with the ID of the API tested
     private static final String KEY_LATENCY_MIN = "latency_min_";
     private static final String KEY_LATENCY_MAX = "latency_max_";
-    private static final String KEY_LATENCY_AVE = "latency_max_";
+    private static final String KEY_LATENCY_AVE = "latency_ave_";
     private static final String KEY_LATENCY_NUM_MEASUREMENTS = "latency_num_measurements_";
 
     public final TestName testName = new TestName();

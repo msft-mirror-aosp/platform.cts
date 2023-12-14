@@ -134,7 +134,7 @@ public class StorageTest extends InstrumentationTestCase {
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
 
-        device.findObject(new UiSelector().text("DELETE")).click();
+        device.findObject(new UiSelector().textMatches("(?i)Delete")).click();
     }
 
     private void clearSpaceWatch(UiDevice device) throws UiObjectNotFoundException {
@@ -160,7 +160,7 @@ public class StorageTest extends InstrumentationTestCase {
     private void clearSpaceTv(UiDevice device) throws UiObjectNotFoundException {
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
-        device.findObject(new UiSelector().text("OK")).click();
+        device.findObject(new UiSelector().textContains("OK")).click();
     }
 
     private void clearSpaceCar(UiDevice device) throws UiObjectNotFoundException {

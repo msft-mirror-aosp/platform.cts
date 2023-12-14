@@ -401,7 +401,7 @@ def is_device_folded(device_id):
   """
   cmd = (f'adb -s {device_id} shell cmd device_state state')
   result = subprocess.getoutput(cmd)
-  if 'CLOSED' in result:
+  if 'CLOSE' in result:
     return True
   return False
 
@@ -554,16 +554,16 @@ def main():
     if (testing_folded_front_camera and camera_id not in unav_cameras
         and not folded_prompted):
       folded_prompted = True
-      input('\nYou are testing a foldable device in folded state.'
-            'Please make sure the device is folded and press <ENTER>'
+      input('\nYou are testing a foldable device in folded state. '
+            'Please make sure the device is folded and press <ENTER> '
             'after positioning properly.\n')
 
     if (testing_foldable_device and
         not device_folded and _FRONT_CAMERA_ID in camera_id and
         camera_id not in unav_cameras and not opened_prompted):
       opened_prompted = True
-      input('\nYou are testing a foldable device in opened state.'
-            'Please make sure the device is unfolded and press <ENTER>'
+      input('\nYou are testing a foldable device in opened state. '
+            'Please make sure the device is unfolded and press <ENTER> '
             'after positioning properly.\n')
 
     # Run through all scenes if user does not supply one and config file doesn't
@@ -639,6 +639,7 @@ def main():
       if 'folded' in s:
         testing_scene = s.split('_folded')[0]
       test_params_content['scene'] = testing_scene
+      test_params_content['scene_with_suffix'] = s
       if auto_scene_switch:
         # Copy scene images onto the tablet
         if 'scene0' not in testing_scene:

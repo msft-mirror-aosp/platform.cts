@@ -54,6 +54,9 @@ public class Components extends ComponentsBase {
                 Components.class.getPackage().getName() + ".ACTION_LAUNCH_BACKGROUND_ACTIVITIES";
         public static final String ACTION_FINISH_ACTIVITY =
                 Components.class.getPackage().getName() + ".ACTION_FINISH_ACTIVITY";
+
+        public static final String ACTION_LAUNCH_INTO_PIP =
+                Components.class.getPackage().getName() + ".ACTION_LAUNCH_INTO_PIP";
     }
 
     /** Extra key constants for {@link #APP_A_SEND_PENDING_INTENT_RECEIVER} */
@@ -65,6 +68,12 @@ public class Components extends ComponentsBase {
     public static class StartBackgroundActivityReceiver {
         public static final String START_ACTIVITY_DELAY_MS_EXTRA =
                 "START_ACTIVITY_FROM_FG_ACTIVITY_DELAY_MS_EXTRA";
+    }
+
+    /** Extra key constants for {@link #VIRTUAL_DISPLAY_ACTIVITY} */
+    public static class VirtualDisplayActivityExtra {
+        public static final String USE_PUBLIC_PRESENTATION =
+                "USE_PUBLIC_PRESENTATION_EXTRA";
     }
 
 }

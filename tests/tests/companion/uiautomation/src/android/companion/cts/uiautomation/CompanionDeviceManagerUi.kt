@@ -16,8 +16,11 @@
 
 package android.companion.cts.uiautomation
 
+import android.os.SystemClock
+import android.os.SystemClock.sleep
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.SearchCondition
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
@@ -52,8 +55,20 @@ class CompanionDeviceManagerUi(private val ui: UiDevice) {
 
     fun clickNegativeButton() = click(NEGATIVE_BUTTON, "Negative button")
 
-    fun clickNegativeButtonMultipleDevices() = click(
-            NEGATIVE_BUTTON_MULTIPLE_DEVICES, "Negative button for multiple devices")
+    fun clickNegativeButtonMultipleDevices() {
+        ui.wait(Until.findObject(CONFIRMATION_UI), 2.seconds.inWholeMilliseconds)?.let {
+            // swipe up (or scroll down) until cancel button is enabled
+            val startTime = SystemClock.uptimeMillis()
+            var elapsedTime = 0L
+            // UiDevice.hasObject() takes a long time for some reason so wait at least 10 seconds
+            while (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES)
+                    && elapsedTime < 10.seconds.inWholeMilliseconds) {
+                it.swipe(Direction.UP, 1.0F)
+                elapsedTime = SystemClock.uptimeMillis() - startTime
+            }
+        }
+        click(NEGATIVE_BUTTON_MULTIPLE_DEVICES, "Negative button for multiple devices")
+    }
 
     private fun click(selector: BySelector, description: String) = ui.waitShortAndFind(
             Until.findObject(selector), "$description  is not found")

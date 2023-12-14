@@ -86,6 +86,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.SettingsUtils;
 import com.android.internal.annotations.GuardedBy;
 
 import org.junit.ClassRule;
@@ -157,11 +158,13 @@ public class AudioManagerTest extends InstrumentationTestCase {
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundFormatsSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
+                    SettingsUtils.NAMESPACE_GLOBAL,
                     Settings.Global.ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS);
 
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundModeSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
+                    SettingsUtils.NAMESPACE_GLOBAL,
                     Settings.Global.ENCODED_SURROUND_OUTPUT);
 
     @Override
@@ -281,6 +284,9 @@ public class AudioManagerTest extends InstrumentationTestCase {
         if (isAutomotive()) {
             return;
         }
+        if (!hasBuiltinSpeaker()) {
+            return;
+        }
         final MyBlockingIntentReceiver receiver = new MyBlockingIntentReceiver(
                 AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED);
         final boolean initialSpeakerphoneState = mAudioManager.isSpeakerphoneOn();
@@ -301,6 +307,18 @@ public class AudioManagerTest extends InstrumentationTestCase {
             mContext.unregisterReceiver(receiver);
             mAudioManager.setSpeakerphoneOn(initialSpeakerphoneState);
         }
+    }
+
+    private boolean hasBuiltinSpeaker() {
+        AudioDeviceInfo[] devices = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+        for (AudioDeviceInfo device : devices) {
+            final int type = device.getType();
+            if (type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                    || type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static final class MyBlockingIntentReceiver extends BroadcastReceiver {

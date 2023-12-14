@@ -575,7 +575,7 @@ public class MediaRecorderTest extends ActivityInstrumentationTestCase2<MediaStu
         FileOutputStream fos = new FileOutputStream(OUTPUT_PATH2);
         FileDescriptor fd = fos.getFD();
         mMediaRecorder.setOutputFile(fd);
-        long maxFileSize = MAX_FILE_SIZE * 10;
+        long maxFileSize = mVideoHeight >= 720 ? MAX_FILE_SIZE * 50 : MAX_FILE_SIZE * 10;
         recordMedia(maxFileSize, mOutFile2);
         assertFalse(checkLocationInFile(OUTPUT_PATH2));
         fos.close();
@@ -607,7 +607,11 @@ public class MediaRecorderTest extends ActivityInstrumentationTestCase2<MediaStu
         }
         mMediaRecorder.setVideoSize(width, height);
         mMediaRecorder.setOutputFile(mOutFile);
-        long maxFileSize = MAX_FILE_SIZE * 10;
+
+        // For some devices, the QUALITY_LOW profile can be as high as 720p. In that case use
+        // the bigger max file size to make sure the file will be able to contain at least single
+        // valid frame.
+        long maxFileSize = height >= 720 ? MAX_FILE_SIZE * 50 : MAX_FILE_SIZE * 10;
         recordMedia(maxFileSize, mOutFile);
     }
 
@@ -1125,10 +1129,10 @@ public class MediaRecorderTest extends ActivityInstrumentationTestCase2<MediaStu
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-        // Try to get camera profile for QUALITY_LOW; if unavailable,
+        // Try to get camera profile for QUALITY_HIGH; if unavailable,
         // set the video size to default value.
         CamcorderProfile profile = CamcorderProfile.get(
-                0 /* cameraId */, CamcorderProfile.QUALITY_LOW);
+                0 /* cameraId */, CamcorderProfile.QUALITY_HIGH);
         if (profile != null) {
             width = profile.videoFrameWidth;
             height = profile.videoFrameHeight;

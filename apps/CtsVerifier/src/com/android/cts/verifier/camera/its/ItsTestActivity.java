@@ -608,8 +608,16 @@ public class ItsTestActivity extends DialogTestListActivity {
         return "Camera: " + cam + ", " + scene;
     }
 
+    // CtsVerifier has a "Folded" toggle that selectively surfaces some tests.
+    // To separate the tests in folded and unfolded states, CtsVerifier adds a [folded]
+    // suffix to the test id in its internal database depending on the state of the "Folded"
+    // toggle button. However, CameraITS has tests that it needs to persist across both folded
+    // and unfolded states.To get the test results to persist, we need CtsVerifier to store and
+    // look up the same test id regardless of the toggle button state.
+    // TODO(b/282804139): Update CTS tests to allow activities to write tests that persist
+    // across the states
     protected String testId(String cam, String scene) {
-        return "Camera_ITS_" + cam + "_" + scene;
+        return "Camera_ITS_" + cam + "_" + scene + "[folded]";
     }
 
     protected boolean isFoldableDevice() {
@@ -757,5 +765,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         setContentView(R.layout.its_main);
         setInfoResources(R.string.camera_its_test, R.string.camera_its_test_info, -1);
         setPassFailButtonClickListeners();
+        // Changing folded state can incorrectly enable pass button
+        ItsTestActivity.this.getPassButton().setEnabled(false);
     }
 }

@@ -16,9 +16,12 @@
 
 package android.car.cts.powerpolicy;
 
+import com.android.tradefed.log.LogUtil;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Set;
 
 public final class PowerPolicyGroups {
     private final HashMap<String, PowerPolicyGroupDef> mPolicyGroups = new HashMap<>();
@@ -61,15 +64,35 @@ public final class PowerPolicyGroups {
     }
 
     public static PowerPolicyGroups parse(ArrayList<String> defStrs) throws Exception {
-        if ((defStrs.size() % 3) != 0) {
-            throw new IllegalArgumentException("each policy group def needs 3 lines of data");
-        }
-
         PowerPolicyGroups policyGroups = new PowerPolicyGroups();
-        for (int i = 0; i < defStrs.size(); i += 3) {
-            String groupId = defStrs.get(i).trim();
-            String waitForVHALPolicy = parsePolicyGroupDef("WaitForVHAL", defStrs.get(i + 1));
-            String onPolicy = parsePolicyGroupDef("On", defStrs.get(i + 2));
+        String groupId = null;
+        String waitForVHALPolicy = null;
+        String onPolicy = null;
+
+        String groupDefDelimiter = "-->";
+        for (int i = 0; i < defStrs.size(); ++i) {
+            String line = defStrs.get(i);
+            if (line.contains(groupDefDelimiter)) {
+                if (line.contains("WaitForVHAL")) {
+                    waitForVHALPolicy = parsePolicyGroupDef("WaitForVHAL", line);
+                } else if (line.contains("On")) {
+                    onPolicy = parsePolicyGroupDef("On", line);
+                } else {
+                    LogUtil.CLog.d("Policy group is ignored: " + line);
+                }
+            } else {
+                // Found name, if name is not empty, another group was already found
+                // add previous group to the policyGroups before proceeding with current one
+                if (groupId != null) {
+                    policyGroups.add(groupId, waitForVHALPolicy, onPolicy);
+                    waitForVHALPolicy = null;
+                    onPolicy = null;
+                }
+                groupId = line.trim();
+            }
+        }
+        // If group wasn't saved (indicated by non-null values of policies), save it
+        if (groupId != null && (waitForVHALPolicy != null || onPolicy != null)) {
             policyGroups.add(groupId, waitForVHALPolicy, onPolicy);
         }
         return policyGroups;
@@ -88,6 +111,23 @@ public final class PowerPolicyGroups {
         }
 
         return tokens[2].trim();
+    }
+
+    public Set<String> getGroupIds() {
+        return mPolicyGroups.keySet();
+    }
+
+    public PowerPolicyGroupDef getGroup(String groupId) {
+        return mPolicyGroups.get(groupId);
+    }
+
+    public boolean containsGroup(String groupId, PowerPolicyGroupDef expectedGroupDef) {
+        PowerPolicyGroupDef policyGroup = mPolicyGroups.get(groupId);
+        if (policyGroup == null) {
+            return false;
+        }
+
+        return policyGroup.equals(expectedGroupDef);
     }
 
     public static final class PowerPolicyGroupDef {

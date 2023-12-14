@@ -26,6 +26,7 @@ import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
 import android.telephony.SmsManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.test.AndroidTestCase;
 import android.text.TextUtils;
@@ -61,7 +62,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
      */
     public void testReceiveTextMessage() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
+                !packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             return;
         }
 
@@ -98,7 +100,8 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
      */
     public void testAppSpecificSmsToken() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
+                !packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             return;
         }
 
@@ -140,12 +143,19 @@ public class NoReceiveSmsPermissionTest extends AndroidTestCase {
                  getContext().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         int subscriptionId = subscription.getActiveDataSubscriptionId();
 
+        assertFalse("[RERUN] No active telephony subscription. Check there is one enabled.",
+                subscriptionId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
         // get current phone number
         String currentNumber = subscription.getPhoneNumber(subscriptionId);
 
         // fallback to getActiveSubscriptionInfo if number is empty
         if (TextUtils.isEmpty(currentNumber)) {
-            currentNumber = subscription.getActiveSubscriptionInfo(subscriptionId).getNumber();
+            SubscriptionInfo subInfo = subscription.getActiveSubscriptionInfo(subscriptionId);
+
+            assertTrue("[RERUN] No info for the active telephony subscription.",
+                    subInfo != null);
+            currentNumber = subInfo.getNumber();
         }
 
         assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",

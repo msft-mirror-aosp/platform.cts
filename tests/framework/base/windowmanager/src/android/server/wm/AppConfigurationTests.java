@@ -272,6 +272,19 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         launchActivity(activityName, WINDOWING_MODE_FULLSCREEN);
         final SizeInfo initialFullscreenSizes = getLastReportedSizesForActivity(activityName);
 
+        // Ensure the orientation configuration is different while moving the activity into split
+        // primary task later if we expected activity to be launched.
+        if (relaunch) {
+            mTaskOrganizer.registerOrganizerIfNeeded();
+            Rect primaryTaskBounds = mTaskOrganizer.getPrimaryTaskBounds();
+            if (initialFullscreenSizes.displayHeight > initialFullscreenSizes.displayWidth) {
+                primaryTaskBounds.bottom = primaryTaskBounds.width() / 2;
+            } else {
+                primaryTaskBounds.right = primaryTaskBounds.height() / 2;
+            }
+            mTaskOrganizer.setRootPrimaryTaskBounds(primaryTaskBounds);
+        }
+
         // Move the task to the primary split task.
         separateTestJournal();
         putActivityInPrimarySplit(activityName);
@@ -651,6 +664,8 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      */
     @Test
     public void testAppOrientationWhenRotating() throws Exception {
+        assumeFalse("Skipping test: square size may not have configuration change",
+                isCloseToSquareDisplay());
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
         // TODO(b/209920544) remove assumeFalse after issue fix.
@@ -895,10 +910,18 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
         assumeTrue("Skipping test: no multi-window support", supportsSplitScreenMultiWindow());
 
-        // Launch activities in split screen.
-        launchActivitiesInSplitScreen(
-                getLaunchActivityBuilder().setTargetActivity(LAUNCHING_ACTIVITY),
-                getLaunchActivityBuilder().setTargetActivity(activity));
+        // Launch activity and move it to primary split-screen.
+        launchActivityInPrimarySplit(LAUNCHING_ACTIVITY);
+
+        // Launch target activity in secondary split-screen.
+        mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
+        getLaunchActivityBuilder()
+                .setTargetActivity(activity)
+                .setUseInstrumentation()
+                .setWaitForLaunched(true)
+                .setNewTask(true)
+                .setMultipleTask(true)
+                .execute();
         mWmState.assertVisibility(activity, true /* visible */);
 
         // Rotate the device and it should always rotate regardless orientation app requested.

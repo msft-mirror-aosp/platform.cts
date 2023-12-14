@@ -995,6 +995,7 @@
         should disable battery optimizations for an app and to allow a user to remove the app from
         the exemption list.
     </string>
+    <string name="ibo_auto_power_modes_enabled">Auto power modes enabled.</string>
     <string name="ibo_test_start_unexempt_app">
         Remove the test app from the ignore battery optimizations list to begin the test. (Try going
         to the App Info page and make sure the system is optimizing battery for the app.)
@@ -1607,9 +1608,9 @@
     <string name="camera_orientation">Camera Orientation</string>
     <string name="co_info">This test verifies the orientation capabilities of
     camera preview and capture.\n - The left view shows a preview window rotated
-    clockwise by a given magnitude of degrees.\n - The right view, after taking
+    by a given magnitude of degrees.\n - The right view, after taking
     a photo, shows the captured image.\n - For each camera and orientation, both
-    the left and right views should appear rotated clockwise by the amount of
+    the left and right views should appear rotated by the amount of
     degrees specified. Choose \"Pass\" if this is the case. Otherwise, choose
     \"Fail\".\n - For front-facing cameras, the test will horizontally mirror
     the captured image prior to rotation, in attempt to make the left and right
@@ -1621,7 +1622,6 @@
     <string name="co_format_label">Oriented photo</string>
     <string name="co_camera_label">Camera:</string>
     <string name="co_orientation_label">Orientation</string>
-    <string name="co_orientation_direction_label">clockwise</string>
     <string name="co_instruction_heading_label">Instruction:</string>
     <string name="co_instruction_text_photo_label">Take a photo</string>
     <string name="co_instruction_text_passfail_label">Choose \"Pass\" if the left view is oriented the same as the right view. Otherwise, choose \"Fail\".</string>
@@ -4091,7 +4091,8 @@ You should be prompted to select credentials; choose the ones you just installed
         - You cannot share an admin configured WiFi config.\n
         - Sharing option is disabled in Settings.\n
         \n
-        Use the Back button to return to this page.
+        Use the Back button to return to this page.\n
+        NOTE: If the device does not support Wi-Fi sharing please skip this test and mark it as passing.
     </string>
     <string name="device_owner_wifi_security_level_restriction">Set WiFi security level restriction</string>
     <string name="device_owner_wifi_security_level_restriction_info">
@@ -5528,7 +5529,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_btn">Test</string>
     <string name="audio_loopback_results_text">Results...</string>
     <string name="audio_loopback_test_all_paths">Please test all supported paths.</string>
-
+    <string name="audio_loopback_test_not_required">Test not required for this device.</string>
+    <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
+    <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
     in a quiet room. Press the Start button and allow the test to proceed.</string>
 

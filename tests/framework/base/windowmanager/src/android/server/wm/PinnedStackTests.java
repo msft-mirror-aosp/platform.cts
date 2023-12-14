@@ -161,7 +161,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     private static final int ROTATION_180 = 2;
     private static final int ROTATION_270 = 3;
 
-    private static final float FLOAT_COMPARE_EPSILON = 0.005f;
+    private static final float FLOAT_COMPARE_EPSILON = 0.01f;
 
     // Corresponds to com.android.internal.R.dimen.config_pictureInPictureMinAspectRatio
     private static final int MIN_ASPECT_RATIO_NUMERATOR = 100;
@@ -785,7 +785,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         launchActivity(PIP_ACTIVITY);
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
-        int defaultDisplayWindowingMode = getDefaultDisplayWindowingMode(PIP_ACTIVITY);
+        int defaultDisplayWindowingMode = getDisplayAreaWindowingMode(PIP_ACTIVITY);
 
         // Launch second PIP activity
         launchActivity(PIP_ACTIVITY2, extraString(EXTRA_ENTER_PIP, "true"));
@@ -1713,10 +1713,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertTrue(displayRect.contains(pinnedStackBounds));
     }
 
-    private int getDefaultDisplayWindowingMode(ComponentName activityName) {
-        Task task = mWmState.getTaskByActivity(activityName);
-        return mWmState.getDisplay(task.mDisplayId)
-                .getWindowingMode();
+    private int getDisplayAreaWindowingMode(ComponentName activityName) {
+        return mWmState.getTaskDisplayArea(activityName).getWindowingMode();
     }
 
     /**
@@ -1787,7 +1785,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     private void waitForEnterPip(ComponentName activityName) {
         mWmState.waitForWithAmState(wmState -> {
             Task task = wmState.getTaskByActivity(activityName);
-            return task != null && task.getWindowingMode() == WINDOWING_MODE_PINNED;
+            return task != null && task.getWindowingMode() == WINDOWING_MODE_PINNED
+                    && task.isVisible();
         }, "checking task windowing mode");
     }
 

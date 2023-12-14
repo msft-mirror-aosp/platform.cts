@@ -16,14 +16,20 @@
 
 package android.accessibilityservice.cts;
 
+import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
+
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.accessibilityservice.cts.utils.AsyncUtils;
 import android.accessibilityservice.cts.utils.DisplayUtils;
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.text.TextUtils;
@@ -35,8 +41,6 @@ import android.widget.Button;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,6 +56,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class AccessibilityOverlayTest {
 
+    private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
     InstrumentedAccessibilityService mService;
 
@@ -69,7 +74,8 @@ public class AccessibilityOverlayTest {
 
     @BeforeClass
     public static void oneTimeSetUp() {
-        sUiAutomation = InstrumentationRegistry.getInstrumentation()
+        sInstrumentation = InstrumentationRegistry.getInstrumentation();
+        sUiAutomation = sInstrumentation
                 .getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
@@ -98,26 +104,23 @@ public class AccessibilityOverlayTest {
 
     @Test
     public void testA11yServiceShowsOverlayOnVirtualDisplay_shouldAppear() throws Exception {
+        assumeTrue(supportsMultiDisplay(sInstrumentation.getContext()));
         try (final DisplayUtils.VirtualDisplaySession displaySession =
                      new DisplayUtils.VirtualDisplaySession()) {
             final Display newDisplay = displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                     mService, false);
             final int displayId = newDisplay.getDisplayId();
             final String overlayTitle = "Overlay title on virtualDisplay";
-            // Make sure the onDisplayAdded callback of a11y framework handled by checking if the
-            // accessibilityWindowInfo list of the virtual display has been added.
-            // And the a11y default token is available after the onDisplayAdded callback handled.
-            TestUtils.waitUntil("AccessibilityWindowInfo list of the virtual display are not ready",
-                    () -> {
-                        final SparseArray<List<AccessibilityWindowInfo>> allWindows =
-                                sUiAutomation.getWindowsOnAllDisplays();
-                        return allWindows.get(displayId) != null;
-                    }
-            );
-            final Context newDisplayContext = mService.createDisplayContext(newDisplay);
+
+            // Create an initial activity window on the virtual display to ensure that
+            // AccessibilityWindowManager is tracking windows for the display.
+            launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
+                    sUiAutomation,
+                    AccessibilityWindowQueryActivity.class,
+                    displayId);
 
             sUiAutomation.executeAndWaitForEvent(() -> mService.runOnServiceSync(() -> {
-                addOverlayWindow(newDisplayContext, overlayTitle);
+                addOverlayWindow(mService.createDisplayContext(newDisplay), overlayTitle);
             }), (event) -> findOverlayWindow(displayId) != null, AsyncUtils.DEFAULT_TIMEOUT_MS);
 
             assertTrue(TextUtils.equals(findOverlayWindow(displayId).getTitle(), overlayTitle));

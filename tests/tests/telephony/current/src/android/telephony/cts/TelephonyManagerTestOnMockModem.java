@@ -82,6 +82,12 @@ public class TelephonyManagerTestOnMockModem {
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService());
+
+        final PackageManager pm = getContext().getPackageManager();
+        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            //Wait for Telephony FW and RIL initialization are done
+            TimeUnit.SECONDS.sleep(4);
+        }
     }
 
     @AfterClass
@@ -143,6 +149,10 @@ public class TelephonyManagerTestOnMockModem {
         Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
 
         return isSimHotSwapCapable;
+    }
+
+    private static boolean isWatch() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
     private static void enforceMockModemDeveloperSetting() throws Exception {
@@ -309,6 +319,7 @@ public class TelephonyManagerTestOnMockModem {
 
         assumeTrue(isSimHotSwapCapable());
 
+        long watchExtraWaitTimeSec = 20L;
         int slotId = 0;
 
         // Insert a SIM
@@ -316,6 +327,10 @@ public class TelephonyManagerTestOnMockModem {
 
         // Expect: Seaching State
         TimeUnit.SECONDS.sleep(2);
+        if (isWatch()) {
+            // It requires a longer wait time on watch.
+            TimeUnit.SECONDS.sleep(watchExtraWaitTimeSec);
+        }
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_CS),
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
@@ -326,6 +341,10 @@ public class TelephonyManagerTestOnMockModem {
 
         // Expect: Home State
         TimeUnit.SECONDS.sleep(2);
+        if (isWatch()) {
+            // It requires a longer wait time on watch.
+            TimeUnit.SECONDS.sleep(watchExtraWaitTimeSec);
+        }
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_CS),
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
@@ -336,6 +355,10 @@ public class TelephonyManagerTestOnMockModem {
 
         // Expect: Seaching State
         TimeUnit.SECONDS.sleep(2);
+        if (isWatch()) {
+            // It requires a longer wait time on watch.
+            TimeUnit.SECONDS.sleep(watchExtraWaitTimeSec);
+        }
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_CS),
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);

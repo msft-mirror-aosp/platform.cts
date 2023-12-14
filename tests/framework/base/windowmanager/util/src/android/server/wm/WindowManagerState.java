@@ -252,7 +252,8 @@ public class WindowManagerState {
     }
 
     static boolean isValidNavBarType(WindowState navState) {
-        return TYPE_NAVIGATION_BAR == navState.getType();
+        final int windowType = navState.getType();
+        return TYPE_NAVIGATION_BAR == windowType || TYPE_NAVIGATION_BAR_PANEL == windowType;
     }
 
     /**
@@ -974,6 +975,15 @@ public class WindowManagerState {
                 (ws.getName().equals(packageName) || ws.getName().startsWith(packageName + "/"))
                         && Arrays.stream(restrictToTypes).anyMatch(type -> type == ws.getType()))
                 .collect(Collectors.toList());
+    }
+
+    public boolean allActivitiesResumed() {
+        for (Task rootTask : mRootTasks) {
+            final Activity nonResumedActivity =
+                    rootTask.getActivity((a) -> !a.state.equals(STATE_RESUMED));
+            if (nonResumedActivity != null) return false;
+        }
+        return true;
     }
 
     public boolean hasNotificationShade() {

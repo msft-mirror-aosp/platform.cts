@@ -18,6 +18,8 @@ package android.app.cts;
 import static android.Manifest.permission.WRITE_MEDIA_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -26,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.DownloadManager;
@@ -55,6 +58,7 @@ import android.util.Pair;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -723,17 +727,22 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
     @Test
     public void testDownload_onMediaStoreDownloadsDeleted() throws Exception {
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        final PackageManager pm = mContext.getPackageManager();
+
+        // skip this test for automotive and wearable devices which uses FrameworkPackageStubs for
+        // a fake DocumentsUI package.
+        assumeFalse(pm.hasSystemFeature(FEATURE_AUTOMOTIVE) || pm.hasSystemFeature(FEATURE_WATCH));
+
+        // setup for activity
+        GetResultActivity activity = setUpForActivity();
+        assumeNotNull(activity);
+
         // prepare file
         File file = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS), "cts" + System.nanoTime() + ".mp3");
         try {
             stageFile("testmp3.mp3", file);
             Uri mediaStoreUri = MediaStore.scanFile(mContext.getContentResolver(), file);
-
-            // setup for activity
-            GetResultActivity activity = setUpForActivity();
 
             // call activity as we want uri permission grant on DownloadStorageProvider Uri
             final Intent intent = new Intent();
@@ -774,12 +783,17 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         }
     }
 
+    @Nullable
     private GetResultActivity setUpForActivity() {
         final PackageManager pm = mContext.getPackageManager();
         final Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
         final ResolveInfo ri = pm.resolveActivity(intent, 0);
+        if (ri == null || ri.activityInfo == null) {
+            return null;
+        }
+
         mDocumentsUiPackageId = ri.activityInfo.packageName;
 
         final Intent intent2 = new Intent(mContext, GetResultActivity.class);

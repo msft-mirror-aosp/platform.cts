@@ -77,6 +77,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     ProgressBar mProgressBar;
     int mMaxLevel;
 
+    TextView mTestInstructions;
+
     private OnBtnClickListener mBtnClickListener = new OnBtnClickListener();
     private Button[] mStartButtons = new Button[NUM_TEST_ROUTES];
 
@@ -99,6 +101,10 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     // Useful info
     private boolean mSupportsMMAP = AudioUtils.isMMapSupported();
     private boolean mSupportsMMAPExclusive = AudioUtils.isMMapExclusiveSupported();
+
+    private boolean mIsHandheld;
+    private int     mSpeakerDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
+    private int     mMicDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
 
     // Peripheral(s)
     private static final int NUM_TEST_ROUTES =       3;
@@ -224,7 +230,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         private static final String KEY_IS_PERIPHERAL_ATTACHED = "is_peripheral_attached";
         private static final String KEY_INPUT_PERIPHERAL_NAME = "input_peripheral";
         private static final String KEY_OUTPUT_PERIPHERAL_NAME = "output_peripheral";
-        private static final String KEY_TEST_PERIPHERAL = "test_peripheral";
+        private static final String KEY_TEST_PERIPHERAL_NAME = "test_peripheral_name";
 
         void recordTestResults(CtsVerifierReportLog reportLog) {
             reportLog.addValue(
@@ -252,7 +258,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     ResultUnit.NONE);
 
             reportLog.addValue(
-                    KEY_TEST_PERIPHERAL,
+                    KEY_TEST_PERIPHERAL_NAME,
                     mDeviceName,
                     ResultType.NEUTRAL,
                     ResultUnit.NONE);
@@ -266,7 +272,6 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         setContentView(R.layout.audio_loopback_latency_activity);
 
         setPassFailButtonClickListeners();
-        getPassButton().setEnabled(false);
         setInfoResources(R.string.audio_loopback_latency_test, R.string.audio_loopback_info, -1);
 
         mRequireReportLogToPass = true;
@@ -276,6 +281,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mClaimsProAudio = AudioSystemFlags.claimsProAudio(this);
         mClaimsLowLatency = AudioSystemFlags.claimsLowLatencyAudio(this);
         mClaimsMediaPerformance = Build.VERSION.MEDIA_PERFORMANCE_CLASS != 0;
+        mIsHandheld = AudioSystemFlags.isHandheld(this);
 
         // Setup test specifications
         double mustLatency;
@@ -340,20 +346,38 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mStartButtons[TESTROUTE_USB] = (Button) findViewById(R.id.audio_loopback_usbpath_btn);
         mStartButtons[TESTROUTE_USB].setOnClickListener(mBtnClickListener);
 
-        mAudioManager = getSystemService(AudioManager.class);
+        mTestInstructions = (TextView) findViewById(R.id.audio_loopback_instructions);
 
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mAudioManager = getSystemService(AudioManager.class);
+        scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
 
         connectLoopbackUI();
 
-        enableStartButtons(true);
+        if (mustRunTest()) {
+            getPassButton().setEnabled(false);
+            enableStartButtons(true);
+        } else {
+            getPassButton().setEnabled(isReportLogOkToPass());
+            enableStartButtons(false);
+        }
 
+        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+
+        showTestInstructions();
         handleTestCompletion(false);
     }
 
     //
     // UI State
     //
+    private void showTestInstructions() {
+        if (mustRunTest()) {
+            mTestInstructions.setText(getString(R.string.audio_loopback_test_all_paths));
+        } else {
+            mTestInstructions.setText(getString(R.string.audio_loopback_test_not_required));
+        }
+    }
+
     private void enableStartButtons(boolean enable) {
         if (enable) {
             for (int routeId = TESTROUTE_DEVICE; routeId <= TESTROUTE_USB; routeId++) {
@@ -414,19 +438,19 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         clearDeviceIds();
         clearDeviceConnected();
 
+        mSpeakerDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
+        mMicDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
         for (AudioDeviceInfo devInfo : devices) {
             switch (devInfo.getType()) {
                 // TESTROUTE_DEVICE (i.e. Speaker & Mic)
+                // This needs to be handled differently. The other devices can be assumed
+                // to contain both input & output devices in the same type.
+                // For built-in we need to see both TYPES to be sure to have both input & output.
                 case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+                    mSpeakerDeviceId = devInfo.getId();
+                    break;
                 case AudioDeviceInfo.TYPE_BUILTIN_MIC:
-                    if (devInfo.isSink()) {
-                        mTestSpecs[TESTROUTE_DEVICE].mOutputDeviceId = devInfo.getId();
-                    } else if (devInfo.isSource()) {
-                        mTestSpecs[TESTROUTE_DEVICE].mInputDeviceId = devInfo.getId();
-                    }
-                    mTestSpecs[TESTROUTE_DEVICE].mRouteAvailable = true;
-                    mTestSpecs[TESTROUTE_DEVICE].mRouteConnected = true;
-                    mTestSpecs[TESTROUTE_DEVICE].mDeviceName = devInfo.getProductName().toString();
+                    mMicDeviceId = devInfo.getId();
                     break;
 
                 // TESTROUTE_ANALOG_JACK
@@ -455,9 +479,19 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     mTestSpecs[TESTROUTE_USB].mRouteConnected = true;
                     mTestSpecs[TESTROUTE_USB].mDeviceName = devInfo.getProductName().toString();
             }
-
-            enableStartButtons(true);
         }
+
+        // do we have BOTH a Speaker and Mic?
+        if (hasInternalPath()) {
+            mTestSpecs[TESTROUTE_DEVICE].mOutputDeviceId = mSpeakerDeviceId;
+            mTestSpecs[TESTROUTE_DEVICE].mInputDeviceId = mMicDeviceId;
+            mTestSpecs[TESTROUTE_DEVICE].mRouteAvailable = true;
+            mTestSpecs[TESTROUTE_DEVICE].mRouteConnected = true;
+            mTestSpecs[TESTROUTE_DEVICE].mDeviceName =
+                    getResources().getString(R.string.audio_loopback_test_internal_devices);
+        }
+
+        enableStartButtons(mustRunTest());
     }
 
     private class ConnectListener extends AudioDeviceCallback {
@@ -507,6 +541,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     }
 
     @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
     public String getReportFileName() { return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME; }
 
     @Override
@@ -524,7 +563,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     private void recordRouteResults(int routeIndex) {
         if (mTestSpecs[routeIndex].mTestRun) {
-            CtsVerifierReportLog reportLog = newReportLog();
+            CtsVerifierReportLog reportLog = getReportLog();
 
             int audioLevel = mAudioLevelSeekbar.getProgress();
             reportLog.addValue(
@@ -571,8 +610,20 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     @Override
     public void recordTestResults() {
+        // Look for a valid route with the minimum latency.
+        int bestRoute = -1;
+        double minLatency = Double.MAX_VALUE;
         for (int route = 0; route < NUM_TEST_ROUTES; route++) {
-            recordRouteResults(route);
+            if (mTestSpecs[route].isMeasurementValid()) {
+                if (mTestSpecs[route].mMeanLatencyMS < minLatency) {
+                    bestRoute = route;
+                    minLatency = mTestSpecs[route].mMeanLatencyMS;
+                }
+            }
+        }
+        // Record a single result.
+        if (bestRoute >= 0) {
+            recordRouteResults(bestRoute);
         }
     }
 
@@ -646,6 +697,15 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         }
     }
 
+    private boolean mustRunTest() {
+        return mIsHandheld  && hasInternalPath();
+    }
+
+    boolean hasInternalPath() {
+        return mSpeakerDeviceId != AudioDeviceInfo.TYPE_UNKNOWN
+                && mMicDeviceId != AudioDeviceInfo.TYPE_UNKNOWN;
+    }
+
     private void handleTestCompletion(boolean showResult) {
         TestSpec testSpec = mTestSpecs[mTestRoute];
         testSpec.handleTestCompletion();
@@ -662,15 +722,16 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mResultsText[mTestRoute].setText(testSpec.getResultString());
 
         LoopbackLatencyRequirements requirements = new LoopbackLatencyRequirements();
-        boolean pass = isReportLogOkToPass()
-                && requirements.evaluate(mClaimsProAudio,
+        boolean pass = !mustRunTest() // automatic pass
+                || (isReportLogOkToPass()
+                    && requirements.evaluate(mClaimsProAudio,
                         Build.VERSION.MEDIA_PERFORMANCE_CLASS,
                         mTestSpecs[TESTROUTE_DEVICE].isMeasurementValid()
                                 ? mTestSpecs[TESTROUTE_DEVICE].mMeanLatencyMS : 0.0,
                         mTestSpecs[TESTROUTE_ANALOG_JACK].isMeasurementValid()
                                 ? mTestSpecs[TESTROUTE_ANALOG_JACK].mMeanLatencyMS :  0.0,
                         mTestSpecs[TESTROUTE_USB].isMeasurementValid()
-                                ? mTestSpecs[TESTROUTE_USB].mMeanLatencyMS : 0.0);
+                                ? mTestSpecs[TESTROUTE_USB].mMeanLatencyMS : 0.0));
 
         getPassButton().setEnabled(pass);
 
@@ -678,14 +739,18 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         if (!isReportLogOkToPass()) {
             sb.append(getResources().getString(R.string.audio_general_reportlogtest) + "\n");
         }
-        sb.append(requirements.getResultsString());
+        if (!mustRunTest()) {
+            sb.append(getResources().getString(R.string.audio_loopback_test_non_handheld));
+        } else {
+            sb.append(requirements.getResultsString());
+        }
         if (showResult) {
             sb.append("\n" + (pass ? mPassString : mFailString));
         }
         mTestStatusText.setText(sb.toString());
 
         showWait(false);
-        enableStartButtons(true);
+        enableStartButtons(mustRunTest());
     }
 
     /**
