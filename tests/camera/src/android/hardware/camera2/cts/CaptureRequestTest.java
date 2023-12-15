@@ -44,6 +44,7 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.Image;
 import android.os.Build;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeFull;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -108,10 +109,14 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     private static final float FOCUS_DISTANCE_ERROR_PERCENT_UNCALIBRATED = 0.25f;
     // 10 percent error margin for approximate device
     private static final float FOCUS_DISTANCE_ERROR_PERCENT_APPROXIMATE = 0.10f;
+    // 1 percent boundary margin for focus range verify
+    private static final float FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT = 0.01f;
     private static final int ANTI_FLICKERING_50HZ = 1;
     private static final int ANTI_FLICKERING_60HZ = 2;
     // 5 percent error margin for resulting crop regions
     private static final float CROP_REGION_ERROR_PERCENT_DELTA = 0.05f;
+    private static final float ZOOM_RATIO_ERROR_PERCENT_DELTA = 0.05f;
+
     // 1 percent error margin for centering the crop region
     private static final float CROP_REGION_ERROR_PERCENT_CENTERED = 0.01f;
     private static final float DYNAMIC_VS_FIXED_BLK_WH_LVL_ERROR_MARGIN = 0.25f;
@@ -677,6 +682,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Test focus distance control.
      */
     @Test
+    @AppModeFull(reason = "PropertyUtil methods don't work for instant apps")
     public void testFocusDistanceControl() throws Exception {
         for (String id : mCameraIdsUnderTest) {
             try {
@@ -862,9 +868,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Camera API requires that camera timestamps monotonically increase.
      */
     @Test
+    @AppModeFull(reason = "PropertyUtil methods don't work for instant apps")
     public void testZoomTimestampIncrease() throws Exception {
-        if (PropertyUtil.getVendorApiLevel() <= Build.VERSION_CODES.TIRAMISU) {
-            // Only run test for Vendor API level U or higher
+        if (PropertyUtil.getVendorApiLevel() <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Only run test for Vendor API level V or higher
             return;
         }
 
@@ -1229,10 +1236,15 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
         Pair<Float, Float> focusRange = result.get(CaptureResult.LENS_FOCUS_RANGE);
         if (focusRange != null) {
+            // Prevent differences in floating point precision between manual request and HAL
+            // result, some margin need to be considered for focusRange.near and far check
+            float focusRangeNear = focusRange.first  * (1.0f + FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT);
+            float focusRangeFar  = focusRange.second * (1.0f - FOCUS_RANGE_BOUNDARY_MARGIN_PERCENT);
+
             mCollector.expectLessOrEqual("Focus distance should be less than or equal to "
-                    + "FOCUS_RANGE.near", focusRange.first, focusDistance);
+                    + "FOCUS_RANGE.near (with margin)", focusRangeNear, focusDistance);
             mCollector.expectGreaterOrEqual("Focus distance should be greater than or equal to "
-                    + "FOCUS_RANGE.far", focusRange.second, focusDistance);
+                    + "FOCUS_RANGE.far (with margin)", focusRangeFar, focusDistance);
         } else if (VERBOSE) {
             Log.v(TAG, "FOCUS_RANGE undefined, skipping verification");
         }
@@ -3203,8 +3215,9 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
                 verifyCaptureResultForKey(CaptureResult.CONTROL_EXTENDED_SCENE_MODE,
                         mode, listener, NUM_FRAMES_VERIFIED);
+                float zoomRatioDelta = ZOOM_RATIO_ERROR_PERCENT_DELTA * ratio;
                 verifyCaptureResultForKey(CaptureResult.CONTROL_ZOOM_RATIO,
-                        ratio, listener, NUM_FRAMES_VERIFIED);
+                        ratio, listener, NUM_FRAMES_VERIFIED, zoomRatioDelta);
             }
         }
     }
@@ -3216,6 +3229,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 CameraMetadata.CONTROL_AUTOFRAMING_ON};
         final int zoomSteps = 5;
         final float zoomErrorMargin = 0.05f;
+        final int kMaxNumFrames = 200;
         Size maxPreviewSize = mOrderedPreviewSizes.get(0); // Max preview size.
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -3246,17 +3260,34 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                         CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
 
                 if (mode == CameraMetadata.CONTROL_AUTOFRAMING_ON) {
-                    if (expectedZoomRatio == 0.0f) {
-                        expectedZoomRatio = resultZoomRatio;
-                    }
-                    assertTrue("Autoframing state should be FRAMING or CONVERGED when AUTOFRAMING"
-                            + "is ON",
+                    int numFrames = 0;
+                    while (numFrames < kMaxNumFrames) {
+                        result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                        autoframingState = getValueNotNull(result,
+                                CaptureResult.CONTROL_AUTOFRAMING_STATE);
+                        assertTrue("Autoframing state should be FRAMING or CONVERGED when "
+                            + "AUTOFRAMING is ON",
                             autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_FRAMING
                                     || autoframingState
                                             == CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED);
-                    assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
+
+                        assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
                             videoStabilizationMode
                                     == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+
+                        resultZoomRatio = getValueNotNull(result, CaptureResult.CONTROL_ZOOM_RATIO);
+                        if (autoframingState ==
+                                CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED) {
+                            break;
+                        }
+                        numFrames++;
+                    }
+                    assertTrue("Autoframing state didn't converge within " + kMaxNumFrames
+                            + " frames", numFrames < kMaxNumFrames);
+
+                    if (expectedZoomRatio == 0.0f) {
+                        expectedZoomRatio = resultZoomRatio;
+                    }
                 } else {
                     expectedZoomRatio = testZoomRatio;
                     assertTrue("Autoframing state should be INACTIVE when AUTOFRAMING is OFF",
@@ -3473,6 +3504,33 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 frameDuration >= expTime);
 
         validatePipelineDepth(result);
+    }
+
+    /**
+     * Basic verification for the control mode capture result.
+     *
+     * @param key The capture result key to be verified against
+     * @param requestMode The request mode for this result
+     * @param listener The capture listener to get capture results
+     * @param numFramesVerified The number of capture results to be verified
+     * @param threshold The threshold by which the request and result keys can differ
+     */
+    private void verifyCaptureResultForKey(CaptureResult.Key<Float> key, float requestMode,
+            SimpleCaptureCallback listener, int numFramesVerified, float threshold) {
+        for (int i = 0; i < numFramesVerified; i++) {
+            CaptureResult result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+            validatePipelineDepth(result);
+            float resultMode = getValueNotNull(result, key);
+            if (VERBOSE) {
+                Log.v(TAG, "Expect value: " + requestMode + " result value: "
+                        + resultMode + " threshold " + threshold);
+            }
+            // Check that the request and result are within the given threshold of each other.
+            // (expectEquals isn't the most intuitive function name.)
+            mCollector.expectEquals("Key " + key.getName() + " request: " + requestMode +
+                    " result: " + resultMode + " not within threshold " + threshold +
+                    " of each other", requestMode, resultMode, threshold);
+        }
     }
 
     /**

@@ -35,7 +35,9 @@ import android.media.cts.MediaTestBase;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,20 +56,28 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 @MediaHeavyPresubmitTest
 @AppModeFull(reason = "There should be no instant apps specific behavior related to decoders")
-// BUFFER_FLAG_DECODE_ONLY was added in Android U.
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
 public class DecodeOnlyTest extends MediaTestBase {
+    public static final boolean WAS_LAUNCHED_ON_U_OR_LATER =
+            SystemProperties.getInt("ro.product.first_api_level",
+                                    Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
     private static final String MEDIA_DIR_STRING = WorkDir.getMediaDirString();
     private static final String HEVC_VIDEO =
             "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv";
@@ -98,36 +108,54 @@ public class DecodeOnlyTest extends MediaTestBase {
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOnAvc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(AVC_VIDEO, true);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOnVp9() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(VP9_VIDEO, true);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOnHevc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(HEVC_VIDEO, true);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOffAvc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(AVC_VIDEO, false);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOffVp9() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(VP9_VIDEO, false);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledPerfectSeekInitialPeekOffHevc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledPerfectSeek(HEVC_VIDEO, false);
     }
 
@@ -137,18 +165,27 @@ public class DecodeOnlyTest extends MediaTestBase {
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledTrickPlayHevc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledTrickPlay(HEVC_VIDEO);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledTrickPlayAvc() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledTrickPlay(AVC_VIDEO);
     }
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testTunneledTrickPlayVp9() throws Exception {
+        // Tunnel mode requires vendor support of the DECODE_ONLY feature
+        Assume.assumeTrue("First API level is not Android 14 or later.",
+                WAS_LAUNCHED_ON_U_OR_LATER);
         testTunneledTrickPlay(VP9_VIDEO);
     }
 
@@ -170,7 +207,6 @@ public class DecodeOnlyTest extends MediaTestBase {
         testNonTunneledTrickPlay(VP9_VIDEO);
     }
 
-
     private void testNonTunneledTrickPlay(String fileName) throws Exception {
         Preconditions.assertTestFileExists(MEDIA_DIR_STRING + fileName);
         // create the video extractor
@@ -184,7 +220,6 @@ public class DecodeOnlyTest extends MediaTestBase {
         MediaFormat videoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
         String mime = videoFormat.getString(MediaFormat.KEY_MIME);
         MediaCodec videoCodec = MediaCodec.createDecoderByType(mime);
-        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
 
         AtomicBoolean done = new AtomicBoolean(false);
         List<Long> expectedPresentationTimes = new ArrayList<>();
@@ -206,7 +241,7 @@ public class DecodeOnlyTest extends MediaTestBase {
                     ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
                     int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
                     long presentationTime = videoExtractor.getSampleTime();
-                    int flags = videoExtractor.getSampleFlags();
+                    int flags = 0;
                     if (sampleSize < 0) {
                         flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                         sampleSize = 0;
@@ -250,6 +285,7 @@ public class DecodeOnlyTest extends MediaTestBase {
             }
         });
 
+        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
         // start the video the codec with track selected
         videoCodec.start();
 
@@ -289,7 +325,6 @@ public class DecodeOnlyTest extends MediaTestBase {
                 codecName != null);
         videoFormat.setInteger(MediaFormat.KEY_AUDIO_SESSION_ID, audioSessionId);
         MediaCodec videoCodec = MediaCodec.createByCodecName(codecName);
-        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
 
         // create the audio extractor
         MediaExtractor audioExtractor = createMediaExtractor(fileName);
@@ -302,7 +337,6 @@ public class DecodeOnlyTest extends MediaTestBase {
         MediaFormat audioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
         String mime = audioFormat.getString(MediaFormat.KEY_MIME);
         MediaCodec audioCodec = MediaCodec.createDecoderByType(mime);
-        audioCodec.configure(audioFormat, null, null, 0);
 
         // audio track used by audio codec
         AudioTrack audioTrack = createAudioTrack(audioFormat, audioSessionId);
@@ -322,7 +356,7 @@ public class DecodeOnlyTest extends MediaTestBase {
                 ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
                 int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
                 long presentationTime = videoExtractor.getSampleTime();
-                int flags = videoExtractor.getSampleFlags();
+                int flags = 0;
                 if (sampleSize < 0) {
                     flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                     sampleSize = 0;
@@ -354,9 +388,15 @@ public class DecodeOnlyTest extends MediaTestBase {
 
             }
         });
-
+        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
         AtomicBoolean done = new AtomicBoolean(false);
-        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done));
+        // Since data is written to AudioTrack in a blocking manner, run it in a separate thread to
+        // not block other operations.
+        HandlerThread audioThread = new HandlerThread("audioThread");
+        audioThread.start();
+        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done),
+                new Handler(audioThread.getLooper()));
+        audioCodec.configure(audioFormat, null, null, 0);
 
         List<Long> renderedPresentationTimes = new ArrayList<>();
 
@@ -424,7 +464,6 @@ public class DecodeOnlyTest extends MediaTestBase {
                 codecName != null);
         videoFormat.setInteger(MediaFormat.KEY_AUDIO_SESSION_ID, audioSessionId);
         MediaCodec videoCodec = MediaCodec.createByCodecName(codecName);
-        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
 
         // create the audio extractor
         MediaExtractor audioExtractor = createMediaExtractor(fileName);
@@ -437,50 +476,77 @@ public class DecodeOnlyTest extends MediaTestBase {
         MediaFormat audioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
         String mime = audioFormat.getString(MediaFormat.KEY_MIME);
         MediaCodec audioCodec = MediaCodec.createDecoderByType(mime);
-        audioCodec.configure(audioFormat, null, null, 0);
 
         // audio track used by audio codec
         AudioTrack audioTrack = createAudioTrack(audioFormat, audioSessionId);
 
         // Frames at 2s of each file are not key frame
         AtomicLong seekTime = new AtomicLong(2000 * 1000);
-        boolean isPeeking = setKeyTunnelPeek(videoCodec, initialPeek ? 1 : 0);
         videoExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         audioExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 
         List<Long> expectedPresentationTimes = new ArrayList<>();
-        AtomicBoolean done = new AtomicBoolean(false);
+        // Setting it to true so that buffers are not queued in the beginning.
+        AtomicBoolean done = new AtomicBoolean(true);
         AtomicBoolean hasDecodeOnlyFrames = new AtomicBoolean(false);
 
-        videoCodec.setCallback(new MediaCodec.Callback() {
-            // before queueing a frame, check if it is the last frame and set the EOS flag
-            // to the frame if that's the case. If the frame is to be only decoded
-            // (any frame before the seek timestamp), then set the DECODE_ONLY flag to the frame.
-            // Only frames not tagged with EOS or DECODE_ONLY are expected to be rendered and added
-            // to expectedPresentationTimes
+        class VideoAsyncHandler extends MediaCodec.Callback {
+            private final Queue<Integer> mAvailableInputIndices = new ArrayDeque<>();
+            private final Lock mLock = new ReentrantLock();
+
+            private void queueInput(MediaCodec codec, int index) {
+                ByteBuffer inputBuffer = codec.getInputBuffer(index);
+                int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
+                long presentationTime = videoExtractor.getSampleTime();
+                int flags = 0;
+                if (sampleSize < 0) {
+                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                    sampleSize = 0;
+                } else if (presentationTime < seekTime.get()) {
+                    flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
+                    hasDecodeOnlyFrames.set(true);
+                } else {
+                    expectedPresentationTimes.add(presentationTime);
+                }
+                codec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
+                videoExtractor.advance();
+            }
+
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
-                if (!done.get()) {
-                    ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
-                    int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
-                    long presentationTime = videoExtractor.getSampleTime();
-                    int flags = videoExtractor.getSampleFlags();
-                    if (sampleSize < 0) {
-                        flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                        sampleSize = 0;
-                    } else if (presentationTime < seekTime.get()) {
-                        flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
-                        hasDecodeOnlyFrames.set(true);
+                mLock.lock();
+                try {
+                    if (!done.get()) {
+                        queueInput(codec, index);
                     } else {
-                        expectedPresentationTimes.add(presentationTime);
+                        mAvailableInputIndices.offer(index);
                     }
-                    videoCodec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
-                    videoExtractor.advance();
+                } finally {
+                    mLock.unlock();
                 }
             }
 
-            // nothing to do here - in tunneled mode, the frames are rendered directly by the
-            // hardware, they are not sent back to the codec for extra processing
+            public void startProcess() {
+                mLock.lock();
+                try {
+                    done.set(false);
+                    while (!mAvailableInputIndices.isEmpty()) {
+                        queueInput(videoCodec, mAvailableInputIndices.poll());
+                    }
+                } finally {
+                    mLock.unlock();
+                }
+            }
+
+            public void clearBufferQueue() {
+                mLock.lock();
+                try {
+                    mAvailableInputIndices.clear();
+                } finally {
+                    mLock.unlock();
+                }
+            }
+
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index,
                     MediaCodec.BufferInfo info) {
@@ -496,9 +562,18 @@ public class DecodeOnlyTest extends MediaTestBase {
             public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
 
             }
-        });
+        }
 
-        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done));
+        VideoAsyncHandler videoAsyncHandler = new VideoAsyncHandler();
+        videoCodec.setCallback(videoAsyncHandler);
+        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
+        // Since data is written to AudioTrack in a blocking manner, run it in a separate thread to
+        // not block other operations.
+        HandlerThread audioThread = new HandlerThread("audioThread");
+        audioThread.start();
+        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done),
+                new Handler(audioThread.getLooper()));
+        audioCodec.configure(audioFormat, null, null, 0);
 
         List<Long> renderedPresentationTimes = new ArrayList<>();
         // play for 500ms
@@ -518,6 +593,10 @@ public class DecodeOnlyTest extends MediaTestBase {
         // start media playback
         videoCodec.start();
         audioCodec.start();
+        // Set peeking value after MediaCodec.start() is called.
+        boolean isPeeking = setKeyTunnelPeek(videoCodec, initialPeek ? 1 : 0);
+        // start to queue video frames
+        videoAsyncHandler.startProcess();
 
         // When video codecs are started, large chunks of contiguous physical memory need to be
         // allocated, which, on low-RAM devices, can trigger high CPU usage for moving memory
@@ -564,8 +643,7 @@ public class DecodeOnlyTest extends MediaTestBase {
         Thread.sleep(500);
         videoCodec.flush();
         audioCodec.flush();
-        // Set peek on when it was off, and set it off when it was on.
-        isPeeking = setKeyTunnelPeek(videoCodec, isPeeking ? 0 : 1);
+        videoAsyncHandler.clearBufferQueue();
 
         // Frames at 7s of each file are not key frame, and there is non-zero key frame before it
         seekTime.set(7000 * 1000);
@@ -587,12 +665,14 @@ public class DecodeOnlyTest extends MediaTestBase {
         }, new Handler(Looper.getMainLooper()));
 
         // Restart media playback
-        done.set(false);
         firstTunnelFrameReady.set(false);
         videoCodec.start();
         audioCodec.start();
+        // Set peek on when it was off, and set it off when it was on.
+        isPeeking = setKeyTunnelPeek(videoCodec, isPeeking ? 0 : 1);
+        videoAsyncHandler.startProcess();
         sleepUntil(firstTunnelFrameReady::get, Duration.ofSeconds(firstFrameReadyTimeoutSeconds));
-        assertTrue(String.format("onFirstTunnelFrameReady not called within %d milliseconds",
+        assertTrue(String.format("onFirstTunnelFrameReady not called within %d seconds",
                 firstFrameReadyTimeoutSeconds), firstTunnelFrameReady.get());
 
         // Sleep for 1s here to ensure that either (1) when peek is on, high-latency display
@@ -717,7 +797,7 @@ public class DecodeOnlyTest extends MediaTestBase {
             ByteBuffer audioInputBuffer = mAudioCodec.getInputBuffer(index);
             int audioSampleSize = mAudioExtractor.readSampleData(audioInputBuffer, 0);
             long presentationTime = mAudioExtractor.getSampleTime();
-            int flags = mAudioExtractor.getSampleFlags();
+            int flags = 0;
             if (audioSampleSize < 0) {
                 flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                 audioSampleSize = 0;
@@ -735,9 +815,30 @@ public class DecodeOnlyTest extends MediaTestBase {
                 byte[] audioArray = new byte[info.size];
                 outputBuffer.get(audioArray);
                 outputBuffer.clear();
-                mAudioTrack.write(ByteBuffer.wrap(audioArray), info.size,
-                        AudioTrack.WRITE_BLOCKING,
-                        info.presentationTimeUs * 1000);
+                ByteBuffer audioData = ByteBuffer.wrap(audioArray);
+                int writtenSize = 0;
+                // This is a workaround, just to avoid blocking audio track write and codec
+                // crashes caused by invalid index after audio track pause and codec flush.
+                // b/291959069 to fix the outstanding callback issue.
+                while (!mDone.get()) {
+                    int written = mAudioTrack.write(audioData, info.size - writtenSize,
+                            AudioTrack.WRITE_BLOCKING, info.presentationTimeUs * 1000);
+                    if (written >= 0) {
+                        writtenSize += written;
+                        if (writtenSize >= info.size) {
+                            break;
+                        }
+                        // When audio track is not in playing state, the write operation does not
+                        // block in WRITE_BLOCKING mode. And when audio track is full, the audio
+                        // data can not be fully written. Must sleep here to wait for free spaces.
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException ignored) {
+                        }
+                    } else {
+                        Assert.fail("AudioTrack write failure.");
+                    }
+                }
                 mAudioCodec.releaseOutputBuffer(index, false);
             }
         }
