@@ -1090,6 +1090,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
              getInfoVinVerifier(),
              getInfoMakeVerifier(),
              getInfoModelVerifier(),
+             getInfoModelYearVerifier(),
              getInfoFuelCapacityVerifier(),
              getInfoFuelTypeVerifier(),
              getInfoEvBatteryCapacityVerifier(),
@@ -1498,8 +1499,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(possibleEnumValues)
                 .setDependentOnProperty(VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED,
-                        ImmutableSet.of(Car.PERMISSION_READ_ADAS_SETTINGS,
-                                Car.PERMISSION_CONTROL_ADAS_SETTINGS))
+                        ImmutableSet.of(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS,
+                                Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_STATES)
                 .build();
@@ -1529,8 +1530,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(possibleEnumValues)
                 .setDependentOnProperty(VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED,
-                        ImmutableSet.of(Car.PERMISSION_READ_ADAS_SETTINGS,
-                                Car.PERMISSION_CONTROL_ADAS_SETTINGS))
+                        ImmutableSet.of(Car.PERMISSION_READ_DRIVER_MONITORING_SETTINGS,
+                                Car.PERMISSION_CONTROL_DRIVER_MONITORING_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_DRIVER_MONITORING_STATES)
                 .build();
@@ -1708,8 +1709,24 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    public void testInfoModelYearIfSupported() {
+    public void testInfoModelIfSupported() {
         getInfoModelVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getInfoModelYearVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_MODEL_YEAR,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer.class, mCarPropertyManager)
+                .addReadPermission(Car.PERMISSION_CAR_INFO)
+                .build();
+    }
+
+    @Test
+    public void testInfoModelYearIfSupported() {
+        getInfoModelYearVerifier().verify();
     }
 
     private VehiclePropertyVerifier<Float> getInfoFuelCapacityVerifier() {
@@ -3343,6 +3360,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_ENERGY)
+                .addReadPermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
                 .build()
                 .verify();

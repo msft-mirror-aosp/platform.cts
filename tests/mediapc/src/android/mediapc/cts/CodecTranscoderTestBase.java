@@ -16,6 +16,9 @@
 
 package android.mediapc.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
+import static android.mediapc.cts.CodecTestBase.areFormatsSupported;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,6 +32,8 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 public class CodecTranscoderTestBase {
@@ -39,6 +44,7 @@ public class CodecTranscoderTestBase {
     String mTestFile;
     int mBitrate;
     int mFrameRate;
+    boolean mUseHighBitDepth;
     MediaExtractor mExtractor;
     int mMaxBFrames;
     int mLatency;
@@ -59,11 +65,13 @@ public class CodecTranscoderTestBase {
     int mDecOutputCount;
     int mEncOutputCount;
 
-    CodecTranscoderTestBase(String mime, String testfile, int bitrate, int frameRate) {
+    CodecTranscoderTestBase(String mime, String testfile, int bitrate, int frameRate,
+            boolean useHighBitDepth) {
         mMime = mime;
         mTestFile = testfile;
         mBitrate = bitrate;
         mFrameRate = frameRate;
+        mUseHighBitDepth = useHighBitDepth;
         mMaxBFrames = 0;
         mLatency = mMaxBFrames;
         mReviseLatency = false;
@@ -349,6 +357,10 @@ public class CodecTranscoderTestBase {
         encoderFormat.setInteger(MediaFormat.KEY_MAX_B_FRAMES, mMaxBFrames);
         encoderFormat.setInteger(MediaFormat.KEY_PRIORITY,
                 decoderFormat.getInteger(MediaFormat.KEY_PRIORITY));
+        if (mUseHighBitDepth) {
+            encoderFormat.setInteger(MediaFormat.KEY_PROFILE,
+                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mMime))[0]);
+        }
         return encoderFormat;
     }
 }
@@ -364,8 +376,8 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
     private final boolean mIsAsync;
 
     Transcode(String mime, String testFile, String decoderName, String encoderName,
-            boolean isAsync) {
-        super(mime, testFile, 3000000, 30);
+            boolean isAsync, boolean useHighBitDepth) {
+        super(mime, testFile, 3000000, 30, useHighBitDepth);
         mDecoderName = decoderName;
         mEncoderName = encoderName;
         mIsAsync = isAsync;
@@ -373,6 +385,13 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
 
     public Double doTranscode() throws Exception {
         MediaFormat decoderFormat = setUpSource(mTestFile);
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        formats.add(decoderFormat);
+        // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
+        if (!areFormatsSupported(mDecoderName, formats)) {
+            return (Double) 0.0;
+        }
+
         mDecoder = MediaCodec.createByCodecName(mDecoderName);
         MediaFormat encoderFormat = setUpEncoderFormat(decoderFormat);
         mEncoder = MediaCodec.createByCodecName(mEncoderName);
@@ -415,7 +434,7 @@ class TranscodeLoad extends Transcode {
 
     TranscodeLoad(String mime, String testFile, String decoderName, String encoderName,
             LoadStatus loadStatus) {
-        super(mime, testFile, decoderName, encoderName, false);
+        super(mime, testFile, decoderName, encoderName, false, false);
         mLoadStatus = loadStatus;
         mMaxPts = 0;
         mBasePts = 0;

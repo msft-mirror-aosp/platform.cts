@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.job.JobParameters;
@@ -36,7 +37,9 @@ import android.content.pm.ApplicationInfo;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.ParcelFileDescriptor;
+import android.os.PowerManager;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -45,6 +48,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.compatibility.common.util.CallbackAsserter;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -72,11 +77,13 @@ public class UserInitiatedJobTest {
     private static final int JOB_ID = UserInitiatedJobTest.class.hashCode();
 
     private Context mContext;
+    private PowerManager mPowerManager;
     private UiDevice mUiDevice;
     private TestAppInterface mTestAppInterface;
     private NetworkingHelper mNetworkingHelper;
 
     private String mInitialActivityManagerConstants;
+    private boolean mInitialLowPowerStandbyEnabled;
 
     @Before
     public void setUp() throws Exception {
@@ -95,6 +102,13 @@ public class UserInitiatedJobTest {
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.ACTIVITY_MANAGER_CONSTANTS, "background_settle_time=0");
         SystemUtil.runShellCommand("am set-deterministic-uid-idle true");
+
+        mPowerManager = mContext.getSystemService(PowerManager.class);
+        mInitialLowPowerStandbyEnabled = mPowerManager.isLowPowerStandbyEnabled();
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
+            mPowerManager.setLowPowerStandbyEnabled(false);
+        }
     }
 
     @After
@@ -104,6 +118,10 @@ public class UserInitiatedJobTest {
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.ACTIVITY_MANAGER_CONSTANTS, mInitialActivityManagerConstants);
         SystemUtil.runShellCommand("am set-deterministic-uid-idle false");
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
+            mPowerManager.setLowPowerStandbyEnabled(mInitialLowPowerStandbyEnabled);
+        }
     }
 
     @Test
@@ -197,7 +215,9 @@ public class UserInitiatedJobTest {
             try (WatchUidRunner uidWatcher = new WatchUidRunner(
                     InstrumentationRegistry.getInstrumentation(), testAppInfo.uid)) {
                 // Taking the app off the temp whitelist should make it go UID idle.
-                SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -r " + TEST_APP_PACKAGE);
+                SystemUtil.runShellCommand("cmd deviceidle tempwhitelist"
+                        + " -u " + UserHandle.myUserId()
+                        + " -r " + TEST_APP_PACKAGE);
                 uidWatcher.waitFor(WatchUidRunner.CMD_IDLE);
                 Thread.sleep(1000); // Wait a bit for JS to process.
             }
@@ -237,7 +257,8 @@ public class UserInitiatedJobTest {
             assertTrue(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
 
             // Take the app off the temp whitelist so it doesn't retain the exemptions.
-            SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -r " + TEST_APP_PACKAGE);
+            SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -u " + UserHandle.myUserId()
+                    + " -r " + TEST_APP_PACKAGE);
 
             // Restrict app. Job should stop immediately and shouldn't restart.
             mTestAppInterface.setTestPackageRestricted(true);

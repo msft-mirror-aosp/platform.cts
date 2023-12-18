@@ -26,7 +26,7 @@ import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ProtoExtractors.extract;
 import static android.server.wm.StateLogger.log;
 import static android.server.wm.StateLogger.logE;
-import static android.server.wm.TestTaskOrganizer.INVALID_TASK_ID;
+import static android.server.wm.WindowManagerState.Task.INVALID_TASK_ID;
 import static android.util.DisplayMetrics.DENSITY_DEFAULT;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.DisplayAreaOrganizer.FEATURE_IME;
@@ -499,7 +499,7 @@ public class WindowManagerState {
         return mIsHomeRecentsComponent;
     }
 
-    DisplayContent getDisplay(int displayId) {
+    public DisplayContent getDisplay(int displayId) {
         for (DisplayContent display : mDisplays) {
             if (display.mId == displayId) {
                 return display;
@@ -870,8 +870,8 @@ public class WindowManagerState {
     }
 
     public int getRootTaskIdByActivity(ComponentName activityName) {
-        final Task task = getTaskByActivity(activityName);
-        return  (task == null) ? INVALID_TASK_ID : task.mRootTaskId;
+        final Task rootTask = getRootTaskByActivity(activityName);
+        return  (rootTask == null) ? INVALID_TASK_ID : rootTask.mTaskId;
     }
 
     public Task getTaskByActivity(ComponentName activityName) {
@@ -1432,6 +1432,8 @@ public class WindowManagerState {
     }
 
     public static class Task extends ActivityContainer {
+        // TODO(b/292187837): Use the one in ActivityTaskManager instead.
+        public static final int INVALID_TASK_ID = -1;
         int mTaskId;
         int mRootTaskId;
         public int mDisplayId;
@@ -1902,6 +1904,10 @@ public class WindowManagerState {
             mOverrideConfiguration.setTo(extract(proto.overrideConfiguration));
             mFullConfiguration.setTo(extract(proto.fullConfiguration));
             mMergedOverrideConfiguration.setTo(extract(proto.mergedOverrideConfiguration));
+        }
+
+        public Configuration getFullConfiguration() {
+            return mFullConfiguration;
         }
 
         boolean isWindowingModeCompatible(int requestedWindowingMode) {
