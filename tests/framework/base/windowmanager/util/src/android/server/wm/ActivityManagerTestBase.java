@@ -961,7 +961,7 @@ public abstract class ActivityManagerTestBase {
         mWmState.computeState();
         final List<Task> rootTasks = mWmState.getRootTasks();
         for (Task rootTask : rootTasks) {
-            if (rootTask.getTaskId() == taskId) {
+            if (rootTask.getRootTaskId() == taskId) {
                 return rootTask;
             }
         }
@@ -1743,6 +1743,11 @@ public abstract class ActivityManagerTestBase {
         }
 
         LockScreenSession disableLockScreen() {
+            // Lock credentials need to be cleared before disabling the lock.
+            if (mLockCredentialSet) {
+                removeLockCredential();
+                mLockCredentialSet = false;
+            }
             setLockDisabled(true);
             return this;
         }
@@ -1866,7 +1871,7 @@ public abstract class ActivityManagerTestBase {
          * @param lockDisabled true if should disable, false otherwise.
          */
         protected void setLockDisabled(boolean lockDisabled) {
-            runCommandAndPrintOutput("locksettings set-disabled " + oldIfNeeded() + lockDisabled);
+            runCommandAndPrintOutput("locksettings set-disabled " + lockDisabled);
         }
 
         @NonNull
@@ -3475,5 +3480,14 @@ public abstract class ActivityManagerTestBase {
                 windowState.getMergedLocalInsetsSources().stream().filter(
                         predicate).findFirst();
         insetsOptional.ifPresent(insets -> insets.insetGivenFrame(inOutBounds));
+    }
+
+    /**
+     * Checks whether the device has automotive split-screen multitasking feature enabled
+     */
+    boolean hasAutomotiveSplitscreenMultitaskingFeature() {
+        return mContext.getPackageManager()
+                .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
+                        "android.software.car.splitscreen_multitasking") && isCar();
     }
 }
