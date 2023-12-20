@@ -41,6 +41,8 @@ android_test {
         "flag-junit",
         "bedstead-flags",
         "bedstead-root",
+        "device_policy_aconfig_flags_lib",
+        "TestApisReflection"
     ],
     srcs: [
         "src/**/*.java",

@@ -17,7 +17,7 @@ object Properties {
             .executeOrThrowNeneException("Error setting property $key to $value")
 
         return UndoableContext {
-            set(key, existingValue)
+            var unused = set(key, existingValue)
         }
     }
 

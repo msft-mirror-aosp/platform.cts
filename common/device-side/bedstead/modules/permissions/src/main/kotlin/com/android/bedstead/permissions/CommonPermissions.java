@@ -1991,7 +1991,8 @@ public class CommonPermissions {
     public static final String MANAGE_DEVICE_POLICY_WIPE_DATA = "android.permission.MANAGE_DEVICE_POLICY_WIPE_DATA";
     /** See {@link Manifest#MANAGE_DEVICE_POLICY_MTE} */
     public static final String MANAGE_DEVICE_POLICY_MTE = "android.permission.MANAGE_DEVICE_POLICY_MTE";
-    /** See {@link Manifest#MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL} */public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL =
+    /** See {@link Manifest#MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL} */
+    public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL =
             "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL";
     /** See {@link Manifest#MANAGE_DEVICE_POLICY_ACROSS_USERS} */
     public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS = "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS";
