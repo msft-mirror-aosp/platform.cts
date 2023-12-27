@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2016 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,13 @@
 //
 
 package {
-    default_team: "trendy_team_chromium_webview",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_helper_app {
-    name: "CtsWebViewStartupApp",
+    name: "CtsRegisterResourcePathsTestApp2",
     defaults: ["cts_support_defaults"],
-    // Don't include this package in any target.
-    sdk_version: "test_current",
+    sdk_version: "current",
     static_libs: [
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
@@ -41,10 +39,4 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
-}
-
-java_library {
-    name: "webview-startup-cts-activity",
-    srcs: ["src/com/android/cts/webkit/WebViewStartupCtsActivity.java"],
-    sdk_version: "test_current",
 }
