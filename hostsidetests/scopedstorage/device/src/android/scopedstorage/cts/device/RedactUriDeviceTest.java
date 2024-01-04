@@ -48,6 +48,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.scopedstorage.cts.lib.ScopedStorageBaseDeviceTest;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.FileUtils;
@@ -78,7 +79,9 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Device-side test suite to verify redacted URI operations.
+ * We are in process of splitting CtsScopedStorageDeviceOnlyTest module into multiple ones.
+ * This is a temporary test class, and it will be deleted
+ * after all the links to new modules are created.
  */
 @RunWith(Parameterized.class)
 @SdkSuppress(minSdkVersion = 31, codeName = "S")

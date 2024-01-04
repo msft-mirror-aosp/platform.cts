@@ -37,7 +37,6 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
-import android.view.View;
 import android.view.WindowManager;
 
 import androidx.test.rule.ActivityTestRule;
@@ -72,6 +71,11 @@ public class BlurTests extends WindowManagerTestBase {
             Settings.Global::getInt,
             Settings.Global::putInt,
             0);
+    private final TestRule mDisableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            0f);
 
     private final ActivityTestRule<BackgroundActivity> mBackgroundActivity =
             new ActivityTestRule<>(BackgroundActivity.class);
@@ -79,6 +83,7 @@ public class BlurTests extends WindowManagerTestBase {
     @Rule
     public final TestRule methodRules = RuleChain.outerRule(mDumpOnFailure)
             .around(mEnableBlurRule)
+            .around(mDisableTransitionAnimationRule)
             .around(mBackgroundActivity);
 
     @Before
@@ -424,7 +429,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             getSplashScreen().setOnExitAnimationListener(view -> view.remove());
 
-            setContentView(new View(this));
+            setContentView(R.layout.background_image);
 
             getWindow().setDecorFitsSystemWindows(false);
             getWindow().getInsetsController().hide(systemBars());
