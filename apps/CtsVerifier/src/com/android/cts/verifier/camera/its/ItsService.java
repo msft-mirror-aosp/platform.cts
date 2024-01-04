@@ -166,6 +166,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
+    private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
     private static final long TIMEOUT_STATE_MS = 500;
     private static final long TIMEOUT_SESSION_CLOSE = 3000;
 
@@ -941,6 +942,9 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getSupportedVideoQualities".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoQualities(cameraId);
+                } else if ("doGetSupportedVideoSizesCapped".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedPreviewSizes(cameraId);
@@ -2243,6 +2247,33 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("supportedVideoQualities", profiles.toString());
     }
 
+    private void doGetSupportedVideoSizesCapped(String id) throws ItsException {
+        int cameraId = Integer.parseInt(id);
+        StringBuilder profiles = new StringBuilder();
+        // s1440p which is the max supported stream size in a combination, when preview
+        // stabilization is on.
+        Size maxPreviewSize = new Size(1920, 1440);
+        ArrayList<Size> outputSizes = new ArrayList<Size>();
+        for (Map.Entry<Integer, String> entry : CAMCORDER_PROFILE_QUALITIES_MAP.entrySet()) {
+            if (CamcorderProfile.hasProfile(cameraId, entry.getKey())) {
+                CamcorderProfile camcorderProfile = getCamcorderProfile(cameraId, entry.getKey());
+                assert(camcorderProfile != null);
+                Size videoSize = new Size(camcorderProfile.videoFrameWidth,
+                        camcorderProfile.videoFrameHeight);
+                outputSizes.add(videoSize);
+            }
+        }
+        Log.i(TAG, "Supported video sizes: " + outputSizes.toString());
+        String response = outputSizes.stream()
+                .distinct()
+                .filter(s -> s.getWidth() * s.getHeight()
+                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
+                .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .map(Size::toString)
+                .collect(Collectors.joining(";"));
+        mSocketRunnableObj.sendResponse("supportedVideoSizes", response);
+    }
+
     private void appendSupportProfile(StringBuilder profiles, String name, int profile,
             int cameraId) {
         if (CamcorderProfile.hasProfile(cameraId, profile)) {
@@ -2960,7 +2991,7 @@ public class ItsService extends Service implements SensorEventListener {
                     sessionListener,
                     has10bitOutput);
 
-            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
 
             CaptureRequest.Builder captureBuilder = requests.get(0);
 
@@ -3874,8 +3905,9 @@ public class ItsService extends Service implements SensorEventListener {
                 if (request == null || result == null) {
                     throw new ItsException("Request/result is invalid");
                 }
-                if (result.get(CaptureResult.CONTROL_AE_STATE) ==
-                    CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                int aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                if (aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED
+                        || aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED) {
                     synchronized(mCountCallbacksRemaining) {
                         mCountCallbacksRemaining.decrementAndGet();
                         mCountCallbacksRemaining.notify();
