@@ -177,10 +177,14 @@ public class EncoderConfigParams {
             } else {
                 mInputBitDepth = 8;
             }
-            if (mColorFormat == COLOR_FormatSurface && mInputBitDepth == 10 && mProfile == -1) {
-                throw new IllegalArgumentException("If color format is configured to "
-                        + "COLOR_FormatSurface and bitdepth is set to 10 then profile needs to be "
-                        + "configured");
+            if (mProfile == -1) {
+                if ((mColorFormat == COLOR_FormatSurface && mInputBitDepth == 10) || (mColorFormat
+                        == COLOR_FormatYUVP010)) {
+                    throw new IllegalArgumentException("If color format is configured to "
+                            + "COLOR_FormatSurface and bitdepth is set to 10 or color format is "
+                            + "configured to COLOR_FormatYUVP010 then profile needs to be"
+                            + " configured");
+                }
             }
             mRange = cfg.mRange;
             mStandard = cfg.mStandard;
@@ -413,6 +417,12 @@ public class EncoderConfigParams {
 
         public Builder setProfile(int profile) {
             this.mProfile = profile;
+            // encoder profile requires also level to be set prior to Android U,
+            // but this can be a default/unknown value. Setting this to 1 as all
+            // codecs use a value of 1 for lowest level.
+            if (mLevel < 0) {
+                mLevel = 1;
+            }
             return this;
         }
 

@@ -18,13 +18,13 @@ package com.android.cts.verifier;
 
 import static com.android.cts.verifier.ReportExporter.LOGS_DIRECTORY;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
-import static com.android.cts.verifier.TestListActivity.sInitialLaunch;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.hardware.devicestate.DeviceStateManager;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
@@ -44,10 +44,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * {@link BaseAdapter} that handles loading, refreshing, and setting test results. What tests are
@@ -98,6 +101,9 @@ public abstract class TestListAdapter extends BaseAdapter {
      * view only, including unfolded mode and folded mode respectively.
      */
     protected Map<String, List<TestListItem>> mDisplayModesTests = new HashMap<>();
+
+    /** A keyword to help filter out test cases by the test name. */
+    protected String mTestFilter;
 
     /** {@link ListView} row that is either a test category header or a test. */
     public static class TestListItem {
@@ -395,10 +401,7 @@ public abstract class TestListAdapter extends BaseAdapter {
                 String displayMode,
                 boolean passInEitherMode) {
             this.title = title;
-            if (!sInitialLaunch) {
-                testName = setTestNameSuffix(sCurrentDisplayMode, testName);
-            }
-            this.testName = testName;
+            this.testName = setTestNameSuffix(sCurrentDisplayMode, testName);
             this.intent = intent;
             this.requiredActions = requiredActions;
             this.requiredFeatures = requiredFeatures;
@@ -427,7 +430,7 @@ public abstract class TestListAdapter extends BaseAdapter {
     }
 
     public void loadTestResults() {
-        new RefreshTestResultsTask(false).execute();
+        new RefreshTestResultsTask().execute();
     }
 
     public void clearTestResults() {
@@ -451,28 +454,15 @@ public abstract class TestListAdapter extends BaseAdapter {
                 .execute();
     }
 
+    void setTestFilter(String testFilter) {
+        mTestFilter = testFilter;
+    }
+
     class RefreshTestResultsTask extends AsyncTask<Void, Void, RefreshResult> {
-
-        private boolean mIsFromMainView;
-
-        RefreshTestResultsTask(boolean isFromMainView) {
-            mIsFromMainView = isFromMainView;
-        }
 
         @Override
         protected RefreshResult doInBackground(Void... params) {
-            List<TestListItem> rows = getRows();
-            // When initial launch, needs to fetch tests in the unfolded/folded mode
-            // to be stored in mDisplayModesTests as the basis for the future switch.
-            if (sInitialLaunch) {
-                sInitialLaunch = false;
-            }
-
-            if (mIsFromMainView) {
-                rows = mDisplayModesTests.get(sCurrentDisplayMode);
-            }
-
-            return getRefreshResults(rows);
+            return getRefreshResults(getRows());
         }
 
         @Override
@@ -719,7 +709,7 @@ public abstract class TestListAdapter extends BaseAdapter {
 
     /** Gets {@link TestListItem} with the given test name. */
     public TestListItem getItemByName(String testName) {
-        for (TestListItem item: mRows) {
+        for (TestListItem item : mRows) {
             if (item != null && item.testName != null && item.testName.equals(testName)) {
                 return item;
             }
@@ -846,7 +836,8 @@ public abstract class TestListAdapter extends BaseAdapter {
 
     public boolean allTestsPassed() {
         for (TestListItem item : mRows) {
-            if (item != null && item.isTest()
+            if (item != null
+                    && item.isTest()
                     && (!mTestResults.containsKey(item.testName)
                             || (mTestResults.get(item.testName)
                                     != TestResult.TEST_RESULT_PASSED))) {
@@ -905,6 +896,29 @@ public abstract class TestListAdapter extends BaseAdapter {
         }
 
         return textView;
+    }
+
+    /**
+     * Uses {@link DeviceStateManager} to determine if the device is foldable or not. It relies on
+     * the OEM exposing supported states, and setting
+     * com.android.internal.R.array.config_foldedDeviceStates correctly with the folded states.
+     *
+     * @return true if the device is foldable, false otherwise
+     */
+    public boolean isFoldableDevice() {
+        DeviceStateManager deviceStateManager = mContext.getSystemService(DeviceStateManager.class);
+        if (deviceStateManager == null) {
+            return false;
+        }
+        Set<Integer> supportedStates =
+                Arrays.stream(deviceStateManager.getSupportedStates())
+                        .boxed()
+                        .collect(Collectors.toSet());
+        int identifier =
+                mContext.getResources()
+                        .getIdentifier("config_foldedDeviceStates", "array", "android");
+        int[] foldedDeviceStates = mContext.getResources().getIntArray(identifier);
+        return Arrays.stream(foldedDeviceStates).anyMatch(supportedStates::contains);
     }
 
     private int getLayout(int position) {

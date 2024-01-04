@@ -105,7 +105,6 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
-import android.util.TypedValue;
 import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -204,8 +203,10 @@ public class AccessibilityDisplayProxyTest {
 
     private static final String SEPARATE_PROCESS_PACKAGE_NAME = "foo.bar.proxy";
     private static final String SEPARATE_PROCESS_ACTIVITY = ".NonProxySeparateAppActivity";
-
-    private static final float MIN_SCREEN_WIDTH_MM = 40.0f;
+    public static final int VIRTUAL_DISPLAY_WIDTH = 100;
+    // Minimum screen width for supporting taps. This is more arbitrary since clicking or
+    // tapping requires a single point. We use half the virtual display width.
+    private static final int MIN_SCREEN_WIDTH_TAP_PX = VIRTUAL_DISPLAY_WIDTH / 2;
     private static final int TEST_SYSTEM_ACTION_ID = 1000;
     public static final String INSTRUMENTED_STREAM_ROLE_PACKAGE_NAME =
             "android.accessibilityservice.cts";
@@ -583,8 +584,7 @@ public class AccessibilityDisplayProxyTest {
                     WindowManager.class);
             final DisplayMetrics metrics = new DisplayMetrics();
             windowManager.getDefaultDisplay().getRealMetrics(metrics);
-            assumeTrue(areaOfActivityWindowOnDisplay.width() > TypedValue.applyDimension(
-                            TypedValue.COMPLEX_UNIT_MM, MIN_SCREEN_WIDTH_MM, metrics));
+            assumeTrue(areaOfActivityWindowOnDisplay.width() > MIN_SCREEN_WIDTH_TAP_PX);
             sUiAutomation.executeAndWaitForEvent(() -> {
                 final int xOnScreen =
                         areaOfActivityWindowOnDisplay.centerX();
@@ -1481,9 +1481,13 @@ public class AccessibilityDisplayProxyTest {
     }
 
     private View showTopWindowAndWaitForItToShowUp() throws TimeoutException {
+        final WindowManager wm =
+                mProxiedVirtualDisplayActivity.getSystemService(WindowManager.class);
+        final Rect windowBounds = wm.getCurrentWindowMetrics().getBounds();
         final WindowManager.LayoutParams paramsForTop =
                 WindowCreationUtils.layoutParamsForWindowOnTop(
-                        sInstrumentation, mProxiedVirtualDisplayActivity, TOP_WINDOW_TITLE);
+                        sInstrumentation, mProxiedVirtualDisplayActivity, TOP_WINDOW_TITLE,
+                        WindowManager.LayoutParams.MATCH_PARENT, windowBounds.height() / 2);
         final Button button = new Button(mProxiedVirtualDisplayActivity);
         button.setText(sInstrumentation.getContext().getString(R.string.button1));
         WindowCreationUtils.addWindowAndWaitForEvent(sUiAutomation, sInstrumentation,
@@ -1504,7 +1508,8 @@ public class AccessibilityDisplayProxyTest {
                         mFakeAssociationRule.getAssociationInfo().getId(),
                         DEFAULT_VIRTUAL_DEVICE_PARAMS);
         // Values taken from StreamedAppClipboardTest
-        mImageReader = ImageReader.newInstance(/* width= */ 100, /* height= */ 100,
+        mImageReader = ImageReader.newInstance(/* width= */ VIRTUAL_DISPLAY_WIDTH,
+                /* height= */ 100,
                 PixelFormat.RGBA_8888, /* maxImages= */ 1);
         display = mVirtualDevice.createVirtualDisplay(
                 /* width= */ mImageReader.getWidth(),

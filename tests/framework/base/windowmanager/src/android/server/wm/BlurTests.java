@@ -37,7 +37,6 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
-import android.view.View;
 import android.view.WindowManager;
 
 import androidx.test.rule.ActivityTestRule;
@@ -54,7 +53,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
-import java.util.Optional;
 import java.util.function.Consumer;
 
 @Presubmit
@@ -73,6 +71,11 @@ public class BlurTests extends WindowManagerTestBase {
             Settings.Global::getInt,
             Settings.Global::putInt,
             0);
+    private final TestRule mDisableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            0f);
 
     private final ActivityTestRule<BackgroundActivity> mBackgroundActivity =
             new ActivityTestRule<>(BackgroundActivity.class);
@@ -80,6 +83,7 @@ public class BlurTests extends WindowManagerTestBase {
     @Rule
     public final TestRule methodRules = RuleChain.outerRule(mDumpOnFailure)
             .around(mEnableBlurRule)
+            .around(mDisableTransitionAnimationRule)
             .around(mBackgroundActivity);
 
     @Before
@@ -95,12 +99,8 @@ public class BlurTests extends WindowManagerTestBase {
         WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
         WindowManagerState.Activity act = mWmState.getActivity(cn);
         mBackgroundActivityBounds = act.getBounds();
-        Optional<WindowManagerState.InsetsSource> captionInsetsOptional =
-                windowState.getMergedLocalInsetsSources().stream().filter(
-                        insets -> insets.isCaptionBar()).findFirst();
-        captionInsetsOptional.ifPresent(captionInsets -> {
-            captionInsets.insetGivenFrame(mBackgroundActivityBounds);
-        });
+        insetGivenFrame(windowState, WindowManagerState.InsetsSource::isCaptionBar,
+                mBackgroundActivityBounds);
 
         // Wait for the first frame *after* the splash screen is removed to take screenshots.
         // We don't currently have a definite event / callback for this.
@@ -429,7 +429,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             getSplashScreen().setOnExitAnimationListener(view -> view.remove());
 
-            setContentView(new View(this));
+            setContentView(R.layout.background_image);
 
             getWindow().setDecorFitsSystemWindows(false);
             getWindow().getInsetsController().hide(systemBars());

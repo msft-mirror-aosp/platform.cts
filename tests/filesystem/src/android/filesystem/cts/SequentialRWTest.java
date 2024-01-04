@@ -35,6 +35,7 @@ import com.android.compatibility.common.util.Stat;
 
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,13 +54,19 @@ public class SequentialRWTest {
     private static final String DIR_SEQ_UPDATE = "SEQ_UPDATE";
     private static final String DIR_SEQ_RD = "SEQ_RD";
     private static final String REPORT_LOG_NAME = "CtsFileSystemTestCases";
-    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
+    private static final int BUFFER_SIZE = 100 * 1024 * 1024;
 
     @Rule
     public final TestName mTestName = new TestName();
 
+    @Before
+    public void setUp() throws Exception {
+        CarTestUtil.getInstance().setUp();
+    }
+
     @After
     public void tearDown() throws Exception {
+        CarTestUtil.getInstance().tearDown();
         FileUtil.removeFileOrDir(getContext(), DIR_SEQ_WR);
         FileUtil.removeFileOrDir(getContext(), DIR_SEQ_UPDATE);
         FileUtil.removeFileOrDir(getContext(), DIR_SEQ_RD);

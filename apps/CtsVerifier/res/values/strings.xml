@@ -33,6 +33,9 @@
     <string name="fail_and_next_button_text">Fail and Next</string>
     <string name="yes_string">Yes</string>
     <string name="no_string">No</string>
+    <string name="search_label">TestListActivity</string>
+    <string name="search_hint">Search Tests</string>
+    <string name="search_title">Search</string>
 
     <!-- Strings for CtsReportLog warning -->
     <string name="reportlog_warning_title">CTS-Verifier Report Log</string>
@@ -1232,7 +1235,7 @@
 
     <string name="nfc_scan_tag">Place device on a writable %s tag...</string>
     <string name="nfc_write_tag_title">Writable tag discovered!</string>
-    <string name="nfc_write_tag_message">Press OK to write to this tag...</string>
+    <string name="nfc_write_tag_message">Press OK to write to this tag(or auto write to this tag after 3s)...</string>
     <string name="nfc_scan_tag_again">Tap the same %s tag again to confirm that its contents match...</string>
     <string name="nfc_wrong_tag_title">Wrong type of tag scanned</string>
     <string name="nfc_no_tech">No tag technologies detected...</string>
@@ -2554,7 +2557,7 @@
         \nPull down the notification shade and look for the NotifPrivacyTest notification.
         \nFail the test if it can be found without unlocking the device.
         \n\nGo back when ready to Pass/Fail the step.</string>
-    <string name="np_public_version_text">NotifPrivacyTefst: REDACTED</string>
+    <string name="np_public_version_text">NotifPrivacyTest: REDACTED</string>
     <string name="np_private_version_text">NotifPrivacyTest: EXPOSED</string>
     <string name="notif_privacy_test">Notification Privacy Test</string>
     <string name="notif_privacy_info">This test checks that Notification privacy is correctly
@@ -4462,7 +4465,7 @@ You should be prompted to select credentials; choose the ones you just installed
         Set \'%s\' user restriction by turning on the switch below.
     </string>
     <string name="disallow_add_user">Disallow add user</string>
-    <string name="disallow_add_user_action">Adding a new user</string>
+    <string name="disallow_add_user_action">Accessing the multiple users settings page, or if the device allows access to the page, then attempting to enable the feature </string>
     <string name="disallow_adjust_volume">Disallow adjust volume</string>
     <string name="disallow_adjust_volume_action">Adjusting the volume\n
         NOTE: If the device does not support volume adjustment in Settings app please skip this test and mark it as passing.\n</string>
@@ -5048,17 +5051,6 @@ You should be prompted to select credentials; choose the ones you just installed
         When successfully logout and switched back to primary user, confirm that the logout control
         is not available in primary user.
     </string>
-    <string name="disallow_cellular_2g">Disallow Cellular 2g</string>
-    <string name="disallow_cellular_2g_action">Configuring Cellular 2g</string>
-    <string name="device_owner_disallow_cellular_2g_info">
-        Device should have a sim card to perform this test.
-        Please press the Set restriction button to set the user restriction.
-        Then press Go to open the Mobile network page in Settings.
-        Confirm that:\n\n
-        - Enable 2g is disabled.\n
-        - Enabling 2g is not possible and triggers a support message.\n\n
-        Use the Back button to return to this page.
-    </string>
 
     <!-- Strings for JobScheduler Tests -->
     <string name="js_test_description">This test is mostly automated, but requires some user interaction. You can pass this test once the list items below are checked.</string>
@@ -5618,6 +5610,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="midiFailedOverrunLbl">Failed - Data Overrun.</string>
     <string name="midiFailedDeviceLbl">Failed - Device Error.</string>
     <string name="midiFailedJNILbl">Failed - JNI Error.</string>
+    <string name="midiFailedSetupLbl">Failed - Error in Setup.</string>
+    <string name="midiFailedSendLbl">Failed - Error during Send.</string>
 
     <!-- Audio general text -->
     <string name="audio_wired_exists">Does this device support wired USB or Analog audio peripherals?</string>
@@ -5727,7 +5721,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_btn">Test</string>
     <string name="audio_loopback_results_text">Results...</string>
     <string name="audio_loopback_test_all_paths">Please test all supported paths.</string>
-
+    <string name="audio_loopback_test_not_required">Test not required for this device.</string>
+    <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
+    <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
     in a quiet room. Press the Start button and allow the test to proceed.</string>
 
@@ -5739,6 +5735,18 @@ You should be prompted to select credentials; choose the ones you just installed
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
+    <string name="audio_loopback_automobile">Automobile:</string>
+    <string name="audio_loopback_handheld">Handheld:</string>
+    <string name="audio_loopback_tv">TV:</string>
+    <string name="audio_loopback_watch">Watch:</string>
+    <string name="audio_loopback_mmapexclusive">MMAP Exclusive:</string>
+    <string name="audio_loopback_mmap">MMAP:</string>
+    <string name="audio_loopback_mcp">MPC:</string>
+    <string name="audio_loopback_lowlatency">Low Latency:</string>
+    <string name="audio_loopback_proaudio">Pro Audio:</string>
+    <string name="audio_loopback_speakermic">Speaker/Mic</string>
+    <string name="audio_loopback_headsetjack">Headset Jack</string>
+    <string name="audio_loopback_usb">USB</string>
 
     <!-- result codes -->
     <string name="audio_loopback_resultcode_none">Result: None.</string>
@@ -6893,6 +6901,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \nIf the TV device is launched on older Android letters, all tests will be disabled. Press Pass to pass this case.
     </string>
     <string name="is_reference_device_checkbox_text">Is Reference Device</string>
+    <string name="is_manual_pass_text">Pass test manually after test completion</string>
     <string name="uwb_precision">Uwb Precision Test</string>
     <string name="uwb_short_range">Uwb Short Range Test</string>
     <string name="uwb_precision_instruction">
@@ -6942,7 +6951,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n1. Ensure that the test is already started on the reference device.
         \n2. Input the device ID of the reference device (displayed on the reference device) into the provided field and click "Start Test"
         \n3. The test is automatically stopped and passed (or failed) when all the required data is collected
-        \n4. The test is passed if the median RSSI from both DUT and reference device is between -65dBm and -45dBm.
+        \n4. The test is passed if the median RSSI from both DUT and reference device is between -65dBm and -35dBm.
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>

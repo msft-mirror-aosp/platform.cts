@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="14_r2">
+          android:versionName="14_r3">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
 
@@ -214,7 +214,9 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest"
-                       android:value="2.2.4/8.3/H-1-1|2.3.4/8.3/T-1-1|2.4.4/8.3/W-SR|8.3/C-SR" />
+                       android:value="2.2.4/8.3/H-1-1|2.3.4/8.3/T-1-1|
+                                      2.4.4/8.3/W-SR-1,8.3/W-SR-2|
+                                      8.3/C-SR-1,C-SR-2" />
             <meta-data android:name="ApiTest" android:value="android.os.PowerManager#isPowerSaveMode" />
         </activity>
 
@@ -419,7 +421,10 @@
 
         <!-- Support service to ensure HID Device Test succeeds on
             devices with full screen pairing dialogs (ex. Android TV -->
-        <service android:name=".bluetooth.FocusLossPreventionService" />
+        <service android:name=".bluetooth.FocusLossPreventionService"
+                 android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="CtsVerifier" />
+        </service>
 
         <!--
              CTS Verifier Bluetooth Hid Host Test Screen
@@ -4513,10 +4518,13 @@
                         android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.SEARCH" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.searchable"
+                   android:resource="@xml/searchable"/>
         </activity-alias>
 
 <!--        <activity-alias-->
@@ -4628,6 +4636,10 @@
             <meta-data android:name="test_excluded_features"
                     android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data
+                android:name="test_required_configs"
+                android:value="config_battery_supported"/>
+            <meta-data android:name="CddTest" android:value="7.3/C-1-5" />
         </activity>
 
         <service
@@ -4823,7 +4835,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_managed_provisioning" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.software.lockscreen_disabled" />
+                       android:value="android.software.lockscreen_disabled:com.google.android.feature.AMATI_EXPERIENCE" />
             <meta-data android:name="test_required_features" android:value="android.software.device_admin" />
             <meta-data android:name="display_mode"
                        android:value="single_display_mode" />
@@ -4858,12 +4870,10 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_managed_provisioning" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.software.lockscreen_disabled" />
+              android:value="android.software.lockscreen_disabled:com.google.android.feature.AMATI_EXPERIENCE" />
             <meta-data android:name="test_required_features" android:value="android.software.device_admin" />
             <meta-data android:name="display_mode"
                        android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.os.UserManager#DISALLOW_CELLULAR_2G"/>
         </activity>
 
         <activity android:name=".managedprovisioning.ManagedUserPositiveTestActivity"
@@ -4893,6 +4903,7 @@
             <meta-data android:name="test_required_features" android:value="android.software.device_admin" />
             <meta-data android:name="display_mode"
                        android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features" android:value="com.google.android.feature.AMATI_EXPERIENCE" />
         </activity>
 
         <activity android:name=".managedprovisioning.NonMarketAppsActivity"
@@ -5450,6 +5461,8 @@
             <meta-data android:name="test_category" android:value="@string/test_category_tunnel" />
             <meta-data android:name="test_required_features"
                        android:value="android.software.leanback" />
+            <meta-data android:name="test_required_configs"
+                       android:value="config_changeable_volume" />
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
@@ -5671,7 +5684,6 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.hdmi.cec" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioDescriptor#getStandard|
@@ -5794,23 +5806,6 @@
                 android.media.AudioRecord.OnRoutingChangedListener#onRoutingChanged" />
         </activity>
 
-        <activity android:name=".audio.AudioDataPathsActivity"
-            android:exported="true"
-            android:label="@string/audio_datapaths_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
-            <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest"
-                android:value="android.media.AudioRecord#startRecording|
-                    android.media.AudioRecord#stopRecording|
-                    android.media.AudioTrack#play|
-                    android.media.AudioTrack#stop" />
-        </activity>
-
         <activity android:name=".audio.AudioLoopbackLatencyActivity"
             android:exported="true"
             android:label="@string/audio_loopback_latency_test">
@@ -5881,6 +5876,7 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.touchscreen" />
             <meta-data android:name="test_excluded_features"
                 android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
@@ -6851,6 +6847,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_input"/>
             <meta-data android:name="ApiTest" android:value="android.view.InputDevice#getUsiVersion" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
         <!-- Components used for CTS Verifying Capture Content For Notes APIs. -->

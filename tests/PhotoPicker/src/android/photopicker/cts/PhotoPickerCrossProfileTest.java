@@ -24,6 +24,7 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findProfileButton;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPickerUriFormat;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertRedactedReadOnlyAccess;
+import static android.provider.MediaStore.ACTION_PICK_IMAGES;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -42,6 +43,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.ClassRule;
@@ -82,10 +84,17 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     @RequireRunOnWorkProfile
     @SdkSuppress(minSdkVersion = 32, codeName = "T")
     public void testWorkApp_canAccessPersonalProfileContents() throws Exception {
-        final int imageCount = 2;
-        mUriList.addAll(createImagesAndGetUris(imageCount, sDeviceState.primaryUser().id()));
+        final int primaryUserId;
+        if (SdkLevel.isAtLeastU()) {
+            primaryUserId = sDeviceState.initialUser().id();
+        } else {
+            primaryUserId = sDeviceState.primaryUser().id();
+        }
 
-        Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        final int imageCount = 2;
+        mUriList.addAll(createImagesAndGetUris(imageCount, primaryUserId));
+
+        Intent intent = new Intent(ACTION_PICK_IMAGES);
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, imageCount);
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
@@ -112,7 +121,7 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
         assertThat(count).isEqualTo(imageCount);
         for (int i = 0; i < count; i++) {
             Uri uri = clipData.getItemAt(i).getUri();
-            assertPickerUriFormat(uri, sDeviceState.primaryUser().id());
+            assertPickerUriFormat(ACTION_PICK_IMAGES, uri, primaryUserId);
             assertRedactedReadOnlyAccess(uri);
         }
     }
@@ -139,7 +148,7 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     }
 
     private void assertBlockedByAdmin(boolean isInvokedFromWorkProfile) throws Exception {
-        Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        Intent intent = new Intent(ACTION_PICK_IMAGES);
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
