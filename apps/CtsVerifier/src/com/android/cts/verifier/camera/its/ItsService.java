@@ -166,6 +166,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
+    private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
     private static final long TIMEOUT_STATE_MS = 500;
     private static final long TIMEOUT_SESSION_CLOSE = 3000;
 
@@ -2990,7 +2991,7 @@ public class ItsService extends Service implements SensorEventListener {
                     sessionListener,
                     has10bitOutput);
 
-            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
 
             CaptureRequest.Builder captureBuilder = requests.get(0);
 
@@ -3000,19 +3001,22 @@ public class ItsService extends Service implements SensorEventListener {
                 }
                 // Set repeating request and wait for AE convergence, using another ImageReader.
                 Logt.i(TAG, "Waiting for AE to converge before taking extensions capture.");
-                captureBuilder.addTarget(mExtensionPreviewImageReader.getSurface());
+                CaptureRequest.Builder previewRequestBuilder = mCamera.createCaptureRequest(
+                        CameraDevice.TEMPLATE_PREVIEW);
+                previewRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                        CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                previewRequestBuilder.addTarget(mExtensionPreviewImageReader.getSurface());
                 ImageReader.OnImageAvailableListener dropperListener =
                         createAvailableListenerDropper();
                 mExtensionPreviewImageReader.setOnImageAvailableListener(dropperListener,
                         mSaveHandlers[0]);
-                mExtensionSession.setRepeatingRequest(captureBuilder.build(),
+                mExtensionSession.setRepeatingRequest(previewRequestBuilder.build(),
                         new HandlerExecutor(mResultHandler),
                         mExtAEResultListener);
                 mCountCallbacksRemaining.set(1);
                 long timeout = TIMEOUT_CALLBACK * 1000;
                 waitForCallbacks(timeout);
                 mExtensionSession.stopRepeating();
-                captureBuilder.removeTarget(mExtensionPreviewImageReader.getSurface());
                 mResultThread.sleep(PIPELINE_WARMUP_TIME_MS);
             }
 
@@ -3904,8 +3908,9 @@ public class ItsService extends Service implements SensorEventListener {
                 if (request == null || result == null) {
                     throw new ItsException("Request/result is invalid");
                 }
-                if (result.get(CaptureResult.CONTROL_AE_STATE) ==
-                    CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                int aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                if (aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED
+                        || aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED) {
                     synchronized(mCountCallbacksRemaining) {
                         mCountCallbacksRemaining.decrementAndGet();
                         mCountCallbacksRemaining.notify();
