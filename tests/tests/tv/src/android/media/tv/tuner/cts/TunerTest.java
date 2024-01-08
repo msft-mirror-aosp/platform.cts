@@ -3254,6 +3254,15 @@ public class TunerTest {
             ap.hasDialogueEnhancement();
             ap.hasSpokenSubtitles();
         }
+        if (TunerVersionChecker.isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_4_0)) {
+            e.getNumDataPieces();
+            e.getIndexInDataGroup();
+            e.getDataGroupId();
+        } else {
+            assertTrue(e.getNumDataPieces() == 0);
+            assertTrue(e.getIndexInDataGroup() == 0);
+            assertTrue(e.getDataGroupId() == 0);
+        }
         e.release();
     }
 
