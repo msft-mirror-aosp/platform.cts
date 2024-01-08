@@ -75,6 +75,8 @@ import static com.android.compatibility.common.util.ShellUtils.tap;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure.ViewNode;
 import android.autofillservice.cts.R;
@@ -104,6 +106,7 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
@@ -1468,6 +1471,46 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @Test
+    public void remoteViews_doesNotSpillAcrossUsers() throws Exception {
+        // Set service.
+        enableService();
+
+
+        RemoteViews firstRv = createPresentation("hello");
+        RemoteViews secondRv = createPresentation("world");
+
+        // bad url, should not be displayed
+        firstRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+        secondRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+
+        // Set expectations.
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                    .setField(ID_USERNAME, "dude", firstRv)
+                    .setField(ID_PASSWORD, "sweet", secondRv)
+                    .build())
+                .setHeader(firstRv)
+                .setFooter(secondRv)
+                .build());
+
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger auto-fill.
+        mActivity.onUsername(View::requestFocus);
+        sReplier.getNextFillRequest();
+
+        // Assert that the dataset is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasets("The Dude"));
+
+        // Assert that header/footer is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasetsWithBorders("hello", "world", "The Dude"));
+    }
+
     /**
      * Tests the scenario where the service uses custom remote views for different fields (username
      * and password), but each dataset has a different number of fields.
@@ -2386,11 +2429,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         requestFocusOnUsername();
@@ -2426,7 +2469,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -2447,11 +2490,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         mActivity.forceAutofillOnUsername();
@@ -2487,7 +2530,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -3029,7 +3072,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     public void testSwitchInputMethod_noNewFillRequest() throws Exception {
         // TODO(b/187664861): Find better solution for small display device.
         mUiBot.assumeMinimumResolution(500);
-
+	mUiBot.setScreenResolution();
         // Set service
         enableService();
 
@@ -3060,5 +3103,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // No new fill request
         sReplier.assertNoUnhandledFillRequests();
+        mUiBot.resetScreenResolution();
     }
 }

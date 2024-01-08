@@ -23,6 +23,7 @@ import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -360,8 +361,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     private void internalTestPlayAudio(final String res,
             int mp3Duration, int tolerance, int seekDuration) throws Exception {
-        Preconditions.assertTestFileExists(mInpPrefix + res);
-        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
+        String filePath = mInpPrefix + res;
+        Preconditions.assertTestFileExists(filePath);
+        assumeTrue("codecs not found for " +  filePath, MediaUtils.hasCodecsForResource(filePath));
+        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(filePath)));
         try {
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
@@ -1287,7 +1290,12 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         mOnSeekCompleteCalled.waitForSignal();
         Thread.sleep(playTime);
         assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-        assertEquals("MediaPlayer position should be 0", 0, mMediaPlayer.getCurrentPosition());
+        int positionAtStart = mMediaPlayer.getCurrentPosition();
+        // Allow both 0 and 23 (the timestamp of the second audio sample) to avoid flaky failures
+        // on builds that don't include http://r.android.com/2700283.
+        if (positionAtStart != 0 && positionAtStart != 23) {
+            fail("MediaPlayer position should be 0 or 23");
+        }
 
         mMediaPlayer.start();
         Thread.sleep(playTime);

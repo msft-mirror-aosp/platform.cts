@@ -246,7 +246,7 @@ public class UiBot {
     @Deprecated
     // TODO: remove once we're sure no more OEM is getting failure due to screen size
     public void setScreenResolution() {
-        if (true) {
+        if (false) {
             Log.w(TAG, "setScreenResolution(): ignored");
             return;
         }
@@ -266,7 +266,7 @@ public class UiBot {
     @Deprecated
     // TODO: remove once we're sure no more OEM is getting failure due to screen size
     public void resetScreenResolution() {
-        if (true) {
+        if (false) {
             Log.w(TAG, "resetScreenResolution(): ignored");
             return;
         }
@@ -1477,11 +1477,11 @@ public class UiBot {
         return waitForObject(FILL_DIALOG_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
-    private UiObject2 findFillDialogDatasetPicker() throws Exception {
+    public UiObject2 findFillDialogDatasetPicker() throws Exception {
         return waitForObject(FILL_DIALOG_DATASET_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
-    private UiObject2 findFillDialogHeaderPicker() throws Exception {
+    public UiObject2 findFillDialogHeaderPicker() throws Exception {
         return waitForObject(FILL_DIALOG_HEADER_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 

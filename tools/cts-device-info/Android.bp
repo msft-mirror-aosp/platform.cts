@@ -83,6 +83,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.KeystoreAttestationDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.LocaleDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MediaDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.MediaDrmDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MediaOutputDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MemoryDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.PackageDeviceInfo " +
@@ -95,7 +96,5 @@ genrule {
         " -lo androidx.window.sidecar " +
         " -p com.android.compatibility.common.deviceinfo " +
         " -i androidx.test.runner.AndroidJUnitRunner " +
-        " -s 23 " +
-        " -t 23 " +
         " -o $(out)",
 }

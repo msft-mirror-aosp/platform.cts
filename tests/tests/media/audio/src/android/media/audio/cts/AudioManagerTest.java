@@ -90,6 +90,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.UserSettings.Namespace;
 import com.android.internal.annotations.GuardedBy;
 
 import org.junit.ClassRule;
@@ -172,12 +173,12 @@ public class AudioManagerTest extends InstrumentationTestCase {
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundFormatsSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
-                    Settings.Global.ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS);
+                    Namespace.GLOBAL, Settings.Global.ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS);
 
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundModeSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
-                    Settings.Global.ENCODED_SURROUND_OUTPUT);
+                    Namespace.GLOBAL, Settings.Global.ENCODED_SURROUND_OUTPUT);
 
     @Override
     protected void setUp() throws Exception {
@@ -299,10 +300,14 @@ public class AudioManagerTest extends InstrumentationTestCase {
         if (!hasBuiltinSpeaker()) {
             return;
         }
+
         final MyBlockingIntentReceiver receiver = new MyBlockingIntentReceiver(
                 AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED);
         final boolean initialSpeakerphoneState = mAudioManager.isSpeakerphoneOn();
         try {
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    Manifest.permission.MODIFY_PHONE_STATE);
+
             mContext.registerReceiver(receiver,
                     new IntentFilter(AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED));
             // change the speakerphone state
@@ -318,6 +323,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
         } finally {
             mContext.unregisterReceiver(receiver);
             mAudioManager.setSpeakerphoneOn(initialSpeakerphoneState);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -585,9 +591,9 @@ public class AudioManagerTest extends InstrumentationTestCase {
         // setBluetoothA2dpOn is a no-op, and getRouting should always return -1
         boolean oldA2DP = mAudioManager.isBluetoothA2dpOn();
         mAudioManager.setBluetoothA2dpOn(true);
-        assertEquals(oldA2DP , mAudioManager.isBluetoothA2dpOn());
+        assertEquals(oldA2DP, mAudioManager.isBluetoothA2dpOn());
         mAudioManager.setBluetoothA2dpOn(false);
-        assertEquals(oldA2DP , mAudioManager.isBluetoothA2dpOn());
+        assertEquals(oldA2DP, mAudioManager.isBluetoothA2dpOn());
 
         assertEquals(-1, mAudioManager.getRouting(MODE_RINGTONE));
         assertEquals(-1, mAudioManager.getRouting(MODE_NORMAL));
@@ -606,13 +612,22 @@ public class AudioManagerTest extends InstrumentationTestCase {
         if (isAutomotive()) {
             return;
         }
-        mAudioManager.setSpeakerphoneOn(true);
-        assertTrueCheckTimeout(mAudioManager, p -> p.isSpeakerphoneOn(),
-                DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isSpeakerPhoneOn() returned false");
 
-        mAudioManager.setSpeakerphoneOn(false);
-        assertTrueCheckTimeout(mAudioManager, p -> !p.isSpeakerphoneOn(),
-                DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isSpeakerPhoneOn() returned true");
+        try {
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    Manifest.permission.MODIFY_PHONE_STATE);
+
+            mAudioManager.setSpeakerphoneOn(true);
+            assertTrueCheckTimeout(mAudioManager, p -> p.isSpeakerphoneOn(),
+                    DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isSpeakerPhoneOn() returned false");
+
+            mAudioManager.setSpeakerphoneOn(false);
+            assertTrueCheckTimeout(mAudioManager, p -> !p.isSpeakerphoneOn(),
+                    DEFAULT_ASYNC_CALL_TIMEOUT_MS, "isSpeakerPhoneOn() returned true");
+
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     public void testVibrateNotification() throws Exception {

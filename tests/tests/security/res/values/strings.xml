@@ -32,4 +32,31 @@
     <string name="cve_2022_20338_invalidURL">https://google.com@evil.com</string>
     <string name="cve_2022_20338_path">@evil.com</string>
     <string name="cve_2022_20338_scheme">https</string>
+
+    <!-- CVE-2023-20960 -->
+    <string name="cve_2023_20960_dumpsysActivityCmd">dumpsys activity %1$s</string>
+    <string name="cve_2023_20960_failMsg">Device is vulnerable to b/250589026, Unexported
+    activities can be launched using ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY</string>
+    <string name="cve_2023_20960_forwardSlash">/</string>
+    <string name="cve_2023_20960_mResumedTruePattern">.*mResumed=true.*</string>
+    <string name="cve_2023_20960_settingsPackageName">com.android.settings</string>
+    <string name="cve_2023_20960_unexportedActivity">.security.InstallCaCertificateWarning</string>
+    <string name="cve_2023_20960_uriStringComponent">component=</string>
+    <string name="cve_2023_20960_uriStringIntent">intent:#Intent;</string>
+    <string name="cve_2023_20960_uriStringSuffix">;end</string>
+
+    <!-- CVE-2021-0600 -->
+    <string name="cve_2021_0600_action">CVE_2021_0600_action</string>
+    <string name="cve_2021_0600_errorCreateCharSeq">Failed to create a charsequence to contain HTML
+    text</string>
+    <string name="cve_2021_0600_failMsg">Vulnerable to b/179042963 !!</string>
+    <string name="cve_2021_0600_intentNotFound">Failed to resolve %1$s</string>
+    <string name="cve_2021_0600_keyException">exception</string>
+    <string name="cve_2021_0600_keyHtml">html</string>
+    <string name="cve_2021_0600_noException">noException</string>
+    <string name="cve_2021_0600_pattern">.*CVE_2021_0600_EXPN.*</string>
+    <string name="cve_2021_0600_patternNotFound">UI element with text pattern %1$s not found
+    </string>
+    <string name="cve_2021_0600_targetText">CVE_2021_0600_EXPN</string>
+    <string name="cve_2021_0600_targetTextHtml"><![CDATA[<h1>CVE_2021_0600_EXPN</h1>]]></string>
 </resources>

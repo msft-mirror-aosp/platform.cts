@@ -45,6 +45,27 @@ public final class FeatureUtil {
     }
 
     /**
+     * Checks whether the device supports customizing the lock screen message
+     */
+    public static boolean isCustomizeLockScreenMessageSupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports password
+     */
+    public static boolean isPasswordSupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports high password complexity
+     */
+    public static boolean isHighPasswordComplexitySupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
      * Checks whether the device supports Easter egg / game
      */
     public static boolean isFunSupported(Context context) {
@@ -201,5 +222,13 @@ public final class FeatureUtil {
      */
     public static boolean isKeyguardShownWhenUserDoesntHaveCredentials(Context context) {
         return !isAutomotive(context) && !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports camera.
+     */
+    public static boolean supportCameraFeature(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
     }
 }

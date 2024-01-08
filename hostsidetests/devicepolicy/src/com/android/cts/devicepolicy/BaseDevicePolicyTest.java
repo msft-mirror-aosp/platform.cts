@@ -87,7 +87,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
 
     //The maximum time to wait for user to be unlocked.
-    private static final long USER_UNLOCK_TIMEOUT_SEC = 30;
+    private static final long USER_UNLOCK_TIMEOUT_SEC = 60;
     private static final String USER_STATE_UNLOCKED = "RUNNING_UNLOCKED";
 
     protected static final String PERMISSION_INTERACT_ACROSS_USERS =
@@ -429,6 +429,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         int retries = 10;
         CLog.i("switching to user %d", userId);
         executeShellCommand("am switch-user " + userId);
+        RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
         while (getDevice().getCurrentUser() != userId && (--retries) >= 0) {
             // am switch-user can be ignored if a previous user-switching operation
             // is still in progress. In this case, sleep a bit and then retry
