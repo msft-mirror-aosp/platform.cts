@@ -414,7 +414,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         try {
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/,
+                    mCameraManager, true/*defaultSupport*/,
                     String.format("Session configuration query from combination: %s failed",
                             combination.getDescription()));
 
@@ -591,13 +591,14 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             if (physicalCameraId == null) {
                 checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                         /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                        true/*defaultSupport*/, String.format(
+                        mCameraManager, true/*defaultSupport*/, String.format(
                         "Session configuration query from combination: %s failed",
                         combination.getDescription()));
             } else {
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue(
                         String.format("Session configuration query from combination: %s failed",
                         combination.getDescription()), !sessionConfigSupport.error);
@@ -737,7 +738,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         try {
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/,
+                    mCameraManager, true/*defaultSupport*/,
                     String.format("Session configuration query from combination: %s failed",
                             combination.getDescription()));
 
@@ -995,8 +996,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             allOutputSurfaces.add(inputReader.getSurface());
 
             checkSessionConfigurationWithSurfaces(mCamera, mHandler, allOutputSurfaces,
-                    inputConfig, SessionConfiguration.SESSION_REGULAR, /*defaultSupport*/ true,
-                    String.format("Session configuration query %s failed",
+                    inputConfig, SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                    /*defaultSupport*/ true, String.format("Session configuration query %s failed",
                     combination.getDescription()));
 
             // Verify we can create a reprocessable session with the input and all outputs.

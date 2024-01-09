@@ -283,7 +283,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue("Session configuration query for logical camera failed with error",
                         !sessionConfigSupport.error);
                 if (!sessionConfigSupport.callSupported) {
@@ -422,7 +423,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue("Session configuration query for logical camera failed with error",
                         !sessionConfigSupport.error);
                 if (!sessionConfigSupport.callSupported) {
@@ -1131,7 +1133,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
         SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                 mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                false/*defaultSupport*/);
         assertTrue("Session configuration query for logical camera failed with error",
                 !sessionConfigSupport.error);
         if (!sessionConfigSupport.callSupported) {

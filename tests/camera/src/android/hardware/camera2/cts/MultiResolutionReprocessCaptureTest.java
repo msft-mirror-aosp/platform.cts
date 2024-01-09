@@ -377,7 +377,7 @@ public class MultiResolutionReprocessCaptureTest extends Camera2AndroidTestCase 
 
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     inputConfig, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/, String.format(
+                    mCameraManager, true/*defaultSupport*/, String.format(
                     "Session configuration query for multi-res combination: %s failed",
                     combination.getDescription()));
 
