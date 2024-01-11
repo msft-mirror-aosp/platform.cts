@@ -15,7 +15,6 @@
  */
 package android.devicepolicy.cts
 
-
 import android.app.admin.DevicePolicyManager
 import android.content.pm.PackageManager
 import android.os.Build
@@ -45,6 +44,8 @@ import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.utils.Assert.assertThrows
+import com.android.bedstead.nene.utils.ShellCommand
+import com.android.bedstead.nene.utils.Versions.R
 import com.android.compatibility.common.util.ApiTest
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.Query
@@ -55,7 +56,6 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.testng.Assert
-import com.android.bedstead.nene.utils.Versions.R
 
 @RunWith(BedsteadJUnit4::class)
 class PasswordTest {
@@ -176,7 +176,7 @@ class PasswordTest {
         try {
             deviceState.dpc().devicePolicyManager()
                 .setRequiredStrongAuthTimeout(deviceState.dpc().componentName(), TIMEOUT)
-            Truth.assertThat(TestApis.devicePolicy().getRequiredStrongAuthTimeout()
+            assertThat(TestApis.devicePolicy().getRequiredStrongAuthTimeout()
             ).isNotEqualTo(TIMEOUT)
         } finally {
             deviceState.dpc().devicePolicyManager()
@@ -191,7 +191,7 @@ class PasswordTest {
     @PolicyAppliesTest(policy = [DeprecatedResetPassword::class])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#resetPassword"])
     fun resetPassword_targetBeforeN_returnsFalse() {
-        Truth.assertThat(
+        assertThat(
             deviceState.dpc()
                 .devicePolicyManager().resetPassword(Defaults.DEFAULT_PASSWORD,  /* flags= */0)
         ).isFalse()
@@ -1528,10 +1528,102 @@ class PasswordTest {
         )
     }
 
+    @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
+    @PolicyAppliesTest(
+            policy = [PasswordQuality::class]
+    )
+    fun currentFailedPasswordAttempts_resets_whenPasswordIsCorrect() {
+        try {
+            val wrongPassword = TEST_PASSWORD + "5"
+            changeUserCredential(TEST_PASSWORD, null)
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(0)
+            // Try an incorrect password.
+            assertThat(verifyUserCredentialIsCorrect(wrongPassword)).isFalse()
+            // Test that now there is one failed attempt.
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(1)
+            // Try the correct password and check the failed attempts number has been reset to 0.
+            assertThat(verifyUserCredentialIsCorrect(TEST_PASSWORD)).isTrue()
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(0)
+        }finally {
+            changeUserCredential(null, TEST_PASSWORD)
+        }
+    }
+    @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
+    @PolicyAppliesTest(
+            policy = [PasswordQuality::class]
+    )
+    fun currentFailedPasswordAttempts_increasesBy1_onFailedPasswordAttempt() {
+        try {
+            val wrongPassword = TEST_PASSWORD + "5"
+            changeUserCredential(TEST_PASSWORD, null)
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(0)
+            // Try an incorrect password.
+            assertThat(verifyUserCredentialIsCorrect(wrongPassword)).isFalse()
+            // Test that now there is one failed attempt.
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(1)
+            // Try an incorrect password.
+            assertThat(verifyUserCredentialIsCorrect(wrongPassword)).isFalse()
+            // Test that now there are two failed attempts.
+            assertThat(
+                    deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+            ).isEqualTo(2)
+        }finally {
+            changeUserCredential(null, TEST_PASSWORD)
+        }
+    }
+
+    private fun verifyUserCredentialIsCorrect(credential: String): Boolean {
+        return ShellCommand.builder("cmd lock_settings verify")
+                .addOperand("--user")
+                .addOperand(deviceState.dpc().user().id())
+                .addOperand(if (credential.isEmpty()) "" else "--old $credential")
+                .execute().startsWith(VERIFY_CREDENTIAL_CONFIRMATION)
+    }
+
+    private fun changeUserCredential(
+            newCredential: String?,
+            oldCredential: String?
+    ) {
+        val oldCredentialArgument =
+                if (oldCredential.isNullOrEmpty()) "" else "--old $oldCredential"
+        if (!newCredential.isNullOrEmpty()) {
+            val commandOutput: String = ShellCommand.builder("cmd lock_settings set-password")
+                    .addOperand("--user")
+                    .addOperand(deviceState.dpc().user().id())
+                    .addOperand(oldCredentialArgument)
+                    .addOperand(newCredential)
+                    .execute()
+
+            if (!commandOutput.startsWith("Password set to")) {
+                Assert.fail("Failed to set user credential: $commandOutput")
+            }
+        } else {
+            val commandOutput: String = ShellCommand.builder("cmd lock_settings clear")
+                    .addOperand("--user")
+                    .addOperand(deviceState.dpc().user().id())
+                    .addOperand(oldCredentialArgument)
+                    .execute()
+            if (!commandOutput.startsWith("Lock credential cleared")) {
+                Assert.fail("Failed to clear user credential: $commandOutput")
+            }
+        }
+    }
+
     companion object {
         private const val TIMEOUT: Long = 51234
         private const val PASSWORD_MEDIUM_COMPLEXITY = "abc12"
-
+        private const val TEST_PASSWORD = "1234"
+        private const val VERIFY_CREDENTIAL_CONFIRMATION = "Lock credential verified"
         private const val TEST_VALUE: Int = 5
         private const val DEFAULT_LENGTH = 0
         private const val DEFAULT_NUMERIC = 1
