@@ -21,6 +21,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 
 import com.android.queryable.info.ActivityInfo;
+import com.android.queryable.info.MetadataInfo;
 import com.android.queryable.info.ReceiverInfo;
 import com.android.queryable.info.ServiceInfo;
 
@@ -31,12 +32,13 @@ import java.util.Set;
 class TestAppDetails {
     TestappProtos.AndroidApp mApp;
     int mResourceIdentifier;
-    final Bundle mMetadata = new Bundle();
+    final Set<MetadataInfo> mMetadata = new HashSet<>();
     final Set<String> mPermissions = new HashSet<>();
     final Set<ActivityInfo> mActivities = new HashSet<>();
     final Set<ActivityInfo> mActivityAliases = new HashSet<>();
     final Set<ServiceInfo> mServices = new HashSet<>();
     final Set<ReceiverInfo> mReceivers = new HashSet<>();
+    final Set<Integer> mPolicies = new HashSet<>();
 
     /**
      * Gets the shared user ID of the test app, or {@code Null} if none.
@@ -77,6 +79,7 @@ class TestAppDetails {
                 + ", mActivityAliases=" + mActivityAliases
                 + ", mServices=" + mServices
                 + ", mReceivers=" + mReceivers
+                + ", mPolicies=" + mPolicies
                 + '}';
     }
 }
