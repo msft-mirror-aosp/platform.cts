@@ -59,7 +59,8 @@ public abstract class PlayerListener implements Player.Listener {
     SPEED_CHANGE_TEST,
     PIP_MODE_TEST,
     SPLIT_SCREEN_TEST,
-    DEVICE_LOCK_TEST
+    DEVICE_LOCK_TEST,
+    LOCK_PLAYBACK_CONTROLLER_TEST
   }
 
   public static boolean mPlaybackEnded;
