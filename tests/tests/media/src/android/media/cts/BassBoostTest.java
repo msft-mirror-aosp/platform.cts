@@ -16,6 +16,12 @@
 
 package android.media.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.media.audiofx.AudioEffect;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -24,7 +30,13 @@ import android.os.Looper;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @NonMediaMainlineTest
+@RunWith(AndroidJUnit4.class)
 public class BassBoostTest extends PostProcTestBase {
 
     private String TAG = "BassBoostTest";
@@ -46,6 +58,7 @@ public class BassBoostTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 0.0: test constructor and release
+    @Test
     public void test0_0ConstructorAndRelease() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -76,6 +89,7 @@ public class BassBoostTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 1.0: test strength
+    @Test
     public void test1_0Strength() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -108,6 +122,7 @@ public class BassBoostTest extends PostProcTestBase {
     }
 
     //Test case 1.1: test properties
+    @Test
     public void test1_1Properties() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -145,6 +160,7 @@ public class BassBoostTest extends PostProcTestBase {
     }
 
     //Test case 1.2: test setStrength() throws exception after release
+    @Test
     public void test1_2SetStrengthAfterRelease() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -166,6 +182,7 @@ public class BassBoostTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 2.0: test setEnabled() and getEnabled() in valid state
+    @Test
     public void test2_0SetEnabledGetEnabled() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -185,6 +202,7 @@ public class BassBoostTest extends PostProcTestBase {
     }
 
     //Test case 2.1: test setEnabled() throws exception after release
+    @Test
     public void test2_1SetEnabledAfterRelease() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -206,6 +224,7 @@ public class BassBoostTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 3.0: test control status listener
+    @Test
     public void test3_0ControlStatusListener() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -231,6 +250,7 @@ public class BassBoostTest extends PostProcTestBase {
     }
 
     //Test case 3.1: test enable status listener
+    @Test
     public void test3_1EnableStatusListener() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
@@ -258,6 +278,7 @@ public class BassBoostTest extends PostProcTestBase {
     }
 
     //Test case 3.2: test parameter changed listener
+    @Test
     public void test3_2ParameterChangedListener() throws Exception {
         if (!isBassBoostAvailable()) {
             return;
