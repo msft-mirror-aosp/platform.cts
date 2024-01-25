@@ -386,7 +386,7 @@ open class PackageInstallerTestBase {
         clickInstallerUIButton(getBySelector(resId))
     }
 
-    private fun getBySelector(id: String): BySelector {
+    fun getBySelector(id: String): BySelector {
         // Normally, we wouldn't need to look for buttons from 2 different packages.
         // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
         // to selective partners, leading to fragmentation in which button surfaces in an OEM's
