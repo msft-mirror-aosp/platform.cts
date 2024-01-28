@@ -346,4 +346,16 @@
 
     <!-- b/301216478 -->
     <option name="compatibility:exclude-filter" value="CtsSandboxedFledgeManagerTests com.android.tests.sandbox.fledge.SandboxedFledgeManagerTest#loadSdkAndRunFledgeFlow" />
+<<<<<<< HEAD   (4b97c9 Merge "[CDM][CTS] Make SystemDataTransferTest backward compa)
+=======
+
+    <!-- b/320761239 -->
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#cannotUseTooManyAttributions" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#noteFromTwoProxiesAndVerifyProxyInfo" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedProxyVerifyRunningAndTime" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedAndUntrustedProxyVerifyProxyInfo" />
+
+    <!-- b/318756444 -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled" />
+>>>>>>> CHANGE (819d29 [RESTRICT AUTOMERGE] CTS: Exclude a failed test for Settings)
 </configuration>
