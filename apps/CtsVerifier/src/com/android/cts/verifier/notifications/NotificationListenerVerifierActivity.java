@@ -1958,6 +1958,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
                             .addAction(generateAction(1))
                             .addAction(generateAction(2))
                             .build();
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+                n1.category = Notification.CATEGORY_CALL;
+            }
             mNm.notify(mTag1, mId1, n1);
         }
 
