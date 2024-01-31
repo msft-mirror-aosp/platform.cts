@@ -4,7 +4,12 @@
         android:id="@+id/switch_item"
         android:title="@string/view"
         android:actionLayout="@layout/display_mode_switch"
-        android:showAsAction="ifRoom" />
+        android:showAsAction="always" />
+    <item
+        android:id="@+id/system_switch_item"
+        android:title="@string/system"
+        android:actionLayout="@layout/system_switch"
+        android:showAsAction="always" />
     <item android:id="@+id/clear"
           android:icon="@android:drawable/ic_menu_delete"
           android:title="@string/clear"
@@ -13,4 +18,10 @@
           android:icon="@android:drawable/ic_menu_save"
           android:title="@string/export"
           android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/search_test"
+        android:title="@string/search_title"
+        android:actionViewClass="android.widget.SearchView"
+        android:showAsAction="collapseActionView|ifRoom"
+        android:imeOptions="actionSearch" />
 </menu>
