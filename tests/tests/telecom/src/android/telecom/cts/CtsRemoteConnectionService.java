@@ -49,6 +49,7 @@ public class CtsRemoteConnectionService extends ConnectionService {
     // This is the connection service registered with Telecom
     private static ConnectionService sTelecomConnectionService;
     private static boolean mIsServiceUnbound;
+    private static ConnectionRequest sConnectionRequest;
 
     public CtsRemoteConnectionService() throws Exception {
         super();
@@ -78,12 +79,14 @@ public class CtsRemoteConnectionService extends ConnectionService {
             sConnectionService = connectionService;
             // Cant override the onBind method for ConnectionService, so reset it here.
             mIsServiceUnbound = false;
+            sConnectionRequest = null;
         }
     }
 
     public static void tearDown() {
         synchronized(sLock) {
             sConnectionService = null;
+            sConnectionRequest = null;
         }
     }
 
@@ -91,6 +94,7 @@ public class CtsRemoteConnectionService extends ConnectionService {
     public Connection onCreateOutgoingConnection(PhoneAccountHandle connectionManagerPhoneAccount,
             ConnectionRequest request) {
         synchronized(sLock) {
+            sConnectionRequest = request;
             if (sConnectionService != null) {
                 return sConnectionService.onCreateOutgoingConnection(
                         connectionManagerPhoneAccount, request);
@@ -105,6 +109,7 @@ public class CtsRemoteConnectionService extends ConnectionService {
     public Connection onCreateIncomingConnection(PhoneAccountHandle connectionManagerPhoneAccount,
             ConnectionRequest request) {
         synchronized(sLock) {
+            sConnectionRequest = request;
             if (sConnectionService != null) {
                 return sConnectionService.onCreateIncomingConnection(
                         connectionManagerPhoneAccount, request);
@@ -119,6 +124,7 @@ public class CtsRemoteConnectionService extends ConnectionService {
     public Conference onCreateOutgoingConference(PhoneAccountHandle connectionManagerPhoneAccount,
             ConnectionRequest request) {
         synchronized(sLock) {
+            sConnectionRequest = request;
             if (sConnectionService != null) {
                 return sConnectionService.onCreateOutgoingConference(
                         connectionManagerPhoneAccount, request);
@@ -134,6 +140,7 @@ public class CtsRemoteConnectionService extends ConnectionService {
     public Conference onCreateIncomingConference(PhoneAccountHandle connectionManagerPhoneAccount,
             ConnectionRequest request) {
         synchronized(sLock) {
+            sConnectionRequest = request;
             if (sConnectionService != null) {
                 return sConnectionService.onCreateIncomingConference(
                         connectionManagerPhoneAccount, request);
@@ -171,5 +178,8 @@ public class CtsRemoteConnectionService extends ConnectionService {
 
     public static boolean isServiceUnbound() {
         return mIsServiceUnbound;
+    }
+    public static ConnectionRequest getConnectionRequest() {
+        return sConnectionRequest;
     }
 }

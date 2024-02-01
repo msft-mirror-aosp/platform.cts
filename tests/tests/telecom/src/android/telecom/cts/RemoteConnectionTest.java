@@ -45,6 +45,8 @@ import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.view.Surface;
 
+import com.android.server.telecom.flags.Flags;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,6 +74,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertCallState(call, Call.STATE_DIALING);
 
         verifyRemoteConnectionObject(mRemoteConnectionObject, mRemoteConnection);
+        verifyRemoteConnectionRequestTelecomCallId();
 
         mConnection.setActive();
         mRemoteConnection.setActive();
@@ -110,6 +113,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertCallState(call, Call.STATE_DIALING);
 
         verifyRemoteConnectionObject(mRemoteConnectionObject, mRemoteConnection);
+        verifyRemoteConnectionRequestTelecomCallId();
 
         mConnection.setActive();
         mRemoteConnection.setActive();
@@ -146,6 +150,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertCallState(call, Call.STATE_RINGING);
 
         verifyRemoteConnectionObject(mRemoteConnectionObject, mRemoteConnection);
+        verifyRemoteConnectionRequestTelecomCallId();
 
         assertConnectionState(mConnection, Connection.STATE_RINGING);
         assertRemoteConnectionState(mRemoteConnectionObject, Connection.STATE_RINGING);
@@ -214,6 +219,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
             MockConference remoteConference = verifyConferenceOnRemoteCS(2);
             RemoteConferenceTest.verifyRemoteConferenceObject(conference.getRemoteConference(),
                     remoteConference, conference);
+            verifyRemoteConnectionRequestTelecomCallId();
             conference.onDisconnect();
         } catch (Exception e) {
             fail(e.getMessage());
@@ -261,6 +267,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
             MockConference remoteConference = verifyConferenceOnRemoteCS(2);
             RemoteConferenceTest.verifyRemoteConferenceObject(conference.getRemoteConference(),
                     remoteConference, conference);
+            verifyRemoteConnectionRequestTelecomCallId();
             conference.onDisconnect();
         } catch (Exception e) {
             fail(e.getMessage());
@@ -1530,5 +1537,12 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertEquals(mRemoteConnectionObject, callbackInvoker.getArgs(0)[0]);
         mRemoteConnectionObject.unregisterCallback(callback);
         return handler;
+    }
+
+    private void verifyRemoteConnectionRequestTelecomCallId() {
+        if (Flags.setRemoteConnectionCallId()) {
+            assertNotNull(CtsRemoteConnectionService.getConnectionRequest());
+            assertNotNull(CtsRemoteConnectionService.getConnectionRequest().getTelecomCallId());
+        }
     }
 }
