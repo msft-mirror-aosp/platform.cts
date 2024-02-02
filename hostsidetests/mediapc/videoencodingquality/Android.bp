@@ -21,6 +21,7 @@ java_test_host {
     srcs: ["src/*.java"],
     static_libs: [
         "compatibility-host-util",
+        "cts-host-utils",
     ],
     libs: [
         "cts-tradefed",
@@ -30,5 +31,8 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
+    ],
+    data: [
+        ":VideoEncodingApp",
     ],
 }

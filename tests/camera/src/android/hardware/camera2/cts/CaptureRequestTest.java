@@ -2805,6 +2805,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                                 " Preview size is " + previewSize + ", repeating is " + repeating);
                     }
                     requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, cropRegions[i]);
+                    requestBuilder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                            CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
                     requests[i] = requestBuilder.build();
                     if (VERBOSE) {
                         Log.v(TAG, "submit crop region " + cropRegions[i]);
@@ -2951,6 +2953,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             }
             requestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomFactor);
             requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, defaultCropRegion);
+            requestBuilder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                    CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
             CaptureRequest request = requestBuilder.build();
             for (int j = 0; j < captureSubmitRepeat; ++j) {
                 mSession.capture(request, listener, mHandler);
@@ -3194,6 +3198,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         Size maxPreviewSize = mOrderedPreviewSizes.get(0);
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        requestBuilder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
 
         for (Capability cap : extendedSceneModeCaps) {
             int mode = cap.getMode();
@@ -3229,6 +3235,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 CameraMetadata.CONTROL_AUTOFRAMING_ON};
         final int zoomSteps = 5;
         final float zoomErrorMargin = 0.05f;
+        final int kMaxNumFrames = 200;
         Size maxPreviewSize = mOrderedPreviewSizes.get(0); // Max preview size.
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -3259,17 +3266,33 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                         CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
 
                 if (mode == CameraMetadata.CONTROL_AUTOFRAMING_ON) {
-                    if (expectedZoomRatio == 0.0f) {
-                        expectedZoomRatio = resultZoomRatio;
-                    }
-                    assertTrue("Autoframing state should be FRAMING or CONVERGED when AUTOFRAMING"
-                            + "is ON",
+                    int numFrames = 0;
+                    while (numFrames < kMaxNumFrames) {
+                        result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                        autoframingState = getValueNotNull(result,
+                                CaptureResult.CONTROL_AUTOFRAMING_STATE);
+                        assertTrue("Autoframing state should be FRAMING or CONVERGED when "
+                            + "AUTOFRAMING is ON",
                             autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_FRAMING
                                     || autoframingState
                                             == CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED);
-                    assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
+
+                        assertTrue("Video Stablization should be OFF when AUTOFRAMING is ON",
                             videoStabilizationMode
                                     == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+
+                        resultZoomRatio = getValueNotNull(result, CaptureResult.CONTROL_ZOOM_RATIO);
+                        if (autoframingState ==
+                                CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED) {
+                            break;
+                        }
+                        numFrames++;
+                    }
+
+                    if (autoframingState == CameraMetadata.CONTROL_AUTOFRAMING_STATE_CONVERGED
+                            && expectedZoomRatio == 0.0f) {
+                        expectedZoomRatio = resultZoomRatio;
+                    }
                 } else {
                     expectedZoomRatio = testZoomRatio;
                     assertTrue("Autoframing state should be INACTIVE when AUTOFRAMING is OFF",
@@ -3279,12 +3302,16 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 verifyCaptureResultForKey(CaptureResult.CONTROL_AUTOFRAMING, mode, listener,
                         NUM_FRAMES_VERIFIED);
 
-                mCollector.expectTrue(String.format(
-                                "Zoom Ratio in Capture Request does not match the expected zoom"
-                                        + "ratio in Capture Result (expected = %f, actual = %f)",
-                                expectedZoomRatio, resultZoomRatio),
-                        Math.abs(expectedZoomRatio - resultZoomRatio) / expectedZoomRatio
-                                <= zoomErrorMargin);
+                // If autoframing was OFF, or the framing state CONVERGED, the zoom ratio in result
+                // should be within the margin of error.
+                if (autoframingState != CameraMetadata.CONTROL_AUTOFRAMING_STATE_FRAMING) {
+                    mCollector.expectTrue(String.format(
+                            "Zoom Ratio in Capture Request does not match the expected zoom"
+                                    + "ratio in Capture Result (expected = %f, actual = %f)",
+                                    expectedZoomRatio, resultZoomRatio),
+                            Math.abs(expectedZoomRatio - resultZoomRatio) / expectedZoomRatio
+                                    <= zoomErrorMargin);
+                }
             }
         }
     }

@@ -24,6 +24,7 @@ import android.graphics.Rect;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -39,7 +40,10 @@ import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import org.junit.rules.TestName;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
@@ -66,11 +70,15 @@ public class CtsWindowInfoUtils {
      * @param predicate The predicate tested each time window infos change.
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
      * @param unit      The units associated with timeout.
+     * @param uiAutomation Pass in a uiAutomation to use. If null is passed in, the default will
+     *                     be used. Passing non null is only needed if the test has a custom version
+     *                     of uiAutomtation since retrieving a uiAutomation could overwrite it.
      * @return True if the provided predicate is true for any invocation before
      * the timeout is reached. False otherwise.
      */
     public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
-            long timeout, @NonNull TimeUnit unit) throws InterruptedException {
+            long timeout, @NonNull TimeUnit unit, @Nullable UiAutomation uiAutomation)
+            throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
 
@@ -84,15 +92,51 @@ public class CtsWindowInfoUtils {
             }
         };
 
-        var listener = new WindowInfosListenerForTest();
-        try {
-            listener.addWindowInfosListener(checkPredicate);
-            latch.await(timeout, unit);
-        } finally {
-            listener.removeWindowInfosListener(checkPredicate);
+        var waitForWindow = new ThrowingRunnable() {
+            @Override
+            public void run() throws InterruptedException {
+                var listener = new WindowInfosListenerForTest();
+                try {
+                    listener.addWindowInfosListener(checkPredicate);
+                    latch.await(timeout, unit);
+                } finally {
+                    listener.removeWindowInfosListener(checkPredicate);
+                }
+            }
+        };
+
+        if (uiAutomation == null) {
+            uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        }
+        Set<String> shellPermissions = uiAutomation.getAdoptedShellPermissions();
+        if (shellPermissions.isEmpty()) {
+            SystemUtil.runWithShellPermissionIdentity(uiAutomation, waitForWindow,
+                    Manifest.permission.ACCESS_SURFACE_FLINGER);
+        } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
+            waitForWindow.run();
+        } else {
+            throw new IllegalStateException(
+                    "waitForWindowOnTop called with adopted shell permissions that don't include "
+                            + "ACCESS_SURFACE_FLINGER");
         }
 
         return satisfied.get();
+    }
+
+    /**
+     * Same as {@link #waitForWindowInfos(Predicate, long, TimeUnit, UiAutomation)}, but passes in
+     * a null uiAutomation object. This should be used in most cases unless there's a custom
+     * uiAutomation object used in the test.
+     *
+     * @param predicate The predicate tested each time window infos change.
+     * @param timeout   The amount of time to wait for the predicate to be satisfied.
+     * @param unit      The units associated with timeout.
+     * @return True if the provided predicate is true for any invocation before
+     * the timeout is reached. False otherwise.
+     */
+    public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
+            long timeout, @NonNull TimeUnit unit) throws InterruptedException {
+        return waitForWindowInfos(predicate, timeout, unit, null /* uiAutomation */);
     }
 
     /**
@@ -261,38 +305,43 @@ public class CtsWindowInfoUtils {
                         latch.countDown();
                     }
                 };
-                mTimer.schedule(mTask, 200L * HW_TIMEOUT_MULTIPLIER);
+                mTimer.schedule(mTask, 200 * HW_TIMEOUT_MULTIPLIER);
             }
         };
 
-        var waitForWindow = new ThrowingRunnable() {
-            @Override
-            public void run() throws InterruptedException {
-                var listener = new WindowInfosListenerForTest();
-                try {
-                    listener.addWindowInfosListener(windowNotOccluded);
-                    latch.await(timeout, unit);
-                } finally {
-                    listener.removeWindowInfosListener(windowNotOccluded);
-                }
+        runWithSurfaceFlingerPermission(() -> {
+            var listener = new WindowInfosListenerForTest();
+            try {
+                listener.addWindowInfosListener(windowNotOccluded);
+                latch.await(timeout, unit);
+            } finally {
+                listener.removeWindowInfosListener(windowNotOccluded);
             }
-        };
+        });
+
+        return satisfied.get();
+    }
+
+    private interface InterruptableRunnable {
+        void run() throws InterruptedException;
+    };
+
+    private static void runWithSurfaceFlingerPermission(@NonNull InterruptableRunnable runnable)
+            throws InterruptedException {
 
         Set<String> shellPermissions =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation()
                         .getAdoptedShellPermissions();
         if (shellPermissions.isEmpty()) {
-            SystemUtil.runWithShellPermissionIdentity(waitForWindow,
+            SystemUtil.runWithShellPermissionIdentity(runnable::run,
                     Manifest.permission.ACCESS_SURFACE_FLINGER);
         } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
-            waitForWindow.run();
+            runnable.run();
         } else {
             throw new IllegalStateException(
                     "waitForWindowOnTop called with adopted shell permissions that don't include "
                             + "ACCESS_SURFACE_FLINGER");
         }
-
-        return satisfied.get();
     }
 
     /**
@@ -323,6 +372,76 @@ public class CtsWindowInfoUtils {
             IBinder windowToken = windowTokenSupplier.get();
             return windowToken != null && windowInfo.windowToken == windowToken;
         });
+    }
+
+    /**
+     * Waits until the set of windows and their geometries are unchanged for 200ms.
+     *
+     * <p>
+     * <strong>Note:</strong>If the caller has any adopted shell permissions, they must include
+     * android.permission.ACCESS_SURFACE_FLINGER.
+     * </p>
+     *
+     * @param timeout The amount of time to wait for the window to be visible.
+     * @param unit    The units associated with timeout.
+     * @return True if window geometry becomes stable before the timeout is reached. False
+     * otherwise.
+     */
+    public static boolean waitForStableWindowGeometry(int timeout, @NonNull TimeUnit unit)
+            throws InterruptedException {
+        var latch = new CountDownLatch(1);
+        var satisfied = new AtomicBoolean();
+
+        var timer = new Timer();
+        TimerTask[] task = {null};
+
+        var previousBounds = new HashMap<IBinder, Rect>();
+        var currentBounds = new HashMap<IBinder, Rect>();
+
+        Consumer<List<WindowInfo>> consumer = windowInfos -> {
+            if (satisfied.get()) {
+                return;
+            }
+
+            currentBounds.clear();
+            for (var windowInfo : windowInfos) {
+                currentBounds.put(windowInfo.windowToken, windowInfo.bounds);
+            }
+
+            if (currentBounds.equals(previousBounds)) {
+                // No changes detected. Let the previously scheduled timer task continue.
+                return;
+            }
+
+            previousBounds.clear();
+            previousBounds.putAll(currentBounds);
+
+            // Something has changed. Cancel the previous timer task and schedule a new task
+            // to countdown the latch in 200ms.
+            if (task[0] != null) {
+                task[0].cancel();
+            }
+            task[0] = new TimerTask() {
+                @Override
+                public void run() {
+                    satisfied.set(true);
+                    latch.countDown();
+                }
+            };
+            timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
+        };
+
+        runWithSurfaceFlingerPermission(() -> {
+            var listener = new WindowInfosListenerForTest();
+            try {
+                listener.addWindowInfosListener(consumer);
+                latch.await(timeout, unit);
+            } finally {
+                listener.removeWindowInfosListener(consumer);
+            }
+        });
+
+        return satisfied.get();
     }
 
     /**
@@ -440,4 +559,17 @@ public class CtsWindowInfoUtils {
         return true;
     }
 
+    public static void dumpWindowsOnScreen(String tag, TestName testName)
+            throws InterruptedException {
+        waitForWindowInfos(windowInfos -> {
+            if (windowInfos.size() == 0) {
+                return false;
+            }
+            Log.d(tag, "Dumping windows on screen for test " + testName.getMethodName());
+            for (var windowInfo : windowInfos) {
+                Log.d(tag, "     " + windowInfo);
+            }
+            return true;
+        }, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
+    }
 }

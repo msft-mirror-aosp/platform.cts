@@ -29,6 +29,7 @@ import android.compat.testing.SharedLibraryInfo;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
+import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.INativeDevice;
 import com.android.tradefed.device.ITestDevice;
@@ -49,7 +50,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.jf.dexlib2.iface.ClassDef;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -246,7 +246,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/sdksandbox/ISdkSandboxProcessDeathCallback;",
                     "Landroid/app/sdksandbox/ISendDataCallback;",
                     "Landroid/app/sdksandbox/ISharedPreferencesSyncCallback;",
-                    "Landroid/app/sdksandbox/ISdkToServiceCallback;"
+                    "Landroid/app/sdksandbox/ISdkToServiceCallback;",
+                    "Landroid/app/sdksandbox/IUnloadSdkCallback;"
             );
 
     private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
@@ -448,7 +449,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 "Lcom/android/sdksandbox/ISdkSandboxService;",
                 "Lcom/android/sdksandbox/SandboxLatencyInfo-IA;",
                 "Lcom/android/sdksandbox/SandboxLatencyInfo;",
-                "Lcom/android/sdksandbox/IUnloadSdkCallback;",
                 "Lcom/android/sdksandbox/IComputeSdkStorageCallback;"
             );
 
@@ -484,6 +484,55 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.adservices/app/SdkSandboxGoogle/SdkSandboxGoogle.apk",
                 ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
+            .build();
+
+    /**
+     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-U devices.
+     *
+     * <p> Add the new item into this list only if the failure is caused by base device image (not the mainline train).
+     */
+    private static final ImmutableMap<String, ImmutableSet<String>> PRE_U_APK_IN_APEX_BURNDOWN_LIST =
+        new ImmutableMap.Builder<String, ImmutableSet<String>>()
+            .put("/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
+                ImmutableSet.of(
+                    // b/310322439
+                    "Lcom/android/bluetooth/x/android/sysprop/AdbProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/ApkVerityProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/BluetoothProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/CarProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/ContactsProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/CryptoProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/DeviceProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/DisplayProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/HdmiProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/HypervisorProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/InputProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/MediaProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/NetworkProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/OtaProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/PowerProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/SetupWizardProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/SocProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/TelephonyProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/TraceProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/VndkProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/VoldProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/WifiProperties;"
+                ))
+            .build();
+
+    /**
+     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-T devices.
+     *
+     * <p> Add the new item into this list only if the failure is caused by base device image (not the mainline train).
+     */
+    private static final ImmutableMap<String, ImmutableSet<String>> PRE_T_APK_IN_APEX_BURNDOWN_LIST =
+        new ImmutableMap.Builder<String, ImmutableSet<String>>()
+            .put("/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
+                ImmutableSet.of(
+                    // b/303732833
+                    "Lcom/android/internal/util/Preconditions;"
+                ))
             .build();
 
     /**
@@ -565,6 +614,69 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     }
 
     /**
+     * Pretty prints a multimap to make it easier for a person to read it.
+     *
+     * It makes assumptions about the inputs: it assumes the keys are classes and the values are jar
+     * files where they exist. It also assumes that for any given class there will be 2 or more jar
+     * files where they are found.
+     *
+     * @return  the string pretty formatted
+     */
+    private String prettyPrint(Multimap<String, String> classesToJars) {
+        if (classesToJars.isEmpty()) {
+            return "No findings";
+        }
+
+        final HashMultimap<Collection<String>, String> jarsToClasses = HashMultimap.create();
+        classesToJars.asMap().forEach((className, jarFiles) ->
+                jarsToClasses.put(jarFiles, className)
+        );
+
+        StringBuilder sb = new StringBuilder();
+        jarsToClasses.asMap().forEach((jars, classes) -> {
+                    sb.append("The following jar files:\n");
+                    jars.forEach((jar) -> sb.append("    ").append(jar).append('\n'));
+                    sb.append("Contain the following duplicate classes:\n");
+                    classes.forEach((klass) -> sb.append("    ").append(klass).append('\n'));
+                    sb.append("End of duplications.\n\n");
+                }
+        );
+        sb.append("This can result in runtime breakages (now or in a future release)."
+                + " Read more at http://go/fixing-strict-java-packages\n");
+        return sb.toString();
+    }
+
+    /**
+     * Pretty prints a nested multimap to make it easier for a person to read it.
+     *
+     * It makes assumptions about the inputs: it assumes the outer keys are apk files (coming from
+     * APK in apexes) and the outer values are a Multimap with keys being a jar file and values
+     * classes that are defined in that jar and that also exist in the apk file.
+     *
+     * @return  the string pretty formatted
+     */
+    private String prettyPrint(
+            HashMultimap<String, Multimap<String, String>> apkToJarToClasses) {
+        if (apkToJarToClasses.isEmpty()) {
+            return "No findings";
+        }
+        StringBuilder sb = new StringBuilder();
+        apkToJarToClasses.forEach((apk, jarToClasses) -> {
+            jarToClasses.asMap().forEach((jar, classes) -> {
+                sb.append("The apk in apex and jar file:\n");
+                sb.append("    ").append(apk).append('\n');
+                sb.append("    ").append(jar).append('\n');
+                sb.append("contain the following duplicate class definitions:\n");
+                classes.forEach(klass -> sb.append("     ").append(klass).append('\n'));
+                sb.append("End of duplications.\n\n");
+            });
+        });
+        sb.append("This can result in runtime breakages (now or in a future release)."
+                + " Read more at http://go/fixing-strict-java-packages\n");
+        return sb.toString();
+    }
+
+    /**
      * Ensure that there are no duplicate classes among jars listed in BOOTCLASSPATH.
      */
     @Test
@@ -591,7 +703,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
                 duplicate -> !overlapBurndownList.contains(duplicate));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -621,7 +735,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 duplicate -> !overlapBurndownList.contains(duplicate)
                         && !jarsInSameApex(duplicates.get(duplicate)));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -632,7 +748,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> duplicates = getDuplicateClasses(sBootclasspathJars);
         Multimap<String, String> filtered =
                 Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
-        assertThat(filtered).isEmpty();
+
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -644,7 +763,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> filtered =
                 Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -663,7 +784,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 duplicate -> !BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST.contains(duplicate));
         filtered = Multimaps.filterValues(filtered, jar -> jar.startsWith("/apex/"));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -706,7 +829,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     }
                     return true;
                 });
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -733,8 +858,22 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         // e.g. /apex/com.android.btservices/app/Bluetooth@SC-DEV/Bluetooth.apk ->
                         //      /apex/com.android.btservices/app/Bluetooth/Bluetooth.apk
                         apk = apk.replaceFirst("@[^/]*", "");
-                        final ImmutableSet<String> burndownClasses =
-                                FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of());
+                        ImmutableSet<String> burndownClasses;
+                        if (mDeviceSdkLevel.isDeviceAtLeastU()) {
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of())).build();
+                        } else if (mDeviceSdkLevel.isDeviceAtLeastT()) {
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of()))
+                                    .addAll(PRE_U_APK_IN_APEX_BURNDOWN_LIST.getOrDefault(apk, ImmutableSet.of())).build();
+                        } else {
+                            // testApkInApex_nonClasspathClasses is not part of CTS until T
+                            // therefore, running this for pre-T devices with additional list of known failures.
+                            // Another option would be to skip this test entirely for pre-T devices.
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of()))
+                                    .addAll(PRE_T_APK_IN_APEX_BURNDOWN_LIST.getOrDefault(apk, ImmutableSet.of())).build();
+                        }
                         final Multimap<String, String> duplicates =
                                 Multimaps.filterValues(sJarsToClasses, apkClasses::contains);
                         final Multimap<String, String> filteredDuplicates =
@@ -756,7 +895,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         FileUtil.deleteFile(apkFile);
                     }
                 });
-        assertThat(perApkClasspathDuplicates).isEmpty();
+
+        assertWithMessage(prettyPrint(perApkClasspathDuplicates))
+                .that(perApkClasspathDuplicates)
+                .isEmpty();
     }
 
     /**
