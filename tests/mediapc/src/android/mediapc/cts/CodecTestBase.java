@@ -59,6 +59,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 class CodecAsyncHandler extends MediaCodec.Callback {
     private static final String LOG_TAG = CodecAsyncHandler.class.getSimpleName();
@@ -198,8 +199,10 @@ abstract class CodecTestBase {
     static final int RETRY_LIMIT = 100; // max poll counter before test aborts and returns error
     static final String mInpPrefix = WorkDir.getMediaDirString();
     public static final MediaCodecList MCL_ALL = new MediaCodecList(MediaCodecList.ALL_CODECS);
+    public static final String CODEC_FILTER_KEY = "codec-filter";
     public static final String CODEC_PREFIX_KEY = "codec-prefix";
     public static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
+    public static Pattern codecFilter;
     public static String codecPrefix;
     public static String mediaTypePrefix;
 
@@ -222,6 +225,10 @@ abstract class CodecTestBase {
         android.os.Bundle args = InstrumentationRegistry.getArguments();
         codecPrefix = args.getString(CODEC_PREFIX_KEY);
         mediaTypePrefix = args.getString(MEDIA_TYPE_PREFIX_KEY);
+        String codecFilterStr = args.getString(CODEC_FILTER_KEY);
+        if (codecFilterStr != null) {
+            codecFilter = Pattern.compile(codecFilterStr);
+        }
     }
 
     abstract void enqueueInput(int bufferIndex) throws IOException;
@@ -602,8 +609,25 @@ class CodecDecoderTestBase extends CodecTestBase {
                     isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0);
 
             Map<UUID, byte[]> psshInfo = mExtractor.getPsshInfo();
-            assertNotNull("Extractor is missing pssh info", psshInfo);
-            byte[] emeInitData = psshInfo.get(WIDEVINE_UUID);
+            byte[] emeInitData = null;
+
+            // TODO(b/230682028) Remove the following once webm extractor returns PSSH info for VP9
+            if (psshInfo == null && mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                if (format.getInteger(MediaFormat.KEY_HEIGHT) == 1080) {
+                    emeInitData = new byte[]{8, 1, 18, 1, 51, 26, 13, 119, 105, 100, 101, 118,
+                            105, 110, 101, 95, 116, 101, 115, 116, 34, 10, 50, 48, 49, 53,
+                            95, 116, 101, 97, 114, 115, 42, 2, 72, 68};
+                } else if (format.getInteger(MediaFormat.KEY_HEIGHT) == 2160) {
+                    emeInitData = new byte[]{8, 1, 18, 1, 56, 26, 13, 119, 105, 100, 101, 118,
+                            105, 110, 101, 95, 116, 101, 115, 116, 34, 10, 50, 48, 49, 53,
+                            95, 116, 101, 97, 114, 115, 42, 4, 85, 72, 68, 49};
+                } else {
+                    fail("unable to get pssh info for the given resolution in vp9");
+                }
+            } else {
+                assertNotNull("Extractor is missing pssh info", psshInfo);
+                emeInitData = psshInfo.get(WIDEVINE_UUID);
+            }
             assertNotNull("Extractor pssh info is missing data for scheme: " + WIDEVINE_UUID,
                     emeInitData);
             KeyRequester requester =

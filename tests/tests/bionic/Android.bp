@@ -5,6 +5,12 @@ package {
 cc_test {
     name: "CtsBionicTestCases",
 
+    defaults: ["cts_bionic_defaults"],
+}
+
+cc_defaults {
+    name: "cts_bionic_defaults",
+
     defaults: ["bionic_unit_tests_data"],
 
     compile_multilib: "both",
@@ -65,12 +71,6 @@ cc_test {
         ":libdlext_test_runpath_zip_zipaligned",
         ":libdlext_test_zip_zipaligned",
     ],
-
-    test_config: "AndroidTest.xml",
-
-    test_options: {
-        extra_test_configs: ["BionicRootTest.xml"],
-    },
 
     per_testcase_directory: true,
 }

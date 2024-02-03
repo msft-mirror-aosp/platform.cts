@@ -1,7 +1,7 @@
 ## Media Performance Class CTS Tests
 Current folder comprises of files necessary for testing media performance class.
 
-The test vectors used by the test suite is available at [link](https://dl.google.com/android/xts/cts/tests/mediapc/CtsMediaPerformanceClassTestCases-2.3.zip) and is downloaded automatically while running tests. Manual installation of these can be done using copy_media.sh script in this directory.
+The test vectors used by the test suite is available at [link](https://dl.google.com/android/xts/cts/tests/mediapc/CtsMediaPerformanceClassTestCases-3.0.zip) and is downloaded automatically while running tests. Manual installation of these can be done using copy_media.sh script in this directory.
 
 ### Commands
 #### To run all tests in CtsMediaPerformanceClassTestCases
@@ -32,6 +32,14 @@ Example: To limit the tests to run for media types whose names start with video/
 
 ```sh
 atest CtsMediaPerformanceClassTestCases -- --module-arg CtsMediaPerformanceClassTestCases:instrumentation-arg:media-type-prefix:=video/avc
+```
+#### Select codecs using regular expressions
+To select codecs by applying regular expressions, *codec-filter* can be passed to media codec tests to select one or more codecs that match with a specified regular expression pattern.
+
+Example: To limit the tests to run for c2.android.avc.decoder and c2.android.hevc.encoder
+
+```sh
+atest CtsMediaPerformanceClassTestCases -- --module-arg CtsMediaPerformanceClassTestCases:instrumentation-arg:codec-filter:="c2\.android\.avc\.decoder\|c2\.android\.hevc\.encoder"
 ```
 
 #### Select codecs by name

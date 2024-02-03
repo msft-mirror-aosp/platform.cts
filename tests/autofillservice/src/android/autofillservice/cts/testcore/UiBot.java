@@ -1449,7 +1449,8 @@ public class UiBot {
     public void touchOutsideDialog() throws Exception {
         Log.v(TAG, "touchOutsideDialog()");
         final UiObject2 picker = findFillDialogPicker();
-        assertThat(injectClick(new Point(1, picker.getVisibleBounds().top / 2))).isTrue();
+        final Rect bounds = picker.getVisibleBounds();
+        assertThat(injectClick(new Point(bounds.left, bounds.top / 2))).isTrue();
     }
 
     /**
@@ -1459,7 +1460,8 @@ public class UiBot {
         Log.v(TAG, "touchOutsideSaveDialog()");
         final UiObject2 picker = waitForObject(SAVE_UI_SELECTOR, SAVE_TIMEOUT);
         Log.v(TAG, "got picker: " + picker);
-        assertThat(injectClick(new Point(1, picker.getVisibleBounds().top / 2))).isTrue();
+        final Rect bounds = picker.getVisibleBounds();
+        assertThat(injectClick(new Point(bounds.left, bounds.top / 2))).isTrue();
     }
 
     /**
@@ -1477,11 +1479,11 @@ public class UiBot {
         return waitForObject(FILL_DIALOG_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
-    private UiObject2 findFillDialogDatasetPicker() throws Exception {
+    public UiObject2 findFillDialogDatasetPicker() throws Exception {
         return waitForObject(FILL_DIALOG_DATASET_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
-    private UiObject2 findFillDialogHeaderPicker() throws Exception {
+    public UiObject2 findFillDialogHeaderPicker() throws Exception {
         return waitForObject(FILL_DIALOG_HEADER_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 

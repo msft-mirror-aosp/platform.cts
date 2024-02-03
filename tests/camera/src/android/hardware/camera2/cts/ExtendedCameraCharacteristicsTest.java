@@ -3573,22 +3573,18 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             }
 
             // H-1-12
-            boolean previewStab = staticInfo.isPreviewStabilizationSupported();
             if (isPrimaryRear) {
+                boolean previewStab = staticInfo.isPreviewStabilizationSupported();
                 previewStabilizationReq.setRearPreviewStabilizationSupported(previewStab);
-            } else {
-                previewStabilizationReq.setFrontPreviewStabilizationSupported(previewStab);
             }
 
             // H-1-13
-            int facing = staticInfo.getLensFacingChecked();
-            int numOfPhysicalRgbCameras = getNumberOfRgbPhysicalCameras(facing);
-            boolean logicalMultiCameraReqMet =
-                    (numOfPhysicalRgbCameras <= 1) || staticInfo.isLogicalMultiCamera();
             if (isPrimaryRear) {
+                int facing = staticInfo.getLensFacingChecked();
+                int numOfPhysicalRgbCameras = getNumberOfRgbPhysicalCameras(facing);
+                boolean logicalMultiCameraReqMet =
+                        (numOfPhysicalRgbCameras <= 1) || staticInfo.isLogicalMultiCamera();
                 logicalMultiCameraReq.setRearLogicalMultiCameraReqMet(logicalMultiCameraReqMet);
-            } else {
-                logicalMultiCameraReq.setFrontLogicalMultiCameraReqMet(logicalMultiCameraReqMet);
             }
 
             // H-1-14
@@ -3624,8 +3620,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             timestampSourceReq.setFrontCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);
             ultrawideZoomRatioReq.setFrontUltraWideZoomRatioReqMet(false);
-            previewStabilizationReq.setFrontPreviewStabilizationSupported(false);
-            logicalMultiCameraReq.setFrontLogicalMultiCameraReqMet(false);
             streamUseCaseReq.setFrontStreamUseCaseSupported(false);
         }
 

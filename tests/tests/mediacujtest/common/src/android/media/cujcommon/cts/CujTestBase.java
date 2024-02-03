@@ -19,8 +19,10 @@ package android.media.cujcommon.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ActivityScenario;
 
@@ -31,6 +33,8 @@ import java.util.concurrent.TimeoutException;
  * This class comprises of routines that are generic to all tests.
  */
 public class CujTestBase {
+
+  static final String SHORTFORM_PLAYBAK_TEST_APP = "android.media.cujsmalltest.cts";
 
   static final int[] ORIENTATIONS = {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
@@ -70,6 +74,22 @@ public class CujTestBase {
     final PackageManager pm = activity.getPackageManager();
     return pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE)
         && pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT);
+  }
+
+  /**
+   * Whether the device supports phone call feature.
+   */
+  public static boolean deviceSupportPhoneCall(final Activity activity) {
+    return (((TelephonyManager) activity.getApplicationContext()
+        .getSystemService(Context.TELEPHONY_SERVICE)).getPhoneType()
+        != TelephonyManager.PHONE_TYPE_NONE);
+  }
+
+  /**
+   * Whether the device is a watch.
+   */
+  public static boolean isWatchDevice(final Activity activity) {
+    return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
   }
 
   /**

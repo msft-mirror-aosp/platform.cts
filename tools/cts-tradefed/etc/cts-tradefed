@@ -33,16 +33,21 @@ fi
 
 source ${UTILS_SCRIPT}
 
-checkPath aapt
+checkPath aapt2
 checkPath adb
 
 RDBG_FLAG=$(getRemoteDbgFlag)
 
 # get OS
 HOST=`uname`
-if [ "$HOST" == "Linux" ]; then
+HOST_ARCH=`uname -sm`
+if [ "$HOST_ARCH" == "Linux x86_64" ]; then
     OS="linux-x86"
-elif [ "$HOST" == "Darwin" ]; then
+elif [ "$HOST_ARCH" == "Linux aarch64" ]; then
+    OS="linux-arm64"
+    # Bundled java is for linux-x86 so use host JDK on linux-arm64
+    JAVA_BINARY=java
+elif [ "$HOST_ARCH" == "Darwin x86_64" ]; then
     OS="darwin-x86"
     # Bundled java is for linux so use host JDK on Darwin
     JAVA_BINARY=java
@@ -50,17 +55,6 @@ else
     echo "Unrecognized OS"
     exit
 fi
-
-if [ -z ${JAVA_BINARY} ]; then
-    JAVA_BINARY=${CTS_ROOT}/android-cts/jdk/bin/java
-fi;
-
-if [ ! -f "${JAVA_BINARY}" ]; then
-    JAVA_BINARY=java
-fi
-
-checkPath ${JAVA_BINARY}
-checkJavaVersion ${JAVA_BINARY}
 
 # check if in Android build env
 if [ ! -z "${ANDROID_BUILD_TOP}" ]; then
@@ -80,6 +74,17 @@ if [ -z ${CTS_ROOT} ]; then
     CTS_ROOT="$(dirname $(realpath $0))/../.."
 fi;
 
+if [ -z ${JAVA_BINARY} ]; then
+    JAVA_BINARY=${CTS_ROOT}/android-cts/jdk/bin/java
+fi;
+
+if [ ! -f "${JAVA_BINARY}" ]; then
+    JAVA_BINARY=java
+fi
+
+checkPath ${JAVA_BINARY}
+checkJavaVersion ${JAVA_BINARY}
+
 JAR_DIR=${CTS_ROOT}/android-cts/tools
 
 for JAR in ${JAR_DIR}/*.jar; do
@@ -90,8 +95,7 @@ TRADEFED_JAR=":${JAR_DIR}/tradefed.jar"
 JAR_PATH="${TRADEFED_JAR}${JAR_PATH/$TRADEFED_JAR}"
 JAR_PATH=${JAR_PATH:1} # Strip off leading ':'
 
-LIB_DIR=${CTS_ROOT}/android-cts/lib
-loadSharedLibraries "$HOST" "$LIB_DIR"
+loadSharedLibraries "$HOST"
 
 # include any host-side test jars
 for j in $(find ${CTS_ROOT}/android-cts/testcases -name '*.jar'); do
