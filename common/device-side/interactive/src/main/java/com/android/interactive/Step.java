@@ -81,12 +81,16 @@ public abstract class Step<E> {
     private static final Automator sAutomator = new Automator(AUTOMATION_FILE);
 
     private View mInstructionView;
+    private Button mCollapseButton;
 
     private static final WindowManager sWindowManager =
             TestApis.context().instrumentedContext().getSystemService(WindowManager.class);
 
     private Optional<E> mValue = Optional.empty();
     private boolean mFailed = false;
+    // Whether there's a screenshot taken for this step.
+    // In case multiple close() calls creating multiple screenshot files.
+    private boolean mHasTakenScreenshot = false;
 
     private static Map<Class<? extends Step<?>>, Object> sStepCache = new HashMap<>();
 
@@ -146,7 +150,7 @@ public abstract class Step<E> {
                                         .terminalValue((b) -> step.hasFailed())
                                         .errorOnFail(
                                                 "Expected value from step. No value provided or"
-                                                    + " step failed.")
+                                                        + " step failed.")
                                         .timeout(MAX_STEP_DURATION)
                                         .await()
                                         .get();
@@ -226,7 +230,7 @@ public abstract class Step<E> {
         } catch (ClassCastException e) {
             throw new IllegalStateException(
                     "You cannot call pass() for a step which requires a return value. If no return"
-                        + " value is required, the step should use Nothing (not Void)");
+                            + " value is required, the step should use Nothing (not Void)");
         }
     }
 
@@ -278,6 +282,28 @@ public abstract class Step<E> {
             GridLayout layout = mInstructionView.findViewById(R.id.buttons);
             layout.addView(btn);
         });
+    }
+
+    /**
+     * Adds a small button that allows users to collapse the instructions.
+     */
+    protected void addCollapseInstructionsButton() {
+        mCollapseButton = new Button(TestApis.context().instrumentedContext());
+        mCollapseButton.setText("\u21F1");
+        mCollapseButton.setOnClickListener(v -> collapse());
+        GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+        layout.addView(mCollapseButton);
+    }
+
+    private void collapse() {
+        TextView instructionsTextView = mInstructionView.findViewById(R.id.text);
+        if (instructionsTextView.getVisibility() != View.GONE) {
+            instructionsTextView.setVisibility(View.GONE);
+            mCollapseButton.setText("\u21F2");
+        } else {
+            instructionsTextView.setVisibility(View.VISIBLE);
+            mCollapseButton.setText("\u21F1");
+        }
     }
 
     /**
@@ -344,8 +370,14 @@ public abstract class Step<E> {
         sWindowManager.updateViewLayout(mInstructionView, params);
     }
 
+    /**
+     * Closes the step, takes a screenshot of the device if the feature is enabled, and removes the
+     * instruction view if it's still there.
+     */
     protected void close() {
-        if (TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+        if (!mHasTakenScreenshot
+                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+            mHasTakenScreenshot = true;
             ScreenshotUtil.captureScreenshot(getClass().getCanonicalName());
         }
         if (mInstructionView != null) {
