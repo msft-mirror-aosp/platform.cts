@@ -23,6 +23,7 @@ import static android.provider.Settings.ACTION_MANAGE_CROSS_PROFILE_ACCESS;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.CLONE_PROFILE;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
+import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
@@ -53,6 +54,7 @@ import android.stats.devicepolicy.EventId;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.android.activitycontext.ActivityContext;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
@@ -1044,6 +1046,51 @@ public final class CrossProfileAppsTest {
             assertThat(workTestApp.events().broadcastReceived()
                     .whereIntent().action().isEqualTo(ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED))
                     .eventOccurred();
+        }
+    }
+
+    @CrossUserTest({@UserPair(from = INITIAL_USER, to = PRIVATE_PROFILE),
+            @UserPair(from = WORK_PROFILE, to = PRIVATE_PROFILE),
+            @UserPair(from = CLONE_PROFILE, to = PRIVATE_PROFILE)})
+    @Postsubmit(reason = "new test")
+    @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
+    public void getTargetUserProfiles_excludeHiddenProfiles() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        List<UserHandle> targetProfiles = sCrossProfileApps.getTargetUserProfiles();
+
+        assertThat(targetProfiles).doesNotContain(sDeviceState.otherUser().userHandle());
+    }
+
+    @CrossUserTest({@UserPair(from = INITIAL_USER, to = PRIVATE_PROFILE),
+            @UserPair(from = WORK_PROFILE, to = PRIVATE_PROFILE),
+            @UserPair(from = CLONE_PROFILE, to = PRIVATE_PROFILE)})
+    @Postsubmit(reason = "new test")
+    @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
+    public void startMainActivity_hiddenProfile_throwsException() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThrows(SecurityException.class, () -> {
+            sCrossProfileApps.startMainActivity(MAIN_ACTIVITY,
+                    sDeviceState.otherUser().userHandle());
+        });
+    }
+
+    @CrossUserTest(@UserPair(from = INITIAL_USER, to = PRIVATE_PROFILE))
+    @Postsubmit(reason = "new test")
+    @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
+    public void canInteractAcrossProfiles_initialUserToHiddenProfile_returnsFalse() {
+        try (TestAppInstance primaryApp = sCrossProfileTestApp.install()) {
+            sCrossProfileTestApp.pkg().appOps().set(AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
+                    AppOpsMode.ALLOWED);
+
+            assertThat(primaryApp.crossProfileApps().canInteractAcrossProfiles()).isFalse();
         }
     }
 }
