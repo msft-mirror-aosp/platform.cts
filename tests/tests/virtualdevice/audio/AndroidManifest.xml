@@ -25,6 +25,10 @@
             android:name=".VirtualAudioTest$AudioActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".VirtualAudioPermissionTest$PermissionActivity"
+            android:exported="false" />
+
         <uses-library android:name="android.test.runner" />
     </application>
 
