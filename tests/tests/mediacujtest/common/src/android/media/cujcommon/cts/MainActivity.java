@@ -26,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -44,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
   protected ScaleGestureDetector mScaleGestureDetector = null;
   protected boolean mConfiguredPipMode;
   protected boolean mIsInPipMode;
+  protected boolean mConfiguredSplitScreenMode;
+  protected boolean mIsInMultiWindowMode;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +142,23 @@ public class MainActivity extends AppCompatActivity {
       assertEquals(mConfiguredPipMode, isInPictureInPictureMode);
       // Verify that the player is playing in PIP mode
       if (isInPictureInPictureMode) {
+        assertTrue(mPlayer.isPlaying());
+      }
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void onMultiWindowModeChanged(boolean isInMultiWindowMode,
+      @NonNull Configuration newConfig) {
+    super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig);
+    if (mPlayerListener.isSplitScreenTest()) {
+      mIsInMultiWindowMode = isInMultiWindowMode;
+      assertEquals(mConfiguredSplitScreenMode, isInMultiWindowMode);
+      // Verify that the player is playing in Split screen mode
+      if (isInMultiWindowMode) {
         assertTrue(mPlayer.isPlaying());
       }
     }

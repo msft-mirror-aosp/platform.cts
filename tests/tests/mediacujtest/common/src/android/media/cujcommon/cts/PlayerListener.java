@@ -57,7 +57,8 @@ public abstract class PlayerListener implements Player.Listener {
     MESSAGE_NOTIFICATION_TEST,
     PINCH_TO_ZOOM_TEST,
     SPEED_CHANGE_TEST,
-    PIP_MODE_TEST
+    PIP_MODE_TEST,
+    SPLIT_SCREEN_TEST
   }
 
   public static boolean mPlaybackEnded;
@@ -117,6 +118,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final boolean isPipTest() {
     return getTestType().equals(TestType.PIP_MODE_TEST);
+  }
+
+  /**
+   * Returns True for Split Screen test.
+   */
+  public final boolean isSplitScreenTest() {
+    return getTestType().equals(TestType.SPLIT_SCREEN_TEST);
   }
 
   /**
