@@ -1947,6 +1947,11 @@ public class PerformanceClassEvaluator {
                     colorFormatSupported);
         }
 
+        public void setDynamicColorAspectsSupportReq(boolean dynamicColorAspectsSupported) {
+            this.setMeasuredValue(RequirementConstants.DYNAMIC_COLOR_ASPECTS,
+                    dynamicColorAspectsSupported);
+        }
+
         /**
          * [2.2.7.1/5.1/H-1-15] Must have at least 1 HW video decoder supporting 4K60
          */
@@ -2034,6 +2039,21 @@ public class PerformanceClassEvaluator {
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_18, resolution, fps,
                     bitrate);
+        }
+
+        /**
+         * [5.1/H-1-21] MUST support FEATURE_DynamicColorAspects for all hardware video decoders
+         *  (AVC, HEVC, VP9, AV1 or later).
+         */
+        public static VideoCodecRequirement createR5_1__H_1_21() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.DYNAMIC_COLOR_ASPECTS)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_21, requirement);
         }
 
         /**
@@ -2248,6 +2268,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19());
     }
 
+    /* Adds requirement 5.1/H-1-21 */
+    public VideoCodecRequirement addR5_1__H_1_21() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_21());
+    }
 
     public FrameDropRequirement addR5_3__H_1_1_R() {
         return this.addRequirement(FrameDropRequirement.createR5_3__H_1_1_R());
