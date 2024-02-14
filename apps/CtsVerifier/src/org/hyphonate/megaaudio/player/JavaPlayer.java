@@ -77,6 +77,12 @@ public class JavaPlayer extends Player {
         return mAudioTrack != null ? mAudioTrack.getChannelCount() : -1;
     }
 
+    @Override
+    public boolean isMMap() {
+        // Java Streams are never MMAP
+        return false;
+    }
+
     /**
      * Allocates the array for the burst buffer.
      */
