@@ -257,6 +257,10 @@ android_test {
         ":CtsMultiArchApp64_targetSdk33_x86",
         ":CtsMultiArchAppBoth_targetSdk33_arm",
         ":CtsMultiArchAppBoth_targetSdk33_x86",
+        ":HelloInstallerApp",
+        ":HelloInstallerAppUpdated",
+        ":HelloInstallerAppAbsent",
+        ":HelloInstallerAppAbsentUpdated",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
