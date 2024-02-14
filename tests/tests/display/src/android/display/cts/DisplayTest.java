@@ -46,6 +46,8 @@ import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.hardware.DataSpace;
+import android.hardware.HardwareBuffer;
 import android.hardware.OverlayProperties;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
@@ -1024,6 +1026,10 @@ public class DisplayTest extends TestBase {
         OverlayProperties dest = OverlayProperties.CREATOR.createFromParcel(parcel);
         assertEquals(overlayProperties.isMixedColorSpacesSupported(),
                      dest.isMixedColorSpacesSupported());
+        assertEquals(overlayProperties.isCombinationSupported(
+                            DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888),
+                     dest.isCombinationSupported(
+                            DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
         parcel.recycle();
     }
 
@@ -1039,6 +1045,8 @@ public class DisplayTest extends TestBase {
         Display secondaryDisplay = getSecondaryDisplay(mDisplayManager.getDisplays());
         testGetOverlaySupportInternal(secondaryDisplay.getOverlaySupport());
         assertTrue(secondaryDisplay.getOverlaySupport().isMixedColorSpacesSupported());
+        assertTrue(secondaryDisplay.getOverlaySupport()
+                .isCombinationSupported(DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
     }
 
     @Test
