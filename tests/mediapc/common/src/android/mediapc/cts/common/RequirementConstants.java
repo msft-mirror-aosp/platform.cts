@@ -50,6 +50,7 @@ public class RequirementConstants {
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
     public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
+    public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
 
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
@@ -150,6 +151,8 @@ public class RequirementConstants {
             "number_crypto_hw_secure_all_support";
 
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
+
+    public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
     public static final String PRIMARY_CAMERA_VIDEO_FPS =
