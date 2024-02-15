@@ -16,6 +16,8 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -27,15 +29,27 @@ import static org.junit.Assume.assumeTrue;
 
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.satellite.EnableRequestAttributes;
+import android.telephony.satellite.NtnSignalStrength;
+import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.SatelliteCapabilities;
+import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -49,6 +63,10 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     private static boolean sOriginalIsSatelliteEnabled = false;
     private static boolean sOriginalIsSatelliteProvisioned = false;
     private static boolean sIsProvisionable = false;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
     public static void beforeAllTests() throws Exception {
@@ -67,9 +85,9 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             if (!sOriginalIsSatelliteProvisioned) {
                 SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
                         new SatelliteProvisionStateCallbackTest();
-                long registerError = sSatelliteManager.registerForSatelliteProvisionStateChanged(
+                long registerError = sSatelliteManager.registerForProvisionStateChanged(
                         getContext().getMainExecutor(), satelliteProvisionStateCallback);
-                assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerError);
+                assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
 
                 provisioned = provisionSatellite();
                 if (provisioned) {
@@ -77,7 +95,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                     assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
                     assertTrue(satelliteProvisionStateCallback.isProvisioned);
                 }
-                sSatelliteManager.unregisterForSatelliteProvisionStateChanged(
+                sSatelliteManager.unregisterForProvisionStateChanged(
                         satelliteProvisionStateCallback);
             }
 
@@ -85,10 +103,10 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             if (provisioned && !sOriginalIsSatelliteEnabled) {
                 logd("Enable satellite");
 
-                SatelliteStateCallbackTest callback = new SatelliteStateCallbackTest();
-                long registerResult = sSatelliteManager.registerForSatelliteModemStateChanged(
+                SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+                long registerResult = sSatelliteManager.registerForModemStateChanged(
                         getContext().getMainExecutor(), callback);
-                assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerResult);
+                assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
                 assertTrue(callback.waitUntilResult(1));
 
                 requestSatelliteEnabled(true);
@@ -96,7 +114,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                 assertTrue(callback.waitUntilResult(1));
                 assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback.modemState);
                 assertTrue(isSatelliteEnabled());
-                sSatelliteManager.unregisterForSatelliteModemStateChanged(callback);
+                sSatelliteManager.unregisterForModemStateChanged(callback);
             }
         }
         revokeSatellitePermission();
@@ -112,10 +130,10 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (sIsSatelliteSupported) {
             logd("Restore enabled state");
             if (isSatelliteEnabled() != sOriginalIsSatelliteEnabled) {
-                SatelliteStateCallbackTest callback = new SatelliteStateCallbackTest();
-                long registerResult = sSatelliteManager.registerForSatelliteModemStateChanged(
+                SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+                long registerResult = sSatelliteManager.registerForModemStateChanged(
                         getContext().getMainExecutor(), callback);
-                assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerResult);
+                assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
                 assertTrue(callback.waitUntilResult(1));
 
                 requestSatelliteEnabled(sOriginalIsSatelliteEnabled);
@@ -125,15 +143,15 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                         ? SatelliteManager.SATELLITE_MODEM_STATE_IDLE :
                         SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
                 assertTrue(isSatelliteEnabled() == sOriginalIsSatelliteEnabled);
-                sSatelliteManager.unregisterForSatelliteModemStateChanged(callback);
+                sSatelliteManager.unregisterForModemStateChanged(callback);
             }
 
             logd("Restore provision state");
             SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
                     new SatelliteProvisionStateCallbackTest();
-            long registerError = sSatelliteManager.registerForSatelliteProvisionStateChanged(
+            long registerError = sSatelliteManager.registerForProvisionStateChanged(
                     getContext().getMainExecutor(), satelliteProvisionStateCallback);
-            assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerError);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
 
             if (sOriginalIsSatelliteProvisioned) {
                 if (!isSatelliteProvisioned()) {
@@ -151,7 +169,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                     assertFalse(satelliteProvisionStateCallback.isProvisioned);
                 }
             }
-            sSatelliteManager.unregisterForSatelliteProvisionStateChanged(
+            sSatelliteManager.unregisterForProvisionStateChanged(
                     satelliteProvisionStateCallback);
         }
         revokeSatellitePermission();
@@ -181,30 +199,30 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> sSatelliteManager.startSatelliteTransmissionUpdates(
+                () -> sSatelliteManager.startTransmissionUpdates(
                         getContext().getMainExecutor(), error::offer, callback));
 
         grantSatellitePermission();
-        sSatelliteManager.startSatelliteTransmissionUpdates(
+        sSatelliteManager.startTransmissionUpdates(
                 getContext().getMainExecutor(), error::offer, callback);
         Integer errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
         assertNotNull(errorCode);
-        if (errorCode == SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             Log.d(TAG, "Successfully started transmission updates.");
         } else {
             Log.d(TAG, "Failed to start transmission updates: " + errorCode);
         }
-        getContext().getSystemService(SatelliteManager.class).stopSatelliteTransmissionUpdates(
+        getContext().getSystemService(SatelliteManager.class).stopTransmissionUpdates(
                 callback, getContext().getMainExecutor(), error::offer);
         errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
         assertNotNull(errorCode);
         Log.d(TAG, "Stop transmission updates: " + errorCode);
 
-        sSatelliteManager.stopSatelliteTransmissionUpdates(
+        sSatelliteManager.stopTransmissionUpdates(
                 callback, getContext().getMainExecutor(), error::offer);
         errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_INVALID_ARGUMENTS, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_INVALID_ARGUMENTS, (long) errorCode);
         revokeSatellitePermission();
     }
 
@@ -213,12 +231,12 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
 
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        String mText = "This is a test provision data.";
+        String mText = "This is test provision data.";
         byte[] testProvisionData = mText.getBytes();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> sSatelliteManager.provisionSatelliteService(
+                () -> sSatelliteManager.provisionService(
                         "", testProvisionData, null,
                         getContext().getMainExecutor(), error::offer));
 
@@ -232,9 +250,9 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
                 new SatelliteProvisionStateCallbackTest();
-        long registerError = sSatelliteManager.registerForSatelliteProvisionStateChanged(
+        long registerError = sSatelliteManager.registerForProvisionStateChanged(
                 getContext().getMainExecutor(), satelliteProvisionStateCallback);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerError);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
 
         if (isSatelliteProvisioned()) {
             if (!deprovisionSatellite()) {
@@ -246,7 +264,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         }
 
         CancellationSignal cancellationSignal = new CancellationSignal();
-        sSatelliteManager.provisionSatelliteService(TOKEN, testProvisionData, cancellationSignal,
+        sSatelliteManager.provisionService(TOKEN, testProvisionData, cancellationSignal,
                 getContext().getMainExecutor(), error::offer);
         cancellationSignal.cancel();
         Integer errorCode;
@@ -272,7 +290,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             assertTrue(satelliteProvisionStateCallback.isProvisioned);
             assertTrue(isSatelliteProvisioned());
         }
-        sSatelliteManager.unregisterForSatelliteProvisionStateChanged(
+        sSatelliteManager.unregisterForProvisionStateChanged(
                 satelliteProvisionStateCallback);
 
         revokeSatellitePermission();
@@ -286,7 +304,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> sSatelliteManager.deprovisionSatelliteService(
+                () -> sSatelliteManager.deprovisionService(
                         "", getContext().getMainExecutor(), error::offer));
     }
 
@@ -299,7 +317,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> sSatelliteManager.registerForSatelliteProvisionStateChanged(
+                () -> sSatelliteManager.registerForProvisionStateChanged(
                         getContext().getMainExecutor(), satelliteProvisionStateCallback));
     }
 
@@ -324,7 +342,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                () -> sSatelliteManager.requestIsSatelliteProvisioned(
+                () -> sSatelliteManager.requestIsProvisioned(
                         getContext().getMainExecutor(), receiver));
     }
 
@@ -335,10 +353,12 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, () -> sSatelliteManager.requestSatelliteEnabled(
-                true, true, getContext().getMainExecutor(), error::offer));
-        assertThrows(SecurityException.class, () -> sSatelliteManager.requestSatelliteEnabled(
-                false, true, getContext().getMainExecutor(), error::offer));
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(true).build(),
+                getContext().getMainExecutor(), error::offer));
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(false).build(),
+                getContext().getMainExecutor(), error::offer));
     }
 
     @Test
@@ -363,7 +383,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                 };
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsSatelliteEnabled(
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsEnabled(
                 getContext().getMainExecutor(), receiver));
     }
 
@@ -389,7 +409,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                     }
                 };
 
-        sSatelliteManager.requestIsSatelliteSupported(getContext().getMainExecutor(),
+        sSatelliteManager.requestIsSupported(getContext().getMainExecutor(),
                 receiver);
         assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
@@ -424,7 +444,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                 };
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, () -> sSatelliteManager.requestSatelliteCapabilities(
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestCapabilities(
                 getContext().getMainExecutor(), receiver));
     }
 
@@ -432,15 +452,15 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     public void testSatelliteModemStateChanged() {
         if (!shouldTestSatellite()) return;
 
-        SatelliteStateCallbackTest callback = new SatelliteStateCallbackTest();
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForSatelliteModemStateChanged(getContext().getMainExecutor(), callback));
+                .registerForModemStateChanged(getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForSatelliteModemStateChanged(callback));
+                .unregisterForModemStateChanged(callback));
 
         if (!sIsSatelliteSupported) {
             Log.d(TAG, "Satellite is not supported on the device");
@@ -459,9 +479,9 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (originalEnabledState) {
             registerCallback = true;
 
-            long registerResult = sSatelliteManager.registerForSatelliteModemStateChanged(
+            long registerResult = sSatelliteManager.registerForModemStateChanged(
                     getContext().getMainExecutor(), callback);
-            assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerResult);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
             assertTrue(callback.waitUntilResult(1));
 
             requestSatelliteEnabled(false);
@@ -472,9 +492,9 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         }
         if (!registerCallback) {
             long registerResult = sSatelliteManager
-                    .registerForSatelliteModemStateChanged(getContext().getMainExecutor(),
+                    .registerForModemStateChanged(getContext().getMainExecutor(),
                             callback);
-            assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerResult);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
             assertTrue(callback.waitUntilResult(1));
             assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
         }
@@ -484,19 +504,19 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback.modemState);
         assertTrue(isSatelliteEnabled());
 
-        SatelliteStateCallbackTest callback1 = new SatelliteStateCallbackTest();
+        SatelliteModemStateCallbackTest callback1 = new SatelliteModemStateCallbackTest();
         long registerResult = sSatelliteManager
-                .registerForSatelliteModemStateChanged(getContext().getMainExecutor(), callback1);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, registerResult);
+                .registerForModemStateChanged(getContext().getMainExecutor(), callback1);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
         assertTrue(callback1.waitUntilResult(1));
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback1.modemState);
-        sSatelliteManager.unregisterForSatelliteModemStateChanged(callback);
+        sSatelliteManager.unregisterForModemStateChanged(callback);
 
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         String mText = "This is a test datagram message";
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
         callback1.clearModemStates();
-        sSatelliteManager.sendSatelliteDatagram(
+        sSatelliteManager.sendDatagram(
                 SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
                 getContext().getMainExecutor(), resultListener::offer);
 
@@ -505,11 +525,11 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             fail("testSatelliteModemStateChanged: Got InterruptedException in waiting"
-                    + " for the sendSatelliteDatagram result code");
+                    + " for the sendDatagram result code");
             return;
         }
         assertNotNull(errorCode);
-        Log.d(TAG, "testSatelliteModemStateChanged: sendSatelliteDatagram errorCode="
+        Log.d(TAG, "testSatelliteModemStateChanged: sendDatagram errorCode="
                 + errorCode);
 
         assertFalse(callback.waitUntilResult(1));
@@ -517,7 +537,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertTrue(callback1.getTotalCountOfModemStates() >= 2);
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING,
                 callback1.getModemState(0));
-        if (errorCode == SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             /**
              * Modem state should have the following transitions:
              * 1) IDLE to TRANSFERRING.
@@ -549,7 +569,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback1.modemState);
             assertFalse(isSatelliteEnabled());
         }
-        sSatelliteManager.unregisterForSatelliteModemStateChanged(callback1);
+        sSatelliteManager.unregisterForModemStateChanged(callback1);
 
         revokeSatellitePermission();
     }
@@ -562,11 +582,11 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForSatelliteDatagram(getContext().getMainExecutor(), callback));
+                .registerForIncomingDatagram(getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForSatelliteDatagram(callback));
+                .unregisterForIncomingDatagram(callback));
     }
 
     @Test
@@ -577,7 +597,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.pollPendingSatelliteDatagrams(
+                ()-> sSatelliteManager.pollPendingDatagrams(
                         getContext().getMainExecutor(), resultListener::offer));
     }
 
@@ -592,7 +612,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.sendSatelliteDatagram(
+                ()-> sSatelliteManager.sendDatagram(
                         SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
                         getContext().getMainExecutor(), resultListener::offer));
         // TODO: add detailed test
@@ -618,7 +638,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                 };
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsSatelliteEnabled(
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsEnabled(
                 getContext().getMainExecutor(), receiver));
     }
 
@@ -645,5 +665,194 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestTimeForNextSatelliteVisibility(
                         getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRequestSatelliteAttachEnabledForCarrier() throws Exception {
+        if (!shouldTestSatellite()) return;
+
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestAttachEnabledForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest(), true,
+                        getContext().getMainExecutor(), error::offer));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestAttachEnabledForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest(), false,
+                        getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
+    public void testRequestIsSatelliteAttachEnabledForCarrier() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Boolean> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestIsAttachEnabledForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest(),
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testAddSatelliteAttachRestrictionForCarrier() {
+        if (!shouldTestSatellite()) return;
+
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.addAttachRestrictionForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest(),
+                        SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION,
+                        getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
+    public void testRemoveSatelliteAttachRestrictionForCarrier() {
+        if (!shouldTestSatellite()) return;
+
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.removeAttachRestrictionForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest(),
+                        SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION,
+                        getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
+    public void testGetSatelliteCommunicationRestrictionReasons() {
+        if (!shouldTestSatellite()) return;
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.getAttachRestrictionReasonsForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRequestNtnSignalStrength() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<NtnSignalStrength> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<NtnSignalStrength, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(NtnSignalStrength result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestNtnSignalStrength(getContext().getMainExecutor(),
+                        receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForNtnSignalStrengthChanged() {
+        if (!shouldTestSatellite()) return;
+
+        NtnSignalStrengthCallback callback = new NtnSignalStrengthCallback() {
+            @Override
+            public void onNtnSignalStrengthChanged(@NonNull NtnSignalStrength ntnSignalStrength) {
+                logd("onNtnSignalStrengthChanged(" + ntnSignalStrength + ")");
+            }
+        };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testUnregisterForNtnSignalStrengthChanged() {
+        if (!shouldTestSatellite()) return;
+
+        NtnSignalStrengthCallback callback = new NtnSignalStrengthCallback() {
+            @Override
+            public void onNtnSignalStrengthChanged(@NonNull NtnSignalStrength ntnSignalStrength) {
+                logd("onNtnSignalStrengthChanged(" + ntnSignalStrength + ")");
+            }
+        };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
+                        getContext().getMainExecutor(), callback));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForSatelliteCapabilitiesChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteCapabilitiesCallback callback =
+                capabilities -> logd("onSatelliteCapabilitiesChanged(" + capabilities + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForCapabilitiesChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testUnregisterForSatelliteCapabilitiesChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteCapabilitiesCallback callback =
+                capabilities -> logd("onSatelliteCapabilitiesChanged(" + capabilities + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForCapabilitiesChanged(
+                        getContext().getMainExecutor(), callback));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForCapabilitiesChanged(callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    public void testGetAggregateSatellitePlmnListForCarrier() {
+        if (!shouldTestSatellite()) return;
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.getSatellitePlmnsForCarrier(
+                        getActiveSubIDForCarrierSatelliteTest()));
     }
 }

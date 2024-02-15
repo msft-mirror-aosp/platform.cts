@@ -24,6 +24,7 @@ import android.net.wifi.nl80211.IInterfaceEventCallback;
 import android.net.wifi.nl80211.IWificond;
 import android.net.wifi.nl80211.IWificondEventCallback;
 import android.os.IBinder;
+import android.util.Log;
 import android.wifi.mockwifi.MockWifiModemService;
 
 import java.util.HashMap;
@@ -37,6 +38,7 @@ public class WifiNL80211ManagerImp extends IWificond.Stub {
     private static Context sContext;
     Set<String> mConfiguredMethodSet;
     private HashMap<String, IClientInterfaceImp> mMockIClientInterfaces = new HashMap<>();
+    private HashMap<String, IWifiScannerImp> mMockIWifiScanners = new HashMap<>();
 
     public WifiNL80211ManagerImp(Context context) {
         sContext = context;
@@ -52,7 +54,10 @@ public class WifiNL80211ManagerImp extends IWificond.Stub {
     @Override
     public IClientInterface createClientInterface(String ifaceName) {
         IClientInterfaceImp mockIClientInterface = new IClientInterfaceImp(ifaceName);
+        IWifiScannerImp mockIWifiScanner = (IWifiScannerImp) mockIClientInterface
+                                            .getWifiScannerImpl();
         mMockIClientInterfaces.put(ifaceName, mockIClientInterface);
+        mMockIWifiScanners.put(ifaceName, mockIWifiScanner);
         return mockIClientInterface;
     }
 
@@ -147,15 +152,36 @@ public class WifiNL80211ManagerImp extends IWificond.Stub {
     }
     // CHECKSTYLE:ON Generated code
 
-    public boolean configureSignalPoll(String ifaceName, int currentRssiDbm, int txBitrateMbps,
-            int rxBitrateMbps, int associationFrequencyMHz) {
+    public boolean configureClientInterfaceMock(String ifaceName,
+            IClientInterfaceImp.ClientInterfaceMock clientInterfaceMock) {
         IClientInterfaceImp clientInterface = mMockIClientInterfaces.get(ifaceName);
         if (clientInterface == null) return false;
-        mConfiguredMethodSet.add("signalPoll");
-        clientInterface.setRxBitrateMbps(rxBitrateMbps);
-        clientInterface.setTxBitrateMbps(txBitrateMbps);
-        clientInterface.setCurrentRssiDbm(currentRssiDbm);
-        clientInterface.setAssociationFrequencyMHz(associationFrequencyMHz);
+        Set<String> configuredMethods = clientInterface.setClientInterfaceMock(clientInterfaceMock);
+        if (configuredMethods.isEmpty()) {
+            Log.e(TAG, "No methods overridden in the mock ClientInterface!?");
+            return false;
+        }
+        mConfiguredMethodSet.addAll(configuredMethods);
+        return true;
+    }
+
+    /**
+     * Configures a mock Wifi scanner interface.
+     */
+    public boolean configureWifiScannerInterfaceMock(String ifaceName,
+            IWifiScannerImp.WifiScannerInterfaceMock wifiScannerInterfaceMock) {
+        IWifiScannerImp wifiscanner = mMockIWifiScanners.get(ifaceName);
+        if (wifiscanner == null || wifiScannerInterfaceMock == null) {
+            Log.e(TAG, "WifiScanner interface mock: Null!");
+            return false;
+        }
+        Set<String> configuredMethods = wifiscanner.setWifiScannerInterfaceMock(
+                                        wifiScannerInterfaceMock);
+        if (configuredMethods.isEmpty()) {
+            Log.e(TAG, "No methods overridden in the mock WifiScanner!?");
+            return false;
+        }
+        mConfiguredMethodSet.addAll(configuredMethods);
         return true;
     }
 

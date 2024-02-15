@@ -34,14 +34,19 @@ import android.os.PowerManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.AsbSecurityTest
 import android.support.test.uiautomator.By
+import android.util.Log
 import android.view.KeyEvent
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
+import com.android.compatibility.common.util.SystemUtil.getEventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -52,7 +57,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assume
+import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -62,6 +68,7 @@ abstract class SensorPrivacyBaseTest(
 ) {
 
     companion object {
+        val TAG = this::class.simpleName
         const val MIC_CAM_ACTIVITY_ACTION =
                 "android.sensorprivacy.cts.usemiccamera.action.USE_MIC_CAM"
         const val MIC_CAM_OVERLAY_ACTIVITY_ACTION =
@@ -84,6 +91,7 @@ abstract class SensorPrivacyBaseTest(
         const val RECORDING_FILE_NAME = "${PKG_NAME}_record.mp4"
         const val ACTIVITY_TITLE_SNIP = "CtsUseMic"
         const val SENSOR_USE_TIME_MS = 5L
+        const val NEW_WINDOW_TIMEOUT_MILLIS = 5_000L
     }
 
     protected val instrumentation = InstrumentationRegistry.getInstrumentation()!!
@@ -103,6 +111,7 @@ abstract class SensorPrivacyBaseTest(
         uiDevice.wakeUp()
         runShellCommandOrThrow("wm dismiss-keyguard")
         uiDevice.waitForIdle()
+        SystemUtil.waitForBroadcastDispatch(FINISH_MIC_CAM_ACTIVITY_ACTION)
     }
 
     @After
@@ -173,20 +182,20 @@ abstract class SensorPrivacyBaseTest(
             setSensor(true)
             val intent = Intent(MIC_CAM_ACTIVITY_ACTION)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     .addFlags(Intent.FLAG_ACTIVITY_MATCH_EXTERNAL)
             for (extra in extras) {
                 intent.putExtra(extra, true)
             }
             intent.putExtra(DELAYED_ACTIVITY_EXTRA, delayedActivity)
             intent.putExtra(DELAYED_ACTIVITY_NEW_TASK_EXTRA, delayedActivityNewTask)
-            context.startActivity(intent)
+            doAndWaitForWindowTransition {
+                context.startActivity(intent)
+            }
             Thread.sleep(3000)
             unblockSensorWithDialogAndAssert()
         } finally {
-            runShellCommandOrThrow("am broadcast" +
-                    " --user ${context.userId}" +
-                    " -a $FINISH_MIC_CAM_ACTIVITY_ACTION" +
-                    " -f ${Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS}")
+            broadcastAndWait(FINISH_MIC_CAM_ACTIVITY_ACTION)
         }
     }
 
@@ -326,14 +335,13 @@ abstract class SensorPrivacyBaseTest(
     @AppModeFull(reason = "Instant apps can't manage keyguard")
     fun testCantChangeWhenLocked() {
         assumeSensorToggleSupport()
-        Assume.assumeTrue(packageManager
-                .hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN))
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN))
 
 //      TODO use actual test api when it can be added
-//      Assume.assumeTrue(callWithShellPermissionIdentity { spm.requiresAuthentication() })
+//      assumeTrue(callWithShellPermissionIdentity { spm.requiresAuthentication() })
         val packageContext: Context = context.createPackageContext("android", 0)
         try {
-            Assume.assumeTrue(packageContext.resources.getBoolean(packageContext.resources
+            assumeTrue(packageContext.resources.getBoolean(packageContext.resources
                     .getIdentifier("config_sensorPrivacyRequiresAuthentication", "bool", "android"))
             )
         } catch (e: NotFoundException) {
@@ -499,15 +507,15 @@ abstract class SensorPrivacyBaseTest(
     @Test
     @AppModeFull(reason = "Uses secondary app, instant apps have no visibility")
     fun testCantEnablePrivacyIfNotSupported() {
-        Assume.assumeFalse(spm.supportsSensorToggle(sensor))
-        Assume.assumeFalse(spm.supportsSensorToggle(TOGGLE_TYPE_SOFTWARE, sensor))
+        assumeFalse(spm.supportsSensorToggle(sensor))
+        assumeFalse(spm.supportsSensorToggle(TOGGLE_TYPE_SOFTWARE, sensor))
         setSensor(true)
         assertFalse(isSensorPrivacyEnabled())
     }
 
     private fun assumeSensorToggleSupport() {
-        Assume.assumeTrue(spm.supportsSensorToggle(sensor))
-        Assume.assumeTrue(spm.supportsSensorToggle(TOGGLE_TYPE_SOFTWARE, sensor))
+        assumeTrue(spm.supportsSensorToggle(sensor))
+        assumeTrue(spm.supportsSensorToggle(TOGGLE_TYPE_SOFTWARE, sensor))
     }
 
     private fun startTestApp() {
@@ -550,10 +558,17 @@ abstract class SensorPrivacyBaseTest(
 
     private fun finishTestApp() {
         // instant apps can't broadcast to other instant apps; use the shell
+        broadcastAndWait(FINISH_MIC_CAM_ACTIVITY_ACTION)
+    }
+
+    private fun broadcastAndWait(action: String) {
+        Log.i(TAG, "Broadcasting action '$action'")
         runShellCommandOrThrow("am broadcast" +
                 " --user ${context.userId}" +
-                " -a $FINISH_MIC_CAM_ACTIVITY_ACTION" +
+                " -a $action" +
                 " -f ${Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS}")
+        SystemUtil.waitForBroadcastDispatch(FINISH_MIC_CAM_ACTIVITY_ACTION)
+        Log.i(TAG, "Finished broadcasting action '$action'")
     }
 
     protected fun setSensor(enable: Boolean) {
@@ -639,42 +654,61 @@ abstract class SensorPrivacyBaseTest(
     fun runWhileLocked(r: () -> Unit) {
         val km = context.getSystemService(KeyguardManager::class.java)!!
         val pm = context.getSystemService(PowerManager::class.java)!!
-        val password = byteArrayOf(1, 2, 3, 4)
+        val pin = "1234".toByteArray(StandardCharsets.UTF_8)
         try {
             runWithShellPermissionIdentity {
-                km.setLock(KeyguardManager.PIN, password, KeyguardManager.PIN, null)
+                assumeTrue("Could not set lock.",
+                        km.setLock(KeyguardManager.PIN, pin, KeyguardManager.PIN, null))
             }
-            eventually {
+            getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP)
-                assertFalse("Device never slept.", pm.isInteractive)
+                assumeFalse("Device never slept.", pm.isInteractive)
             }
-            eventually {
+            getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_WAKEUP)
-                assertTrue("Device never woke up.", pm.isInteractive)
+                assumeTrue("Device never woke up.", pm.isInteractive)
             }
-            eventually {
-                assertTrue("Device isn't locked", km.isDeviceLocked)
+            getEventually {
+                assumeTrue("Device isn't locked", km.isDeviceLocked)
             }
 
             r.invoke()
         } finally {
             runWithShellPermissionIdentity {
-                km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, password)
+                assumeTrue("Could not remove lock.",
+                        km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, pin))
             }
 
             // Recycle the screen power in case the keyguard is stuck open
-            eventually {
+            getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP)
-                assertFalse("Device never slept.", pm.isInteractive)
+                assumeFalse("Device never slept.", pm.isInteractive)
             }
-            eventually {
+            getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_WAKEUP)
-                assertTrue("Device never woke up.", pm.isInteractive)
+                assumeTrue("Device never woke up.", pm.isInteractive)
             }
 
-            eventually {
-                assertFalse("Device isn't unlocked", km.isDeviceLocked)
+            getEventually {
+                assumeFalse("Device isn't unlocked", km.isDeviceLocked)
             }
         }
     }
+
+    /**
+     * Perform the requested action, then wait both for the action to complete, and for at least
+     * one window transition to occur since the moment the action begins executing.
+     */
+    private inline fun doAndWaitForWindowTransition(
+            crossinline block: () -> Unit
+    ) {
+        val timeoutOccurred = !uiDevice.performActionAndWait({
+            block()
+        }, Until.newWindow(), NEW_WINDOW_TIMEOUT_MILLIS)
+
+        if (timeoutOccurred) {
+            throw RuntimeException("Timed out waiting for window transition.")
+        }
+    }
+
 }

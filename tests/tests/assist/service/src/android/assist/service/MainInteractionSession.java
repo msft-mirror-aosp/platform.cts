@@ -61,6 +61,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
     private String mTestName;
     private View mContentView;
     private RemoteCallback mRemoteCallback;
+    private Bundle mOnShowArgs;
 
     MainInteractionSession(Context context) {
         super(context);
@@ -119,6 +120,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
             Log.e(TAG, "onshow() received null args");
             return;
         }
+        mOnShowArgs = args;
         mScreenshotNeeded = (showFlags & SHOW_WITH_SCREENSHOT) != 0;
         mTestName = args.getString(Utils.TESTCASE_TYPE, "");
         mCurColor = args.getInt(Utils.SCREENSHOT_COLOR_KEY);
@@ -188,6 +190,17 @@ public class MainInteractionSession extends VoiceInteractionSession {
         Log.i(TAG, "onHandleAssist()");
         Log.i(TAG, String.format("Bundle: %s, Activity: %s, Structure: %s, Content: %s",
                 data, activity, structure, content));
+
+        // The structure becomes null under following conditions
+        // May be null if assist data has been disabled by the user or device policy;
+        // Will be an empty stub if the application has disabled assist by marking its window as secure.
+        // The CTS testcase will fail under the condition(automotive usecases) where
+        // there are multiple displays and some of the displays are marked with FLAG_SECURE
+
+        if ((Utils.isAutomotive(mContext)) && (structure == null)) {
+            Log.i(TAG, "Ignoring... Structure is null");
+            return;
+        }
 
         if (activity != null && Utils.isAutomotive(mContext)
                 && !activity.getPackageName().startsWith("android.assist")) {
@@ -289,6 +302,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
         } else {
             Bundle bundle = new Bundle();
             bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_ASSIST_DATA_INTENT);
+            bundle.putBundle(Utils.ON_SHOW_ARGS_KEY, mOnShowArgs);
             bundle.putAll(mAssistData);
             mRemoteCallback.sendResult(bundle);
 

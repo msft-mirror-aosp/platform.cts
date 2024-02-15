@@ -18,12 +18,15 @@ package android.provider.cts.media;
 
 import static android.provider.cts.media.MediaStoreTest.TAG;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -51,10 +54,9 @@ import android.provider.cts.media.MediaStoreUtils.PendingSession;
 import android.util.Log;
 import android.util.Size;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,17 +84,17 @@ public class MediaStore_Images_MediaTest {
     private Uri mExternalImages;
     private Uri mExternalFiles;
 
-    @Parameter(0)
+    @Parameter()
     public String mVolumeName;
 
     @Parameters
-    public static Iterable<? extends Object> data() {
+    public static Iterable<?> data() {
         return ProviderTestUtils.getSharedVolumeNames();
     }
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mContentResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
@@ -302,6 +304,11 @@ public class MediaStore_Images_MediaTest {
      */
     @Test
     public void testUpdateAndReplace() throws Exception {
+        // Don't run the test for MediaStore#VOLUME_EXTERNAL. This test specifically tests the
+        // usecase of update operation which is a write operation. MediaStore#VOLUME_EXTERNAL can't
+        // be used for write operations. We need to use specific volume names for write operations.
+        assumeFalse(MediaStore.VOLUME_EXTERNAL.equalsIgnoreCase(mVolumeName));
+
         File dir = mContext.getSystemService(StorageManager.class)
                 .getStorageVolume(mExternalFiles).getDirectory();
         File dcimDir = new File(dir, Environment.DIRECTORY_DCIM);
@@ -339,6 +346,11 @@ public class MediaStore_Images_MediaTest {
 
     @Test
     public void testUpsert() throws Exception {
+        // Don't run the test for MediaStore#VOLUME_EXTERNAL. This test specifically tests the
+        // usecase of upsert operation which is a write operation. MediaStore#VOLUME_EXTERNAL can't
+        // be used for write operations. We need to use specific volume names for write operations.
+        assumeFalse(MediaStore.VOLUME_EXTERNAL.equalsIgnoreCase(mVolumeName));
+
         File dir = mContext.getSystemService(StorageManager.class)
                 .getStorageVolume(mExternalFiles).getDirectory();
         File dcimDir = new File(dir, Environment.DIRECTORY_DCIM);
@@ -374,8 +386,8 @@ public class MediaStore_Images_MediaTest {
         destinationDir.mkdirs();
         file.createNewFile();
 
-        try (InputStream source = InstrumentationRegistry.getTargetContext().getResources()
-                .openRawResource(sourceResId);
+        try (InputStream source = InstrumentationRegistry.getInstrumentation().getTargetContext()
+                .getResources().openRawResource(sourceResId);
              OutputStream target = new FileOutputStream(file)) {
             FileUtils.copy(source, target);
         }
@@ -410,9 +422,9 @@ public class MediaStore_Images_MediaTest {
             assertEquals(10.69585, latLong[1], 0.001);
 
             String xmp = exif.getAttribute(ExifInterface.TAG_XMP);
-            assertTrue("Failed to read XMP longitude", xmp.contains("53,50.070500N"));
-            assertTrue("Failed to read XMP latitude", xmp.contains("10,41.751000E"));
-            assertTrue("Failed to read non-location XMP", xmp.contains("LensDefaults"));
+            assertWithMessage("Failed to read XMP longitude").that(xmp).contains("10,41.751000E");
+            assertWithMessage("Failed to read XMP latitude").that(xmp).contains("53,50.070500N");
+            assertWithMessage("Failed to read non-location XMP").that(xmp).contains("LensDefaults");
         }
         // As owner, we should be able to request the original bytes
         try (ParcelFileDescriptor pfd = mContentResolver.openFileDescriptor(originalUri, "r")) {
@@ -429,9 +441,12 @@ public class MediaStore_Images_MediaTest {
             assertEquals(0, latLong[1], 0.001);
 
             String xmp = exif.getAttribute(ExifInterface.TAG_XMP);
-            assertFalse("Failed to redact XMP longitude", xmp.contains("53,50.070500N"));
-            assertFalse("Failed to redact XMP latitude", xmp.contains("10,41.751000E"));
-            assertTrue("Redacted non-location XMP", xmp.contains("LensDefaults"));
+            assertWithMessage("Failed to redact XMP longitude").that(xmp)
+                    .doesNotContain("10,41.751000E");
+            assertWithMessage("Failed to redact XMP latitude").that(xmp)
+                    .doesNotContain(
+                    "53,50.070500N");
+            assertWithMessage("Redacted non-location XMP").that(xmp).contains("13166/7763");
         }
         // We can't request original bytes unless we have permission
         try (ParcelFileDescriptor pfd = mContentResolver.openFileDescriptor(originalUri, "r")) {
@@ -482,7 +497,8 @@ public class MediaStore_Images_MediaTest {
     public void testCanonicalize() throws Exception {
         // Remove all audio left over from other tests
         ProviderTestUtils.executeShellCommand("content delete"
-                + " --user " + InstrumentationRegistry.getTargetContext().getUserId()
+                + " --user " + InstrumentationRegistry.getInstrumentation().getTargetContext()
+                        .getUserId()
                 + " --uri " + mExternalImages,
                 InstrumentationRegistry.getInstrumentation().getUiAutomation());
 

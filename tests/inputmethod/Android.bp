@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -44,6 +45,8 @@ android_test {
         "cts-wm-util",
         "cts_window-extensions",
         "statsdprotonano",
+        "android.view.inputmethod.flags-aconfig-java",
+        "flag-junit",
     ],
     srcs: [
         "src/**/*.java",
@@ -59,10 +62,12 @@ android_test {
         ":CtsHiddenFromPickerIme",
         ":CtsMockA11yInputMethod",
         ":CtsMockInputMethod",
+        ":CtsMockInputMethod2",
         ":CtsSpellCheckingIme",
         ":CtsInputMethodStandaloneTestApp",
         ":CtsMockLargeResourceInputMethod",
         ":CtsMockInputMethodWithSubtypes",
+        ":CtsInputMethodTestLauncher",
     ],
     per_testcase_directory: true,
 }

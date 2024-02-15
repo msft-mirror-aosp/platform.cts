@@ -42,6 +42,8 @@ COLOR_SPACES = [
     'CIE_XYZ', 'CIE_LAB', 'BT2020_HLG', 'BT2020_PQ'
 ]
 SETTINGS_OVERRIDE_ZOOM = 1
+STABILIZATION_MODE_OFF = 0
+STABILIZATION_MODE_PREVIEW = 2
 
 
 def legacy(props):
@@ -416,6 +418,7 @@ def zoom_ratio_range(props):
   return 'android.control.zoomRatioRange' in props and props[
       'android.control.zoomRatioRange'] is not None
 
+
 def low_latency_zoom(props):
   """Returns whether a device supports low latency zoom via settings override.
 
@@ -426,7 +429,8 @@ def low_latency_zoom(props):
     Boolean. True if device supports SETTINGS_OVERRIDE_ZOOM.
   """
   return ('android.control.availableSettingsOverrides') in props and (
-      SETTINGS_OVERRIDE_ZOOM in props['android.control.availableSettingsOverrides'])
+      SETTINGS_OVERRIDE_ZOOM in props[
+          'android.control.availableSettingsOverrides'])
 
 
 def sync_latency(props):
@@ -486,14 +490,17 @@ def get_fps_range_to_test(fps_ranges):
   Returns:
     An AE target FPS range for testing.
   """
-  accepted_range = list(DEFAULT_AE_TARGET_FPS_RANGE)
+  default_range_min, default_range_max = DEFAULT_AE_TARGET_FPS_RANGE
+  default_range_size = default_range_max - default_range_min
   logging.debug('AE target FPS ranges: %s', fps_ranges)
-  for (fps_range_min, fps_range_max) in fps_ranges:
-    if (fps_range_max == accepted_range[1] and
-        fps_range_min < accepted_range[0]):
-      accepted_range[0] = fps_range_min
-  logging.debug('Accepted AE target FPS range: %s', accepted_range)
-  return accepted_range
+  widest_fps_range = max(fps_ranges, key=lambda r: r[1] - r[0])
+  if widest_fps_range[1] - widest_fps_range[0] < default_range_size:
+    logging.debug('Default range %s is wider than widest '
+                  'available AE target FPS range %s.',
+                  DEFAULT_AE_TARGET_FPS_RANGE,
+                  widest_fps_range)
+  logging.debug('Accepted AE target FPS range: %s', widest_fps_range)
+  return widest_fps_range
 
 
 def ae_lock(props):
@@ -561,6 +568,25 @@ def distortion_correction(props):
       'android.lens.distortion'] is not None
 
 
+def distortion_correction_mode(props, mode):
+  """Returns whether a device supports a distortionCorrection mode.
+
+  Args:
+    props: Camera properties object
+    mode: Integer indicating distortion correction mode
+
+  Returns:
+    Boolean. True if device supports distortion correction mode(s).
+  """
+  if 'android.distortionCorrection.availableModes' in props:
+    logging.debug('distortionCorrection.availableModes: %s',
+                  props['android.distortionCorrection.availableModes'])
+  else:
+    logging.debug('distortionCorrection.availableModes not in props!')
+  return ('android.distortionCorrection.availableModes' in props and
+          mode in props['android.distortionCorrection.availableModes'])
+
+
 def freeform_crop(props):
   """Returns whether a device supports freefrom cropping.
 
@@ -626,17 +652,17 @@ def edge_mode(props, mode):
 
 
 def tonemap_mode(props, mode):
-    """Returns whether a device supports the tonemap mode.
+  """Returns whether a device supports the tonemap mode.
 
-    Args:
-        props: Camera properties object.
-        mode: Integer, indicating the tonemap mode to check for availability.
+  Args:
+    props: Camera properties object.
+    mode: Integer, indicating the tonemap mode to check for availability.
 
-    Return:
-        Boolean.
-    """
-    return 'android.tonemap.availableToneMapModes' in props and mode in props[
-        'android.tonemap.availableToneMapModes']
+  Return:
+    Boolean.
+  """
+  return 'android.tonemap.availableToneMapModes' in props and mode in props[
+      'android.tonemap.availableToneMapModes']
 
 
 def yuv_reprocess(props):
@@ -677,6 +703,7 @@ def stream_use_case(props):
   return 'android.request.availableCapabilities' in props and 19 in props[
       'android.request.availableCapabilities']
 
+
 def cropped_raw_stream_use_case(props):
   """Returns whether a device supports the CROPPED_RAW stream use case.
 
@@ -686,7 +713,8 @@ def cropped_raw_stream_use_case(props):
   Returns:
      Boolean. True if the device supports the CROPPED_RAW stream use case.
   """
-  return stream_use_case(props) and 6 in props['android.scaler.availableStreamUseCases']
+  return stream_use_case(props) and 6 in props[
+      'android.scaler.availableStreamUseCases']
 
 
 def intrinsic_calibration(props):
@@ -990,4 +1018,30 @@ def autoframing(props):
     Boolean. True if android.control.autoframing is supported.
   """
   return 'android.control.autoframingAvailable' in props and props[
-    'android.control.autoframingAvailable'] == 1
+      'android.control.autoframingAvailable'] == 1
+
+
+def ae_regions(props):
+  """Returns whether a device supports CONTROL_AE_REGIONS.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.control.aeRegions is supported.
+  """
+  return 'android.control.maxRegionsAe' in props and props[
+      'android.control.maxRegionsAe'] != 0
+
+
+def awb_regions(props):
+  """Returns whether a device supports CONTROL_AWB_REGIONS.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.control.awbRegions is supported.
+  """
+  return 'android.control.maxRegionsAwb' in props and props[
+      'android.control.maxRegionsAwb'] != 0

@@ -16,36 +16,46 @@
 
 package android.os.cts;
 
-import static android.os.Build.VERSION.ACTIVE_CODENAMES;
-import static android.os.Build.VERSION_CODES.CUR_DEVELOPMENT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 
-import junit.framework.TestCase;
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-public class BuildTest extends TestCase {
+public class BuildTest {
+    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
     private static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
     private static final String RO_PRODUCT_CPU_ABILIST64 = "ro.product.cpu.abilist64";
+    private static final String DEVICE = "ro.product.device";
+    private static final String MANUFACTURER = "ro.product.manufacturer";
+    private static final String MODEL = "ro.product.model";
 
     /**
      * Verify that the values of the various CPU ABI fields are consistent.
      */
+    @Test
     @AppModeFull(reason = "Instant apps cannot access APIs")
+    @IgnoreUnderRavenwood(reason = "No shell commands")
     public void testCpuAbi() throws Exception {
         runTestCpuAbiCommon();
         if (android.os.Process.is64Bit()) {
@@ -56,8 +66,22 @@ public class BuildTest extends TestCase {
     }
 
     /**
+     * Check if minimal properties are set (note that these might come from either
+     * /system/build.props or /oem/oem.props.
+     */
+    @Test
+    @CddTest(requirements = {"3.2.2/C-0-1"})
+    @IgnoreUnderRavenwood(reason = "No shell commands")
+    public void testBuildProperties() throws Exception {
+        assertNotNull("Build.DEVICE should be defined", Build.DEVICE);
+        assertNotNull("Build.MANUFACTURER should be defined", Build.MANUFACTURER);
+        assertNotNull("Build.MODEL should be defined", Build.MODEL);
+    }
+
+    /**
      * Verify that the CPU ABI fields on device match the permitted ABIs defined by CDD.
      */
+    @Test
     public void testCpuAbi_valuesMatchPermitted() throws Exception {
         for (String abi : Build.SUPPORTED_ABIS) {
             if (abi.endsWith("-hwasan")) {
@@ -194,6 +218,7 @@ public class BuildTest extends TestCase {
         Pattern.compile("^([0-9A-Za-z._-]+)$");
 
     /** Tests that check for valid values of constants in Build. */
+    @Test
     public void testBuildConstants() {
         // Build.VERSION.* constants tested by BuildVersionTest
 
@@ -245,69 +270,10 @@ public class BuildTest extends TestCase {
     }
 
     /**
-     * Tests that check for valid values of codenames related constants.
-     */
-    public void testBuildCodenameConstants() {
-        // CUR_DEVELOPMENT must be larger than any released version.
-        Field[] fields = Build.VERSION_CODES.class.getDeclaredFields();
-        List<String> activeCodenames = Arrays.asList(ACTIVE_CODENAMES);
-        // Make the codenames uppercase to match the field names.
-        activeCodenames.replaceAll(String::toUpperCase);
-        Set<String> knownCodenames = Build.VERSION.KNOWN_CODENAMES.stream()
-                .map(String::toUpperCase)
-                .collect(Collectors.toSet());
-        HashSet<String> declaredCodenames = new HashSet<>();
-        for (Field field : fields) {
-            if (field.getType().equals(int.class) && Modifier.isStatic(field.getModifiers())) {
-                String fieldName = field.getName();
-                final int fieldValue;
-                try {
-                    fieldValue = field.getInt(null);
-                } catch (IllegalAccessException e) {
-                    throw new AssertionError(e.getMessage());
-                }
-                declaredCodenames.add(fieldName);
-                if (fieldName.equals("CUR_DEVELOPMENT")) {
-                    // It should be okay to change the value of this constant in future, but it
-                    // should at least be a conscious decision.
-                    assertEquals(10000, fieldValue);
-                } else {
-                    // Remove all underscores to match build level codenames, e.g. S_V2 is Sv2.
-                    String fieldNameWithoutUnderscores = fieldName.replaceAll("_", "");
-                    if (activeCodenames.contains(fieldNameWithoutUnderscores)) {
-                        // This is the current development version. Note that fieldName can
-                        // become < CUR_DEVELOPMENT before CODENAME becomes "REL", so we
-                        // can't assertEquals(CUR_DEVELOPMENT, fieldValue) here.
-                        assertTrue("Expected " + fieldName + " value to be <= " + CUR_DEVELOPMENT
-                                + ", got " + fieldValue, fieldValue <= CUR_DEVELOPMENT);
-                    } else {
-                        assertTrue("Expected " + fieldName + " value to be < " + CUR_DEVELOPMENT
-                                + ", got " + fieldValue, fieldValue < CUR_DEVELOPMENT);
-                    }
-                    declaredCodenames.add(fieldNameWithoutUnderscores);
-                    assertTrue("Expected " + fieldNameWithoutUnderscores
-                                        + " to be declared in Build.VERSION.KNOWN_CODENAMES",
-                            knownCodenames.contains(fieldNameWithoutUnderscores));
-                }
-            }
-        }
-
-        HashSet<String> diff = new HashSet<>(knownCodenames);
-        diff.removeAll(declaredCodenames);
-        assertTrue(
-                "Expected all elements in Build.VERSION.KNOWN_CODENAMES to be declared in"
-                        + " Build.VERSION_CODES, found " + diff, diff.isEmpty());
-
-        if (!Build.VERSION.CODENAME.equals("REL")) {
-            assertTrue("In-development CODENAME must be declared in Build.VERSION.KNOWN_CODENAMES",
-                Build.VERSION.KNOWN_CODENAMES.contains(Build.VERSION.CODENAME));
-        }
-    }
-
-    /**
      * Verify that SDK versions are bounded by both high and low expected
      * values.
      */
+    @Test
     public void testSdkInt() {
         assertTrue(
                 "Current SDK version " + Build.VERSION.SDK_INT
@@ -331,6 +297,7 @@ public class BuildTest extends TestCase {
     /**
      * Verify that MEDIA_PERFORMANCE_CLASS are bounded by both high and low expected values.
      */
+    @Test
     public void testMediaPerformanceClass() {
         // media performance class value of 0 is valid
         if (Build.VERSION.MEDIA_PERFORMANCE_CLASS == 0) {

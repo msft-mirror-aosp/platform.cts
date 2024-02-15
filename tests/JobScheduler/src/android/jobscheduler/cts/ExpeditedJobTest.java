@@ -16,6 +16,7 @@
 
 package android.jobscheduler.cts;
 
+import static android.jobscheduler.cts.JobThrottlingTest.setScreenState;
 import static android.jobscheduler.cts.JobThrottlingTest.setTestPackageStandbyBucket;
 import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
@@ -23,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
+import android.app.job.JobInfo;
 import android.content.Context;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
@@ -33,7 +35,6 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
-import com.android.compatibility.common.util.ScreenUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -51,6 +52,7 @@ public class ExpeditedJobTest {
     private Context mContext;
     private UiDevice mUiDevice;
     private int mTestJobId;
+    private NetworkingHelper mNetworkingHelper;
     private TestAppInterface mTestAppInterface;
 
     @Before
@@ -62,23 +64,50 @@ public class ExpeditedJobTest {
         setTestPackageStandbyBucket(mUiDevice, JobThrottlingTest.Bucket.ACTIVE);
         AppOpsUtils.setOpMode(TEST_APP_PACKAGE, APP_OP_GET_USAGE_STATS,
                 AppOpsManager.MODE_ALLOWED);
+        mNetworkingHelper = new NetworkingHelper(
+                InstrumentationRegistry.getInstrumentation(), mContext);
     }
 
     @After
     public void tearDown() throws Exception {
         mTestAppInterface.cleanup();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
+        mNetworkingHelper.tearDown();
     }
 
     @Test
-    public void testJobUidState() throws Exception {
+    public void testJobUidState_noRequiredNetwork() throws Exception {
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
-        ScreenUtils.setScreenOn(false);
+        setScreenState(mUiDevice, false);
         mTestAppInterface.scheduleJob(Map.of(
                 TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true,
                 TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true
         ), Collections.emptyMap());
+        mTestAppInterface.forceRunJob();
+        assertTrue("Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
+                0,
+                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+    }
+
+    @Test
+    public void testJobUidState_withRequiredNetwork() throws Exception {
+        // Turn screen off so any lingering activity close processing from previous tests
+        // don't affect this one.
+        setScreenState(mUiDevice, false);
+        mNetworkingHelper.setAllNetworksEnabled(true);
+        mTestAppInterface.scheduleJob(
+                Map.of(
+                        TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true,
+                        TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true
+                ),
+                Map.of(
+                        TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                        JobInfo.NETWORK_TYPE_ANY
+                )
+        );
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
@@ -93,7 +122,7 @@ public class ExpeditedJobTest {
     public void testTopEJUnlimited() throws Exception {
         final int standardConcurrency = 64;
         final int numEjs = standardConcurrency + 1;
-        ScreenUtils.setScreenOn(true);
+        setScreenState(mUiDevice, true);
         mTestAppInterface.startAndKeepTestActivity(true);
         for (int i = 0; i < numEjs; ++i) {
             mTestAppInterface.scheduleJob(

@@ -33,6 +33,9 @@ aidl_interface {
         cpp: {
             enabled: false,
         },
+        rust: {
+            enabled: false,
+        },
         ndk: {
             enabled: true,
             additional_shared_libraries: [
@@ -56,6 +59,7 @@ android_test {
         "android.test.base",
     ],
     static_libs: [
+        "CtsVirtualDeviceCommonLib",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
@@ -66,6 +70,11 @@ android_test {
         "mockito-target-minus-junit4",
         "platform-test-annotations",
         "ctshardware-aidl-java",
+        "junit",
+        "junit-params",
+        "flag-junit",
+        "android.hardware.biometrics.flags-aconfig-java",
+        "android.companion.virtual.flags-aconfig-java",
     ],
     jni_libs: [
         "libctshardware_jni",

@@ -124,7 +124,13 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         super.setUp();
         mDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
-        mDeviceConfigStateHelper.set("fc_enable_flexibility", "false");
+        SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes on");
+        // Disable batching behavior.
+        mDeviceConfigStateHelper.set("min_ready_cpu_only_jobs_count", "0");
+        mDeviceConfigStateHelper.set("min_ready_non_active_jobs_count", "0");
+        mDeviceConfigStateHelper.set("conn_transport_batch_threshold", "");
+        // Disable flex behavior.
+        mDeviceConfigStateHelper.set("fc_applied_constraints", "0");
         kTestEnvironment.setUp();
         kTriggerTestEnvironment.setUp();
         mJobScheduler.cancelAll();
@@ -146,6 +152,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     @CallSuper
     @Override
     public void tearDown() throws Exception {
+        SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler monitor-battery off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd battery reset");
         Settings.Global.putString(mContext.getContentResolver(),
@@ -267,6 +274,28 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         mActivityStarted = false;
     }
 
+    void setDeviceConfigFlag(String key, String value, boolean waitForConfirmation)
+            throws Exception {
+        mDeviceConfigStateHelper.set(key, value);
+        if (waitForConfirmation) {
+            waitUntil("Config didn't update appropriately to '" + value
+                            + "'. Current value=" + getConfigValue(key),
+                    5 /* seconds */,
+                    () -> {
+                        final String curVal = getConfigValue(key);
+                        if (value == null) {
+                            return "null".equals(curVal);
+                        } else {
+                            return curVal.equals(value);
+                        }
+                    });
+        }
+    }
+
+    static String getConfigValue(String key) {
+        return SystemUtil.runShellCommand("cmd jobscheduler get-config-value " + key).trim();
+    }
+
     String getJobState(int jobId) throws Exception {
         return SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler get-job-state --user cur "
@@ -293,6 +322,9 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
      */
     static void toggleScreenOn(final boolean screenon) throws Exception {
         BatteryUtils.turnOnScreen(screenon);
+        if (screenon) {
+            SystemUtil.runShellCommand("wm dismiss-keyguard");
+        }
         // Wait a little bit for the broadcasts to be processed.
         Thread.sleep(2_000);
     }

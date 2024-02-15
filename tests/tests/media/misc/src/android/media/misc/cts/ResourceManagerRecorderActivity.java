@@ -16,6 +16,8 @@
 
 package android.media.misc.cts;
 
+import static org.junit.Assert.assertTrue;
+
 import android.hardware.Camera;
 import android.hardware.cts.helpers.CameraUtils;
 import android.media.MediaCodecList;
@@ -30,8 +32,6 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,20 +43,17 @@ import java.util.List;
 //  - use either AVC or HEVC video encoder
 //  - record at lowest supported resolution or the highest resolution
 public class ResourceManagerRecorderActivity extends MediaStubActivity {
-    private static final int VIDEO_FRAMERATE = 30;
     private static final int RECORD_TIME_MS = 3000;
-    private static final int VIDEO_WIDTH = 176;
-    private static final int VIDEO_HEIGHT = 144;
     private static final float LATITUDE = 0.0000f;
     private static final float LONGITUDE  = -180.0f;
     private static final float TOLERANCE = 0.0002f;
     private static final String TAG = "ResourceManagerRecorderActivity";
     private final String mOutputPath;
 
-    private boolean mSuccess = false;
+    private int mResult = RESULT_CANCELED;
     private boolean mHighResolution = false;
-    private int mVideoWidth = VIDEO_WIDTH;
-    private int mVideoHeight = VIDEO_HEIGHT;
+    private int mVideoWidth = 0;
+    private int mVideoHeight = 0;
     private int mVideoEncoderType = MediaRecorder.VideoEncoder.H264;
     private String mMime = MediaFormat.MIMETYPE_VIDEO_AVC;
     private Camera mCamera;
@@ -133,14 +130,14 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         mWorkerThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.e(TAG, "Started the thread");
+                Log.i(TAG, "Started the thread");
                 try {
                     recordVideoUsingCamera();
                 } catch (Exception e) {
-                    Log.d(TAG, "Caught exception: " + e);
+                    Log.e(TAG, "Caught exception: " + e);
                     finishWithResult(RESULT_CANCELED);
                 }
-                finishWithResult(mSuccess ? RESULT_OK : RESULT_CANCELED);
+                finishWithResult(mResult);
             }
         });
         mWorkerThread.start();
@@ -154,9 +151,9 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
         // Pick the max or min resolution (width * height) based
         // on the requirement.
         long curMaxResolution = 0;
-        long curMinResolution = VIDEO_WIDTH * VIDEO_HEIGHT;
+        long curMinResolution = Long.MAX_VALUE;
         for (Camera.Size size : videoSizes) {
-            long resolution = size.width * size.height;
+            long resolution = (long) size.width * size.height;
             if (!mHighResolution && (resolution < curMinResolution)) {
                 curMinResolution = resolution;
                 mVideoWidth = size.width;
@@ -212,7 +209,7 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
     // Checks whether the device supports any encoder with given
     // configuration.
     private static boolean isEncoderSupported(String mime, int width, int height) {
-        MediaCodecList mcl = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        MediaCodecList mcl = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         MediaFormat format = MediaFormat.createVideoFormat(mime, width, height);
         if (mcl.findEncoderForFormat(format) == null) {
             return false;
@@ -238,18 +235,23 @@ public class ResourceManagerRecorderActivity extends MediaStubActivity {
             // recording.
             if (isEncoderSupported(mMime, mVideoWidth, mVideoHeight)) {
                 recordVideoUsingCamera(mCamera, mOutputPath, durMs);
+                boolean success = checkLocationInFile(mOutputPath);
+                mResult = success ? RESULT_OK : RESULT_CANCELED;
             } else {
                 // We are skipping the test.
                 Log.w(TAG, "The device doesn't support the encoder wth configuration("
                         + mMime + "," + mVideoWidth + "x" + mVideoHeight
                         + ") required for the Recording");
-                mSuccess = true;
+                mResult = ResourceManagerStubActivity.RESULT_CODE_NO_ENCODER;
             }
             mCamera.release();
             mCamera = null;
-            if (!mSuccess) {
-                mSuccess = checkLocationInFile(mOutputPath);
-            }
+        } else {
+            // Since there aren't any cameras on the device,
+            // we are skipping the test.
+            Log.w(TAG, "The device doesn't have any camera available for recording"
+                    + " as android.hardware.Camera.getNumberOfCameras() returns: " + nCamera);
+            mResult = ResourceManagerStubActivity.RESULT_CODE_NO_CAMERA;
         }
     }
 

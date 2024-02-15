@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_ui_toolkit",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -34,6 +35,7 @@ android_test {
     ],
 
     static_libs: [
+        "android.view.flags-aconfig-java",
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
@@ -44,10 +46,14 @@ android_test {
         "junit-params",
         "mockito-target-minus-junit4",
         "platform-test-annotations",
-        "ub-uiautomator",
-        "truth-prebuilt",
+        "androidx.test.uiautomator_uiautomator",
+        "truth",
         "CtsSurfaceValidatorLib",
         "cts-wm-util",
+        "flag-junit",
+        "android.view.flags-aconfig-java",
+        "android.view.inputmethod.flags-aconfig-java",
+        "com.android.input.flags-aconfig-java",
     ],
 
     jni_libs: [

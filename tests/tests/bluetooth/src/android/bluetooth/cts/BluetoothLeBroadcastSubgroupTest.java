@@ -57,7 +57,7 @@ public class BluetoothLeBroadcastSubgroupTest {
 
     // For BluetoothLeAudioCodecConfigMetadata
     private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
-    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 7;
+    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 6;
     private static final int TEST_FRAME_DURATION_10000 = 0x01 << 1;
     private static final int TEST_OCTETS_PER_FRAME = 100;
 
@@ -108,7 +108,7 @@ public class BluetoothLeBroadcastSubgroupTest {
     }
 
     @Test
-    public void testCreateBroadcastSubgroupFromBuilder() {
+    public void createBroadcastSubgroupFromBuilder() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
                 new BluetoothLeAudioCodecConfigMetadata.Builder()
                         .setAudioLocation(TEST_AUDIO_LOCATION_FRONT_LEFT)
@@ -139,7 +139,7 @@ public class BluetoothLeBroadcastSubgroupTest {
     }
 
     @Test
-    public void testCreateBroadcastSubgroupFromCopy() {
+    public void createBroadcastSubgroupFromCopy() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
                 new BluetoothLeAudioCodecConfigMetadata.Builder()
                         .setAudioLocation(TEST_AUDIO_LOCATION_FRONT_LEFT)

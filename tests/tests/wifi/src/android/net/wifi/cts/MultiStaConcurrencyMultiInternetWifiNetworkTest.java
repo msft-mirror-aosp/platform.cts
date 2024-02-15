@@ -133,11 +133,14 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         // Don't use assumeTrue in @BeforeClass
         if (!WifiFeature.isWifiSupported(context)) return;
         if (!SdkLevel.isAtLeastT()) return;
-        sShouldRunTest = true;
-        Log.i(TAG, "sShouldRunTest " + sShouldRunTest);
 
         WifiManager wifiManager = context.getSystemService(WifiManager.class);
         assertThat(wifiManager).isNotNull();
+        if (!wifiManager.isStaConcurrencyForMultiInternetSupported()) {
+            return;
+        }
+        sShouldRunTest = true;
+        Log.i(TAG, "sShouldRunTest " + sShouldRunTest);
 
         // Turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
@@ -184,12 +187,6 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         mExecutorService = Executors.newSingleThreadScheduledExecutor();
         mTestHelper = new TestHelper(mContext, mUiDevice);
 
-        // Skip the test if WiFi is not supported.
-        assumeTrue("Wifi not supported", WifiFeature.isWifiSupported(mContext));
-        // Skip if multi STA for internet feature not supported.
-        assumeTrue("isStaConcurrencyForMultiInternetSupported",
-                mWifiManager.isStaConcurrencyForMultiInternetSupported());
-
         // Turn screen on
         mTestHelper.turnScreenOn();
 
@@ -207,7 +204,8 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.getPrivilegedConfiguredNetworks());
         mMatchingNetworksMap =
-                TestHelper.findMatchingSavedNetworksWithBssidByBand(mWifiManager, savedNetworks, 2);
+                TestHelper.findMatchingSavedNetworksWithBssidByBand(mWifiManager, savedNetworks,
+                        0, 2);
         assertWithMessage("Need at least 2 saved network bssids in different bands").that(
                 mMatchingNetworksMap.size()).isAtLeast(2);
 

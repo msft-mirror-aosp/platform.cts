@@ -23,6 +23,7 @@ import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_SECURI
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -255,6 +256,13 @@ public final class ActivityManagerForegroundServiceTypeTest {
     @Test
     public void testForegroundServiceTypeFileManagementPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_FILE_MANAGEMENT);
+    }
+
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING"})
+    @Test
+    public void testForegroundServiceTypeMediaProcessingPermission() throws Exception {
+        assumeTrue(android.content.pm.Flags.introduceMediaProcessingType());
+        testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
     }
 
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SPECIAL_USE"})
@@ -594,7 +602,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
         if (!ArrayUtils.isEmpty(appops)) {
             for (String appop : appops) {
                 // Because we're adopting the shell identity, we have to set the appop to shell here
-                executeShellCommand("appops set --uid " + SHELL_PKG_NAME + " " + appop + " allow");
+                executeShellCommand("appops set --user " + UserHandle.myUserId()
+                        + " --uid " + SHELL_PKG_NAME + " " + appop + " allow");
             }
         }
         if (!ArrayUtils.isEmpty(specialOps)) {
@@ -604,7 +613,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
         }
         if (!ArrayUtils.isEmpty(roles)) {
             for (String role: roles) {
-                executeShellCommand("cmd role add-role-holder " + role + " " + packageName);
+                executeShellCommand("cmd role add-role-holder --user " + UserHandle.myUserId()
+                        + " " + role + " " + packageName);
             }
         }
     }
@@ -612,7 +622,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
     private void resetPermissions(TestPermissionInfo[] permissions, String packageName)
             throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-        executeShellCommand("appops reset " + SHELL_PKG_NAME);
+        executeShellCommand("appops reset --user " + UserHandle.myUserId()
+                + " " + SHELL_PKG_NAME);
         if (permissions != null) {
             final SpecialPermissionOp[] specialOps = Arrays.stream(permissions)
                     .filter(p-> p.mSpecialOp != null)
@@ -629,7 +640,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
             }
             if (!ArrayUtils.isEmpty(roles)) {
                 for (String role: roles) {
-                    executeShellCommand("cmd role remove-role-holder " + role + " " + packageName);
+                    executeShellCommand("cmd role remove-role-holder --user "
+                            + UserHandle.myUserId() + " " + role + " " + packageName);
                 }
             }
         }

@@ -16,11 +16,10 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
-import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.os.Binder;
 import android.view.Gravity;
 import android.view.SurfaceControlViewHost;
@@ -39,12 +38,11 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class SurfacePackageFlickerTest {
     private static final int DEFAULT_LAYOUT_WIDTH = 100;
     private static final int DEFAULT_LAYOUT_HEIGHT = 100;
-    private static final int DEFAULT_BUFFER_WIDTH = 640;
-    private static final int DEFAULT_BUFFER_HEIGHT = 480;
 
     @Rule
     public final ActivityScenarioRule<CapturedActivity> mActivityRule =
@@ -57,9 +55,6 @@ public class SurfacePackageFlickerTest {
     @Before
     public void setup() {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
-        // Change runtime to 10s instead of 50s
-        mActivity.setMinimumCaptureDurationMs(10000);
     }
 
     class SurfacePackageTestCase implements ISurfaceValidatorTestCase {
@@ -113,10 +108,11 @@ public class SurfacePackageFlickerTest {
             });
         }
 
-        public void waitForReady() {
+        public boolean waitForReady() {
             try {
-                mFirstDrawLatch.await();
+                return mFirstDrawLatch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
             } catch (Exception e) {
+                return false;
                 // Oh well
             }
         }
@@ -129,23 +125,8 @@ public class SurfacePackageFlickerTest {
         }
 
         @Override
-        public boolean hasAnimation() {
-            return false;
-        }
-
-        @Override
         public PixelChecker getChecker() {
             return mPixelChecker;
-        }
-
-        @Override
-        public Rect getBoundsToCheck(FrameLayout parent) {
-            View boundsView = mParent;
-            Rect boundsToCheck = new Rect(0, 0, boundsView.getWidth(), boundsView.getHeight());
-            int[] topLeft = new int[2];
-            boundsView.getLocationOnScreen(topLeft);
-            boundsToCheck.offset(topLeft[0], topLeft[1]);
-            return boundsToCheck;
         }
     }
 

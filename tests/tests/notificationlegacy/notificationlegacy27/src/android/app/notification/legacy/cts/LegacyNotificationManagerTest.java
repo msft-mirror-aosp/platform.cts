@@ -163,6 +163,9 @@ public class LegacyNotificationManagerTest {
                 SUPPRESSED_EFFECT_SCREEN_ON | SUPPRESSED_EFFECT_SCREEN_OFF);
         mNotificationManager.setNotificationPolicy(appPolicy);
 
+        // Applying policy is asynchronous
+        Thread.sleep(300);
+
         int expected = userPolicy.suppressedVisualEffects
                 | SUPPRESSED_EFFECT_SCREEN_ON | SUPPRESSED_EFFECT_SCREEN_OFF
                 | SUPPRESSED_EFFECT_PEEK | SUPPRESSED_EFFECT_LIGHTS
@@ -322,7 +325,7 @@ public class LegacyNotificationManagerTest {
 
         assertTrue(mHelper.isNotificationGone(sbn.getKey()));
         assertEquals((Integer) NotificationListenerService.REASON_CHANNEL_BANNED,
-                mListener.mRemoved.get(sbn.getKey()));
+                mListener.mRemovedReasons.get(sbn.getKey()));
     }
 
     private void sendNotification(final int id, final int icon) throws Exception {

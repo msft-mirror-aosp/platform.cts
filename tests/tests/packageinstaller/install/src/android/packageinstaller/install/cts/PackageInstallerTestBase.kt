@@ -38,13 +38,15 @@ import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
 import android.provider.DeviceConfig
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil
@@ -52,6 +54,7 @@ import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -157,11 +160,23 @@ open class PackageInstallerTestBase {
         uiDevice.waitForIdle()
     }
 
+    @After
+    fun pressBack() {
+        uiDevice.pressBack()
+    }
+
     /**
      * Wait for session's install result and return it
      */
     protected fun getInstallSessionResult(timeout: Long = TIMEOUT): SessionResult {
-        return installSessionResult.poll(timeout, TimeUnit.MILLISECONDS)
+        return getInstallSessionResult(installSessionResult, timeout)
+    }
+
+    protected fun getInstallSessionResult(
+        installResult: LinkedBlockingQueue<SessionResult>,
+        timeout: Long = TIMEOUT
+    ): SessionResult {
+        return installResult.poll(timeout, TimeUnit.MILLISECONDS)
             ?: SessionResult(null /* status */, null /* preapproval */, "Fail to poll result")
     }
 
@@ -347,6 +362,13 @@ open class PackageInstallerTestBase {
         return pm.getPackageInfo(TEST_APK_PACKAGE_NAME, flags)
     }
 
+    fun assertInstalled(packageName: String,
+        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
+    ): PackageInfo {
+        // Throws exception if package is not installed.
+        return pm.getPackageInfo(packageName, flags)
+    }
+
     fun assertNotInstalled() {
         try {
             pm.getPackageInfo(TEST_APK_PACKAGE_NAME, PackageManager.PackageInfoFlags.of(0))
@@ -361,16 +383,40 @@ open class PackageInstallerTestBase {
      * @param resId The resource ID of the button to click
      */
     fun clickInstallerUIButton(resId: String) {
+        clickInstallerUIButton(getBySelector(resId))
+    }
+
+    private fun getBySelector(id: String): BySelector {
+        // Normally, we wouldn't need to look for buttons from 2 different packages.
+        // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
+        // to selective partners, leading to fragmentation in which button surfaces in an OEM's
+        // installer app.
+        return By.res(Pattern.compile(String.format(
+                    "(?:^%s|^%s):id/%s", PACKAGE_INSTALLER_PACKAGE_NAME, SYSTEM_PACKAGE_NAME, id)))
+    }
+
+    /**
+     * Click a button in the UI of the installer app
+     *
+     * @param bySelector The bySelector of the button to click
+     */
+    fun clickInstallerUIButton(bySelector: BySelector) {
+        var button: UiObject2? = null
         val startTime = System.currentTimeMillis()
         while (startTime + TIMEOUT > System.currentTimeMillis()) {
             try {
-                uiDevice.wait(Until.findObject(By.res(PACKAGE_INSTALLER_PACKAGE_NAME, resId)), 1000)
-                        .click()
-                return
+                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                if (button != null) {
+                    Log.d(TAG, "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
+                            " text: ${button.getText()}," +
+                            " package: ${button.getApplicationPackage()}")
+                    button.click()
+                    return
+                }
             } catch (ignore: Throwable) {
             }
         }
-        Assert.fail("Failed to click the button: $resId")
+        Assert.fail("Failed to click the button: $bySelector")
     }
 
     /**

@@ -57,6 +57,7 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.server.biometrics.nano.SensorServiceStateProto;
 import com.android.server.biometrics.nano.SensorStateProto;
 
@@ -153,6 +154,11 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricTestSession#startEnroll",
+            "android.hardware.biometrics."
+                    + "BiometricTestSession#finishEnroll"})
     @Test
     public void testEnroll() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -165,7 +171,7 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
     }
 
     private void testEnrollForSensor(BiometricTestSession session, int sensorId) throws Exception {
-        final int userId = 0;
+        final int userId = Utils.getUserId();
 
         session.startEnroll(userId);
         mInstrumentation.waitForIdleSync();
@@ -182,13 +188,16 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
                 .get(sensorId).getUserStates().get(userId).numEnrolled);
     }
 
+    @ApiTest(apis = {
+            "android.hardware.fingerprint."
+                    + "FingerprintManager#authenticate"})
     @Test
     public void testAuthenticateFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
         // Manually keep track and close the sessions, since we want to enroll all sensors before
         // requesting auth.
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         try (TestSessionList testSessions = createTestSessionsWithEnrollments(userId)) {
             final TestJournal journal = TestJournalContainer.get(AUTH_ON_CREATE_ACTIVITY);
 
@@ -220,13 +229,16 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.fingerprint."
+                    + "FingerprintManager#authenticate"})
     @Test
     public void testRejectThenErrorFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
         // Manually keep track and close the sessions, since we want to enroll all sensors before
         // requesting auth.
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         try (TestSessionList testSessions = createTestSessionsWithEnrollments(userId)) {
             final TestJournal journal = TestJournalContainer.get(AUTH_ON_CREATE_ACTIVITY);
 
@@ -287,12 +299,15 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.fingerprint."
+                    + "FingerprintManager#authenticate"})
     @Test
     @AsbSecurityTest(cveBugId = 214261879)
     public void testAuthCancelsWhenAppSwitched() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         try (TestSessionList testSessions = createTestSessionsWithEnrollments(userId)) {
             launchActivity(AUTH_ON_CREATE_ACTIVITY);
             final UiObject2 prompt = mDevice.wait(
@@ -309,6 +324,8 @@ public class FingerprintServiceTest extends ActivityManagerTestBase
             } else {
                 // devices that do not show a sysui prompt may not cancel until an attempt is made
                 mWmState.waitForActivityState(EMPTY_ACTIVITY, STATE_RESUMED);
+                //TODO(b/295160922): wait for BP UI animation over before accepting auth
+                Thread.sleep(300);
                 testSessions.first().acceptAuthentication(userId);
                 mInstrumentation.waitForIdleSync();
             }

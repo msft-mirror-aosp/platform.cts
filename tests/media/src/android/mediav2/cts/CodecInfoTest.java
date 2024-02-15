@@ -33,6 +33,8 @@ import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
@@ -90,13 +92,14 @@ public class CodecInfoTest {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && codecInfo.isAlias()) {
                 continue;
             }
-            if (CodecTestBase.codecPrefix != null &&
-                    !codecInfo.getName().startsWith(CodecTestBase.codecPrefix)) {
+            String codecName = codecInfo.getName();
+            if (codecPrefix != null && !codecName.startsWith(codecPrefix)
+                    || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
             }
             String[] types = codecInfo.getSupportedTypes();
             for (String type : types) {
-                argsList.add(new Object[]{type, codecInfo.getName(), codecInfo});
+                argsList.add(new Object[]{type, codecName, codecInfo});
             }
         }
         return argsList;
@@ -114,7 +117,7 @@ public class CodecInfoTest {
     // display capabilities at native level, till then limit the test to vendor codecs
     @NonMainlineTest
     @CddTest(requirements = "5.1.7/C-2-1")
-    @ApiTest(apis = "MediaCodecInfo.CodecCapabilities#profileLevels")
+    @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     public void testHDRDisplayCapabilities() {
         Assume.assumeTrue("Test needs Android 13", IS_AT_LEAST_T);
         Assume.assumeTrue("Test needs VNDK Android 13", VNDK_IS_AT_LEAST_T);

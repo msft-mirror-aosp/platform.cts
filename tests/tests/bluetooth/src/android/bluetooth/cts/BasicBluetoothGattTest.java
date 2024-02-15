@@ -24,6 +24,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
@@ -40,7 +41,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests a small part of the {@link BluetoothGatt} methods without a real Bluetooth device.
@@ -49,6 +52,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class BasicBluetoothGattTest {
     private static final String TAG = BasicBluetoothGattTest.class.getSimpleName();
+    private static final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mBluetoothDevice;
@@ -93,7 +97,7 @@ public class BasicBluetoothGattTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testGetServices() throws Exception {
+    public void getServices() throws Exception {
         // getServices() returns an empty list if service discovery has not yet been performed.
         List<BluetoothGattService> services = mBluetoothGatt.getServices();
         assertNotNull(services);
@@ -102,35 +106,52 @@ public class BasicBluetoothGattTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testConnect() throws Exception {
+    public void connect() throws Exception {
         mBluetoothGatt.connect();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testSetPreferredPhy() throws Exception {
+    public void setPreferredPhy() throws Exception {
         mBluetoothGatt.setPreferredPhy(BluetoothDevice.PHY_LE_1M, BluetoothDevice.PHY_LE_1M,
                 BluetoothDevice.PHY_OPTION_NO_PREFERRED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testGetConnectedDevices() {
+    public void getConnectedDevices() {
         assertThrows(UnsupportedOperationException.class,
                 () -> mBluetoothGatt.getConnectedDevices());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testGetConnectionState() {
+    public void getConnectionState() {
         assertThrows(UnsupportedOperationException.class,
                 () -> mBluetoothGatt.getConnectionState(null));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testGetDevicesMatchingConnectionStates() {
+    public void getDevicesMatchingConnectionStates() {
         assertThrows(UnsupportedOperationException.class,
                 () -> mBluetoothGatt.getDevicesMatchingConnectionStates(null));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void writeCharacteristic_withValueOverMaxLength() {
+        BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(TEST_UUID,
+                0x0A, 0x11);
+        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        service.addCharacteristic(characteristic);
+
+        // 512 is the max attribute length
+        byte[] value = new byte[513];
+        Arrays.fill(value, (byte) 0x01);
+
+        assertThrows(IllegalArgumentException.class, () -> mBluetoothGatt.writeCharacteristic(
+                characteristic, value, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
     }
 }

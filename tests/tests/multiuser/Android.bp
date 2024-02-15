@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_multiuser",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -32,6 +33,9 @@ android_test {
         "Nene",
         "Harrier",
         "TestApp",
+        "android.multiuser.flags-aconfig-java",
+        "android.os.flags-aconfig-java",
+        "flag-junit",
     ],
     libs: ["android.test.base"],
     sdk_version: "test_current",

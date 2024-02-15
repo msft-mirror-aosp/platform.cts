@@ -33,7 +33,7 @@ _ALIGN_TOL_MM = 5.0  # mm
 _ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
-_CIRCLE_MIN_AREA = 0.0075  # multiplied by image size
+_CIRCLE_MIN_AREA = 0.005  # multiplied by image size
 _CIRCLE_RTOL = 0.1  # 10%
 _CM_TO_M = 1E-2
 _FMT_CODE_RAW = 0x20
@@ -112,19 +112,19 @@ def select_ids_to_test(ids, props, chart_distance):
                   chart_distance)
     # determine best combo with rig used or recommend different rig
     if (opencv_processing_utils.FOV_THRESH_TELE < fov <
-        opencv_processing_utils.FOV_THRESH_WFOV):
+        opencv_processing_utils.FOV_THRESH_UW):
       test_ids.append(i)  # RFoV camera
     elif fov < opencv_processing_utils.FOV_THRESH_TELE40:
       logging.debug('Skipping camera. Not appropriate multi-camera testing.')
       continue  # super-TELE camera
     elif (fov <= opencv_processing_utils.FOV_THRESH_TELE and
           math.isclose(chart_distance,
-                       opencv_processing_utils.CHART_DISTANCE_RFOV,
+                       opencv_processing_utils.CHART_DISTANCE_31CM,
                        rel_tol=_CHART_DISTANCE_RTOL)):
       test_ids.append(i)  # TELE camera in RFoV rig
-    elif (fov >= opencv_processing_utils.FOV_THRESH_WFOV and
+    elif (fov >= opencv_processing_utils.FOV_THRESH_UW and
           math.isclose(chart_distance,
-                       opencv_processing_utils.CHART_DISTANCE_WFOV,
+                       opencv_processing_utils.CHART_DISTANCE_22CM,
                        rel_tol=_CHART_DISTANCE_RTOL)):
       test_ids.append(i)  # WFoV camera in WFoV rig
     else:
@@ -388,7 +388,8 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       if (media_performance_class >= _TEST_REQUIRED_MPC and
           not should_run and
           cam.is_primary_camera() and
-          has_multiple_same_facing_cameras):
+          has_multiple_same_facing_cameras and
+          props['android.lens.facing'] == _LENS_FACING_BACK):
         logging.error('Found multiple camera IDs %s facing in the same '
                       'direction as primary camera %s.',
                       cameras_facing_same_direction, self.camera_id)
@@ -536,7 +537,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         circle[i] = opencv_processing_utils.find_circle(
             img, f'{name_with_log_path}_{fmt}_gray_{i}.jpg',
             _CIRCLE_MIN_AREA, _CIRCLE_COLOR)
-        logging.debug('Circle radius %s:  %.2f', format(i), circle[i]['r'])
+        logging.debug('Circle radius %s: %.2f', format(i), circle[i]['r'])
 
         # Undo zoom to image (if applicable).
         if fmt == 'yuv':

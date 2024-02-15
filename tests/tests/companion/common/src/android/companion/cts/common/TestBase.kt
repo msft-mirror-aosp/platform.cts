@@ -18,6 +18,7 @@ package android.companion.cts.common
 
 import android.Manifest
 import android.annotation.CallSuper
+import android.annotation.UserIdInt
 import android.app.Instrumentation
 import android.app.UiAutomation
 import android.companion.AssociationInfo
@@ -27,6 +28,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.MacAddress
+import android.os.ParcelUuid
 import android.os.Process
 import android.os.SystemClock.sleep
 import android.os.SystemClock.uptimeMillis
@@ -35,12 +37,14 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import java.io.IOException
+import java.util.Locale
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -177,6 +181,15 @@ abstract class TestBase {
             }
         }
     }
+
+    fun simulateDeviceEvent(associationId: Int, event: Int) =
+            runShellCommand("cmd companiondevice simulate-device-event $associationId $event")
+
+    fun simulateDeviceUuidEvent(uuid: ParcelUuid, event: Int) =
+            runShellCommand(
+                    "cmd companiondevice simulate-device-uuid-event " +
+                    "$uuid $targetPackageName $userId $event"
+            )
 }
 
 const val TAG = "CtsCompanionDeviceManagerTestCases"
@@ -217,14 +230,13 @@ fun <T> assertEmpty(list: Collection<T>) = assertTrue("Collection is not empty")
 fun assertAssociations(
     actual: List<AssociationInfo>,
     expected: Set<Pair<String, MacAddress?>>
-) = assertEquals(actual = actual.map { it.packageName to it.deviceMacAddress }.toSet(),
-        expected = expected)
+) = assertEquals(actual = actual.map {
+    it.packageName to it.deviceMacAddress }.toSet(), expected = expected)
 
 fun assertSelfManagedAssociations(
     actual: List<AssociationInfo>,
     expected: Set<Pair<String, Int>>
-) = assertEquals(actual = actual.map { it.packageName to it.id }.toSet(),
-        expected = expected)
+) = assertEquals(actual = actual.map { it.packageName to it.id }.toSet(), expected = expected)
 
 /**
  * Assert that CDM binds valid CompanionDeviceServices, both primary and secondary.
@@ -275,9 +287,11 @@ fun assertValidCompanionDeviceServicesRemainUnbound() =
  * (i.e. missing permission or intent-filter).
  */
 fun assertInvalidCompanionDeviceServicesNotBound() =
-        assertFalse("CompanionDeviceServices that do not require " +
+        assertFalse(
+                "CompanionDeviceServices that do not require " +
                 "BIND_COMPANION_DEVICE_SERVICE permission or do not declare an intent-filter for " +
-                "\"android.companion.CompanionDeviceService\" action should not be bound") {
+                "\"android.companion.CompanionDeviceService\" action should not be bound"
+        ) {
             MissingPermissionCompanionService.isBound ||
                     MissingIntentFilterActionCompanionService.isBound
     }
@@ -297,8 +311,9 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
         assertContains(PrimaryCompanionService.associationIdsForConnectedDevices, associationId)
     } else {
         PrimaryCompanionService.waitAssociationToDisappear(associationId)
-        assertFalse(PrimaryCompanionService.associationIdsForConnectedDevices
-                .contains(associationId))
+        assertFalse(
+                PrimaryCompanionService.associationIdsForConnectedDevices.contains(associationId)
+        )
     }
 
     // ... while neither the non-primary nor incorrectly defined CompanionDeviceServices -
@@ -354,11 +369,26 @@ fun Instrumentation.runShellCommand(cmd: String): String {
 fun Instrumentation.setSystemProp(name: String, value: String) =
         runShellCommand("setprop $name $value")
 
-fun MacAddress.toUpperCaseString() = toString().toUpperCase()
+fun MacAddress.toUpperCaseString() = toString().uppercase(Locale.ROOT)
 
 fun sleepFor(duration: Duration) = sleep(duration.inWholeMilliseconds)
 
 fun killProcess(name: String) {
-    val pid = SystemUtil.runShellCommand("pgrep -A $name").trim()
-    Process.killProcess(Integer.valueOf(pid))
+    val pids = SystemUtil.runShellCommand("pgrep $name").trim().split("\\s+".toRegex())
+    for (pid: String in pids) {
+        // Make sure that it is the intended process before killing it.
+        val process = SystemUtil.runShellCommand("ps $pid")
+        if (process.contains("android.companion.cts.multiprocess")) {
+            Process.killProcess(Integer.valueOf(pid))
+        }
+    }
 }
+
+fun getAssociationForPackage(
+        @UserIdInt userId: Int,
+        packageName: String,
+        macAddress: MacAddress,
+        cdm: CompanionDeviceManager
+): AssociationInfo = cdm.allAssociations.find {
+    it.belongsToPackage(userId, packageName) && it.deviceMacAddress == macAddress
+} ?: fail("Association for u$userId/$packageName linked to address $macAddress does not exist")

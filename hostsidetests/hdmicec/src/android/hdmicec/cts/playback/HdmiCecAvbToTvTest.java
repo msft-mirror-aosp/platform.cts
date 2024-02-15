@@ -18,6 +18,8 @@ package android.hdmicec.cts.playback;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.hdmicec.cts.AudioManagerHelper;
 import android.hdmicec.cts.BaseHdmiCecAbsoluteVolumeBehaviorTest;
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
@@ -51,6 +53,7 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
     public RuleChain ruleChain =
             RuleChain.outerRule(BaseHdmiCecCtsTest.CecRules.requiresCec(this))
                     .around(BaseHdmiCecCtsTest.CecRules.requiresLeanback(this))
+                    .around(BaseHdmiCecCtsTest.CecRules.requiresPhysicalDevice(this))
                     .around(
                             BaseHdmiCecCtsTest.CecRules.requiresDeviceType(
                                     this, HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE))
@@ -106,6 +109,9 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      */
     @Test
     public void testEnableDisableAvb_triggeredByAvbSupportChanged() throws Exception {
+        assumeFalse("Skip for audio system devices (b/323469502)",
+                hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);
 
@@ -138,6 +144,9 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      */
     @Test
     public void testEnableAndDisableAvb_triggeredByVolumeControlSettingChange() throws Exception {
+        assumeFalse("Skip for audio system devices (b/323469502)",
+                hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
         enableSystemAudioModeIfApplicable();
 
         // System audio device reports support for <Set Audio Volume Level>
@@ -169,6 +178,9 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      */
     @Test
     public void testOutgoingVolumeUpdates() throws Exception {
+        assumeFalse("Skip for audio system devices (b/323469502)",
+                hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);
@@ -206,6 +218,9 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      */
     @Test
     public void testIncomingVolumeUpdates() throws Exception {
+        assumeFalse("Skip for audio system devices (b/323469502)",
+                hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);

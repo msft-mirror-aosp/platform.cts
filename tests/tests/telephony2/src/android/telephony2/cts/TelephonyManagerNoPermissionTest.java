@@ -17,12 +17,15 @@
 package android.telephony2.cts;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 
+import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
 
 import org.junit.After;
@@ -85,6 +88,18 @@ public class TelephonyManagerNoPermissionTest {
                     + "if TelecomManager#ENABLE_GET_CALL_STATE_PERMISSION_PROTECTION is "
                     + "enabled.");
         } catch (SecurityException e) {
+            // expected
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @Test
+    public void getCarrierRestrictionRules_SecurityException() {
+        try {
+            assumeNotNull(mTelephonyManager.getCarrierRestrictionRules());
+            mTelephonyManager.getCarrierRestrictionRules();
+            fail();
+        } catch (SecurityException se) {
             // expected
         }
     }

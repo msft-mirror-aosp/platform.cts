@@ -36,6 +36,7 @@ import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.autofillservice.cts.R;
@@ -50,17 +51,20 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.content.Intent;
-import android.platform.test.annotations.FlakyTest;
+import android.graphics.drawable.Icon;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.util.Log;
 import android.view.View;
+import android.widget.RemoteViews;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.RetryableException;
 
 import org.junit.After;
 import org.junit.Test;
-
 
 /**
  * This is the test cases for the fill dialog UI.
@@ -875,19 +879,63 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressingFillDialogOnActivityThatOnlyHasCredmanField() throws Exception {
-        // with this on, any field could trigger pre-emptive request
-        setFillDialogHints(sContext, "password");
-        enableService();
+    public void testSuppressingFillDialog_onCredmanFieldOnlyActivity_withIsCredman()
+            throws Exception {
+        testSuppressFillDialog_onlyCredentialFields(false);
+    }
 
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    public void testSuppressFillDialog_onCredmanFieldOnlyActivity_withAutofillHint()
+            throws Exception {
+        testSuppressFillDialog_onlyCredentialFields(true);
+    }
+
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    public void testSuppressFillDialog_onMixedFields_withIsCredman()
+            throws Exception {
+        testSuppressFillDialog_onMixedFields(false);
+    }
+
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    public void testSuppressFillDialog_onMixedFields_withAutofillHint()
+            throws Exception {
+        testSuppressFillDialog_onMixedFields(true);
+    }
+
+    @Test
+    public void testIsCredential() throws Exception {
         // Start activity
         final LoginImportantForCredentialManagerActivity activity =
-                startLoginImportantForCredentialManagerActivity();
-
-        // Check fill request is not triggered on layout
-        // ImportantForCredential fields shouldn't trigger Fill Dialog requests.
-        sReplier.assertNoUnhandledFillRequests();
+                startLoginImportantForCredentialManagerActivity(false);
         mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        View v = activity.findViewById(R.id.password);
+        assertThat(v.isCredential()).isTrue();
+
+        v.setIsCredential(false);
+        assertThat(v.isCredential()).isFalse();
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 281666022)
+    public void remoteViews_doesNotSpillAcrossUsers() throws Exception {
+        enableFillDialogFeature(sContext);
+        enableService();
+
+        RemoteViews header = createPresentation("Dialog Header");
+        RemoteViews dialogRv = createPresentation("Dialog Presentation");
+        // bad url, should not be displayed
+        header.setImageViewIcon(R.id.icon, Icon.createWithContentUri(
+                "content://1000@com.android.contacts/display_photo/1"));
+        dialogRv.setImageViewIcon(R.id.icon, Icon.createWithContentUri(
+                "content://1000@com.android.contacts/display_photo/1"));
 
         // Set response with a dataset
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
@@ -895,31 +943,33 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
                     .setField(ID_USERNAME, "dude")
                     .setField(ID_PASSWORD, "sweet")
                     .setPresentation(createPresentation("Dropdown Presentation"))
-                    .setDialogPresentation(createPresentation("Dialog Presentation"))
+                    .setDialogPresentation(dialogRv)
                     .build())
-                .setDialogHeader(createPresentation("Dialog Header"))
-                .setDialogTriggerIds(ID_USERNAME, ID_PASSWORD);
+                .setDialogHeader(header)
+                .setDialogTriggerIds(ID_PASSWORD);
         sReplier.addResponse(builder.build());
 
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
         mUiBot.selectByRelativeId(ID_PASSWORD);
         mUiBot.waitForIdleSync();
 
-        // assert fill request is received on test provider
-        final FillRequest fillRequest = sReplier.getNextFillRequest();
+        // Asserts that the header is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.findFillDialogHeaderPicker());
 
-        // on app side, verify no fill dialog is shown
-        // verify dropdown is shown by selecting dropdown suggestion
-        mUiBot.assertNoFillDialog();
-        // Set expected value, then select dataset
-        activity.expectAutoFill("dude", "sweet");
-        mUiBot.selectDataset("Dropdown Presentation");
-        // Check the results.
-        activity.assertAutoFilled();
+        // Asserts that the
+        assertThrows(RetryableException.class,
+                () -> mUiBot.findFillDialogDatasetPicker());
     }
 
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressingFillDialogOnActivityThatHasBothCredmanAndNonCredmanInputField()
+    private void testSuppressFillDialog_onMixedFields(boolean usesAutofillHint)
             throws Exception {
         // with this on, any field could trigger pre-emptive request
         enableFillDialogFeature(sContext);
@@ -928,18 +978,18 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         // Set response with a dataset
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
                 .addDataset(new CannedDataset.Builder()
-                    .setField(ID_USERNAME, "dude")
-                    .setField(ID_PASSWORD, "sweet")
-                    .setPresentation(createPresentation("Dropdown Presentation"))
-                    .setDialogPresentation(createPresentation("Dialog Presentation"))
-                    .build())
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
                 .setDialogHeader(createPresentation("Dialog Header"))
                 .setDialogTriggerIds(ID_PASSWORD);
         sReplier.addResponse(builder.build());
 
         // Start activity and autofill
         final LoginMixedImportantForCredentialManagerActivity activity =
-                startLoginMixedImportantForCredentialManagerActivity();
+                startLoginMixedImportantForCredentialManagerActivity(usesAutofillHint);
         mUiBot.waitForIdleSync();
 
         sReplier.getNextFillRequest();
@@ -959,22 +1009,47 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
-    @Test
-    public void testIsCredential() throws Exception {
+    private void testSuppressFillDialog_onlyCredentialFields(boolean usesAutofillHint)
+            throws Exception {
+        // with this on, any field could trigger pre-emptive request
+        setFillDialogHints(sContext, "password");
+        enableService();
+
         // Start activity
         final LoginImportantForCredentialManagerActivity activity =
-                startLoginImportantForCredentialManagerActivity();
+                startLoginImportantForCredentialManagerActivity(usesAutofillHint);
+
+        // Check fill request is not triggered on layout
+        // ImportantForCredential fields shouldn't trigger Fill Dialog requests.
+        sReplier.assertNoUnhandledFillRequests();
         mUiBot.waitForIdleSync();
 
-        // Click on password field to trigger fill dialog
+        // Set response with a dataset
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_USERNAME, ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
         mUiBot.selectByRelativeId(ID_PASSWORD);
         mUiBot.waitForIdleSync();
 
-        View v = activity.findViewById(R.id.password);
-        assertThat(v.isCredential()).isTrue();
+        // assert fill request is received on test provider
+        sReplier.getNextFillRequest();
 
-        v.setIsCredential(false);
-        assertThat(v.isCredential()).isFalse();
+        // on app side, verify no fill dialog is shown
+        // verify dropdown is shown by selecting dropdown suggestion
+        mUiBot.assertNoFillDialog();
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset("Dropdown Presentation");
+        // Check the results.
+        activity.assertAutoFilled();
     }
 
     private FieldsNoPasswordActivity startNoPasswordActivity() throws Exception {

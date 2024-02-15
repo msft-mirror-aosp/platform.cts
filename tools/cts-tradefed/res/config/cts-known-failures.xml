@@ -111,9 +111,6 @@
     <!-- b/64221494 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testAospSeappContexts" />
 
-    <!-- b/63378294 b/64382381 -->
-    <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules440" />
-
     <!-- b/36686383 -->
     <option name="compatibility:exclude-filter" value="CtsIncidentHostTestCases com.android.server.cts.ErrorsTest#testANR" />
 
@@ -142,10 +139,6 @@
     <!-- b/192313064 , b/192984235 , b/274369142 -->
     <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
     <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases[instant] android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
-
-    <!-- b/134654621 -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testAppOrientationRequestConfigClears" />
 
     <!-- b/62976713 -->
     <option name="compatibility:exclude-filter" value="arm64-v8a CtsMediaBitstreamsTestCases" />
@@ -213,13 +206,6 @@
     <!-- b/126548816 -->
     <option name="compatibility:exclude-filter" value="CtsRcsTestCases" />
 
-    <!-- b/112688380 -->
-    <option name="compatibility:exclude-filter" value="CtsActivityManagerDeviceTestCases android.server.am.ActivityManagerAppConfigurationTests#testAppOrientationRequestConfigClears" />
-    <option name="compatibility:exclude-filter" value="CtsActivityManagerDeviceTestCases android.server.am.ActivityManagerAppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-    <!-- b/112688380, b/139936670 -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testAppOrientationRequestConfigClears" />
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-
     <!-- b/167931576 -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.ActivityVisibilityTests#testTurnScreenOnAttrNoLockScreen" />
 
@@ -244,7 +230,7 @@
     <option name="compatibility:exclude-filter" value="CtsPrintTestCases[instant]" />
 
     <!-- b/194146521 -->
-    <option name="compatibility:exclude-filter" value="CtsPermission3TestCases android.permission3.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
 
     <!-- b/198992105 -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
@@ -257,6 +243,9 @@
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <!-- b/300310474 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
 
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
@@ -291,4 +280,9 @@
 
     <!-- b/284365711, b/285449475 -->
     <option name="compatibility:exclude-filter" value="CtsBluetoothMultiDevicesTestCases BluetoothMultiDevicesTest" />
+
+    <!--- b/289540897 -->
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_small_medium_sizes" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_large_sizes" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_realloc" />
 </configuration>

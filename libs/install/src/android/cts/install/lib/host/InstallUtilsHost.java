@@ -92,10 +92,6 @@ public class InstallUtilsHost {
      * unnecessary reboots.
      */
     public void uninstallShimApexIfNecessary() throws Exception {
-        if (!isApexUpdateSupported()) {
-            // Device doesn't support updating apex. Nothing to uninstall.
-            return;
-        }
         final ITestDevice.ApexInfo shimApex = getShimApex().orElseThrow(
                 () -> new AssertionError("Can't find " + SHIM_APEX_PACKAGE_NAME));
         if (shimApex.sourceDir.startsWith("/system")) {
@@ -148,6 +144,14 @@ public class InstallUtilsHost {
      */
     public String installStagedPackage(File pkg) throws Exception {
         return getTestInfo().getDevice().installPackage(pkg, false, "--staged");
+    }
+
+    /**
+     * Installs packages using rebootless (non-staged) install flow and waits
+     *     for verification to complete
+     */
+    public String installRebootlessPackage(File pkg) throws Exception {
+        return getTestInfo().getDevice().installPackage(pkg, false, "--non-staged");
     }
 
     /**

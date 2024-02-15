@@ -19,11 +19,15 @@ import static android.telephony.cts.FakeCarrierMessagingService.FAKE_MESSAGE_REF
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.carrier.CarrierMessagingService;
 import android.service.carrier.CarrierMessagingServiceWrapper;
 import android.service.carrier.MessagePdu;
@@ -34,8 +38,11 @@ import android.telephony.cts.util.TelephonyUtils;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -56,6 +63,9 @@ import java.util.concurrent.TimeoutException;
  *  CarrierMessagingServiceWrapperTest
  */
 public class CarrierMessagingServiceWrapperTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
     private TelephonyManager mTelephonyManager;
     private int mTestSub;
     private Context mContext;
@@ -73,6 +83,14 @@ public class CarrierMessagingServiceWrapperTest {
 
     @Before
     public void setUp() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(getContext().getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        } else {
+            assumeTrue(getContext().getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY));
+        }
+
         MockitoAnnotations.initMocks(this);
         mContext = getContext();
         mTestSub = SubscriptionManager.getDefaultSubscriptionId();

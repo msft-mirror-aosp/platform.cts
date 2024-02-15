@@ -23,7 +23,8 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
-        "mts",
+        "mts-permission",
+        "mcts-permission",
         "sts",
     ],
     libs: [
@@ -32,11 +33,13 @@ java_test_host {
         "compatibility-host-util",
     ],
     static_libs: [
-        "truth-prebuilt",
+        "truth",
         "platformprotos",
     ],
     data: [
+        ":CtsBackupOtherSoundsSettingsApp",
         ":CtsHostsideTestsFullBackupApp",
+        ":CtsProfileKeyValueApp",
     ],
     per_testcase_directory: true,
 }

@@ -38,6 +38,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -105,7 +106,9 @@ public abstract class InputTestCase {
     @After
     public void tearDown() throws Exception {
         onTearDown();
-        mActivityRule.close();
+        if (mActivityRule != null) {
+            mActivityRule.close();
+        }
     }
 
     /** Optional setup logic performed before the test activity is launched. */
@@ -264,7 +267,7 @@ public abstract class InputTestCase {
             // any unexpected event received caused by the HID report injection.
             InputEvent event = waitForEvent();
             if (event != null) {
-                fail(mCurrentTestCase + " : Received unexpected event " + event);
+                failWithMessage("Received unexpected event " + event);
             }
             return;
         }
@@ -280,9 +283,9 @@ public abstract class InputTestCase {
                     continue;
                 }
             } catch (AssertionError error) {
-                throw new AssertionError("Assertion on entry " + i + " failed.", error);
+                failWithMessage("Assertion on entry " + i + " failed: " + error);
             }
-            fail("Entry " + i + " is neither a KeyEvent nor a MotionEvent: " + event);
+            failWithMessage("Entry " + i + " is neither a KeyEvent nor a MotionEvent: " + event);
         }
     }
 
@@ -290,7 +293,7 @@ public abstract class InputTestCase {
         InputEvent event = waitForEvent();
         while (event != null) {
             if (event instanceof KeyEvent) {
-                fail(mCurrentTestCase + " : Received unexpected KeyEvent " + event);
+                failWithMessage(" : Received unexpected KeyEvent " + event);
             }
             event = waitForEvent();
         }
@@ -396,6 +399,7 @@ public abstract class InputTestCase {
      * Dump out the events queue to help debug.
      */
     private void failWithMessage(String message) {
+        DebugInputRule.dumpInputStateToLogcat();
         if (mEvents.isEmpty()) {
             Log.i(TAG, "The events queue is empty");
         } else {

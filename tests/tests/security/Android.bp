@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_platform_security",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -26,11 +27,13 @@ android_test {
         "androidx.test.rules",
         "androidx.test.runner",
         "android-common",
+        "android.security.flags-aconfig-java",
         "ctstestserver",
         "ctstestrunner-axt",
         "cts-install-lib",
         "compatibility-device-util-axt",
         "compatibility-common-util-devicesidelib",
+        "flag-junit",
         "guava",
         "platform-test-annotations",
         "permission-test-util-lib",

@@ -137,19 +137,8 @@ public final class AutoFillServiceTestCase {
 
         @Override
         protected TestRule getMainTestRule() {
-            try {
-                // Set orientation as portrait before auto-launch an activity,
-                // otherwise some tests might fail due to elements not fitting
-                // in, IME orientation, etc...
-                // Many tests will hold Activity in afterActivityLaunched() by
-                // overriding ActivityRule. If rotating after the activity has
-                // started, these tests will keep the old activity. All actions
-                // on the wrong activity did not happen as expected.
-                getDropdownUiBot().setScreenOrientation(UiBot.PORTRAIT);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
+            // Tries to set the orientation, noop if nothing happens
+            getDropdownUiBot().maybeSetScreenOrientation(UiBot.PORTRAIT);
             return getActivityRule();
         }
 
@@ -232,20 +221,24 @@ public final class AutoFillServiceTestCase {
         }
 
         protected LoginImportantForCredentialManagerActivity
-                    startLoginImportantForCredentialManagerActivity() throws Exception {
+                    startLoginImportantForCredentialManagerActivity(boolean useAutofillHint)
+                throws Exception {
             final Intent intent =
                     new Intent(mContext, LoginImportantForCredentialManagerActivity.class)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHint);
             mContext.startActivity(intent);
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginImportantForCredentialManagerActivity.getCurrentActivity();
         }
 
         protected LoginMixedImportantForCredentialManagerActivity
-                startLoginMixedImportantForCredentialManagerActivity() throws Exception {
+                startLoginMixedImportantForCredentialManagerActivity(boolean useAutofillHInt)
+                throws Exception {
             final Intent intent =
                     new Intent(mContext, LoginMixedImportantForCredentialManagerActivity.class)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHInt);
             mContext.startActivity(intent);
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginMixedImportantForCredentialManagerActivity.getCurrentActivity();
@@ -281,9 +274,6 @@ public final class AutoFillServiceTestCase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder().setInlineSuggestionsEnabled(true)
                         .setInlineSuggestionViewContentDesc(InlineUiBot.SUGGESTION_STRIP_DESC));
-
-        protected static final RequiredFeatureRule sRequiredFeatureRule =
-                new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL);
 
         private final AutofillTestWatcher mTestWatcher = new AutofillTestWatcher();
 
@@ -390,6 +380,13 @@ public final class AutoFillServiceTestCase {
                             "include_all_autofill_type_not_none_views_in_assist_structure",
                             Boolean.toString(false)))
 
+
+                //
+                // Max input size to provide autofill suggestion should be 3
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "max_input_length_for_autofill",
+                            Integer.toString(3)))
+
                 //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
@@ -398,6 +395,10 @@ public final class AutoFillServiceTestCase {
         protected final Context mContext = sContext;
         protected final String mPackageName;
         protected final UiBot mUiBot;
+
+        protected static final RuleChain sRequiredFeaturesRule = RuleChain
+                .outerRule(new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL))
+                .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
             mPackageName = mContext.getPackageName();
@@ -456,7 +457,7 @@ public final class AutoFillServiceTestCase {
          */
         @NonNull
         protected TestRule getRequiredFeaturesRule() {
-            return sRequiredFeatureRule;
+            return sRequiredFeaturesRule;
         }
 
         /**
@@ -497,9 +498,11 @@ public final class AutoFillServiceTestCase {
             assumeFalse("Device is half-folded",
                     Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.HALF_FOLDED));
 
+            assumeFalse("Device is TV", Helper.isTv(mContext));
+
             // Set orientation as portrait, otherwise some tests might fail due to elements not
             // fitting in, IME orientation, etc...
-            mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+            mUiBot.maybeSetScreenOrientation(UiBot.PORTRAIT);
 
             // Clear Clipboard
             // TODO(b/117768051): remove try/catch once fixed

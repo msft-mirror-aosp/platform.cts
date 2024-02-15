@@ -36,7 +36,9 @@ android_test {
     resource_zips: [
         ":CtsRenderscriptTestCases-rscript{CtsRenderscriptTestCases.res.zip}",
     ],
-    sdk_version: "current",
+    // The SDK version is pinned because ScriptC throw an exception starting
+    // at API level 35 (see b/297019750).
+    sdk_version: "34",
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
@@ -48,6 +50,7 @@ genrule {
     name: "CtsRenderscriptTestCases-rscript",
     srcs: [
         "src/**/*.rscript",
+        "src/**/*.rsh",
         ":rs_script_api",
         ":rs_clang_headers",
     ],

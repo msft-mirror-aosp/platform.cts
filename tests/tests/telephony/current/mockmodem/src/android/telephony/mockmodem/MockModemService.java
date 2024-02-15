@@ -53,6 +53,7 @@ public class MockModemService extends Service {
     public static final String PHONE_ID = "phone_id";
 
     private static MockModemConfigInterface sMockModemConfigInterface;
+    private static MockCentralizedNetworkAgent sMockCentralizedNetworkAgent;
     private static IRadioConfigImpl sIRadioConfigImpl;
     private static IRadioModemImpl[] sIRadioModemImpl;
     private static IRadioSimImpl[] sIRadioSimImpl;
@@ -64,6 +65,8 @@ public class MockModemService extends Service {
 
     public static final byte PHONE_ID_0 = 0x00;
     public static final byte PHONE_ID_1 = 0x01;
+    public static final byte PHONE_ID_2 = 0x02;
+    public static final byte MAX_PHONE_NUM = 3;
 
     public static final int LATCH_MOCK_MODEM_SERVICE_READY = 0;
     public static final int LATCH_RADIO_INTERFACES_READY = 1;
@@ -98,6 +101,10 @@ public class MockModemService extends Service {
         mNumOfSim = getNumPhysicalSlots();
         mNumOfPhone = mTelephonyManager.getActiveModemCount();
         Log.d(TAG, "Support number of phone = " + mNumOfPhone + ", number of SIM = " + mNumOfSim);
+
+        if (mNumOfPhone > MAX_PHONE_NUM) {
+            mNumOfPhone = MAX_PHONE_NUM;
+        }
 
         // Number of physical Sim slot should be equals to or greater than number of phone.
         if (mNumOfSim < mNumOfPhone) {
@@ -138,7 +145,10 @@ public class MockModemService extends Service {
         }
 
         sMockModemConfigInterface = new MockModemConfigBase(mContext, mNumOfSim, mNumOfPhone);
-        sIRadioConfigImpl = new IRadioConfigImpl(this, sMockModemConfigInterface, PHONE_ID_0);
+        sIRadioConfigImpl = new IRadioConfigImpl(this,
+            sMockModemConfigInterface,
+            sMockCentralizedNetworkAgent,
+            PHONE_ID_0);
         sIRadioModemImpl = new IRadioModemImpl[mNumOfPhone];
         sIRadioSimImpl = new IRadioSimImpl[mNumOfPhone];
         sIRadioNetworkImpl = new IRadioNetworkImpl[mNumOfPhone];
@@ -156,7 +166,11 @@ public class MockModemService extends Service {
             sIRadioVoiceImpl[i] = new IRadioVoiceImpl(this, sMockModemConfigInterface, i);
             sIRadioImsImpl[i] = new IRadioImsImpl(this, sMockModemConfigInterface, i);
         }
-
+        try {
+            sMockCentralizedNetworkAgent.setNetworkAgentInfo(sIRadioDataImpl, mNumOfPhone);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception error: " + e);
+        }
         mBinder = new LocalBinder();
     }
 
@@ -181,7 +195,7 @@ public class MockModemService extends Service {
 
         byte phoneId = intent.getByteExtra(PHONE_ID, PHONE_ID_0);
 
-        if (phoneId > PHONE_ID_1) {
+        if (phoneId >= MAX_PHONE_NUM) {
             Log.e(TAG, "Not suuport for phone " + phoneId);
             return null;
         }
@@ -394,5 +408,9 @@ public class MockModemService extends Service {
 
     public IRadioImsImpl getIRadioIms(byte phoneId) {
         return sIRadioImsImpl[phoneId];
+    }
+
+    public int getActiveMockModemCount() {
+        return mNumOfPhone;
     }
 }

@@ -37,7 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class PackageInstallationSessionReportedStatsTests extends PackageManagerStatsTestsBase{
+public class PackageInstallationSessionReportedStatsTests extends PackageManagerStatsTestsBase {
+    private static final int STEP_FREEZE_INSTALL = 6;
     private static final String TEST_INSTALL_APK = "CtsStatsdAtomEmptyApp.apk";
     private static final String TEST_INSTALL_APK_V2 = "CtsStatsdAtomEmptyAppV2.apk";
     private static final String TEST_INSTALL_PACKAGE =
@@ -56,7 +57,6 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
             "com.android.cts.packagemanager.stats.emptystaticsharedlib";
     private static final String TEST_INSTALL_STATIC_SHARED_LIB_NAME = "test.stats.lib";
 
-
     @Override
     protected void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
@@ -65,6 +65,9 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     }
 
     public void testPackageInstallationSessionReportedForApkSuccessWithReplace() throws Exception {
+        if (!Utils.hasIncrementalFeature(getDevice())) {
+            return;
+        }
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
@@ -111,11 +114,21 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     private void checkDurationResult(AtomsProto.PackageInstallationSessionReported report) {
         final long totalDuration = report.getTotalDurationMillis();
         assertThat(totalDuration).isGreaterThan(0);
-        assertThat(report.getInstallStepsCount()).isEqualTo(4);
+        // TODO(b/308138823): Use hortenInstallFreeze(), meet java.lang.NoClassDefFoundError:
+        // android/provider/DeviceConfig error
+        // @RequiresFlagsEnabled still runs even the flag is false.
+        //int expectedSteps = shortenInstallFreeze() ? 5 : 4;
+        assertThat(report.getInstallStepsCount()).isAtLeast(4);
         long sumStepDurations = 0;
-        for (long duration : report.getStepDurationMillisList()) {
-            assertThat(duration).isAtLeast(0);
-            sumStepDurations += duration;
+        int stepCount = report.getInstallStepsCount();
+        for (int i = 0; i < stepCount; i++) {
+            int step = report.getInstallSteps(i);
+            // Don't count freeze step time
+            if (step != STEP_FREEZE_INSTALL) {
+                long duration = report.getStepDurationMillis(i);
+                assertThat(duration).isAtLeast(0);
+                sumStepDurations += duration;
+            }
         }
         assertThat(sumStepDurations).isGreaterThan(0);
         assertThat(sumStepDurations).isLessThan(totalDuration);

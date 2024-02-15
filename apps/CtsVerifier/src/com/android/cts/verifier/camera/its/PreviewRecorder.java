@@ -124,6 +124,7 @@ class PreviewRecorder implements AutoCloseable {
     private volatile boolean mIsRecording = false;
 
     private final Size mPreviewSize;
+    private final int mMaxFps;
     private final Handler mHandler;
 
     private Surface mRecorderSurface; // MediaRecorder source. EGL writes to this surface
@@ -146,12 +147,14 @@ class PreviewRecorder implements AutoCloseable {
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
 
+    private int mNumFrames = 0;
+
     /**
      * Initializes MediaRecorder and EGL context. The result of recorded video will be stored in
      * {@code outputFile}.
      */
-    PreviewRecorder(int cameraId, Size previewSize, int sensorOrientation, String outputFile,
-            Handler handler, Context context) throws ItsException {
+    PreviewRecorder(int cameraId, Size previewSize, int maxFps, int sensorOrientation,
+            String outputFile, Handler handler, Context context) throws ItsException {
         // Ensure that we can record the given size
         int maxSupportedResolution = mResolutionToCamcorderProfile
                                         .stream()
@@ -166,6 +169,7 @@ class PreviewRecorder implements AutoCloseable {
 
         mHandler = handler;
         mPreviewSize = previewSize;
+        mMaxFps = maxFps;
         // rotate the texture as needed by the sensor orientation
         mTexRotMatrix = getRotationMatrix(sensorOrientation);
 
@@ -218,6 +222,7 @@ class PreviewRecorder implements AutoCloseable {
                 }
                 try {
                     copyFrameToRecorder();
+                    mNumFrames++;
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);
                     throw new ItsRuntimeException("Failed to copy texture to recorder.", e);
@@ -240,7 +245,7 @@ class PreviewRecorder implements AutoCloseable {
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         mMediaRecorder.setVideoEncodingBitRate(calculateBitrate(cameraId));
         mMediaRecorder.setInputSurface(mRecorderSurface);
-        mMediaRecorder.setVideoFrameRate(30);
+        mMediaRecorder.setVideoFrameRate(mMaxFps);
         mMediaRecorder.setOutputFile(outputFile);
 
         try {
@@ -431,8 +436,16 @@ class PreviewRecorder implements AutoCloseable {
             List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
             for (EncoderProfiles.VideoProfile profile : videoProfiles) {
                 if (profile == null) continue;
-                Logt.i(TAG, "Recording bitrate: " + profile.getBitrate());
-                return  profile.getBitrate();
+            }
+
+            // Find a profile which can achieve the requested max frame rate
+            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
+                if (profile == null) continue;
+                if (profile.getFrameRate() >= mMaxFps) {
+                    Logt.i(TAG, "Recording bitrate: " + profile.getBitrate()
+                            + ", fps " + profile.getFrameRate());
+                    return  profile.getBitrate();
+                }
             }
         }
 
@@ -450,8 +463,11 @@ class PreviewRecorder implements AutoCloseable {
             CamcorderProfile profile = CamcorderProfile.get(cameraId, entry.second);
             if (profile == null) continue;
 
-            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate);
-            return profile.videoBitRate;
+            int profileFrameRate = profile.videoFrameRate;
+            float bitRateScale = (profileFrameRate < mMaxFps) ?
+                    1.0f * mMaxFps / profileFrameRate : 1.0f;
+            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate + " * " + bitRateScale);
+            return (int)(profile.videoBitRate * bitRateScale);
         }
 
         // Ideally, we should always find a Camcorder/Encoder Profile corresponding
@@ -527,32 +543,37 @@ class PreviewRecorder implements AutoCloseable {
         return mCameraSurface;
     }
 
+    int getNumFrames() {
+        synchronized(mRecorderLock) {
+            return mNumFrames;
+        }
+    }
+
     /**
-     * Records frames from mCameraSurface for the specified {@code durationMs}. This method should
+     * Starts recording frames from mCameraSurface. This method should
      * only be called once. Throws {@link ItsException} on subsequent calls.
      */
-    void recordPreview(long durationMs) throws ItsException {
+    void startRecording() throws ItsException {
         if (mMediaRecorderConsumed) {
             throw new ItsException("Attempting to record on a stale PreviewRecorder. "
                     + "Create a new instance instead.");
         }
         mMediaRecorderConsumed = true;
+        Logt.i(TAG, "Starting Preview Recording.");
+        synchronized (mRecorderLock) {
+            mIsRecording = true;
+            mMediaRecorder.start();
+        }
+    }
 
-        try {
-            Logt.i(TAG, "Starting Preview Recording.");
-            synchronized (mRecorderLock) {
-                mIsRecording = true;
-                mMediaRecorder.start();
-            }
-            Thread.sleep(durationMs);
-        } catch (InterruptedException e) {
-            throw new ItsException("Recording interrupted.", e);
-        } finally {
-            Logt.i(TAG, "Stopping Preview Recording.");
-            synchronized (mRecorderLock) {
-                mIsRecording = false;
-                mMediaRecorder.stop();
-            }
+    /**
+     * Stops recording frames.
+     */
+    void stopRecording() {
+        Logt.i(TAG, "Stopping Preview Recording.");
+        synchronized (mRecorderLock) {
+            mIsRecording = false;
+            mMediaRecorder.stop();
         }
     }
 
@@ -560,6 +581,11 @@ class PreviewRecorder implements AutoCloseable {
     public void close() {
         // synchronized to prevent reads and writes to surfaces while they are being released.
         synchronized (mRecorderLock) {
+            if (mIsRecording) {
+                Logt.e(TAG, "Preview recording was not stopped before closing.");
+                mIsRecording = false;
+                mMediaRecorder.stop();
+            }
             mCameraSurface.release();
             mCameraTexture.release();
             mMediaRecorder.release();

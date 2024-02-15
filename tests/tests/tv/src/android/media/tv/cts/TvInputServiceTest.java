@@ -39,6 +39,7 @@ import android.media.tv.TvTrackInfo;
 import android.media.tv.TvView;
 import android.media.tv.cts.TvInputServiceTest.CountingTvInputService.CountingRecordingSession;
 import android.media.tv.cts.TvInputServiceTest.CountingTvInputService.CountingSession;
+import android.media.tv.interactive.TvInteractiveAppService;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.net.Uri;
 import android.os.Bundle;
@@ -142,6 +143,7 @@ public class TvInputServiceTest {
         private int mTimeShiftSpeedsCount;
         private int mCueingMessageAvailabilityCount;
         private int mTvMessageCount;
+        private int mVideoFrozenCount;
 
         private Uri mChannelRetunedUri;
         private Integer mVideoUnavailableReason;
@@ -159,6 +161,7 @@ public class TvInputServiceTest {
         private Boolean mCueingMessageAvailable;
         private Integer mTvMessageType;
         private Bundle mTvMessageData;
+        private Boolean mVideoFrozen;
 
         @Override
         public void onChannelRetuned(String inputId, Uri channelUri) {
@@ -262,6 +265,12 @@ public class TvInputServiceTest {
             mTvMessageType = type;
         }
 
+        @Override
+        public void onVideoFreezeUpdated(String inputId, boolean isFrozen) {
+            mVideoFrozenCount++;
+            mVideoFrozen = isFrozen;
+        }
+
         public void resetCounts() {
             mChannelRetunedCount = 0;
             mVideoAvailableCount = 0;
@@ -278,6 +287,7 @@ public class TvInputServiceTest {
             mTimeShiftSpeedsCount = 0;
             mCueingMessageAvailabilityCount = 0;
             mTvMessageCount = 0;
+            mVideoFrozenCount = 0;
         }
 
         public void resetPassedValues() {
@@ -297,6 +307,7 @@ public class TvInputServiceTest {
             mCueingMessageAvailable = null;
             mTvMessageData = null;
             mTvMessageType = null;
+            mVideoFrozen = null;
         }
     }
 
@@ -791,6 +802,33 @@ public class TvInputServiceTest {
     }
 
     @Test
+    public void verifyCommandResume() {
+        final CountingSession session = tune(CHANNEL_0);
+        resetPassedValues();
+
+        onTvView(TvView::resumePlayback);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT, () -> session.mResumePlaybackCount > 0);
+
+        assertThat(session.mResumePlaybackCount).isEqualTo(1);
+    }
+
+    @Test
+    public void verifyCommandStopPlayback() {
+        final CountingSession session = tune(CHANNEL_0);
+        resetPassedValues();
+
+        onTvView(tvView -> tvView
+                .stopPlayback(TvInteractiveAppService.COMMAND_PARAMETER_VALUE_STOP_MODE_FREEZE));
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT, () -> session.mStopPlaybackCount > 0);
+
+        assertThat(session.mStopPlaybackCount).isEqualTo(1);
+        assertThat(session.mPlaybackCommandMode)
+                .isEqualTo(TvInteractiveAppService.COMMAND_PARAMETER_VALUE_STOP_MODE_FREEZE);
+    }
+
+    @Test
     public void verifyCommandSetTimeShiftPositionCallback() {
         tune(CHANNEL_0);
 
@@ -802,6 +840,26 @@ public class TvInputServiceTest {
 
         assertThat(mTimeShiftPositionCallback.mTimeShiftCurrentPositionChanged).isEqualTo(1);
         assertThat(mTimeShiftPositionCallback.mTimeShiftStartPositionChanged).isEqualTo(1);
+    }
+
+    @Test
+    public void verifyCommandSetVideoFrozen() {
+        final CountingSession session = tune(CHANNEL_0);
+        resetPassedValues();
+
+        onTvView(tvView -> tvView.setVideoFrozen(true));
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT, () -> session.mSetVideoFrozenCount > 0);
+
+        assertThat(session.mSetVideoFrozenCount).isEqualTo(1);
+        assertThat(session.mVideoFrozen).isEqualTo(true);
+
+        onTvView(tvView -> tvView.setVideoFrozen(false));
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT, () -> session.mSetVideoFrozenCount > 1);
+
+        assertThat(session.mSetVideoFrozenCount).isEqualTo(2);
+        assertThat(session.mVideoFrozen).isEqualTo(false);
     }
 
     @Test
@@ -1128,6 +1186,23 @@ public class TvInputServiceTest {
     }
 
     @Test
+    public void verifyCallbackVideoFrozen() {
+        final CountingSession session = tune(CHANNEL_0);
+        resetCounts();
+        resetPassedValues();
+
+        session.notifyVideoFreezeUpdated(true);
+        PollingCheck.waitFor(TIME_OUT, () -> mCallback.mVideoFrozenCount > 0);
+        assertThat(mCallback.mVideoFrozenCount).isEqualTo(1);
+        assertThat(mCallback.mVideoFrozen).isEqualTo(true);
+
+        session.notifyVideoFreezeUpdated(false);
+        PollingCheck.waitFor(TIME_OUT, () -> mCallback.mVideoFrozenCount > 1);
+        assertThat(mCallback.mVideoFrozenCount).isEqualTo(2);
+        assertThat(mCallback.mVideoFrozen).isEqualTo(false);
+    }
+
+    @Test
     public void verifyCallbackLayoutSurface() {
         final CountingSession session = tune(CHANNEL_0);
         final int left = 10;
@@ -1385,6 +1460,8 @@ public class TvInputServiceTest {
             public volatile int mTimeShiftSetPlaybackParamsCount;
             public volatile int mTimeShiftPlayCount;
             public volatile int mTimeShiftSetModeCount;
+            public volatile int mResumePlaybackCount;
+            public volatile int mStopPlaybackCount;
             public volatile long mTimeShiftGetCurrentPositionCount;
             public volatile long mTimeShiftGetStartPositionCount;
             public volatile int mAppPrivateCommandCount;
@@ -1392,6 +1469,7 @@ public class TvInputServiceTest {
             public volatile int mTvMessageCount;
             public volatile int mTvMessageEnabledCount;
             public volatile int mAudioPresentationSelectCount;
+            public volatile int mSetVideoFrozenCount;
 
             public volatile String mAppPrivateCommandAction;
             public volatile Bundle mAppPrivateCommandData;
@@ -1425,6 +1503,8 @@ public class TvInputServiceTest {
             public volatile Integer mAudioPresentationId;
             public volatile Integer mAudioProgramId;
             public volatile Integer mTimeShiftMode;
+            public volatile Integer mPlaybackCommandMode;
+            public volatile Boolean mVideoFrozen;
 
             CountingSession(Context context, @Nullable String sessionId) {
 
@@ -1456,11 +1536,14 @@ public class TvInputServiceTest {
                 mTimeShiftSetModeCount = 0;
                 mTimeShiftGetCurrentPositionCount = 0;
                 mTimeShiftGetStartPositionCount = 0;
+                mResumePlaybackCount = 0;
+                mStopPlaybackCount = 0;
                 mAppPrivateCommandCount = 0;
                 mSetInteractiveAppNotificationEnabledCount = 0;
                 mTvMessageCount = 0;
                 mTvMessageEnabledCount = 0;
                 mAudioPresentationSelectCount = 0;
+                mSetVideoFrozenCount = 0;
             }
 
             public void resetPassedValues() {
@@ -1496,6 +1579,8 @@ public class TvInputServiceTest {
                 mAudioPresentationId = null;
                 mAudioProgramId = null;
                 mTimeShiftMode = null;
+                mPlaybackCommandMode = null;
+                mVideoFrozen = null;
             }
 
             @Override
@@ -1724,6 +1809,23 @@ public class TvInputServiceTest {
             @Override
             public void notifyAvailableSpeeds(float[] speeds) {
                 super.notifyAvailableSpeeds(speeds);
+            }
+
+            @Override
+            public void onResumePlayback() {
+                mResumePlaybackCount++;
+            }
+
+            @Override
+            public void onStopPlayback(int mode) {
+                mStopPlaybackCount++;
+                mPlaybackCommandMode = mode;
+            }
+
+            @Override
+            public void onSetVideoFrozen(boolean isFrozen) {
+                mSetVideoFrozenCount++;
+                mVideoFrozen = isFrozen;
             }
         }
 

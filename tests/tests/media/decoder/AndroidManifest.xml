@@ -31,9 +31,6 @@
 
     <application android:requestLegacyExternalStorage="true"
          android:largeHeap="true">
-        <uses-library android:name="android.test.runner"/>
-        <uses-library android:name="org.apache.http.legacy"
-             android:required="false"/>
 
         <activity android:name="android.media.decoder.cts.DecodeAccuracyTestActivity"
              android:label="DecodeAccuracyTestActivity"
@@ -50,8 +47,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.media.decoder.cts"
          android:label="CTS tests of android.media">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

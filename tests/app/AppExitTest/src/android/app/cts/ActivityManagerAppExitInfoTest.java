@@ -49,6 +49,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.DropBoxManager;
+import android.os.Flags;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -58,6 +59,7 @@ import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
@@ -821,8 +823,15 @@ public final class ActivityManagerAppExitInfoTest {
         // Get the memory info from it.
         String dump = executeShellCmd("dumpsys activity processes " + STUB_PACKAGE_NAME);
         assertNotNull(dump);
-        final String lastPss = extractMemString(dump, " lastPss=", ' ');
-        final String lastRss = extractMemString(dump, " lastRss=", '\n');
+        String lastPss = null;
+        String lastRss = null;
+        if (!Flags.removeAppProfilerPssCollection()) {
+            lastPss = extractMemString(dump, " lastPss=", ' ');
+            lastRss = extractMemString(dump, " lastRss=", '\n');
+        } else {
+            // lastRss is not the final field in the dump, so the next separator is not a newline.
+            lastRss = extractMemString(dump, " lastRss=", ' ');
+        }
 
         // Revoke the read calendar permission
         mInstrumentation.getUiAutomation().revokeRuntimePermission(
@@ -842,8 +851,10 @@ public final class ActivityManagerAppExitInfoTest {
                 ApplicationExitInfo.REASON_PERMISSION_CHANGE, null, null, now, now2);
 
         // Also verify that we get the expected meminfo
-        assertEquals(lastPss, DebugUtils.sizeValueToString(
-                info.getPss() * 1024, new StringBuilder()));
+        if (!Flags.removeAppProfilerPssCollection()) {
+            assertEquals(lastPss, DebugUtils.sizeValueToString(
+                    info.getPss() * 1024, new StringBuilder()));
+        }
         assertEquals(lastRss, DebugUtils.sizeValueToString(
                 info.getRss() * 1024, new StringBuilder()));
     }
@@ -872,8 +883,15 @@ public final class ActivityManagerAppExitInfoTest {
         // Get the memory info from it.
         String dump = executeShellCmd("dumpsys activity processes " + STUB_PACKAGE_NAME);
         assertNotNull(dump);
-        final String lastPss = extractMemString(dump, " lastPss=", ' ');
-        final String lastRss = extractMemString(dump, " lastRss=", '\n');
+        String lastPss = null;
+        String lastRss = null;
+        if (!Flags.removeAppProfilerPssCollection()) {
+            lastPss = extractMemString(dump, " lastPss=", ' ');
+            lastRss = extractMemString(dump, " lastRss=", '\n');
+        } else {
+            // lastRss is not the final field in the dump, so the next separator is not a newline.
+            lastRss = extractMemString(dump, " lastRss=", ' ');
+        }
 
         // Revoke the read calendar permission
         runWithShellPermissionIdentity(() -> {
@@ -897,8 +915,10 @@ public final class ActivityManagerAppExitInfoTest {
         assertEquals(revokeReason, info.getDescription());
 
         // Also verify that we get the expected meminfo
-        assertEquals(lastPss, DebugUtils.sizeValueToString(
-                info.getPss() * 1024, new StringBuilder()));
+        if (!Flags.removeAppProfilerPssCollection()) {
+            assertEquals(lastPss, DebugUtils.sizeValueToString(
+                    info.getPss() * 1024, new StringBuilder()));
+        }
         assertEquals(lastRss, DebugUtils.sizeValueToString(
                 info.getRss() * 1024, new StringBuilder()));
     }
@@ -1400,8 +1420,9 @@ public final class ActivityManagerAppExitInfoTest {
     @CddTest(requirements = {"3.5/C-0-2"})
     @Test
     public void testFreezerEnabled() throws Exception {
-        if (FIRST_SDK_IS_AT_LEAST_U) {
-            // We expect all devices that first shipped with U to support Freezer
+        if (FIRST_SDK_IS_AT_LEAST_U
+                && SystemProperties.get("ro.kernel.version").compareTo("5") >= 0) {
+            // We expect all devices with kernel 5.x that first shipped with U to support Freezer
             assertTrue(ActivityManager.getService().isAppFreezerSupported());
         } else {
             // For old devices OTA'ed to U, check if Linux kernel and vendor partition is too old
@@ -1482,11 +1503,11 @@ public final class ActivityManagerAppExitInfoTest {
         mContext.startActivity(intent1);
         sleep(1000);
 
-        // Launch Home to make sure the HeartbeatActivity is in cached mode
-        Intent intentHome = new Intent(Intent.ACTION_MAIN);
-        intentHome.addCategory(Intent.CATEGORY_HOME);
-        intentHome.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intentHome);
+        // Launch another activity to make sure the HeartbeatActivity is in cached mode
+        Intent intent2 = new Intent(Intent.ACTION_MAIN);
+        intent2.setClassName(STUB_PACKAGE_NAME, STUB_PACKAGE_NAME + ".NonLauncherActivity");
+        intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent2);
 
         // Wait until the HeartbeatService finishes
         awaitForLatch(mLatch, HEARTBEAT_COUNTDOWN * HEARTBEAT_INTERVAL, "heartbeat");

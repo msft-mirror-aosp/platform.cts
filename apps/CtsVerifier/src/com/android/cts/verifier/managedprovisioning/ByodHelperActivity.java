@@ -34,7 +34,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -84,7 +83,6 @@ public class ByodHelperActivity extends Activity
             "com.android.cts.verifier.managedprovisioning.BYOD_KEYGUARD_DISABLED_FEATURES";
     public static final String ACTION_LOCKNOW =
             "com.android.cts.verifier.managedprovisioning.BYOD_LOCKNOW";
-    public static final String ACTION_TEST_NFC_BEAM = "com.android.cts.verifier.managedprovisioning.TEST_NFC_BEAM";
 
     public static final String EXTRA_PROVISIONED = "extra_provisioned";
     public static final String EXTRA_PARAMETER_1 = "extra_parameter_1";
@@ -258,6 +256,7 @@ public class ByodHelperActivity extends Activity
                 mDevicePolicyManager.clearCrossProfileIntentFilters(mAdminReceiverComponent);
                 mDevicePolicyManager.wipeData(0);
                 showToast(R.string.provisioning_byod_profile_deleted);
+                setResult(RESULT_OK);
             }
         } else if (action.equals(ACTION_CHECK_DISK_ENCRYPTION)) {
             final int status = mDevicePolicyManager.getStorageEncryptionStatus();
@@ -335,12 +334,6 @@ public class ByodHelperActivity extends Activity
         } else if (ACTION_LOCKNOW.equals(action)) {
             mDevicePolicyManager.lockNow();
             setResult(RESULT_OK);
-        } else if (action.equals(ACTION_TEST_NFC_BEAM)) {
-            Intent testNfcBeamIntent = new Intent(this, NfcTestActivity.class);
-            testNfcBeamIntent.putExtras(intent);
-            startActivity(testNfcBeamIntent);
-            finish();
-            return;
         } else if (action.equals(ACTION_TEST_CROSS_PROFILE_INTENTS_DIALOG)) {
             sendIntentInsideChooser(new Intent(
                     CrossProfileTestActivity.ACTION_CROSS_PROFILE_TO_PERSONAL));

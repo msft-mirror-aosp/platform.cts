@@ -17,9 +17,10 @@
 package android.display.cts;
 
 import static android.view.Display.DEFAULT_DISPLAY;
-import static android.view.WindowInsets.Type.statusBars;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -35,6 +36,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.view.ViewTreeObserver;
@@ -45,6 +47,7 @@ import android.view.cts.surfacevalidator.SaveBitmapHelper;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
+import androidx.core.view.WindowCompat;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -58,8 +61,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayManagerTest {
-    private static final String TAG = "MediaProjectionGlobalTest";
+    private static final String TAG = "DisplayManagerTest";
     @Rule
     public TestName mTestName = new TestName();
 
@@ -74,7 +78,7 @@ public class DisplayManagerTest {
 
     private int mNumRetries;
 
-    final HandlerThread mWorkerThread = new HandlerThread("MediaProjectGlobalTest");
+    final HandlerThread mWorkerThread = new HandlerThread("DisplayManagerTest");
 
     private VirtualDisplay mVirtualDisplay;
 
@@ -96,6 +100,9 @@ public class DisplayManagerTest {
 
     @Test
     public void testCreateVirtualDisplayFromShell() throws InterruptedException {
+        // b/317812433: Disable test until test can be fixed for specific devices
+        assumeTrue(false);
+
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
         mActivity.waitForReady();
         mInstrumentation.waitForIdleSync();
@@ -200,6 +207,9 @@ public class DisplayManagerTest {
 
             setContentView(mFrameLayout, layoutParams);
 
+            // Prevent certain devices from adding a left and right border
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
             mFrameLayout.getViewTreeObserver().addOnWindowAttachListener(
                     new ViewTreeObserver.OnWindowAttachListener() {
                         @Override
@@ -232,14 +242,14 @@ public class DisplayManagerTest {
             int testAreaWidth = mFrameLayout.getWidth();
             int testAreaHeight = mFrameLayout.getHeight();
 
-            Insets statusBarInsets = getWindow()
+            Insets systemBarInsets = getWindow()
                     .getDecorView()
                     .getRootWindowInsets()
-                    .getInsets(statusBars());
+                    .getInsets(systemBars());
 
-            return new Rect(statusBarInsets.left, statusBarInsets.top,
-                    testAreaWidth - statusBarInsets.right,
-                    testAreaHeight - statusBarInsets.bottom);
+            return new Rect(systemBarInsets.left, systemBarInsets.top,
+                    testAreaWidth - systemBarInsets.right,
+                    testAreaHeight - systemBarInsets.bottom);
         }
     }
 }

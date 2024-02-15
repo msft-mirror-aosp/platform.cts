@@ -51,10 +51,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -102,14 +102,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private File mSepolicyAnalyze;
     private File checkSeapp;
     private File checkFc;
-    private File aospSeappFile;
     private File aospFcFile;
     private File aospPcFile;
     private File aospSvcFile;
     private File devicePolicyFile;
     private File deviceSystemPolicyFile;
-    private File devicePlatSeappFile;
-    private File deviceVendorSeappFile;
     private File devicePlatFcFile;
     private File deviceVendorFcFile;
     private File devicePcFile;
@@ -128,7 +125,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public static File copyResourceToTempFile(String resName) throws IOException {
         InputStream is = SELinuxHostTest.class.getResourceAsStream(resName);
         String tempFileName = "SELinuxHostTest" + resName.replace("/", "_");
-        File tempFile = File.createTempFile(tempFileName, ".tmp");
+        File tempFile = createTempFile(tempFileName, ".tmp");
         FileOutputStream os = new FileOutputStream(tempFile);
         byte[] buf = new byte[1024];
         int len;
@@ -138,7 +135,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
         os.flush();
         os.close();
-        tempFile.deleteOnExit();
         return tempFile;
     }
 
@@ -217,8 +213,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         if (file != null) {
             return file;
         }
-        file = File.createTempFile(tmpFileName, ".tmp");
-        file.deleteOnExit();
+        file = createTempFile(tmpFileName, ".tmp");
         device.pullFile(deviceFilePath, file);
         synchronized (cache) {
             cache.put(device, file);
@@ -237,37 +232,22 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
 
-        builtPolicyFile = File.createTempFile(tmpFileName, ".tmp");
-        builtPolicyFile.deleteOnExit();
+        builtPolicyFile = createTempFile(tmpFileName, ".tmp");
 
         File secilc = copyResourceToTempFile("/secilc");
         secilc.setExecutable(true);
 
-        File systemSepolicyCilFile = File.createTempFile("plat_sepolicy", ".cil");
-        systemSepolicyCilFile.deleteOnExit();
-        File fileContextsFile = File.createTempFile("file_contexts", ".txt");
-        fileContextsFile.deleteOnExit();
+        File systemSepolicyCilFile = createTempFile("plat_sepolicy", ".cil");
+        File fileContextsFile = createTempFile("file_contexts", ".txt");
 
         assertTrue(device.pullFile("/system/etc/selinux/plat_sepolicy.cil", systemSepolicyCilFile));
 
-        ProcessBuilder pb = new ProcessBuilder(
-                secilc.getAbsolutePath(),
+        String errorString = tryRunCommand(secilc.getAbsolutePath(),
                 "-m", "-M", "true", "-c", "30",
                 "-o", builtPolicyFile.getAbsolutePath(),
                 "-f", fileContextsFile.getAbsolutePath(),
                 systemSepolicyCilFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
-        assertTrue(errorString.toString(), errorString.length() == 0);
+        assertTrue(errorString, errorString.length() == 0);
 
         synchronized (cache) {
             cache.put(device, builtPolicyFile);
@@ -275,7 +255,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         return builtPolicyFile;
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns the host-side file containing the SELinux policy of the device under test.
      */
@@ -283,7 +262,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         return getDeviceFile(device, cachedDevicePolicyFiles, "/sys/fs/selinux/policy", "sepolicy");
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns the host-side file containing the system SELinux policy of the device under test.
      */
@@ -291,7 +269,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         return buildSystemPolicy(device, cachedDeviceSystemPolicy, "system_sepolicy");
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns the major number of sepolicy version of device's vendor implementation.
      */
@@ -323,6 +300,19 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         } catch (Exception ex) {
             CLog.e("getVendorSepolicyVersionFromManifests failed: ", ex);
             throw buildInfoEx;
+        }
+    }
+
+    /**
+     * Returns VSR (Vendor Software Requirements) api level. Returns 0 if the property
+     * ro.vendor.api_level doesn't exist
+     */
+    private static int getVSRApiLevel(ITestDevice device) throws Exception {
+        try {
+            return Integer.parseInt(device.getProperty("ro.vendor.api_level"));
+        } catch (Exception ex) {
+            CLog.e("getProperty(\"ro.vendor.api_level\") failed: ", ex);
+            return 0;
         }
     }
 
@@ -380,7 +370,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         return getSepolicyVersionFromMajorMinor(version.getTextContent());
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns the major number of sepolicy version of system.
      */
@@ -425,19 +414,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testAllDomainsEnforcing() throws Exception {
 
         /* run sepolicy-analyze permissive check on policy file */
-        ProcessBuilder pb = new ProcessBuilder(mSepolicyAnalyze.getAbsolutePath(),
+        String errorString = tryRunCommand(mSepolicyAnalyze.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(), "permissive");
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
         assertTrue("The following SELinux domains were found to be in permissive mode:\n"
                    + errorString, errorString.length() == 0);
     }
@@ -499,7 +477,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns {@code true} if this device is required to be a full Treble device.
      */
@@ -513,7 +490,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         return isFullTrebleDevice(mDevice);
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns {@code true} if this device is required to enforce compatible property.
      */
@@ -523,14 +499,14 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
                 device, "ro.actionable_compatible_property.enabled", "true");
     }
 
-    // NOTE: cts/tools/selinux depends on this method. Rename/change with caution.
     /**
      * Returns {@code true} if this device has sepolicy split across different paritions.
      * This is possible even for devices launched at api level higher than 26.
      */
     public static boolean isSepolicySplit(ITestDevice device)
             throws DeviceNotAvailableException {
-        return device.doesFileExist("/system/etc/selinux/plat_file_contexts");
+        return PropertyUtil.getFirstApiLevel(device) > 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */
+                || device.doesFileExist("/system/etc/selinux/plat_file_contexts");
     }
 
     /**
@@ -580,17 +556,28 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.7")
     @Test
     public void testValidSeappContexts() throws Exception {
-
-        /* obtain seapp_contexts file from running device */
-        devicePlatSeappFile = File.createTempFile("plat_seapp_contexts", ".tmp");
-        devicePlatSeappFile.deleteOnExit();
-        deviceVendorSeappFile = File.createTempFile("vendor_seapp_contexts", ".tmp");
-        deviceVendorSeappFile.deleteOnExit();
-        if (mDevice.pullFile("/system/etc/selinux/plat_seapp_contexts", devicePlatSeappFile)) {
-            mDevice.pullFile("/vendor/etc/selinux/vendor_seapp_contexts", deviceVendorSeappFile);
+        /* obtain seapp_contexts file from running device
+         *
+         * PLEASE KEEP IN SYNC WITH:
+         * external/selinux/libselinux/src/android/android_seapp.c
+         */
+        File platformSeappFile = createTempFile("plat_seapp_contexts", ".tmp");
+        File systemExtSeappFile = createTempFile("system_ext_seapp_contexts", ".tmp");
+        File productSeappFile = createTempFile("product_seapp_contexts", ".tmp");
+        File vendorSeappFile = createTempFile("vendor_seapp_contexts", ".tmp");
+        File odmSeappFile = createTempFile("odm_seapp_contexts", ".tmp");
+        if (mDevice.pullFile("/system/etc/selinux/plat_seapp_contexts", platformSeappFile)) {
+            mDevice.pullFile("/system_ext/etc/selinux/system_ext_seapp_contexts",
+                    systemExtSeappFile);
+            mDevice.pullFile("/product/etc/selinux/product_seapp_contexts", productSeappFile);
+            mDevice.pullFile("/vendor/etc/selinux/vendor_seapp_contexts", vendorSeappFile);
+            mDevice.pullFile("/odm/etc/selinux/odm_seapp_contexts", odmSeappFile);
         } else {
-            mDevice.pullFile("/plat_seapp_contexts", devicePlatSeappFile);
-            mDevice.pullFile("/vendor_seapp_contexts", deviceVendorSeappFile);
+            mDevice.pullFile("/plat_seapp_contexts", platformSeappFile);
+            mDevice.pullFile("/system_ext_seapp_contexts", systemExtSeappFile);
+            mDevice.pullFile("/product_seapp_contexts", productSeappFile);
+            mDevice.pullFile("/vendor_seapp_contexts", vendorSeappFile);
+            mDevice.pullFile("/odm_seapp_contexts", odmSeappFile);
         }
 
         /* retrieve the checkseapp executable from jar */
@@ -601,43 +588,52 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         seappNeverAllowFile = copyResourceToTempFile("/plat_seapp_neverallows");
 
         /* run checkseapp on seapp_contexts */
-        ProcessBuilder pb = new ProcessBuilder(checkSeapp.getAbsolutePath(),
+        String errorString = tryRunCommand(checkSeapp.getAbsolutePath(),
                 "-p", devicePolicyFile.getAbsolutePath(),
                 seappNeverAllowFile.getAbsolutePath(),
-                devicePlatSeappFile.getAbsolutePath(),
-                deviceVendorSeappFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
+                platformSeappFile.getAbsolutePath(),
+                systemExtSeappFile.getAbsolutePath(),
+                productSeappFile.getAbsolutePath(),
+                vendorSeappFile.getAbsolutePath(),
+                odmSeappFile.getAbsolutePath());
         assertTrue("The seapp_contexts file was invalid:\n"
                    + errorString, errorString.length() == 0);
+
+        /* run checkseapp on vendor contexts to find coredomain violations, starting from V */
+        int vsrVersion = getVSRApiLevel(getDevice());
+        if (vsrVersion > 34) /* V or later */ {
+            errorString = tryRunCommand(checkSeapp.getAbsolutePath(),
+                    "-p", devicePolicyFile.getAbsolutePath(),
+                    "-c", /* coredomain check */
+                    vendorSeappFile.getAbsolutePath(),
+                    odmSeappFile.getAbsolutePath());
+            assertTrue("vendor seapp_contexts contains coredomain:\n"
+                    + errorString, errorString.length() == 0);
+        }
     }
 
     /**
-     * Asserts that the actual file contents starts with the expected file
-     * contents.
+     * Asserts that the actual file contains all the lines from the expected file.
+     * It does not guarantee the order of the lines.
      *
      * @param expectedFile
      *  The file with the expected contents.
      * @param actualFile
      *  The actual file being checked.
      */
-    private void assertFileStartsWith(File expectedFile, File actualFile) throws Exception {
-        BufferedReader expectedReader = new BufferedReader(new FileReader(expectedFile.getAbsolutePath()));
-        BufferedReader actualReader = new BufferedReader(new FileReader(actualFile.getAbsolutePath()));
-        String expectedLine, actualLine;
-        while ((expectedLine = expectedReader.readLine()) != null) {
-            actualLine = actualReader.readLine();
-            assertEquals("Lines do not match:", expectedLine, actualLine);
-        }
+    private void assertContainsAllLines(File expectedFile, File actualFile) throws Exception {
+        List<String> expectedLines = Files.readAllLines(expectedFile.toPath());
+        List<String> actualLines = Files.readAllLines(actualFile.toPath());
+
+        expectedLines.replaceAll(String::trim);
+        actualLines.replaceAll(String::trim);
+
+        HashSet<String> expected = new HashSet(expectedLines);
+        HashSet<String> actual = new HashSet(actualLines);
+
+        /* remove all seen lines from expected, ignoring new entries */
+        expected.removeAll(actual);
+        assertTrue("Line removed: " + String.join("\n", expected), expected.isEmpty());
     }
 
     /**
@@ -651,15 +647,14 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testAospSeappContexts() throws Exception {
 
         /* obtain seapp_contexts file from running device */
-        devicePlatSeappFile = File.createTempFile("seapp_contexts", ".tmp");
-        devicePlatSeappFile.deleteOnExit();
-        if (!mDevice.pullFile("/system/etc/selinux/plat_seapp_contexts", devicePlatSeappFile)) {
-            mDevice.pullFile("/plat_seapp_contexts", devicePlatSeappFile);
+        File platformSeappFile = createTempFile("seapp_contexts", ".tmp");
+        if (!mDevice.pullFile("/system/etc/selinux/plat_seapp_contexts", platformSeappFile)) {
+            mDevice.pullFile("/plat_seapp_contexts", platformSeappFile);
         }
         /* retrieve the AOSP seapp_contexts file from jar */
-        aospSeappFile = copyResourceToTempFile("/plat_seapp_contexts");
+        File aospSeappFile = copyResourceToTempFile("/plat_seapp_contexts");
 
-        assertFileStartsWith(aospSeappFile, devicePlatSeappFile);
+        assertContainsAllLines(aospSeappFile, platformSeappFile);
     }
 
     /**
@@ -680,18 +675,12 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         aospFcFile = copyResourceToTempFile("/plat_file_contexts");
 
         /* run checkfc -c plat_file_contexts plat_file_contexts */
-        ProcessBuilder pb = new ProcessBuilder(checkFc.getAbsolutePath(),
+        String result = tryRunCommand(checkFc.getAbsolutePath(),
                 "-c", aospFcFile.getAbsolutePath(),
-                devicePlatFcFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line = result.readLine();
+                devicePlatFcFile.getAbsolutePath()).trim();
         assertTrue("The file_contexts file did not include the AOSP entries:\n"
-                   + line + "\n",
-                   line.equals("equal") || line.equals("subset"));
+                   + result + "\n",
+                   result.equals("equal") || result.equals("subset"));
     }
 
     /**
@@ -705,8 +694,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testAospPropertyContexts() throws Exception {
 
         /* obtain property_contexts file from running device */
-        devicePcFile = File.createTempFile("plat_property_contexts", ".tmp");
-        devicePcFile.deleteOnExit();
+        devicePcFile = createTempFile("plat_property_contexts", ".tmp");
         // plat_property_contexts may be either in /system/etc/sepolicy or in /
         if (!mDevice.pullFile("/system/etc/selinux/plat_property_contexts", devicePcFile)) {
             mDevice.pullFile("/plat_property_contexts", devicePcFile);
@@ -717,7 +705,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         // Android devices. See build script of this CTS module.
         aospPcFile = copyResourceToTempFile("/plat_property_contexts");
 
-        assertFileStartsWith(aospPcFile, devicePcFile);
+        assertContainsAllLines(aospPcFile, devicePcFile);
     }
 
     /**
@@ -731,8 +719,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testAospServiceContexts() throws Exception {
 
         /* obtain service_contexts file from running device */
-        deviceSvcFile = File.createTempFile("service_contexts", ".tmp");
-        deviceSvcFile.deleteOnExit();
+        deviceSvcFile = createTempFile("service_contexts", ".tmp");
         if (!mDevice.pullFile("/system/etc/selinux/plat_service_contexts", deviceSvcFile)) {
             mDevice.pullFile("/plat_service_contexts", deviceSvcFile);
         }
@@ -740,7 +727,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         /* retrieve the AOSP service_contexts file from jar */
         aospSvcFile = copyResourceToTempFile("/plat_service_contexts");
 
-        assertFileStartsWith(aospSvcFile, deviceSvcFile);
+        assertContainsAllLines(aospSvcFile, deviceSvcFile);
     }
 
     /**
@@ -757,26 +744,14 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         checkFc.setExecutable(true);
 
         /* combine plat and vendor policies for testing */
-        File combinedFcFile = File.createTempFile("combined_file_context", ".tmp");
-        combinedFcFile.deleteOnExit();
+        File combinedFcFile = createTempFile("combined_file_context", ".tmp");
         appendTo(combinedFcFile.getAbsolutePath(), devicePlatFcFile.getAbsolutePath());
         appendTo(combinedFcFile.getAbsolutePath(), deviceVendorFcFile.getAbsolutePath());
 
         /* run checkfc sepolicy file_contexts */
-        ProcessBuilder pb = new ProcessBuilder(checkFc.getAbsolutePath(),
+        String errorString = tryRunCommand(checkFc.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(),
                 combinedFcFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
         assertTrue("file_contexts was invalid:\n"
                    + errorString, errorString.length() == 0);
     }
@@ -795,28 +770,16 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         propertyInfoChecker.setExecutable(true);
 
         /* obtain property_contexts file from running device */
-        devicePcFile = File.createTempFile("property_contexts", ".tmp");
-        devicePcFile.deleteOnExit();
+        devicePcFile = createTempFile("property_contexts", ".tmp");
         // plat_property_contexts may be either in /system/etc/sepolicy or in /
         if (!mDevice.pullFile("/system/etc/selinux/plat_property_contexts", devicePcFile)) {
             mDevice.pullFile("/plat_property_contexts", devicePcFile);
         }
 
         /* run property_info_checker on property_contexts */
-        ProcessBuilder pb = new ProcessBuilder(propertyInfoChecker.getAbsolutePath(),
+        String errorString = tryRunCommand(propertyInfoChecker.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(),
                 devicePcFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
         assertTrue("The property_contexts file was invalid:\n"
                    + errorString, errorString.length() == 0);
     }
@@ -835,25 +798,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         checkFc.setExecutable(true);
 
         /* obtain service_contexts file from running device */
-        deviceSvcFile = File.createTempFile("service_contexts", ".tmp");
-        deviceSvcFile.deleteOnExit();
+        deviceSvcFile = createTempFile("service_contexts", ".tmp");
         mDevice.pullFile("/service_contexts", deviceSvcFile);
 
         /* run checkfc -s on service_contexts */
-        ProcessBuilder pb = new ProcessBuilder(checkFc.getAbsolutePath(),
+        String errorString = tryRunCommand(checkFc.getAbsolutePath(),
                 "-s", devicePolicyFile.getAbsolutePath(),
                 deviceSvcFile.getAbsolutePath());
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
         assertTrue("The service_contexts file was invalid:\n"
                    + errorString, errorString.length() == 0);
     }
@@ -885,19 +836,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             args.add(deviceSystemPolicyFile.getAbsolutePath());
         }
 
-        ProcessBuilder pb = new ProcessBuilder(args);
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
-        assertTrue(errorString.toString(), errorString.length() == 0);
+        String errorString = tryRunCommand(args.toArray(new String[0]));
+        assertTrue(errorString, errorString.length() == 0);
 
         sepolicyTests.delete();
     }
@@ -988,8 +928,20 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testCoredomainViolators() throws Exception {
-        assertSepolicyTests("CoredomainViolations", "/treble_sepolicy_tests",
+        assertSepolicyTests("CoredomainViolations", "/sepolicy_tests",
                 PropertyUtil.isVendorApiLevelNewerThan(mDevice, 27) /* includeVendorSepolicy */);
+    }
+
+    /**
+     * Tests that all labels on /dev have the dev_type attribute.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testDevTypeViolators() throws Exception {
+        int vsrVersion = getVSRApiLevel(getDevice());
+        assumeTrue("Skipping test: dev_type is enforced for W or later", vsrVersion > 202404);
+        assertSepolicyTests("TestDevTypeViolations", "/sepolicy_tests", true);
     }
 
    /**
@@ -1002,19 +954,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public void testNoBooleans() throws Exception {
 
         /* run sepolicy-analyze booleans check on policy file */
-        ProcessBuilder pb = new ProcessBuilder(mSepolicyAnalyze.getAbsolutePath(),
+        String errorString = tryRunCommand(mSepolicyAnalyze.getAbsolutePath(),
                 devicePolicyFile.getAbsolutePath(), "booleans");
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        p.waitFor();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
         assertTrue("The policy contained booleans:\n"
                    + errorString, errorString.length() == 0);
     }
@@ -1513,5 +1454,27 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         public boolean isKernel() {
             return (pid == kernelParentThreadpid || ppid == kernelParentThreadpid);
         }
+    }
+
+    private static String tryRunCommand(String... command) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+        pb.redirectErrorStream(true);
+        Process p = pb.start();
+        p.waitFor();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        StringBuilder result = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            result.append(line);
+            result.append("\n");
+        }
+        return result.toString();
+    }
+
+    private static File createTempFile(String name, String ext) throws IOException {
+        File ret = File.createTempFile(name, ext);
+        ret.deleteOnExit();
+        return ret;
     }
 }

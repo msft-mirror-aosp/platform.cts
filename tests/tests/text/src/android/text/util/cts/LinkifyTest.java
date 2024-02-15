@@ -33,10 +33,10 @@ import android.text.util.Linkify.MatchFilter;
 import android.text.util.Linkify.TransformFilter;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -89,7 +89,7 @@ public class LinkifyTest {
 
     @Before
     public void setup() {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
     @Test
@@ -633,7 +633,7 @@ public class LinkifyTest {
 
     @Test
     public void testAddLinks_doesNotMatchUrlsWithoutProtocolAndWithUnknownTld() {
-        String url = "thank.you";
+        String url = "thank.unknowntld";
         verifyAddLinksWithWebUrlFails("Should not match URL that does not start with a protocol " +
                 "and does not contain a known TLD", url);
     }
@@ -647,7 +647,7 @@ public class LinkifyTest {
     @Test
     public void testAddLinks_doesNotMatchUrlsWithEmojiWithoutProtocolAndWithoutKnownTld()
             {
-        String url = "Thank\u263A.you";
+        String url = "Thank\u263A.unknowntld";
         verifyAddLinksWithWebUrlFails("Should not match URLs containing emoji and with unknown " +
                 "TLD", url);
     }

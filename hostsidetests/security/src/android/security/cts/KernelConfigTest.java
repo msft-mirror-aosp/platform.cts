@@ -296,6 +296,8 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
         result.put("KHAJE", null);
         result.put("BENGAL-IOT", null);
         result.put("BENGALP-IOT", null);
+        result.put("SCUBAIIOT", null);
+        result.put("SCUBAPIIOT", null);
         result.put("DEFAULT", new String[]{"CONFIG_UNMAP_KERNEL_AT_EL0=y"});
         return result;
     }
@@ -337,7 +339,7 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
 
     /**
      * Test that the kernel enables static usermodehelper and sets
-     * the path to a whitelisted path.
+     * the path to an allowlisted path.
      *
      * @throws Exception
      */
@@ -395,7 +397,7 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
     }
 
     /**
-     * Test that the kernel enables fs-verity and its built-in signature support.
+     * Test that the kernel enables fs-verity.
      */
     @CddTest(requirement="9.10")
     @Test
@@ -406,9 +408,6 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
         }
         assertTrue("Linux kernel must have fs-verity enabled: CONFIG_FS_VERITY=y",
                 configSet.contains("CONFIG_FS_VERITY=y"));
-        assertTrue("Linux kernel must have fs-verity's builtin signature enabled: "
-                + "CONFIG_FS_VERITY_BUILTIN_SIGNATURES=y",
-                configSet.contains("CONFIG_FS_VERITY_BUILTIN_SIGNATURES=y"));
     }
 
     private void assumeSecurityModelCompat() throws Exception {

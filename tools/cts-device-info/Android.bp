@@ -27,6 +27,7 @@ android_test_helper_app {
     min_sdk_version: "23",
     // Tag this module as a cts test artifact
     test_suites: [
+        "csuite",
         "cts",
         "general-tests",
         "sts",
@@ -35,6 +36,37 @@ android_test_helper_app {
         "catbox",
         "gcatbox",
         "ats",
+        "mcts",
+        "xrts",
+        "mcts-adbd",
+        "mcts-adservices",
+        "mcts-appsearch",
+        "mcts-art",
+        "mcts-bluetooth",
+        "mcts-cellbroadcast",
+        "mcts-configinfrastructure",
+        "mcts-conscrypt",
+        "mcts-cronet",
+        "mcts-dnsresolver",
+        "mcts-documentsui",
+        "mcts-extservices",
+        "mcts-healthfitness",
+        "mcts-ipsec",
+        "mcts-mainline-infra",
+        "mcts-media",
+        "mcts-mediaprovider",
+        "mcts-networking",
+        "mcts-neuralnetworks",
+        "mcts-ondevicepersonalization",
+        "mcts-permission",
+        "mcts-rkpd",
+        "mcts-scheduling",
+        "mcts-sdkextensions",
+        "mcts-statsd",
+        "mcts-tethering",
+        "mcts-tzdata",
+        "mcts-uwb",
+        "mcts-wifi",
     ],
     static_libs: [
         "compatibility-device-info",
@@ -73,6 +105,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.ConfigurationDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ConnectivityDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.CpuDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.DefaultAppDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.FeatureDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GenericDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +
@@ -83,6 +116,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.KeystoreAttestationDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.LocaleDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MediaDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.MediaDrmDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MediaOutputDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MemoryDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.PackageDeviceInfo " +
@@ -95,7 +129,5 @@ genrule {
         " -lo androidx.window.sidecar " +
         " -p com.android.compatibility.common.deviceinfo " +
         " -i androidx.test.runner.AndroidJUnitRunner " +
-        " -s 23 " +
-        " -t 23 " +
         " -o $(out)",
 }

@@ -17,6 +17,7 @@ package android.packageinstaller.tapjacking.cts;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.Context;
@@ -24,20 +25,21 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.Until;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
-
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
+import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,6 +49,7 @@ import org.junit.runner.RunWith;
 public class TapjackingTest {
 
     private static final String LOG_TAG = TapjackingTest.class.getSimpleName();
+    private static final String SYSTEM_PACKAGE_NAME = "android";
     private static final String PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller";
     private static final String INSTALL_BUTTON_ID = "button1";
     private static final String OVERLAY_ACTIVITY_TEXT_VIEW_ID = "overlay_description";
@@ -92,24 +95,72 @@ public class TapjackingTest {
         return mUiDevice.wait(Until.findObject(selector), WAIT_FOR_UI_TIMEOUT);
     }
 
+    private UiObject2 waitForButton(String id) {
+        return mUiDevice.wait(Until.findObject(getBySelector(id)), WAIT_FOR_UI_TIMEOUT);
+    }
+
+    private BySelector getBySelector(String id) {
+        return By.res(Pattern.compile(
+            String.format("(?:^%s|^%s):id/%s", PACKAGE_INSTALLER_PACKAGE_NAME, SYSTEM_PACKAGE_NAME,
+                id)));
+    }
+
     @Test
     public void testTapsDroppedWhenObscured() throws Exception {
         Log.i(LOG_TAG, "launchPackageInstaller");
         launchPackageInstaller();
-        UiObject2 installButton = waitForView(PACKAGE_INSTALLER_PACKAGE_NAME, INSTALL_BUTTON_ID);
+
+        UiObject2 installButton = waitForButton(INSTALL_BUTTON_ID);
         assertNotNull("Install button not shown", installButton);
+
         Log.i(LOG_TAG, "launchOverlayingActivity");
         launchOverlayingActivity();
         assertNotNull("Overlaying activity not started",
                 waitForView(mPackageName, OVERLAY_ACTIVITY_TEXT_VIEW_ID));
-        installButton = waitForView(PACKAGE_INSTALLER_PACKAGE_NAME, INSTALL_BUTTON_ID);
-        assertNotNull("Cannot find install button below overlay activity", installButton);
-        Log.i(LOG_TAG, "installButton.click");
-        installButton.click();
-        assertFalse("Tap on install button succeeded", mUiDevice.wait(
-                Until.gone(By.res(PACKAGE_INSTALLER_PACKAGE_NAME, INSTALL_BUTTON_ID)),
-                WAIT_FOR_UI_TIMEOUT));
+
+        installButton = waitForButton(INSTALL_BUTTON_ID);
+        if (installButton != null) {
+            Log.i(LOG_TAG, "installButton.click");
+            installButton.click();
+            assertFalse("Tap on install button succeeded", mUiDevice.wait(
+                Until.gone(getBySelector(INSTALL_BUTTON_ID)), WAIT_FOR_UI_TIMEOUT));
+        }
+
         mUiDevice.pressBack();
+    }
+
+    @Test
+    @Ignore("b/322018861")
+    public void testTapsWhenNotObscured() throws Exception {
+        Log.i(LOG_TAG, "launchPackageInstaller");
+        launchPackageInstaller();
+
+        UiObject2 installButton = waitForButton(INSTALL_BUTTON_ID);
+        assertNotNull("Install button not shown", installButton);
+
+        Log.i(LOG_TAG, "launchOverlayingActivity");
+        launchOverlayingActivity();
+        assertNotNull("Overlaying activity not started",
+            waitForView(mPackageName, OVERLAY_ACTIVITY_TEXT_VIEW_ID));
+
+        installButton = waitForButton(INSTALL_BUTTON_ID);
+        if (installButton != null) {
+            Log.i(LOG_TAG, "installButton.click");
+            installButton.click();
+            assertFalse("Tap on install button succeeded", mUiDevice.wait(
+                    Until.gone(getBySelector(INSTALL_BUTTON_ID)), WAIT_FOR_UI_TIMEOUT));
+        }
+
+        mUiDevice.pressBack();
+
+        // Overlay should be gone and we require that the button can be found.
+        installButton = waitForButton(INSTALL_BUTTON_ID);
+        assertNotNull("Cannot find install button", installButton);
+
+        Log.i(LOG_TAG, "installButton.click after overlay removed");
+        installButton.click();
+        assertTrue("Tap on install button failed", mUiDevice.wait(
+            Until.gone(getBySelector(INSTALL_BUTTON_ID)), WAIT_FOR_UI_TIMEOUT));
     }
 
     @After

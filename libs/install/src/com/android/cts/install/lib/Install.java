@@ -47,6 +47,8 @@ public class Install {
     private boolean mIsDowngrade = false;
     private boolean mEnableRollback = false;
     private int mRollbackDataPolicy = 0;
+    private long mLifetimeMillis = 0;
+    private int mRollbackImpactLevel = 0;
     private int mSessionMode = PackageInstaller.SessionParams.MODE_FULL_INSTALL;
     private int mInstallFlags = 0;
     private boolean mBypassAllowedApexUpdateCheck = true;
@@ -141,6 +143,22 @@ public class Install {
     public Install setEnableRollback(int dataPolicy) {
         mEnableRollback = true;
         mRollbackDataPolicy = dataPolicy;
+        return this;
+    }
+
+    /**
+     * Sets lifetimeMillis for rollback expiration.
+     */
+    public Install setRollbackLifetimeMillis(long lifetimeMillis) {
+        mLifetimeMillis = lifetimeMillis;
+        return this;
+    }
+
+    /**
+     * Sets rollbackImpactLevel for the install.
+     */
+    public Install setRollbackImpactLevel(int impactLevel) {
+        mRollbackImpactLevel = impactLevel;
         return this;
     }
 
@@ -279,6 +297,12 @@ public class Install {
             }
             params.setRequestDowngrade(mIsDowngrade);
             params.setEnableRollback(mEnableRollback, mRollbackDataPolicy);
+            if (mEnableRollback && mLifetimeMillis > 0) {
+                params.setRollbackLifetimeMillis(mLifetimeMillis);
+            }
+            if (mEnableRollback && mRollbackImpactLevel >= 0) {
+                params.setRollbackImpactLevel(mRollbackImpactLevel);
+            }
             if (mInstallFlags != 0) {
                 InstallUtils.mutateInstallFlags(params, mInstallFlags);
             }

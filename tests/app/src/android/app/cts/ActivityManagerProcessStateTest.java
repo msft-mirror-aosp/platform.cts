@@ -1563,6 +1563,10 @@ public class ActivityManagerProcessStateTest {
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             uid1Watcher.expect(WatchUidRunner.CMD_IDLE, null);
 
+            // We are interested in only the uid changes happening after returning to home.
+            // Clear the history so we won't match staled results.
+            device.waitForIdle();
+            uid2Watcher.clearHistory();
             // Return to home.
             mTargetContext.startActivity(homeIntent);
             uid2Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
@@ -2403,6 +2407,8 @@ public class ActivityManagerProcessStateTest {
         final boolean origFgTypePermissionEnforceValue =
                 toggleBgFgsTypeStartPermissionEnforcement(false);
         try {
+            runShellCommand(mInstrumentation, "am service-restart-backoff disable "
+                    + PACKAGE_NAME_APP1);
             // Start an activity in app1 to put app1 in TOP state, so the FGS it started can have
             // while-in-use capabilities.
             CommandReceiver.sendCommand(mContext,
@@ -2447,6 +2453,8 @@ public class ActivityManagerProcessStateTest {
             monitor.sendCommand(AmMonitor.CMD_KILL);
             checkKillResult.accept(uid1Watcher, waiter);
         } finally {
+            runShellCommand(mInstrumentation, "am service-restart-backoff enable "
+                    + PACKAGE_NAME_APP1);
             toggleBgFgsTypeStartPermissionEnforcement(origFgTypePermissionEnforceValue);
             final ActivityManager am = mContext.getSystemService(ActivityManager.class);
             SystemUtil.runWithShellPermissionIdentity(() -> {

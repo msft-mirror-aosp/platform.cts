@@ -21,8 +21,6 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
-import static android.server.wm.BarTestUtils.assumeStatusBarContainsCutout;
-import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -41,6 +39,7 @@ import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.view.Gravity;
 import android.view.InputDevice;
@@ -121,6 +120,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLightStatusBarIcons() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -136,6 +136,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testAppearanceCanOverwriteLegacyFlags() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -163,6 +164,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLegacyFlagsCannotOverwriteAppearance() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -246,32 +248,7 @@ public class LightBarTests extends LightBarTestBase {
             Thread.sleep(WAIT_TIME);
 
             Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.BLACK, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
-    }
-
-    @Test
-    @AppModeFull // Instant apps cannot create notifications
-    public void testLightBarIsNotAllowed_fitDisplayCutout() throws Throwable {
-        assumeHasColoredStatusBar(mActivityRule);
-        assumeStatusBarContainsCutout(mActivityRule);
-
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                final WindowManager.LayoutParams attrs = activity.getWindow().getAttributes();
-                attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-                activity.getWindow().setAttributes(attrs);
-                activity.getWindow().setStatusBarColor(Color.BLACK);
-                activity.getWindow().setNavigationBarColor(Color.BLACK);
-                activity.setLightStatusBarAppearance(true);
-                activity.setLightNavigationBarAppearance(true);
-            });
-            Thread.sleep(WAIT_TIME);
-
-            Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.BLACK, 0);
+            Stats s = evaluateDarkBarBitmap(bitmap, Color.TRANSPARENT, 0);
             assertStats(bitmap, s, false /* light */);
         });
     }

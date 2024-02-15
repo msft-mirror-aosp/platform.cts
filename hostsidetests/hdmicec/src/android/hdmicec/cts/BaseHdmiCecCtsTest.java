@@ -147,8 +147,15 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
                     testPointer,
                     deviceType);
         }
+
+        /** This rule will skip the test if the DUT is an emulator. */
+        public static TestRule requiresPhysicalDevice(BaseHostJUnit4Test testPointer) {
+            return RequiredDeviceTypeRule.requiredPhysicalDevice(testPointer);
+        }
     }
 
+    /** @deprecated not used anymore **/
+    @Deprecated
     @Option(name = HdmiCecConstants.PHYSICAL_ADDRESS_NAME,
             description = "HDMI CEC physical address of the DUT",
             mandatory = false)
@@ -433,6 +440,20 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
         } else {
             throw new Exception("Unsupported final power state!");
         }
+        // We first give 2 seconds to enter the transition state, and then
+        // MAX_SLEEP_TIME_SECONDS to go from the transition state to the final state.
+        do {
+            TimeUnit.SECONDS.sleep(HdmiCecConstants.SLEEP_TIMESTEP_SECONDS);
+            waitTimeSeconds += HdmiCecConstants.SLEEP_TIMESTEP_SECONDS;
+            hdmiCecClient.sendCecMessage(cecClientDevice, CecOperand.GIVE_POWER_STATUS);
+            powerStatus =
+                    CecMessage.getParams(
+                            hdmiCecClient.checkExpectedOutput(
+                                    cecClientDevice, CecOperand.REPORT_POWER_STATUS));
+            if (powerStatus == finalState) {
+                return;
+            }
+        } while (waitTimeSeconds <= HdmiCecConstants.SLEEP_TIME_DELAY_SECONDS);
         do {
             TimeUnit.SECONDS.sleep(HdmiCecConstants.SLEEP_TIMESTEP_SECONDS);
             waitTimeSeconds += HdmiCecConstants.SLEEP_TIMESTEP_SECONDS;
@@ -672,5 +693,19 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
     public boolean isAdjustOnlyAbsoluteVolumeDevice(int audioOutputDevice) throws Exception {
         return isAudioOutputDeviceInList(audioOutputDevice,
                 "dumpsys audio | grep 'adjust-only absolute volume devices'");
+    }
+
+    /**
+     * On Google TV devices the only stream played is STREAM_MUSIC.
+     * The method returns whether "Devices" in "STREAM_MUSIC" contains "hdmi" in audio dumpsys.
+     * This is required by tests where the DUT has to redirect volume key events as CEC
+     * <User Control Pressed> messages.
+     * This method might return false, because the set-up contains an HDMI Stub.
+     * See {@link android.media.AudioSystem#STREAM_MUSIC} and
+     * {@link android.media.AudioSystem#DEVICE_OUT_HDMI}.
+     */
+    public boolean isPlayingStreamMusicOnHdmiOut() throws DeviceNotAvailableException {
+        return getDevice().executeShellCommand("dumpsys audio | sed -n '/^- STREAM_MUSIC:/,/^$/p'"
+                + " | grep \"Devices\"").contains("hdmi");
     }
 }

@@ -15,12 +15,16 @@
  */
 package android.quickaccesswallet.cts;
 
+import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
+import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
+import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -56,6 +60,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.UserSettings;
 
+import com.google.common.util.concurrent.MoreExecutors;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,6 +73,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests parceling of the {@link WalletCard}
@@ -96,12 +103,20 @@ public class QuickAccessWalletClientTest {
         mDefaultPaymentApp = mUserSettings.get(NFC_PAYMENT_DEFAULT_COMPONENT);
         ComponentName component =
                 ComponentName.createRelative(mContext, TestHostApduService.class.getName());
-        mUserSettings.syncSet(NFC_PAYMENT_DEFAULT_COMPONENT, component.flattenToString());
+        // setDefaultWalletRoleHolder only succeeds if the Flag is enabled. If it fails, indicating
+        // that the flag is not enabled, we set the default payment component and test the flow
+        // without the wallet role.
+        if (!setDefaultWalletRoleHolder(mContext, component.getPackageName())) {
+            mUserSettings.syncSet(NFC_PAYMENT_DEFAULT_COMPONENT, component.flattenToString());
+        }
         TestQuickAccessWalletService.resetStaticFields();
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
         // Restore saved default payment app
         mUserSettings.syncSet(NFC_PAYMENT_DEFAULT_COMPONENT, mDefaultPaymentApp);
 
@@ -113,6 +128,9 @@ public class QuickAccessWalletClientTest {
         setServiceState(QuickAccessWalletDelegateTargetActivityService.class,
                 PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);
         TestQuickAccessWalletService.resetStaticFields();
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
@@ -606,6 +624,32 @@ public class QuickAccessWalletClientTest {
 
         public void await(int time, TimeUnit unit) throws InterruptedException {
             mLatch.await(time, unit);
+        }
+    }
+
+
+    private static boolean setDefaultWalletRoleHolder(Context context, String packageName)
+            throws InterruptedException {
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+        try {
+            RoleManager roleManager = context.getSystemService(RoleManager.class);
+            if (!roleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
+                return false;
+            }
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            AtomicReference<Boolean> result = new AtomicReference<>(false);
+            roleManager.setDefaultApplication(RoleManager.ROLE_WALLET,
+                    packageName, 0,
+                    MoreExecutors.directExecutor(), aBoolean -> {
+                        result.set(aBoolean);
+                        countDownLatch.countDown();
+                    });
+            countDownLatch.await(2000, TimeUnit.MILLISECONDS);
+            return result.get();
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
         }
     }
 }

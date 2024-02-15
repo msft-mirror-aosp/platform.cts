@@ -35,14 +35,11 @@ android_test {
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
-    libs: [
-        "android.test.base",
-        "android.test.runner",
-    ],
     test_suites: [
         "cts",
         "general-tests",
         "mts-media",
+        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",

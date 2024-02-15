@@ -59,12 +59,8 @@ public class BluetoothCddTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED,
                 BLUETOOTH_SCAN);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        if (mAdapter.isEnabled()) {
-            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-            try {
-                Thread.sleep(BLUETOOTH_TOGGLE_DELAY_MS);
-            } catch (InterruptedException ignored) { }
-        }
+
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
     }
 
     @After
@@ -87,18 +83,14 @@ public class BluetoothCddTest {
 
     @CddTest(requirements = {"7.4.3/C-3-1", "7.4.3/C-3-2"})
     @Test
-    public void test_C_3_BleRequirements() {
-        Assume.assumeTrue(mHasBluetooth);
+    public void C_3_BleRequirements() {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         assertThat(mAdapter.getSupportedProfiles()).contains(BluetoothProfile.GATT);
     }
 
     @CddTest(requirements = {"7.4.3/C-7-3", "7.4.3/C-7-5"})
     @Test
-    public void test_C_7_LeAudioUnicastRequirements() {
-        Assume.assumeTrue(mHasBluetooth);
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+    public void C_7_LeAudioUnicastRequirements() {
         // Assert that BluetoothAdapter#isLeAudioSupported() and
         // BluetoothAdapter#getSupportedProfiles() return the same information
         if (mAdapter.isLeAudioSupported() != BluetoothStatusCodes.FEATURE_SUPPORTED) {
@@ -117,9 +109,7 @@ public class BluetoothCddTest {
 
     @CddTest(requirements = {"7.4.3/C-8-2", "7.4.3/C-8-3"})
     @Test
-    public void test_C_8_LeAudioBroadcastSourceRequirements() {
-        Assume.assumeTrue(mHasBluetooth);
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+    public void C_8_LeAudioBroadcastSourceRequirements() {
         // Assert that BluetoothAdapter#isLeAudioBroadcastSourceSupported() and
         // BluetoothAdapter#getSupportedProfiles() return the same information
         if (mAdapter.isLeAudioBroadcastSourceSupported()
@@ -138,9 +128,7 @@ public class BluetoothCddTest {
 
     @CddTest(requirements = {"7.4.3/C-9-2"})
     @Test
-    public void test_C_9_LeAudioBroadcastAssistantRequirements() {
-        Assume.assumeTrue(mHasBluetooth);
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+    public void C_9_LeAudioBroadcastAssistantRequirements() {
         // Assert that BluetoothAdapter#isLeAudioBroadcastAssistantSupported() and
         // BluetoothAdapter#getSupportedProfiles() return the same information
         if (mAdapter.isLeAudioBroadcastAssistantSupported()

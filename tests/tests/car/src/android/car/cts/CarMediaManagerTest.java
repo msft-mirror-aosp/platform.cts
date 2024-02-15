@@ -26,10 +26,12 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.car.Car;
+import android.car.cts.utils.DumpUtils;
 import android.car.media.CarMediaManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
+import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -42,13 +44,19 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@AppModeFull(reason = "No need to run the tests in instant app mode")
 public class CarMediaManagerTest {
 
     private static final String TAG = CarMediaManagerTest.class.getSimpleName();
 
+    private static final String CAR_POWER_MANAGEMENT_SERVICE_NAME = "CarPowerManagementService";
+    private static final String MEDIA_COMPONENT_KEY = "MEDIA";
+    private static final String CAR_MEDIA_SERVICE_NAME = "CarMediaService";
+    private static final String MEDIA_CONNECTOR_STARTED_KEY = "MediaConnectorService";
     private static final long TIMEOUT = 3L;
     private static final String PACKAGE = "android.car.cts";
     private static final ComponentName FAKE_0 = ComponentName.createRelative(PACKAGE, ".fake0");
@@ -201,6 +209,22 @@ public class CarMediaManagerTest {
         List<ComponentName> playbackSources = getRecentSources(MEDIA_SOURCE_MODE_PLAYBACK, 1);
         assertThat(browsedSources).containsExactly(FAKE_1);
         assertThat(playbackSources).containsExactly(FAKE_2);
+    }
+
+    @Test
+    public void testMediaConnectorServiceStarted() {
+        Map<String, String> carPowerManagementServiceDump =
+                DumpUtils.executeDumpShellCommand(CAR_POWER_MANAGEMENT_SERVICE_NAME);
+        // Skip the test if the MEDIA power is not enabled.
+        assumeTrue(carPowerManagementServiceDump.get(MEDIA_COMPONENT_KEY).equals("on"));
+
+        Map<String, String> carMediaServiceDump =
+                DumpUtils.executeDumpShellCommand(CAR_MEDIA_SERVICE_NAME);
+
+        String startedMediaConnectorServiceName =
+                carMediaServiceDump.get(MEDIA_CONNECTOR_STARTED_KEY);
+        assertThat(startedMediaConnectorServiceName).isNotNull();
+        assertThat(ComponentName.unflattenFromString(startedMediaConnectorServiceName)).isNotNull();
     }
 
     private void waitUntilAllChangesReceived() {

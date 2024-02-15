@@ -49,7 +49,7 @@ def compute_means_and_save(cap, img_name, log_path):
   patch = image_processing_utils.get_image_patch(
       img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   rgb_means = image_processing_utils.compute_image_means(patch)
-  logging.debug('%s rbg_means: %s', img_name, rgb_means)
+  logging.debug('%s RGB means: %s', img_name, rgb_means)
   return rgb_means
 
 
@@ -98,6 +98,7 @@ class YuvPlusJpegTest(its_base_test.ItsBaseTest):
       req = capture_request_utils.auto_capture_request(
           linear_tonemap=True, props=props, do_af=False)
 
+      cam.do_3a()
       cap_yuv, cap_jpg = cam.do_capture(req, [fmt_yuv, fmt_jpg])
       rgb_means_yuv = compute_means_and_save(cap_yuv, 'yuv', log_path)
       rgb_means_jpg = compute_means_and_save(cap_jpg, 'jpg', log_path)
@@ -108,6 +109,9 @@ class YuvPlusJpegTest(its_base_test.ItsBaseTest):
       logging.debug('%s', msg)
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF:
         raise AssertionError(msg + f', spec: {_THRESHOLD_MAX_RMS_DIFF}')
+
+      # Log rms-diff, so that it can be written to the report log.
+      print(f'test_yuv_plus_jpeg_rms_diff:{rms_diff:.4f}')
 
 if __name__ == '__main__':
   test_runner.main()

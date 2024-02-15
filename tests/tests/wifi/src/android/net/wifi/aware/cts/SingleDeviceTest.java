@@ -40,6 +40,7 @@ import android.net.ConnectivityManager;
 import android.net.MacAddress;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.wifi.OuiKeyedData;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.aware.AttachCallback;
@@ -47,6 +48,7 @@ import android.net.wifi.aware.AwarePairingConfig;
 import android.net.wifi.aware.AwareParams;
 import android.net.wifi.aware.AwareResources;
 import android.net.wifi.aware.Characteristics;
+import android.net.wifi.aware.ConfigRequest;
 import android.net.wifi.aware.DiscoverySession;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
@@ -67,16 +69,22 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcel;
+import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.modules.utils.build.SdkLevel;
+import com.android.wifi.flags.Flags;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -431,6 +439,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         @Override
         public void onServiceDiscovered(ServiceDiscoveryInfo info) {
             super.onServiceDiscovered(info);
+            if (isVendorDataSupported()) {
+                assertNotNull(info.getVendorData());
+            }
             processCallback(ON_SERVICE_DISCOVERED);
         }
 
@@ -679,8 +690,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
         assertNotNull("Wi-Fi Aware characteristics are null", characteristics);
         assertEquals("Service Name Length", characteristics.getMaxServiceNameLength(), 255);
-        assertEquals("Service Specific Information Length",
-                characteristics.getMaxServiceSpecificInfoLength(), 255);
+        assertTrue("Service Specific Information Length",
+                characteristics.getMaxServiceSpecificInfoLength() >= 255);
         assertEquals("Match Filter Length", characteristics.getMaxMatchFilterLength(), 255);
         assertNotEquals("Cipher suites", characteristics.getSupportedCipherSuites(), 0);
         assertTrue("Max number of NDP", characteristics.getNumberOfSupportedDataPaths() > 0);
@@ -779,6 +790,40 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     }
 
     /**
+     * Verify that {@link WifiAwareManager#attach(ConfigRequest, Handler, AttachCallback,
+     * IdentityChangedListener)} can be called successfully.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_VENDOR_PARCELABLE_PARAMETERS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    public void testAttachDiscoveryWithConfigRequest() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(getContext())) {
+            return;
+        }
+
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            OuiKeyedData vendorDataElement =
+                    new OuiKeyedData.Builder(0x00aabbcc, new PersistableBundle()).build();
+            List<OuiKeyedData> vendorData = Arrays.asList(vendorDataElement);
+            ConfigRequest configRequest = new ConfigRequest.Builder()
+                    .setVendorData(vendorData)
+                    .build();
+            assertEquals(vendorData, configRequest.getVendorData());
+
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            AttachCallbackTest attachCb = new AttachCallbackTest();
+            IdentityChangedListenerTest identityL = new IdentityChangedListenerTest();
+            mWifiAwareManager.attach(configRequest, executor, attachCb, identityL);
+
+            assertEquals("Attach callback state", AttachCallbackTest.ATTACHED,
+                    attachCb.waitForAnyCallback());
+            WifiAwareSession session = attachCb.getSession();
+            assertNotNull("Attach callback session", session);
+            session.close();
+        });
+    }
+
+    /**
      * Validate that can attach to Wi-Fi Aware and get identity information. Use the identity
      * information to validate that MAC address changes on every attach.
      *
@@ -866,8 +911,17 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
 
         // 2. update-publish
-        publishConfig = new PublishConfig.Builder().setServiceName(
-                serviceName).setServiceSpecificInfo("extras".getBytes()).build();
+        PublishConfig.Builder configBuilder = new PublishConfig.Builder()
+                .setServiceName(serviceName)
+                .setServiceSpecificInfo("extras".getBytes());
+        List<OuiKeyedData> vendorData = generateOuiKeyedDataList(5);
+        if (isVendorDataSupported()) {
+            configBuilder.setVendorData(vendorData);
+        }
+        publishConfig = configBuilder.build();
+        if (isVendorDataSupported()) {
+            assertEquals(vendorData, publishConfig.getVendorData());
+        }
         discoverySession.updatePublish(publishConfig);
         assertTrue("Publish update", discoveryCb.waitForCallback(
                 DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
@@ -1121,7 +1175,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate successful suspend/resume with a publish session.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testSuspendResumeSuccessWithPublishSession() {
+    @ApiTest(apis = {"android.net.wifi.aware.DiscoverySession#suspend",
+            "android.net.wifi.aware.DiscoverySession#resume"})
+    public void testSuspendResumeFailWithoutNdpOnPublishSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
         }
@@ -1155,18 +1211,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
             // 2. suspend
             discoverySession.suspend();
-            assertTrue("Publish session suspended",
-                    discoveryCb.waitForCallback(
-                            DiscoverySessionCallbackTest.ON_SESSION_SUSPEND_SUCCEEDED));
-            assertFalse(discoveryCb.waitForCallback(
+            assertTrue(discoveryCb.waitForCallback(
                     DiscoverySessionCallbackTest.ON_SESSION_SUSPEND_FAILED));
 
             // 3. resume
             discoverySession.resume();
-            assertTrue("Publish session resumed",
-                    discoveryCb.waitForCallback(
-                            DiscoverySessionCallbackTest.ON_SESSION_RESUME_SUCCEEDED));
-            assertFalse(discoveryCb.waitForCallback(
+            assertTrue(discoveryCb.waitForCallback(
                     DiscoverySessionCallbackTest.ON_SESSION_RESUME_FAILED));
 
             // 4. destroy
@@ -1180,6 +1230,25 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
             session.close();
         });
+    }
+
+    private static boolean isVendorDataSupported() {
+        return SdkLevel.isAtLeastV() && Flags.vendorParcelableParameters();
+    }
+
+    private static OuiKeyedData generateOuiKeyedData(int oui) {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putString("stringKey", "stringValue");
+        bundle.putInt("intKey", 789);
+        return new OuiKeyedData.Builder(oui, bundle).build();
+    }
+
+    private static List<OuiKeyedData> generateOuiKeyedDataList(int size) {
+        List<OuiKeyedData> dataList = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            dataList.add(generateOuiKeyedData(i + 1));
+        }
+        return dataList;
     }
 
     /**
@@ -1230,7 +1299,16 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         if (rttSupported) {
             builder.setMinDistanceMm(MIN_DISTANCE_MM);
         }
+
+        List<OuiKeyedData> vendorData = generateOuiKeyedDataList(5);
+        if (isVendorDataSupported()) {
+            builder.setVendorData(vendorData);
+        }
+
         subscribeConfig = builder.build();
+        if (isVendorDataSupported()) {
+            assertEquals(vendorData, subscribeConfig.getVendorData());
+        }
 
         discoverySession.updateSubscribe(subscribeConfig);
         assertTrue("Subscribe update", discoveryCb.waitForCallback(
@@ -1422,7 +1500,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate successful suspend/resume with a subscribe session.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testSuspendResumeSuccessWithSubscribeSession() {
+    @ApiTest(apis = {"android.net.wifi.aware.DiscoverySession#suspend",
+            "android.net.wifi.aware.DiscoverySession#resume"})
+    public void testSuspendResumeFailWithoutNdpOnSubscribeSession() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
         }
@@ -1457,18 +1537,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
             // 2. suspend
             discoverySession.suspend();
-            assertTrue("Subscribe session suspended",
-                    discoveryCb.waitForCallback(
-                            DiscoverySessionCallbackTest.ON_SESSION_SUSPEND_SUCCEEDED));
-            assertFalse(discoveryCb.waitForCallback(
+            assertTrue(discoveryCb.waitForCallback(
                     DiscoverySessionCallbackTest.ON_SESSION_SUSPEND_FAILED));
 
             // 3. resume
             discoverySession.resume();
-            assertTrue("Subscribe session resumed",
-                    discoveryCb.waitForCallback(
-                            DiscoverySessionCallbackTest.ON_SESSION_RESUME_SUCCEEDED));
-            assertFalse(discoveryCb.waitForCallback(
+            assertTrue(discoveryCb.waitForCallback(
                     DiscoverySessionCallbackTest.ON_SESSION_RESUME_FAILED));
 
             // 4. destroy

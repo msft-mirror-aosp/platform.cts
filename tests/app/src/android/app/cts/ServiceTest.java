@@ -60,6 +60,7 @@ import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.service.notification.StatusBarNotification;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
@@ -71,6 +72,7 @@ import androidx.test.filters.FlakyTest;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.IBinderParcelable;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.am.Flags;
 import com.android.server.am.nano.ActivityManagerServiceDumpProcessesProto;
 import com.android.server.am.nano.ProcessRecordProto;
 
@@ -104,6 +106,9 @@ public class ServiceTest extends ActivityTestsBase {
     private static final String EXTERNAL_SERVICE_PACKAGE = "com.android.app2";
     private static final String EXTERNAL_SERVICE_COMPONENT =
             EXTERNAL_SERVICE_PACKAGE + "/android.app.stubs.LocalService";
+    private static final String DELAYED_SERVICE_PACKAGE = "com.android.delayed_start";
+    private static final String DELAYED_SERVICE_COMPONENT =
+            DELAYED_SERVICE_PACKAGE + "/android.app.stubs.LocalService";
     private static final String APP_ZYGOTE_PROCESS_NAME = "android.app.stubs_zygote";
     private static final String KEY_MAX_SERVICE_CONNECTIONS_PER_PROCESS =
             "max_service_connections_per_process";
@@ -118,6 +123,7 @@ public class ServiceTest extends ActivityTestsBase {
     private Intent mLocalService_ApplicationDoesNotHavePermission;
     private Intent mIsolatedService;
     private Intent mExternalService;
+    private Intent mDelayedService;
     private Executor mContextMainExecutor;
     private HandlerThread mBackgroundThread;
     private Executor mBackgroundThreadExecutor;
@@ -375,12 +381,12 @@ public class ServiceTest extends ActivityTestsBase {
             data.recycle();
         }
 
-        public int getValue() {
+        public int getValue(int transactCode) {
             Parcel data = Parcel.obtain();
             Parcel reply = Parcel.obtain();
             data.writeInterfaceToken(LocalService.SERVICE_LOCAL);
             try {
-                mService.transact(LocalService.GET_VALUE_CODE, data, reply, 0);
+                mService.transact(transactCode, data, reply, 0);
             } catch (RemoteException e) {
                 finishBad("DeadObjectException when sending reporting object");
             }
@@ -388,55 +394,30 @@ public class ServiceTest extends ActivityTestsBase {
             reply.recycle();
             data.recycle();
             return value;
+        }
+
+        public int getValue() {
+            return getValue(LocalService.GET_VALUE_CODE);
         }
 
         public int getPidIpc() {
-            Parcel data = Parcel.obtain();
-            Parcel reply = Parcel.obtain();
-            data.writeInterfaceToken(LocalService.SERVICE_LOCAL);
-            try {
-                mService.transact(LocalService.GET_PID_CODE, data, reply, 0);
-            } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
-            }
-            int value = reply.readInt();
-            reply.recycle();
-            data.recycle();
-            return value;
+            return getValue(LocalService.GET_PID_CODE);
         }
 
         public int getPpidIpc() {
-            Parcel data = Parcel.obtain();
-            Parcel reply = Parcel.obtain();
-            data.writeInterfaceToken(LocalService.SERVICE_LOCAL);
-            try {
-                mService.transact(LocalService.GET_PPID_CODE, data, reply, 0);
-            } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
-            }
-            int value = reply.readInt();
-            reply.recycle();
-            data.recycle();
-            return value;
+            return getValue(LocalService.GET_PPID_CODE);
         }
 
         public int getUidIpc() {
-            Parcel data = Parcel.obtain();
-            Parcel reply = Parcel.obtain();
-            data.writeInterfaceToken(LocalService.SERVICE_LOCAL);
-            try {
-                mService.transact(LocalService.GET_UID_CODE, data, reply, 0);
-            } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
-            }
-            int value = reply.readInt();
-            reply.recycle();
-            data.recycle();
-            return value;
+            return getValue(LocalService.GET_UID_CODE);
         }
 
         public Thread getOnServiceConnectedThread() {
             return mOnServiceConnectedThread;
+        }
+
+        public int getOnCreateCalledCount() {
+            return getValue(LocalService.GET_ON_CREATE_CALLED_COUNT);
         }
 
         @Override
@@ -533,9 +514,12 @@ public class ServiceTest extends ActivityTestsBase {
 
     private void assertNotification(int id, String expectedTitle, boolean shouldHaveFgsFlag) {
         String packageName = getContext().getPackageName();
-        String errorMessage = null;
-        for (int i = 1; i<=2; i++) {
-            errorMessage = null;
+        String titleErrorMsg = null;
+        String flagErrorMsg = null;
+        int i = 0;
+        while (true) {
+            titleErrorMsg = null;
+            flagErrorMsg = null;
             StatusBarNotification[] sbns = getNotificationManager().getActiveNotifications();
             for (StatusBarNotification sbn : sbns) {
                 if (sbn.getId() == id && sbn.getPackageName().equals(packageName)) {
@@ -543,30 +527,40 @@ public class ServiceTest extends ActivityTestsBase {
                     // check title first to make sure the update has propagated
                     String actualTitle = n.extras.getString(Notification.EXTRA_TITLE);
                     if (expectedTitle.equals(actualTitle)) {
+                        titleErrorMsg = null;
                         // make sure notification and service state is in sync
                         if (shouldHaveFgsFlag ==
                                 ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0)) {
+                            flagErrorMsg = null;
+                            // both title and flag matches.
                             return;
+                        } else {
+                            // title match, flag not match.
+                            flagErrorMsg = String.format("Wrong flag for notification #%d: "
+                                    + " actual '%d'", id, n.flags);
                         }
-                        fail(String.format("Wrong flag for notification #%d: "
-                                + " actual '%d'", id, n.flags));
+                    } else {
+                        // It's possible the notification hasn't been updated yet, so save the error
+                        // message to only fail after retrying.
+                        titleErrorMsg = String.format("Wrong title for notification #%d: "
+                                + "expected '%s', actual '%s'", id, expectedTitle, actualTitle);
                     }
-                    // It's possible the notification hasn't been updated yet, so save the error
-                    // message to only fail after retrying.
-                    errorMessage = String.format("Wrong title for notification #%d: "
-                            + "expected '%s', actual '%s'", id, expectedTitle, actualTitle);
-                    Log.w(TAG, errorMessage);
+                    // id and packageName are found, break now.
+                    break;
                 }
             }
-            // Notification might not be rendered yet, wait and try again...
-            try {
-                Thread.sleep(DELAY);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            // allow two more retries.
+            if (++i > 2) {
+                break;
             }
+            // Notification might not be rendered yet, wait and try again...
+            SystemClock.sleep(DELAY); // 5 seconds delay
         }
-        if (errorMessage != null) {
-            fail(errorMessage);
+        if (flagErrorMsg != null) {
+            fail(flagErrorMsg);
+        }
+        if (titleErrorMsg != null) {
+            fail(titleErrorMsg);
         }
         fail("No notification with id " + id + " for package " + packageName);
     }
@@ -738,7 +732,9 @@ public class ServiceTest extends ActivityTestsBase {
         PermissionUtils.grantPermission(mContext.getPackageName(), POST_NOTIFICATIONS);
         mLocalService = new Intent(mContext, LocalService.class);
         mExternalService = new Intent();
+        mDelayedService = new Intent();
         mExternalService.setComponent(ComponentName.unflattenFromString(EXTERNAL_SERVICE_COMPONENT));
+        mDelayedService.setComponent(ComponentName.unflattenFromString(DELAYED_SERVICE_COMPONENT));
         mLocalForegroundService = new Intent(mContext, LocalForegroundService.class);
         mLocalPhoneCallService = new Intent(mContext, LocalPhoneCallService.class);
         mLocalPhoneCallService.putExtra(LocalForegroundService.EXTRA_FOREGROUND_SERVICE_TYPE,
@@ -780,6 +776,7 @@ public class ServiceTest extends ActivityTestsBase {
         mContext.stopService(mLocalGrantedService);
         mContext.stopService(mLocalService_ApplicationHasPermission);
         mContext.stopService(mExternalService);
+        mContext.stopService(mDelayedService);
         if (mBackgroundThread != null) {
             mBackgroundThread.quitSafely();
         }
@@ -1046,6 +1043,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @RequiresFlagsDisabled(Flags.FLAG_FGS_BOOT_COMPLETED)
     public void testForegroundService_removeNotificationOnStopUsingFlags() throws Exception {
         testForegroundServiceRemoveNotificationOnStop(true);
     }
@@ -1148,6 +1146,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @RequiresFlagsDisabled(Flags.FLAG_FGS_BOOT_COMPLETED)
     public void testForegroundService_detachNotificationOnStop() throws Exception {
         String newTitle = null;
         boolean success = false;
@@ -1625,6 +1624,31 @@ public class ServiceTest extends ActivityTestsBase {
             }
             if (conn1a != null) {
                 mContext.unbindService(conn1a);
+            }
+        }
+    }
+
+    @MediumTest
+    public void testOnCreateCalledOnce_bindService() throws Exception {
+        IsolatedConnection conn = null;
+
+        try {
+            conn = new IsolatedConnection();
+            mContext.bindService(
+                    mDelayedService, Context.BIND_AUTO_CREATE, mContextMainExecutor, conn);
+
+            // Wait for app to be executing bindApplication
+            SystemClock.sleep(1000);
+
+            mContext.bindService(
+                    mDelayedService, Context.BIND_AUTO_CREATE, mContextMainExecutor, conn);
+
+            conn.waitForService(DELAY);
+
+            assertEquals(1, conn.getOnCreateCalledCount());
+        } finally {
+            if (conn != null) {
+                mContext.unbindService(conn);
             }
         }
     }

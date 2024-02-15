@@ -100,7 +100,14 @@ CodecEncoderSurfaceTest::CodecEncoderSurfaceTest(const char* mediaType, const ch
     resetContext(false, false);
     mMaxBFrames = 0;
     if (mEncFormat != nullptr) {
-        AMediaFormat_getInt32(mEncFormat, TBD_AMEDIACODEC_PARAMETER_KEY_MAX_B_FRAMES, &mMaxBFrames);
+        // key formalized in Android U (sdk==34).
+        // Use internally-defined when running on earlier releases, such as happens with MTS
+        if (__builtin_available(android __ANDROID_API_U__, *)) {
+            AMediaFormat_getInt32(mEncFormat, AMEDIAFORMAT_KEY_MAX_B_FRAMES, &mMaxBFrames);
+        } else {
+            AMediaFormat_getInt32(mEncFormat, COMPATIBLE_AMEDIAFORMAT_KEY_MAX_B_FRAMES,
+                                  &mMaxBFrames);
+        }
     }
     mLatency = mMaxBFrames;
     mReviseLatency = false;
@@ -320,6 +327,8 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
     if (info->size > 0) {
         size_t buffSize;
         uint8_t* buf = AMediaCodec_getOutputBuffer(mEncoder, bufferIndex, &buffSize);
+        // NdkMediaCodec calls ABuffer::data, which already adds offset
+        info->offset = 0;
         if (mSaveToMem) {
             mOutputBuff->saveToMemory(buf, info);
         }
@@ -346,22 +355,19 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
 bool CodecEncoderSurfaceTest::tryEncoderOutput(long timeOutUs) {
     if (mIsCodecInAsyncMode) {
         if (!hasSeenError() && !mSawEncOutputEOS) {
-            int retry = 0;
             while (mReviseLatency) {
-                if (mAsyncHandleEncoder.hasOutputFormatChanged()) {
-                    int actualLatency;
-                    mReviseLatency = false;
-                    if (AMediaFormat_getInt32(mAsyncHandleEncoder.getOutputFormat(),
-                                              AMEDIAFORMAT_KEY_LATENCY, &actualLatency)) {
-                        if (mLatency < actualLatency) {
-                            mLatency = actualLatency;
-                            return !hasSeenError();
-                        }
+                if (!mAsyncHandleEncoder.waitOnFormatChange()) {
+                    mErrorLogs.append("taking too long to receive onOutputFormatChanged callback");
+                    return false;
+                }
+                int actualLatency;
+                mReviseLatency = false;
+                if (AMediaFormat_getInt32(mAsyncHandleEncoder.getOutputFormat(),
+                                          AMEDIAFORMAT_KEY_LATENCY, &actualLatency)) {
+                    if (mLatency < actualLatency) {
+                        mLatency = actualLatency;
+                        return !hasSeenError();
                     }
-                } else {
-                    if (retry > kRetryLimit) return false;
-                    usleep(kQDeQTimeOutUs);
-                    retry++;
                 }
             }
             callbackObject element = mAsyncHandleEncoder.getOutput();
@@ -573,16 +579,14 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         RETURN_IF_NULL(mEncoder, StringFormat("unable to create media codec by name %s", encoder))
         FILE* ofp = nullptr;
         if (muxOutput && loopCounter == 0) {
-            int muxerFormat = 0;
+            OutputFormat muxerFormat = AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4;
             if (!strcmp(mMediaType, AMEDIA_MIMETYPE_VIDEO_VP8) ||
                 !strcmp(mMediaType, AMEDIA_MIMETYPE_VIDEO_VP9)) {
-                muxerFormat = OUTPUT_FORMAT_WEBM;
-            } else {
-                muxerFormat = OUTPUT_FORMAT_MPEG_4;
+                muxerFormat = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
             }
             ofp = fopen(muxOutPath, "wbe+");
             if (ofp) {
-                mMuxer = AMediaMuxer_new(fileno(ofp), (OutputFormat)muxerFormat);
+                mMuxer = AMediaMuxer_new(fileno(ofp), muxerFormat);
             }
         }
         if (!configureCodec(isAsync, false, usePersistentSurface)) return false;
@@ -615,6 +619,9 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
                        StringFormat("Decoder output count is not equal to decoder input count\n "
                                     "Input count : %s, Output count : %s\n",
                                     mDecInputCount, mDecOutputCount))
+        RETURN_IF_TRUE((mMaxBFrames == 0 && !mOutputBuff->isPtsStrictlyIncreasing(INT32_MIN)),
+                       std::string{"Output timestamps are not strictly increasing \n"}.append(
+                               ref->getErrorMsg()))
         /* TODO(b/153127506)
          *  Currently disabling all encoder output checks. Added checks only for encoder timeStamp
          *  is in increasing order or not.

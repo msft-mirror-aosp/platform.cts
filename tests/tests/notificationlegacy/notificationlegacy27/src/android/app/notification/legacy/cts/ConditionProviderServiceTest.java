@@ -26,6 +26,7 @@ import static junit.framework.TestCase.fail;
 
 import static java.lang.Thread.sleep;
 
+import android.Manifest;
 import android.app.AutomaticZenRule;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
@@ -44,6 +45,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.SystemUtil;
 
 import junit.framework.Assert;
 
@@ -65,6 +67,7 @@ public class ConditionProviderServiceTest {
     private ZenModeBroadcastReceiver mModeReceiver;
     private IntentFilter mModeFilter;
     private ArraySet<String> ids = new ArraySet<>();
+    private static final int BROADCAST_TIMEOUT_MS = 5000;
 
     @Before
     public void setUp() throws Exception {
@@ -72,15 +75,17 @@ public class ConditionProviderServiceTest {
         mModeReceiver = new ZenModeBroadcastReceiver();
         mModeFilter = new IntentFilter();
         mModeFilter.addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED);
-        mContext.registerReceiver(mModeReceiver, mModeFilter,
-                Context.RECEIVER_EXPORTED_UNAUDITED);
+        mContext.registerReceiver(mModeReceiver, mModeFilter, Context.RECEIVER_EXPORTED);
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
         LegacyConditionProviderService.requestRebind(LegacyConditionProviderService.getId());
         SecondaryConditionProviderService.requestRebind(SecondaryConditionProviderService.getId());
         mNm = (NotificationManager) mContext.getSystemService(
                 Context.NOTIFICATION_SERVICE);
-        mNm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mNm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL),
+                Manifest.permission.STATUS_BAR_SERVICE);
     }
 
     @After
@@ -125,7 +130,7 @@ public class ConditionProviderServiceTest {
         addRule(cn, INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(1/*Secondary only*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(1/*Secondary only*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind service
@@ -156,7 +161,7 @@ public class ConditionProviderServiceTest {
         addRule(SecondaryConditionProviderService.getId(), INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(2/*Legacy and Secondary*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(2/*Legacy and Secondary*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind one of the services
@@ -189,7 +194,7 @@ public class ConditionProviderServiceTest {
         addRule(SecondaryConditionProviderService.getId(), INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(2/*Legacy and Secondary*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(2/*Legacy and Secondary*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind one of the services

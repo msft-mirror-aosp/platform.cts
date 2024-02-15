@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_java_core_libraries",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -62,5 +63,6 @@ android_test {
         "mts-art",
         "general-tests",
         "automotive-general-tests",
+        "mcts-art",
     ],
 }

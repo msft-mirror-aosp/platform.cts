@@ -64,21 +64,25 @@ import android.annotation.Nullable;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.os.SystemProperties;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
+import android.telecom.cts.TestUtils;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.BarringInfo;
 import android.telephony.CarrierConfigManager;
 import android.telephony.DisconnectCause;
 import android.telephony.DomainSelectionService;
 import android.telephony.NetworkRegistrationInfo;
+import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.InCallServiceStateValidator;
+import android.telephony.cts.util.TelephonyUtils;
+import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
 import android.telephony.ims.ImsReasonInfo;
@@ -87,6 +91,8 @@ import android.telephony.ims.stub.ImsFeatureConfiguration;
 import android.telephony.ims.stub.ImsRegistrationImplBase;
 import android.telephony.mockmodem.MockEmergencyRegResult;
 import android.telephony.mockmodem.MockModemManager;
+import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -98,11 +104,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -113,9 +119,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     private static final String LOG_TAG = "CtsEmergencyCallDomainSelectionTestOnMockModem";
     private static final boolean VDBG = false;
-    private static final boolean DEBUG = !"user".equals(Build.TYPE);
 
-    private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final String TEST_DOMAIN_SELECTION_PROPERTY =
             "persist.radio.test_domain_selection";
 
@@ -173,7 +177,10 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
             return;
         }
 
-        enforceMockModemDeveloperSetting();
+        TestUtils.setSystemDialerOverride(
+                InstrumentationRegistry.getInstrumentation(), INCALL_COMPONENT);
+
+        MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
@@ -239,6 +246,8 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
+
+        TestUtils.clearSystemDialerOverride(InstrumentationRegistry.getInstrumentation());
     }
 
     @Before
@@ -284,6 +293,8 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
             sIsBound = false;
             imsService.waitForExecutorFinish();
         }
+
+        TelephonyUtils.endBlockSuppression(InstrumentationRegistry.getInstrumentation());
     }
 
     @Test
@@ -944,28 +955,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyRescanPsPreferred();
     }
 
-    @Ignore("TODO: switch the preferred transport between WWAN and IWLAN.")
-    @Test
-    public void testDefaultWifiImsRegisteredScanTimeoutSelectWifi() throws Exception {
-        // Setup pre-condition
-        PersistableBundle bundle = getDefaultPersistableBundle();
-        bundle.putInt(KEY_EMERGENCY_SCAN_TIMER_SEC_INT, 3);
-        overrideCarrierConfig(bundle);
-
-        MockEmergencyRegResult regResult = getEmergencyRegResult(EUTRAN, REGISTRATION_STATE_UNKNOWN,
-                0, false, false, 0, 0, "", "");
-        sMockModemManager.setEmergencyRegResult(sTestSlot, regResult);
-
-        bindImsService(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN);
-
-        placeOutgoingCall(TEST_EMERGENCY_NUMBER);
-        assertTrue(waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
-        TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
-        TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService()
-                .getMmTelFeature().getImsCallsession();
-        assertNotNull(callSession);
-    }
-
     @Test
     public void testDefaultWifiImsRegisteredScanTimeoutSelectWifiImsPdn() throws Exception {
         // Setup pre-condition
@@ -1077,6 +1066,125 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         // LTE should have higher priority in scan list to trigger EPS fallback.
         verifyScanPsPreferred();
+    }
+
+    @Test
+    public void testOutGoingEmergencyCall() throws Exception {
+        // Setup pre-condition
+        PersistableBundle bundle = getDefaultPersistableBundle();
+        overrideCarrierConfig(bundle);
+
+        MockEmergencyRegResult regResult = getEmergencyRegResult(EUTRAN, REGISTRATION_STATE_HOME,
+                NetworkRegistrationInfo.DOMAIN_CS | NetworkRegistrationInfo.DOMAIN_PS,
+                true, true, 0, 0, "", "");
+        sMockModemManager.setEmergencyRegResult(sTestSlot, regResult);
+
+        TestTelephonyCallbackForCallStateChange testCb =
+                new TestTelephonyCallbackForCallStateChange();
+
+        TelephonyManager telephonyManager = (TelephonyManager) getContext()
+                .getSystemService(Context.TELEPHONY_SERVICE);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        // Place outgoing emergency call
+        placeOutgoingCall(TEST_EMERGENCY_NUMBER);
+        TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        Call call = getCall(mCurrentCallId);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue(testCb.waitForCallActive());
+
+        TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
+                .getImsCallsession();
+        isCallActive(call, callSession);
+
+        call.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager, (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
+    private class TestTelephonyCallbackForCallStateChange extends TelephonyCallback implements
+            TelephonyCallback.PreciseCallStateListener,
+            TelephonyCallback.OutgoingEmergencyCallListener {
+
+        private EmergencyNumber mLastOutgoingEmergencyNumber;
+        private Semaphore mOutgoingEmergencyCallSemaphore = new Semaphore(0);
+        private Semaphore mActiveCallStateSemaphore = new Semaphore(0);
+
+        @Override
+        public void onPreciseCallStateChanged(@NonNull PreciseCallState callState) {
+            Log.i(LOG_TAG, "onPreciseCallStateChanged: state=" + callState);
+            if (callState.getForegroundCallState() == PreciseCallState.PRECISE_CALL_STATE_ACTIVE) {
+                mActiveCallStateSemaphore.release();
+            }
+        }
+
+        @Override
+        public void onOutgoingEmergencyCall(EmergencyNumber emergencyNumber, int subscriptionId) {
+            Log.i(LOG_TAG, "onOutgoingEmergencyCall: emergencyNumber=" + emergencyNumber);
+            mLastOutgoingEmergencyNumber = emergencyNumber;
+            mOutgoingEmergencyCallSemaphore.release();
+        }
+
+        public boolean waitForCallActive() {
+            try {
+                if (!mActiveCallStateSemaphore.tryAcquire(
+                        WAIT_LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    Log.e(LOG_TAG, "Timed out to receive active call state");
+                    return false;
+                }
+            } catch (InterruptedException ex) {
+                Log.e(LOG_TAG, "waitForCallActive: ex=" + ex);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitForOutgoingEmergencyCall(String expectedNumber) {
+            try {
+                if (!mOutgoingEmergencyCallSemaphore.tryAcquire(
+                        WAIT_LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    Log.e(LOG_TAG, "Timed out to receive OutgoingEmergencyCall");
+                    return false;
+                }
+            } catch (InterruptedException ex) {
+                Log.e(LOG_TAG, "waitForOutgoingEmergencyCall: ex=" + ex);
+                return false;
+            }
+
+            // At this point we can only be sure that we got AN update, but not necessarily the one
+            // we are looking for; wait until we see the state we want before verifying further.
+            waitUntilConditionIsTrueOrTimeout(
+                    new Condition() {
+                        @Override
+                        public Object expected() {
+                            return true;
+                        }
+
+                        @Override
+                        public Object actual() {
+                            return mLastOutgoingEmergencyNumber != null
+                                    && mLastOutgoingEmergencyNumber.getNumber().equals(
+                                            expectedNumber);
+                        }
+                    },
+                    WAIT_LATCH_TIMEOUT_MS,
+                    "Expected emergency number: " + expectedNumber);
+            return TextUtils.equals(expectedNumber, mLastOutgoingEmergencyNumber.getNumber());
+        }
     }
 
     private void verifyCsDialed() throws Exception {
@@ -1217,16 +1325,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
                                 ImsReasonInfo.CODE_UNSPECIFIED, ""));
 
         Thread.sleep(3000);
-    }
-
-    private static void enforceMockModemDeveloperSetting() throws Exception {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!isAllowed && !DEBUG) {
-            throw new IllegalStateException(
-                "!! Enable Mock Modem before running this test !! "
-                    + "Developer options => Allow Mock Modem");
-        }
     }
 
     private static PersistableBundle getDefaultPersistableBundle() {

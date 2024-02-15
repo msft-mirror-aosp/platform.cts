@@ -22,9 +22,12 @@ import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWE
 
 import android.content.Context;
 import android.hardware.radio.sim.Carrier;
+import android.hardware.radio.sim.CarrierRestrictions;
 import android.hardware.radio.voice.CdmaSignalInfoRecord;
 import android.hardware.radio.voice.UusInfo;
+import android.os.Build;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.telephony.Annotation;
 import android.telephony.BarringInfo;
 import android.telephony.SubscriptionManager;
@@ -46,11 +49,28 @@ import java.util.function.BooleanSupplier;
 
 public class MockModemManager {
     private static final String TAG = "MockModemManager";
+    private static final boolean DEBUG = !"user".equals(Build.TYPE);
+
+    private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
+    private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
 
     private static Context sContext;
     private static MockModemServiceConnector sServiceConnector;
     private static final long TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED = 10000;
+    private static final int WAIT_UPDATE_TIMEOUT_MS = 200;  // 0.2sec delay
     private MockModemService mMockModemService;
+
+    public static void enforceMockModemDeveloperSetting() throws Exception {
+        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
+        boolean isAllowedForBoot =
+                SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
+        // Check for developer settings for user build. Always allow for debug builds
+        if (!(isAllowed || isAllowedForBoot) && !DEBUG) {
+            throw new IllegalStateException(
+                "!! Enable Mock Modem before running this test !! "
+                    + "Developer options => Allow Mock Modem");
+        }
+    }
 
     public MockModemManager() {
         sContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -400,7 +420,26 @@ public class MockModemManager {
      * @return boolean true if the operation is successful, otherwise false.
      */
     public boolean changeNetworkService(
-            int slotId, int carrierId, boolean registration, int domainBitmask) throws Exception {
+            int slotId, int carrierId,
+            boolean registration, int domainBitmask) throws Exception {
+        return changeNetworkService(
+                slotId, carrierId, registration, domainBitmask, 0 /* regFailCause */);
+    }
+
+    /**
+     * Make the modem is in service or not for CS or PS registration
+     *
+     * @param slotId which SIM slot is under the carrierId network.
+     * @param carrierId which carrier network is used.
+     * @param registration boolean true if the modem is in service, otherwise false.
+     * @param domainBitmask int specify domains (CS only, PS only, or both).
+     * @param regFailCause int reason code for registration failure.
+     * @return boolean true if the operation is successful, otherwise false.
+     */
+    public boolean changeNetworkService(
+            int slotId, int carrierId,
+            boolean registration, int domainBitmask,
+            int regFailCause) throws Exception {
         Log.d(
                 TAG,
                 "changeNetworkService["
@@ -410,13 +449,16 @@ public class MockModemManager {
                         + ") "
                         + registration
                         + " with domainBitmask = "
-                        + domainBitmask);
+                        + domainBitmask
+                        + " with failCause = "
+                        + regFailCause);
 
         boolean result;
         result =
                 mMockModemService
                         .getIRadioNetwork((byte) slotId)
-                        .changeNetworkService(carrierId, registration, domainBitmask);
+                        .changeNetworkService(
+                                carrierId, registration, domainBitmask, regFailCause);
 
         waitForTelephonyFrameworkDone(1);
         return result;
@@ -1014,30 +1056,6 @@ public class MockModemManager {
         mMockModemService.getIRadioVoice((byte) slotId).notifyEmergencyNumberList(numbers);
     }
 
-    private String strArrayToStr(String[] strArr) {
-        StringBuilder sb = new StringBuilder();
-        if (strArr != null && strArr.length > 0) {
-            for (int i = 0; i < strArr.length - 1; i++) {
-                sb.append(strArr[i]);
-                sb.append(", ");
-            }
-            sb.append(strArr[strArr.length - 1]);
-        }
-        return sb.toString();
-    }
-
-    private String intArrayToStr(int[] intArr) {
-        StringBuilder sb = new StringBuilder();
-        if (intArr != null && intArr.length > 0) {
-            for (int i = 0; i < intArr.length - 1; i++) {
-                sb.append(intArr[i]);
-                sb.append(", ");
-            }
-            sb.append(intArr[intArr.length - 1]);
-        }
-        return sb.toString();
-    }
-
     /**
      * Sets the new carrierId and CarrierRestriction status values in IRadioSimImpl.java
      * @param carrierList
@@ -1046,5 +1064,42 @@ public class MockModemManager {
     public void updateCarrierRestrictionInfo(Carrier[] carrierList, int carrierRestrictionStatus) {
         mMockModemService.getIRadioSim().updateCarrierRestrictionStatusInfo(carrierList,
                 carrierRestrictionStatus);
+    }
+
+    /**
+     * Helper method that can be called from the test suite to change the primary IMEi mapping
+     * with respect to sim slot.
+     */
+    public boolean changeImeiMapping() {
+        int modemCount = mMockModemService.getActiveMockModemCount();
+        if (modemCount == 1) {
+            return false;
+        }
+        for (int slotId = 0; slotId < modemCount; slotId++) {
+            mMockModemService.getIRadioModem((byte) slotId).resetAllLatchCountdown();
+            mMockModemService.getIRadioModem((byte) slotId).changeImeiMapping();
+            if (waitForModemLatchCountdown(slotId, WAIT_UPDATE_TIMEOUT_MS)) {
+                Log.e(TAG, "Error in waitForModemLatchCountdown");
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Wait latch for 0.2 sec or latch to countdown.
+     * @param slotId : slotId of the device.
+     * @param waitMs : Wait in milliseconds for the latch-wait timeout.
+     * @return true if latch is success else fail.
+     */
+    public boolean waitForModemLatchCountdown(int slotId, int waitMs) {
+        Log.d(TAG, "waitForVoiceLatchCountdown[" + slotId + "]");
+        return mMockModemService.getIRadioModem((byte) slotId)
+                .waitForLatchCountdown(slotId, waitMs);
+    }
+
+    public void setCarrierRestrictionRules(CarrierRestrictions carrierRestrictionRules,
+            int multiSimPolicy) {
+        mMockModemService.getIRadioSim().updateCarrierRestrictionRules(
+                carrierRestrictionRules, multiSimPolicy);
     }
 }

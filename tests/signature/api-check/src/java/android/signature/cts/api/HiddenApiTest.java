@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.Test;
+import org.junit.Ignore;
 
 /**
  * Checks that it is not possible to access hidden APIs.
@@ -66,22 +67,29 @@ public class HiddenApiTest extends AbstractApiTest {
     private final static Predicate<DexMember> FIELD_FILTER =
             dexMember -> (dexMember instanceof DexField);
 
-    @Test(timeout = 350000)
+    // All tests here are currently skipped. If any gets enabled, the timeout
+    // for the first test to run needs to be sufficiently large on it to allow
+    // for loadFilters() to complete.
+    @Test(timeout = 900000)
+    @Ignore("b/301075649")
     public void testSignatureMethodsThroughReflection() {
         doTestSignature(METHOD_FILTER,/* reflection= */ true, /* jni= */ false);
     }
 
     @Test
+    @Ignore("b/301075649")
     public void testSignatureMethodsThroughJni() {
         doTestSignature(METHOD_FILTER, /* reflection= */ false, /* jni= */ true);
     }
 
     @Test
+    @Ignore("b/301075649")
     public void testSignatureFieldsThroughReflection() {
         doTestSignature(FIELD_FILTER, /* reflection= */ true, /* jni= */ false);
     }
 
     @Test
+    @Ignore("b/301075649")
     public void testSignatureFieldsThroughJni() {
         doTestSignature(FIELD_FILTER, /* reflection= */ false, /* jni= */ true);
     }

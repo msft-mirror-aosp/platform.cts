@@ -28,15 +28,19 @@ import android.os.PersistableBundle;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
+import android.service.voice.VisualQueryDetectedResult;
 import android.service.voice.VisualQueryDetectionServiceFailure;
 import android.service.voice.VisualQueryDetector;
 import android.service.voice.VoiceInteractionService;
 import android.util.Log;
+import android.voiceinteraction.common.Utils;
 import android.voiceinteraction.cts.testcore.Helper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -49,6 +53,7 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
 
     private final String mTag = getClass().getSimpleName();
     public static final int STATUS_NO_CALLBACK_CALLED = -100;
+    public static final int NUM_THREADS = 10;
 
     // The service instance
     public static VoiceInteractionService sService;
@@ -172,6 +177,11 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
             new VisualQueryDetector.Callback() {
                 @Override
                 public void onQueryDetected(@NonNull String partialQuery) {
+                    //No-op
+                }
+
+                @Override
+                public void onQueryDetected(@NonNull VisualQueryDetectedResult partialResult) {
                     //No-op
                 }
 
@@ -517,6 +527,36 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
         createKeyphraseModelManager().setModelDatabaseForTestEnabled(/* enabled= */ false);
     }
 
+    /**
+     * Creates a file in the internal storage to test the file read method
+     * {@link android.service.voice.VisualQueryDetectionService#openFileInput(String)}.
+     * @throws Throwable throws exceptions when writing to the file via output stream.
+     */
+    public void createTestFile(String suffix) throws Throwable {
+        File path = this.getFilesDir();
+        File file = new File(path, Utils.TEST_RESOURCE_FILE_NAME + suffix);
+        try (FileOutputStream stream = new FileOutputStream(file)) {
+            stream.write(Utils.TEST_RESOURCE_FILE_CONTENT.getBytes());
+        }
+    }
+
+    /**
+     * Remove all files in the internal storage that is created by
+     * {@link BaseVoiceInteractionService#createTestFile(String)}.
+     */
+    public void removeTestFiles() {
+        File path = this.getFilesDir();
+        File[] files = path.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                // Check if the filename starts with the specified prefix
+                if (file.getName().startsWith(Utils.TEST_RESOURCE_FILE_NAME)) {
+                    file.delete(); // Delete the file
+                }
+            }
+        }
+    }
+
     AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetectorNoHotwordDetectionService(
             AlwaysOnHotwordDetector.Callback callback, boolean useExecutor) {
         Log.i(mTag,
@@ -636,7 +676,7 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
         try {
             resetDetectorCreationExceptions();
             return createVisualQueryDetector(Helper.createFakePersistableBundleData(),
-                    Helper.createFakeSharedMemoryData(), Executors.newSingleThreadExecutor(),
+                    Helper.createFakeSharedMemoryData(), Executors.newFixedThreadPool(NUM_THREADS),
                     callback);
         } catch (IllegalStateException | SecurityException e) {
             if (e instanceof IllegalStateException) {

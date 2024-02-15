@@ -30,12 +30,10 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.radio.network.Domain;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.PersistableBundle;
-import android.os.SystemProperties;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
@@ -63,6 +61,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -74,7 +73,6 @@ import java.util.concurrent.TimeUnit;
 public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
 
     private static final String TAG = CallDomainSelectionTestOnMockModem.class.getSimpleName();
-    private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
 
     // the timeout to wait for result in milliseconds
     private static final int WAIT_UPDATE_TIMEOUT_MS = 5000;
@@ -87,7 +85,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
     private static CallStateListener sCallStateCallback;
     private static TelephonyManager sTelephonyManager;
     private static TelecomManager sTelecomManager;
-    private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private final Executor mCallStateChangeExecutor = Runnable::run;
     private final Object mCallStateChangeLock = new Object();
 
@@ -126,7 +123,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         }
 
         // Load mock SIM profile.
-        enforceMockModemDeveloperSetting();
+        MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
@@ -219,16 +216,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
             sServiceConnector.disconnectCarrierImsService();
             sIsBound = false;
             imsService.waitForExecutorFinish();
-        }
-    }
-
-    private static void enforceMockModemDeveloperSetting() {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!isAllowed && !DEBUG) {
-            throw new IllegalStateException(
-                    "!! Enable Mock Modem before running this test !! "
-                            + "Developer options => Allow Mock Modem");
         }
     }
 
@@ -952,6 +939,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         sCallStateCallback = null;
     }
 
+    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoLteCalls() throws Exception {
         sMockModemManager.changeNetworkService(
@@ -1054,6 +1042,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         waitForUnboundService();
     }
 
+    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoLteCallsWithIncomingCall() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
@@ -1139,6 +1128,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         waitForUnboundService();
     }
 
+    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoWifiCalls() throws Exception {
         sMockModemManager.changeNetworkService(

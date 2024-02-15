@@ -92,10 +92,12 @@ public class NetworkRegistrationInfoTest {
     public void testGetAvailableServices() {
         NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                 .setAvailableServices(Arrays.asList(NetworkRegistrationInfo.SERVICE_TYPE_DATA,
-                        NetworkRegistrationInfo.SERVICE_TYPE_VIDEO))
+                        NetworkRegistrationInfo.SERVICE_TYPE_VIDEO,
+                        NetworkRegistrationInfo.SERVICE_TYPE_MMS))
                 .build();
         assertEquals(Arrays.asList(NetworkRegistrationInfo.SERVICE_TYPE_DATA,
-                NetworkRegistrationInfo.SERVICE_TYPE_VIDEO), nri.getAvailableServices());
+                NetworkRegistrationInfo.SERVICE_TYPE_VIDEO,
+                NetworkRegistrationInfo.SERVICE_TYPE_MMS), nri.getAvailableServices());
     }
 
     @Test
@@ -399,5 +401,13 @@ public class NetworkRegistrationInfoTest {
 
         assertEquals(NetworkRegistrationInfo.REGISTRATION_STATE_EMERGENCY,
                 nri.getRegistrationState());
+    }
+
+    @Test
+    public void testIsNonTerrestrialNetwork() {
+        NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
+                .setIsNonTerrestrialNetwork(true)
+                .build();
+        assertTrue(nri.isNonTerrestrialNetwork());
     }
 }

@@ -16,6 +16,10 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
@@ -81,12 +85,19 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         ArrayList<Pair<String, String>> mimeTypeDecoderPairs = new ArrayList<>();
         ArrayList<Pair<String, String>> mimeTypeEncoderPairs = new ArrayList<>();
         for (String mime : mMimeList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfDecoders = getHardwareCodecsForMime(mime, false);
             for (String decoder : listOfDecoders) {
                 mimeTypeDecoderPairs.add(Pair.create(mime, decoder));
             }
             ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
             for (String encoder : listOfEncoders) {
+                if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
+                    continue;
+                }
                 mimeTypeEncoderPairs.add(Pair.create(mime, encoder));
             }
         }
@@ -146,7 +157,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-5", "2.2.7.1/5.1/H-1-6"})
     public void test4k() throws Exception {
         Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
-        testCodec(m2160pTestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES, false);
+        testCodec(m2160pPc14TestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES, false);
     }
 
     /**
@@ -164,7 +175,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         Assume.assumeFalse("Skip HBD tests for avc",
                 mDecoderPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
                         || mEncoderPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AVC));
-        testCodec(m2160p10bitTestFiles, 2160, 3840, 3, true);
+        testCodec(m2160pPc1410bitTestFiles, 2160, 3840, 3, true);
     }
 
     private void testCodec(Map<String, String> testFiles, int height, int width,
@@ -177,7 +188,11 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 checkAndGetMaxSupportedInstancesForCodecCombinations(height, width, mimeCodecPairs,
                         false, requiredMinInstances);
         double achievedFrameRate = 0.0;
-        if (maxInstances >= requiredMinInstances) {
+        if (false) {
+            // if we had a reason not to even try running the tests, we would report 0s.
+            achievedFrameRate = 0.0;
+            maxInstances = 0;
+        } else if (maxInstances >= requiredMinInstances) {
             ExecutorService pool =
                     Executors.newFixedThreadPool(maxInstances / 2 + maxInstances % 2);
             List<Transcode> transcodeList = new ArrayList<>();
@@ -186,17 +201,18 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 for (int i = 0; i < (maxInstances / 2) - 1; i++) {
                     transcodeList.add(
                             new Transcode(mEncoderPair.first, testFiles1080p, mDecoderPair.second,
-                                    mEncoderPair.second, mIsAsync));
+                                    mEncoderPair.second, mIsAsync, useHighBitDepth));
                 }
-                transcodeList
-                        .add(new Transcode(mEncoderPair.first, mTestFiles.get(mDecoderPair.first),
-                                mDecoderPair.second, mEncoderPair.second, mIsAsync));
+                transcodeList.add(
+                        new Transcode(mEncoderPair.first, mTestFiles.get(mDecoderPair.first),
+                                mDecoderPair.second, mEncoderPair.second, mIsAsync,
+                                useHighBitDepth));
             } else {
                 for (int i = 0; i < maxInstances / 2; i++) {
-                    transcodeList
-                            .add(new Transcode(mEncoderPair.first,
-                                    mTestFiles.get(mDecoderPair.first),
-                                    mDecoderPair.second, mEncoderPair.second, mIsAsync));
+                    transcodeList.add(
+                            new Transcode(mEncoderPair.first, mTestFiles.get(mDecoderPair.first),
+                                    mDecoderPair.second, mEncoderPair.second, mIsAsync,
+                                    useHighBitDepth));
                 }
             }
             List<Future<Double>> decodeResultList = null;
@@ -214,13 +230,28 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
             }
             List<Future<Double>> transcodeResultList = pool.invokeAll(transcodeList);
             for (Future<Double> result : transcodeResultList) {
-                achievedFrameRate += result.get();
+                Double fps = result.get();
+                if (fps < 0) {
+                    achievedFrameRate = -1;
+                } else if (achievedFrameRate >= 0) {
+                    achievedFrameRate += fps;
+                }
             }
             if (decodeResultList != null) {
                 for (Future<Double> result : decodeResultList) {
-                    achievedFrameRate += result.get();
+                    Double fps = result.get();
+                    if (fps < 0) {
+                        achievedFrameRate = -1;
+                    } else if (achievedFrameRate >= 0) {
+                        achievedFrameRate += fps;
+                    }
                 }
             }
+        }
+
+        // map errors to '0 fps'
+        if (achievedFrameRate < 0) {
+            achievedFrameRate = 0;
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);

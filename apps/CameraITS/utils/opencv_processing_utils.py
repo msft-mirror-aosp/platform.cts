@@ -20,6 +20,7 @@ import os
 import pathlib
 import cv2
 import numpy
+import scipy.spatial
 
 import capture_request_utils
 import error_util
@@ -31,10 +32,10 @@ ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_RFOV = 13.5  # cm
-CHART_HEIGHT_WFOV = 9.5  # cm
-CHART_DISTANCE_RFOV = 31.0  # cm
-CHART_DISTANCE_WFOV = 22.0  # cm
+CHART_HEIGHT_31CM = 13.5  # cm
+CHART_HEIGHT_22CM = 9.5  # cm
+CHART_DISTANCE_31CM = 31.0  # cm
+CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
 CHART_SCALE_START = 0.65
 CHART_SCALE_STOP = 1.35
@@ -46,29 +47,39 @@ CIRCLISH_LOW_RES_ATOL = 0.15  # loosen for low res images
 CIRCLE_MIN_PTS = 20
 CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
 CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
+CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
+CV2_GREEN = (0, 1, 0)
+CV2_THRESHOLD_BLOCK_SIZE = 11
+CV2_THRESHOLD_CONSTANT = 2
 
 CV2_HOME_DIRECTORY = os.path.dirname(cv2.__file__)
 CV2_ALTERNATE_DIRECTORY = pathlib.Path(CV2_HOME_DIRECTORY).parents[3]
 HAARCASCADE_FILE_NAME = 'haarcascade_frontalface_default.xml'
 
+FACES_ALIGNED_MIN_NUM = 2
+FACE_CENTER_MATCH_TOL_X = 10  # 10 pixels or ~1.5% in 640x480 image
+FACE_CENTER_MATCH_TOL_Y = 20  # 20 pixels or ~4% in 640x480 image
+FACE_CENTER_MIN_LOGGING_DIST = 50
+FACE_MIN_CENTER_DELTA = 15
+
 FOV_THRESH_TELE25 = 25
 FOV_THRESH_TELE40 = 40
 FOV_THRESH_TELE = 60
-FOV_THRESH_WFOV = 90
+FOV_THRESH_UW = 90
 
 LOW_RES_IMG_THRESH = 320 * 240
 
 RGB_GRAY_WEIGHTS = (0.299, 0.587, 0.114)  # RGB to Gray conversion matrix
 
-SCALE_RFOV_IN_WFOV_BOX = 0.67
-SCALE_TELE_IN_WFOV_BOX = 0.5
-SCALE_TELE_IN_RFOV_BOX = 0.67
-SCALE_TELE40_IN_WFOV_BOX = 0.33
-SCALE_TELE40_IN_RFOV_BOX = 0.5
-SCALE_TELE25_IN_RFOV_BOX = 0.33
+SCALE_WIDE_IN_22CM_RIG = 0.67
+SCALE_TELE_IN_22CM_RIG = 0.5
+SCALE_TELE_IN_31CM_RIG = 0.67
+SCALE_TELE40_IN_22CM_RIG = 0.33
+SCALE_TELE40_IN_31CM_RIG = 0.5
+SCALE_TELE25_IN_31CM_RIG = 0.33
 
 SQUARE_AREA_MIN_REL = 0.05  # Minimum size for square relative to image area
 SQUARE_CROP_MARGIN = 0  # Set to aid detection of QR codes
@@ -154,7 +165,6 @@ def find_opencv_faces(img, scale_factor, min_neighbors):
 
 def find_all_contours(img):
   cv2_version = cv2.__version__
-  logging.debug('cv2_version: %s', cv2_version)
   if cv2_version.startswith('3.'):  # OpenCV 3.x
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE,
                                       cv2.CHAIN_APPROX_SIMPLE)
@@ -174,31 +184,26 @@ def calc_chart_scaling(chart_distance, camera_fov):
    chart_scaling: float; scaling factor for chart
   """
   chart_scaling = 1.0
-  camera_fov = float(camera_fov)
-  if (FOV_THRESH_TELE < camera_fov < FOV_THRESH_WFOV and
-      math.isclose(
-          chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
-    chart_scaling = SCALE_RFOV_IN_WFOV_BOX
-  elif (FOV_THRESH_TELE40 < camera_fov <= FOV_THRESH_TELE and
-        math.isclose(
-            chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
-    chart_scaling = SCALE_TELE_IN_WFOV_BOX
-  elif (camera_fov <= FOV_THRESH_TELE40 and
-        math.isclose(chart_distance, CHART_DISTANCE_WFOV, rel_tol=CHART_SCALE_RTOL)):
-    chart_scaling = SCALE_TELE40_IN_WFOV_BOX
-  elif (camera_fov <= FOV_THRESH_TELE25 and
-        (math.isclose(
-            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL) or
-         chart_distance > CHART_DISTANCE_RFOV)):
-    chart_scaling = SCALE_TELE25_IN_RFOV_BOX
-  elif (camera_fov <= FOV_THRESH_TELE40 and
-        math.isclose(
-            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL)):
-    chart_scaling = SCALE_TELE40_IN_RFOV_BOX
-  elif (camera_fov <= FOV_THRESH_TELE and
-        math.isclose(
-            chart_distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL)):
-    chart_scaling = SCALE_TELE_IN_RFOV_BOX
+  fov = float(camera_fov)
+  is_chart_distance_22cm = math.isclose(
+      chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_31cm = math.isclose(
+      chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+
+  if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
+    chart_scaling = SCALE_WIDE_IN_22CM_RIG
+  elif FOV_THRESH_TELE40 < fov <= FOV_THRESH_TELE and is_chart_distance_22cm:
+    chart_scaling = SCALE_TELE_IN_22CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
+    chart_scaling = SCALE_TELE40_IN_22CM_RIG
+  elif (fov <= FOV_THRESH_TELE25 and
+        is_chart_distance_31cm or
+        chart_distance > CHART_DISTANCE_31CM):
+    chart_scaling = SCALE_TELE25_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
+    chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
+    chart_scaling = SCALE_TELE_IN_31CM_RIG
   return chart_scaling
 
 
@@ -254,12 +259,12 @@ class Chart(object):
     """
     self._file = chart_file or CHART_FILE
     if math.isclose(
-        distance, CHART_DISTANCE_RFOV, rel_tol=CHART_SCALE_RTOL):
-      self._height = height or CHART_HEIGHT_RFOV
+        distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL):
+      self._height = height or CHART_HEIGHT_31CM
       self._distance = distance
     else:
-      self._height = height or CHART_HEIGHT_WFOV
-      self._distance = CHART_DISTANCE_WFOV
+      self._height = height or CHART_HEIGHT_22CM
+      self._distance = CHART_DISTANCE_22CM
     self._scale_start = scale_start or CHART_SCALE_START
     self._scale_stop = scale_stop or CHART_SCALE_STOP
     self._scale_step = scale_step or CHART_SCALE_STEP
@@ -466,7 +471,7 @@ def find_circle_fill_metric(shape, img_bw, color):
   return matching / total
 
 
-def find_circle(img, img_name, min_area, color):
+def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
   """Find the circle in the test image.
 
   Args:
@@ -474,6 +479,7 @@ def find_circle(img, img_name, min_area, color):
     img_name: string with image info of format and size.
     min_area: float of minimum area of circle to find
     color: int of [0 or 255] 0 is black, 255 is white
+    use_adaptive_threshold: True if binarization should use adaptive threshold.
 
   Returns:
     circle = {'x', 'y', 'r', 'w', 'h', 'x_offset', 'y_offset'}
@@ -485,11 +491,15 @@ def find_circle(img, img_name, min_area, color):
   else:
     circlish_atol = CIRCLISH_LOW_RES_ATOL
 
-  # convert to gray-scale image
-  img_gray = convert_to_gray(img)
-
-  # otsu threshold to binarize the image
-  img_bw = binarize_image(img_gray)
+  # convert to gray-scale image and binarize using adaptive/global threshold
+  if use_adaptive_threshold:
+    img_gray = cv2.cvtColor(img.astype(numpy.uint8), cv2.COLOR_BGR2GRAY)
+    img_bw = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                   cv2.THRESH_BINARY, CV2_THRESHOLD_BLOCK_SIZE,
+                                   CV2_THRESHOLD_CONSTANT)
+  else:
+    img_gray = convert_to_gray(img)
+    img_bw = binarize_image(img_gray)
 
   # find contours
   contours = find_all_contours(255-img_bw)
@@ -498,11 +508,13 @@ def find_circle(img, img_name, min_area, color):
   num_circles = 0
   circle_contours = []
   logging.debug('Initial number of contours: %d', len(contours))
+  min_circle_area = min_area * img_size[0] * img_size[1]
+  logging.debug('Screening out circles w/ radius < %.1f (pixels) or %d pts.',
+                math.sqrt(min_circle_area / math.pi), CIRCLE_MIN_PTS)
   for contour in contours:
     area = cv2.contourArea(contour)
     num_pts = len(contour)
-    if (area > img_size[0]*img_size[1]*min_area and
-        num_pts >= CIRCLE_MIN_PTS):
+    if (area > min_circle_area and num_pts >= CIRCLE_MIN_PTS):
       shape = component_shape(contour)
       radius = (shape['width'] + shape['height']) / 4
       colour = img_bw[shape['cty']][shape['ctx']]
@@ -517,6 +529,36 @@ def find_circle(img, img_name, min_area, color):
           math.isclose(1.0, aspect_ratio, abs_tol=CIRCLE_AR_ATOL) and
           num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH and
           math.isclose(1.0, fill, abs_tol=CIRCLE_COLOR_ATOL)):
+        radii = [
+            image_processing_utils.distance(
+                (shape['ctx'], shape['cty']), numpy.squeeze(point))
+            for point in contour
+        ]
+        minimum_radius, maximum_radius = min(radii), max(radii)
+        logging.debug('Minimum radius: %.2f, maximum radius: %.2f',
+                      minimum_radius, maximum_radius)
+        if circle:
+          old_circle_center = (circle['x'], circle['y'])
+          new_circle_center = (shape['ctx'], shape['cty'])
+          # Based on image height
+          center_distance_atol = img_size[0]*CIRCLE_LOCATION_VARIATION_RTOL
+          if math.isclose(
+              image_processing_utils.distance(
+                  old_circle_center, new_circle_center),
+              0,
+              abs_tol=center_distance_atol
+          ) and maximum_radius - minimum_radius < circle['radius_spread']:
+            logging.debug('Replacing the previously found circle. '
+                          'Circle located at %s has a smaller radius spread '
+                          'than the previously found circle at %s. '
+                          'Current radius spread: %.2f, '
+                          'previous radius spread: %.2f',
+                          new_circle_center, old_circle_center,
+                          maximum_radius - minimum_radius,
+                          circle['radius_spread'])
+            circle_contours.pop()
+            circle = {}
+            num_circles -= 1
         circle_contours.append(contour)
 
         # Populate circle dictionary
@@ -527,12 +569,13 @@ def find_circle(img, img_name, min_area, color):
         circle['h'] = float(shape['height'])
         circle['x_offset'] = (shape['ctx'] - img_size[1]//2) / circle['w']
         circle['y_offset'] = (shape['cty'] - img_size[0]//2) / circle['h']
+        circle['radius_spread'] = maximum_radius - minimum_radius
         logging.debug('Num pts: %d', num_pts)
         logging.debug('Aspect ratio: %.3f', aspect_ratio)
         logging.debug('Circlish value: %.3f', circlish)
         logging.debug('Location: %.1f x %.1f', circle['x'], circle['y'])
         logging.debug('Radius: %.3f', circle['r'])
-        logging.debug('Circle center position wrt to image center:%.3fx%.3f',
+        logging.debug('Circle center position wrt to image center: %.3fx%.3f',
                       circle['x_offset'], circle['y_offset'])
         num_circles += 1
         # if more than one circle found, break
@@ -541,8 +584,12 @@ def find_circle(img, img_name, min_area, color):
 
   if num_circles == 0:
     image_processing_utils.write_image(img/255, img_name, True)
-    raise AssertionError('No black circle detected. '
-                         'Please take pictures according to instructions.')
+    if not use_adaptive_threshold:
+      return find_circle(
+          img, img_name, min_area, color, use_adaptive_threshold=True)
+    else:
+      raise AssertionError('No circle detected. '
+                           'Please take pictures according to instructions.')
 
   if num_circles > 1:
     image_processing_utils.write_image(img/255, img_name, True)
@@ -551,87 +598,13 @@ def find_circle(img, img_name, min_area, color):
     img_name_parts = img_name.split('.')
     image_processing_utils.write_image(
         img/255, f'{img_name_parts[0]}_contours.{img_name_parts[1]}', True)
-    raise AssertionError('More than 1 black circle detected. '
+    if not use_adaptive_threshold:
+      return find_circle(
+          img, img_name, min_area, color, use_adaptive_threshold=True)
+    raise AssertionError('More than 1 circle detected. '
                          'Background of scene may be too complex.')
 
   return circle
-
-
-def find_center_circle(img, img_name, color, circle_ar_rtol, circlish_rtol,
-                       min_circle_pts, min_area, debug):
-  """Find circle closest to image center for scene with multiple circles.
-
-  Finds all contours in the image. Rejects those too small and not enough
-  points to qualify as a circle. The remaining contours must have center
-  point of color=color and are sorted based on distance from the center
-  of the image. The contour closest to the center of the image is returned.
-
-  Note: hierarchy is not used as the hierarchy for black circles changes
-  as the zoom level changes.
-
-  Args:
-    img: numpy img array with pixel values in [0,255].
-    img_name: str file name for saved image
-    color: int 0 --> black, 255 --> white
-    circle_ar_rtol: float aspect ratio relative tolerance
-    circlish_rtol: float contour area vs ideal circle area pi*((w+h)/4)**2
-    min_circle_pts: int minimum number of points to define a circle
-    min_area: int minimum area of circles to screen out
-    debug: bool to save extra data
-
-  Returns:
-    circle: [center_x, center_y, radius]
-  """
-
-  # gray scale & otsu threshold to binarize the image
-  gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-  _, img_bw = cv2.threshold(
-      numpy.uint8(gray), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-  # use OpenCV to find contours (connected components)
-  contours = find_all_contours(255-img_bw)
-
-  # check contours and find the best circle candidates
-  circles = []
-  img_ctr = [gray.shape[1] // 2, gray.shape[0] // 2]
-  for contour in contours:
-    area = cv2.contourArea(contour)
-    if area > min_area and len(contour) >= min_circle_pts:
-      shape = component_shape(contour)
-      radius = (shape['width'] + shape['height']) / 4
-      colour = img_bw[shape['cty']][shape['ctx']]
-      circlish = round((math.pi * radius**2) / area, 4)
-      if (colour == color and
-          math.isclose(1, circlish, rel_tol=circlish_rtol) and
-          math.isclose(shape['width'], shape['height'],
-                       rel_tol=circle_ar_rtol)):
-        circles.append([shape['ctx'], shape['cty'], radius, circlish, area])
-
-  if not circles:
-    raise AssertionError('No circle was detected. Please take pictures '
-                         'according to instructions carefully!')
-
-  if debug:
-    logging.debug('circles [x, y, r, pi*r**2/area, area]: %s', str(circles))
-
-  # find circle closest to center
-  circles.sort(key=lambda x: math.hypot(x[0] - img_ctr[0], x[1] - img_ctr[1]))
-  circle = circles[0]
-
-  # mark image center
-  size = gray.shape
-  m_x, m_y = size[1] // 2, size[0] // 2
-  marker_size = CV2_LINE_THICKNESS * 10
-  cv2.drawMarker(img, (m_x, m_y), CV2_RED, markerType=cv2.MARKER_CROSS,
-                 markerSize=marker_size, thickness=CV2_LINE_THICKNESS)
-
-  # add circle to saved image
-  center_i = (int(round(circle[0], 0)), int(round(circle[1], 0)))
-  radius_i = int(round(circle[2], 0))
-  cv2.circle(img, center_i, radius_i, CV2_RED, CV2_LINE_THICKNESS)
-  image_processing_utils.write_image(img / 255.0, img_name)
-
-  return [circle[0], circle[1], circle[2]]
 
 
 def append_circle_center_to_img(circle, img, img_name):
@@ -857,3 +830,120 @@ def get_angle(input_img):
     return None
 
   return numpy.median(filtered_angles)
+
+
+def correct_faces_for_crop(faces, img, crop):
+  """Correct face rectangles for sensor crop.
+
+  Args:
+    faces: list of dicts with face information
+    img: np image array
+    crop: dict of crop region size with 'top, right, left, bottom' as keys
+  Returns:
+    list of face locations (left, right, top, bottom) corrected
+  """
+  faces_corrected = []
+  cw, ch = crop['right'] - crop['left'], crop['bottom'] - crop['top']
+  logging.debug('crop region: %s', str(crop))
+  w = img.shape[1]
+  h = img.shape[0]
+  for rect in [face['bounds'] for face in faces]:
+    logging.debug('rect: %s', str(rect))
+    left = int(round((rect['left'] - crop['left']) * w / cw))
+    right = int(round((rect['right'] - crop['left']) * w / cw))
+    top = int(round((rect['top'] - crop['top']) * h / ch))
+    bottom = int(round((rect['bottom'] - crop['top']) * h / ch))
+    faces_corrected.append([left, right, top, bottom])
+  logging.debug('faces_corrected: %s', str(faces_corrected))
+  return faces_corrected
+
+
+def eliminate_duplicate_centers(coordinates_list):
+  """Checks center coordinates of OpenCV's face rectangles.
+
+  Method makes sure that the list of face rectangles' centers do not
+  contain duplicates from the same face
+
+  Args:
+    coordinates_list: list; coordinates of face rectangles' centers
+  Returns:
+    non_duplicate_list: list; coordinates of face rectangles' centers
+    without duplicates on the same face
+  """
+  output = set()
+
+  for _, xy1 in enumerate(coordinates_list):
+    for _, xy2 in enumerate(coordinates_list):
+      if scipy.spatial.distance.euclidean(xy1, xy2) < FACE_MIN_CENTER_DELTA:
+        continue
+      if xy1 not in output:
+        output.add(xy1)
+      else:
+        output.add(xy2)
+  return list(output)
+
+
+def match_face_locations(faces_cropped, faces_opencv, img, img_name):
+  """Assert face locations between two methods.
+
+  Method determines if center of opencv face boxes is within face detection
+  face boxes. Using math.hypot to measure the distance between the centers,
+  as math.dist is not available for python versions before 3.8.
+
+  Args:
+    faces_cropped: list of lists with (l, r, t, b) for each face.
+    faces_opencv: list of lists with (x, y, w, h) for each face.
+    img: numpy [0, 1] image array
+    img_name: text string with path to image file
+  """
+  # turn faces_opencv into list of center locations
+  faces_opencv_center = [(x+w//2, y+h//2) for (x, y, w, h) in faces_opencv]
+  cropped_faces_centers = [
+      ((l+r)//2, (t+b)//2) for (l, r, t, b) in faces_cropped]
+  faces_opencv_center.sort(key=lambda t: [t[1], t[0]])
+  cropped_faces_centers.sort(key=lambda t: [t[1], t[0]])
+  logging.debug('cropped face centers: %s', str(cropped_faces_centers))
+  logging.debug('opencv face center: %s', str(faces_opencv_center))
+  faces_opencv_centers = []
+  num_centers_aligned = 0
+
+  # eliminate duplicate openCV face rectangles' centers the same face
+  faces_opencv_centers = eliminate_duplicate_centers(faces_opencv_center)
+  logging.debug('opencv face centers: %s', str(faces_opencv_centers))
+
+  for (x, y) in faces_opencv_centers:
+    for (x1, y1) in cropped_faces_centers:
+      centers_dist = math.hypot(x-x1, y-y1)
+      if centers_dist < FACE_CENTER_MIN_LOGGING_DIST:
+        logging.debug('centers_dist: %.3f', centers_dist)
+      if (abs(x-x1) < FACE_CENTER_MATCH_TOL_X and
+          abs(y-y1) < FACE_CENTER_MATCH_TOL_Y):
+        num_centers_aligned += 1
+
+  # If test failed, save image with green AND OpenCV red rectangles
+  image_processing_utils.write_image(img, img_name)
+  if num_centers_aligned < FACES_ALIGNED_MIN_NUM:
+    for (x, y, w, h) in faces_opencv:
+      cv2.rectangle(img, (x, y), (x+w, y+h), tuple(numpy.array(CV2_RED)/255), 2)
+      image_processing_utils.write_image(img, img_name)
+      logging.debug('centered: %s', str(num_centers_aligned))
+    raise AssertionError(f'Face rectangles in wrong location(s)!. '
+                         f'Found {num_centers_aligned} rectangles near cropped '
+                         f'face centers, expected {FACES_ALIGNED_MIN_NUM}')
+
+
+def draw_green_boxes_around_faces(img, faces_cropped, img_name):
+  """Correct face rectangles for sensor crop.
+
+  Args:
+    img: numpy [0, 1] image array
+    faces_cropped: list of lists with (l, r, t, b) for each face
+    img_name: text string with path to image file
+  Returns:
+    image with green rectangles
+  """
+  # draw boxes around faces in green and save image
+  for (l, r, t, b) in faces_cropped:
+    cv2.rectangle(img, (l, t), (r, b), CV2_GREEN, 2)
+  image_processing_utils.write_image(img, img_name)
+

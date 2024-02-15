@@ -35,15 +35,19 @@ import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.storage.StorageManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.AlarmClock;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.provider.Telephony;
 import android.telecom.TelecomManager;
+import android.telephony.TelephonyManager;
 import android.test.AndroidTestCase;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.media.flags.Flags;
 
 import java.util.List;
 
@@ -179,7 +183,10 @@ public class AvailableIntentsTest extends AndroidTestCase {
      */
     public void testDialPhoneNumber() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        TelephonyManager telephonyManager =
+                mContext.getSystemService(TelephonyManager.class);
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                && telephonyManager.isVoiceCapable()) {
             Uri uri = Uri.parse("tel:(212)5551212");
             Intent intent = new Intent(Intent.ACTION_DIAL, uri);
             assertCanBeHandled(intent);
@@ -191,7 +198,10 @@ public class AvailableIntentsTest extends AndroidTestCase {
      */
     public void testDialVoicemail() {
         PackageManager packageManager = mContext.getPackageManager();
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        TelephonyManager telephonyManager =
+                mContext.getSystemService(TelephonyManager.class);
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                && telephonyManager.isVoiceCapable()) {
             Uri uri = Uri.parse("voicemail:");
             Intent intent = new Intent(Intent.ACTION_DIAL, uri);
             assertCanBeHandled(intent);
@@ -425,6 +435,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(new Intent(StorageManager.ACTION_MANAGE_STORAGE));
     }
 
+    @ApiTest(apis = {"android.provider.Settings#ACTION_FINGERPRINT_ENROLL"})
     public void testFingerprintEnrollStart() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)) {
@@ -452,6 +463,14 @@ public class AvailableIntentsTest extends AndroidTestCase {
             return;
         }
         assertCanBeHandled(new Intent(Settings.ACTION_REQUEST_MANAGE_MEDIA));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
+    public void testMediaRoutingControlSettings() {
+        if (FeatureUtil.isWatch()) {
+            return;
+        }
+        assertCanBeHandled(new Intent(Settings.ACTION_REQUEST_MEDIA_ROUTING_CONTROL));
     }
 
     public void testInteractAcrossProfilesSettings() {
@@ -502,9 +521,10 @@ public class AvailableIntentsTest extends AndroidTestCase {
     }
 
     public void testPowerUsageSummarySettings() {
-        if(FeatureUtil.isWatch()){
+        if (FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) {
             return;
         }
+
         if (isBatteryPresent()) {
             assertCanBeHandled(new Intent(Intent.ACTION_POWER_USAGE_SUMMARY));
         }
@@ -534,6 +554,19 @@ public class AvailableIntentsTest extends AndroidTestCase {
         Intent intent = new Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
                 .setData(Uri.parse("package:android.content.cts"));
         assertCanBeHandled(intent);
+    }
+
+    public void testRequestSetCredentialManagerServiceIntent() {
+        if (!isHandheld()) {
+            return;
+        }
+
+        PackageManager packageManager = mContext.getPackageManager();
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_CREDENTIALS)) {
+            Intent intent = new Intent(Settings.ACTION_CREDENTIAL_PROVIDER)
+                        .setData(Uri.parse("package:android.content.cts"));
+            assertCanBeHandled(intent);
+        }
     }
 
     public void testNotificationPolicyDetailIntent() {

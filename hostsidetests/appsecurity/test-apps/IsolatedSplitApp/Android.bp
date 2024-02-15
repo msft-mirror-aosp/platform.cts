@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -35,7 +36,7 @@ android_test_helper_app {
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.rules",
-        "truth-prebuilt",
+        "truth",
     ],
     srcs: ["src/**/*.java"],
     // Generate a locale split.
@@ -55,7 +56,7 @@ android_test_helper_app {
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.rules",
-        "truth-prebuilt",
+        "truth",
     ],
     srcs: ["src/**/*.java"],
     // Generate a locale split.

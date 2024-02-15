@@ -32,6 +32,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
@@ -53,13 +54,17 @@ import java.util.Map;
 public class ResultsAssertionsUtils {
     private static final String TAG = "PhotoPickerTestAssertions";
 
-    public static void assertPickerUriFormat(Uri uri, int expectedUserId) {
+    public static void assertPickerUriFormat(String action, Uri uri, int expectedUserId) {
         // content://media/picker/<user-id>/<media-id>
         final int userId = Integer.parseInt(uri.getPathSegments().get(1));
         assertThat(userId).isEqualTo(expectedUserId);
 
         final String auth = uri.getPathSegments().get(0);
-        assertThat(auth).isEqualTo("picker");
+        if (action.equalsIgnoreCase(MediaStore.ACTION_PICK_IMAGES)) {
+            assertThat(auth).isEqualTo("picker");
+        } else {
+            assertThat(auth).contains("picker");
+        }
     }
 
     public static void assertPersistedGrant(Uri uri, ContentResolver resolver) {

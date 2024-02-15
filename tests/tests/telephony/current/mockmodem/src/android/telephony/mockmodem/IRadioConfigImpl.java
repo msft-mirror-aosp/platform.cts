@@ -53,9 +53,13 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     private byte mNumOfLiveModems = 1;
     private PhoneCapability mPhoneCapability = new PhoneCapability();
     private SimSlotStatus[] mSimSlotStatus;
+    private int[] mEnabledLogicalSlots = {};
+
+    MockCentralizedNetworkAgent mMockCentralizedNetworkAgent;
 
     public IRadioConfigImpl(
-            MockModemService service, MockModemConfigInterface configInterface, int instanceId) {
+            MockModemService service, MockModemConfigInterface configInterface,
+            MockCentralizedNetworkAgent centralizedNetworkAgent, int instanceId) {
         mTag = TAG + "-" + instanceId;
         Log.d(mTag, "Instantiated");
 
@@ -66,6 +70,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioConfigHandler();
         mSubId = instanceId;
+        mMockCentralizedNetworkAgent = centralizedNetworkAgent;
 
         // Register events
         mMockModemConfigInterface.registerForNumOfLiveModemChanged(
@@ -173,6 +178,24 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     }
 
     @Override
+    public void getSimultaneousCallingSupport(int serial) {
+        Log.d(mTag, "getSimultaneousCallingSupport");
+        int[] enabledLogicalSlots;
+
+        synchronized (mCacheUpdateMutex) {
+            enabledLogicalSlots = mEnabledLogicalSlots;
+        }
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioConfigResponse.getSimultaneousCallingSupportResponse(rsp, enabledLogicalSlots);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to invoke getSimultaneousCallingSupportResponse from AIDL. "
+                    + "Exception" + ex);
+        }
+    }
+
+    @Override
     public void getSimSlotsStatus(int serial) {
         Log.d(mTag, "getSimSlotsStatus");
         SimSlotStatus[] slotStatus;
@@ -212,8 +235,9 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
         Log.d(mTag, "setPreferredDataModem");
         // TODO: cache value
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
+            mMockCentralizedNetworkAgent.setPreferredDataPhone((int) modemId);
             mRadioConfigResponse.setPreferredDataModemResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to invoke setPreferredDataModemResponse from AIDL. Exception" + ex);

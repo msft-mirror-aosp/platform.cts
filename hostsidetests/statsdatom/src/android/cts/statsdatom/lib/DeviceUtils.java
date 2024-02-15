@@ -266,13 +266,21 @@ public final class DeviceUtils {
     }
 
     /**
-     * Returns the UID of the test app.
+     * Returns the UID of the test app for the current user.
      */
     public static int getAppUid(ITestDevice device, String pkgName)
             throws DeviceNotAvailableException {
         int currentUser = device.getCurrentUser();
+        return getAppUidForUser(device, pkgName, currentUser);
+    }
+
+    /**
+     * Returns the UID of the test app for the given user.
+     */
+    public static int getAppUidForUser(ITestDevice device, String pkgName, int userId)
+            throws DeviceNotAvailableException {
         String uidLine = device.executeShellCommand("cmd package list packages -U --user "
-                + currentUser + " " + pkgName);
+                + userId + " " + pkgName);
         String[] uidLineArr = uidLine.split(":");
 
         // Package uid is located at index 2.
@@ -480,6 +488,32 @@ public final class DeviceUtils {
                 "am startservice -n '%s/.%s' -e %s %s",
                 STATSD_ATOM_TEST_PKG, service,
                 KEY_ACTION, actionValue));
+    }
+
+    public static void rebootDeviceAndWaitUntilReady(ITestDevice device) throws Exception {
+        device.rebootUntilOnline();
+        // Wait for 3 mins.
+        assertWithMessage("Device failed to boot")
+            .that(device.waitForBootComplete(180_000)).isTrue();
+        assertWithMessage("Stats service failed to start")
+            .that(waitForStatsServiceStart(device, 60_000)).isTrue();
+        RunUtil.getDefault().sleep(2_000);
+    }
+
+    private static boolean waitForStatsServiceStart(ITestDevice device, long waitTime)
+            throws Exception {
+        LogUtil.CLog.i("Waiting %d ms for stats service to start", waitTime);
+        int counter = 1;
+        long startTime = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - startTime) < waitTime) {
+            if ("running".equals(getProperty(device, "init.svc.statsd"))) {
+                return true;
+            }
+            RunUtil.getDefault().sleep(Math.min(200 * counter, 2_000));
+            counter++;
+        }
+        LogUtil.CLog.w("Stats service did not start after %d ms", waitTime);
+        return false;
     }
 
     /**

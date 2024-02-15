@@ -24,20 +24,13 @@ android_test {
         "androidx.test.ext.truth",
         "ctstestrunner-axt",
         "cts-media-common",
-        "truth-prebuilt",
+        "flag-junit",
+        "truth",
         "Harrier",
     ],
     resource_dirs: ["res"],
     aaptflags: [
         "--auto-add-overlay",
-
-        // Do not compress these files:
-        "-0 .vp9",
-        "-0 .ts",
-        "-0 .heic",
-        "-0 .trp",
-        "-0 .ota",
-        "-0 .mxmf",
     ],
     srcs: [
         "src/**/*.java",
@@ -45,16 +38,12 @@ android_test {
     ],
     // This test uses private APIs
     platform_apis: true,
-    libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
-    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
         "mts-media",
+        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",

@@ -20,7 +20,10 @@ import static android.mediapc.cts.CodecTestBase.SELECT_ALL;
 import static android.mediapc.cts.CodecTestBase.SELECT_AUDIO;
 import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.getMimesOfAvailableCodecs;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
@@ -79,7 +82,7 @@ public class CodecInitializationLatencyTest {
 
     private static final String AVC = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final String HEVC = MediaFormat.MIMETYPE_VIDEO_HEVC;
-    private static final String AVC_TRANSCODE_FILE = "bbb_1280x720_3mbps_30fps_avc.mp4";
+    private static final String AVC_TRANSCODE_FILE = "bbb_1920x1080_8mbps_60fps_avc.mp4";
     private static String AVC_DECODER_NAME;
     private static String AVC_ENCODER_NAME;
     private static final Map<String, String> mTestFiles = new HashMap<>();
@@ -176,6 +179,9 @@ public class CodecInitializationLatencyTest {
         Set<String> mimeSet = getMimesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
         mimeSet.addAll(getMimesOfAvailableCodecs(SELECT_AUDIO, SELECT_ALL));
         for (String mime : mimeSet) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfCodecs;
             if (mime.startsWith("audio/")) {
                 listOfCodecs = selectCodecs(mime, null, null, true);
@@ -185,6 +191,10 @@ public class CodecInitializationLatencyTest {
                 listOfCodecs.addAll(selectHardwareCodecs(mime, null, null, false));
             }
             for (String codec : listOfCodecs) {
+                if ((codecPrefix != null && !codec.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(codec).matches())) {
+                    continue;
+                }
                 argsList.add(new Object[]{mime, codec});
             }
         }
@@ -209,8 +219,7 @@ public class CodecInitializationLatencyTest {
     }
 
     private void startLoad() throws Exception {
-        // TODO: b/183671436
-        // Create Transcode load (AVC Decoder(720p) + AVC Encoder(720p))
+        // Create Transcode load (AVC Decoder(1080p) + AVC Encoder(720p))
         mTranscodeLoadStatus = new LoadStatus();
         mTranscodeLoadThread = new Thread(() -> {
             try {
@@ -350,8 +359,8 @@ public class CodecInitializationLatencyTest {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.CodecInitLatencyRequirement r5_1__H_1_Latency =
-            isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7()
-                : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
+                isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7(mMime)
+                    : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
 
         r5_1__H_1_Latency.setCodecInitLatencyMs(initializationLatency);
 
@@ -533,6 +542,13 @@ public class CodecInitializationLatencyTest {
         public long calculateInitLatency() throws Exception {
             MediaCodec.BufferInfo outInfo = new MediaCodec.BufferInfo();
             MediaFormat format = setUpSource(mTestFile);
+            ArrayList<MediaFormat> formats = new ArrayList<>();
+            formats.add(format);
+            // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to
+            // indicate that all decode was not successful
+            if (!areFormatsSupported(mDecoderName, formats)) {
+                return Integer.MAX_VALUE;
+            }
             long enqueueTimeStamp = 0;
             long dequeueTimeStamp = 0;
             long baseTimeStamp = SystemClock.elapsedRealtimeNanos();

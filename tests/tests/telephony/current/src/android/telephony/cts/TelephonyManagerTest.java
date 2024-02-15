@@ -26,6 +26,8 @@ import static android.telephony.DataSpecificRegistrationInfo.LTE_ATTACH_TYPE_UNK
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_NSA;
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_SA;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -56,6 +58,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -63,15 +66,22 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.DropBoxManager;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telecom.cts.TestUtils;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.AvailableNetworkInfo;
@@ -133,6 +143,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
+import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.uicc.IccUtils;
 
 import org.json.JSONArray;
@@ -141,6 +152,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -155,12 +167,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -169,6 +183,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -179,6 +194,9 @@ import java.util.stream.IntStream;
  *  cts-tradefed run cts -m CtsTelephonyTestCases --test android.telephony.cts.TelephonyManagerTest
  */
 public class TelephonyManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private PackageManager mPackageManager;
@@ -363,14 +381,26 @@ public class TelephonyManagerTest {
                 Arrays.asList(TelephonyManager.NETWORK_TYPE_TD_SCDMA));
     }
 
+    /**
+     * Emergency call diagnostic data configs
+     */
+    private static final String DROPBOX_TAG = "ecall_diagnostic_data";
+    private static final String TELECOM_DUMPSYS_COMMAND = "dumpsys telecom";
+    private static final String TELEPHONY_DUMPSYS_COMMAND = "dumpsys telephony.registry";
+    private static final String LOGCAT_BINARY = "/system/bin/logcat";
+    private static final String DIAG_ERROR_MSG = "DiagnosticDataCollector error executing cmd";
+    public static final int MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT = 20;
+    private static final int MAX_READ_BYTES_PER_DROP_BOX_ENTRY = 5000;
+    private static final int DROP_BOX_LATCH_TIMEOUT = 3000;
+    private CountDownLatch mLatchForDropBox;
+    private IntentFilter mDropBoxIntentFilter;
+
     private int mTestSub;
     private int mNetworkHalVersion;
     private int mModemHalVersion;
     private int mConfigHalVersion;
     private boolean mIsAllowedNetworkTypeChanged;
     private Map<Integer, Long> mAllowedNetworkTypesList = new HashMap<>();
-
-    private final CountryChangedReceiver mCountryChangedReceiver = new CountryChangedReceiver();
 
     private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss"
             + ".myverizon\":{\"carrierId\":1839,"
@@ -480,10 +510,9 @@ public class TelephonyManagerTest {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.READ_PHONE_STATE);
         saveAllowedNetworkTypesForAllReasons();
-        getContext().registerReceiver(mCountryChangedReceiver,
-                new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
-                Context.RECEIVER_EXPORTED);
-
+        mLatchForDropBox = new CountDownLatch(1);
+        mDropBoxIntentFilter = new IntentFilter();
+        mDropBoxIntentFilter.addAction(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
         // Wait previously queued broadcasts to complete before starting the test
         AmUtils.waitForBroadcastBarrier();
     }
@@ -754,6 +783,7 @@ public class TelephonyManagerTest {
      * condition(>0 or not null).
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
     public void testTelephonyManager() {
         assertTrue(mTelephonyManager.getNetworkType() >= TelephonyManager.NETWORK_TYPE_UNKNOWN);
         assertTrue(mTelephonyManager.getPhoneType() >= TelephonyManager.PHONE_TYPE_NONE);
@@ -843,6 +873,10 @@ public class TelephonyManagerTest {
         mTelephonyManager.getCarrierConfig();
         mTelephonyManager.isVoiceCapable();
         mTelephonyManager.isSmsCapable();
+        if (Flags.dataOnlyCellularService()) {
+            mTelephonyManager.isDeviceVoiceCapable();
+            mTelephonyManager.isDeviceSmsCapable();
+        }
         mTelephonyManager.isLteCdmaEvdoGsmWcdmaEnabled();
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isDataConnectionAllowed());
@@ -917,6 +951,208 @@ public class TelephonyManagerTest {
                     "");
         } finally {
             setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+        }
+    }
+
+    /**
+     * The getter methods here are all related to the information about the telephony.
+     * These getters are related to concrete location, phone, service provider company, so
+     * it's no need to get details of these information, just make sure they are in right
+     * condition(>0 or not null).
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
+    public void testTelephonyManagerWithFeatureMapping() {
+
+        // Telephony feature not required.
+        assertTrue(mTelephonyManager.getNetworkType() >= TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        assertTrue(mTelephonyManager.getPhoneType() >= TelephonyManager.PHONE_TYPE_NONE);
+        assertTrue(mTelephonyManager.getCallState() >= TelephonyManager.CALL_STATE_IDLE);
+
+        // The following methods may return any value depending on the state of the device. Simply
+        // call them to make sure they do not throw any exceptions.
+        mTelephonyManager.getCellLocation();
+        mTelephonyManager.getLine1Number();
+        mTelephonyManager.getPhoneCount();
+        mTelephonyManager.isVoiceCapable();
+        mTelephonyManager.isSmsCapable();
+        mTelephonyManager.getDeviceSoftwareVersion();
+
+        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.getDeviceId());
+        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.getDeviceId(mTelephonyManager.getSlotIndex()));
+        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.getDeviceSoftwareVersion(mTelephonyManager.getSlotIndex()));
+        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.getPhoneAccountHandle());
+
+        // FEATURE_TELEPHONY_DATA required.
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
+            assertTrue(mTelephonyManager.getDataActivity() >= TelephonyManager.DATA_ACTIVITY_NONE);
+            assertTrue(mTelephonyManager.getDataState() >= TelephonyManager.DATA_DISCONNECTED);
+            mTelephonyManager.isDataRoamingEnabled();
+            mTelephonyManager.getDataEnabled();
+            mTelephonyManager.getNetworkSpecifier();
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isDataConnectionAllowed());
+        }
+
+        //FEATURE_TELEPHONY_RADIO_ACCESS required.
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+            mTelephonyManager.getNetworkCountryIso();
+            mTelephonyManager.getSignalStrength();
+            mTelephonyManager.getNetworkOperatorName();
+            mTelephonyManager.getNetworkOperator();
+            mTelephonyManager.isNetworkRoaming();
+            mTelephonyManager.isLteCdmaEvdoGsmWcdmaEnabled();
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isManualNetworkSelectionAllowed());
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getManualNetworkSelectionPlmn());
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isAnyRadioPoweredOn());
+        }
+
+        //FEATURE_TELEPHONY_MESSAGING
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
+            // Make sure devices without MMS service won't fail on this
+            if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
+                assertFalse(mTelephonyManager.getMmsUserAgent().isEmpty());
+                assertFalse(mTelephonyManager.getMmsUAProfUrl().isEmpty());
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    TelephonyManager::getDefaultRespondViaMessageApplication);
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    TelephonyManager::getAndUpdateDefaultRespondViaMessageApplication);
+        }
+
+        //FEATURE_TELEPHONY_CALLING required
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+            mTelephonyManager.getVoiceMailNumber();
+            mTelephonyManager.getVoiceMailAlphaTag();
+        }
+
+        //FEATURE_TELEPHONY_IMS required
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.resetIms(tm.getSlotIndex()));
+        }
+
+        //FEATURE_TELEPHONY_GSM required
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getImei());
+            if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getPrimaryImei());
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getImei(mTelephonyManager.getSlotIndex()));
+        }
+
+        TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
+        PhoneAccountHandle defaultAccount = telecomManager
+                .getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+            mTelephonyManager.getVoicemailRingtoneUri(defaultAccount);
+            mTelephonyManager.isVoicemailVibrationEnabled(defaultAccount);
+        }
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
+            mTelephonyManager.getSubscriptionId(defaultAccount);
+        }
+
+        // FEATURE_TELEPHONY_SUBSCRIPTION required.
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
+            assertTrue(mTelephonyManager.getSimState() >= TelephonyManager.SIM_STATE_UNKNOWN);
+
+            for (int i = 0; i < mTelephonyManager.getPhoneCount(); ++i) {
+                assertTrue(mTelephonyManager.getSimState(i) >= TelephonyManager.SIM_STATE_UNKNOWN);
+            }
+
+            mTelephonyManager.getSimOperatorName();
+            mTelephonyManager.getSimCarrierId();
+            mTelephonyManager.getSimCarrierIdName();
+            mTelephonyManager.getSimSpecificCarrierId();
+            mTelephonyManager.getSimSpecificCarrierIdName();
+            mTelephonyManager.getCarrierIdFromSimMccMnc();
+            mTelephonyManager.getSimCountryIso();
+            mTelephonyManager.getCarrierConfig();
+            mTelephonyManager.getSimOperator();
+
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getSimSerialNumber());
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getSubscriberId());
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getNai());
+
+            // Verify TelephonyManager.getCarrierPrivilegeStatus
+            List<Integer> validCarrierPrivilegeStatus = new ArrayList<>();
+            validCarrierPrivilegeStatus.add(TelephonyManager.CARRIER_PRIVILEGE_STATUS_HAS_ACCESS);
+            validCarrierPrivilegeStatus.add(TelephonyManager.CARRIER_PRIVILEGE_STATUS_NO_ACCESS);
+            validCarrierPrivilegeStatus.add(
+                    TelephonyManager.CARRIER_PRIVILEGE_STATUS_RULES_NOT_LOADED);
+            validCarrierPrivilegeStatus.add(
+                    TelephonyManager.CARRIER_PRIVILEGE_STATUS_ERROR_LOADING_RULES);
+            int carrierPrivilegeStatusResult = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, (tm) -> tm.getCarrierPrivilegeStatus(Process.myUid()));
+            assertTrue(validCarrierPrivilegeStatus.contains(carrierPrivilegeStatusResult));
+
+            // Verify TelephonyManager.getCarrierPrivilegedPackagesForAllActiveSubscriptions
+            List<String> resultForGetCarrierPrivilegedApis =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                            (tm) -> tm.getCarrierPrivilegedPackagesForAllActiveSubscriptions());
+            assertNotNull(resultForGetCarrierPrivilegedApis);
+            for (String result : resultForGetCarrierPrivilegedApis) {
+                assertFalse(TextUtils.isEmpty(result));
+            }
+
+            // Verify getImei/getSubscriberId/getIccAuthentication:
+            // With app ops permission USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER, should not throw
+            // SecurityException.
+            try {
+                setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+
+                if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
+                    mTelephonyManager.getImei();
+                    if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+                        mTelephonyManager.getPrimaryImei();
+                    }
+                }
+
+                mTelephonyManager.getSubscriberId();
+                mTelephonyManager.getIccAuthentication(
+                        TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            } finally {
+                setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+            }
+
+            // Verify getIccAuthentication:
+            // With app ops permission USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER, should not throw
+            // SecurityException.
+            try {
+                setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+
+                mTelephonyManager.getIccAuthentication(
+                        TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_GBA_BOOTSTRAP, "");
+            } finally {
+                setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+            }
+
+            // Verify getIccAuthentication:
+            // With app ops permission USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER, should not throw
+            // SecurityException.
+            try {
+                setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+
+                mTelephonyManager.getIccAuthentication(
+                        TelephonyManager.APPTYPE_USIM,
+                        TelephonyManager.AUTHTYPE_GBA_NAF_KEY_EXTERNAL,
+                        "");
+            } finally {
+                setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
+            }
         }
     }
 
@@ -1045,10 +1281,18 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetCallWaitingStatus() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY present");
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+                Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY_CALLING present");
+                return;
+            }
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY present");
+                return;
+            }
         }
+
         Set<Integer> validCallWaitingStatuses = new HashSet<Integer>();
         validCallWaitingStatuses.add(TelephonyManager.CALL_WAITING_STATUS_ENABLED);
         validCallWaitingStatuses.add(TelephonyManager.CALL_WAITING_STATUS_DISABLED);
@@ -1147,14 +1391,14 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
-        PhoneAccountHandle defaultAccount = telecomManager
-                .getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
+        List<PhoneAccountHandle> callCapableAccounts = telecomManager
+                .getCallCapablePhoneAccounts();
         try {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(
                         android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             PhoneAccountHandle phoneAccountHandle = mTelephonyManager.getPhoneAccountHandle();
-            assertEquals(phoneAccountHandle, defaultAccount);
+            assertTrue(callCapableAccounts.contains(phoneAccountHandle));
         } catch (SecurityException e) {
             fail("TelephonyManager#getPhoneAccountHandle requires READ_PRIVILEGED_PHONE_STATE");
         } finally {
@@ -1605,6 +1849,10 @@ public class TelephonyManagerTest {
 
     @Test
     public void testNetworkTypeMatchesDataNetworkType() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         assertEquals(mTelephonyManager.getDataNetworkType(),
                 mTelephonyManager.getNetworkType());
     }
@@ -1849,6 +2097,10 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetPhoneCapabilityAndVerify() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY));
+        }
+
         boolean is5gStandalone = getContext().getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_telephony5gStandalone", "bool",
                         "android"));
@@ -1875,10 +2127,15 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimLocale() throws InterruptedException {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG,"skipping test that requires Telephony");
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                Log.d(TAG, "skipping test that requires Telephony");
+                return;
+            }
         }
+
         if (SubscriptionManager.getDefaultSubscriptionId()
                 == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
             fail("Expected SIM inserted");
@@ -1896,6 +2153,10 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetTac() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
+        }
+
         String tac = mTelephonyManager.getTypeAllocationCode();
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
@@ -1917,6 +2178,10 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetMc() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA));
+        }
+
         String mc = mTelephonyManager.getManufacturerCode();
         String meid = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getMeid());
@@ -1942,6 +2207,10 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImei() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
+        }
+
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
 
@@ -1957,6 +2226,10 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetPrimaryImei() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
+        }
+
         // make sure the modem supports primaryImei feature
         assumeTrue(mModemHalVersion >= RADIO_HAL_VERSION_2_1);
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -1974,6 +2247,10 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImeiForSlot() {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
+        }
+
         for (int i = 0; i < mTelephonyManager.getPhoneCount(); i++) {
             // The compiler error 'local variables referenced from a lambda expression must be final
             // or effectively final' is reported when using i, so assign it to a final variable.
@@ -2687,8 +2964,12 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testIsVoNrEnabled() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                return;
+            }
         }
 
         try {
@@ -2709,9 +2990,13 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testSetVoNrEnabledException() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
+                return;
+            }
         }
         try {
             mTelephonyManager.setVoNrEnabled(true);
@@ -2929,6 +3214,24 @@ public class TelephonyManagerTest {
             status = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                     tm -> tm.getCallComposerStatus());
             assertThat(status).isEqualTo(TelephonyManager.CALL_COMPOSER_STATUS_OFF);
+        }
+    }
+
+    /**
+     * Tests TelephonyManager.setCallComposerStatus and TelephonyManager.getCallComposerStatus with
+     * the TelephonyManager.CALL_COMPOSER_STATUS_BUSINESS_ONLY value.
+     */
+    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_BUSINESS_CALL_COMPOSER)
+    @Test
+    public void testBusinessOnlyCallComposerStatus() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    tm -> tm.setCallComposerStatus(
+                            TelephonyManager.CALL_COMPOSER_STATUS_BUSINESS_ONLY));
+            int status = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    tm -> tm.getCallComposerStatus());
+            assertThat(status).isEqualTo(TelephonyManager.CALL_COMPOSER_STATUS_BUSINESS_ONLY);
         }
     }
 
@@ -3186,8 +3489,12 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccOpenLogicalChannelBySlotAndPort() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                return;
+            }
         }
         // just verify no crash
         try {
@@ -3213,9 +3520,14 @@ public class TelephonyManagerTest {
     }
     @Test
     public void testIccCloseLogicalChannelBySlotAndPort() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                return;
+            }
         }
+
         int slotIndex = getValidSlotIndexAndPort().getKey();
         int portIndex = getValidSlotIndexAndPort().getValue();
         // just verify no crash
@@ -3267,9 +3579,14 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduLogicalChannelBySlotAndPort() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                return;
+            }
         }
+
         int slotIndex = getValidSlotIndexAndPort().getKey();
         int portIndex = getValidSlotIndexAndPort().getValue();
         try {
@@ -3313,9 +3630,14 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduBasicChannelBySlotAndPort() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                return;
+            }
         }
+
         // just verify no crash
         int slotIndex = getValidSlotIndexAndPort().getKey();
         int portIndex = getValidSlotIndexAndPort().getValue();
@@ -3548,7 +3870,7 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
-        long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_NR;
+        long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
         try {
             mTelephonyManager.setAllowedNetworkTypes(allowedNetworkTypes);
             fail("testSetAllowedNetworkTypes: SecurityException expected");
@@ -3578,8 +3900,7 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         long allowedNetworkTypes = ~TelephonyManager.NETWORK_TYPE_BITMASK_NR;
-        long networkTypeBitmask = TelephonyManager.NETWORK_TYPE_BITMASK_NR
-                | TelephonyManager.NETWORK_TYPE_BITMASK_LTE
+        long networkTypeBitmask = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_LTE_CA;
 
         try {
@@ -3623,7 +3944,7 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
-        long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_NR;
+        long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
         try {
             mIsAllowedNetworkTypeChanged = true;
             mTelephonyManager.setAllowedNetworkTypesForReason(
@@ -3662,7 +3983,7 @@ public class TelephonyManagerTest {
                     () -> {
                         mTelephonyManager.setAllowedNetworkTypesForReason(
                                 TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
-                                TelephonyManager.NETWORK_TYPE_BITMASK_NR);
+                                TelephonyManager.NETWORK_TYPE_BITMASK_LTE);
                     }
             );
         } catch (SecurityException se) {
@@ -3682,7 +4003,7 @@ public class TelephonyManagerTest {
                     () -> {
                         mTelephonyManager.setAllowedNetworkTypesForReason(
                                 TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G,
-                                TelephonyManager.NETWORK_TYPE_BITMASK_NR);
+                                TelephonyManager.NETWORK_TYPE_BITMASK_LTE);
                     }
             );
         });
@@ -3693,14 +4014,14 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
-        long allowedNetworkTypes1 = TelephonyManager.NETWORK_TYPE_BITMASK_NR
+        long allowedNetworkTypes1 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_UMTS;
         long allowedNetworkTypes2 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
-        long allowedNetworkTypes3 = TelephonyManager.NETWORK_TYPE_BITMASK_NR
-                | TelephonyManager.NETWORK_TYPE_BITMASK_LTE
+        long allowedNetworkTypes3 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
+                | TelephonyManager.NETWORK_TYPE_BITMASK_HSPA
                 | TelephonyManager.NETWORK_TYPE_BITMASK_UMTS;
-        long allowedNetworkTypes4 = TelephonyManager.NETWORK_TYPE_LTE
-                | TelephonyManager.NETWORK_TYPE_EVDO_B;
+        long allowedNetworkTypes4 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
+                | TelephonyManager.NETWORK_TYPE_BITMASK_HSPA;
 
         try {
             mIsAllowedNetworkTypeChanged = true;
@@ -5350,10 +5671,15 @@ public class TelephonyManagerTest {
 
     @Test
     public void testRegisterTelephonyCallback() throws Throwable {
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, need to adjust test to for CDMA
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        } else {
+            if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+                // TODO: temp workaround, need to adjust test to for CDMA
+                return;
+            }
         }
+
         grantLocationPermissions();
 
         TestThread t = new TestThread(() -> {
@@ -5762,10 +6088,9 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // NETWORK_TYPE_BITMASK_LTE_CA is invalid, should be converted into NETWORK_TYPE_BITMASK_LTE
-        long invalidAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_NR
+        long invalidAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_LTE_CA;
-        long expectedAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_NR
-                | TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
+        long expectedAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
         try {
             mIsAllowedNetworkTypeChanged = true;
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -5820,15 +6145,20 @@ public class TelephonyManagerTest {
         return true;
     }
 
-    private static class ServiceStateRadioStateListener extends TelephonyCallback
+    public static class ServiceStateRadioStateListener extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener,
             TelephonyCallback.RadioPowerStateListener {
-        private final Object mLock = new Object();
+        private static final long TIMEOUT_TO_WAIT_FOR_DESIRED_STATE =
+                TimeUnit.SECONDS.toMillis(20);
+        private final Object mPowerStateLock = new Object();
+        private final Object mServiceStateLock = new Object();
         ServiceState mServiceState;
+        int mDesireServiceState;
+
         int mRadioPowerState;
         int mDesireRadioPowerState;
 
-        ServiceStateRadioStateListener(ServiceState serviceState, int radioPowerState) {
+        public ServiceStateRadioStateListener(ServiceState serviceState, int radioPowerState) {
             mServiceState = serviceState;
             mRadioPowerState = radioPowerState;
             mDesireRadioPowerState = radioPowerState;
@@ -5836,39 +6166,74 @@ public class TelephonyManagerTest {
 
         @Override
         public void onServiceStateChanged(ServiceState ss) {
-            mServiceState = ss;
+            Log.d(TAG, "onServiceStateChanged to " + ss);
+            synchronized (mServiceStateLock) {
+                mServiceState = ss;
+                if (ss.getState() == mDesireServiceState) {
+                    mServiceStateLock.notify();
+                }
+            }
         }
 
         @Override
         public void onRadioPowerStateChanged(int radioState) {
             Log.d(TAG, "onRadioPowerStateChanged to " + radioState);
-            synchronized (mLock) {
+            synchronized (mPowerStateLock) {
                 mRadioPowerState = radioState;
                 if (radioState == mDesireRadioPowerState) {
-                    mLock.notify();
+                    mPowerStateLock.notify();
                 }
             }
         }
 
         public void waitForRadioStateIntent(int desiredRadioState) {
             Log.d(TAG, "waitForRadioStateIntent: desiredRadioState=" + desiredRadioState);
-            synchronized (mLock) {
-                if (mRadioPowerState != desiredRadioState) {
-                    mDesireRadioPowerState = desiredRadioState;
+            synchronized (mPowerStateLock) {
+                mDesireRadioPowerState = desiredRadioState;
+                /**
+                 * Since SST sets waiting time up to 10 seconds for the power off radio, the
+                 * RadioStateIntent timer extends the wait time up to 20 seconds here as well.
+                 */
+                waitForDesiredState(mPowerStateLock, desiredRadioState,
+                        () -> mRadioPowerState, true);
+            }
+        }
+
+        public void waitForServiceStateIntent(int desiredServiceState, boolean failOnTimeOut) {
+            Log.d(TAG, "waitForServiceStateIntent: desiredServiceState=" + desiredServiceState);
+            synchronized (mServiceStateLock) {
+                mDesireServiceState = desiredServiceState;
+                waitForDesiredState(mServiceStateLock, desiredServiceState,
+                        () -> mServiceState.getState(), failOnTimeOut);
+            }
+        }
+
+        private void waitForDesiredState(@NonNull Object lock, int desiredState,
+                @NonNull IntSupplier currentStateSupplier, boolean failOnTimeOut) {
+            synchronized (lock) {
+                long now = SystemClock.elapsedRealtime();
+                long deadline = now + TIMEOUT_TO_WAIT_FOR_DESIRED_STATE;
+                while (currentStateSupplier.getAsInt() != desiredState && now < deadline) {
                     try {
-                        // Since SST sets waiting time up to 10 seconds for the power off radio,
-                        // the RadioStateIntent timer extends the wait time up to 10 seconds
-                        // here as well.
-                        mLock.wait(10000);
+                        lock.wait(TIMEOUT_TO_WAIT_FOR_DESIRED_STATE);
                     } catch (Exception e) {
-                        fail(e.getMessage());
+                        if (failOnTimeOut) {
+                            fail(e.getMessage());
+                        } else {
+                            Log.w(TAG, "waitForDesiredState: e=" + e);
+                        }
                     }
+                    now = SystemClock.elapsedRealtime();
                 }
             }
         }
     }
 
     @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#setVoiceServiceStateOverride"})
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
     public void testSetVoiceServiceStateOverride() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
@@ -5884,26 +6249,21 @@ public class TelephonyManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                         tm -> tm.setRadioPower(false), permission.MODIFY_PHONE_STATE);
                 callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
-                turnedRadioOff = true;
-                // Wait up to 20s until ServiceState reflects the power change,
-                // but this should only take a little over 10s in reality.
-                int retry = 0;
-                while ((callback.mServiceState.getState() == ServiceState.STATE_IN_SERVICE)
-                        && retry < 10) {
-                    retry++;
-                    waitForMs(2000);
-                }
+                callback.waitForServiceStateIntent(ServiceState.STATE_POWER_OFF, true);
                 assertEquals(TelephonyManager.RADIO_POWER_OFF, callback.mRadioPowerState);
-                assertNotEquals(ServiceState.STATE_IN_SERVICE, callback.mServiceState.getState());
+                assertEquals(ServiceState.STATE_POWER_OFF, callback.mServiceState.getState());
+                turnedRadioOff = true;
             }
             // This could be OUT_OF_SERVICE or POWER_OFF, it doesn't really matter for this test as
             // long as it's not IN_SERVICE
             ServiceState serviceState = mTelephonyManager.getServiceState();
             int retry = 0;
-            while (serviceState == null && retry < 3) {
+            while ((serviceState == null
+                    || serviceState.getState() == ServiceState.STATE_IN_SERVICE) && retry < 3) {
                 serviceState = mTelephonyManager.getServiceState();
                 retry++;
-                waitForMs(200);
+                // wait up to 3s for radio power off/out of service
+                waitForMs(1000);
             }
             int originalServiceState = serviceState != null ? serviceState.getState()
                     : callback.mServiceState.getState();
@@ -5921,6 +6281,7 @@ public class TelephonyManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                         tm -> tm.setVoiceServiceStateOverride(true),
                         permission.BIND_TELECOM_CONNECTION_SERVICE);
+                callback.waitForServiceStateIntent(ServiceState.STATE_IN_SERVICE, false);
                 setServiceStateOverride = true;
 
                 serviceState = mTelephonyManager.getServiceState();
@@ -5929,7 +6290,6 @@ public class TelephonyManagerTest {
                 }
                 listenerState = callback.mServiceState.getState();
                 retry++;
-                waitForMs(5000);
             }
             assertEquals(ServiceState.STATE_IN_SERVICE, listenerState);
             assertEquals(ServiceState.STATE_IN_SERVICE, telephonyManagerState);
@@ -5939,6 +6299,7 @@ public class TelephonyManagerTest {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                     tm -> tm.setVoiceServiceStateOverride(false),
                     permission.BIND_TELECOM_CONNECTION_SERVICE);
+            callback.waitForServiceStateIntent(originalServiceState, true);
             assertEquals(originalServiceState, callback.mServiceState.getState());
             assertEquals(originalServiceState, mTelephonyManager.getServiceState().getState());
         } finally {
@@ -5956,13 +6317,7 @@ public class TelephonyManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                         tm -> tm.setRadioPower(true), permission.MODIFY_PHONE_STATE);
                 callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
-
-                int retry = 0;
-                while ((callback.mServiceState.getState() != ServiceState.STATE_IN_SERVICE)
-                        && retry < 10) {
-                    retry++;
-                    waitForMs(1000);
-                }
+                callback.waitForServiceStateIntent(ServiceState.STATE_IN_SERVICE, true);
                 assertEquals(TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
                 assertEquals(ServiceState.STATE_IN_SERVICE, callback.mServiceState.getState());
             }
@@ -6068,6 +6423,10 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#getCellBroadcastIdRanges",
             "android.telephony.TelephonyManager#setCellBroadcastIdRanges"})
     public void testSetCellBroadcastIdRanges() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        }
+
         final List<CellBroadcastIdRange> ranges = new ArrayList<>();
         ranges.add(new CellBroadcastIdRange(0, 999, SmsCbMessage.MESSAGE_FORMAT_3GPP, true));
 
@@ -6133,6 +6492,16 @@ public class TelephonyManagerTest {
 
         Set<Integer> radioPowerOffReasons = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager,
+                tm -> tm.getRadioPowerOffReasons(), permission.READ_PRIVILEGED_PHONE_STATE);
+        assertTrue(radioPowerOffReasons.contains(reason));
+    }
+
+    private void assertRadioOffWithReason(TelephonyManager telephonyManager,
+            ServiceStateRadioStateListener callback, int reason) {
+        assertEquals(TelephonyManager.RADIO_POWER_OFF, callback.mRadioPowerState);
+
+        Set<Integer> radioPowerOffReasons = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                telephonyManager,
                 tm -> tm.getRadioPowerOffReasons(), permission.READ_PRIVILEGED_PHONE_STATE);
         assertTrue(radioPowerOffReasons.contains(reason));
     }
@@ -6253,6 +6622,12 @@ public class TelephonyManagerTest {
     public void testLastKnownCountryIso() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
+        CountryChangedReceiver countryChangedReceiver = new CountryChangedReceiver();
+
+        getContext().registerReceiver(countryChangedReceiver,
+                new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
+                Context.RECEIVER_EXPORTED);
+
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
                 mTelephonyManager.getServiceState(), mTelephonyManager.getRadioPowerState());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -6278,10 +6653,10 @@ public class TelephonyManagerTest {
                     + "turning radio off due to testing last known country ...");
             turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
             try {
-                mCountryChangedReceiver.waitForIntent();
-                assertThat(mCountryChangedReceiver.getExtras().getString(
+                countryChangedReceiver.waitForIntent();
+                assertThat(countryChangedReceiver.getExtras().getString(
                         TelephonyManager.EXTRA_NETWORK_COUNTRY)).isEmpty();
-                assertThat(mCountryChangedReceiver.getExtras().getString(
+                assertThat(countryChangedReceiver.getExtras().getString(
                         TelephonyManager.EXTRA_LAST_KNOWN_NETWORK_COUNTRY)).isEqualTo(countryCode);
                 Log.i(TAG, "testLastKnownCountryIso: country code \"" + countryCode
                         + "\" matched.");
@@ -6298,6 +6673,7 @@ public class TelephonyManagerTest {
                 Log.i(TAG, "testLastKnownCountryIso: turning radio back on");
                 turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
             }
+            getContext().unregisterReceiver(countryChangedReceiver);
         }
     }
 
@@ -6356,5 +6732,423 @@ public class TelephonyManagerTest {
             }
             assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
         }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#requestRadioPowerOffForReason",
+            "android.telephony.TelephonyManager#clearRadioPowerOffForReason",
+            "android.telephony.TelephonyManager#getRadioPowerOffReasons"})
+    public void testSetRadioPowerForMultiSimDevice() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mTelephonyManager.isMultiSimSupported() != TelephonyManager.MULTISIM_ALLOWED) {
+            Log.d(TAG, "testSetRadioPowerForMultiSimDevice: Multi SIM is not supported");
+            return;
+        }
+        Integer secondTestSubId = getSecondTestSubId();
+        if (secondTestSubId == null) {
+            Log.d(TAG, "Need at least 2 active subscriptions to run this test");
+            return;
+        }
+        Log.d(TAG, "testSetRadioPowerForMultiSimDevice: secondTestSubId=" + secondTestSubId);
+
+        TelephonyManager secondTelephonyManager = getContext().getSystemService(
+                TelephonyManager.class).createForSubscriptionId(secondTestSubId);
+        ServiceStateRadioStateListener callbackForFirstSub = new ServiceStateRadioStateListener(
+                mTelephonyManager.getServiceState(), mTelephonyManager.getRadioPowerState());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                tm -> tm.registerTelephonyCallback(Runnable::run, callbackForFirstSub));
+        ServiceStateRadioStateListener callbackForSecondSub =
+                new ServiceStateRadioStateListener(secondTelephonyManager.getServiceState(),
+                        secondTelephonyManager.getRadioPowerState());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(secondTelephonyManager,
+                tm -> tm.registerTelephonyCallback(Runnable::run, callbackForSecondSub));
+
+        boolean turnedRadioOn = false;
+        if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
+            Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
+                    + "turning on radio since it is off");
+            turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertEquals(TelephonyManager.RADIO_POWER_ON, callbackForFirstSub.mRadioPowerState);
+            callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+            assertEquals(TelephonyManager.RADIO_POWER_ON, callbackForSecondSub.mRadioPowerState);
+            turnedRadioOn = true;
+        }
+
+        Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
+                + "turning radio off due to nearby device ...");
+        turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+        assertRadioOffWithReason(callbackForFirstSub,
+                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
+                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+
+        Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning on airplane mode ...");
+        turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+        assertRadioOffWithReason(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
+                TelephonyManager.RADIO_POWER_REASON_USER);
+
+        Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning off airplane mode ...");
+        turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+        assertRadioOffWithReason(callbackForFirstSub,
+                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
+                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+
+        Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
+                + " turning on radio due to nearby device...");
+        turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+        assertEquals(TelephonyManager.RADIO_POWER_ON, callbackForFirstSub.mRadioPowerState);
+        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+        assertEquals(TelephonyManager.RADIO_POWER_ON, callbackForSecondSub.mRadioPowerState);
+
+        if (turnedRadioOn) {
+            Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning radio back off");
+            turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+            callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
+            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
+    public void testSetEnableCellularIdentifierDisclosureNotifications() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            return;
+        }
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
+        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+        assertTrue(enabled);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
+        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+        assertFalse(enabled);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
+            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
+    public void testCellularIdentifierDisclosureNotificationsPermissions() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            return;
+        }
+
+        assertThrows(SecurityException.class, () -> {
+                    mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
+                }
+        );
+
+        assertThrows(SecurityException.class, () -> {
+                    mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
+                }
+        );
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#getLastKnownCellIdentity"})
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
+    public void testGetLastKnownCellIdentity() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
+        // is still thrown if com.android.phone.permission.ACCESS_LAST_KNOWN_CELL_ID is
+        // not granted.
+        try {
+            mTelephonyManager.getLastKnownCellIdentity();
+            fail("TelephonyManager#resetSettings requires the"
+                    + " permission.ACCESS_LAST_KNOWN_CELL_ID.");
+        } catch (SecurityException e) {
+            //expected
+        }
+
+        // Obtain the primary cell identity from the NetworkRegistration info list.
+        ServiceState ss = mTelephonyManager.getServiceState();
+        List<NetworkRegistrationInfo> regInfos = ss != null
+                ? ss.getNetworkRegistrationInfoList()
+                : new ArrayList();
+
+        Optional<CellIdentity> primaryCellIdentity = regInfos.stream()
+                .filter(nri -> nri.getCellIdentity() != null)
+                .filter(nri -> nri.getTransportType() == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                .sorted(Comparator.comparing(NetworkRegistrationInfo::isRegistered)
+                        .thenComparing((nri) -> nri.getDomain() & NetworkRegistrationInfo.DOMAIN_CS)
+                        .reversed())
+                .map(nri -> nri.getCellIdentity())
+                .distinct()
+                .findFirst();
+
+        try {
+            CellIdentity cellIdentity = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, (tm) -> tm.getLastKnownCellIdentity(),
+                    permission.ACCESS_LAST_KNOWN_CELL_ID,
+                    permission.ACCESS_FINE_LOCATION);
+            assertEquals(
+                    cellIdentity,
+                    primaryCellIdentity.isPresent() ? primaryCellIdentity.get() : null);
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            fail(e.toString());
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
+            "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MODEM_CIPHER_TRANSPARENCY)
+    public void testsetNullCipherNotificationsEnabled() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            return;
+        }
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.setNullCipherNotificationsEnabled(true));
+        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.isNullCipherNotificationsEnabled());
+        assertTrue(enabled);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.setNullCipherNotificationsEnabled(false));
+        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.isNullCipherNotificationsEnabled());
+        assertFalse(enabled);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
+            "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MODEM_CIPHER_TRANSPARENCY)
+    public void testNullCipherNotificationsPermissions() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            return;
+        }
+
+        assertThrows(SecurityException.class, () -> {
+                    mTelephonyManager.setNullCipherNotificationsEnabled(true);
+                }
+        );
+
+        assertThrows(SecurityException.class, () -> {
+                    mTelephonyManager.isNullCipherNotificationsEnabled();
+                }
+        );
+    }
+
+    @Test
+    @ApiTest(apis = {"android.telephony.TelephonyManager#EmergencyCallDiagnosticData"})
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
+    public void testEmergencyCallDiagnosticData() {
+        long startTime = SystemClock.elapsedRealtime();
+        TelephonyManager.EmergencyCallDiagnosticData.Builder callDiagnosticBuilder =
+                new TelephonyManager.EmergencyCallDiagnosticData.Builder();
+        TelephonyManager.EmergencyCallDiagnosticData data = callDiagnosticBuilder
+                .setTelecomDumpsysCollectionEnabled(true)
+                .setTelephonyDumpsysCollectionEnabled(true)
+                .setLogcatCollectionStartTimeMillis(startTime)
+                .build();
+        assertTrue(data.isTelecomDumpsysCollectionEnabled());
+        assertTrue(data.isTelephonyDumpsysCollectionEnabled());
+        assertTrue(data.isLogcatCollectionEnabled());
+        assertEquals(startTime, data.getLogcatCollectionStartTimeMillis());
+
+        data = callDiagnosticBuilder
+                .setTelecomDumpsysCollectionEnabled(false)
+                .setTelephonyDumpsysCollectionEnabled(false)
+                .setLogcatCollectionStartTimeMillis(-1L)
+                .build();
+        assertFalse(data.isTelecomDumpsysCollectionEnabled());
+        assertFalse(data.isTelephonyDumpsysCollectionEnabled());
+        assertFalse(data.isLogcatCollectionEnabled());
+    }
+
+    @Test
+    @ApiTest(apis = {"android.telephony.TelephonyManager#persistEmergencyCallDiagnosticData"})
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
+    public void testPersistEmergencyCallDiagnosticData() throws Exception {
+        long startTime = SystemClock.elapsedRealtime();
+        getContext().registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String tag =
+                        intent.getStringExtra(DropBoxManager.EXTRA_TAG);
+                if (tag.equals(DROPBOX_TAG)) {
+                    Log.d(TAG, "entry added to dropbox");
+                    mLatchForDropBox.countDown();
+                }
+            }
+        }, mDropBoxIntentFilter);
+
+        TelephonyManager.EmergencyCallDiagnosticData.Builder callDiagnosticBuilder =
+                new TelephonyManager.EmergencyCallDiagnosticData.Builder();
+        persistCallDiagnostics(callDiagnosticBuilder, true /* setTelecomDump */,
+                false /* setTelephonyDump */, false /* setLogcatDump */);
+        String telecomDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
+                TELECOM_DUMPSYS_COMMAND);
+        long nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
+                startTime, telecomDumpOutput, false);
+
+        persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
+                true /* setTelephonyDump */, false /* setLogcatDump */);
+        String telephonyDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
+                TELEPHONY_DUMPSYS_COMMAND);
+        nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
+                nextEntryTime, telephonyDumpOutput, false);
+
+        String logcatSystemRadioCmd = LOGCAT_BINARY + " -t " + startTime
+                + " -b system,radio";
+        persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
+                false /* setTelephonyDump */, true /* setLogcatDump */);
+        String logcatDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
+                logcatSystemRadioCmd);
+        verifyEmergencyDropBoxEntriesCreatedAndDumped(nextEntryTime, logcatDumpOutput, true);
+    }
+
+    private void persistCallDiagnostics(
+            TelephonyManager.EmergencyCallDiagnosticData.Builder callDiagnosticBuilder,
+            boolean setTelecomDump, boolean setTelephonyDump, boolean setLogcatDump)
+            throws InterruptedException {
+        TelephonyManager.EmergencyCallDiagnosticData data = callDiagnosticBuilder
+                .setTelecomDumpsysCollectionEnabled(setTelecomDump)
+                .setTelephonyDumpsysCollectionEnabled(setTelephonyDump)
+                .setLogcatCollectionStartTimeMillis(
+                        setLogcatDump ? SystemClock.elapsedRealtime() : -1L)
+                .build();
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.persistEmergencyCallDiagnosticData(DROPBOX_TAG, data),
+                    permission.DUMP);
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            fail(e.toString());
+        }
+        assertTrue(mLatchForDropBox.await(DROP_BOX_LATCH_TIMEOUT, TimeUnit.MILLISECONDS));
+        mLatchForDropBox = new CountDownLatch(1);
+    }
+
+    private long verifyEmergencyDropBoxEntriesCreatedAndDumped(
+            long entriesAfterTime, String dumpsysOutput, boolean allowSkipDumpsysVerification
+    ) {
+        DropBoxManager dm = getContext().getSystemService(DropBoxManager.class);
+        DropBoxManager.Entry entry;
+
+        entry = dm.getNextEntry(DROPBOX_TAG, entriesAfterTime);
+        if (allowSkipDumpsysVerification && entry == null) {
+            return -1L;
+        }
+
+        assertNotNull("No emergency diagnostic dropbox entries found", entry);
+        long entryTime = entry.getTimeMillis();
+        String [] content = entry.getText(MAX_READ_BYTES_PER_DROP_BOX_ENTRY).split(
+                System.lineSeparator());
+        assertNotNull("Dropbox entry content is null", content);
+        int lineCount = 1;
+        for (String line : content) {
+            assertFalse(line.contains(DIAG_ERROR_MSG));
+            //verify that corresponding dumpsys output also has this data
+            if (lineCount++ < MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT) {
+                //we only check top x lines to verify presence in dumpsys output
+                assertTrue("line not found: " + line, dumpsysOutput.contains(line));
+            }
+        }
+        entry.close();
+        return entryTime;
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isDeviceVoiceCapable",
+            "android.telephony.TelephonyManager#isVoiceCapable"})
+    public void testIsDeviceVoiceCapable_isIdenticalToIsVoiceCapable() {
+        assertEquals(mTelephonyManager.isDeviceVoiceCapable(), mTelephonyManager.isVoiceCapable());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#isDeviceSmsCapable",
+            "android.telephony.TelephonyManager#isSmsCapable"})
+    public void testIsDeviceSmsCapable_isIdenticalToIsSmsCapable() {
+        assertEquals(mTelephonyManager.isDeviceSmsCapable(), mTelephonyManager.isSmsCapable());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
+    public void testActionResetMobileNetworkSettings_shouldBeSupported() {
+        PackageManager packageManager = getContext().getPackageManager();
+        Intent intent = new Intent(TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS);
+
+        List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent,
+                PackageManager.MATCH_DEFAULT_ONLY);
+        final String errorMessage =
+                "TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS should be supported to "
+                        + "launch setting to reset mobile networks!";
+        assertTrue(errorMessage, !resolvedActivities.isEmpty());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
+    @ApiTest(apis = {
+            "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
+    public void testActionResetMobileNetworkSettings_requiresNoPermission() {
+        // Try to startActivity with the action and make sure no exceptions are thrown.
+        // Exceptions may include:
+        // 1. SecurityException if additional permission are required for the action
+        // 2. ActivityNotFoundException if the action is not supported
+        Intent intent = new Intent(TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+    }
+
+    private Integer getSecondTestSubId() {
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            for (int subId : mSubscriptionManager.getActiveSubscriptionIdList()) {
+                if (subId != mTestSub) {
+                    return subId;
+                }
+            }
+        } catch (SecurityException e) {
+            fail("SubscriptionManager#getActiveSubscriptionIdList requires "
+                    + "READ_PRIVILEGED_PHONE_STATE");
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+        return null;
     }
 }

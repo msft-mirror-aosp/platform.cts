@@ -44,6 +44,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraExtensionCharacteristics;
 import android.hardware.camera2.CameraExtensionSession;
 import android.hardware.camera2.CameraMetadata;
@@ -60,6 +61,7 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Range;
 import android.util.Size;
@@ -146,7 +148,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // Verify that camera extension sessions can be created and closed as expected.
     @Test
     public void testBasicExtensionLifecycle() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -195,7 +197,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // session.
     @Test
     public void testCloseCaptureSession() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -261,7 +263,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // session.
     @Test
     public void testCloseExtensionSession() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -322,7 +324,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // Verify camera device query
     @Test
     public void testGetDevice() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -380,7 +382,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // callbacks.
     @Test
     public void testRepeatingCapture() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -492,9 +494,10 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         final int IMAGE_COUNT = 10;
         final int SUPPORTED_CAPTURE_OUTPUT_FORMATS[] = {
                 ImageFormat.YUV_420_888,
-                ImageFormat.JPEG
+                ImageFormat.JPEG,
+                ImageFormat.JPEG_R
         };
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -590,7 +593,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
                         for (int i = 0; i < IMAGE_COUNT; i++) {
                             int jpegOrientation = (i * 90) % 360; // degrees [0..270]
-                            if (captureFormat == ImageFormat.JPEG) {
+                            if (captureFormat == ImageFormat.JPEG
+                                    || captureFormat == ImageFormat.JPEG_R) {
                                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
                                         jpegOrientation);
                             }
@@ -604,24 +608,32 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                     imageListenerPostview
                                     .getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
                             postviewCaptureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
-                            if (captureFormat == ImageFormat.JPEG) {
-                                verifyJpegOrientation(imgPostview, postviewSize, jpegOrientation);
+
+                            if (captureFormat == ImageFormat.JPEG
+                                    || captureFormat == ImageFormat.JPEG_R) {
+                                verifyJpegOrientation(imgPostview, postviewSize,
+                                        jpegOrientation, captureFormat);
                             } else {
                                 validateImage(imgPostview, postviewSize.getWidth(),
                                         postviewSize.getHeight(), captureFormat, null);
                             }
+
                             Long imgTsPostview = imgPostview.getTimestamp();
                             imgPostview.close();
 
                             Image img =
                                     imageListener.getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
                             captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
-                            if (captureFormat == ImageFormat.JPEG) {
-                                verifyJpegOrientation(img, maxSize, jpegOrientation);
+
+                            if (captureFormat == ImageFormat.JPEG
+                                    || captureFormat == ImageFormat.JPEG_R) {
+                                verifyJpegOrientation(img, maxSize,
+                                        jpegOrientation, captureFormat);
                             } else {
-                                validateImage(img, maxSize.getWidth(), maxSize.getHeight(),
-                                        captureFormat, null);
+                                validateImage(img, maxSize.getWidth(),
+                                        maxSize.getHeight(), captureFormat, null);
                             }
+
                             Long imgTs = img.getTimestamp();
                             img.close();
 
@@ -709,9 +721,10 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         final int IMAGE_COUNT = 10;
         final int SUPPORTED_CAPTURE_OUTPUT_FORMATS[] = {
                 ImageFormat.YUV_420_888,
-                ImageFormat.JPEG
+                ImageFormat.JPEG,
+                ImageFormat.JPEG_R
         };
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -779,7 +792,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
                         for (int i = 0; i < IMAGE_COUNT; i++) {
                             int jpegOrientation = (i * 90) % 360; // degrees [0..270]
-                            if (captureFormat == ImageFormat.JPEG) {
+                            if (captureFormat == ImageFormat.JPEG
+                                    || captureFormat == ImageFormat.JPEG_R) {
                                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
                                         jpegOrientation);
                             }
@@ -792,12 +806,16 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                             Image img =
                                     imageListener.getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
                             captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
-                            if (captureFormat == ImageFormat.JPEG) {
-                                verifyJpegOrientation(img, maxSize, jpegOrientation);
+
+                            if (captureFormat == ImageFormat.JPEG
+                                    || captureFormat == ImageFormat.JPEG_R) {
+                                verifyJpegOrientation(img, maxSize,
+                                        jpegOrientation, captureFormat);
                             } else {
-                                validateImage(img, maxSize.getWidth(), maxSize.getHeight(),
-                                        captureFormat, null);
+                                validateImage(img, maxSize.getWidth(),
+                                        maxSize.getHeight(), captureFormat, null);
                             }
+
                             Long imgTs = img.getTimestamp();
                             img.close();
 
@@ -880,7 +898,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             return;
         }
 
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -1023,7 +1041,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     @Test
     public void testRepeatingAndCaptureCombined() throws Exception {
         final double LATENCY_MARGIN = .1f; // Account for system load, capture call duration etc.
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -1247,7 +1265,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         }
     }
 
-    private void verifyJpegOrientation(Image img, Size jpegSize, int requestedOrientation)
+    private void verifyJpegOrientation(Image img, Size jpegSize, int requestedOrientation,
+                int captureFormat)
             throws IOException {
         byte[] blobBuffer = getDataFromImage(img);
         String blobFilename = mTestRule.getDebugFileNameBase() + "/verifyJpegKeys.jpeg";
@@ -1267,7 +1286,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         /**
          * Device captured image doesn't respect the requested orientation,
          * which means it rotates the image buffer physically. Then we
-         * should swap the exif width/height accordingly to compare.
+         * should swap the jpegSize width/height accordingly to compare.
          */
         boolean deviceRotatedImage = exifOrientation == ExifInterface.ORIENTATION_UNDEFINED;
 
@@ -1275,7 +1294,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             // Case 1.
             boolean needSwap = (requestedOrientation % 180 == 90);
             if (needSwap) {
-                exifSize = new Size(exifHeight, exifWidth);
+                jpegSize = new Size(jpegSize.getHeight(), jpegSize.getWidth());
             }
         } else {
             // Case 2.
@@ -1284,6 +1303,23 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         }
 
         assertEquals("Exif size should match jpeg capture size", jpegSize, exifSize);
+
+        byte[] data = getDataFromImage(img);
+        assertTrue("Invalid image data", data != null && data.length > 0);
+
+        switch (captureFormat) {
+            case ImageFormat.JPEG:
+                validateJpegData(data, jpegSize.getWidth(), jpegSize.getHeight(),
+                        null /*filePath*/);
+                break;
+            case ImageFormat.JPEG_R:
+                validateJpegData(data, jpegSize.getWidth(), jpegSize.getHeight(),
+                        null /*filePath*/, null /*colorSpace*/, true /*gainMapPresent*/);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported format for JPEG validation: "
+                        + captureFormat);
+        }
     }
 
     private static int getExifOrientationInDegree(int exifOrientation) {
@@ -1665,7 +1701,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 CaptureResult.CONTROL_AF_STATE};
         final int METERING_REGION_SCALE_RATIO = 8;
         final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -1695,7 +1731,13 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             for (Integer extension : supportedExtensions) {
                 Set<CaptureRequest.Key> supportedRequestKeys =
                         extensionChars.getAvailableCaptureRequestKeys(extension);
-                if (!supportedRequestKeys.containsAll(Arrays.asList(FOCUS_CAPTURE_REQUEST_SET))) {
+                // The night extension is required to support AF controls starting with Android V
+                if ((Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                    && (extension == CameraExtensionCharacteristics.EXTENSION_NIGHT)) {
+                    assertTrue(supportedRequestKeys.containsAll(
+                            Arrays.asList(FOCUS_CAPTURE_REQUEST_SET)));
+                } else if (!supportedRequestKeys.containsAll(
+                        Arrays.asList(FOCUS_CAPTURE_REQUEST_SET))) {
                     continue;
                 }
                 Set<CaptureResult.Key> supportedResultKeys =
@@ -1841,42 +1883,63 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         final CaptureRequest.Key[] ZOOM_CAPTURE_REQUEST_SET = {CaptureRequest.CONTROL_ZOOM_RATIO};
         final CaptureResult.Key[] ZOOM_CAPTURE_RESULT_SET = {CaptureResult.CONTROL_ZOOM_RATIO};
         final int ZOOM_RATIO_STEPS = 10;
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
                 continue;
             }
-            Range<Float> zoomRatioRange = staticMeta.getZoomRatioRangeChecked();
-            if (zoomRatioRange.getUpper().equals(zoomRatioRange.getLower())) {
-                continue;
-            }
 
-            final float maxZoom = staticMeta.getAvailableMaxDigitalZoomChecked();
-            if (Math.abs(maxZoom - 1.0f) < ZOOM_ERROR_MARGIN) {
-                return;
-            }
-
-            Float zoomStep  =
-                    (zoomRatioRange.getUpper() - zoomRatioRange.getLower()) / ZOOM_RATIO_STEPS;
-            if (zoomStep < ZOOM_ERROR_MARGIN) {
-                continue;
-            }
-
-            ArrayList<Float> candidateZoomRatios = new ArrayList<>(ZOOM_RATIO_STEPS);
-            for (int step = 0; step < (ZOOM_RATIO_STEPS - 1); step++) {
-                candidateZoomRatios.add(step, zoomRatioRange.getLower() + step * zoomStep);
-            }
-            candidateZoomRatios.add(ZOOM_RATIO_STEPS - 1, zoomRatioRange.getUpper());
-
-            updatePreviewSurfaceTexture();
             CameraExtensionCharacteristics extensionChars =
                     mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+
+            updatePreviewSurfaceTexture();
             List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
             for (Integer extension : supportedExtensions) {
+                final Range<Float> zoomRatioRange;
+                final float maxZoom;
+                if (Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    zoomRatioRange =
+                            extensionChars.get(extension,
+                                    CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                    assertNotNull(
+                            "Zoom ratio range must be present in CameraExtensionCharacteristics",
+                            zoomRatioRange);
+                    maxZoom = zoomRatioRange.getUpper();
+                } else {
+                    zoomRatioRange = staticMeta.getZoomRatioRangeChecked();
+                    maxZoom = staticMeta.getAvailableMaxDigitalZoomChecked();
+                }
+
+                if (zoomRatioRange.getUpper().equals(zoomRatioRange.getLower())) {
+                    continue;
+                }
+
+                if (Math.abs(maxZoom - 1.0f) < ZOOM_ERROR_MARGIN) {
+                    return;
+                }
+
+                Float zoomStep  =
+                        (zoomRatioRange.getUpper() - zoomRatioRange.getLower()) / ZOOM_RATIO_STEPS;
+                if (zoomStep < ZOOM_ERROR_MARGIN) {
+                    continue;
+                }
+
+                ArrayList<Float> candidateZoomRatios = new ArrayList<>(ZOOM_RATIO_STEPS);
+                for (int step = 0; step < (ZOOM_RATIO_STEPS - 1); step++) {
+                    candidateZoomRatios.add(step, zoomRatioRange.getLower() + step * zoomStep);
+                }
+                candidateZoomRatios.add(ZOOM_RATIO_STEPS - 1, zoomRatioRange.getUpper());
+
                 Set<CaptureRequest.Key> supportedRequestKeys =
                         extensionChars.getAvailableCaptureRequestKeys(extension);
-                if (!supportedRequestKeys.containsAll(Arrays.asList(ZOOM_CAPTURE_REQUEST_SET))) {
+                // The Night extension is required to support zoom controls start with Android V
+                if ((Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                        && (extension == CameraExtensionCharacteristics.EXTENSION_NIGHT)) {
+                    assertTrue(supportedRequestKeys.containsAll(
+                            Arrays.asList(ZOOM_CAPTURE_REQUEST_SET)));
+                } else if (!supportedRequestKeys.containsAll(
+                        Arrays.asList(ZOOM_CAPTURE_REQUEST_SET))) {
                     continue;
                 }
                 Set<CaptureResult.Key> supportedResultKeys =
@@ -1981,7 +2044,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 CaptureResult.CONTROL_AE_PRECAPTURE_TRIGGER, CaptureResult.CONTROL_AE_LOCK,
                 CaptureResult.CONTROL_AE_STATE, CaptureResult.FLASH_MODE,
                 CaptureResult.FLASH_STATE};
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {
@@ -2192,7 +2255,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
     @Test
     public void testIllegalArguments() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
             if (!staticMeta.isColorOutputSupported()) {

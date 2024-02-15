@@ -47,6 +47,7 @@ java_test_host {
         "src/**/perfetto/*.java",
         "src/**/performancehintmanager/*.java",
         "src/**/permissionstate/*.java",
+        "src/**/powermanager/*.java",
         "src/**/settingsstats/*.java",
         "src/**/sizecompatrestartbutton/*.java",
         "src/**/statsd/*.java",
@@ -59,6 +60,7 @@ java_test_host {
         "src/**/wifi/*.java",
         "src/**/incremental/*.java",
         "src/**/memorysafety/*.java",
+        "src/**/express/*.java",
     ],
 
     test_suites: [
@@ -72,11 +74,14 @@ java_test_host {
         "cts-tradefed",
         "host-libprotobuf-java-full",
         "tradefed",
-        "truth-prebuilt",
+        "truth",
     ],
 
     static_libs: [
+        "android.hardware.usb.flags-aconfig-java-host",
+        "android.os.flags-aconfig-java-host",
         "cts-statsd-atom-host-test-utils",
+        "flag-junit-host",
         "perfetto_config-full",
     ],
 
@@ -90,6 +95,7 @@ java_test_host {
         ":CtsStatsdAlarmHelper2",
         ":CtsVoiceInteractionTestCases",
         ":CtsCredentialManagerTestCases",
+        ":CtsStatsdExpressLogHelper",
     ],
     per_testcase_directory: true,
 }
@@ -105,6 +111,6 @@ java_library_host {
         "compatibility-host-util",
         "cts-tradefed",
         "tradefed",
-        "truth-prebuilt",
+        "truth",
     ],
 }

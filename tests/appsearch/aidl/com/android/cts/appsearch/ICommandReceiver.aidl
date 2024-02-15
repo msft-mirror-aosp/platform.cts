@@ -29,11 +29,18 @@ interface ICommandReceiver {
     boolean indexGloballySearchableDocument(in String databaseName, in String namespace,
         in String id, in List<Bundle> permissionBundles);
 
+    boolean indexGloballySearchableDocumentVisibleToConfig(in String databaseName,
+        in String namespace, in String id, in List<Bundle> packageBundles,
+        in List<Bundle> permissionBundles, in Bundle publicAclPackage);
+
     boolean indexNotGloballySearchableDocument(in String databaseName, in String namespace,
         in String id);
 
     boolean indexAction(in String databaseName, in String namespace, in String id,
         in String entityId, in boolean globallySearchable);
+
+    boolean setUpPubliclyVisibleDocuments(in String targetPackageNameA,
+        in byte[] targetPackageCertA, in String targetPackageNameB, in byte[] targetPackageCertB);
 
     boolean clearData(in String databaseName);
 }

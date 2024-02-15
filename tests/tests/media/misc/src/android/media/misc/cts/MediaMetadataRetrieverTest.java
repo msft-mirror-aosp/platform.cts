@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -52,6 +53,7 @@ import android.util.Log;
 import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -172,29 +174,44 @@ public class MediaMetadataRetrieverTest {
         return ds;
     }
 
+    private static class WrappedDataSource extends MediaDataSource {
+        private final MediaDataSource mBackingMediaDataSource;
+        private boolean mFinished = false;
+
+        WrappedDataSource(MediaDataSource backingMediaDataSource) {
+            mBackingMediaDataSource = backingMediaDataSource;
+        }
+
+        @Override
+        public int readAt(long position, byte[] buffer, int offset, int size)
+                throws IOException {
+            return mBackingMediaDataSource.readAt(position, buffer, offset, size);
+        }
+
+        @Override
+        public long getSize() throws IOException {
+            return mBackingMediaDataSource.getSize();
+        }
+
+        @Override
+        public void close() throws IOException {
+            mBackingMediaDataSource.close();
+            if (!mFinished) {
+                throw new IOException();
+            }
+        }
+
+        public void finish() {
+            mFinished = true;
+        }
+    }
+
     @Test
     public void testExceptionWhileClosingMediaDataSource() throws IOException {
         MediaDataSource backingMediaDataSource =
                 TestMediaDataSource.fromAssetFd(
                         getAssetFileDescriptorFor("audio_with_metadata.mp3"));
-        MediaDataSource mediaDataSource = new MediaDataSource() {
-            @Override
-            public int readAt(long position, byte[] buffer, int offset, int size)
-                    throws IOException {
-                return backingMediaDataSource.readAt(position, buffer, offset, size);
-            }
-
-            @Override
-            public long getSize() throws IOException {
-                return backingMediaDataSource.getSize();
-            }
-
-            @Override
-            public void close() throws IOException {
-                backingMediaDataSource.close();
-                throw new IOException();
-            }
-        };
+        WrappedDataSource mediaDataSource = new WrappedDataSource(backingMediaDataSource);
         mRetriever.setDataSource(mediaDataSource);
         try {
             mRetriever.release();
@@ -202,6 +219,10 @@ public class MediaMetadataRetrieverTest {
         } catch (IOException e) {
             // Expected.
         }
+        // MediaDataSource implements Closeable interface, so the finalizer will
+        // try to close the object. If close() always throws an exception, the
+        // finalizer will bring down the test.
+        mediaDataSource.finish();
     }
 
     @Test
@@ -1174,15 +1195,66 @@ public class MediaMetadataRetrieverTest {
                 1 /*imageCount*/, 0 /*primary*/, false /*useGrid*/, true /*checkColor*/);
     }
 
+    /**
+     * Test AVIF (1024x1024 with 2x2 grid) decoding
+     */
     @Test
-    public void testGetImageAtIndexAvifGrid() throws Exception {
+    public void testGetImageAtIndexAvif1024x1024Grid2x2() throws Exception {
+        testGetImageAtIndexAvifGrid("sample_grid_1024x1024_2x2.avif", 1024 /* imageWidth */,
+                1024 /* imageHeight */, 2 /* gridCols */, 2 /* gridRows */);
+    }
+
+    /**
+     * Test AVIF (1920x1080 with 2x4 grid) decoding
+     */
+    @Test
+    public void testGetImageAtIndexAvif1920x1080Grid2x4() throws Exception {
+        testGetImageAtIndexAvifGrid("sample_grid_1920x1080_2x4.avif", 1920 /* imageWidth */,
+                1080 /* imageHeight */, 2 /* gridCols */, 4 /* gridRows */);
+    }
+
+    /**
+     * Test AVIF (1920x1080 with 4x4 grid) decoding
+     */
+    @Test
+    public void testGetImageAtIndexAvif1920x1080Grid4x4() throws Exception {
+        testGetImageAtIndexAvifGrid("sample_grid_1920x1080_4x4.avif", 1920 /* imageWidth */,
+                1080 /* imageHeight */, 4 /* gridCols */, 4 /* gridRows */);
+    }
+
+    private void testGetImageAtIndexAvifGrid(final String res, int imageWidth, int imageHeight,
+                                             int gridCols, int gridRows) throws Exception {
         if (!MediaUtils.check(mIsAtLeastS, "test needs Android 12")) return;
-        if (!MediaUtils.canDecodeVideo(MediaFormat.MIMETYPE_VIDEO_AV1, 512, 512, 30)) {
-            MediaUtils.skipTest("No AV1 codec for 512p");
+        int gridWidth = imageWidth / gridCols;
+        int gridHeight = imageHeight / gridRows;
+        if (!MediaUtils.canDecodeVideo(MediaFormat.MIMETYPE_VIDEO_AV1, gridWidth, gridHeight, 30)) {
+            MediaUtils.skipTest("No AV1 codec for " + gridWidth + " x " + gridHeight);
+            //TODO (b/224402585) Remove the following once MediaUtils.skipTest() calls assumeTrue
+            assumeTrue("No AV1 codec for " + gridWidth + " x " + gridHeight, false);
             return;
         }
-        testGetImage("sample_grid2x4.avif", 1920, 1080, "image/avif", 0 /*rotation*/,
-                1 /*imageCount*/, 0 /*primary*/, true /*useGrid*/, true /*checkColor*/);
+        testGetImage(res, imageWidth, imageHeight, "image/avif", 0 /*rotation*/, 1 /*imageCount*/,
+                0 /*primary*/, true /*useGrid*/, true /*checkColor*/);
+    }
+
+    @Test
+    // TODO(b/296893703): Replace this with Build.VERSION_CODES.V once it exists.
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    public void testGetImageAtIndexAvifWithCrop() throws Exception {
+        // sample_1960x1120_crop_20_20_1920_1080.avif is a 1960x1120 AVIF image with the crop window
+        // set to left: 20 top: 20 crop width: 1920 crop height: 1080. The cropped image should
+        // contain the same pixels as other sample AVIF images. So in order to verify the cropping,
+        // it is sufficient to pass checkColor to true to testGetImage.  If the cropping was
+        // incorrect, then checking of color bars will fail. The expected width and height should be
+        // that of the cropped image.
+        if (!MediaUtils.canDecodeVideo(MediaFormat.MIMETYPE_VIDEO_AV1, 1960, 1120, 30)) {
+            MediaUtils.skipTest("No AV1 codec for 1960x1120");
+            return;
+        }
+        testGetImage("sample_1960x1120_crop_20_20_1920_1080.avif", 1920, 1080, "image/avif",
+                0 /*rotation*/, 1 /*imageCount*/, 0 /*primary*/, false /*useGrid*/,
+                true /*checkColor*/);
     }
 
     /**
@@ -1250,6 +1322,8 @@ public class MediaMetadataRetrieverTest {
                 for (int imageIndex = 0; imageIndex < imageCount; imageIndex++) {
                     timer.start();
                     bitmap = mRetriever.getImageAtIndex(imageIndex);
+                    assertEquals("Wrong bitmap width", width, bitmap.getWidth());
+                    assertEquals("Wrong bitmap height", height, bitmap.getHeight());
                     assertNotNull("Failed to retrieve image at index " + imageIndex, bitmap);
                     timer.end();
                     timer.printDuration("getImageAtIndex");
@@ -1277,6 +1351,8 @@ public class MediaMetadataRetrieverTest {
                 timer.end();
                 timer.printDuration("getPrimaryImage");
 
+                assertEquals("Wrong bitmap width", width, bitmap.getWidth());
+                assertEquals("Wrong bitmap height", height, bitmap.getHeight());
                 assertTrue("Color block for primary image doesn't match",
                         approxEquals(COLOR_BLOCK, Color.valueOf(
                                 bitmap.getPixel(r.centerX(), height - r.centerY()))));
@@ -1286,6 +1362,8 @@ public class MediaMetadataRetrieverTest {
                 // This should match the primary image as well.
                 inputStream = new FileInputStream(mInpPrefix + res);
                 bitmap = BitmapFactory.decodeStream(inputStream);
+                assertEquals("Wrong bitmap width", width, bitmap.getWidth());
+                assertEquals("Wrong bitmap height", height, bitmap.getHeight());
                 assertTrue("Color block for bitmap decoding doesn't match",
                         approxEquals(COLOR_BLOCK, Color.valueOf(
                                 bitmap.getPixel(r.centerX(), height - r.centerY()))));

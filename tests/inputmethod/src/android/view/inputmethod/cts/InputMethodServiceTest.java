@@ -19,8 +19,8 @@ package android.view.inputmethod.cts;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
-import static android.server.wm.jetpack.utils.ExtensionUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.utils.ExtensionUtil.isExtensionVersionAtLeast;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
@@ -61,6 +61,7 @@ import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.server.wm.DisplayMetricsSession;
 import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
@@ -96,7 +97,6 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -104,6 +104,7 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -125,6 +126,7 @@ import java.util.function.Predicate;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodServiceTest extends EndToEndImeTestBase {
     private static final String TAG = "InputMethodServiceTest";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
@@ -210,7 +212,8 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     @Test
     public void testSwitchInputMethod_verifiesEnabledState() throws Exception {
-        SystemUtil.runShellCommand("ime disable " + OTHER_IME_ID);
+        Assume.assumeFalse(isPreventImeStartup());
+        SystemUtil.runShellCommandOrThrow("ime disable " + OTHER_IME_ID);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -233,6 +236,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
     @Test
     public void testSwitchInputMethodWithSubtype_verifiesEnabledState() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         SystemUtil.runShellCommand("ime disable " + OTHER_IME_ID);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -330,6 +334,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(detail = "slow test")
     public void testRequestShowSelf() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -812,6 +817,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 294840051)
     public void testBatchEdit_commitSpaceThenSetComposingRegion_webView() throws Exception {
         assumeTrue(hasFeatureWebView());
 
@@ -1025,6 +1031,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(detail = "slow test")
     public void testNoExceptionWhenSwitchingDisplaysWithImeReCreate() throws Exception {
         try (SimulatedVirtualDisplaySession displaySession = SimulatedVirtualDisplaySession.create(
                 mInstrumentation.getContext(), 800, 600, 240, DISPLAY_IME_POLICY_LOCAL);
@@ -1095,6 +1102,51 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         } finally {
             SystemUtil.runCommandAndPrintOnLogcat(TAG, "am compat reset "
                     + DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE + " " + DISAPPROVE_IME_PACKAGE_NAME);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar and then show it again does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideThenShowImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
+            expectImeVisible(TIMEOUT);
         }
     }
 

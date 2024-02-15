@@ -142,6 +142,19 @@ public class ColorTest {
                 android.R.color.system_accent3_800,
                 android.R.color.system_accent3_900,
                 android.R.color.system_accent3_1000,
+                android.R.color.system_error_0,
+                android.R.color.system_error_10,
+                android.R.color.system_error_50,
+                android.R.color.system_error_100,
+                android.R.color.system_error_200,
+                android.R.color.system_error_300,
+                android.R.color.system_error_400,
+                android.R.color.system_error_500,
+                android.R.color.system_error_600,
+                android.R.color.system_error_700,
+                android.R.color.system_error_800,
+                android.R.color.system_error_900,
+                android.R.color.system_error_1000,
         };
 
         int[] materialSystemColors = {
@@ -244,7 +257,10 @@ public class ColorTest {
                 android.R.color.system_palette_key_color_secondary_dark,
                 android.R.color.system_palette_key_color_tertiary_dark,
                 android.R.color.system_palette_key_color_neutral_dark,
-                android.R.color.system_palette_key_color_neutral_variant_dark
+                android.R.color.system_palette_key_color_neutral_variant_dark,
+                android.R.color.system_surface_disabled,
+                android.R.color.system_on_surface_disabled,
+                android.R.color.system_outline_disabled,
         };
 
         List<Integer> expectedColorStateLists = Arrays.asList(
@@ -353,7 +369,7 @@ public class ColorTest {
         assertEquals(0xff, Color.green(Color.GREEN));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testHSVToColorArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];
@@ -374,7 +390,7 @@ public class ColorTest {
         assertEquals(Color.RED, Color.HSVToColor(0xff, hsv));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorStringOfInvalidLength() {
         // abnormal case: colorString starts with '#' but length is neither 7 nor 9
         Color.parseColor("#ff00ff0");
@@ -398,7 +414,7 @@ public class ColorTest {
         assertEquals(Color.MAGENTA, Color.parseColor("magenta"));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorUnsupportedFormat() {
         // abnormal case: colorString doesn't start with '#' and is unknown color
         Color.parseColor("hello");
@@ -418,7 +434,7 @@ public class ColorTest {
         assertEquals(Color.YELLOW, Color.rgb(1.0f, 1.0f, 0.0f));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testRGBToHSVArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];

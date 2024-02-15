@@ -37,11 +37,13 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.Context;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -76,9 +78,11 @@ public class BluetoothLeAudioTest {
     private boolean mGroupNodeAddedCalled;
     private boolean mGroupNodeRemovedCalled;
     private boolean mGroupStatusChangedCalled;
+    private boolean mGroupStreamStatusChangedCalled;
     private BluetoothDevice mTestDevice;
     private int mTestGroupId;
     private int mTestGroupStatus;
+    private int mTestGroupStreamStatus;
 
     private static final BluetoothLeAudioCodecConfig LC3_16KHZ_CONFIG =
             new BluetoothLeAudioCodecConfig.Builder()
@@ -119,6 +123,12 @@ public class BluetoothLeAudioTest {
             mGroupStatusChangedCalled = true;
             assertTrue(groupId == mTestGroupId);
             assertTrue(groupStatus == mTestGroupStatus);
+        }
+        @Override
+        public void onGroupStreamStatusChanged(int groupId, int groupStreamStatus) {
+            mGroupStreamStatusChangedCalled = true;
+            assertTrue(groupId == mTestGroupId);
+            assertTrue(groupStreamStatus == mTestGroupStreamStatus);
         }
     };
 
@@ -162,7 +172,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_closeProfileProxy() {
+    public void closeProfileProxy() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
         assertTrue(mIsProfileReady);
@@ -174,7 +184,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_getConnectedDevices() {
+    public void getConnectedDevices() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -187,7 +197,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_getDevicesMatchingConnectionStates() {
+    public void getDevicesMatchingConnectionStates() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -201,7 +211,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_getConnectionState() {
+    public void getConnectionState() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -220,7 +230,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_getAudioLocation() {
+    public void getAudioLocation() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -235,7 +245,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_isInbandRingtoneEnabled() {
+    public void isInbandRingtoneEnabled() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -250,7 +260,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_setgetConnectionPolicy() {
+    public void setgetConnectionPolicy() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -261,7 +271,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_registerCallbackNoPermission() {
+    public void registerCallbackNoPermission() {
         TestUtils.dropPermissionAsShellUid();
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
@@ -275,7 +285,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_registerUnregisterCallback() {
+    public void registerUnregisterCallback() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -303,7 +313,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_callback() {
+    public void callback() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -328,8 +338,26 @@ public class BluetoothLeAudioTest {
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_CALLBACK_ON_GROUP_STREAM_STATUS)
     @Test
-    public void test_getConnectedGroupLeadDevice() {
+    public void streamStatusCallback() {
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeAudio);
+
+        mTestGroupId = 1;
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mTestGroupStreamStatus = 1;
+
+        mGroupStreamStatusChangedCalled = false;
+
+        mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
+
+        assertTrue(mGroupStreamStatusChangedCalled);
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getConnectedGroupLeadDevice() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -343,7 +371,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_setVolume() {
+    public void setVolume() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -356,7 +384,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_getCodecStatus() {
+    public void getCodecStatus() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -365,7 +393,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void test_setCodecConfigPreference() {
+    public void setCodecConfigPreference() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -390,7 +418,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1"})
     @Test
-    public void test_getGroupId() {
+    public void getGroupId() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -419,7 +447,7 @@ public class BluetoothLeAudioTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrrupted");
+            Log.e(TAG, "waitForProfileConnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }
@@ -439,7 +467,7 @@ public class BluetoothLeAudioTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrrupted");
+            Log.e(TAG, "waitForProfileDisconnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }

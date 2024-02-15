@@ -16,10 +16,10 @@
 
 package com.android.bedstead.harrier.annotations.enterprise;
 
-import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.MIDDLE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
-import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
@@ -64,16 +64,24 @@ public @interface EnsureHasDeviceOwner {
 
         /**
          * When used - when setting the device owner on a headless system user mode device, a profile
-         * owner will also be set on the initial user. This matches the behaviour when setting up
-         * a new HSUM device.
+         * owner will also be set on the initial user. This matches the behaviour when the DPC
+         * has 'headless-system-user device-owner-mode="affiliated"' in device_admin.xml.
          *
          * <p>Note that when this is set - a default affiliation ID will be added to the Device
          * Owner and to the Profile Owner set on any other users.
          */
-        AFFILIATED;
+        AFFILIATED,
+
+        /**
+         * When used - the Device Owner will be set on the first secondary user (user 10).
+         * This matches the behaviour when the DPC has
+         * 'headless-system-user device-owner-mode="single_user"'
+         * in headless_single_user_device_admin.xml.
+         */
+        SINGLE_USER;
     }
 
-    int DO_PO_WEIGHT = MIDDLE;
+    int DO_PO_PRIORITY = MIDDLE;
 
     String DEFAULT_KEY = "deviceOwner";
 
@@ -106,17 +114,18 @@ public @interface EnsureHasDeviceOwner {
      */
     String[] affiliationIds() default {};
 
-    /**
-     * Weight sets the order that annotations will be resolved.
+     /**
+     * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower weight will be resolved before annotations with a higher weight.
+     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the weight of the
+     * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default DO_PO_WEIGHT;
+    int priority() default DO_PO_PRIORITY;
 
     /**
      * The type of device owner that is managing the device which can be {@link

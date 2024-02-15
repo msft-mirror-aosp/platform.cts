@@ -41,6 +41,7 @@ import android.media.metrics.MediaMetricsManager;
 import android.media.metrics.PlaybackSession;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 
@@ -59,6 +60,7 @@ import java.nio.ShortBuffer;
 import java.util.concurrent.Executor;
 
 @NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioTrackTest {
     private String TAG = "AudioTrackTest";
@@ -2349,13 +2351,14 @@ public class AudioTrackTest {
             Thread.sleep(lastCheckMs);
             final int position2 = track.getPlaybackHeadPosition();
 
-            final int tolerance60MsInFrames = sampleRate * 60 / 1000;
+            final int toleranceMs = isLowLatencyDevice() ? 60 : 100;
+            final int toleranceInFrames = toleranceMs * sampleRate / 1000;
             final int expected = lastCheckMs * sampleRate / 1000;
             final int actual = position2 - position1;
 
             // Log.d(TAG, "Variable Playback: expected(" + expected + ")  actual(" + actual
             //        + ")  diff(" + (expected - actual) + ")");
-            assertEquals(expected, actual, tolerance60MsInFrames);
+            assertEquals(expected, actual, toleranceInFrames);
             track.stop();
         }
         track.release();

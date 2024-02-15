@@ -85,14 +85,6 @@ public final class SamegradeTest extends BaseHostJUnit4Test {
     }
 
     @Before
-    public void assumeApexSupported() throws DeviceNotAvailableException {
-        if (mInstallType.containsApex()) {
-            assumeTrue("Device does not support updating APEX",
-                    mShimApexRule.isUpdatingApexSupported());
-        }
-    }
-
-    @Before
     public void assumeNotNativeBridgeWithApex() throws Exception {
         if (!CpuFeatures.isNativeAbi(getDevice(), getAbi().getName())) {
             assumeFalse("APEX packages do not work with native bridge",

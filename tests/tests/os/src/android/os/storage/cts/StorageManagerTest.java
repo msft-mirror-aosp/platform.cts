@@ -16,6 +16,8 @@
 
 package android.os.storage.cts;
 
+import static android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -49,6 +51,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageManager.StorageVolumeCallback;
 import android.os.storage.StorageVolume;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.DeviceConfig;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -93,6 +96,7 @@ import java.util.stream.Collectors;
 // TODO(b/278069249): Investigate why the order matters, and possibly remove the annotation.
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StorageManagerTest {
 
     private static final String TAG = StorageManager.class.getSimpleName();
@@ -1132,6 +1136,30 @@ public class StorageManagerTest {
                 resultModerate[0] >= 0L);
         assertTrue("" + resultModerate[0] + " expected to be less than equal to total space",
                 resultModerate[0] <= mockFile.getTotalSpace());
+    }
+
+    @Test
+    public void testStorageRemainingLifetime() {
+        if (!android.os.Flags.storageLifetimeApi()) {
+            return;
+        }
+
+        int value = -1;
+        boolean gotSecurityException = false;
+        try {
+            value = mStorageManager.getInternalStorageRemainingLifetime();
+        } catch (SecurityException e) {
+            gotSecurityException = true;
+        }
+        assertEquals(value, -1);
+        assertTrue(gotSecurityException);
+
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(READ_PRIVILEGED_PHONE_STATE);
+
+        value = mStorageManager.getInternalStorageRemainingLifetime();
+        assertThat(value).isAtLeast(-1);
+        assertThat(value).isAtMost(100);
     }
 
     public static byte[] readFully(InputStream in) throws IOException {

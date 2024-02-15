@@ -15,10 +15,10 @@
  */
 package android.os.cts.batteryhealth;
 
+import static android.os.Flags.stateOfHealthPublic;
+import static android.os.Flags.batteryPartStatusApi;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.fail;
 
 import android.app.UiAutomation;
@@ -109,8 +109,10 @@ public class BatteryHealthTest {
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_STATE_OF_HEALTH"})
     public void testBatteryStateOfHealth_dataInRange() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        if (!stateOfHealthPublic()) {
+            mAutomation = getInstrumentation().getUiAutomation();
+            mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        }
         final int stateOfHealth = mBatteryManager.getIntProperty(BatteryManager
                 .BATTERY_PROPERTY_STATE_OF_HEALTH);
 
@@ -118,7 +120,41 @@ public class BatteryHealthTest {
             assertThat(stateOfHealth).isAtLeast(BATTERY_STATE_OF_HEALTH_MIN);
             assertThat(stateOfHealth).isLessThan(BATTERY_STATE_OF_HEALTH_MAX + 1);
         }
+        if (!stateOfHealthPublic()) {
+            mAutomation.dropShellPermissionIdentity();
+        }
+    }
 
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_SERIAL_NUMBER"})
+    public void testBatterySerialNumber_dataValid() {
+        if (!batteryPartStatusApi()) {
+            return;
+        }
+        mAutomation = getInstrumentation().getUiAutomation();
+        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        final String serialNumber = mBatteryManager.getStringProperty(BatteryManager
+                .BATTERY_PROPERTY_SERIAL_NUMBER);
+
+        if (serialNumber != null) {
+            assertThat(serialNumber.length()).isAtLeast(6);
+        }
+        mAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_PART_STATUS"})
+    public void testBatteryPartStatus_dataInRange() {
+        if (!batteryPartStatusApi()) {
+            return;
+        }
+        mAutomation = getInstrumentation().getUiAutomation();
+        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        final int partStatus = mBatteryManager.getIntProperty(BatteryManager
+                .BATTERY_PROPERTY_PART_STATUS);
+
+        assertThat(partStatus).isAtLeast(BatteryManager.PART_STATUS_UNSUPPORTED);
+        assertThat(partStatus).isAtMost(BatteryManager.PART_STATUS_REPLACED);
         mAutomation.dropShellPermissionIdentity();
     }
 
@@ -164,18 +200,6 @@ public class BatteryHealthTest {
         try {
             final int chargingPolicy = mBatteryManager.getIntProperty(BatteryManager
                     .BATTERY_PROPERTY_CHARGING_POLICY);
-        } catch (SecurityException expected) {
-            return;
-        }
-        fail("Didn't throw SecurityException");
-    }
-
-    @Test
-    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_STATE_OF_HEALTH"})
-    public void testBatteryStateOfHealth_noPermission() {
-        try {
-            final int stateOfHealth = mBatteryManager.getIntProperty(BatteryManager
-                    .BATTERY_PROPERTY_STATE_OF_HEALTH);
         } catch (SecurityException expected) {
             return;
         }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -38,9 +39,12 @@ android_test {
     static_libs: [
         "androidx.test.core",
         "androidx.test.ext.junit",
+        "com.android.hardware.input-aconfig-java",
+        "com.android.input.flags-aconfig-java",
         "compatibility-device-util-axt",
         "cts-input-lib",
         "cts-wm-util",
+        "flag-junit",
         "kotlin-test",
     ],
     sdk_version: "test_current",

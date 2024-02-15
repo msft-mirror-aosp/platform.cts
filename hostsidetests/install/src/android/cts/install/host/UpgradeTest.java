@@ -89,14 +89,6 @@ public final class UpgradeTest extends BaseHostJUnit4Test {
         }
     }
 
-    @Before
-    public void assumeApexSupported() throws DeviceNotAvailableException {
-        if (mInstallType.containsApex()) {
-            assumeTrue("Device does not support updating APEX",
-                    mShimApexRule.isUpdatingApexSupported());
-        }
-    }
-
     @Test
     public void testNonStagedUpgrade() throws Exception {
         // Apex should not be committed in non-staged install, such logic covered in InstallTest.

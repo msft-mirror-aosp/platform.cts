@@ -2,6 +2,7 @@
 // Signed Package
 
 package {
+    default_team: "trendy_team_fwk_nfc",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -14,6 +15,7 @@ android_test_import {
         "general-tests",
     ],
     // Make sure the build system doesn't try to resign the APK
+    preprocessed: true,
     presigned: true,
     dex_preopt: {
         enabled: false,

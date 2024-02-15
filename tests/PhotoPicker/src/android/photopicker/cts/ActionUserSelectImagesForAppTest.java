@@ -17,16 +17,13 @@
 package android.photopicker.cts;
 
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
-import static android.photopicker.cts.PhotoPickerCloudUtils.disableCloudMediaAndClearAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.disableDeviceConfigSync;
 import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
 import static android.photopicker.cts.PhotoPickerCloudUtils.fetchPickerMedia;
-import static android.photopicker.cts.PhotoPickerCloudUtils.getAllowedProvidersDeviceConfig;
 import static android.photopicker.cts.PhotoPickerCloudUtils.initCloudProviderWithImage;
-import static android.photopicker.cts.PhotoPickerCloudUtils.isCloudMediaEnabled;
 import static android.photopicker.cts.PhotoPickerCloudUtils.selectAndAddPickerMedia;
 import static android.photopicker.cts.PickerProviderMediaGenerator.getMediaGenerator;
-import static android.photopicker.cts.PickerProviderMediaGenerator.setCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
@@ -61,6 +58,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,19 +66,15 @@ import java.util.List;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
 @RunWith(AndroidJUnit4.class)
 public class ActionUserSelectImagesForAppTest extends PhotoPickerBaseTest {
-
-    private static boolean sCloudMediaPreviouslyEnabled;
+    private static final String TAG = ActionUserSelectImagesForAppTest.class.getSimpleName();
     @Nullable
-    private static String sPreviouslyAllowedCloudProviders;
+    private static DeviceStatePreserver sDeviceStatePreserver;
 
     @BeforeClass
-    public static void setUpClass() {
-        // Store the current Cloud-Media feature configs which we will override during the test,
-        // and will need to restore after the test finished.
-        sCloudMediaPreviouslyEnabled = isCloudMediaEnabled();
-        if (sCloudMediaPreviouslyEnabled) {
-            sPreviouslyAllowedCloudProviders = getAllowedProvidersDeviceConfig();
-        }
+    public static void setUpClass() throws IOException {
+        sDeviceStatePreserver = new DeviceStatePreserver(sDevice);
+        sDeviceStatePreserver.saveCurrentCloudProviderState();
+        disableDeviceConfigSync();
 
         // Override the allowed cloud providers config to enable the banners
         // (this is a self-instrumenting test, so "target" package name and "own" package name are
@@ -89,12 +83,9 @@ public class ActionUserSelectImagesForAppTest extends PhotoPickerBaseTest {
     }
 
     @AfterClass
-    public static void tearDownClass() {
-        // Restore Cloud-Media feature configs.
-        if (sCloudMediaPreviouslyEnabled) {
-            enableCloudMediaAndSetAllowedCloudProviders(sPreviouslyAllowedCloudProviders);
-        } else {
-            disableCloudMediaAndClearAllowedCloudProviders();
+    public static void tearDownClass() throws Exception {
+        if (sDeviceStatePreserver != null) {
+            sDeviceStatePreserver.restoreCloudProviderState();
         }
     }
 
@@ -150,22 +141,23 @@ public class ActionUserSelectImagesForAppTest extends PhotoPickerBaseTest {
 
     @Test
     public void testUserSelectImagesForAppHandledByPhotopicker() throws Exception {
-        launchActivityForResult(getUserSelectImagesIntent());
-        UiAssertionUtils.assertThatShowsPickerUi();
+        Intent intent = getUserSelectImagesIntent();
+        launchActivityForResult(intent);
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
     }
 
     @Test
     public void testPhotosMimeTypeFilter() throws Exception {
         Intent intent = getUserSelectImagesIntent("image/*");
         launchActivityForResult(intent);
-        UiAssertionUtils.assertThatShowsPickerUi();
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
     }
 
     @Test
     public void testVideosMimeTypeFilter() throws Exception {
         Intent intent = getUserSelectImagesIntent("video/*");
         launchActivityForResult(intent);
-        UiAssertionUtils.assertThatShowsPickerUi();
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
     }
 
     @Test
@@ -212,7 +204,7 @@ public class ActionUserSelectImagesForAppTest extends PhotoPickerBaseTest {
                 PhotoPickerFilesUtils.deleteMedia(uri, mContext);
             }
             uriList.clear();
-            setCloudProvider(mContext, null);
+            setCloudProvider(null);
         }
     }
 

@@ -24,8 +24,11 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.platform.test.annotations.PlatinumTest;
 import android.provider.CallLog;
-import android.provider.Contacts;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds;
+import android.provider.ContactsContract.Data;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
@@ -36,6 +39,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.emergency.EmergencyNumber;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.List;
 import java.util.Map;
@@ -71,19 +75,25 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
 
                 // insert a contact with phone number
                 ContentValues values = new ContentValues();
-                values.put(Contacts.People.NAME, "CTS test contact");
-                mPersonRecord = cr.insert(Contacts.People.CONTENT_URI, values);
-                Uri phoneUri = Uri.withAppendedPath(mPersonRecord,
-                        Contacts.People.Phones.CONTENT_DIRECTORY);
-                values.clear();
-                values.put(Contacts.People.Phones.TYPE, Contacts.People.Phones.TYPE_HOME);
-                values.put(Contacts.People.Phones.NUMBER, TEST_PHONE_NUMBER);
-                mPhoneRecord = cr.insert(phoneUri, values);
+                mPersonRecord = cr.insert(ContactsContract.RawContacts.CONTENT_URI, values);
 
+                values.clear();
+                values.put(CommonDataKinds.StructuredName.DISPLAY_NAME, "CTS test contact");
+                values.put(Data.RAW_CONTACT_ID, mPersonRecord.getLastPathSegment());
+                values.put(Data.MIMETYPE, CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
+                cr.insert(Data.CONTENT_URI, values);
+
+                values.clear();
+                values.put(Data.RAW_CONTACT_ID, mPersonRecord.getLastPathSegment());
+                values.put(CommonDataKinds.Phone.TYPE, CommonDataKinds.Phone.TYPE_HOME);
+                values.put(CommonDataKinds.Phone.NUMBER, TEST_PHONE_NUMBER);
+                values.put(Data.MIMETYPE, CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
+                mPhoneRecord = cr.insert(Data.CONTENT_URI, values);
             } catch (Exception e) {
                 // Force tearDown if setUp errors out to ensure unused listeners are cleaned up.
                 tearDown();
-                assertTrue("Failed to insert test contact", false);
+                fail(String.format("Failed to insert test contact because of the following"
+                        + " exception=[%s]", e));
             }
         }
     }
@@ -166,6 +176,10 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         assertNotAudioRoute(mInCallCallbacks.getService(), CallAudioState.ROUTE_SPEAKER);
     }
 
+    /**
+     * Nominal outgoing test case; verifies an outgoing call can be placed on the device.
+     */
+    @PlatinumTest(focusArea = "telecom")
     public void testStartCallWithSpeakerphoneNotProvided_SpeakerphoneOffByDefault() {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -174,6 +188,11 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
 
         placeAndVerifyCall();
+        // Confirm that we got ConnectionService#onCreateConnectionComplete
+        if (Flags.telecomResolveHiddenDependencies()) {
+            assertTrue(connectionService.waitForEvent(
+                    MockConnectionService.EVENT_CONNECTION_SERVICE_CREATE_CONNECTION_COMPLETE));
+        }
         verifyConnectionForOutgoingCall();
         if (mInCallCallbacks.getService().getCallAudioState().getSupportedRouteMask() ==
                 CallAudioState.ROUTE_SPEAKER) {
@@ -188,6 +207,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         }
         TestUtils.setSystemDialerOverride(getInstrumentation());
         TestUtils.setTestEmergencyPhoneAccountPackageFilter(getInstrumentation(), mContext);
+        mTelephonyCallback.clearEmergencyNumberQueue();
         TestUtils.addTestEmergencyNumber(getInstrumentation(), TEST_EMERGENCY_NUMBER);
         Map<Integer, List<EmergencyNumber>> emergencyNumbers = null;
 

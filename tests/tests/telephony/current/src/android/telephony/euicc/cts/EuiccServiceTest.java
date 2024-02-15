@@ -20,10 +20,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.euicc.DownloadSubscriptionResult;
 import android.service.euicc.EuiccService;
 import android.service.euicc.GetDefaultDownloadableSubscriptionListResult;
@@ -34,6 +38,7 @@ import android.service.euicc.IDownloadSubscriptionCallback;
 import android.service.euicc.IEraseSubscriptionsCallback;
 import android.service.euicc.IEuiccService;
 import android.service.euicc.IEuiccServiceDumpResultCallback;
+import android.service.euicc.IGetAvailableMemoryInBytesCallback;
 import android.service.euicc.IGetDefaultDownloadableSubscriptionListCallback;
 import android.service.euicc.IGetDownloadableSubscriptionMetadataCallback;
 import android.service.euicc.IGetEidCallback;
@@ -54,6 +59,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,6 +72,10 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class EuiccServiceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String ACTIVATION_CODE = "12345-ABCDE";
 
     private static final int CALLBACK_TIMEOUT_MILLIS = 2000 /* 2 sec */;
@@ -86,6 +97,11 @@ public class EuiccServiceTest {
         @Override
         public String onGetEid(int slotId) {
             return null;
+        }
+
+        @Override
+        public long onGetAvailableMemoryInBytes(int slotId) {
+            return EuiccManager.EUICC_MEMORY_FIELD_UNAVAILABLE;
         }
 
         @Override
@@ -162,6 +178,10 @@ public class EuiccServiceTest {
 
     @Before
     public void setUp() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(EuiccUtil.hasEuiccFeature());
+        }
+
         mCallback = new MockEuiccServiceCallback();
         MockEuiccService.setCallback(mCallback);
 
@@ -174,6 +194,12 @@ public class EuiccServiceTest {
 
     @After
     public void tearDown() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            if (!EuiccUtil.hasEuiccFeature()) {
+                return;
+            }
+        }
+
         mServiceTestRule.unbindService();
         mCallback.reset();
     }
@@ -211,6 +237,31 @@ public class EuiccServiceTest {
                     @Override
                     public void onSuccess(String eid) {
                         assertEquals(MockEuiccService.MOCK_EID, eid);
+                        mCountDownLatch.countDown();
+                    }
+                });
+
+        try {
+            mCountDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+
+        assertTrue(mCallback.isMethodCalled());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ESIM_AVAILABLE_MEMORY)
+    public void testOnGetAvailableMemoryInBytes() throws Exception {
+        mCountDownLatch = new CountDownLatch(1);
+
+        mEuiccServiceBinder.getAvailableMemoryInBytes(
+                MOCK_SLOT_ID,
+                new IGetAvailableMemoryInBytesCallback.Stub() {
+                    @Override
+                    public void onSuccess(long availableMemoryInBytes) {
+                        assertEquals(
+                                MockEuiccService.MOCK_AVAILABLE_MEMORY, availableMemoryInBytes);
                         mCountDownLatch.countDown();
                     }
                 });

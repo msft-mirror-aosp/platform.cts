@@ -23,7 +23,9 @@ import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
+import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -59,6 +61,7 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
+import androidx.core.content.FileProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -81,6 +84,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -279,6 +284,42 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     }
 
     @Test
+    public void testPlayContentUri() throws Exception {
+        String testFile = "testmp3_2.mp3";
+        File localFile;
+        try (AssetFileDescriptor mediaFd = getAssetFileDescriptorFor(testFile)) {
+            Environment.getExternalStorageDirectory();
+            File externalFilesDir = mContext.getExternalFilesDir(/* type= */ null);
+            localFile = new File(externalFilesDir, "test_files/" + testFile);
+            localFile.mkdirs();
+            Files.copy(
+                    mediaFd.createInputStream(),
+                    localFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            Uri contentUri = FileProvider.getUriForFile(
+                    mContext, /* authority= */ "com.android.media.player.cts.provider", localFile);
+            mediaPlayer.setDataSource(mContext, contentUri);
+            mediaPlayer.prepare();
+
+            assertFalse(mediaPlayer.isPlaying());
+            mediaPlayer.start();
+            assertTrue(mediaPlayer.isPlaying());
+
+            // waiting to complete
+            while (mediaPlayer.isPlaying()) {
+                Thread.sleep(SLEEP_TIME);
+            }
+        } finally {
+            mediaPlayer.release();
+            localFile.delete();
+        }
+    }
+
+    @Test
     public void testPlayAudioFromDataURI() throws Exception {
         final int mp3Duration = 34909;
         final int tolerance = 70;
@@ -360,8 +401,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     private void internalTestPlayAudio(final String res,
             int mp3Duration, int tolerance, int seekDuration) throws Exception {
-        Preconditions.assertTestFileExists(mInpPrefix + res);
-        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
+        String filePath = mInpPrefix + res;
+        Preconditions.assertTestFileExists(filePath);
+        assumeTrue("codecs not found for " +  filePath, MediaUtils.hasCodecsForResource(filePath));
+        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(filePath)));
         try {
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
@@ -1287,7 +1330,12 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         mOnSeekCompleteCalled.waitForSignal();
         Thread.sleep(playTime);
         assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-        assertEquals("MediaPlayer position should be 0", 0, mMediaPlayer.getCurrentPosition());
+        int positionAtStart = mMediaPlayer.getCurrentPosition();
+        // Allow both 0 and 23 (the timestamp of the second audio sample) to avoid flaky failures
+        // on builds that don't include http://r.android.com/2700283.
+        if (positionAtStart != 0 && positionAtStart != 23) {
+            fail("MediaPlayer position should be 0 or 23");
+        }
 
         mMediaPlayer.start();
         Thread.sleep(playTime);
@@ -2629,6 +2677,13 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     @Test
     public void testConstructorWithNullContextFails() {
         assertThrows(NullPointerException.class, () -> new MediaPlayer(/*context=*/null));
+    }
+
+    /** {@link ContentProvider} implementation which serves local files using content:// URIs. */
+    public static final class TestFileProvider extends FileProvider {
+        public TestFileProvider() {
+            super(R.xml.media_player_test_content_path);
+        }
     }
 
 }

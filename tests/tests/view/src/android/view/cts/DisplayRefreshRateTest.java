@@ -24,6 +24,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
  */
 @LargeTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayRefreshRateTest {
     // The test passes if
     //   abs(measured_fps - Display.getRefreshRate()) <= FPS_TOLERANCE.
@@ -73,21 +75,23 @@ public class DisplayRefreshRateTest {
     private DisplayRefreshRateCtsActivity mActivity;
     private DisplayRefreshRateCtsActivity.FpsResult mFpsResult;
 
-    @Rule
+    @Rule(order = 1)
     public ActivityTestRule<DisplayRefreshRateCtsActivity> mActivityRule =
             new ActivityTestRule<>(DisplayRefreshRateCtsActivity.class);
 
-    @Rule
+    @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
             InstrumentationRegistry.getInstrumentation().getUiAutomation(),
             Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
-            Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE);
+            Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     class DisplayListener implements DisplayManager.DisplayListener {
         private CountDownLatch mCountDownLatch = new CountDownLatch(1);
 
         void waitForModeToChange(int modeId) throws InterruptedException {
-            while (modeId != mDisplay.getMode().getModeId()) {
+            while (modeId != mDisplay.getMode().getModeId()
+                && mDisplay.getMode().getRefreshRate() != mDisplay.getRefreshRate()) {
                 mCountDownLatch.await(5, TimeUnit.SECONDS);
             }
         }
@@ -167,9 +171,9 @@ public class DisplayRefreshRateTest {
     @Test
     public void testRefreshRate() {
         boolean fpsOk = false;
-        float claimedFps = mDisplay.getRefreshRate();
 
         for (int i = 0; i < 3; i++) {
+            float claimedFps = mDisplay.getRefreshRate();
             float achievedFps = mFpsResult.waitResult();
             Log.d(TAG, "claimed " + claimedFps + " fps, " +
                        "achieved " + achievedFps + " fps");

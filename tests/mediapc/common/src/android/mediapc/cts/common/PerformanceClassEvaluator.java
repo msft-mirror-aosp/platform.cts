@@ -247,8 +247,8 @@ public class PerformanceClassEvaluator {
 
         /**
          * [2.2.7.2/7.5/H-1-6] MUST have camera2 startup latency (open camera to first
-         * preview frame) < 600ms as measured by the CTS camera PerformanceTest under ITS lighting
-         * conditions (3000K) for both primary cameras.
+         * preview frame) < 600ms (S and below) or 500ms (T and above) as measured by the CTS camera
+         * PerformanceTest under ITS lighting conditions (3000K) for both primary cameras.
          */
         public static CameraLatencyRequirement createLaunchLatencyReq() {
             RequiredMeasurement<Float> rearLaunchLatency = RequiredMeasurement
@@ -257,8 +257,8 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.FLOAT_LTE)
                     .addRequiredValue(Build.VERSION_CODES.R, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 600.0f)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 600.0f)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
                     .build();
             RequiredMeasurement<Float> frontLaunchLatency = RequiredMeasurement
                     .<Float>builder()
@@ -266,8 +266,8 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.FLOAT_LTE)
                     .addRequiredValue(Build.VERSION_CODES.R, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 600.0f)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 600.0f)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
                     .build();
 
             return new CameraLatencyRequirement(RequirementConstants.R7_5__H_1_6,
@@ -369,16 +369,18 @@ public class PerformanceClassEvaluator {
          * ms or less for a 1080p or smaller video encoding session for all hardware video
          * encoders when under load. Load here is defined as a concurrent 1080p to 720p
          * video-only transcoding session using hardware video codecs together with the 1080p
-         * audio-video recording initialization.
+         * audio-video recording initialization. For Dolby vision codec, the codec initialization
+         * latency MUST be 50 ms or less.
          */
-        public static CodecInitLatencyRequirement createR5_1__H_1_7() {
+        public static CodecInitLatencyRequirement createR5_1__H_1_7(String mediaType) {
+            long latency = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) ? 50L : 40L;
             RequiredMeasurement<Long> codec_init_latency =
                 RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
                         .setPredicate(RequirementConstants.LONG_LTE)
                         .addRequiredValue(Build.VERSION_CODES.R, 65L)
                         .addRequiredValue(Build.VERSION_CODES.S, 50L)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 40L)
+                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, latency)
+                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, latency)
                         .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_7,
@@ -1514,14 +1516,9 @@ public class PerformanceClassEvaluator {
                     reqMet);
         }
 
-        public void setFrontLogicalMultiCameraReqMet(boolean reqMet) {
-            this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_LOGICAL_MULTI_CAMERA_REQ_MET,
-                    reqMet);
-        }
-
         /**
          * [2.2.7.2/7.5/H-1-13] MUST support LOGICAL_MULTI_CAMERA capability for the primary
-         * cameras if there are greater than 1 RGB cameras facing the same direction.
+         * rear-facing camera if there are greater than 1 RGB rear-facing cameras.
          */
         public static LogicalMultiCameraRequirement createLogicalMultiCameraReq() {
             RequiredMeasurement<Boolean> rearRequirement = RequiredMeasurement
@@ -1531,16 +1528,9 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
                     .build();
-            RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
-                    .<Boolean>builder()
-                    .setId(RequirementConstants.FRONT_CAMERA_LOGICAL_MULTI_CAMERA_REQ_MET)
-                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
-                    .build();
 
             return new LogicalMultiCameraRequirement(RequirementConstants.R7_5__H_1_13,
-                    rearRequirement, frontRequirement);
+                    rearRequirement);
         }
     }
 
@@ -1606,14 +1596,9 @@ public class PerformanceClassEvaluator {
                     supported);
         }
 
-        public void setFrontPreviewStabilizationSupported(boolean supported) {
-            this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_PREVIEW_STABILIZATION_SUPPORTED,
-                    supported);
-        }
-
         /**
          * [2.2.7.2/7.5/H-1-12] MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
-         * for both primary front and primary back camera.
+         * for the primary back camera.
          */
         public static PreviewStabilizationRequirement createPreviewStabilizationReq() {
             RequiredMeasurement<Boolean> rearRequirement = RequiredMeasurement
@@ -1623,16 +1608,9 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
                     .build();
-            RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
-                    .<Boolean>builder()
-                    .setId(RequirementConstants.FRONT_CAMERA_PREVIEW_STABILIZATION_SUPPORTED)
-                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
-                    .build();
 
             return new PreviewStabilizationRequirement(RequirementConstants.R7_5__H_1_12,
-                    rearRequirement, frontRequirement);
+                    rearRequirement);
         }
     }
 
@@ -2206,8 +2184,8 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k());
     }
 
-    public CodecInitLatencyRequirement addR5_1__H_1_7() {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7());
+    public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
+        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
     }
 
     public CodecInitLatencyRequirement addR5_1__H_1_8() {

@@ -59,6 +59,7 @@ import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.accessibilityservice.cts.activities.NonDefaultDisplayActivity;
+import android.accessibilityservice.cts.utils.DisplayUtils;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.LocaleManager;
@@ -85,6 +86,7 @@ import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -750,6 +752,7 @@ public class AccessibilityWindowQueryTest {
     }
 
     @Test
+    @FlakyTest
     public void testWindowLocale_setGet() throws Exception {
         final LocaleManager manager = mActivity.getSystemService(LocaleManager.class);
         final LocaleList systemLocales = manager.getSystemLocales();
@@ -784,7 +787,8 @@ public class AccessibilityWindowQueryTest {
                         () -> localeManager.setApplicationLocales(localeList)),
                 event -> {
                     AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
-                    return root != null && root.getWindow() != null;
+                    return root != null && root.getWindow() != null
+                            && localeManager.getApplicationLocales().equals(localeList);
                 }, DEFAULT_TIMEOUT_MS);
     }
 
@@ -1054,7 +1058,7 @@ public class AccessibilityWindowQueryTest {
             window.getBoundsInScreen(mTempBounds);
             final int[] location = new int[2];
             mViewRoot.getLocationOnScreen(location);
-            if (location[0] == mTempBounds.left && location[1] == mTempBounds.top) {
+            if (DisplayUtils.fuzzyBoundsInScreenSameOrigin(location, mTempBounds)) {
                 mTargetWindow = window;
                 return  true;
             }

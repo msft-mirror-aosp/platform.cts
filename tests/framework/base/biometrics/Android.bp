@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_biometrics_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -42,6 +43,10 @@ android_test {
         "platform-test-annotations",
         "platformprotosnano",
         "androidx.test.uiautomator_uiautomator",
+        "android.hardware.biometrics.flags-aconfig-java",
+        "flag-junit",
+        "Harrier",
+        "truth",
     ],
     srcs: ["src/**/*.java"],
     data: [

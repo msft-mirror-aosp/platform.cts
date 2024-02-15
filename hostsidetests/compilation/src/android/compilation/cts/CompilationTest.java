@@ -18,23 +18,34 @@ package android.compilation.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.compilation.cts.annotation.CtsTestCase;
+import static org.junit.Assert.assertThrows;
 
-import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import android.compilation.cts.annotation.CtsTestCase;
+import android.content.pm.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
+import com.android.tradefed.util.Pair;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.regex.Pattern;
+
+import junitparams.Parameters;
 
 /**
  * Compilation tests that don't require root access.
  */
-@RunWith(DeviceJUnit4ClassRunner.class)
+@RunWith(DeviceParameterizedRunner.class)
 @CtsTestCase
 public class CompilationTest extends BaseHostJUnit4Test {
     private static final String STATUS_CHECKER_PKG = "android.compilation.cts.statuscheckerapp";
@@ -43,8 +54,19 @@ public class CompilationTest extends BaseHostJUnit4Test {
     private static final String TEST_APP_PKG = "android.compilation.cts";
     private static final String TEST_APP_APK_RES = "/CtsCompilationApp.apk";
     private static final String TEST_APP_DM_RES = "/CtsCompilationApp.dm";
+    private static final String TEST_APP_WITH_GOOD_PROFILE_RES =
+            "/CtsCompilationApp_with_good_profile.apk";
+    private static final String TEST_APP_WITH_BAD_PROFILE_RES =
+            "/CtsCompilationApp_with_bad_profile.apk";
+    private static final String TEST_APP_2_PKG = "android.compilation.cts.appusedbyotherapp";
+    private static final String TEST_APP_2_APK_RES = "/AppUsedByOtherApp.apk";
+    private static final String TEST_APP_2_DM_RES = "/AppUsedByOtherApp_1.dm";
 
     private Utils mUtils;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Before
     public void setUp() throws Exception {
@@ -54,6 +76,7 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @After
     public void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_APP_PKG);
+        getDevice().uninstallPackage(TEST_APP_2_PKG);
     }
 
     @Test
@@ -122,29 +145,182 @@ public class CompilationTest extends BaseHostJUnit4Test {
     }
 
     @Test
-    public void testCompileSecondaryDex() throws Exception {
+    @Parameters({"secondary.jar", "secondary"})
+    public void testCompileSecondaryDex(String filename) throws Exception {
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
                               .setTestClassName(STATUS_CHECKER_CLASS)
-                              .setTestMethodName("createAndLoadSecondaryDex");
+                              .setTestMethodName("createAndLoadSecondaryDex")
+                              .addInstrumentationArg("secondary-dex-filename", filename);
         assertThat(runDeviceTests(options)).isTrue();
 
         // Verify that the secondary dex file is recorded.
         String dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
-        checkDexoptStatus(dump, "secondary\\.jar", ".*");
+        checkDexoptStatus(dump, Pattern.quote(filename), ".*?");
 
         mUtils.assertCommandSucceeds(
                 "pm compile --secondary-dex -m speed -f " + STATUS_CHECKER_PKG);
         dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
-        checkDexoptStatus(dump, "secondary\\.jar", "speed");
+        checkDexoptStatus(dump, Pattern.quote(filename), "speed");
 
         mUtils.assertCommandSucceeds(
                 "pm compile --secondary-dex -m verify -f " + STATUS_CHECKER_PKG);
         dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
-        checkDexoptStatus(dump, "secondary\\.jar", "verify");
+        checkDexoptStatus(dump, Pattern.quote(filename), "verify");
 
         mUtils.assertCommandSucceeds("pm delete-dexopt " + STATUS_CHECKER_PKG);
         dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
-        checkDexoptStatus(dump, "secondary\\.jar", "run-from-apk");
+        checkDexoptStatus(dump, Pattern.quote(filename), "run-from-apk");
+    }
+
+    @Test
+    public void testCompileSecondaryDexUnsupportedClassLoader() throws Exception {
+        String filename = "secondary-unsupported-clc.jar";
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("createAndLoadSecondaryDexUnsupportedClassLoader")
+                              .addInstrumentationArg("secondary-dex-filename", filename);
+        assertThat(runDeviceTests(options)).isTrue();
+
+        // "speed" should be downgraded to "verify" because the CLC is unsupported.
+        mUtils.assertCommandSucceeds(
+                "pm compile --secondary-dex -m speed -f " + STATUS_CHECKER_PKG);
+        String dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
+        checkDexoptStatus(dump, Pattern.quote(filename), "verify");
+    }
+
+    @Test
+    public void testSecondaryDexReporting() throws Exception {
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("testSecondaryDexReporting")
+                              .setDisableHiddenApiCheck(true);
+        assertThat(runDeviceTests(options)).isTrue();
+
+        String dump = mUtils.assertCommandSucceeds("dumpsys package " + STATUS_CHECKER_PKG);
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_1.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_2.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_3.apk");
+        Utils.dumpDoesNotContainDexFile(dump, "reported_bad_4.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_1.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_2.apk");
+        Utils.dumpContainsDexFile(dump, "reported_good_3.apk");
+
+        // Check that ART Service doesn't crash on various operations after invalid dex paths and
+        // class loader contexts are reported.
+        mUtils.assertCommandSucceeds(
+                "pm compile --secondary-dex -m verify -f " + STATUS_CHECKER_PKG);
+        mUtils.assertCommandSucceeds("pm art clear-app-profiles " + STATUS_CHECKER_PKG);
+        mUtils.assertCommandSucceeds("pm art cleanup");
+    }
+
+    @Test
+    public void testGetDexFileOutputPaths() throws Exception {
+        mUtils.assertCommandSucceeds("pm compile -m verify -f " + STATUS_CHECKER_PKG);
+
+        var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                              .setTestClassName(STATUS_CHECKER_CLASS)
+                              .setTestMethodName("testGetDexFileOutputPaths")
+                              .setDisableHiddenApiCheck(true);
+        assertThat(runDeviceTests(options)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testExternalProfileValidationOk() throws Exception {
+        mUtils.installFromResources(getAbi(), TEST_APP_APK_RES, TEST_APP_DM_RES);
+    }
+
+    /** Verifies that adb install-multiple fails when the APK and the DM file don't match. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testExternalProfileValidationFailed() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResources(getAbi(), TEST_APP_APK_RES, TEST_APP_2_DM_RES);
+        });
+        assertThat(throwable).hasMessageThat().contains(
+                "Error occurred during dexopt when processing external profiles:");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testExternalProfileValidationMultiPackageOk() throws Exception {
+        mUtils.installFromResourcesMultiPackage(getAbi(),
+                List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_DM_RES)),
+                        List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_2_DM_RES))));
+    }
+
+    /**
+     * Verifies that adb install-multi-package fails when the mismatch happens on one of the APK-DM
+     * pairs.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testExternalProfileValidationMultiPackageFailed() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesMultiPackage(getAbi(),
+                    List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_DM_RES)),
+                            List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_DM_RES))));
+        });
+
+        assertThat(Utils.countSubstringOccurrence(throwable.getMessage(),
+                           "Error occurred during dexopt when processing external profiles:"))
+                .isEqualTo(1);
+    }
+
+    @Test
+    public void testEmbeddedProfileOk() throws Exception {
+        mUtils.assumeSysPropTrue("dalvik.vm.features.embedded_profile");
+        mUtils.installFromResources(getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testEmbeddedProfileFailed() throws Exception {
+        mUtils.assumeSysPropTrue("dalvik.vm.features.embedded_profile");
+        Throwable throwable = assertThrows(Throwable.class,
+                () -> { mUtils.installFromResources(getAbi(), TEST_APP_WITH_BAD_PROFILE_RES); });
+        assertThat(throwable).hasMessageThat().contains(
+                "Error occurred during dexopt when processing external profiles:");
+    }
+
+    /**
+     * Verifies that adb install-multi-package fails with multiple error messages when multiple
+     * APK-DM mismatches happen.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testExternalProfileValidationMultiPackageFailedMultipleErrors() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesMultiPackage(getAbi(),
+                    List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_2_DM_RES)),
+                            List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_DM_RES))));
+        });
+
+        assertThat(Utils.countSubstringOccurrence(throwable.getMessage(),
+                           "Error occurred during dexopt when processing external profiles:"))
+                .isEqualTo(2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testIgnoreDexoptProfile() throws Exception {
+        // Both the APK and the DM have a good profile, but ART Service should use none of them.
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--ignore-dexopt-profile"),
+                List.of(Pair.create(TEST_APP_WITH_GOOD_PROFILE_RES, TEST_APP_DM_RES)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_ART_SERVICE_V2)
+    public void testIgnoreDexoptProfileNoValidation() throws Exception {
+        // Both the APK and the DM have a bad profile, but ART Service should not complain.
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--ignore-dexopt-profile"),
+                List.of(Pair.create(TEST_APP_WITH_BAD_PROFILE_RES, TEST_APP_2_DM_RES)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
@@ -153,7 +329,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
         //       x86_64: [status=speed] [reason=cmdline] [primary-abi]
         // The pattern is intentionally minimized to be as forward compatible as possible.
         // TODO(b/283447251): Use a machine-readable format.
-        assertThat(dump).containsMatch(Pattern.compile(String.format(
-                "\\b(%s)\\b[^\\n]*\\n[^\\n]*\\[status=(%s)\\]", dexfilePattern, statusPattern)));
+        assertThat(dump).containsMatch(
+                Pattern.compile(String.format("[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\]",
+                        dexfilePattern, statusPattern)));
     }
 }

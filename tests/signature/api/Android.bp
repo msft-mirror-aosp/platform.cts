@@ -18,11 +18,12 @@ package {
 
 genrule_defaults {
     name: "signature-cts-api-api-gz",
-    cmd: "$(location metalava) --no-banner -convert2xmlnostrip $(in) $(genDir)/api.xml && gzip -c $(genDir)/api.xml > $(out)",
+    cmd: "$(location metalava) signature-to-jdiff $(in) $(genDir)/api.xml && gzip -c $(genDir)/api.xml > $(out)",
     tools: ["metalava"],
     visibility: [
         "//cts/tests/signature/api-check:__subpackages__",
         "//cts/tests/signature/intent-check",
+        "//cts/hostsidetests/devicepolicy",
     ],
 }
 

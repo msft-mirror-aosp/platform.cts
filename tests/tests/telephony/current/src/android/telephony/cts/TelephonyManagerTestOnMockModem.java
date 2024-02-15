@@ -20,6 +20,7 @@ import static android.telephony.PreciseDisconnectCause.TEMPORARY_FAILURE;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
 
 import static org.junit.Assert.assertEquals;
@@ -37,6 +38,7 @@ import android.content.pm.Signature;
 import android.hardware.radio.network.Domain;
 import android.hardware.radio.sim.Carrier;
 import android.hardware.radio.sim.CarrierRestrictions;
+import android.hardware.radio.sim.SimLockMultiSimPolicy;
 import android.hardware.radio.voice.LastCallFailCause;
 import android.hardware.radio.voice.UusInfo;
 import android.net.Uri;
@@ -44,9 +46,14 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
+import android.telephony.CarrierInfo;
+import android.telephony.CarrierRestrictionRules;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionManager;
@@ -60,27 +67,37 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.uicc.IccUtils;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 /** Test MockModemService interfaces. */
 public class TelephonyManagerTestOnMockModem {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "TelephonyManagerTestOnMockModem";
-    private static final long WAIT_TIME_MS = 5000;
+    private static final long WAIT_TIME_MS = 20000;
     private static MockModemManager sMockModemManager;
     private static TelephonyManager sTelephonyManager;
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
@@ -97,6 +114,9 @@ public class TelephonyManagerTestOnMockModem {
     private static ServiceStateListener sServiceStateCallback;
     private static CallDisconnectCauseListener sCallDisconnectCauseCallback;
     private static CallStateListener sCallStateCallback;
+    private int mServiceState;
+    private int mExpectedRegState;
+    private int mExpectedRegFailCause;
     private int mPreciseCallDisconnectCause;
     private int mCallState;
     private final Object mServiceStateChangeLock = new Object();
@@ -107,7 +127,7 @@ public class TelephonyManagerTestOnMockModem {
     private final Executor mCallStateChangeExecutor = Runnable::run;
     private boolean mResetCarrierStatusInfo;
     private static String mShaId;
-    private final int TIMEOUT_IN_SEC_FOR_MODEM_CB = 5;
+    private static final int TIMEOUT_IN_SEC_FOR_MODEM_CB = 10;
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#beforeAllTests()");
@@ -144,6 +164,12 @@ public class TelephonyManagerTestOnMockModem {
         sCallStateChangeCallbackHandler =
                 new Handler(sCallStateChangeCallbackHandlerThread.getLooper());
         mShaId = getShaId(TelephonyUtils.CTS_APP_PACKAGE);
+
+        final PackageManager pm = getContext().getPackageManager();
+        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            //Wait for Telephony FW and RIL initialization are done
+            TimeUnit.SECONDS.sleep(4);
+        }
     }
 
     @AfterClass
@@ -247,6 +273,16 @@ public class TelephonyManagerTestOnMockModem {
         return true;
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
+    private static boolean hasTelephonyFeature(String featureName) {
+        final PackageManager pm = getContext().getPackageManager();
+        if (!pm.hasSystemFeature(featureName)) {
+            Log.d(TAG, "Skipping test that requires " + featureName);
+            return false;
+        }
+        return true;
+    }
+
     private static boolean isMultiSim(TelephonyManager tm) {
         return tm != null && tm.getPhoneCount() > 1;
     }
@@ -293,14 +329,10 @@ public class TelephonyManagerTestOnMockModem {
         int subsLength = allSubs.length;
         Log.d(TAG, " Active Sub length is " + subsLength);
 
-        assertTrue(phoneId <= (subsLength - 1));
-
-        return allSubs[phoneId];
+        return (phoneId < subsLength) ? allSubs[phoneId] : -1;
     }
 
-    private int getRegState(int domain, int subId) {
-        int reg;
-
+    private NetworkRegistrationInfo getNri(int domain, int subId) {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.READ_PHONE_STATE");
@@ -311,11 +343,32 @@ public class TelephonyManagerTestOnMockModem {
         NetworkRegistrationInfo nri =
                 ss.getNetworkRegistrationInfo(domain, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
         assertNotNull(nri);
+        return nri;
+    }
+
+    private int getRegState(int domain, int subId) {
+        int reg;
+
+        NetworkRegistrationInfo nri = getNri(domain, subId);
 
         reg = nri.getRegistrationState();
         Log.d(TAG, "SS: " + nri.registrationStateToString(reg));
 
         return reg;
+    }
+
+    private int getRegFailCause(int domain, int subId) {
+        return getNri(domain, subId).getRejectCause();
+    }
+
+    private void waitForCondition(BooleanSupplier condition, Object lock, long maxWaitMillis)
+            throws Exception {
+        long now = System.currentTimeMillis();
+        long deadlineTime = now + maxWaitMillis;
+        while (!condition.getAsBoolean() && now < deadlineTime) {
+            lock.wait(deadlineTime - now);
+            now = System.currentTimeMillis();
+        }
     }
 
     @Test
@@ -363,36 +416,69 @@ public class TelephonyManagerTestOnMockModem {
         // Insert a SIM
         sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT);
 
-        // Leave Service
-        Log.d(TAG, "testServiceStateChange: Leave Service");
-        sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
-
-        // Expect: Seaching State
         TimeUnit.SECONDS.sleep(2);
         subId = getActiveSubId(slotId);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId),
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+        assertTrue(subId > 0);
+
+        // Register service state change callback
+        synchronized (mServiceStateChangeLock) {
+            mServiceState = ServiceState.STATE_OUT_OF_SERVICE;
+            mExpectedRegState = ServiceState.STATE_IN_SERVICE;
+        }
+
+        sServiceStateChangeCallbackHandler.post(
+                () -> {
+                    sServiceStateCallback = new ServiceStateListener();
+                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                            sTelephonyManager,
+                            (tm) ->
+                                    tm.registerTelephonyCallback(
+                                            mServiceStateChangeExecutor, sServiceStateCallback));
+                });
 
         // Enter Service
         Log.d(TAG, "testServiceStateChange: Enter Service");
         sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
 
         // Expect: Home State
-        TimeUnit.SECONDS.sleep(2);
+        synchronized (mServiceStateChangeLock) {
+            if (mServiceState != ServiceState.STATE_IN_SERVICE) {
+                Log.d(TAG, "Wait for service state change to in service");
+                waitForCondition(
+                        () -> (ServiceState.STATE_IN_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
+        }
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId),
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
 
         // Leave Service
+        synchronized (mServiceStateChangeLock) {
+            mExpectedRegState = ServiceState.STATE_OUT_OF_SERVICE;
+        }
+
         Log.d(TAG, "testServiceStateChange: Leave Service");
         sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
 
         // Expect: Seaching State
-        TimeUnit.SECONDS.sleep(2);
+        synchronized (mServiceStateChangeLock) {
+            if (mServiceState != ServiceState.STATE_OUT_OF_SERVICE) {
+                Log.d(TAG, "Wait for service state change to out of service");
+                waitForCondition(
+                        () -> (ServiceState.STATE_OUT_OF_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
+        }
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId),
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+
+        // Unregister service state change callback
+        sTelephonyManager.unregisterTelephonyCallback(sServiceStateCallback);
+        sServiceStateCallback = null;
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId);
@@ -402,10 +488,88 @@ public class TelephonyManagerTestOnMockModem {
             implements TelephonyCallback.ServiceStateListener {
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
-            if (serviceState.getVoiceRegState() == ServiceState.STATE_IN_SERVICE) {
-                mServiceStateChangeLock.notify();
+            Log.d(TAG, "Callback: service state = " + serviceState.getVoiceRegState());
+            synchronized (mServiceStateChangeLock) {
+                mServiceState = serviceState.getVoiceRegState();
+                if (serviceState.getVoiceRegState() == mExpectedRegState) {
+                    mServiceStateChangeLock.notify();
+                }
             }
         }
+    }
+
+    @Test
+    public void testRegistrationFailed() throws Throwable {
+        Log.d(TAG, "TelephonyManagerTestOnMockModem#testRegistrationFailed");
+
+        assumeTrue(isSimHotSwapCapable());
+
+        int slotId = 0;
+        int subId;
+
+        // Insert a SIM
+        sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT);
+
+        TimeUnit.SECONDS.sleep(2);
+        subId = getActiveSubId(slotId);
+        assertTrue(subId > 0);
+
+        // Register service state change callback
+        synchronized (mServiceStateChangeLock) {
+            mServiceState = ServiceState.STATE_IN_SERVICE;
+            mExpectedRegState = ServiceState.STATE_OUT_OF_SERVICE;
+            mExpectedRegFailCause = (int) (Math.random() * (double) 256);
+        }
+
+        sServiceStateChangeCallbackHandler.post(
+                () -> {
+                    sServiceStateCallback = new ServiceStateListener();
+                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                            sTelephonyManager,
+                            (tm) ->
+                                    tm.registerTelephonyCallback(
+                                            mServiceStateChangeExecutor, sServiceStateCallback));
+                });
+
+        sMockModemManager.changeNetworkService(
+                slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+
+        // Expect: Searching
+        synchronized (mServiceStateChangeLock) {
+            if (mServiceState != ServiceState.STATE_OUT_OF_SERVICE) {
+                Log.d(TAG, "Wait for service state change to searching");
+                waitForCondition(
+                        () -> (ServiceState.STATE_OUT_OF_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
+        }
+        assertEquals(
+                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId),
+                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+
+
+        // Expect: Registration Failed
+        synchronized (mServiceStateChangeLock) {
+            Log.d(TAG, "Wait for service state change to denied");
+            sMockModemManager.changeNetworkService(
+                    slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, false, Domain.CS, mExpectedRegFailCause);
+            mServiceStateChangeLock.wait(WAIT_TIME_MS);
+        }
+
+        assertEquals(
+                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId),
+                NetworkRegistrationInfo.REGISTRATION_STATE_DENIED);
+        assertEquals(
+                getRegFailCause(NetworkRegistrationInfo.DOMAIN_CS, subId),
+                mExpectedRegFailCause);
+
+        // Unregister service state change callback
+        sTelephonyManager.unregisterTelephonyCallback(sServiceStateCallback);
+        sServiceStateCallback = null;
+
+        // Remove the SIM
+        sMockModemManager.removeSimCard(slotId);
     }
 
     private class CallDisconnectCauseListener extends TelephonyCallback
@@ -435,6 +599,13 @@ public class TelephonyManagerTestOnMockModem {
     public void testVoiceCallState() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testVoiceCallState");
 
+        // Skip the test if it is a data-only device
+        final PackageManager pm = getContext().getPackageManager();
+        if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+            Log.d(TAG, "Skipping test: Not test on data-only device");
+            return;
+        }
+
         assumeTrue(isSimHotSwapCapable());
 
         int slotId = 0;
@@ -448,6 +619,11 @@ public class TelephonyManagerTestOnMockModem {
         TimeUnit.SECONDS.sleep(1);
 
         // Register service state change callback
+        synchronized (mServiceStateChangeLock) {
+            mServiceState = ServiceState.STATE_OUT_OF_SERVICE;
+            mExpectedRegState = ServiceState.STATE_IN_SERVICE;
+        }
+
         sServiceStateChangeCallbackHandler.post(
                 () -> {
                     sServiceStateCallback = new ServiceStateListener();
@@ -465,11 +641,17 @@ public class TelephonyManagerTestOnMockModem {
 
         // Verify service state
         synchronized (mServiceStateChangeLock) {
-            Log.d(TAG, "Wait for service state change to in service");
-            mServiceStateChangeLock.wait(WAIT_TIME_MS);
+            if (mServiceState != ServiceState.STATE_IN_SERVICE) {
+                Log.d(TAG, "Wait for service state change to in service");
+                waitForCondition(() -> (
+                        ServiceState.STATE_IN_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
         }
 
         subId = getActiveSubId(slotId);
+        assertTrue(subId > 0);
         assertEquals(
                 getRegState(NetworkRegistrationInfo.DOMAIN_PS, subId),
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
@@ -616,17 +798,25 @@ public class TelephonyManagerTestOnMockModem {
         sMockModemManager.insertSimCard(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
         sMockModemManager.insertSimCard(slotId_1, MOCK_SIM_PROFILE_ID_TWN_FET);
 
-        // Expect: Seaching State
         TimeUnit.SECONDS.sleep(2);
         subId_0 = getActiveSubId(slotId_0);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_0),
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
-
         subId_1 = getActiveSubId(slotId_1);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_1),
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+
+        // Register service state change callback
+        synchronized (mServiceStateChangeLock) {
+            mServiceState = ServiceState.STATE_OUT_OF_SERVICE;
+            mExpectedRegState = ServiceState.STATE_IN_SERVICE;
+        }
+
+        sServiceStateChangeCallbackHandler.post(
+                () -> {
+                    sServiceStateCallback = new ServiceStateListener();
+                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                            sTelephonyManager,
+                            (tm) ->
+                                    tm.registerTelephonyCallback(
+                                            mServiceStateChangeExecutor, sServiceStateCallback));
+                });
 
         // Enter Service
         Log.d(TAG, "testDsdsServiceStateChange: Enter Service");
@@ -634,29 +824,62 @@ public class TelephonyManagerTestOnMockModem {
         sMockModemManager.changeNetworkService(slotId_1, MOCK_SIM_PROFILE_ID_TWN_FET, true);
 
         // Expect: Home State
-        TimeUnit.SECONDS.sleep(2);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_0),
-                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_1),
-                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+        synchronized (mServiceStateChangeLock) {
+            if (mServiceState != ServiceState.STATE_IN_SERVICE) {
+                Log.d(TAG, "Wait for service state change to in service");
+                waitForCondition(
+                        () -> (ServiceState.STATE_IN_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
+        }
+        if (subId_0 > 0) {
+            assertEquals(
+                    getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_0),
+                    NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+        }
+        if (subId_1 > 0) {
+            TimeUnit.SECONDS.sleep(2);
+            assertEquals(
+                    getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_1),
+                    NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+        }
 
-        TimeUnit.SECONDS.sleep(2);
+        assertTrue(subId_0 > 0 || subId_1 > 0);
 
         // Leave Service
+        synchronized (mServiceStateChangeLock) {
+            mExpectedRegState = ServiceState.STATE_OUT_OF_SERVICE;
+        }
+
         Log.d(TAG, "testDsdsServiceStateChange: Leave Service");
         sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
         sMockModemManager.changeNetworkService(slotId_1, MOCK_SIM_PROFILE_ID_TWN_FET, false);
 
         // Expect: Seaching State
-        TimeUnit.SECONDS.sleep(2);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_0),
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
-        assertEquals(
-                getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_1),
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+        synchronized (mServiceStateChangeLock) {
+            if (mServiceState != ServiceState.STATE_OUT_OF_SERVICE) {
+                Log.d(TAG, "Wait for service state change to out of service");
+                waitForCondition(
+                        () -> (ServiceState.STATE_OUT_OF_SERVICE == mServiceState),
+                        mServiceStateChangeLock,
+                        WAIT_TIME_MS);
+            }
+        }
+        if (subId_0 > 0) {
+            assertEquals(
+                    getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_0),
+                    NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+        }
+        if (subId_1 > 0) {
+            assertEquals(
+                    getRegState(NetworkRegistrationInfo.DOMAIN_CS, subId_1),
+                    NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING);
+        }
+
+        // Unregister service state change callback
+        sTelephonyManager.unregisterTelephonyCallback(sServiceStateCallback);
+        sServiceStateCallback = null;
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId_0);
@@ -848,12 +1071,169 @@ public class TelephonyManagerTestOnMockModem {
     /**
      * Test for primaryImei will return the IMEI that is set through mockModem
      */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testGetPrimaryImei() {
-        assumeTrue(sTelephonyManager.getActiveModemCount() > 0);
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(hasTelephonyFeature(PackageManager.FEATURE_TELEPHONY_GSM)
+                    && sTelephonyManager.getActiveModemCount() > 0);
+        } else {
+            assumeTrue(sTelephonyManager.getActiveModemCount() > 0);
+        }
+
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                 (tm) -> tm.getPrimaryImei());
         assertNotNull(primaryImei);
         assertEquals(MockModemConfigInterface.DEFAULT_PHONE1_IMEI, primaryImei);
     }
+
+    /**
+     * Verify the change of PrimaryImei with respect to sim slot.
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @Test
+    public void onImeiMappingChanged() {
+        // As first step verify the primary Imei against the default allocation
+        assumeTrue(sTelephonyManager.getActiveModemCount() > 1);
+        String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
+                (tm) -> tm.getPrimaryImei());
+        assertNotNull(primaryImei);
+        assertEquals(MockModemConfigInterface.DEFAULT_PHONE1_IMEI, primaryImei);
+        String slot0Imei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
+                (tm) -> tm.getImei(0));
+        assertEquals(slot0Imei, primaryImei);
+
+        // Second step is change the PrimaryImei to slot2 and verify the same.
+        if (sMockModemManager.changeImeiMapping()) {
+            Log.d(TAG, "Verifying primary IMEI after change in IMEI mapping");
+            primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
+                    (tm) -> tm.getPrimaryImei());
+            assertNotNull(primaryImei);
+            assertEquals(MockModemConfigInterface.DEFAULT_PHONE1_IMEI, primaryImei);
+            String slot1Imei = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    sTelephonyManager,
+                    (tm) -> tm.getImei(1));
+            assertEquals(slot1Imei, primaryImei);
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @Test
+    public void getAllowedCarriers_ReadPhoneState_Restricted() throws Exception {
+        sMockModemManager.updateCarrierRestrictionInfo(getCarrierList(false),
+                CarrierRestrictions.CarrierRestrictionStatus.RESTRICTED);
+        CarrierRestrictionRules rules =runWithShellPermissionIdentity(() -> {
+            return sTelephonyManager.getCarrierRestrictionRules();
+        }, android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED,
+                rules.getCarrierRestrictionStatus());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void getCarrierRestrictionRules() {
+        assumeTrue(Flags.carrierRestrictionRulesEnhancement());
+        // settings the data in MockModem
+        android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
+                new android.hardware.radio.sim.CarrierRestrictions();
+        android.hardware.radio.sim.CarrierInfo carrierInfo = getCarrierInfo("321", "654", "Airtel",
+                null, null, null, null, null, null);
+        carrierRestrictions.allowedCarrierInfoList = new android.hardware.radio.sim.CarrierInfo[1];
+        carrierRestrictions.allowedCarrierInfoList[0] = carrierInfo;
+        sMockModemManager.setCarrierRestrictionRules(carrierRestrictions,
+                android.hardware.radio.sim.SimLockMultiSimPolicy.NO_MULTISIM_POLICY);
+
+        // calling TM API with shell permissions.
+        CarrierRestrictionRules carrierRules = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                sTelephonyManager, tm -> tm.getCarrierRestrictionRules());
+
+        // Verify the received CarrierRestrictionRules
+        assertTrue(carrierRules != null);
+        assertTrue(carrierRules.getAllowedCarriersInfoList() != null);
+        assertEquals(1, carrierRules.getAllowedCarriersInfoList().size());
+        CarrierInfo carrierInfo1 = carrierRules.getAllowedCarriersInfoList().get(0);
+        assertTrue(carrierInfo1 != null);
+        assertEquals(carrierInfo1.getMcc(), "321");
+        assertEquals(carrierInfo1.getMnc(), "654");
+        assertEquals(carrierInfo1.getSpn(), "Airtel");
+        assertEquals(carrierRules.getMultiSimPolicy(),
+                CarrierRestrictionRules.MULTISIM_POLICY_NONE);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void getCarrierRestrictionRules_WithEphlmnList() {
+        assumeTrue(Flags.carrierRestrictionRulesEnhancement());
+        // settings the data in MockModem
+        android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
+                new android.hardware.radio.sim.CarrierRestrictions();
+        List<android.hardware.radio.sim.Plmn> plmnList = new ArrayList<>();
+        android.hardware.radio.sim.Plmn plmn1 = new android.hardware.radio.sim.Plmn();
+        plmn1.mcc = "*";
+        plmn1.mnc = "546";
+
+        android.hardware.radio.sim.Plmn plmn2 = new android.hardware.radio.sim.Plmn();
+        plmn2.mcc = "132";
+        plmn2.mnc = "***";
+
+        plmnList.add(plmn1);
+        plmnList.add(plmn2);
+
+        android.hardware.radio.sim.CarrierInfo carrierInfo = getCarrierInfo("*21", "**1", "Jio",
+                null, null, null, plmnList, null, null);
+        carrierRestrictions.allowedCarrierInfoList = new android.hardware.radio.sim.CarrierInfo[1];
+        carrierRestrictions.allowedCarrierInfoList[0] = carrierInfo;
+        sMockModemManager.setCarrierRestrictionRules(carrierRestrictions,
+                SimLockMultiSimPolicy.ACTIVE_SERVICE_ON_ANY_SLOT_TO_UNBLOCK_OTHER_SLOTS);
+
+        // calling TM API with shell permissions.
+        CarrierRestrictionRules carrierRules = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                sTelephonyManager, tm -> tm.getCarrierRestrictionRules());
+
+        // Verify the received CarrierRestrictionRules
+        assertTrue(carrierRules != null);
+        Log.d("TestonMockModem", "CTS carrierRules = " +carrierRules);
+        assertTrue(carrierRules.getAllowedCarriersInfoList() != null);
+        assertEquals(1, carrierRules.getAllowedCarriersInfoList().size());
+        CarrierInfo carrierInfo1 = carrierRules.getAllowedCarriersInfoList().get(0);
+        assertTrue(carrierInfo1 != null);
+        assertEquals(carrierInfo1.getMcc(), "*21");
+        assertEquals(carrierInfo1.getMnc(), "**1");
+        assertEquals(carrierInfo1.getSpn(), "Jio");
+        assertTrue(carrierInfo1.getEhplmn() != null);
+        assertTrue(carrierInfo1.getEhplmn().size() == 2);
+        String ehplmn1 = carrierInfo1.getEhplmn().get(0);
+        String ehplmn2 = carrierInfo1.getEhplmn().get(1);
+        String[] ehplmn1Tokens = ehplmn1.split(",");
+        String[] ehplmn2Tokens = ehplmn2.split(",");
+        assertEquals(ehplmn1Tokens[0], "*");
+        assertEquals(ehplmn1Tokens[1], "546");
+        assertEquals(ehplmn2Tokens[0], "132");
+        assertEquals(ehplmn2Tokens[1], "***");
+        assertEquals(carrierRules.getMultiSimPolicy(),
+                CarrierRestrictionRules.
+                        MULTISIM_POLICY_ACTIVE_SERVICE_ON_ANY_SLOT_TO_UNBLOCK_OTHER_SLOTS);
+    }
+
+    private android.hardware.radio.sim.CarrierInfo getCarrierInfo(String mcc, String mnc,
+            String spn, String gid1, String gid2, String imsi,
+            List<android.hardware.radio.sim.Plmn> ehplmn, String iccid, String impi) {
+        android.hardware.radio.sim.CarrierInfo carrierInfo =
+                new android.hardware.radio.sim.CarrierInfo();
+        carrierInfo.mcc = mcc;
+        carrierInfo.mnc = mnc;
+        carrierInfo.spn = spn;
+        carrierInfo.gid1 = gid1;
+        carrierInfo.gid2 = gid2;
+        carrierInfo.imsiPrefix = imsi;
+        carrierInfo.ehplmn = ehplmn;
+        carrierInfo.iccid = iccid;
+        carrierInfo.impi = impi;
+        return carrierInfo;
+    }
+
 }

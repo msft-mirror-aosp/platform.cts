@@ -33,10 +33,12 @@ android_test {
     ],
     sdk_version: "test_current",
     static_libs: [
+        "android.appwidget.flags-aconfig-java",
         "mockito-target-minus-junit4",
         "ctstestrunner-axt",
         "junit",
         "compatibility-device-util-axt",
+        "cts-wm-util",
     ],
     libs: ["android.test.base"],
     // Tag this module as a cts test artifact
@@ -51,6 +53,7 @@ android_test {
         ":CtsAppWidgetProvider1",
         ":CtsAppWidgetLauncher1",
         ":CtsAppWidgetProvider2",
+        ":CtsAppWidgetTestCasesBalApp",
     ],
     per_testcase_directory: true,
 }

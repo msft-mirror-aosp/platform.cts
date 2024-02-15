@@ -21,21 +21,25 @@ import static android.mediapc.cts.FrameDropTestBase.DECODE_31S;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.util.Pair;
 import android.view.Surface;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 /**
  * The following class calculates the frame drops for the given array of testFiles playback.
  * It will do playback for at least 30 seconds worth of input data or for utmost 31 seconds.
  * If input reaches eos, it will rewind the input to start position.
  */
 public class PlaybackFrameDrop extends CodecDecoderTestBase {
+    private static final int AV1_INITIAL_DELAY = 8;
     private final String mDecoderName;
     private final String[] mTestFiles;
-    private final int mEachFrameTimeIntervalUs;
+    private final long mEachFrameTimeIntervalUs;
     private final boolean mIsAsync;
 
     private int mFrameDropCount;
@@ -49,6 +53,83 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
     private long mDecodeStartTimeMs;
     private int mSampleIndex;
     private int mMaxNumFrames;
+    private int mInitialDelay;
+
+    private OutputHandler mOutputHandler;
+    private Thread mThread;
+
+    class OutputHandler implements Runnable {
+        class BufferData {
+            public final int frameCount;  // total count of full frames up to this point
+            public final int bufferIndex;
+            public final MediaCodec.BufferInfo info;
+
+            public BufferData(int frameCount, int bufferIndex, MediaCodec.BufferInfo info) {
+                this.frameCount = frameCount;
+                this.bufferIndex = bufferIndex;
+                this.info = info;
+            }
+        };
+
+        private final ArrayList<BufferData> mQueue = new ArrayList<>();
+        private boolean mStop = false;
+        private final Lock mLock = new ReentrantLock();
+        private final Condition mCondition = mLock.newCondition();
+
+        private BufferData getOutput() throws InterruptedException {
+            BufferData output = null;
+            mLock.lock();
+            try {
+                while (!mStop) {
+                    if (mQueue.isEmpty()) {
+                        mCondition.await();
+                    } else {
+                        output = mQueue.remove(0);
+                        break;
+                    }
+                }
+            } finally {
+                mLock.unlock();
+            }
+            return output;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    BufferData output = getOutput();
+                    if (output != null) {
+                        delayedReleaseOutput(output.frameCount, output.bufferIndex, output.info);
+                    } else {
+                        break;
+                    }
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+
+        public void add(int outputCount, int bufferIndex, MediaCodec.BufferInfo info) {
+            mLock.lock();
+            try {
+                mQueue.add(new BufferData(outputCount, bufferIndex, info));
+                mCondition.signal();
+            } finally {
+                mLock.unlock();
+            }
+        }
+
+        public void stop() throws Exception {
+            mLock.lock();
+            try {
+                mStop = true;
+                mCondition.signal();
+            } finally {
+                mLock.unlock();
+            }
+        }
+    }
 
     PlaybackFrameDrop(String mime, String decoderName, String[] testFiles, Surface surface,
             int frameRate, boolean isAsync) {
@@ -63,9 +144,13 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         mMaxPts = 0;
         mSampleIndex = 0;
         mFrameDropCount = 0;
-        // Decode for 30 seconds
-        mMaxNumFrames = frameRate * 30;
         mBufferInfos = new ArrayList<>();
+        // When testing AV1, because of super frames, we allow initial few frames to be delayed.
+        mInitialDelay = mime.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? AV1_INITIAL_DELAY : 0;
+        // Decode for 30 seconds
+        mMaxNumFrames = frameRate * 30 + mInitialDelay + 1;
+        mOutputHandler = new OutputHandler();
+        mThread = new Thread(mOutputHandler);
     }
 
     private MediaFormat createInputList(MediaFormat format, ByteBuffer buffer,
@@ -149,11 +234,14 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
 
         mCodec = MediaCodec.createByCodecName(mDecoderName);
         configureCodec(formats.get(0), mIsAsync, false, false);
+        mThread.start();
         mCodec.start();
         mDecodeStartTimeMs = System.currentTimeMillis();
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllOutputs();
+        mOutputHandler.stop();
+        mThread.join();
         mCodec.stop();
         mCodec.release();
         return mFrameDropCount;
@@ -192,21 +280,25 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
     }
 
     @Override
-    void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
-        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-            mSawOutputEOS = true;
-        }
+    protected void releaseOutput(int outputCount, int bufferIndex, MediaCodec.BufferInfo info) {
+        mOutputHandler.add(outputCount, bufferIndex, info);
+    }
+
+    void delayedReleaseOutput(int outputCount, int bufferIndex, MediaCodec.BufferInfo info) {
         // We will limit the playback to 60 fps using the system timestamps.
         long nowUs = System.nanoTime() / 1000;
-        if (mOutputCount == 0) {
-            mRenderStartTimeUs = nowUs;
-            mCodec.releaseOutputBuffer(bufferIndex, true);
-        } else if (nowUs > getRenderTimeUs(mOutputCount + 1)) {
+
+        if (outputCount == 0) {
+            // delay rendering the first frame by the specific delay
+            mRenderStartTimeUs = nowUs + mInitialDelay * mEachFrameTimeIntervalUs;
+        }
+
+        if (nowUs > getRenderTimeUs(outputCount + 1)) {
             // If the current sample timeStamp is greater than the actual presentation timeStamp
             // of the next sample, we will consider it as a frame drop and don't render.
             mFrameDropCount++;
             mCodec.releaseOutputBuffer(bufferIndex, false);
-        } else if (nowUs > getRenderTimeUs(mOutputCount)) {
+        } else if (nowUs > getRenderTimeUs(outputCount)) {
             // If the current sample timeStamp is greater than the actual presentation timeStamp
             // of the current sample, we can render it.
             mCodec.releaseOutputBuffer(bufferIndex, true);
@@ -215,18 +307,15 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
             // We are okay with directly rendering the sample if we are less by not more than
             // half of one sample duration. Otherwise we sleep for how much more we are less
             // than the half of one sample duration.
-            if ((getRenderTimeUs(mOutputCount) - nowUs) > (mEachFrameTimeIntervalUs / 2)) {
+            if ((getRenderTimeUs(outputCount) - nowUs) > (mEachFrameTimeIntervalUs / 2)) {
                 try {
-                    Thread.sleep(((getRenderTimeUs(mOutputCount) - nowUs) -
+                    Thread.sleep(((getRenderTimeUs(outputCount) - nowUs) -
                             (mEachFrameTimeIntervalUs / 2)) / 1000);
                 } catch (InterruptedException e) {
                     // Do nothing.
                 }
             }
             mCodec.releaseOutputBuffer(bufferIndex, true);
-        }
-        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-            mOutputCount++;
         }
     }
 }

@@ -23,12 +23,15 @@ import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
 import static android.view.WindowInsets.Type.captionBar;
+import static android.view.WindowInsets.Type.navigationBars;
+import static android.view.WindowInsets.Type.statusBars;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -44,6 +47,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.DataSpace;
 import android.media.Image;
 import android.media.ImageWriter;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Half;
 import android.view.PixelCopy;
 import android.view.Surface;
@@ -53,12 +57,14 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.cts.util.BitmapDumper;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SynchronousPixelCopy;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -80,6 +86,7 @@ import junitparams.Parameters;
 
 @MediumTest
 @RunWith(JUnitParamsRunner.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class TextureViewTest {
 
     static final int EGL_GL_COLORSPACE_SRGB_KHR = 0x3089;
@@ -98,11 +105,17 @@ public class TextureViewTest {
         assertNotNull(mInstrumentation);
     }
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<TextureViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(TextureViewCtsActivity.class, false, false);
 
-    @Rule
+    @Rule(order = 1)
     public ActivityTestRule<SDRTestActivity> mSDRActivityRule =
             new ActivityTestRule<>(SDRTestActivity.class, false, false);
 
@@ -286,7 +299,7 @@ public class TextureViewTest {
 
         final SDRTestActivity activity =
                 mSDRActivityRule.launchActivity(/*startIntent*/ null);
-        activity.waitForSurface();
+        activity.waitForEnterAnimationComplete();
 
         TextureView textureView = activity.getTextureView();
         // SurfaceView and TextureView dimensions are the same so we reuse variables
@@ -382,25 +395,40 @@ public class TextureViewTest {
         WidgetTestUtils.runOnMainAndDrawSync(
                 mSDRActivityRule, textureView, () -> textureView.getBitmap(textureViewScreenshot));
 
+        WindowInsets rootWindowInsets = activity.getWindow().getDecorView().getRootWindowInsets();
+        int extraSurfaceTopOffset = rootWindowInsets.getInsets(captionBar()).top;
         // If the caption bar is present, the surface top edge in the screenshot is shifted.
-        int extraSurfaceOffset = activity.getWindow().getDecorView().getRootWindowInsets()
-                .getInsets(captionBar()).top;
+        extraSurfaceTopOffset += rootWindowInsets.getInsets(statusBars()).top;
+
+        int extraSurfaceBottomOffset = rootWindowInsets.getInsets(navigationBars()).bottom;
 
         // sample 5 pixels on the edge for bitmap comparison.
         // TextureView and SurfaceView use different shaders, so compare these two with tolerance.
         // TODO(b/229173479): These shaders shouldn't be very different. Figure out why we need
         // this tolerance in the first place.
         final int threshold = 3;
-        assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, extraSurfaceOffset),
-                textureViewScreenshot.getPixel(width / 2, 0), threshold);
-        assertPixelsAreSame(surfaceViewScreenshot.getPixel(0, height / 2),
-                textureViewScreenshot.getPixel(0, height / 2), threshold);
-        assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height / 2),
-                textureViewScreenshot.getPixel(width / 2, height / 2), threshold);
-        assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height - 1),
-                textureViewScreenshot.getPixel(width / 2, height - 1), threshold);
-        assertPixelsAreSame(surfaceViewScreenshot.getPixel(width - 1, height / 2),
-                textureViewScreenshot.getPixel(width - 1, height / 2), threshold);
+        try {
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, extraSurfaceTopOffset),
+                    textureViewScreenshot.getPixel(width / 2, 0), threshold);
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(0, height / 2),
+                    textureViewScreenshot.getPixel(0, height / 2), threshold);
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height / 2),
+                    textureViewScreenshot.getPixel(width / 2, height / 2), threshold);
+            assertPixelsAreSame(
+                    surfaceViewScreenshot.getPixel(width / 2,
+                            height - 1 - extraSurfaceBottomOffset),
+                    textureViewScreenshot.getPixel(width / 2,
+                            height - 1),
+                    threshold);
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width - 1, height / 2),
+                    textureViewScreenshot.getPixel(width - 1, height / 2), threshold);
+        } catch (AssertionError err) {
+            BitmapDumper.dumpBitmap(textureViewScreenshot,
+                    mTestName.getMethodName() + "_textureView", "TextureViewTest");
+            BitmapDumper.dumpBitmap(surfaceViewScreenshot,
+                    mTestName.getMethodName() + "_surfaceView", "TextureViewTest");
+            throw err;
+        }
     }
 
     @Test

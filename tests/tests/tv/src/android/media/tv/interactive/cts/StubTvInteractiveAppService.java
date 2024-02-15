@@ -31,11 +31,14 @@ import android.media.tv.interactive.AppLinkInfo;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppService;
 import android.net.Uri;
+import android.net.http.SslCertificate;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
+
+import androidx.annotation.NonNull;
 
 import java.util.List;
 
@@ -107,6 +110,8 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
         public int mRecordingConnectionFailedCount;
         public int mRecordingDisconnected;
         public int mRecordingErrorCount;
+        public int mSendSelectedTrackInfoCount;
+        public int mSendCertificateCount;
 
         public Integer mKeyDownCode;
         public Integer mKeyUpCode;
@@ -136,6 +141,10 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
         public List<TvRecordingInfo> mTvRecordingInfoList;
         public Rect mCurrentVideoBounds;
         public Integer mRecordingError;
+        public List<TvTrackInfo> mSelectedTrackInfoList;
+        public SslCertificate mCertificate;
+        public String mHost;
+        public Integer mPort;
 
         StubSessionImpl(Context context) {
             super(context);
@@ -175,6 +184,8 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mRecordingConnectionFailedCount = 0;
             mRecordingDisconnected = 0;
             mRecordingErrorCount = 0;
+            mSendSelectedTrackInfoCount = 0;
+            mSendCertificateCount = 0;
 
             mKeyDownCode = null;
             mKeyUpCode = null;
@@ -204,6 +215,10 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mTvRecordingInfoList = null;
             mCurrentVideoBounds = null;
             mRecordingError = null;
+            mSelectedTrackInfoList = null;
+            mCertificate = null;
+            mHost = null;
+            mPort = null;
         }
 
         @Override
@@ -645,6 +660,22 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mRecordingErrorCount++;
             mRecordingId = recordingId;
             mRecordingError = err;
+        }
+
+        @Override
+        public void onSelectedTrackInfo(@NonNull List<TvTrackInfo> trackInfoList) {
+            super.onSelectedTrackInfo(trackInfoList);
+            mSelectedTrackInfoList = trackInfoList;
+            mSendSelectedTrackInfoCount++;
+        }
+
+        @Override
+        public void onCertificate(String host, int port, SslCertificate certificate) {
+            super.onCertificate(host, port, certificate);
+            mSendCertificateCount++;
+            mHost = host;
+            mPort = port;
+            mCertificate = certificate;
         }
     }
 }

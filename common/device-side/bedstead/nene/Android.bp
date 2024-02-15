@@ -5,17 +5,19 @@ package {
 java_library_host {
     name: "NeneCommon",
     srcs: [
-        "common/src/main/java/**/*.java"
+        "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
 }
 
 android_library {
     name: "NeneCommonAndroid",
     srcs: [
-        "common/src/main/java/**/*.java"
+        "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }
 
 // TODO(b/203507664): Remove NeneInternal once we no longer need QUERY_ALL_PACKAGES to install
@@ -23,7 +25,8 @@ android_library {
     name: "NeneInternal",
     sdk_version: "test_current",
     srcs: [
-        "src/main/java/**/*.java"
+        "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     static_libs: [
@@ -34,14 +37,18 @@ android_library {
         "RemoteFrameworkClasses",
         "androidx.test.uiautomator_uiautomator",
     ],
-    min_sdk_version: "29"
+    min_sdk_version: "29",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_library {
     name: "Nene",
     sdk_version: "test_current",
     srcs: [
-        "src/main/java/**/*.java"
+        "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
@@ -51,14 +58,19 @@ android_library {
         "NeneCommonAndroid",
         "RemoteFrameworkClasses",
         "androidx.test.uiautomator_uiautomator",
+        "modules-utils-binary-xml",
     ],
-    min_sdk_version: "29"
+    min_sdk_version: "29",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_test {
     name: "NeneTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -72,18 +84,20 @@ android_test {
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "truth-prebuilt",
-        "testng" // for assertThrows
+        "truth",
+        "testng", // for assertThrows
+        "modules-utils-binary-xml",
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }
 
 android_test {
     name: "InteractiveNeneTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -97,19 +111,20 @@ android_test {
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "truth-prebuilt",
-        "testng" // for assertThrows
+        "truth",
+        "testng", // for assertThrows
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
-    test_config: "InteractiveAndroidTest.xml"
+    test_config: "InteractiveAndroidTest.xml",
 }
 
 android_test {
     name: "NeneBenchmarks",
     srcs: [
         "src/benchmarks/java/**/benchmarks/*.java",
+        "src/benchmarks/java/**/benchmarks/*.kt",
         "src/benchmarks/java/**/benchmarks/*.proto",
     ],
     test_suites: [
@@ -129,14 +144,14 @@ android_test {
     ],
     manifest: "src/benchmarks/AndroidManifest.xml",
     test_config: "src/benchmarks/AndroidTest.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }
 
 android_test_helper_app {
     name: "NeneTestApp1",
     static_libs: [
-        "EventLib"
+        "EventLib",
     ],
     manifest: "testapps/TestApp1.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }

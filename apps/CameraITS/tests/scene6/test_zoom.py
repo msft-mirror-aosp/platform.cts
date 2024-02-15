@@ -26,13 +26,8 @@ from mobly import test_runner
 import numpy as np
 import zoom_capture_utils
 
-_CIRCLE_COLOR = 0  # [0: black, 255: white]
-_CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _JPEG_STR = 'jpg'
-_MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
-_MIN_CIRCLE_PTS = 25
-_MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
@@ -58,13 +53,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
+      # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
-      logging.debug('testing zoomRatioRange: %s', str(z_range))
       debug = self.debug_mode
-
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      z_list = np.arange(z_min, z_max, float(z_max - z_min) / (_NUM_STEPS - 1))
+      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
+      z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
+      logging.debug('Testing zoom range: %s', str(z_list))
 
       # Check media performance class
       media_performance_class = its_session_utils.get_media_performance_class(
@@ -81,8 +78,6 @@ class ZoomTest(its_base_test.ItsBaseTest):
             f'Found media performance class {media_performance_class} '
             f'and minimum zoom {z_min}.')
 
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
-
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
         test_tols, size = zoom_capture_utils.get_test_tols_and_cap_size(
@@ -98,31 +93,34 @@ class ZoomTest(its_base_test.ItsBaseTest):
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
-      # determine vendor API level and test_formats to test
+      # determine first API level and test_formats to test
       test_formats = _TEST_FORMATS
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
-      if vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL:
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      if first_api_level >= its_session_utils.ANDROID14_API_LEVEL:
         test_formats.append(_JPEG_STR)
 
       # do captures over zoom range and find circles with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
-      if camera_properties_utils.manual_sensor(props):
-        logging.debug('Manual sensor, using manual capture request')
-        s, e, _, _, f_d = cam.do_3a(get_results=True)
-        req = capture_request_utils.manual_capture_request(
-            s, e, f_distance=f_d)
-      else:
-        logging.debug('Using auto capture request')
-        cam.do_3a()
-        req = capture_request_utils.auto_capture_request()
+      req = capture_request_utils.auto_capture_request()
       test_failed = False
       for fmt in test_formats:
         logging.debug('testing %s format', fmt)
         test_data = {}
         for i, z in enumerate(z_list):
           req['android.control.zoomRatio'] = z
+          logging.debug('zoom ratio: %.3f', z)
+          cam.do_3a(
+              zoom_ratio=z,
+              out_surfaces={
+                  'format': fmt,
+                  'width': size[0],
+                  'height': size[1]
+              },
+              repeat_request=None,
+          )
           cap = cam.do_capture(
-              req, {'format': fmt, 'width': size[0], 'height': size[1]})
+              req, {'format': fmt, 'width': size[0], 'height': size[1]},
+              reuse_session=True)
 
           img = image_processing_utils.convert_capture_to_rgb_image(
               cap, props=props)
@@ -131,11 +129,22 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           # determine radius tolerance of capture
           cap_fl = cap['metadata']['android.lens.focalLength']
-          radius_tol, offset_tol = test_tols[cap_fl]
+          radius_tol, offset_tol = test_tols.get(
+              cap_fl,
+              (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
+          )
 
-          # Find the center circle in img
-          circle = zoom_capture_utils.get_center_circle(img, img_name, size, z,
-                                                        z_list[0], debug)
+          # Scale circlish RTOL for low zoom ratios
+          if z < 1:
+            circlish_rtol = _CIRCLISH_RTOL / z
+          else:
+            circlish_rtol = _CIRCLISH_RTOL
+
+          # Find the center circle in img and check if it's cropped
+          circle = zoom_capture_utils.find_center_circle(
+              img, img_name, size, z, z_list[0], circlish_rtol=circlish_rtol,
+              debug=debug)
+
           # Zoom is too large to find center circle
           if circle is None:
             break

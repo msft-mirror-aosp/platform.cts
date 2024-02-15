@@ -16,6 +16,10 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+
 import android.media.MediaFormat;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
@@ -67,8 +71,15 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
         for (String mime : mMimeList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfDecoders = getHardwareCodecsForMime(mime, false, true);
             for (String decoder : listOfDecoders) {
+                if ((codecPrefix != null && !decoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(decoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{mime, decoder, isAsync});
                 }
@@ -131,10 +142,10 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
 
         if (isSecureSupportedCodec(mDecoderName, mMime)) {
-            testCodec(m2160pWidevineTestFiles, 2160, 3840,
+            testCodec(m2160pPc14WidevineTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else {
-            testCodec(m2160pTestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES);
+            testCodec(m2160pPc14TestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES);
         }
     }
 
@@ -150,7 +161,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
         Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMime));
-        testCodec(m2160p10bitWidevineTestFiles, 2160, 3840,
+        testCodec(m2160pPc1410bitWidevineTestFiles, 2160, 3840,
                 REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
     }
 

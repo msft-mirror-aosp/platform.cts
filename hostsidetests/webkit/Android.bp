@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_chromium_webview",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,12 +26,14 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
     ],
+    static_libs: ["CompatChangeGatingTestBase"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
     data: [
+        ":CtsWebViewCompatChangeApp",
         ":CtsWebViewStartupApp",
     ],
     per_testcase_directory: true,

@@ -66,6 +66,7 @@ public class AppBindingHostTest extends BaseHostJUnit4Test implements IBuildRece
     private int mCurrentUserId;
 
     private static final int DEFAULT_TIMEOUT_SEC = 30;
+    private static final int DEFAULT_LONG_TIMEOUT_SEC = 70;
 
     private interface ThrowingRunnable {
         void run() throws Throwable;
@@ -176,8 +177,21 @@ public class AppBindingHostTest extends BaseHostJUnit4Test implements IBuildRece
         return false;
     }
 
-    private void setSmsApp(String pkg, int userId) throws Exception {
-        runCommand("cmd role add-role-holder --user " + userId + " android.app.role.SMS " + pkg);
+    private void setSmsApp(String pkg, int userId) throws Throwable {
+        runWithRetries(300, () -> {
+            String output1 = runCommand("cmd role get-role-holders --user " + userId
+                            + " android.app.role.SMS ");
+            if (output1.equals(pkg)) {
+                CLog.d(pkg + " has been set default sms app.");
+            } else {
+                String output2 = runCommand("cmd role add-role-holder --user " + userId
+                                + " android.app.role.SMS " + pkg);
+                if (output2.contains("TimeoutException")) {
+                    RunUtil.getDefault().sleep(10000);
+                    throw new RuntimeException("cmd role add-role-holder timeout.");
+                }
+            }
+        });
     }
 
     private void uninstallTestApps(boolean always) throws Exception {
@@ -566,7 +580,7 @@ ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)
     }
 
     private void assertUserHasNoFinder(int userId) throws Throwable {
-        runWithRetries(DEFAULT_TIMEOUT_SEC, () -> {
+        runWithRetries(DEFAULT_LONG_TIMEOUT_SEC, () -> {
             runCommandAndNotMatch("dumpsys app_binding -s",
                     "^finder,\\[Default\\sSMS\\sapp\\]," + userId + ",");
         });

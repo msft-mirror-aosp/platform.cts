@@ -20,7 +20,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.Xml;
 
@@ -28,6 +31,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xml.sax.Attributes;
@@ -53,6 +57,7 @@ import java.util.Vector;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class XmlTest {
+    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String STR_INVALIDATE_EN_CODING = "invalidateEnCoding";
     private static final String STR_N2 = "-2";
@@ -161,7 +166,12 @@ public class XmlTest {
         }
 
         public void setDocumentLocator(Locator locator) {
-            mVec.add(STR_SET_DOCUMENT_LOCATOR_TAG + locator);
+            // Some implementations have inconsistent column numbering (starting from 0 or 1), so
+            // focus on verifying all other consistent location variables
+            final String str = String.format(
+                    "Locator[publicId: %s, systemId: %s, line: %d, column: 0]",
+                    locator.getPublicId(), locator.getSystemId(), locator.getLineNumber());
+            mVec.add(STR_SET_DOCUMENT_LOCATOR_TAG + str);
         }
 
         public void skippedEntity(String name) throws SAXException {
@@ -401,9 +411,10 @@ public class XmlTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = Resources.class)
     public void testAsAttributeSet() {
-        XmlResourceParser xp = InstrumentationRegistry.getTargetContext().getResources().getLayout(
-                R.layout.xml_test);
+        Resources res = InstrumentationRegistry.getTargetContext().getResources();
+        XmlResourceParser xp = res.getLayout(R.layout.xml_test);
         int eventType = -1;
         try {
             eventType = xp.getEventType();

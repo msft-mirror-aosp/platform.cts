@@ -7,6 +7,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
         "src/main/aidl/**/I*.aidl",
     ],
     aidl: {
@@ -14,16 +15,17 @@ android_library {
     },
     static_libs: [
         "NeneInternal",
-        "Queryable"
+        "Queryable",
     ],
     manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }
 
 android_test {
     name: "EventLibTest",
     srcs: [
-        "src/test/java/**/*.java"
+        "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -34,12 +36,12 @@ android_test {
         "ActivityContext",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "truth",
         "testng", // for assertThrows
         "compatibility-device-util-axt", // used for SystemUtil.runShellCommandOrThrow
     ],
     resource_dirs: ["src/test/res"],
     data: [":EventLibTestApp"],
     manifest: "src/test/AndroidManifest.xml",
-    min_sdk_version: "29"
+    min_sdk_version: "29",
 }

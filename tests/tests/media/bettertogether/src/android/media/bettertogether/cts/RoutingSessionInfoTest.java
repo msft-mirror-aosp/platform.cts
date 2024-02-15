@@ -600,13 +600,36 @@ public class RoutingSessionInfoTest {
                 .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
                 .build();
 
-        boolean volumeAdjustmentForRemoteGroupSessions = Resources.getSystem().getBoolean(
-                com.android.internal.R.bool.config_volumeAdjustmentForRemoteGroupSessions);
+        // Resources.getSystem().getIdentifier() is necessary to avoid the inlining of the resource
+        // id int, which is not guaranteed to match across Android builds on which CTS runs. See
+        // b/288602351 for more context.
+        int volumeAdjustmentForRemoteGroupSessionsResourceId =
+                Resources.getSystem()
+                        .getIdentifier(
+                                "config_volumeAdjustmentForRemoteGroupSessions",
+                                "bool",
+                                /* defPackage= */ "android");
+        boolean volumeAdjustmentForRemoteGroupSessions =
+                Resources.getSystem().getBoolean(volumeAdjustmentForRemoteGroupSessionsResourceId);
 
         int expectedVolumeHandling = volumeAdjustmentForRemoteGroupSessions
                 ? PLAYBACK_VOLUME_VARIABLE : PLAYBACK_VOLUME_FIXED;
 
         assertThat(sessionInfo.getVolumeHandling()).isEqualTo(expectedVolumeHandling);
+    }
+
+    @Test
+    public void testGroupVolumeHandlingForSystemSession() {
+        RoutingSessionInfo sessionInfo =
+                new RoutingSessionInfo.Builder(TEST_ID, TEST_CLIENT_PACKAGE_NAME)
+                        .setName(TEST_NAME)
+                        .addSelectedRoute(TEST_ROUTE_ID_0)
+                        .addSelectedRoute(TEST_ROUTE_ID_1)
+                        .setSystemSession(true)
+                        .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
+                        .build();
+
+        assertThat(sessionInfo.getVolumeHandling()).isEqualTo(PLAYBACK_VOLUME_VARIABLE);
     }
 
     @Test

@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -28,7 +29,7 @@ java_defaults {
     aapt_include_all_resources: true,
     static_libs: [
         "androidx.test.rules",
-        "truth-prebuilt",
+        "truth",
         "hamcrest-library",
         "compatibility-device-util-axt",
     ],
@@ -36,7 +37,7 @@ java_defaults {
         "android.test.runner.stubs",
         "android.test.base.stubs",
     ],
-    target_sdk_version: "current"
+    target_sdk_version: "current",
 }
 
 android_test_helper_app {
@@ -65,6 +66,9 @@ android_test_helper_app {
         "general-tests",
         "mts-mainline-infra",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant with a different revision code
@@ -83,6 +87,9 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant with a different version code
@@ -100,6 +107,9 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant with a different signature
@@ -117,6 +127,9 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant requiring a split for install
@@ -135,16 +148,25 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant with different codes and resources for the inherit updated test of the base apk
 android_test_helper_app {
     name: "CtsSplitAppRevisionA",
     defaults: ["CtsSplitAppDefaults"],
-    srcs: ["src/**/*.java", "revision_a/src/**/*.java"],
-    resource_dirs: ["res", "revision_a/res"],
+    srcs: [
+        "src/**/*.java",
+        "revision_a/src/**/*.java",
+    ],
+    resource_dirs: [
+        "res",
+        "revision_a/res",
+    ],
     asset_dirs: ["revision_a/assets"],
-    manifest : "revision_a/AndroidManifest.xml",
+    manifest: "revision_a/AndroidManifest.xml",
     package_splits: ["v7"],
     certificate: ":cts-testkey1",
     aaptflags: [
@@ -157,6 +179,9 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // Define a variant which includes a provider and service declared in other split apk. And they only
@@ -164,7 +189,7 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsSplitInstantApp",
     defaults: ["CtsSplitAppDefaults"],
-    manifest : "instantapp/AndroidManifest.xml",
+    manifest: "instantapp/AndroidManifest.xml",
     certificate: ":cts-testkey1",
     aaptflags: [
         "--version-code 100",
@@ -175,4 +200,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

@@ -16,4 +16,8 @@
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="config_overridden_string">landscape</string>
+    <string name="simple">simple landscape</string>
+    <bag type="style" name="bag">
+        <item type="string" name="testString">bag landscape</item>
+    </bag>
 </resources>

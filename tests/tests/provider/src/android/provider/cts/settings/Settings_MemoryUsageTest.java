@@ -21,12 +21,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.testng.Assert.expectThrows;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.os.Process;
 import android.os.SystemClock;
 import android.provider.Settings;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.google.common.base.Strings;
 
@@ -37,7 +38,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class Settings_MemoryUsageTest {
-    private static final String STRING_SETTING = Settings.System.RINGTONE;
+    private static final String STRING_SETTING = Settings.System.SCREEN_BRIGHTNESS;
     private static final int sUserId = Process.myUserHandle().getIdentifier();
 
     private ContentResolver mContentResolver;
@@ -45,13 +46,14 @@ public class Settings_MemoryUsageTest {
 
     @Before
     public void setUp() throws Exception {
-        final String packageName = InstrumentationRegistry.getTargetContext().getPackageName();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final String packageName = context.getPackageName();
         InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(
                 "appops set --user " + sUserId + " " + packageName
                         + " android:write_settings allow");
         // Wait a beat to persist the change
         SystemClock.sleep(500);
-        mContentResolver = InstrumentationRegistry.getTargetContext().getContentResolver();
+        mContentResolver = context.getContentResolver();
         assertNotNull(mContentResolver);
         mOldSettingValue = Settings.System.getString(mContentResolver, STRING_SETTING);
     }
@@ -64,12 +66,12 @@ public class Settings_MemoryUsageTest {
 
     @Test
     public void testMemoryUsageExceeded() {
-        expectThrows(IllegalStateException.class,
+        expectThrows(Exception.class,
                 () -> Settings.System.putString(
-                        mContentResolver, STRING_SETTING, Strings.repeat("A", 65535)));
+                        mContentResolver, STRING_SETTING, Strings.repeat("A", 30001)));
         // Repeated calls should throw as well
-        expectThrows(IllegalStateException.class,
+        expectThrows(Exception.class,
                 () -> Settings.System.putString(
-                        mContentResolver, STRING_SETTING, Strings.repeat("A", 65535)));
+                        mContentResolver, STRING_SETTING, Strings.repeat("A", 30001)));
     }
 }

@@ -67,9 +67,10 @@ public class DeviceConfigStateHelper implements AutoCloseable {
      * Run a Runnable, with DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE),
      * with all the shell permissions.
      */
-    private void callWithSyncEnabledWithShellPermissions(RunnableWithThrow r) {
+    public static void callWithSyncEnabledWithShellPermissions(RunnableWithThrow r) {
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            final int originalSyncMode = DeviceConfig.getSyncDisabledMode();
+            final String originalSyncMode = ShellUtils.runShellCommand(
+                    "device_config get_sync_disabled_for_tests");
             try {
                 // TODO: Use DeviceConfig.setSyncDisabledMode, once the SYNC_* constants
                 // are exposed.
@@ -77,7 +78,8 @@ public class DeviceConfigStateHelper implements AutoCloseable {
 
                 r.run();
             } finally {
-                DeviceConfig.setSyncDisabledMode(originalSyncMode);
+                ShellUtils.runShellCommand(
+                        "device_config set_sync_disabled_for_tests %s", originalSyncMode);
             }
         });
     }

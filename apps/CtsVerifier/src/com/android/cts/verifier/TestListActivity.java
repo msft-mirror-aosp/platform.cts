@@ -37,6 +37,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.CompoundButton;
+import android.widget.SearchView;
 import android.widget.Switch;
 import android.widget.Toast;
 
@@ -53,8 +54,11 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
     // Records the current display mode.
     // Default is unfolded mode, and it will be changed when clicking the switch button.
     public static volatile String sCurrentDisplayMode = DisplayMode.UNFOLDED.toString();
-    // Flag of launch app to fetch the unfolded/folded tests in main view from AndroidManifest.xml.
-    protected static boolean sInitialLaunch;
+
+    // Whether the verifier-system plan is enabled.
+    private static boolean sIsSystemEnabled = false;
+    // Whether the system switch has been toggled.
+    private static boolean sHasSystemToggled = false;
 
     private String[] mRequestedPermissions;
 
@@ -69,10 +73,10 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         }
 
         /**
-         * Coverts the mode as suffix with brackets for test name.
+         * Converts the mode as suffix with brackets for test name.
          *
-         * @return A string containing mode with brackets for folded mode; empty string for unfolded
-         *     mode.
+         * @return a string containing mode with brackets for folded mode; empty string for unfolded
+         *     mode
          */
         public String asSuffix() {
             if (name().equals(FOLDED.name())) {
@@ -125,31 +129,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         }
     }
 
-    private void createContinue() {
-        if (!isTaskRoot()) {
-            finish();
-        }
-        sInitialLaunch = true;
-
-        // Restores the last display mode when launching the app after killing the process.
-        if (getCurrentDisplayMode().equals(DisplayMode.FOLDED.toString())) {
-            sCurrentDisplayMode = DisplayMode.FOLDED.toString();
-        }
-
-        setTitle(getString(R.string.title_version, Version.getVersionName(this)));
-
-        if (!getWindow().hasFeature(Window.FEATURE_ACTION_BAR)) {
-            View footer = getLayoutInflater().inflate(R.layout.test_list_footer, null);
-
-            footer.findViewById(R.id.clear).setOnClickListener(this);
-            footer.findViewById(R.id.export).setOnClickListener(this);
-
-            getListView().addFooterView(footer);
-        }
-
-        setTestListAdapter(new ManifestTestListAdapter(this, null));
-    }
-
     @Override
     public void onRequestPermissionsResult(
             int requestCode, String permissions[], int[] grantResults) {
@@ -174,25 +153,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
             }
             return;
         }
-    }
-
-    private AlertDialog sendUserToSettings() {
-        return new AlertDialog.Builder(this)
-                .setTitle("Please grant all permissions")
-                .setPositiveButton(
-                        "Ok",
-                        (dialog, which) -> {
-                            if (which == AlertDialog.BUTTON_POSITIVE) {
-                                startActivity(
-                                        new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                                                .setData(
-                                                        Uri.fromParts(
-                                                                "package",
-                                                                getPackageName(),
-                                                                null)));
-                            }
-                        })
-                .show();
     }
 
     @Override
@@ -221,12 +181,179 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
                         handleSwitchItemSelected();
                     }
                 });
+
+        // Switch button for verifier-system plan.
+        item = (MenuItem) menu.findItem(R.id.system_switch_item);
+        if (item != null) {
+            item.setActionView(R.layout.system_switch);
+            final Switch systemSwitch = item.getActionView().findViewById(R.id.switch_button);
+
+            systemSwitch.setChecked(sIsSystemEnabled);
+            systemSwitch.setOnCheckedChangeListener(
+                    new CompoundButton.OnCheckedChangeListener() {
+
+                        @Override
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            if (!sHasSystemToggled && isChecked) {
+                                sHasSystemToggled = true;
+                                notifyUserSystemPlan(systemSwitch);
+                            } else {
+                                updateIsSystemEnabled(isChecked);
+                            }
+                        }
+                    });
+        }
+
+        SearchView searchView = (SearchView) menu.findItem(R.id.search_test).getActionView();
+        searchView.setOnQueryTextListener(
+                new SearchView.OnQueryTextListener() {
+
+                    public boolean onQueryTextSubmit(String query) {
+                        Log.i(TAG, "Got submitted query: " + query);
+                        handleQueryUpdated(query);
+                        return true;
+                    }
+
+                    public boolean onQueryTextChange(String newText) {
+                        if (newText == null || newText.isEmpty()) {
+                            Log.i(TAG, "Clear filter");
+                            handleQueryUpdated(newText);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return handleMenuItemSelected(item.getItemId()) ? true : super.onOptionsItemSelected(item);
+    }
+
+    /** Gets the verifier-system plan enabled status. */
+    static boolean getIsSystemEnabled() {
+        return sIsSystemEnabled;
+    }
+
+    /** Checks if a list of int array contains a given int value. */
+    private static boolean arrayContains(int[] array, int value) {
+        if (array == null) {
+            return false;
+        }
+        for (int element : array) {
+            if (element == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Removes the first occurrence of a string from a given string array. */
+    private static String[] removeString(String[] cur, String val) {
+        if (cur == null) {
+            return null;
+        }
+        final int n = cur.length;
+        for (int i = 0; i < n; i++) {
+            if (Objects.equals(cur[i], val)) {
+                String[] ret = new String[n - 1];
+                if (i > 0) {
+                    System.arraycopy(cur, 0, ret, 0, i);
+                }
+                if (i < (n - 1)) {
+                    System.arraycopy(cur, i + 1, ret, i, n - i - 1);
+                }
+                return ret;
+            }
+        }
+        return cur;
+    }
+
+    private void createContinue() {
+        if (!isTaskRoot()) {
+            finish();
+        }
+
+        // Restores the last display mode when launching the app after killing the process.
+        if (getCurrentDisplayMode().equals(DisplayMode.FOLDED.toString())) {
+            sCurrentDisplayMode = DisplayMode.FOLDED.toString();
+        }
+
+        setTitle(getString(R.string.title_version, Version.getVersionName(this)));
+
+        if (!getWindow().hasFeature(Window.FEATURE_ACTION_BAR)) {
+            View footer = getLayoutInflater().inflate(R.layout.test_list_footer, null);
+
+            footer.findViewById(R.id.clear).setOnClickListener(this);
+            footer.findViewById(R.id.export).setOnClickListener(this);
+
+            getListView().addFooterView(footer);
+        }
+
+        setTestListAdapter(
+                new ManifestTestListAdapter(/* context= */ this, /* testParent= */ null));
+    }
+
+    private AlertDialog sendUserToSettings() {
+        return new AlertDialog.Builder(this)
+                .setTitle("Please grant all permissions")
+                .setPositiveButton(
+                        "Ok",
+                        (dialog, which) -> {
+                            if (which == AlertDialog.BUTTON_POSITIVE) {
+                                startActivity(
+                                        new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                                .setData(
+                                                        Uri.fromParts(
+                                                                "package",
+                                                                getPackageName(),
+                                                                null)));
+                            }
+                        })
+                .show();
+    }
+
+    /** Notifies the user about the verifier-system plan. */
+    private AlertDialog notifyUserSystemPlan(Switch systemSwitch) {
+        return new AlertDialog.Builder(this)
+                .setTitle("Verifier System Plan")
+                .setMessage(
+                        "This is a feature to execute verifier tests for the system layer"
+                            + " partitions. Click \"Yes\" to proceed or \"No\" to run all of the"
+                            + " verifier tests.")
+                .setPositiveButton(
+                        "Yes",
+                        new DialogInterface.OnClickListener() {
+
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                updateIsSystemEnabled(true);
+                            }
+                        })
+                .setNegativeButton(
+                        "No",
+                        new DialogInterface.OnClickListener() {
+
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                systemSwitch.setChecked(false);
+                            }
+                        })
+                .show();
+    }
+
+    /** Updates the verifier-system plan enabled status and refreshes the test list. */
+    private void updateIsSystemEnabled(boolean isChecked) {
+        Log.i(TAG, "verifier-system plan enabled: " + isChecked);
+        sIsSystemEnabled = isChecked;
+        handleSwitchItemSelected();
+    }
+
+    /** Sets up the flags after switching display mode and reloads tests on UI. */
+    private void handleSwitchItemSelected() {
+        setCurrentDisplayMode(sCurrentDisplayMode);
+        mAdapter.loadTestResults();
     }
 
     private void handleClearItemSelected() {
@@ -252,12 +379,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         new ReportExporter(this, mAdapter).execute();
     }
 
-    // Sets up the flags after switching display mode and reloads tests on UI.
-    private void handleSwitchItemSelected() {
-        setCurrentDisplayMode(sCurrentDisplayMode);
-        mAdapter.loadTestResults();
-    }
-
     private boolean handleMenuItemSelected(int id) {
         if (id == R.id.clear) {
             handleClearItemSelected();
@@ -270,10 +391,21 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
         return true;
     }
 
+    /** Triggered when a new query is input. */
+    private void handleQueryUpdated(String query) {
+        if (query != null && !query.isEmpty()) {
+            mAdapter.setTestFilter(query);
+        } else {
+            // Reset the filter as null to show all tests.
+            mAdapter.setTestFilter(/* testFilter= */ null);
+        }
+        mAdapter.loadTestResults();
+    }
+
     /**
      * Sets current display mode to sharedpreferences.
      *
-     * @param mode A string of current display mode.
+     * @param mode a string of current display mode
      */
     private void setCurrentDisplayMode(String mode) {
         SharedPreferences pref = getSharedPreferences(DisplayMode.class.getName(), MODE_PRIVATE);
@@ -283,42 +415,12 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
     /**
      * Gets current display mode from sharedpreferences.
      *
-     * @return A string of current display mode.
+     * @return a string of current display mode
      */
     private String getCurrentDisplayMode() {
         String mode =
                 getSharedPreferences(DisplayMode.class.getName(), MODE_PRIVATE)
                         .getString(DisplayMode.class.getName(), "");
         return mode;
-    }
-
-    private static boolean arrayContains(int[] array, int value) {
-        if (array == null) return false;
-        for (int element : array) {
-            if (element == value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String[] removeString(String[] cur, String val) {
-        if (cur == null) {
-            return null;
-        }
-        final int n = cur.length;
-        for (int i = 0; i < n; i++) {
-            if (Objects.equals(cur[i], val)) {
-                String[] ret = new String[n - 1];
-                if (i > 0) {
-                    System.arraycopy(cur, 0, ret, 0, i);
-                }
-                if (i < (n - 1)) {
-                    System.arraycopy(cur, i + 1, ret, i, n - i - 1);
-                }
-                return ret;
-            }
-        }
-        return cur;
     }
 }

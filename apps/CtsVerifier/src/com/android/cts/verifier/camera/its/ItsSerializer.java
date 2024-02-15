@@ -301,13 +301,17 @@ public class ItsSerializer {
         throw new ItsException("Invalid key object");
     }
 
-    @SuppressWarnings("unchecked")
     private static MetadataEntry serializeEntry(Type keyType, Object keyObj, CameraMetadata md)
+            throws ItsException {
+        return serializeEntry(keyType, keyObj, getKeyValue(md, keyObj));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static MetadataEntry serializeEntry(Type keyType, Object keyObj, Object keyValue)
             throws ItsException {
         String keyName = getKeyName(keyObj);
 
         try {
-            Object keyValue = getKeyValue(md, keyObj);
             if (keyValue == null) {
                 return new MetadataEntry(keyName, JSONObject.NULL);
             } else if (keyType == Float.class) {
@@ -369,12 +373,16 @@ public class ItsSerializer {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static MetadataEntry serializeArrayEntry(Type keyType, Object keyObj, CameraMetadata md)
+            throws ItsException {
+        return serializeArrayEntry(keyType, keyObj, getKeyValue(md, keyObj));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static MetadataEntry serializeArrayEntry(Type keyType, Object keyObj, Object keyValue)
             throws ItsException {
         String keyName = getKeyName(keyObj);
         try {
-            Object keyValue = getKeyValue(md, keyObj);
             if (keyValue == null) {
                 return null;
             }
@@ -468,6 +476,35 @@ public class ItsSerializer {
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error for key: " + keyName + ": ", e);
         }
+    }
+
+    public static JSONObject serialize(RecordingResult recordingResult)
+            throws ItsException {
+        JSONObject jsonObj = new JSONObject();
+        for (CaptureResult.Key<?> key : recordingResult.getKeys()) {
+            Object value = recordingResult.getResult(key);
+            if (value == null) {
+                Logt.w(TAG, "Key value is null for: " + key.toString());
+                continue;
+            }
+            Type keyType = value.getClass();
+            MetadataEntry entry;
+            if (keyType instanceof GenericArrayType) {
+                entry = serializeArrayEntry(keyType, key, value);
+            } else {
+                entry = serializeEntry(keyType, key, value);
+            }
+            try {
+                if (entry != null) {
+                    jsonObj.put(entry.key, entry.value);
+                } else {
+                    Logt.w(TAG, "Key entry is null for: " + key.toString());
+                }
+            } catch (org.json.JSONException e) {
+                throw new ItsException("JSON error for key: " + key.getName() + ": ", e);
+            }
+        }
+        return jsonObj;
     }
 
     @SuppressWarnings("unchecked")

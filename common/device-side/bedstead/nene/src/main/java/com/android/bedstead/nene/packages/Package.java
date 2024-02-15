@@ -16,8 +16,6 @@
 
 package com.android.bedstead.nene.packages;
 
-import static android.Manifest.permission.FORCE_STOP_PACKAGES;
-import static android.Manifest.permission.QUERY_ALL_PACKAGES;
 import static android.content.pm.ApplicationInfo.FLAG_STOPPED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.PackageManager.GET_PERMISSIONS;
@@ -30,8 +28,10 @@ import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
 import static com.android.bedstead.nene.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
+import static com.android.bedstead.nene.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
 import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -39,6 +39,7 @@ import static org.junit.Assert.fail;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.UiAutomation;
 import android.app.role.RoleManager;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -52,6 +53,7 @@ import android.os.UserHandle;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
@@ -66,8 +68,10 @@ import com.android.bedstead.nene.permissions.Permissions;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.nene.utils.Retry;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
+import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.BlockingCallback.DefaultBlockingCallback;
@@ -90,6 +94,9 @@ public final class Package {
             TestApis.context().instrumentedContext().getPackageManager();
     private static final RoleManager sRoleManager = TestApis.context().instrumentedContext()
             .getSystemService(RoleManager.class);
+
+    private static final UiAutomation sUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     private final String mPackageName;
 
@@ -348,17 +355,22 @@ public final class Package {
         checkCanGrantOrRevokePermission(user, permission);
 
         try {
+            boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
+
             ShellCommand.builderForUser(user, "pm grant")
+                    .asRoot(shouldRunAsRoot)
                     .addOperand(packageName())
                     .addOperand(permission)
                     .allowEmptyOutput(true)
                     .validate(String::isEmpty)
                     .execute();
 
-            assertWithMessage("Error granting permission " + permission
+            String message = "Error granting permission " + permission
                     + " to package " + this + " on user " + user
-                    + ". Command appeared successful but not set.")
-                    .that(hasPermission(user, permission)).isTrue();
+                    + ". Command appeared successful but not set."
+                    + (shouldRunAsRoot ? "" : " If this test requires permissions that can only "
+                    + "be granted on devices where adb has root. Add @RequireAdbRoot to the test.");
+            assertWithMessage(message).that(hasPermission(user, permission)).isTrue();
 
             return this;
         } catch (AdbException e) {
@@ -398,30 +410,31 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        try {
-            ShellCommand.builderForUser(user, "pm revoke")
-                    .addOperand(packageName())
-                    .addOperand(permission)
-                    .allowEmptyOutput(true)
-                    .validate(String::isEmpty)
-                    .execute();
+        boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
 
-            assertWithMessage("Error denying permission " + permission
-                    + " to package " + this + " on user " + user
-                    + ". Command appeared successful but not revoked.")
-                    .that(hasPermission(user, permission)).isFalse();
+        sUiAutomation.revokeRuntimePermission(packageName(), permission);
 
-            return this;
-        } catch (AdbException e) {
-            throw new NeneException("Error denying permission " + permission + " to package "
-                    + this + " on user " + user, e);
-        }
+        String message = "Error denying permission " + permission
+                + " to package " + this + " on user " + user
+                + ". Command appeared successful but not revoked."
+                + (shouldRunAsRoot ? "" : " If this test requires permissions that can only be "
+                + "granted on devices where adb has root. Add @RequireAdbRoot to the test.");
+        assertWithMessage(message).that(hasPermission(user, permission)).isFalse();
+
+        return this;
     }
 
     void checkCanGrantOrRevokePermission(UserReference user, String permission) {
         if (!installedOnUser(user)) {
             throw new NeneException("Attempting to grant " + permission + " to " + this
                     + " on user " + user + ". But it is not installed");
+        }
+
+        if (Tags.hasTag(Tags.ADB_ROOT)) {
+            // If the test is being run as root, every permission can be granted or revoked.
+            Log.i(LOG_TAG,
+                    "checkCanGrantOrRevokePermission skipped as test is being run as root");
+            return;
         }
 
         try {
@@ -431,7 +444,9 @@ public final class Package {
             if (!protectionIsDangerous(permissionInfo.protectionLevel)
                     && !protectionIsDevelopment(permissionInfo.protectionLevel)) {
                 throw new NeneException("Cannot grant non-runtime permission "
-                        + permission + ", protection level is " + permissionInfo.protectionLevel);
+                        + permission + ", protection level is " + permissionInfo.protectionLevel +
+                        ". To restrict this test to only running on debug devices where this "
+                        + "permission is available, add @RequireAdbRoot to the test.");
             }
 
             if (!requestedPermissions().contains(permission)) {
@@ -539,14 +554,14 @@ public final class Package {
 
     /** Get the permissions requested in the package's manifest. */
     public Set<String> requestedPermissions() {
-        PackageInfo packageInfo = packageInfoFromAnyUser(GET_PERMISSIONS);
+        if (TestApis.packages().instrumented().isInstantApp()) {
+            Log.i(LOG_TAG, "Tried to get requestedPermissions for "
+                    + mPackageName + " but can't on instant apps");
+            return new HashSet<>();
+        }
 
+        PackageInfo packageInfo = packageInfoFromAnyUser(GET_PERMISSIONS);
         if (packageInfo == null) {
-            if (TestApis.packages().instrumented().isInstantApp()) {
-                Log.i(LOG_TAG, "Tried to get requestedPermissions for "
-                        + mPackageName + " but can't on instant apps");
-                return new HashSet<>();
-            }
             throw new NeneException("Error getting requestedPermissions, does not exist");
         }
 
@@ -715,16 +730,20 @@ public final class Package {
 
             PackageManager userPackageManager =
                     TestApis.context().androidContextAsUser(user).getPackageManager();
-
+            boolean shouldCheckPreviousProcess = runningProcess() != null;
             // In most cases this should work first time, however if a user restriction has been
             // recently removed we may need to retry
+
+            int previousPid = shouldCheckPreviousProcess ? runningProcess().pid() : -1;
+
             Poll.forValue("Application flag", () -> {
                 userActivityManager.forceStopPackage(mPackageName);
 
-                return userPackageManager.getPackageInfo(mPackageName, PackageManager.GET_META_DATA)
-                        .applicationInfo.flags;
-            })
-                    .toMeet(flag -> (flag & FLAG_STOPPED) == FLAG_STOPPED)
+                return userPackageManager.getPackageInfo(mPackageName,
+                            PackageManager.GET_META_DATA)
+                            .applicationInfo.flags;
+            }).toMeet(flag -> !shouldCheckPreviousProcess || (flag & FLAG_STOPPED) == FLAG_STOPPED
+                            ||  previousPid != runningProcess().pid())
                     .errorOnFail("Expected application flags to contain FLAG_STOPPED ("
                             + FLAG_STOPPED + ")")
                     .await();
@@ -952,24 +971,48 @@ public final class Package {
     public RoleContext setAsRoleHolder(String role, UserReference user) {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_ROLE_HOLDERS, INTERACT_ACROSS_USERS_FULL)) {
-            DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
 
-            sRoleManager.addRoleHolderAsUser(
-                    role,
-                    mPackageName,
-                    /* flags= */ 0,
-                    user.userHandle(),
-                    TestApis.context().instrumentedContext().getMainExecutor(),
-                    blockingCallback::triggerCallback);
+            Retry.logic(() -> {
+                TestApis.logcat().clear();
+                DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
 
-            boolean success = blockingCallback.await();
-            if (!success) {
-                fail("Could not set role holder of " + role + ".");
-            }
+                sRoleManager.addRoleHolderAsUser(
+                        role,
+                        mPackageName,
+                        /* flags= */ 0,
+                        user.userHandle(),
+                        TestApis.context().instrumentedContext().getMainExecutor(),
+                        blockingCallback::triggerCallback);
+
+                boolean success = blockingCallback.await();
+                if (!success) {
+                    fail("Could not set role holder of " + role + "." + " Relevant logcat: "
+                            + TestApis.logcat().dump((line) -> line.contains(role) || line.contains("Role")));
+                }
+                if (!TestApis.roles().getRoleHoldersAsUser(role, user).contains(packageName())) {
+                    fail("addRoleHolderAsUser returned true but did not add role holder. "
+                            + "Relevant logcat: " + TestApis.logcat().dump(
+                                    (line) -> line.contains(role) || line.contains("Role")));
+                }
+            }).terminalException(e -> {
+                // Terminal unless we see logcat output indicating it might be temporary
+                var logcat = TestApis.logcat()
+                        .dump(l -> l.contains("Error calling onAddRoleHolder()"));
+                if (!logcat.isEmpty()) {
+                    // On low end devices - this can happen when the broadcast queue is full
+                    try {
+                        Thread.sleep(10_000);
+                    } catch (InterruptedException ex) {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }).runAndWrapException();
 
             return new RoleContext(role, this, user);
-        } catch (InterruptedException e) {
-            throw new NeneException("Error waiting for setting role holder callback " + role, e);
         }
     }
 
@@ -988,23 +1031,45 @@ public final class Package {
     public void removeAsRoleHolder(String role, UserReference user) {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_ROLE_HOLDERS)) {
-            DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
-            sRoleManager.removeRoleHolderAsUser(
-                    role,
-                    mPackageName,
-                    /* flags= */ 0,
-                    user.userHandle(),
-                    TestApis.context().instrumentedContext().getMainExecutor(),
-                    blockingCallback::triggerCallback);
-            TestApis.roles().setBypassingRoleQualification(false);
+            Retry.logic(() -> {
+                TestApis.logcat().clear();
+                DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
+                sRoleManager.removeRoleHolderAsUser(
+                        role,
+                        mPackageName,
+                        /* flags= */ 0,
+                        user.userHandle(),
+                        TestApis.context().instrumentedContext().getMainExecutor(),
+                        blockingCallback::triggerCallback);
+                TestApis.roles().setBypassingRoleQualification(false);
 
-            boolean success = blockingCallback.await();
-            if (!success) {
-                fail("Failed to clear the role holder of "
-                        + role + ".");
-            }
-        } catch (InterruptedException e) {
-            throw new NeneException("Error while clearing role holder " + role, e);
+                boolean success = blockingCallback.await();
+                if (!success) {
+                    fail("Failed to clear the role holder of "
+                            + role + ".");
+                }
+                if (TestApis.roles().getRoleHoldersAsUser(role, user).contains(packageName())) {
+                    fail("removeRoleHolderAsUser returned true but did not remove role holder. "
+                            + "Relevant logcat: " + TestApis.logcat().dump(
+                                    (line) -> line.contains(role)));
+                }
+            }).terminalException(e -> {
+                // Terminal unless we see logcat output indicating it might be temporary
+                var logcat = TestApis.logcat()
+                        .dump(l -> l.contains("Error calling onRemoveRoleHolder()"));
+                if (!logcat.isEmpty()) {
+                    // On low end devices - this can happen when the broadcast queue is full
+                    try {
+                        Thread.sleep(10_000);
+                    } catch (InterruptedException ex) {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }).runAndWrapException();
         }
     }
 

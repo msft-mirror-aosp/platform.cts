@@ -38,7 +38,6 @@ import android.os.BatteryManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.DeviceConfig;
-import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 import android.util.LongArray;
 
@@ -49,6 +48,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -111,8 +111,6 @@ public class AppStandbyTests {
     private static final DeviceConfigStateHelper sTareDeviceConfigStateHelper =
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
     private static Context sContext = InstrumentationRegistry.getTargetContext();
-    private static UiDevice sUiDevice = UiDevice.getInstance(
-            InstrumentationRegistry.getInstrumentation());
 
     private ComponentName mAlarmScheduler;
     private AtomicInteger mAlarmCount;
@@ -249,17 +247,17 @@ public class AppStandbyTests {
     @Test
     public void testPowerWhitelistedAlarmNotBlocked() throws Exception {
         setTestAppStandbyBucket(APP_BUCKET_TAGS[RARE_INDEX]);
-        setPowerWhitelisted(true);
+        setPowerAllowlisted(true);
         final long triggerTime = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         scheduleAlarm(triggerTime, 0);
         Thread.sleep(MIN_FUTURITY);
         assertTrue("Alarm did not go off for whitelisted app in rare bucket", waitForAlarm());
-        setPowerWhitelisted(false);
+        setPowerAllowlisted(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        setPowerWhitelisted(false);
+        setPowerAllowlisted(false);
         setBatteryCharging(true);
         mConfigHelper.restoreAll();
         final Intent cancelAlarmsIntent = new Intent(TestAlarmScheduler.ACTION_CANCEL_ALL_ALARMS);
@@ -281,15 +279,14 @@ public class AppStandbyTests {
     private void updateAlarmManagerConstants() {
         mConfigHelper.with("min_futurity", MIN_FUTURITY)
                 .with("app_standby_window", APP_STANDBY_WINDOW)
-                .with("min_window", MIN_WINDOW)
-                .with("exact_alarm_deny_list", TEST_APP_PACKAGE);
+                .with("min_window", MIN_WINDOW);
         for (int i = 0; i < APP_STANDBY_QUOTAS.length; i++) {
             mConfigHelper.with(APP_BUCKET_QUOTA_KEYS[i], APP_STANDBY_QUOTAS[i]);
         }
         mConfigHelper.commitAndAwaitPropagation();
     }
 
-    private void setPowerWhitelisted(boolean whitelist) throws IOException {
+    private void setPowerAllowlisted(boolean whitelist) throws IOException {
         final StringBuffer cmd = new StringBuffer("cmd deviceidle whitelist ");
         cmd.append(whitelist ? "+" : "-");
         cmd.append(TEST_APP_PACKAGE);
@@ -313,7 +310,7 @@ public class AppStandbyTests {
     }
 
     private static String executeAndLog(String cmd) throws IOException {
-        final String output = sUiDevice.executeShellCommand(cmd).trim();
+        final String output = SystemUtil.runShellCommand(cmd).trim();
         Log.d(TAG, "command: [" + cmd + "], output: [" + output + "]");
         return output;
     }

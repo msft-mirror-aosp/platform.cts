@@ -41,8 +41,10 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.service.voice.VisualQueryDetector;
 import android.util.Log;
+import android.voiceinteraction.common.Utils;
 import android.voiceinteraction.cts.services.BaseVoiceInteractionService;
 import android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService;
+import android.voiceinteraction.cts.testcore.AssumptionCheckerRule;
 import android.voiceinteraction.cts.testcore.Helper;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
 import android.voiceinteraction.service.MainVisualQueryDetectionService;
@@ -76,6 +78,11 @@ public class VisualQueryDetectionServiceBasicTest {
     private CtsBasicVoiceInteractionService mService;
 
     private static String sDefaultScreenOffTimeoutValue;
+
+    @Rule
+    public AssumptionCheckerRule checkVisualQueryDetectionServiceEnabledRule =
+            new AssumptionCheckerRule(() -> Utils.SYSPROP_VISUAL_QUERY_SERVICE_ENABLED,
+            "Testing VisualQueryDetectionService requires enabling the feature");
 
     @Rule
     public VoiceInteractionServiceConnectedRule mConnectedRule =
@@ -297,6 +304,76 @@ public class VisualQueryDetectionServiceBasicTest {
 
     @Test
     @RequiresDevice
+    public void testVisualQueryDetectionService_startRecogintion_audioVisualAttentionQueryStream()
+            throws Throwable {
+        // Create VisualQueryDetector
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_AUDIO_VISUAL_ATTENTION_STREAM);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(
+                    MainVisualQueryDetectionService.FAKE_QUERY_FIRST);
+            assertThat(streamedQueries.size()).isEqualTo(1);
+
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    public void testVisualQueryDetectionService_startRecogintion_AccessibilityAttentionQueryStream()
+            throws Throwable {
+        // Create VisualQueryDetector
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_ACCESSIBILITY_ATTENTION_STREAM);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(
+                    MainVisualQueryDetectionService.FAKE_QUERY_FIRST);
+            assertThat(streamedQueries.size()).isEqualTo(1);
+
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresDevice
     public void testVisualQueryDetectionService_startRecogintion_attentionQueryRejectedLeave()
             throws Throwable {
         // Create VisualQueryDetector
@@ -357,6 +434,82 @@ public class VisualQueryDetectionServiceBasicTest {
             assertThat(streamedQueries.get(1)).isEqualTo(
                     MainVisualQueryDetectionService.FAKE_QUERY_SECOND);
             assertThat(streamedQueries.size()).isEqualTo(2);
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    public void testVisualQueryDetectionService_startRecogintion_multipleQueryStreamFinish()
+            throws Throwable {
+        // Create VisualQueryDetector
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_MULTIPLE_QUERIES_FINISHED);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(Utils.NUM_TEST_QUERY_SESSION_MULTIPLE);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.size()).isEqualTo(Utils.NUM_TEST_QUERY_SESSION_MULTIPLE);
+            for (int i = 0; i < Utils.NUM_TEST_QUERY_SESSION_MULTIPLE; i++) {
+                if ((i & 1) == 0) {
+                    assertThat(streamedQueries.get(i)).isEqualTo(
+                            MainVisualQueryDetectionService.FAKE_QUERY_FIRST);
+                } else {
+                    assertThat(streamedQueries.get(i)).isEqualTo(
+                            MainVisualQueryDetectionService.FAKE_QUERY_SECOND);
+                }
+            }
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    public void testVisualQueryDetectionService_startRecogintion_complexResultsQueryOnlySuccess()
+            throws Throwable {
+        // Create VisualQueryDetector
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_COMPLEX_RESULT_STREAM_QUERY_ONLY);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(
+                    MainVisualQueryDetectionService.FAKE_QUERY_FIRST
+                            + MainVisualQueryDetectionService.FAKE_QUERY_SECOND);
+            assertThat(streamedQueries.size()).isEqualTo(1);
         } finally {
             visualQueryDetector.destroy();
             // Drop identity adopted.
@@ -471,6 +624,141 @@ public class VisualQueryDetectionServiceBasicTest {
         visualQueryDetector.destroy();
     }
 
+    @Test
+    public void testVisualQueryDetectionService_openFileReadOnly_success() throws Throwable {
+        mService.createTestFile("");
+
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_READ_FILE_MMAP_READ_ONLY);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            // leverage isolated detection callback APIs to verify file contents
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(Utils.TEST_RESOURCE_FILE_CONTENT);
+            assertThat(streamedQueries.size()).isEqualTo(1);
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            mService.removeTestFiles();
+        }
+    }
+
+    @Test
+    public void testVisualQueryDetectionService_openFileNotExist_failure() throws Throwable {
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_READ_FILE_FILE_NOT_EXIST);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            // leverage isolated detection callback APIs to verify file contents
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(
+                    MainVisualQueryDetectionService.MSG_FILE_NOT_FOUND);
+            assertThat(streamedQueries.size()).isEqualTo(1);
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testVisualQueryDetectionService_openFileWrite_failure() throws Throwable {
+        mService.createTestFile("");
+
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_READ_FILE_MMAP_WRITE);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            // leverage isolated detection callback APIs to verify file contents
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(1);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.get(0)).isEqualTo(
+                    MainVisualQueryDetectionService.MSG_FILE_NOT_WRITABLE);
+            assertThat(streamedQueries.size()).isEqualTo(1);
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            mService.removeTestFiles();
+        }
+    }
+
+    @Test
+    public void testVisualQueryDetectionService_openFileMultiple_success() throws Throwable {
+        for (int i = 0; i < Utils.NUM_TEST_RESOURCE_FILE_MULTIPLE; i++) {
+            mService.createTestFile(Integer.toString(i));
+        }
+
+        VisualQueryDetector visualQueryDetector = createVisualQueryDetector();
+        runWithShellPermissionIdentity(() -> {
+            PersistableBundle options = Helper.createFakePersistableBundleData();
+            options.putInt(MainVisualQueryDetectionService.KEY_VQDS_TEST_SCENARIO,
+                    MainVisualQueryDetectionService.SCENARIO_READ_FILE_MMAP_MULTIPLE);
+            visualQueryDetector.updateState(options, Helper.createFakeSharedMemoryData());
+        });
+        try {
+            // leverage isolated detection callback APIs to verify file contents
+            adoptShellPermissionIdentityForVisualQueryDetection();
+
+            mService.initQueryFinishRejectLatch(Utils.NUM_TEST_RESOURCE_FILE_MULTIPLE);
+            visualQueryDetector.startRecognition();
+
+            // wait onStartDetection() called and verify the result
+            mService.waitOnQueryFinishedRejectCalled();
+
+            // verify results
+            ArrayList<String> streamedQueries = mService.getStreamedQueriesResult();
+            assertThat(streamedQueries.size()).isEqualTo(Utils.NUM_TEST_RESOURCE_FILE_MULTIPLE);
+            for (String result: streamedQueries) {
+                assertThat(result).isEqualTo(Utils.TEST_RESOURCE_FILE_CONTENT);
+            }
+        } finally {
+            visualQueryDetector.destroy();
+            // Drop identity adopted.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+            mService.removeTestFiles();
+        }
+    }
 
     private void adoptShellPermissionIdentityForVisualQueryDetection() {
         // Drop any identity adopted earlier.

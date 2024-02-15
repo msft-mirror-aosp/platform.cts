@@ -33,6 +33,7 @@ import opencv_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_HDR = 3
+_TABLET_BRIGHTNESS = '12'  # Highest minimum brightness on a supported tablet
 
 _FMT_NAME = 'jpg'
 _WIDTH = 1920
@@ -183,10 +184,10 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
       logging.debug('Supported extensions: %s', supported_extensions)
 
       # Check SKIP conditions
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
           _EXTENSION_HDR in supported_extensions and
-          vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL)
+          first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
 
       # Establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
@@ -197,24 +198,23 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
           arduino_serial_port, self.lighting_ch, 'OFF')
 
       # Check that tablet is connected and turn it off to validate lighting
-      if self.tablet:
-        lighting_control_utils.turn_off_device(self.tablet)
-      else:
-        raise AssertionError('Test must be run with tablet.')
+      self.turn_off_tablet()
 
       # Validate lighting
-      cam.do_3a()
+      cam.do_3a(do_af=False)
       cap = cam.do_capture(
           capture_request_utils.auto_capture_request(), cam.CAP_YUV)
       y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
       its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', log_path=self.log_path)
+          y_plane, self.scene, state='OFF', log_path=self.log_path,
+          tablet_state='OFF')
 
       self.setup_tablet()
+      self.set_screen_brightness(_TABLET_BRIGHTNESS)
 
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
-          log_path=self.log_path)
+          lighting_check=False, log_path=self.log_path)
 
       file_stem = f'{test_name}_{_FMT_NAME}_{_WIDTH}x{_HEIGHT}'
 

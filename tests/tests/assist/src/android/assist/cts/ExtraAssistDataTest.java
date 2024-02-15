@@ -16,16 +16,24 @@
 package android.assist.cts;
 
 import static android.assist.common.Utils.SHOW_SESSION_FLAGS_TO_SET;
+import static android.service.voice.VoiceInteractionSession.KEY_FOREGROUND_ACTIVITIES;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assume.assumeFalse;
 
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
 import org.junit.Test;
 
-import static com.google.common.truth.Truth.assertWithMessage;
+import java.util.ArrayList;
+
 public class ExtraAssistDataTest extends AssistTestBase {
     private static final String TAG = "ExtraAssistDataTest";
     private static final String TEST_CASE_TYPE = Utils.EXTRA_ASSIST;
@@ -37,10 +45,7 @@ public class ExtraAssistDataTest extends AssistTestBase {
 
     @Test
     public void testAssistContentAndAssistData() throws Exception {
-        if (mActivityManager.isLowRamDevice()) {
-            Log.d(TAG, "Not running assist tests on low-RAM device.");
-            return;
-        }
+        assumeIsNotLowRamDevice();
         startTest(TEST_CASE_TYPE);
         waitForAssistantToBeReady();
         start3pApp(TEST_CASE_TYPE);
@@ -68,14 +73,24 @@ public class ExtraAssistDataTest extends AssistTestBase {
         int actualUid = mAssistBundle.getInt(Intent.EXTRA_ASSIST_UID);
         assertWithMessage("Wrong value for EXTRA_ASSIST_UID").that(actualUid)
                 .isEqualTo(expectedUid);
+
+        // Verify KEY_FOREGROUND_ACTIVITIES was correctly provided in onShow args
+        assertThat(mOnShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isTrue();
+        ArrayList<ComponentName> foregroundApps =
+                mOnShowArgs.getParcelableArrayList(KEY_FOREGROUND_ACTIVITIES);
+        Log.i(TAG, "ForegroundActivityComponent:  " + foregroundApps);
+        assertThat(foregroundApps.size()).isEqualTo(1);
+        assertThat(foregroundApps.get(0).getPackageName()).isEqualTo("android.assist.testapp");
     }
 
     @Test
     public void testAssistContentAndDataNullWhenNoFlagsToShowSession() throws Exception {
-        if (mActivityManager.isLowRamDevice()) {
-            Log.d(TAG, "Not running assist tests on low-RAM device.");
-            return;
-        }
+        assumeIsNotLowRamDevice();
+        // TODO(b/299988169): Fix multi/secure displays for automotive
+        // Currently automotive uses multi-display and/or secure displays
+        // and sending null data is not supported due to the lack of information in main voice
+        // interaction service.
+        assumeIsNotAutomotive();
         startTest(TEST_CASE_TYPE);
         waitForAssistantToBeReady();
         start3pApp(TEST_CASE_TYPE);
@@ -87,5 +102,14 @@ public class ExtraAssistDataTest extends AssistTestBase {
 
         verifyActivityIdNullness(/* isActivityIdNull = */ false);
         verifyAssistDataNullness(true, true, true, true);
+        assertThat(mOnShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isFalse();
+    }
+
+    private void assumeIsNotAutomotive() {
+        assumeFalse("Test not supported in automotive", Utils.isAutomotive(mContext));
+    }
+
+    private void assumeIsNotLowRamDevice() {
+        assumeFalse("Test not supported for low-RAM devices", mActivityManager.isLowRamDevice());
     }
 }

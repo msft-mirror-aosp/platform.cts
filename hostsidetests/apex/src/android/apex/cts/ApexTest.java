@@ -16,8 +16,6 @@
 
 package android.apex.cts;
 
-import static com.android.cts.shim.lib.ShimPackage.SHIM_APEX_PACKAGE_NAME;
-
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
@@ -30,129 +28,91 @@ import java.util.Arrays;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class ApexTest extends BaseHostJUnit4Test {
-  private boolean isApexUpdatable() throws Exception {
-    return Boolean.parseBoolean(getDevice().getProperty("ro.apex.updatable"));
-  }
 
-  private boolean isGSI() throws Exception {
-    String systemProduct = getDevice().getProperty("ro.product.system_ext.name");
-    return (null != systemProduct)
-        && (systemProduct.equals("gsi_arm")
-            || systemProduct.equals("gsi_arm64")
-            || systemProduct.equals("gsi_x86")
-            || systemProduct.equals("gsi_x86_64")
-            || systemProduct.equals("aosp_arm")
-            || systemProduct.equals("aosp_arm64")
-            || systemProduct.equals("aosp_x86")
-            || systemProduct.equals("aosp_x86_64")
-            || systemProduct.equals("aosp_tv_arm64")
-            || systemProduct.equals("aosp_car_arm")
-            || systemProduct.equals("aosp_car_arm64")
-            || systemProduct.equals("aosp_car_x86")
-            || systemProduct.equals("aosp_car_x86_64"));
-  }
+    /** Ensures that the built-in APEXes are all non-flattend APEXes. */
+    @Test
+    public void testApexType() throws Exception {
+        String[] builtinDirs = {
+            "/system/apex", "/system_ext/apex", "/product/apex", "/vendor/apex"
+        };
 
-  /**
-   * Ensures that the built-in APEXes are all with flattened APEXes
-   * or non-flattend APEXes. Mixture of them is not supported and thus
-   * not allowed.
-   *
-   * GSI is exempt from this test since it exceptionally includes both types os APEXes.
-   */
-  @Test
-  public void testApexType() throws Exception {
-    if (isGSI()) {
-      return;
+        int numFlattenedApexes = 0;
+        int numNonFlattenedApexes = 0;
+        for (String dir : builtinDirs) {
+            numFlattenedApexes += countFlattenedApexes(dir);
+            numNonFlattenedApexes += countNonFlattenedApexes(dir);
+        }
+
+        Assert.assertTrue("No APEX found", numNonFlattenedApexes != 0);
+
+        Assert.assertTrue(
+                "APEX should be updatable",
+                Boolean.parseBoolean(getDevice().getProperty("ro.apex.updatable")));
+
+        Assert.assertTrue(
+                numFlattenedApexes
+                        + " flattened APEX(es) found on a device supporting updatable APEX",
+                numFlattenedApexes == 0);
     }
 
-    String[] builtinDirs = {
-      "/system/apex",
-      "/system_ext/apex",
-      "/product/apex",
-      "/vendor/apex"
-    };
-
-    int numFlattenedApexes = 0;
-    int numNonFlattenedApexes = 0;
-    for (String dir : builtinDirs) {
-      numFlattenedApexes += countFlattenedApexes(dir);
-      numNonFlattenedApexes += countNonFlattenedApexes(dir);
+    private int countFlattenedApexes(String dir) throws Exception {
+        CommandResult result =
+                getDevice()
+                        .executeShellV2Command(
+                                "find " + dir + " -type f -name \"apex_manifest.pb\" | wc -l");
+        return result.getExitCode() == 0 ? Integer.parseInt(result.getStdout().trim()) : 0;
     }
 
-    Assert.assertTrue(
-        "No APEX found",
-        (numFlattenedApexes + numNonFlattenedApexes) != 0);
-
-    if (isApexUpdatable()) {
-      Assert.assertTrue(numFlattenedApexes +
-          " flattened APEX(es) found on a device supporting updatable APEX",
-          numFlattenedApexes == 0);
-    } else {
-      Assert.assertTrue(numNonFlattenedApexes +
-          " non-flattened APEX(es) found on a device not supporting updatable APEX",
-          numNonFlattenedApexes == 0);
+    private int countNonFlattenedApexes(String dir) throws Exception {
+        CommandResult result =
+                getDevice()
+                        .executeShellV2Command("find " + dir + " -type f -name \"*.apex\" | wc -l");
+        return result.getExitCode() == 0 ? Integer.parseInt(result.getStdout().trim()) : 0;
     }
-  }
 
-  // CTS shim APEX can be non-flattened - even when ro.apex.updatable=false.
-  // Don't count it.
-  private int countFlattenedApexes(String dir) throws Exception {
-    CommandResult result = getDevice().executeShellV2Command(
-        "find " + dir + " -type f -name \"apex_manifest.pb\" ! -path \"*" +
-        SHIM_APEX_PACKAGE_NAME + "*\" | wc -l");
-    return result.getExitCode() == 0 ? Integer.parseInt(result.getStdout().trim()) : 0;
-  }
+    /**
+     * Ensures that pre-apexd processes (e.g. vold) and post-apexd processes (e.g. init) are using
+     * different mount namespaces (in case of ro.apexd.updatable is true), or not.
+     */
+    @Test
+    public void testMountNamespaces() throws Exception {
+        final int rootMountIdOfInit = getMountEntry("1", "/").mountId;
+        final int rootMountIdOfVold = getMountEntry("$(pidof vold)", "/").mountId;
 
-  private int countNonFlattenedApexes(String dir) throws Exception {
-    CommandResult result = getDevice().executeShellV2Command(
-        "find " + dir + " -type f -name \"*.apex\" ! -name \"" +
-        SHIM_APEX_PACKAGE_NAME + ".apex\" | wc -l");
-    return result.getExitCode() == 0 ? Integer.parseInt(result.getStdout().trim()) : 0;
-  }
-
-  /**
-   * Ensures that pre-apexd processes (e.g. vold) and post-apexd processes (e.g. init) are using
-   * different mount namespaces (in case of ro.apexd.updatable is true), or not.
-   */
-  @Test
-  public void testMountNamespaces() throws Exception {
-    final int rootMountIdOfInit = getMountEntry("1", "/").mountId;
-    final int rootMountIdOfVold = getMountEntry("$(pidof vold)", "/").mountId;
-    if (isApexUpdatable()) {
-      Assert.assertNotEquals("device supports updatable APEX, but is not using multiple mount namespaces",
-          rootMountIdOfInit, rootMountIdOfVold);
-    } else {
-      Assert.assertEquals("device supports updatable APEX, but is using multiple mount namespaces",
-          rootMountIdOfInit, rootMountIdOfVold);
+        Assert.assertNotEquals(
+                "device supports updatable APEX, but is not using multiple mount namespaces",
+                rootMountIdOfInit,
+                rootMountIdOfVold);
     }
-  }
 
-  private static class MountEntry {
-    public final int mountId;
-    public final String mountPoint;
+    private static class MountEntry {
+        public final int mountId;
+        public final String mountPoint;
 
-    public MountEntry(String mountInfoLine) {
-      String[] tokens = mountInfoLine.split(" ");
-      if (tokens.length < 5) {
-        throw new RuntimeException(mountInfoLine + " doesn't seem to be from mountinfo");
-      }
-      mountId = Integer.parseInt(tokens[0]);
-      mountPoint = tokens[4];
+        MountEntry(String mountInfoLine) {
+            String[] tokens = mountInfoLine.split(" ");
+            if (tokens.length < 5) {
+                throw new RuntimeException(mountInfoLine + " doesn't seem to be from mountinfo");
+            }
+            mountId = Integer.parseInt(tokens[0]);
+            mountPoint = tokens[4];
+        }
     }
-  }
 
-  private String[] readMountInfo(String pidExpression) throws Exception {
-    CommandResult result = getDevice().executeShellV2Command(
-        "cat /proc/" + pidExpression + "/mountinfo");
-    if (result.getExitCode() != 0) {
-      throw new RuntimeException("failed to read mountinfo for " + pidExpression);
+    private String[] readMountInfo(String pidExpression) throws Exception {
+        CommandResult result =
+                getDevice().executeShellV2Command("cat /proc/" + pidExpression + "/mountinfo");
+        if (result.getExitCode() != 0) {
+            throw new RuntimeException("failed to read mountinfo for " + pidExpression);
+        }
+        return result.getStdout().trim().split("\n");
     }
-    return result.getStdout().trim().split("\n");
-  }
 
-  private MountEntry getMountEntry(String pidExpression, String mountPoint) throws Exception {
-    return Arrays.asList(readMountInfo(pidExpression)).stream()
-        .map(MountEntry::new)
-        .filter(entry -> mountPoint.equals(entry.mountPoint)).findAny().get();
-  }
+    private MountEntry getMountEntry(String pidExpression, String mountPoint) throws Exception {
+        return Arrays.asList(readMountInfo(pidExpression)).stream()
+                .map(MountEntry::new)
+                .filter(entry -> mountPoint.equals(entry.mountPoint))
+                .findAny()
+                .get();
+    }
 }

@@ -24,6 +24,8 @@ public final class HdmiCecConstants {
 
     private HdmiCecConstants() {}
 
+    /** @deprecated not used anymore **/
+    @Deprecated
     public static final String PHYSICAL_ADDRESS_NAME = "cec-phy-addr";
     public static final int REBOOT_TIMEOUT = 60000;
     public static final int TIMEOUT_CEC_REINIT_SECONDS = 5;
@@ -36,6 +38,7 @@ public final class HdmiCecConstants {
     public static final int DEVICE_WAIT_TIME_MS = 5000;
     public static final int MAX_SLEEP_TIME_SECONDS = 8;
     public static final int SLEEP_TIMESTEP_SECONDS = 1;
+    public static final int SLEEP_TIME_DELAY_SECONDS = 2;
     public static final int DEFAULT_PHYSICAL_ADDRESS = 0x1000;
     public static final int TV_PHYSICAL_ADDRESS = 0x0000;
     public static final int PHYSICAL_ADDRESS_LENGTH = 4; /* Num nibbles in CEC message */
@@ -141,9 +144,10 @@ public final class HdmiCecConstants {
     public static final String HDMI_CEC_FEATURE = "feature:android.hardware.hdmi.cec";
     public static final String LEANBACK_FEATURE = "feature:android.software.leanback";
 
-    // CEC Device property list
+    // Device property list used in CTS
     public static final String HDMI_DEVICE_TYPE_PROPERTY = "ro.hdmi.device_type";
     public static final String PROPERTY_ARC_SUPPORT = "persist.sys.hdmi.property_arc_support";
+    public static final String PROPERTY_BUILD_FINGERPRINT = "ro.system.build.fingerprint";
 
     /*
      * The default name of local directory into which the port to device mapping files are stored.

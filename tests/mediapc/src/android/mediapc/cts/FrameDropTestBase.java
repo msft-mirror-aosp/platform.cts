@@ -16,6 +16,9 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
@@ -49,7 +52,7 @@ public class FrameDropTestBase {
     static final String AV1 = MediaFormat.MIMETYPE_VIDEO_AV1;
     static final String AAC = MediaFormat.MIMETYPE_AUDIO_AAC;
     static final String AAC_LOAD_FILE_NAME = "bbb_1c_128kbps_aac_audio.mp4";
-    static final String AVC_LOAD_FILE_NAME = "bbb_1280x720_3mbps_30fps_avc.mp4";
+    static final String AVC_LOAD_FILE_NAME = "bbb_1920x1080_8mbps_60fps_avc.mp4";
     static final long DECODE_31S = 31000; // In ms
     static final int MAX_FRAME_DROP_FOR_30S;
     // For perf class R, one frame drop per 10 seconds at 30 fps i.e. 3 drops per 30 seconds
@@ -95,7 +98,8 @@ public class FrameDropTestBase {
         m2160p60FpsTestFiles.put(HEVC, "bbb_3840x2160_18mbps_60fps_hevc.mkv");
         m2160p60FpsTestFiles.put(VP8, "bbb_3840x2160_24mbps_60fps_vp8.webm");
         m2160p60FpsTestFiles.put(VP9, "bbb_3840x2160_18mbps_60fps_vp9.webm");
-        m2160p60FpsTestFiles.put(AV1, "bbb_3840x2160_18mbps_60fps_av1.mp4");
+        // Limit AV1 4k tests to 1080p as per PC14 requirements
+        m2160p60FpsTestFiles.put(AV1, "bbb_1920x1080_6mbps_60fps_av1.mp4");
 
         m540p30FpsTestFiles.put(AVC, "bbb_960x540_2mbps_30fps_avc.mp4");
         m540p30FpsTestFiles.put(HEVC, "bbb_960x540_2mbps_30fps_hevc.mp4");
@@ -165,6 +169,9 @@ public class FrameDropTestBase {
         final List<Object[]> argsList = new ArrayList<>();
         final String[] mimesList = new String[] {AVC, HEVC, VP8, VP9, AV1};
         for (String mime : mimesList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             MediaFormat format = MediaFormat.createVideoFormat(mime, 1920, 1080);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
             ArrayList<MediaFormat> formats = new ArrayList<>();
@@ -172,6 +179,10 @@ public class FrameDropTestBase {
             ArrayList<String> listOfDecoders =
                     selectHardwareCodecs(mime, formats, features, false);
             for (String decoder : listOfDecoders) {
+                if ((codecPrefix != null && !decoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(decoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{mime, decoder, isAsync});
                 }
@@ -236,8 +247,7 @@ public class FrameDropTestBase {
     }
 
     private void startLoad() {
-        // TODO: b/183671436
-        // Start Transcode load (Decoder(720p) + Encoder(720p))
+        // Start Transcode load (Decoder(1080p) + Encoder(720p))
         mLoadStatus = new LoadStatus();
         mTranscodeLoadThread = createTranscodeLoad();
         mTranscodeLoadThread.start();

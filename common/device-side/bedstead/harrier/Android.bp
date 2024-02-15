@@ -16,12 +16,12 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-
 // TODO(276742331): Restore host/device separation
 java_library_host {
     name: "HarrierCommon",
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
 
     static_libs: [
@@ -30,7 +30,9 @@ java_library_host {
         "guava",
         "NeneCommon",
         "QueryableCommon",
-        "truth-prebuilt",
+        "truth",
+        "flag-junit-host",
+        "device_policy_aconfig_flags_lib_host",
     ],
 
     plugins: ["auto_annotation_plugin"],
@@ -40,6 +42,7 @@ android_library {
     name: "HarrierCommonAndroid",
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
 
     static_libs: [
@@ -48,7 +51,9 @@ android_library {
         "guava",
         "NeneCommonAndroid",
         "QueryableCommonAndroid",
-        "truth-prebuilt",
+        "truth",
+        "flag-junit",
+        "device_policy_aconfig_flags_lib",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -62,6 +67,7 @@ android_library {
 
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
 
     static_libs: [
@@ -83,6 +89,7 @@ android_test {
     name: "HarrierTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -94,7 +101,7 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "platform-test-annotations",
-        "truth-prebuilt",
+        "truth",
         "testng", // for assertThrows
     ],
     manifest: "src/test/AndroidManifest.xml",

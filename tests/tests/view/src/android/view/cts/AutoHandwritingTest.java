@@ -19,12 +19,17 @@ package android.view.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,19 +38,17 @@ import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AutoHandwritingTest {
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<HandwritingActivity> mActivityRule =
             new ActivityTestRule<>(HandwritingActivity.class);
-
-    @Test
-    public void autoHandwriting_defaultValueIsTrue() {
-        Activity activity = mActivityRule.getActivity();
-        View view = activity.findViewById(R.id.default_view);
-
-        assertTrue(view.isAutoHandwritingEnabled());
-    }
 
     @Test
     public void autoHandwriting_setToTrueInXml() {
@@ -80,6 +83,14 @@ public class AutoHandwritingTest {
         assertFalse(view.isAutoHandwritingEnabled());
 
         view.setAutoHandwritingEnabled(true);
+        assertTrue(view.isAutoHandwritingEnabled());
+    }
+
+    @Test
+    public void autoHandwriting_textView_defaultValueIsTrue() {
+        Activity activity = mActivityRule.getActivity();
+        View view = activity.findViewById(R.id.default_textview);
+
         assertTrue(view.isAutoHandwritingEnabled());
     }
 }

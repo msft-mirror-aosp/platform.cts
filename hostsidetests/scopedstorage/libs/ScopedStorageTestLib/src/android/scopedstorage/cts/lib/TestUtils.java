@@ -87,12 +87,16 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -118,6 +122,10 @@ public class TestUtils {
     public static final String DELETE_FILE_QUERY = "android.scopedstorage.cts.deletefile";
     public static final String DELETE_MEDIA_BY_URI_QUERY =
             "android.scopedstorage.cts.deletemediabyuri";
+    public static final String UPDATE_MEDIA_BY_URI_QUERY =
+            "android.scopedstorage.cts.update_media_by_uri";
+    public static final String QUERY_MEDIA_BY_URI_QUERY =
+            "android.scopedstorage.cts.query_media_by_uri";
     public static final String DELETE_RECURSIVE_QUERY = "android.scopedstorage.cts.deleteRecursive";
     public static final String CAN_OPEN_FILE_FOR_READ_QUERY =
             "android.scopedstorage.cts.can_openfile_read";
@@ -167,6 +175,7 @@ public class TestUtils {
 
     private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
     private static final long POLLING_SLEEP_MILLIS = 100;
+    private static final long APP_INSTALL_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(8);
 
     /**
      * Creates the top level default directories.
@@ -410,6 +419,38 @@ public class TestUtils {
     public static int deleteMediaByUriAs(TestApp testApp, Uri uri) throws Exception {
         final String actionName = DELETE_MEDIA_BY_URI_QUERY;
         return getFromTestApp(testApp, uri, actionName).getInt(actionName);
+    }
+
+    /**
+     * Makes the given {@code testApp} update the media rows for the given {@code uri} by
+     * updating values for the provided {@code attributes}.
+     *
+     * <p>This method drops shell permission identity.
+     */
+    public static boolean updateMediaByUriAs(TestApp testApp, Uri uri, Bundle attributes)
+            throws Exception {
+        final String actionName = UPDATE_MEDIA_BY_URI_QUERY;
+        return getFromTestApp(testApp, uri, actionName, attributes).getBoolean(actionName);
+    }
+
+    /**
+     * Makes the given {@code testApp} query media file by the given {@code uri}
+     * and {@code projection}. An empty result will be returned if {@code uri}
+     * indicates location of multiple files or no files at all.
+     *
+     * <p>This method drops shell permission identity.
+     */
+    public static Bundle queryMediaByUriAs(TestApp testApp, Uri uri, Set<String> projection)
+            throws Exception {
+        final String actionName = QUERY_MEDIA_BY_URI_QUERY;
+        final Bundle bundle = new Bundle();
+        if (projection != null) {
+            for (String columnName : projection) {
+                bundle.putString(columnName, "");
+            }
+        }
+
+        return getFromTestApp(testApp, uri, actionName, bundle).getBundle(actionName);
     }
 
     /**
@@ -709,6 +750,7 @@ public class TestUtils {
      */
     public static void installApp(TestApp testApp, boolean grantStoragePermission)
             throws Exception {
+        Log.d(TAG, String.format("Started installation of %s app", testApp.getPackageName()));
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             final String packageName = testApp.getPackageName();
@@ -717,29 +759,51 @@ public class TestUtils {
             if (isAppInstalled(testApp)) {
                 Uninstall.packages(packageName);
             }
-            Install.single(testApp).commit();
+            Install.single(testApp).setTimeout(APP_INSTALL_TIMEOUT_MILLIS).commit();
             assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(1);
             if (grantStoragePermission) {
-                grantPermission(packageName, Manifest.permission.READ_EXTERNAL_STORAGE);
-                if (SdkLevel.isAtLeastT()) {
-                    grantPermission(packageName, Manifest.permission.READ_MEDIA_IMAGES);
-                    grantPermission(packageName, Manifest.permission.READ_MEDIA_AUDIO);
-                    grantPermission(packageName, Manifest.permission.READ_MEDIA_VIDEO);
-                }
+                addressStoragePermissions(packageName, true);
             }
+            Log.d(TAG, String.format("Successfully installed %s app", testApp.getPackageName()));
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
 
+    /**
+     * Grants or revokes storage read permissions.
+     */
+    public static void addressStoragePermissions(String packageName, boolean grantPermission) {
+        if (grantPermission) {
+            grantPermission(packageName, Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (SdkLevel.isAtLeastT()) {
+                grantPermission(packageName, Manifest.permission.READ_MEDIA_IMAGES);
+                grantPermission(packageName, Manifest.permission.READ_MEDIA_AUDIO);
+                grantPermission(packageName, Manifest.permission.READ_MEDIA_VIDEO);
+            }
+        } else {
+            revokePermission(packageName, Manifest.permission.READ_EXTERNAL_STORAGE);
+            if (SdkLevel.isAtLeastT()) {
+                revokePermission(packageName, Manifest.permission.READ_MEDIA_IMAGES);
+                revokePermission(packageName, Manifest.permission.READ_MEDIA_AUDIO);
+                revokePermission(packageName, Manifest.permission.READ_MEDIA_VIDEO);
+            }
+        }
+    }
+
     public static boolean isAppInstalled(TestApp testApp) {
-        return InstallUtils.getInstalledVersion(testApp.getPackageName()) != -1;
+        boolean isAppInstalled = InstallUtils.getInstalledVersion(testApp.getPackageName()) != -1;
+
+        Log.d(TAG, String.format("Test app %s is %sinstalled", testApp.getPackageName(),
+                isAppInstalled ? "" : "not "));
+        return isAppInstalled;
     }
 
     /**
      * Uninstalls a {@link TestApp}.
      */
     public static void uninstallApp(TestApp testApp) throws Exception {
+        Log.d(TAG, String.format("Started to uninstall %s test app", testApp.getPackageName()));
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             final String packageName = testApp.getPackageName();
@@ -747,6 +811,7 @@ public class TestUtils {
 
             Uninstall.packages(packageName);
             assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(-1);
+            Log.d(TAG, String.format("Successfully uninstalled %s app", testApp.getPackageName()));
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -1096,12 +1161,7 @@ public class TestUtils {
             // to keep rolling forward if we can't find our grant button
             final UiSelector grant = new UiSelector().textMatches("(?i)Allow");
             if (isWatch(inst.getContext().getPackageManager())) {
-                UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
-                try {
-                    uiScrollable.scrollIntoView(grant);
-                } catch (UiObjectNotFoundException e) {
-                    // Scrolling can fail if the UI is not scrollable
-                }
+                scrollIntoView(grant);
             }
             final boolean grantExists = new UiObject(grant).waitForExists(timeout);
 
@@ -1118,6 +1178,9 @@ public class TestUtils {
         } else {
             // fine the Deny button
             final UiSelector deny = new UiSelector().textMatches("(?i)Deny");
+            if (isWatch(inst.getContext().getPackageManager())) {
+                scrollIntoView(deny);
+            }
             final boolean denyExists = new UiObject(deny).waitForExists(timeout);
 
             assertThat(denyExists).isTrue();
@@ -1136,6 +1199,15 @@ public class TestUtils {
 
     private static boolean hasFeature(PackageManager packageManager, String feature) {
         return packageManager.hasSystemFeature(feature);
+    }
+
+    private static void scrollIntoView(UiSelector selector) {
+        UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        try {
+            uiScrollable.scrollIntoView(selector);
+        } catch (UiObjectNotFoundException e) {
+            // Scrolling can fail if the UI is not scrollable
+        }
     }
 
     /**
@@ -1324,12 +1396,79 @@ public class TestUtils {
         }
     }
 
+    private static void copyContentsAndDir(final Path source, final Path target)
+            throws IOException {
+        Files.walkFileTree(source, new java.nio.file.SimpleFileVisitor<Path>() {
+            private java.nio.file.FileVisitResult copyFileOrEmptyDir(final Path source,
+                    final Path sourceRoot, final Path targetRoot) throws IOException {
+                final Path target = targetRoot.resolve(sourceRoot.relativize(source));
+                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.LinkOption.NOFOLLOW_LINKS);
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+            @Override
+            public java.nio.file.FileVisitResult preVisitDirectory(Path sourceDir,
+                    java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                return copyFileOrEmptyDir(sourceDir, source, target);
+            }
+            @Override
+            public java.nio.file.FileVisitResult visitFile(Path sourceFile,
+                    java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                return copyFileOrEmptyDir(sourceFile, source, target);
+            }
+        });
+    }
+
+    private static boolean renameDirectoryWithOptionalFallbackToCopy(
+            File oldDirectory, File newDirectory, boolean allowCopyFallback) {
+        if (oldDirectory.renameTo(newDirectory)) {
+            return true;
+        }
+
+        if (!allowCopyFallback) {
+            return false;
+        }
+
+        if (!oldDirectory.isDirectory()) {
+            return false;
+        }
+        if (newDirectory.exists()
+                && (!newDirectory.isDirectory() || newDirectory.listFiles().length > 0)) {
+            return false;
+        }
+
+        final Path oldPath = oldDirectory.toPath();
+        final Path newPath = newDirectory.toPath();
+        Log.v(TAG, "Recovering failed rename from " + oldPath + " to " + newPath);
+        try {
+            copyContentsAndDir(oldPath, newPath);
+        } catch (IOException e) {
+            Log.v(TAG, "Failed to recover rename: ", e);
+            return false;
+        }
+        deleteRecursively(oldDirectory);
+        return true;
+    }
+
     /**
      * Asserts can rename directory.
      */
     public static void assertCanRenameDirectory(File oldDirectory, File newDirectory,
             @Nullable File[] oldFilesList, @Nullable File[] newFilesList) {
-        assertThat(oldDirectory.renameTo(newDirectory)).isTrue();
+        assertCanRenameDirectory(oldDirectory, newDirectory, oldFilesList, newFilesList,
+                false /* allowCopyFallback */);
+    }
+
+    /**
+     * Asserts can rename directory. When {@code allowCopyFallback} is true and the simple rename
+     * fails, falls back to recursively copying {@code oldDirectory} into {@code newDirectory}.
+     * Note that the file attributes will not be copied on the fallback.
+     */
+    public static void assertCanRenameDirectory(File oldDirectory, File newDirectory,
+            @Nullable File[] oldFilesList, @Nullable File[] newFilesList,
+            boolean allowCopyFallback) {
+        assertThat(renameDirectoryWithOptionalFallbackToCopy(
+                    oldDirectory, newDirectory, allowCopyFallback)).isTrue();
         assertThat(oldDirectory.exists()).isFalse();
         assertThat(newDirectory.exists()).isTrue();
         for (File file : oldFilesList != null ? oldFilesList : new File[0]) {
@@ -1669,15 +1808,34 @@ public class TestUtils {
 
     public static File[] getDefaultTopLevelDirs() {
         if (BuildCompat.isAtLeastS()) {
-            return new File[]{getAlarmsDir(), getAndroidDir(), getAudiobooksDir(), getDcimDir(),
-                    getDocumentsDir(), getDownloadDir(), getMusicDir(), getMoviesDir(),
-                    getNotificationsDir(), getPicturesDir(), getPodcastsDir(), getRecordingsDir(),
-                    getRingtonesDir()};
+            return new File[] {
+                getAlarmsDir(),
+                getAudiobooksDir(),
+                getDcimDir(),
+                getDocumentsDir(),
+                getDownloadDir(),
+                getMusicDir(),
+                getMoviesDir(),
+                getNotificationsDir(),
+                getPicturesDir(),
+                getPodcastsDir(),
+                getRecordingsDir(),
+                getRingtonesDir()
+            };
         }
-        return new File[]{getAlarmsDir(), getAndroidDir(), getAudiobooksDir(), getDcimDir(),
-                getDocumentsDir(), getDownloadDir(), getMusicDir(), getMoviesDir(),
-                getNotificationsDir(), getPicturesDir(), getPodcastsDir(),
-                getRingtonesDir()};
+        return new File[] {
+            getAlarmsDir(),
+            getAudiobooksDir(),
+            getDcimDir(),
+            getDocumentsDir(),
+            getDownloadDir(),
+            getMusicDir(),
+            getMoviesDir(),
+            getNotificationsDir(),
+            getPicturesDir(),
+            getPodcastsDir(),
+            getRingtonesDir()
+        };
     }
 
     private static void assertInputStreamContent(InputStream in, byte[] expectedContent)
@@ -2153,7 +2311,7 @@ public class TestUtils {
         return MediaStore.Files.getContentUri(sStorageVolumeName);
     }
 
-    private static void pollForCondition(Supplier<Boolean> condition, String errorMessage)
+    public static void pollForCondition(Supplier<Boolean> condition, String errorMessage)
             throws Exception {
         for (int i = 0; i < POLLING_TIMEOUT_MILLIS / POLLING_SLEEP_MILLIS; i++) {
             if (condition.get()) {

@@ -26,9 +26,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
@@ -41,6 +43,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.compatibility.common.util.WindowUtil;
@@ -52,6 +55,7 @@ import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ViewTreeObserverTest {
     private static int TIMEOUT_MS = 2000;
 
@@ -64,7 +68,13 @@ public class ViewTreeObserverTest {
     private LinearLayout mLinearLayout;
     private Button mButton;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<MockActivity> mActivityRule =
             new ActivityTestRule<>(MockActivity.class);
 
@@ -257,18 +267,21 @@ public class ViewTreeObserverTest {
 
     @LargeTest
     @Test
-    public void testRemoveOnPreDrawListener() {
+    public void testRemoveOnPreDrawListener() throws Throwable {
         mViewTreeObserver = mLinearLayout.getViewTreeObserver();
 
         final ViewTreeObserver.OnPreDrawListener listener =
                 mock(ViewTreeObserver.OnPreDrawListener.class);
-        mViewTreeObserver.addOnPreDrawListener(listener);
-        mViewTreeObserver.dispatchOnPreDraw();
-        verify(listener, times(1)).onPreDraw();
+        mActivityRule.runOnUiThread(() -> {
+            reset(listener); // in case draw happened before now.
+            mViewTreeObserver.addOnPreDrawListener(listener);
+            mViewTreeObserver.dispatchOnPreDraw();
+            verify(listener, times(1)).onPreDraw();
 
-        reset(listener);
-        mViewTreeObserver.removeOnPreDrawListener(listener);
-        mViewTreeObserver.dispatchOnPreDraw();
+            reset(listener);
+            mViewTreeObserver.removeOnPreDrawListener(listener);
+            mViewTreeObserver.dispatchOnPreDraw();
+        });
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);

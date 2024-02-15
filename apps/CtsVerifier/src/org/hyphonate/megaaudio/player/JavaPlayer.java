@@ -66,6 +66,17 @@ public class JavaPlayer extends Player {
         setupStream(builder);
     }
 
+    @Override
+    public int getSharingMode() {
+        // JAVA Audio API does not support a sharing mode
+        return BuilderBase.SHARING_MODE_NOTSUPPORTED;
+    }
+
+    @Override
+    public int getChannelCount() {
+        return mAudioTrack != null ? mAudioTrack.getChannelCount() : -1;
+    }
+
     /**
      * Allocates the array for the burst buffer.
      */
@@ -114,17 +125,17 @@ public class JavaPlayer extends Player {
         mAudioSource.init(mNumExchangeFrames, mChannelCount);
 
         try {
-            mAudioTrack = new AudioTrack.Builder()
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                            .setSampleRate(mSampleRate)
-                            // setChannelIndexMask() won't give us a FAST_PATH
-                            // .setChannelIndexMask(
-                            // StreamBase.channelCountToIndexMask(mChannelCount))
-                            .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount))
-                            .build())
-                    .setPerformanceMode(mPerformanceMode)
-                    .build();
+            AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
+            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                .setSampleRate(mSampleRate)
+                // setChannelIndexMask() won't give us a FAST_PATH
+                // .setChannelIndexMask(
+                //      StreamBase.channelCountToIndexMask(mChannelCount))
+                .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
+            AudioTrack.Builder audioTrackBuilder = new AudioTrack.Builder();
+            audioTrackBuilder.setAudioFormat(formatBuilder.build())
+                .setPerformanceMode(mPerformanceMode);
+            mAudioTrack = audioTrackBuilder.build();
 
             allocBurstBuffer();
             mAudioTrack.setPreferredDevice(builder.getRouteDevice());
@@ -136,10 +147,10 @@ public class JavaPlayer extends Player {
                         + mAudioTrack.getBufferCapacityInFrames());
             }
         }  catch (UnsupportedOperationException ex) {
-            if (LOG) {
-                Log.e(TAG, "Couldn't open AudioTrack: " + ex);
-            }
-            mAudioTrack = null;
+            Log.e(TAG, "Couldn't open AudioTrack: " + ex);
+            return ERROR_UNSUPPORTED;
+        } catch (java.lang.IllegalArgumentException ex) {
+            Log.e(TAG, "Invalid arguments to AudioTrack.Builder: " + ex);
             return ERROR_UNSUPPORTED;
         }
 
@@ -148,6 +159,9 @@ public class JavaPlayer extends Player {
 
     @Override
     public int teardownStream() {
+        if (LOG) {
+            Log.i(TAG, "teardownStream()");
+        }
         stopStream();
 
         waitForStreamThreadToExit();

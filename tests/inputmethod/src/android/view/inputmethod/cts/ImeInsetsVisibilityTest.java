@@ -44,6 +44,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
@@ -70,6 +71,7 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,6 +81,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
@@ -96,6 +99,7 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenImeFocusableChildPopup() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
@@ -143,6 +147,7 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenImeFocusableGravityBottomChildPopup() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
@@ -191,6 +196,7 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenImeFocusableChildPopupOverlaps() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
@@ -240,6 +246,7 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testEditTextPositionAndPersistWhenAboveImeWindowShown() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(

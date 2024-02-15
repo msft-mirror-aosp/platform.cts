@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.app.UiAutomation;
@@ -45,16 +46,21 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -78,6 +84,10 @@ public class BluetoothAdapterTest {
     private static final int SET_NAME_TIMEOUT = 5000; // ms timeout for setting adapter name
     private static final String ENABLE_DUAL_MODE_AUDIO =
             "persist.bluetooth.enable_dual_mode_audio";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -112,7 +122,7 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getDefaultAdapter() {
+    public void getDefaultAdapter() {
         /*
          * Note: If the target doesn't support Bluetooth at all, then
          * this method should return null.
@@ -125,7 +135,7 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_checkBluetoothAddress() {
+    public void checkBluetoothAddress() {
         // Can't be null.
         assertFalse(BluetoothAdapter.checkBluetoothAddress(null));
 
@@ -168,13 +178,10 @@ public class BluetoothAdapterTest {
         assertTrue(BluetoothAdapter.checkBluetoothAddress("DE:F0:FE:DC:B8:76"));
     }
 
-    @Test
     /** Checks enable(), disable(), getState(), isEnabled() */
-    public void test_enableDisable() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    @Test
+    public void enableDisable() {
+        assumeTrue(mHasBluetooth);
 
         for (int i = 0; i < 5; i++) {
             assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
@@ -183,11 +190,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getAddress() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getAddress() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         assertTrue(BluetoothAdapter.checkBluetoothAddress(mAdapter.getAddress()));
 
@@ -197,11 +202,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_setName_getName() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void setName_getName() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
         IntentFilter filter = new IntentFilter();
@@ -232,11 +235,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getBondedDevices() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getBondedDevices() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // empty value is returned when Bluetooth is disabled
@@ -257,11 +258,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getProfileConnectionState() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getProfileConnectionState() {
+        assumeTrue(mHasBluetooth);
 
         mUiAutomation.dropShellPermissionIdentity();
         // getProfileConnectionState is caching it's return value and cts test doesn't know how to
@@ -277,11 +275,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getRemoteDevice() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getRemoteDevice() {
+        assumeTrue(mHasBluetooth);
+
         // getRemoteDevice() should work even with Bluetooth disabled
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         mUiAutomation.dropShellPermissionIdentity();
@@ -305,11 +301,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getRemoteLeDevice() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getRemoteLeDevice() {
+        assumeTrue(mHasBluetooth);
+
         // getRemoteLeDevice() should work even with Bluetooth disabled
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         mUiAutomation.dropShellPermissionIdentity();
@@ -343,40 +337,32 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_isLeAudioSupported() throws IOException {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void isLeAudioSupported() throws IOException {
+        assumeTrue(mHasBluetooth);
+
         assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN, mAdapter.isLeAudioSupported());
     }
 
     @Test
-    public void test_isLeAudioBroadcastSourceSupported() throws IOException {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void isLeAudioBroadcastSourceSupported() throws IOException {
+        assumeTrue(mHasBluetooth);
+
         assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN,
                 mAdapter.isLeAudioBroadcastSourceSupported());
     }
 
     @Test
-    public void test_isLeAudioBroadcastAssistantSupported() throws IOException {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void isLeAudioBroadcastAssistantSupported() throws IOException {
+        assumeTrue(mHasBluetooth);
+
         assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN,
                 mAdapter.isLeAudioBroadcastAssistantSupported());
     }
 
     @Test
-    public void test_isDistanceMeasurementSupported() throws IOException {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void isDistanceMeasurementSupported() throws IOException {
+        assumeTrue(mHasBluetooth);
+
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertNotSame(BluetoothStatusCodes.ERROR_UNKNOWN,
                 mAdapter.isDistanceMeasurementSupported());
@@ -384,11 +370,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getMaxConnectedAudioDevices() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void getMaxConnectedAudioDevices() {
+        assumeTrue(mHasBluetooth);
 
         // Defined in com.android.bluetooth.btservice.AdapterProperties
         int maxConnectedAudioDevicesLowerBound = 1;
@@ -404,11 +387,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_listenUsingRfcommWithServiceRecord() throws IOException {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void listenUsingRfcommWithServiceRecord() throws IOException {
+        assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         BluetoothServerSocket socket = mAdapter.listenUsingRfcommWithServiceRecord(
@@ -422,11 +402,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_discoverableTimeout() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth is not present.
-            return;
-        }
+    public void discoverableTimeout() {
+        assumeTrue(mHasBluetooth);
 
         Duration minutes = Duration.ofMinutes(2);
 
@@ -445,8 +422,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getConnectionState() {
-        if (!mHasBluetooth) return;
+    public void getConnectionState() {
+        assumeTrue(mHasBluetooth);
 
         // Verify return value if Bluetooth is not enabled
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
@@ -454,8 +431,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getMostRecentlyConnectedDevices() {
-        if (!mHasBluetooth) return;
+    public void getMostRecentlyConnectedDevices() {
+        assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
@@ -469,8 +446,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getUuids() {
-        if (!mHasBluetooth) return;
+    public void getUuids() {
+        assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
@@ -488,7 +465,7 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_nameForState() {
+    public void nameForState() {
         assertEquals("ON", BluetoothAdapter.nameForState(BluetoothAdapter.STATE_ON));
         assertEquals("OFF", BluetoothAdapter.nameForState(BluetoothAdapter.STATE_OFF));
         assertEquals("TURNING_ON",
@@ -509,14 +486,14 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_BluetoothConnectionCallback_disconnectReasonText() {
+    public void BluetoothConnectionCallback_disconnectReasonText() {
         assertEquals("Reason unknown", BluetoothAdapter.BluetoothConnectionCallback
                 .disconnectReasonToString(BluetoothStatusCodes.ERROR_UNKNOWN));
     }
 
     @Test
-    public void test_registerBluetoothConnectionCallback() {
-        if (!mHasBluetooth) return;
+    public void registerBluetoothConnectionCallback() {
+        assumeTrue(mHasBluetooth);
 
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.BluetoothConnectionCallback callback =
@@ -552,8 +529,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_requestControllerActivityEnergyInfo() {
-        if (!mHasBluetooth) return;
+    public void requestControllerActivityEnergyInfo() {
+        assumeTrue(mHasBluetooth);
 
         BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback callback =
                 new BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback() {
@@ -573,8 +550,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_clearBluetooth() {
-        if (!mHasBluetooth) return;
+    public void clearBluetooth() {
+        assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
@@ -591,8 +568,8 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_BluetoothProfile_getConnectionStateName() {
-        if (!mHasBluetooth) return;
+    public void BluetoothProfile_getConnectionStateName() {
+        assumeTrue(mHasBluetooth);
 
         assertEquals("STATE_DISCONNECTED",
                 BluetoothProfile.getConnectionStateName(BluetoothProfile.STATE_DISCONNECTED));
@@ -609,8 +586,7 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_BluetoothProfile_getProfileName() {
-        if (!mHasBluetooth) return;
+    public void BluetoothProfile_getProfileName() {
         assertEquals("HEADSET",
                 BluetoothProfile.getProfileName(BluetoothProfile.HEADSET));
         assertEquals("A2DP",
@@ -667,10 +643,29 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_getSetBluetoothHciSnoopLoggingMode() {
-        if (!mHasBluetooth) {
-            return;
-        }
+    @RequiresFlagsEnabled(Flags.FLAG_AUTO_ON_FEATURE)
+    public void autoOnApi() {
+        assumeTrue(mHasBluetooth);
+
+        assertThrows(SecurityException.class, () -> mAdapter.isAutoOnSupported());
+        assertThrows(SecurityException.class, () -> mAdapter.isAutoOnEnabled());
+        assertThrows(SecurityException.class, () -> mAdapter.setAutoOnEnabled(false));
+
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_PRIVILEGED);
+
+        // Not all devices support the auto on feature
+        assumeTrue(mAdapter.isAutoOnSupported());
+
+        mAdapter.setAutoOnEnabled(false);
+        assertEquals(false, mAdapter.isAutoOnEnabled());
+
+        mAdapter.setAutoOnEnabled(true);
+        assertEquals(true, mAdapter.isAutoOnEnabled());
+    }
+
+    @Test
+    public void getSetBluetoothHciSnoopLoggingMode() {
+        assumeTrue(mHasBluetooth);
 
         assertThrows(SecurityException.class, () -> mAdapter
                 .setBluetoothHciSnoopLoggingMode(BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL));
@@ -700,11 +695,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_setPreferredAudioProfiles_getPreferredAudioProfiles() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    public void setPreferredAudioProfiles_getPreferredAudioProfiles() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
@@ -744,11 +737,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_preferredAudioProfileCallbacks() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    public void preferredAudioProfileCallbacks() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
@@ -794,11 +785,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_bluetoothQualityReportReadyCallbacks() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    public void bluetoothQualityReportReadyCallbacks() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
@@ -842,11 +831,9 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    public void test_notifyActiveDeviceChangeApplied() {
-        if (!mHasBluetooth) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    public void notifyActiveDeviceChangeApplied() {
+        assumeTrue(mHasBluetooth);
+
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
@@ -860,12 +847,6 @@ public class BluetoothAdapterTest {
 
     private boolean isDualModeAudioEnabled() {
         return SystemProperties.getBoolean(ENABLE_DUAL_MODE_AUDIO, false);
-    }
-
-    private static void sleep(long t) {
-        try {
-            Thread.sleep(t);
-        } catch (InterruptedException e) { }
     }
 
     private boolean waitForAdapterNameChange() {

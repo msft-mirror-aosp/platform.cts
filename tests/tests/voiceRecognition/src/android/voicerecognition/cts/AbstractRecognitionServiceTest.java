@@ -58,21 +58,22 @@ import com.android.compatibility.common.util.PollingCheck;
 
 import com.google.common.collect.ImmutableList;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
 
 /** Abstract implementation for {@link android.speech.SpeechRecognizer} CTS tests. */
 @RunWith(JUnitParamsRunner.class)
@@ -84,11 +85,11 @@ abstract class AbstractRecognitionServiceTest {
     private static final long SEQUENCE_TEST_WAIT_TIMEOUT_MS = 5000L;
     private static final long ACTIVITY_INIT_WAIT_TIMEOUT_MS = 5000L;
 
-    private static final String CTS_VOICE_RECOGNITION_SERVICE =
+    /* package */ static final String CTS_VOICE_RECOGNITION_SERVICE =
             "android.recognitionservice.service/android.recognitionservice.service"
                     + ".CtsVoiceRecognitionService";
 
-    private static final String IN_PACKAGE_RECOGNITION_SERVICE =
+    /* package */ static final String IN_PACKAGE_RECOGNITION_SERVICE =
             "android.voicerecognition.cts/android.voicerecognition.cts.CtsRecognitionService";
 
     // Expected to create 1 more recognizer than what the concurrency limit is,
@@ -201,6 +202,11 @@ abstract class AbstractRecognitionServiceTest {
                 .isEqualTo(List.of("pt", "de"));
         assertThat(rs.getOnlineLanguages())
                 .isEqualTo(List.of("zh", "fr"));
+        assertThat(CtsRecognitionService.sBindCount.get()).isGreaterThan(0);
+
+        mActivity.destroyRecognizerDefault();
+        mUiDevice.waitForIdle();
+        PollingCheck.waitFor(() -> CtsRecognitionService.sBindCount.get() == 0);
     }
 
     @Test
@@ -217,48 +223,52 @@ abstract class AbstractRecognitionServiceTest {
         PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
                 () -> CtsRecognitionService.sDownloadTriggers.size() > 0);
         assertThat(CtsRecognitionService.sDownloadTriggers).hasSize(1);
+        assertThat(CtsRecognitionService.sBindCount.get()).isGreaterThan(0);
+
+        mActivity.destroyRecognizerDefault();
+        mUiDevice.waitForIdle();
+        PollingCheck.waitFor(() -> CtsRecognitionService.sBindCount.get() == 0);
     }
 
     @Test
-    public void testCanTriggerModelDownloadWithListener() throws Throwable {
+    @Parameters(method = "modelDownloadScenarios")
+    @TestCaseName("{method}_{0}")
+    public void testCanTriggerModelDownloadWithListener(
+            ModelDownloadExecutionInfo.Scenario scenario) {
         mUiDevice.waitForIdle();
         SpeechRecognizer recognizer = mActivity.getRecognizerInfoDefault().mRecognizer;
         assertThat(recognizer).isNotNull();
         setCurrentRecognizer(recognizer, IN_PACKAGE_RECOGNITION_SERVICE);
 
         mUiDevice.waitForIdle();
+        ModelDownloadExecutionInfo mdei = ModelDownloadExecutionInfo.fromScenario(scenario);
         CtsRecognitionService.sDownloadTriggers.clear();
+        CtsRecognitionService.sInstructedModelDownloadCallbacks =
+                new ArrayDeque<>(mdei.mInstructedCallbacks);
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        List<String> callbackCalls = new ArrayList<>();
-        ModelDownloadListener listener = new ModelDownloadListener() {
-            @Override
-            public void onProgress(int completedPercent) {
-                callbackCalls.add("progress");
-            }
+        ModelDownloadCallbackLogger listener = new ModelDownloadCallbackLogger();
 
-            @Override
-            public void onSuccess() {
-                callbackCalls.add("success");
-            }
-
-            @Override
-            public void onScheduled() {
-                callbackCalls.add("scheduled");
-            }
-
-            @Override
-            public void onError(int error) {
-                callbackCalls.add("error");
-            }
-        };
         mActivity.triggerModelDownloadWithListenerDefault(intent, listener);
         PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
                 () -> CtsRecognitionService.sDownloadTriggers.size() > 0);
-        PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
-                () -> callbackCalls.size() > 0);
-        assertThat(callbackCalls)
-                .containsExactly("progress", "scheduled", "success", "error")
+
+        mUiDevice.waitForIdle();
+        assertThat(listener.mCallbacks)
+                .containsExactlyElementsIn(mdei.mExpectedCallbacks)
                 .inOrder();
+        assertThat(CtsRecognitionService.sBindCount.get()).isGreaterThan(0);
+
+        mActivity.destroyRecognizerDefault();
+        mUiDevice.waitForIdle();
+        PollingCheck.waitFor(() -> CtsRecognitionService.sBindCount.get() == 0);
+    }
+
+    static ModelDownloadExecutionInfo.Scenario[] modelDownloadScenarios() {
+        return new ModelDownloadExecutionInfo.Scenario[] {
+                ModelDownloadExecutionInfo.Scenario.PROGRESS_PROGRESS_PROGRESS,
+                ModelDownloadExecutionInfo.Scenario.PROGRESS_SUCCESS_PROGRESS,
+                ModelDownloadExecutionInfo.Scenario.SCHEDULED_ERROR,
+                ModelDownloadExecutionInfo.Scenario.ERROR_SCHEDULED};
     }
 
     @Test
@@ -503,6 +513,10 @@ abstract class AbstractRecognitionServiceTest {
             assertThat(ri.mErrorCodesReceived).isEqualTo(sei.mExpectedErrorCodesReceived);
         }
         assertThat(CtsRecognitionService.sInstructedCallbackMethods).isEmpty();
+
+        mActivity.destroyAllRecognizers();
+        mUiDevice.waitForIdle();
+        PollingCheck.waitFor(() -> CtsRecognitionService.sBindCount.get() == 0);
     }
 
     private static void prepareDevice() {
@@ -787,6 +801,97 @@ abstract class AbstractRecognitionServiceTest {
                     return new SequenceExecutionInfo(ImmutableList.of(), ImmutableList.of(),
                             ImmutableList.of(), ImmutableList.of(), ImmutableList.of());
             }
+        }
+    }
+
+    /**
+     * Data class containing information about model download listener callback sequence:
+     * <ul>
+     *   <li> {@link ModelDownloadExecutionInfo#mInstructedCallbacks} - list of {@link
+     *   ModelDownloadCallback}s instructed to be invoked by the service on the given listener;
+     *   <li> {@link ModelDownloadExecutionInfo#mExpectedCallbacks} - list of {@link
+     *   ModelDownloadCallback}s expected to be received at the client's end by the given listener.
+     */
+    private static class ModelDownloadExecutionInfo {
+        private final List<ModelDownloadCallback> mInstructedCallbacks;
+        private final List<ModelDownloadCallback> mExpectedCallbacks;
+
+        private ModelDownloadExecutionInfo(
+                List<ModelDownloadCallback> instructedCallbacks,
+                List<ModelDownloadCallback> expectedCallbacks) {
+            mInstructedCallbacks = instructedCallbacks;
+            mExpectedCallbacks = expectedCallbacks;
+        }
+
+        enum Scenario {
+            PROGRESS_PROGRESS_PROGRESS,
+            PROGRESS_SUCCESS_PROGRESS,
+            SCHEDULED_ERROR,
+            ERROR_SCHEDULED
+        }
+
+        private static ModelDownloadExecutionInfo fromScenario(Scenario scenario) {
+            switch (scenario) {
+                case PROGRESS_PROGRESS_PROGRESS:
+                    return new ModelDownloadExecutionInfo(
+                            /* callbacks to be invoked by the service: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_PROGRESS),
+                            /* callbacks to be received by the client: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_PROGRESS));
+                case PROGRESS_SUCCESS_PROGRESS:
+                    return new ModelDownloadExecutionInfo(
+                            /* callbacks to be invoked by the service: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_SUCCESS,
+                            ModelDownloadCallback.ON_PROGRESS),
+                            /* callbacks to be received by the client: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_PROGRESS,
+                            ModelDownloadCallback.ON_SUCCESS));
+                case SCHEDULED_ERROR:
+                    return new ModelDownloadExecutionInfo(
+                            /* callbacks to be invoked by the service: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_SCHEDULED,
+                            ModelDownloadCallback.ON_ERROR),
+                            /* callbacks to be received by the client: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_SCHEDULED));
+                case ERROR_SCHEDULED:
+                    return new ModelDownloadExecutionInfo(
+                            /* callbacks to be invoked by the service: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_ERROR,
+                            ModelDownloadCallback.ON_SCHEDULED),
+                            /* callbacks to be received by the client: */ ImmutableList.of(
+                            ModelDownloadCallback.ON_ERROR));
+                default:
+                    return new ModelDownloadExecutionInfo(ImmutableList.of(), ImmutableList.of());
+            }
+        }
+    }
+
+    private static class ModelDownloadCallbackLogger implements ModelDownloadListener {
+        private List<ModelDownloadCallback> mCallbacks = new ArrayList<>();
+
+        @Override
+        public void onProgress(int completedPercent) {
+            mCallbacks.add(ModelDownloadCallback.ON_PROGRESS);
+        }
+
+        @Override
+        public void onSuccess() {
+            mCallbacks.add(ModelDownloadCallback.ON_SUCCESS);
+        }
+
+        @Override
+        public void onScheduled() {
+            mCallbacks.add(ModelDownloadCallback.ON_SCHEDULED);
+        }
+
+        @Override
+        public void onError(int error) {
+            mCallbacks.add(ModelDownloadCallback.ON_ERROR);
         }
     }
 }

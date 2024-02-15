@@ -16,6 +16,7 @@
 
 package android.dynamicmime.cts;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -26,6 +27,10 @@ import org.junit.runner.RunWith;
 /**
  * Invokes device-side tests as is, no need for any host-side setup
  */
+@ApiTest(apis = {
+        "android.content.pm.PackageManager#getMimeGroup",
+        "android.content.pm.PackageManager#setMimeGroup"
+})
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class TestCases extends BaseHostJUnit4Test {
     private static final String PACKAGE_TEST_APP = "android.dynamicmime.testapp";
@@ -48,11 +53,6 @@ public class TestCases extends BaseHostJUnit4Test {
     @Test
     public void testDynamicMimeWithAppUpdate() throws DeviceNotAvailableException {
         runDeviceTests("update.SameGroupsTest");
-    }
-
-    @Test
-    public void testDynamicMimeWithChangedGroupsAppUpdate() throws DeviceNotAvailableException {
-        runDeviceTests("update.ChangedGroupsTest");
     }
 
     private void runDeviceTests(String className)

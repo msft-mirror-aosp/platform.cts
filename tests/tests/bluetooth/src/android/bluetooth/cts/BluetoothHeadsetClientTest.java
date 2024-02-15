@@ -18,30 +18,47 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadsetClient;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
 import android.sysprop.BluetoothProperties;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class BluetoothHeadsetClientTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class BluetoothHeadsetClientTest {
     private static final String TAG = BluetoothHeadsetClientTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
 
+    private Context mContext;
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private UiAutomation mUiAutomation;
@@ -52,10 +69,11 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        mHasBluetooth = getContext().getPackageManager().hasSystemFeature(
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
+        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
 
@@ -65,7 +83,7 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        BluetoothManager manager = getContext().getSystemService(BluetoothManager.class);
+        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
@@ -74,13 +92,12 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         mIsProfileReady = false;
         mBluetoothHeadsetClient = null;
 
-        mAdapter.getProfileProxy(getContext(), new BluetoothHeadsetClientServiceListener(),
+        mAdapter.getProfileProxy(mContext, new BluetoothHeadsetClientServiceListener(),
                 BluetoothProfile.HEADSET_CLIENT);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         if (!(mHasBluetooth && mIsHeadsetClientSupported)) {
             return;
         }
@@ -93,9 +110,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         mAdapter = null;
     }
 
-    public void test_closeProfileProxy() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void closeProfileProxy() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
         assertTrue(mIsProfileReady);
@@ -105,9 +122,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         assertFalse(mIsProfileReady);
     }
 
-    public void test_getConnectedDevices() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void getConnectedDevices() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -118,9 +135,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         assertTrue(connectedDevices.isEmpty());
     }
 
-    public void test_getDevicesMatchingConnectionStates() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void getDevicesMatchingConnectionStates() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -132,9 +149,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         assertTrue(connectedDevices.isEmpty());
     }
 
-    public void test_getConnectionState() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void getConnectionState() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -151,9 +168,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
                 mBluetoothHeadsetClient.getConnectionState(testDevice));
     }
 
-    public void test_getConnectionPolicy() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void getConnectionPolicy() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -170,9 +187,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
                 mBluetoothHeadsetClient.getConnectionPolicy(testDevice));
     }
 
-    public void test_setConnectionPolicy() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void setConnectionPolicy() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -191,9 +208,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
                 testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
-    public void test_getNetworkServiceState() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void getNetworkServiceState() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadsetClient);
 
@@ -204,9 +221,9 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
         assertNull(mBluetoothHeadsetClient.getNetworkServiceState(null));
     }
 
-    public void test_createNetworkServiceStateFromParcel() {
-        if (!(mHasBluetooth && mIsHeadsetClientSupported)) return;
-
+    @Test
+    public void createNetworkServiceStateFromParcel() {
+        assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         Parcel p = Parcel.obtain();
@@ -240,7 +257,7 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrrupted");
+            Log.e(TAG, "waitForProfileConnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }
@@ -260,7 +277,7 @@ public class BluetoothHeadsetClientTest extends AndroidTestCase {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrrupted");
+            Log.e(TAG, "waitForProfileDisconnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }

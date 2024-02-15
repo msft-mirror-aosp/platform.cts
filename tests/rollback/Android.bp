@@ -19,7 +19,16 @@ package {
 android_test {
     name: "CtsRollbackManagerTestCases",
     srcs: ["src/**/*.java"],
-    static_libs: ["androidx.test.rules", "cts-rollback-lib", "cts-install-lib"],
-    test_suites: ["general-tests"],
+    static_libs: [
+        "android.content.pm.flags-aconfig-java",
+        "androidx.test.rules",
+        "cts-rollback-lib",
+        "cts-install-lib",
+        "flag-junit",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     sdk_version: "test_current",
 }

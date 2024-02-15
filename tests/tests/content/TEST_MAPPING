@@ -1,19 +1,8 @@
 {
-  "presubmit-large": [
+  "ravenwood-presubmit": [
     {
-      "name": "CtsContentTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        },
-        {
-          "exclude-annotation": "org.junit.Ignore"
-        },
-        {
-          "include-filter": "android.content.pm.cts"
-        }
-      ]
+      "name": "CtsContentTestCasesRavenwood",
+      "host": true
     }
   ]
 }
-

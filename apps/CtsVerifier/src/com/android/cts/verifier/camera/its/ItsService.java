@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -101,7 +102,6 @@ import com.android.compatibility.common.util.ReportLog.Metric;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation.MetricListener;
-import com.android.ex.camera2.blocking.BlockingCameraManager;
 import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenException;
 import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
@@ -127,6 +127,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -135,6 +136,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -145,6 +147,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ItsService extends Service implements SensorEventListener {
     public static final String TAG = ItsService.class.getSimpleName();
@@ -167,11 +170,16 @@ public class ItsService extends Service implements SensorEventListener {
 
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
+    private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
     private static final long TIMEOUT_STATE_MS = 500;
     private static final long TIMEOUT_SESSION_CLOSE = 3000;
+    private static final long TIMEOUT_SESSION_READY = 3000;
 
     // Timeout to wait for a capture result after the capture buffer has arrived, in ms.
     private static final long TIMEOUT_CAP_RES = 2000;
+
+    // Time to sleep after a preview recording with dynamic zoom.
+    private static final long PREVIEW_RECORDING_FINAL_SLEEP_MS = 200;
 
     private static final int MAX_CONCURRENT_READER_BUFFERS = 10;
 
@@ -182,6 +190,8 @@ public class ItsService extends Service implements SensorEventListener {
     private static final int PERFORMANCE_CLASS_R = Build.VERSION_CODES.R;
 
     public static final int SERVERPORT = 6000;
+
+    private static final float EPISILON = 0.05f;
 
     public static final String REGION_KEY = "regions";
     public static final String REGION_AE_KEY = "ae";
@@ -199,6 +209,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
     public static final String AUTOFRAMING_KEY = "autoframing";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
+    public static final String SETTINGS_KEY = "settings";
     public static final int AVAILABILITY_TIMEOUT_MS = 10;
 
     private static final HashMap<Integer, String> CAMCORDER_PROFILE_QUALITIES_MAP;
@@ -220,6 +231,29 @@ public class ItsService extends Service implements SensorEventListener {
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_VGA, "VGA");
     };
 
+    // Queryable stream combinations constants
+    private static final int PRIV = 0;
+    private static final int JPEG = 1;
+    private static final int YUV = 2;
+
+    private static final int PREVIEW = 6;
+    private static final int S720P_4_3 = 7;
+    private static final int S720P_16_9 = 8;
+    private static final int S1080P_4_3 = 9;
+    private static final int S1080P_16_9 = 10;
+    private static final int S1440P_4_3 = 11;
+    private static final int S1440P_16_9 = 12;
+    private static final int MAXIMUM = 13;
+    private static final int MAXIMUM_4_3 = 14;
+    private static final int MAXIMUM_16_9 = 15;
+
+    private static HashMap<Integer, String> sFormatMap = new HashMap<Integer, String>();
+    static {
+        sFormatMap.put(PRIV, "priv");
+        sFormatMap.put(JPEG, "jpeg");
+        sFormatMap.put(YUV, "yuv");
+    }
+
     private CameraManager mCameraManager = null;
     private HandlerThread mCameraThread = null;
     private Handler mCameraHandler = null;
@@ -229,14 +263,21 @@ public class ItsService extends Service implements SensorEventListener {
     private CameraCaptureSession mSession = null;
     private CameraExtensionSession mExtensionSession = null;
     private ImageReader[] mOutputImageReaders = null;
+    private ImageReader mThreeAOutputImageReader = null;
     private SparseArray<String> mPhysicalStreamMap = new SparseArray<String>();
     private SparseArray<Long> mStreamUseCaseMap = new SparseArray<Long>();
     private ImageReader mInputImageReader = null;
+    private ImageReader mExtensionPreviewImageReader = null;
     private CameraCharacteristics mCameraCharacteristics = null;
     private CameraExtensionCharacteristics mCameraExtensionCharacteristics = null;
     private HashMap<String, CameraCharacteristics> mPhysicalCameraChars =
             new HashMap<String, CameraCharacteristics>();
     private ItsUtils.ItsCameraIdList mItsCameraIdList = null;
+
+    // To reuse mSession, track output configurations, image reader args, and session listener.
+    private List<OutputConfiguration> mCaptureOutputConfigs = new ArrayList<OutputConfiguration>();
+    private ImageReaderArgs mImageReaderArgs = ImageReaderArgs.EMPTY;
+    private BlockingSessionCallback mSessionListener = null;
 
     private Vibrator mVibrator = null;
 
@@ -260,15 +301,24 @@ public class ItsService extends Service implements SensorEventListener {
     private volatile BlockingQueue<Object[]> mSerializerQueue =
             new LinkedBlockingDeque<Object[]>();
 
-    private AtomicInteger mCountCallbacksRemaining = new AtomicInteger();
+    private final AtomicInteger mCountCallbacksRemaining = new AtomicInteger();
     private AtomicInteger mCountRawOrDng = new AtomicInteger();
     private AtomicInteger mCountRaw10 = new AtomicInteger();
     private AtomicInteger mCountRaw12 = new AtomicInteger();
     private AtomicInteger mCountJpg = new AtomicInteger();
     private AtomicInteger mCountYuv = new AtomicInteger();
     private AtomicInteger mCountCapRes = new AtomicInteger();
+    private AtomicInteger mCountRaw10QuadBayer = new AtomicInteger();
+    private AtomicInteger mCountRaw10Stats = new AtomicInteger();
+    private AtomicInteger mCountRaw10QuadBayerStats = new AtomicInteger();
+    private AtomicInteger mCountRaw = new AtomicInteger();
+    private AtomicInteger mCountRawQuadBayer = new AtomicInteger();
+    private AtomicInteger mCountRawStats = new AtomicInteger();
+    private AtomicInteger mCountRawQuadBayerStats = new AtomicInteger();
     private boolean mCaptureRawIsDng;
     private boolean mCaptureRawIsStats;
+    private boolean mCaptureRawIsQuadBayer;
+    private boolean mCaptureRawIsQuadBayerStats;
     private int mCaptureStatsGridWidth;
     private int mCaptureStatsGridHeight;
     private CaptureResult mCaptureResults[] = null;
@@ -340,26 +390,36 @@ public class ItsService extends Service implements SensorEventListener {
         public int videoFrameRate; // -1 implies video framerate was not set by the test
         public int fileFormat;
         public double zoomRatio;
+        public Map<String, String> metadata = new HashMap<>();
+        List<RecordingResult> perFrameCaptureResults = new ArrayList<>();
 
         public VideoRecordingObject(String recordedOutputPath,
                 String quality, Size videoSize, int videoFrameRate,
-                int fileFormat, double zoomRatio) {
+                int fileFormat, double zoomRatio,
+                List<RecordingResult> perFrameCaptureResults) {
             this.recordedOutputPath = recordedOutputPath;
             this.quality = quality;
             this.videoSize = videoSize;
             this.videoFrameRate = videoFrameRate;
             this.fileFormat = fileFormat;
             this.zoomRatio = zoomRatio;
+            this.perFrameCaptureResults = perFrameCaptureResults;
         }
 
         VideoRecordingObject(String recordedOutputPath, String quality, Size videoSize,
-                int fileFormat, double zoomRatio) {
+                int fileFormat, double zoomRatio,
+                List<RecordingResult> perFrameCaptureResults) {
             this(recordedOutputPath, quality, videoSize,
-                INVALID_FRAME_RATE, fileFormat, zoomRatio);
+                INVALID_FRAME_RATE, fileFormat, zoomRatio,
+                perFrameCaptureResults);
         }
 
         public boolean isFrameRateValid() {
             return videoFrameRate != INVALID_FRAME_RATE;
+        }
+
+        public void addMetadata(String key, String value) {
+            metadata.put(key, value);
         }
     }
 
@@ -368,6 +428,7 @@ public class ItsService extends Service implements SensorEventListener {
     private Sensor mAccelSensor = null;
     private Sensor mMagSensor = null;
     private Sensor mGyroSensor = null;
+    private Sensor mRotationVector = null;
     private volatile LinkedList<MySensorEvent> mEvents = null;
     private volatile Object mEventLock = new Object();
     private volatile boolean mEventsEnabled = false;
@@ -416,15 +477,18 @@ public class ItsService extends Service implements SensorEventListener {
             mAccelSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mMagSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
             mGyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            mRotationVector = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             mSensorThread = new HandlerThread("SensorThread");
             mSensorThread.start();
             mSensorHandler = new Handler(mSensorThread.getLooper());
             mSensorManager.registerListener(this, mAccelSensor,
-                    /*100hz*/ 10000, mSensorHandler);
+                    /*100Hz*/ 10000, mSensorHandler);
             mSensorManager.registerListener(this, mMagSensor,
                     SensorManager.SENSOR_DELAY_NORMAL, mSensorHandler);
             mSensorManager.registerListener(this, mGyroSensor,
-                    /*200hz*/5000, mSensorHandler);
+                    SensorManager.SENSOR_DELAY_FASTEST, mSensorHandler);
+            mSensorManager.registerListener(this, mRotationVector,
+                    SensorManager.SENSOR_DELAY_FASTEST, mSensorHandler);
 
             // Get a handle to the system vibrator.
             mVibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
@@ -476,6 +540,24 @@ public class ItsService extends Service implements SensorEventListener {
             while (!mThreadExitFlag && mSocket==null) {
                 Thread.sleep(1);
             }
+
+            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG)) {
+                try {
+                    mSocketRunnableObj.sendResponse(ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
+                            Integer.toString(intent.getIntExtra(
+                                    ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
+                                    Activity.RESULT_CANCELED)
+                            )
+                    );
+                    mSocketRunnableObj.sendResponse(
+                            ItsTestActivity.JCA_CAPTURE_PATH_TAG,
+                            intent.getStringExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG));
+                } catch (ItsException e) {
+                    Logt.e(TAG, "Error sending JCA capture path and status", e);
+                }
+                return START_STICKY;
+            }
+
             if (!mThreadExitFlag){
                 Logt.i(TAG, "ItsService ready");
             } else {
@@ -623,6 +705,11 @@ public class ItsService extends Service implements SensorEventListener {
 
     public void closeCameraDevice() throws ItsException {
         try {
+            if (mSession != null) {
+                Logt.i(TAG, "Closing session upon closing camera device.");
+                mSession.close();
+                mSession = null;
+            }
             if (mCamera != null) {
                 Logt.i(TAG, "Closing camera");
                 mCamera.close();
@@ -630,6 +717,10 @@ public class ItsService extends Service implements SensorEventListener {
                 mCameraManager.unregisterAvailabilityCallback(ac);
                 unavailablePhysicalCamEventQueue.clear();
             }
+            // Reset OutputConfigurations and ImageReader args
+            mCaptureOutputConfigs = new ArrayList<OutputConfiguration>();
+            mImageReaderArgs = ImageReaderArgs.EMPTY;
+            closeImageReaders();
         } catch (Exception e) {
             throw new ItsException("Failed to close device");
         }
@@ -797,6 +888,10 @@ public class ItsService extends Service implements SensorEventListener {
                 // Receive the socket-open request from the host.
                 try {
                     Logt.i(TAG, "Waiting for client to connect to socket");
+                    if (mSocket == null) {
+                        Logt.e(TAG, "mSocket is null.");
+                        break;
+                    }
                     mOpenSocket = mSocket.accept();
                     if (mOpenSocket == null) {
                         Logt.e(TAG, "Socket connection error");
@@ -906,8 +1001,6 @@ public class ItsService extends Service implements SensorEventListener {
                     doGetSensorEvents();
                 } else if ("do3A".equals(cmdObj.getString("cmdName"))) {
                     do3A(cmdObj);
-                } else if ("doAutoframing".equals(cmdObj.getString("cmdName"))) {
-                    doAutoframing(cmdObj);
                 } else if ("doCapture".equals(cmdObj.getString("cmdName"))) {
                     doCapture(cmdObj);
                 } else if ("doVibrate".equals(cmdObj.getString("cmdName"))) {
@@ -921,7 +1014,8 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getItsVersion".equals(cmdObj.getString("cmdName"))) {
                     mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
                 } else if ("isStreamCombinationSupported".equals(cmdObj.getString("cmdName"))) {
-                    doCheckStreamCombination(cmdObj);
+                    String cameraId = cmdObj.getString("cameraId");
+                    doCheckStreamCombination(cameraId, cmdObj);
                 } else if ("isCameraPrivacyModeSupported".equals(cmdObj.getString("cmdName"))) {
                     doCheckCameraPrivacyModeSupport();
                 } else if ("isPrimaryCamera".equals(cmdObj.getString("cmdName"))) {
@@ -938,12 +1032,22 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getSupportedVideoQualities".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoQualities(cameraId);
+                } else if ("doGetSupportedVideoSizesCapped".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedPreviewSizes(cameraId);
+                } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
+                    doGetQueryableStreamCombinations();
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedExtensions(cameraId);
+                } else if ("getSupportedExtensionSizes".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    int extension = cmdObj.getInt("extension");
+                    int format = cmdObj.getInt("format");
+                    doGetSupportedExtensionSizes(cameraId, extension, format);
                 } else if ("doBasicRecording".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -965,8 +1069,19 @@ public class ItsService extends Service implements SensorEventListener {
                     double zoomRatio = cmdObj.optDouble("zoomRatio");
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
+                    boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
+                    JSONArray threeARegionStart = cmdObj.optJSONArray("threeARegionStart");
+                    JSONArray threeARegionChange = cmdObj.optJSONArray("threeARegionChange");
+                    JSONArray threeARegionEnd = cmdObj.optJSONArray("threeARegionEnd");
+                    double threeARegionDuration = cmdObj.optDouble("threeARegionDuration");
+                    double zoomStart = cmdObj.optDouble("zoomStart");
+                    double zoomEnd = cmdObj.optDouble("zoomEnd");
+                    double stepSize = cmdObj.optDouble("stepSize");
+                    double stepDuration = cmdObj.optDouble("stepDuration");
                     doBasicPreviewRecording(cameraId, videoSize, recordingDuration,
-                            stabilize, zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
+                            stabilize, hlg10Enabled, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
+                            threeARegionStart, threeARegionChange, threeARegionEnd,
+                            threeARegionDuration, zoomStart, zoomEnd, stepSize, stepDuration);
                 } else if ("isHLG10Supported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -1054,24 +1169,42 @@ public class ItsService extends Service implements SensorEventListener {
                 JSONArray accels = new JSONArray();
                 JSONArray mags = new JSONArray();
                 JSONArray gyros = new JSONArray();
+                JSONArray rvs = new JSONArray();
                 for (MySensorEvent event : events) {
                     JSONObject obj = new JSONObject();
-                    obj.put("time", event.timestamp);
-                    obj.put("x", event.values[0]);
-                    obj.put("y", event.values[1]);
-                    obj.put("z", event.values[2]);
+                    if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+                        float[] mRotationMatrix = new float[16];
+                        float[] orientationVals = new float[3];
+                        SensorManager.getRotationMatrixFromVector(mRotationMatrix, event.values);
+                        SensorManager.getOrientation(mRotationMatrix, orientationVals);
+                        orientationVals[0] = (float) Math.toDegrees(orientationVals[0]);
+                        orientationVals[1] = (float) Math.toDegrees(orientationVals[1]);
+                        orientationVals[2] = (float) Math.toDegrees(orientationVals[2]);
+                        obj.put("time", event.timestamp);
+                        obj.put("x", orientationVals[0]);
+                        obj.put("y", orientationVals[1]);
+                        obj.put("z", orientationVals[2]);
+                    } else {
+                        obj.put("time", event.timestamp);
+                        obj.put("x", event.values[0]);
+                        obj.put("y", event.values[1]);
+                        obj.put("z", event.values[2]);
+                    }
                     if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                         accels.put(obj);
                     } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                         mags.put(obj);
                     } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                         gyros.put(obj);
+                    } else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+                        rvs.put(obj);
                     }
                 }
                 JSONObject obj = new JSONObject();
                 obj.put("accel", accels);
                 obj.put("mag", mags);
                 obj.put("gyro", gyros);
+                obj.put("rv", rvs);
                 sendResponse("sensorEvents", null, obj, null);
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error: ", e);
@@ -1120,17 +1253,27 @@ public class ItsService extends Service implements SensorEventListener {
                     videoJson.put("videoFrameRate", obj.videoFrameRate);
                 }
                 videoJson.put("videoSize", obj.videoSize);
+                JSONObject metadata = new JSONObject();
+                for (Map.Entry<String, String> entry : obj.metadata.entrySet()) {
+                    metadata.put(entry.getKey(), entry.getValue());
+                }
+                videoJson.put("metadata", metadata);
+                JSONArray captureMetadata = new JSONArray();
+                for (RecordingResult r : obj.perFrameCaptureResults) {
+                    captureMetadata.put(ItsSerializer.serialize(r));
+                }
+                videoJson.put("captureMetadata", captureMetadata);
                 sendResponse("recordingResponse", null, videoJson, null);
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error: ", e);
             }
         }
 
-        public void sendResponseCaptureResult(CameraCharacteristics props,
-                                              CaptureRequest request,
-                                              TotalCaptureResult result,
-                                              ImageReader[] readers)
-                throws ItsException {
+        public void sendResponseCaptureResult(CameraCharacteristics cameraCharacteristics,
+            CaptureRequest request,
+            TotalCaptureResult result,
+            ImageReader[] readers)
+            throws ItsException {
             try {
                 JSONArray jsonSurfaces = new JSONArray();
                 for (int i = 0; i < readers.length; i++) {
@@ -1140,20 +1283,50 @@ public class ItsService extends Service implements SensorEventListener {
                     int format = readers[i].getImageFormat();
                     if (format == ImageFormat.RAW_SENSOR) {
                         if (mCaptureRawIsStats) {
-                            int aaw = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .width();
-                            int aah = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .height();
+                            Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+                                cameraCharacteristics, false);
+                            int aaw = activeArrayCropRegion.width();
+                            int aah = activeArrayCropRegion.height();
                             jsonSurface.put("format", "rawStats");
-                            jsonSurface.put("width", aaw/mCaptureStatsGridWidth);
-                            jsonSurface.put("height", aah/mCaptureStatsGridHeight);
+                            jsonSurface.put("width", aaw / mCaptureStatsGridWidth);
+                            jsonSurface.put("height", aah / mCaptureStatsGridHeight);
+                        } else if (mCaptureRawIsQuadBayerStats) {
+                            Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+                                cameraCharacteristics, true);
+                            int aaw = activeArrayCropRegion.width();
+                            int aah = activeArrayCropRegion.height();
+                            jsonSurface.put("format", "rawQuadBayerStats");
+                            jsonSurface.put("width", aaw / mCaptureStatsGridWidth);
+                            jsonSurface.put("height", aah / mCaptureStatsGridHeight);
+                        } else if (mCaptureRawIsQuadBayer) {
+                            jsonSurface.put("format", "rawQuadBayer");
                         } else if (mCaptureRawIsDng) {
                             jsonSurface.put("format", "dng");
                         } else {
                             jsonSurface.put("format", "raw");
                         }
                     } else if (format == ImageFormat.RAW10) {
-                        jsonSurface.put("format", "raw10");
+                        if (mCaptureRawIsStats) {
+                            Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+                                cameraCharacteristics, false);
+                            int aaw = activeArrayCropRegion.width();
+                            int aah = activeArrayCropRegion.height();
+                            jsonSurface.put("format", "raw10Stats");
+                            jsonSurface.put("width", aaw / mCaptureStatsGridWidth);
+                            jsonSurface.put("height", aah / mCaptureStatsGridHeight);
+                        } else if (mCaptureRawIsQuadBayerStats) {
+                            Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+                                cameraCharacteristics, true);
+                            int aaw = activeArrayCropRegion.width();
+                            int aah = activeArrayCropRegion.height();
+                            jsonSurface.put("format", "raw10QuadBayerStats");
+                            jsonSurface.put("width", aaw / mCaptureStatsGridWidth);
+                            jsonSurface.put("height", aah / mCaptureStatsGridHeight);
+                        } else if (mCaptureRawIsQuadBayer) {
+                            jsonSurface.put("format", "raw10QuadBayer");
+                        } else {
+                            jsonSurface.put("format", "raw10");
+                        }
                     } else if (format == ImageFormat.RAW12) {
                         jsonSurface.put("format", "raw12");
                     } else if (format == ImageFormat.JPEG) {
@@ -1173,7 +1346,7 @@ public class ItsService extends Service implements SensorEventListener {
                 }
 
                 Map<String, CaptureResult> physicalMetadata =
-                        result.getPhysicalCameraResults();
+                    result.getPhysicalCameraResults();
                 JSONArray jsonPhysicalMetadata = new JSONArray();
                 for (Map.Entry<String, CaptureResult> pair : physicalMetadata.entrySet()) {
                     JSONObject jsonOneMetadata = new JSONObject();
@@ -1202,6 +1375,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Image i = null;
                 try {
                     i = reader.acquireNextImage();
+                    Logt.i(TAG, "Image timestamp: " + i.getTimestamp());
                     String physicalCameraId = new String();
                     for (int idx = 0; idx < mOutputImageReaders.length; idx++) {
                         if (mOutputImageReaders[idx] == reader) {
@@ -1209,6 +1383,35 @@ public class ItsService extends Service implements SensorEventListener {
                         }
                     }
                     listener.onCaptureAvailable(i, physicalCameraId);
+                } finally {
+                    if (i != null) {
+                        i.close();
+                    }
+                }
+            }
+        };
+    }
+
+    public ImageReader.OnImageAvailableListener
+            createExtensionAvailableListener(final CaptureCallback listener) {
+        return new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader reader) {
+                Image i = null;
+                try {
+                    i = reader.acquireNextImage();
+                    String physicalCameraId = new String();
+                    for (int idx = 0; idx < mOutputImageReaders.length; idx++) {
+                        if (mOutputImageReaders[idx] == reader) {
+                            physicalCameraId = mPhysicalStreamMap.get(idx);
+                            break;
+                        }
+                    }
+                    listener.onCaptureAvailable(i, physicalCameraId);
+                    synchronized(mCountCallbacksRemaining) {
+                        mCountCallbacksRemaining.decrementAndGet();
+                        mCountCallbacksRemaining.notify();
+                    }
                 } finally {
                     if (i != null) {
                         i.close();
@@ -1245,6 +1448,7 @@ public class ItsService extends Service implements SensorEventListener {
             obj.put("accel", mAccelSensor != null);
             obj.put("mag", mMagSensor != null);
             obj.put("gyro", mGyroSensor != null);
+            obj.put("rv", mRotationVector != null);
             obj.put("vibrator", mVibrator.hasVibrator());
             mSocketRunnableObj.sendResponse("sensorExistence", null, obj, null);
         } catch (org.json.JSONException e) {
@@ -1354,12 +1558,13 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private void doCheckStreamCombination(JSONObject params) throws ItsException {
+    private void doCheckStreamCombination(String cameraId, JSONObject params) throws ItsException {
         try {
             JSONObject obj = new JSONObject();
             JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
             prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                    /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false);
+                    /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
+                    /*reuseSession*/ false);
             int numSurfaces = mOutputImageReaders.length;
             List<OutputConfiguration> outputConfigs =
                     new ArrayList<OutputConfiguration>(numSurfaces);
@@ -1375,14 +1580,42 @@ public class ItsService extends Service implements SensorEventListener {
                 outputConfigs.add(config);
             }
 
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
+            mSessionListener = new BlockingSessionCallback();
             SessionConfiguration sessionConfig = new SessionConfiguration(
                 SessionConfiguration.SESSION_REGULAR, outputConfigs,
-                new HandlerExecutor(mCameraHandler), sessionListener);
-            boolean supported = mCamera.isSessionConfigurationSupported(sessionConfig);
+                new HandlerExecutor(mCameraHandler), mSessionListener);
 
-            String supportString = supported ? "supportedCombination" : "unsupportedCombination";
-            mSocketRunnableObj.sendResponse("streamCombinationSupport", supportString);
+            CaptureRequest.Builder templateReq = null;
+            if (params.has(SETTINGS_KEY)) {
+                CaptureRequest.Builder defaultReq = mCamera.createCaptureRequest(
+                        CameraDevice.TEMPLATE_STILL_CAPTURE);
+                try {
+                    JSONObject settingsObj = params.getJSONObject(SETTINGS_KEY);
+                    templateReq = ItsSerializer.deserialize(defaultReq, settingsObj);
+                } catch (org.json.JSONException e) {
+                    throw new ItsException("JSON error: ", e);
+                }
+            }
+
+            String returnString;
+            if (templateReq == null) {
+                returnString = mCamera.isSessionConfigurationSupported(sessionConfig)
+                        ? "supportedCombination" : "unsupportedCombination";
+            } else if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
+                Log.i(TAG,
+                        "Attempting to query session support with parameters, but "
+                                + "CameraDeviceSetup is not supported.");
+                returnString = "unsupportedOperation";
+            } else {
+                sessionConfig.setSessionParameters(templateReq.build());
+                CameraDevice.CameraDeviceSetup cameraDeviceSetup =
+                        mCameraManager.getCameraDeviceSetup(mCamera.getId());
+                boolean supported = cameraDeviceSetup.isSessionConfigurationSupported(
+                        sessionConfig);
+                returnString = supported ? "supportedCombination" : "unsupportedCombination";
+            }
+
+            mSocketRunnableObj.sendResponse("streamCombinationSupport", returnString);
 
         } catch (UnsupportedOperationException e) {
             mSocketRunnableObj.sendResponse("streamCombinationSupport", "unsupportedOperation");
@@ -1417,6 +1650,11 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doGetDisplaySize() throws ItsException {
+        Size displaySize = getDisplaySize();
+        mSocketRunnableObj.sendResponse("displaySize", displaySize.toString());
+    }
+
+    private Size getDisplaySize() throws ItsException {
         WindowManager windowManager = getSystemService(WindowManager.class);
         if (windowManager == null) {
             throw new ItsException("No window manager.");
@@ -1435,7 +1673,7 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         Size displaySize = new Size(width, height);
-        mSocketRunnableObj.sendResponse("displaySize", displaySize.toString());
+        return displaySize;
     }
 
     private void doGetMaxCamcorderProfileSize(String cameraId) throws ItsException {
@@ -1683,8 +1921,62 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
-    private void prepareImageReaders(Size[] outputSizes, int[] outputFormats, Size inputSize,
-            int inputFormat, int maxInputBuffers) {
+    private static long getReaderUsage(int format, boolean has10bitOutput) {
+        // Private image format camera readers will default to ZSL usage unless
+        // explicitly configured to use a common consumer such as display.
+        // We don't support the ZSL use case within the 10-bit use case.
+        return (format == ImageFormat.PRIVATE && has10bitOutput) ?
+                HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
+    }
+
+    private List<OutputConfiguration> getCaptureOutputConfigurations(
+            JSONArray jsonOutputSpecs, boolean is10bitOutputPresent)
+            throws org.json.JSONException {
+        int numSurfaces = mOutputImageReaders.length;
+        List<OutputConfiguration> outputConfigs =
+                new ArrayList<OutputConfiguration>(numSurfaces);
+        for (int i = 0; i < numSurfaces; i++) {
+            OutputConfiguration config = new OutputConfiguration(
+                    mOutputImageReaders[i].getSurface());
+            if (mPhysicalStreamMap.get(i) != null &&
+                    !mPhysicalStreamMap.get(i).isEmpty()) {
+                config.setPhysicalCameraId(mPhysicalStreamMap.get(i));
+            }
+            if (mStreamUseCaseMap.get(i) != null) {
+                config.setStreamUseCase(mStreamUseCaseMap.get(i));
+            }
+            if (jsonOutputSpecs != null) {
+                if (i < jsonOutputSpecs.length()) {
+                    JSONObject surfaceObj = jsonOutputSpecs.getJSONObject(i);
+                    int colorSpaceInt = surfaceObj.optInt(
+                        "colorSpace", ColorSpaceProfiles.UNSPECIFIED);
+                    if (colorSpaceInt != ColorSpaceProfiles.UNSPECIFIED) {
+                        config.setColorSpace(ColorSpace.Named.values()[colorSpaceInt]);
+                    }
+                }
+            }
+            if (is10bitOutputPresent) {
+                // HLG10 is mandatory for all 10-bit output capable devices
+                config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+            }
+            outputConfigs.add(config);
+        }
+        return outputConfigs;
+    }
+
+    private void prepareImageReaders(ImageReaderArgs args, boolean reuseSession) {
+        if (reuseSession && args.equals(mImageReaderArgs)) {
+            Logt.i(TAG, "Reusing image readers.");
+            return;
+        }
+        Logt.i(TAG, String.format(Locale.getDefault(),
+                "Current imageReaderArgs: %s, mImageReaderArgs: %s", args, mImageReaderArgs));
+        Size[] outputSizes = args.getOutputSizes();
+        int[] outputFormats = args.getOutputFormats();
+        Size inputSize = args.getInputSize();
+        int inputFormat = args.getInputFormat();
+        int maxInputBuffers = args.getMaxInputBuffers();
+        boolean has10bitOutput = args.getHas10bitOutput();
         closeImageReaders();
         mOutputImageReaders = new ImageReader[outputSizes.length];
         for (int i = 0; i < outputSizes.length; i++) {
@@ -1692,19 +1984,23 @@ public class ItsService extends Service implements SensorEventListener {
             if (outputSizes[i].equals(inputSize) && outputFormats[i] == inputFormat) {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers);
+                        MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
+                        getReaderUsage(outputFormats[i], has10bitOutput));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS);
+                        MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i],
+                            has10bitOutput));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
-                    inputFormat, maxInputBuffers);
+                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat, has10bitOutput));
         }
+        mImageReaderArgs = ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
+                inputFormat, maxInputBuffers, has10bitOutput);
     }
 
     private void closeImageReaders() {
@@ -1716,14 +2012,21 @@ public class ItsService extends Service implements SensorEventListener {
                 }
             }
         }
+        mOutputImageReaders = null;
         if (mInputImageReader != null) {
             mInputImageReader.close();
             mInputImageReader = null;
+        }
+        if (mThreeAOutputImageReader != null) {
+            mThreeAOutputImageReader.close();
+            mThreeAOutputImageReader = null;
         }
     }
 
     private void do3A(JSONObject params) throws ItsException {
         ThreeAResultListener threeAListener = new ThreeAResultListener();
+        boolean reuseSession = params.optBoolean("reuseSession", false);
+        List<OutputConfiguration> captureOutputConfigurations = new ArrayList<>();
         try {
             // Start a 3A action, and wait for it to converge.
             // Get the converged values for each "A", and package into JSON result for caller.
@@ -1736,34 +2039,65 @@ public class ItsService extends Service implements SensorEventListener {
                 c = mPhysicalCameraChars.get(physicalId);
             }
 
-            // 3A happens on full-res frames.
-            Size sizes[] = ItsUtils.getYuvOutputSizes(c);
-            int outputFormats[] = new int[1];
-            outputFormats[0] = ImageFormat.YUV_420_888;
-            Size[] outputSizes = new Size[1];
-            outputSizes[0] = sizes[0];
-            int width = outputSizes[0].getWidth();
-            int height = outputSizes[0].getHeight();
-
-            prepareImageReaders(outputSizes, outputFormats, /*inputSize*/null, /*inputFormat*/0,
-                    /*maxInputBuffers*/0);
-
-            List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>(1);
-            OutputConfiguration config =
-                    new OutputConfiguration(mOutputImageReaders[0].getSurface());
-            if (physicalId != null) {
-                config.setPhysicalCameraId(physicalId);
+            // Prepare capture image readers here, and skip when doing the actual capture
+            if (reuseSession) {
+                Logt.i(TAG, "Preparing capture image readers in 3A");
+                JSONArray jsonCaptureOutputSpecs = ItsUtils.getOutputSpecs(params);
+                List<CaptureRequest.Builder> backgroundRequests =
+                        ItsSerializer.deserializeRequestList(mCamera, params, "repeatRequests");
+                boolean backgroundRequest = backgroundRequests.size() > 0;
+                boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonCaptureOutputSpecs,
+                        /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                        backgroundRequest, reuseSession);
+                captureOutputConfigurations =
+                        getCaptureOutputConfigurations(jsonCaptureOutputSpecs, has10bitOutput);
             }
-            outputConfigs.add(config);
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
-            mCamera.createCaptureSessionByOutputConfigurations(
-                    outputConfigs, sessionListener, mCameraHandler);
-            mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+
+            // Configure output format and size for 3A session, and prepare ImageReader.
+            if (mThreeAOutputImageReader == null) {
+                Logt.i(TAG, "Setting up 3A image reader");
+                int outputFormat = ImageFormat.YUV_420_888;
+                Size size = ItsUtils.getYuvOutputSizes(c)[0];
+                mThreeAOutputImageReader = ImageReader.newInstance(
+                        size.getWidth(), size.getHeight(), outputFormat,
+                        MAX_CONCURRENT_READER_BUFFERS,
+                        getReaderUsage(outputFormat, /*has10bitOutput=*/false));
+            }
+
+            // Add all necessary output configurations for the capture session
+            List<OutputConfiguration> sessionOutputConfigs = new ArrayList<>();
+            OutputConfiguration threeAConfig =
+                    new OutputConfiguration(mThreeAOutputImageReader.getSurface());
+            if (physicalId != null) {
+                threeAConfig.setPhysicalCameraId(physicalId);
+            }
+            sessionOutputConfigs.add(threeAConfig);
+            for (OutputConfiguration config : captureOutputConfigurations) {
+                sessionOutputConfigs.add(config);
+            }
+
+            if (mSession != null && reuseSession &&
+                    mCaptureOutputConfigs.equals(captureOutputConfigurations)) {
+                Logt.i(TAG, "Reusing camera capture session in 3A.");
+            } else {
+                Logt.i(TAG, "Need to create new capture session in 3A");
+                if (mSession != null) {
+                    mSession.close();
+                }
+                mSessionListener = new BlockingSessionCallback();
+                mCamera.createCaptureSessionByOutputConfigurations(
+                        sessionOutputConfigs, mSessionListener, mCameraHandler);
+                mSession = mSessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+                mSessionListener.getStateWaiter().waitForState(
+                                BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+                Logt.i(TAG, "New capture session created.");
+            }
+            mCaptureOutputConfigs = new ArrayList<OutputConfiguration>(captureOutputConfigurations);
 
             // Add a listener that just recycles buffers; they aren't saved anywhere.
             ImageReader.OnImageAvailableListener readerListener =
                     createAvailableListenerDropper();
-            mOutputImageReaders[0].setOnImageAvailableListener(readerListener, mSaveHandlers[0]);
+            mThreeAOutputImageReader.setOnImageAvailableListener(readerListener, mSaveHandlers[0]);
 
             // Get the user-specified regions for AE, AWB, AF.
             // Note that the user specifies normalized [x,y,w,h], which is converted below
@@ -1939,7 +2273,7 @@ public class ItsService extends Service implements SensorEventListener {
                             triggering = true;
                         }
 
-                        req.addTarget(mOutputImageReaders[0].getSurface());
+                        req.addTarget(mThreeAOutputImageReader.getSurface());
 
                         if (triggering) {
                             // Send single request for AE/AF trigger
@@ -1957,6 +2291,10 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
             }
+            mSession.stopRepeating();
+            mSessionListener.getStateWaiter().waitForState(
+                    BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+            Logt.i(TAG, "Session is ready again after doing 3A.");
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         } catch (org.json.JSONException e) {
@@ -1965,89 +2303,10 @@ public class ItsService extends Service implements SensorEventListener {
             mSocketRunnableObj.sendResponse("3aDone", "");
             // stop listener from updating 3A states
             threeAListener.stop();
-            if (mSession != null) {
+            if (mSession != null && !reuseSession) {
+                closeImageReaders();
                 mSession.close();
-            }
-        }
-    }
-
-    private void doAutoframing(JSONObject params) throws ItsException {
-        AutoframingResultListener autoframingListener = new AutoframingResultListener();
-        try {
-            CameraCharacteristics c = mCameraCharacteristics;
-            Size[] sizes = ItsUtils.getYuvOutputSizes(c);
-            int[] outputFormats = new int[1];
-            outputFormats[0] = ImageFormat.YUV_420_888;
-            Size[] outputSizes = new Size[1];
-            outputSizes[0] = sizes[0];
-            int width = outputSizes[0].getWidth();
-            int height = outputSizes[0].getHeight();
-
-            prepareImageReaders(outputSizes, outputFormats, /*inputSize*/null, /*inputFormat*/0,
-                    /*maxInputBuffers*/0);
-
-            List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>(1);
-            OutputConfiguration config =
-                    new OutputConfiguration(mOutputImageReaders[0].getSurface());
-            outputConfigs.add(config);
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
-            mCamera.createCaptureSessionByOutputConfigurations(
-                    outputConfigs, sessionListener, mCameraHandler);
-            mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
-
-            // Add a listener that just recycles buffers; they aren't saved anywhere.
-            ImageReader.OnImageAvailableListener readerListener =
-                    createAvailableListenerDropper();
-            mOutputImageReaders[0].setOnImageAvailableListener(readerListener, mSaveHandlers[0]);
-
-            double zoomRatio = params.optDouble(ZOOM_RATIO_KEY);
-
-            mInterlockAutoframing.open();
-            synchronized (mAutoframingStateLock) {
-                mConvergedAutoframing = false;
-            }
-
-            long tstart = System.currentTimeMillis();
-
-            // Keep issuing capture requests until autoframing has converged.
-            while (true) {
-                // Block until the next autoframing frame.
-                if (!mInterlockAutoframing.block(TIMEOUT_AUTOFRAMING * 1000)
-                        || System.currentTimeMillis() - tstart > TIMEOUT_AUTOFRAMING * 1000) {
-                    throw new ItsException(
-                            "Autoframing failed to converge after " + TIMEOUT_AUTOFRAMING
-                                    + " seconds.\n"
-                                    + "Autoframing converge state: " + mConvergedAutoframing + ".");
-                }
-                mInterlockAutoframing.close();
-
-                synchronized (mAutoframingStateLock) {
-                    if (!mConvergedAutoframing) {
-                        CaptureRequest.Builder req = mCamera.createCaptureRequest(
-                                CameraDevice.TEMPLATE_PREVIEW);
-                        req.set(CaptureRequest.CONTROL_AUTOFRAMING,
-                                CaptureRequest.CONTROL_AUTOFRAMING_ON);
-                        if (!Double.isNaN(zoomRatio)) {
-                            req.set(CaptureRequest.CONTROL_ZOOM_RATIO, (float) zoomRatio);
-                        }
-                        req.addTarget(mOutputImageReaders[0].getSurface());
-
-                        mSession.setRepeatingRequest(req.build(), autoframingListener,
-                                mResultHandler);
-                    } else {
-                        mSocketRunnableObj.sendResponse("autoframingConverged", "");
-                        Logt.i(TAG, "Autoframing converged");
-                        break;
-                    }
-                }
-            }
-        } catch (android.hardware.camera2.CameraAccessException e) {
-            throw new ItsException("Access error: ", e);
-        } finally {
-            mSocketRunnableObj.sendResponse("autoframingDone", "");
-            autoframingListener.stop();
-            if (mSession != null) {
-                mSession.close();
+                mSession = null;
             }
         }
     }
@@ -2100,7 +2359,7 @@ public class ItsService extends Service implements SensorEventListener {
      */
     private boolean prepareImageReadersWithOutputSpecs(JSONArray jsonOutputSpecs,
             Size inputSize, int inputFormat, int maxInputBuffers,
-            boolean backgroundRequest) throws ItsException {
+            boolean backgroundRequest, boolean reuseSession) throws ItsException {
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
@@ -2155,9 +2414,42 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("raw".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
                         sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
-                    } else if ("raw10".equals(sformat)) {
+                    } else if ("rawQuadBayer".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW_SENSOR;
+                        sizes = ItsUtils.getRaw16MaxResulolutionOutputSizes(cameraCharacteristics);
+                        mCaptureRawIsQuadBayer = true;
+                    } else if ("rawStats".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW_SENSOR;
+                        sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
+                        mCaptureRawIsStats = true;
+                        mCaptureStatsGridWidth = surfaceObj.optInt("gridWidth");
+                        mCaptureStatsGridHeight = surfaceObj.optInt("gridHeight");
+                    } else if ("rawQuadBayerStats".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW_SENSOR;
+                        sizes = ItsUtils.getRaw16MaxResulolutionOutputSizes(cameraCharacteristics);
+                        mCaptureRawIsQuadBayerStats = true;
+                        mCaptureStatsGridWidth = surfaceObj.optInt("gridWidth");
+                        mCaptureStatsGridHeight = surfaceObj.optInt("gridHeight");
+                    }
+                    else if ("raw10".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW10;
                         sizes = ItsUtils.getRaw10OutputSizes(cameraCharacteristics);
+                    } else if ("raw10QuadBayer".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW10;
+                        sizes = ItsUtils.getRaw10MaxResulolutionOutputSizes(cameraCharacteristics);
+                        mCaptureRawIsQuadBayer = true;
+                    } else if ("raw10Stats".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW10;
+                        sizes = ItsUtils.getRaw10OutputSizes(cameraCharacteristics);
+                        mCaptureRawIsStats = true;
+                        mCaptureStatsGridWidth = surfaceObj.optInt("gridWidth");
+                        mCaptureStatsGridHeight = surfaceObj.optInt("gridHeight");
+                    } else if ("raw10QuadBayerStats".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW10;
+                        sizes = ItsUtils.getRaw10MaxResulolutionOutputSizes(cameraCharacteristics);
+                        mCaptureRawIsQuadBayerStats = true;
+                        mCaptureStatsGridWidth = surfaceObj.optInt("gridWidth");
+                        mCaptureStatsGridHeight = surfaceObj.optInt("gridHeight");
                     } else if ("raw12".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW12;
                         sizes = ItsUtils.getRaw12OutputSizes(cameraCharacteristics);
@@ -2165,12 +2457,6 @@ public class ItsService extends Service implements SensorEventListener {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
                         sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
                         mCaptureRawIsDng = true;
-                    } else if ("rawStats".equals(sformat)) {
-                        outputFormats[i] = ImageFormat.RAW_SENSOR;
-                        sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
-                        mCaptureRawIsStats = true;
-                        mCaptureStatsGridWidth = surfaceObj.optInt("gridWidth");
-                        mCaptureStatsGridHeight = surfaceObj.optInt("gridHeight");
                     } else if ("y8".equals(sformat)) {
                         outputFormats[i] = ImageFormat.Y8;
                         sizes = ItsUtils.getY8OutputSizes(cameraCharacteristics);
@@ -2193,8 +2479,12 @@ public class ItsService extends Service implements SensorEventListener {
                         height = ItsUtils.getMaxSize(sizes).getHeight();
                     }
                     // The stats computation only applies to the active array region.
-                    int aaw = ItsUtils.getActiveArrayCropRegion(cameraCharacteristics).width();
-                    int aah = ItsUtils.getActiveArrayCropRegion(cameraCharacteristics).height();
+                    boolean isMaximumResolution =
+                        mCaptureRawIsQuadBayer || mCaptureRawIsQuadBayerStats;
+                    Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+                        cameraCharacteristics, isMaximumResolution);
+                    int aaw = activeArrayCropRegion.width();
+                    int aah = activeArrayCropRegion.height();
                     if (mCaptureStatsGridWidth <= 0 || mCaptureStatsGridWidth > aaw) {
                         mCaptureStatsGridWidth = aaw;
                     }
@@ -2227,7 +2517,9 @@ public class ItsService extends Service implements SensorEventListener {
             }
         }
 
-        prepareImageReaders(outputSizes, outputFormats, inputSize, inputFormat, maxInputBuffers);
+        prepareImageReaders(ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
+                inputFormat, maxInputBuffers,
+                is10bitOutputPresent), reuseSession);
 
         return is10bitOutputPresent;
     }
@@ -2263,6 +2555,33 @@ public class ItsService extends Service implements SensorEventListener {
             appendSupportProfile(profiles, entry.getValue(), entry.getKey(), cameraId);
         }
         mSocketRunnableObj.sendResponse("supportedVideoQualities", profiles.toString());
+    }
+
+    private void doGetSupportedVideoSizesCapped(String id) throws ItsException {
+        int cameraId = Integer.parseInt(id);
+        StringBuilder profiles = new StringBuilder();
+        // s1440p which is the max supported stream size in a combination, when preview
+        // stabilization is on.
+        Size maxPreviewSize = new Size(1920, 1440);
+        ArrayList<Size> outputSizes = new ArrayList<Size>();
+        for (Map.Entry<Integer, String> entry : CAMCORDER_PROFILE_QUALITIES_MAP.entrySet()) {
+            if (CamcorderProfile.hasProfile(cameraId, entry.getKey())) {
+                CamcorderProfile camcorderProfile = getCamcorderProfile(cameraId, entry.getKey());
+                assert(camcorderProfile != null);
+                Size videoSize = new Size(camcorderProfile.videoFrameWidth,
+                        camcorderProfile.videoFrameHeight);
+                outputSizes.add(videoSize);
+            }
+        }
+        Log.i(TAG, "Supported video sizes: " + outputSizes.toString());
+        String response = outputSizes.stream()
+                .distinct()
+                .filter(s -> s.getWidth() * s.getHeight()
+                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
+                .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .map(Size::toString)
+                .collect(Collectors.joining(";"));
+        mSocketRunnableObj.sendResponse("supportedVideoSizes", response);
     }
 
     private void appendSupportProfile(StringBuilder profiles, String name, int profile,
@@ -2314,6 +2633,99 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("supportedPreviewSizes", response);
     }
 
+    private Map<Integer, Size> getStreamSizeMap() throws ItsException {
+        HashMap<Integer, Size> sizeMap = new HashMap<Integer, Size>();
+
+        // PREVIEW
+        Size displaySize = getDisplaySize();
+        sizeMap.put(PREVIEW, displaySize);
+
+        // MAXIMUM
+        StreamConfigurationMap configMap = mCameraCharacteristics.get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Size[] jpegSizes = configMap.getOutputSizes(ImageFormat.JPEG);
+        if (jpegSizes == null) {
+            mSocketRunnableObj.sendResponse("queryableStreamCombinations", "");
+            return null;
+        }
+        Optional<Size> maxJpegSize =
+                Stream.of(jpegSizes).max(Comparator.comparing(s -> s.getWidth() * s.getHeight()));
+        sizeMap.put(MAXIMUM, maxJpegSize.get());
+
+        // MAXIMUM_4_3
+        Stream<Size> jpeg4x3SizeStream = Stream.of(jpegSizes)
+                .filter(s -> Math.abs(1.0f * s.getWidth() / s.getHeight() - 1.333f) <= EPISILON);
+        Optional<Size> maxJpegSize_4_3 = jpeg4x3SizeStream.max(
+                Comparator.comparing(s -> s.getWidth() * s.getHeight()));
+        sizeMap.put(MAXIMUM_4_3, maxJpegSize_4_3.get());
+
+        // MAXIMUM_16_9
+        Stream<Size> jpeg16x9SizeStream = Stream.of(jpegSizes)
+                .filter(s -> Math.abs(1.0f * s.getWidth() / s.getHeight() - 1.778f) <= EPISILON);
+        Optional<Size> maxJpegSize_16_9 = jpeg16x9SizeStream.max(
+                Comparator.comparing(s -> s.getWidth() * s.getHeight()));
+        sizeMap.put(MAXIMUM_16_9, maxJpegSize_16_9.get());
+
+        // The rest
+        sizeMap.put(S1440P_4_3, new Size(1920, 1440));
+        sizeMap.put(S1440P_16_9, new Size(2560, 1440));
+        sizeMap.put(S1080P_4_3, new Size(1440, 1080));
+        sizeMap.put(S1080P_16_9, new Size(1920, 1080));
+        sizeMap.put(S720P_4_3, new Size(960, 720));
+        sizeMap.put(S720P_16_9, new Size(1280, 720));
+
+        return sizeMap;
+    }
+
+    private void doGetQueryableStreamCombinations() throws ItsException {
+        final int[][] kQueryableCombinations = {
+            {PRIV, PREVIEW,      JPEG, MAXIMUM},
+            {PRIV, S1440P_4_3,   JPEG, MAXIMUM_4_3},
+            {PRIV, S1440P_16_9,  JPEG, MAXIMUM_16_9},
+            {PRIV, S1080P_4_3,   JPEG, MAXIMUM_4_3},
+            {PRIV, S1080P_16_9,  JPEG, MAXIMUM_16_9},
+            {PRIV, S720P_4_3,    JPEG, MAXIMUM_4_3},
+            {PRIV, S720P_16_9,   JPEG, MAXIMUM_16_9},
+            {PRIV, S1440P_4_3,   JPEG, S1440P_4_3},
+            {PRIV, S1440P_16_9,  JPEG, S1440P_16_9},
+            {PRIV, S1080P_4_3,   JPEG, S1080P_4_3},
+            {PRIV, S1080P_16_9,  JPEG, S1080P_16_9},
+            {PRIV, S720P_4_3,    JPEG, S1080P_4_3},
+            {PRIV, S720P_16_9,   JPEG, S1080P_16_9},
+            {PRIV, PREVIEW,      PRIV, PREVIEW},
+            {PRIV, S1440P_4_3,   PRIV, S1440P_4_3},
+            {PRIV, S1440P_16_9,  PRIV, S1440P_16_9},
+            {PRIV, S1080P_4_3,   PRIV, S1080P_4_3},
+            {PRIV, S1080P_16_9,  PRIV, S1080P_16_9},
+            {PRIV, S720P_4_3,    PRIV, S720P_4_3},
+            {PRIV, S720P_16_9,   PRIV, S720P_16_9},
+        };
+
+        Map<Integer, Size> streamSizeMap = getStreamSizeMap();
+
+        StringBuilder responseBuilder = new StringBuilder();
+        for (int i = 0; i < kQueryableCombinations.length; i++) {
+            String oneCombination = "";
+            for (int j = 0; j < kQueryableCombinations[i].length; j += 2) {
+                String format = sFormatMap.get(kQueryableCombinations[i][j]);
+                Size size = streamSizeMap.get(kQueryableCombinations[i][j + 1]);
+                String oneStream = format + ":" + size.toString();
+                if (j > 0) {
+                    oneCombination += "+";
+                }
+                oneCombination += oneStream;
+            }
+
+            if (i > 0) {
+                responseBuilder.append(";");
+            }
+            responseBuilder.append(oneCombination);
+        }
+
+        Log.i(TAG, "queryableStreamCombinations response is " + responseBuilder.toString());
+        mSocketRunnableObj.sendResponse("queryableStreamCombinations", responseBuilder.toString());
+    }
+
     private void doGetSupportedExtensions(String id) throws ItsException {
         try {
             CameraExtensionCharacteristics chars =
@@ -2322,6 +2734,23 @@ public class ItsService extends Service implements SensorEventListener {
             mSocketRunnableObj.sendResponse("supportedExtensions", extensionsList.toString());
         } catch (CameraAccessException e) {
             throw new ItsException("Failed to get supported extensions list", e);
+        }
+    }
+
+    private void doGetSupportedExtensionSizes(
+            String id, int extension, int format) throws ItsException {
+        try {
+            CameraExtensionCharacteristics chars =
+                    mCameraManager.getCameraExtensionCharacteristics(id);
+            List<Size> extensionSizes = chars.getExtensionSupportedSizes(extension, format);
+            String response = extensionSizes.stream()
+                .distinct()
+                .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                .map(Size::toString)
+                .collect(Collectors.joining(";"));
+            mSocketRunnableObj.sendResponse("supportedExtensionSizes", response);
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to get supported extensions sizes list", e);
         }
     }
 
@@ -2379,6 +2808,7 @@ public class ItsService extends Service implements SensorEventListener {
             int recordingDuration, int videoStabilizationMode,
             boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax)
             throws ItsException {
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
         final long SESSION_CLOSE_TIMEOUT_MS  = 3000;
 
         if (!hlg10Enabled) {
@@ -2452,7 +2882,7 @@ public class ItsService extends Service implements SensorEventListener {
         try {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, DynamicRangeProfiles.HLG10, mockCallback,
-                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
+                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, recordingResultListener);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2490,13 +2920,15 @@ public class ItsService extends Service implements SensorEventListener {
 
         // Send VideoRecordingObject for further processing.
         VideoRecordingObject obj = new VideoRecordingObject(outputFilePath,
-                quality, videoSize, camcorderProfile.videoFrameRate, fileFormat, zoomRatio);
+                quality, videoSize, camcorderProfile.videoFrameRate, fileFormat, zoomRatio,
+                /*perFrameCaptureResults=*/ Collections.emptyList());
         mSocketRunnableObj.sendVideoRecordingObject(obj);
     }
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax) throws ItsException {
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
         int cameraDeviceId = Integer.parseInt(cameraId);
         mMediaRecorder = new MediaRecorder();
         CamcorderProfile camcorderProfile = getCamcorderProfile(cameraDeviceId, profileId);
@@ -2529,7 +2961,8 @@ public class ItsService extends Service implements SensorEventListener {
         try {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, DynamicRangeProfiles.STANDARD,
-                    /*callback =*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
+                    /*callback =*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
+                    recordingResultListener);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2559,7 +2992,8 @@ public class ItsService extends Service implements SensorEventListener {
 
         // Send VideoRecordingObject for further processing.
         VideoRecordingObject obj = new VideoRecordingObject(outputFilePath,
-                quality, videoSize, camcorderProfile.videoFrameRate, fileFormat, zoomRatio);
+                quality, videoSize, camcorderProfile.videoFrameRate, fileFormat, zoomRatio,
+                /*perFrameCaptureResults=*/ Collections.emptyList());
         mSocketRunnableObj.sendVideoRecordingObject(obj);
     }
 
@@ -2574,10 +3008,13 @@ public class ItsService extends Service implements SensorEventListener {
      * ImageReader to the MediaRecorder surface which is encoded into a video.
      */
     private void doBasicPreviewRecording(String cameraId, String videoSizeString,
-            int recordingDuration, boolean stabilize, double zoomRatio,
-            int aeTargetFpsMin, int aeTargetFpsMax)
+            int recordingDuration, boolean stabilize, boolean hlg10Enabled, double zoomRatio,
+            int aeTargetFpsMin, int aeTargetFpsMax, JSONArray threeARegionStart,
+            JSONArray threeARegionChange, JSONArray threeARegionEnd, double threeARegionDuration,
+            double zoomStart, double zoomEnd, double stepSize, double stepDuration)
             throws ItsException {
-
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
+        List<RecordingResult> recordingResults = new ArrayList<>();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             throw new ItsException("Cannot record preview before API level 33");
         }
@@ -2586,6 +3023,14 @@ public class ItsService extends Service implements SensorEventListener {
                 CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION);
         if (stabilize && !stabilizationSupported) {
             throw new ItsException("Preview stabilization requested, but not supported by device.");
+        }
+
+        int[] caps = mCameraCharacteristics.get(
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        boolean supportHlg10 = (caps != null) && IntStream.of(caps).anyMatch(x -> x ==
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
+        if (hlg10Enabled && !supportHlg10) {
+            throw new ItsException("HLG10 requested, but not supported by device.");
         }
 
         int cameraDeviceId = Integer.parseInt(cameraId);
@@ -2597,27 +3042,95 @@ public class ItsService extends Service implements SensorEventListener {
         int fileFormat = MediaRecorder.OutputFormat.DEFAULT;
 
         String outputFilePath = getOutputMediaFile(cameraDeviceId, videoSize,
-                /* quality= */"preview", fileFormat, stabilize, zoomRatio);
+                /* quality= */"preview", fileFormat, hlg10Enabled, stabilize, zoomRatio,
+                aeTargetFpsMin, aeTargetFpsMax);
         assert outputFilePath != null;
 
-        try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, videoSize,
+        // By default aeTargetFpsMax is not set. In that case, default to 30
+        if (aeTargetFpsMax == 0) {
+            aeTargetFpsMax = 30;
+        }
+        try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
                 sensorOrientation, outputFilePath, mCameraHandler, this)) {
             int stabilizationMode = stabilize
                     ? CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
                     : CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF;
+            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, DynamicRangeProfiles.STANDARD,
-                    /*callback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
-            pr.recordPreview(recordingDuration * 1000L);
+                    sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
+                    recordingResultListener);
+            pr.startRecording();
+            for (double z = zoomStart; z < zoomEnd; z += stepSize) {
+                Logt.i(TAG, String.format(
+                        Locale.getDefault(),
+                        "zoomRatio set to %.4f during preview recording.", z));
+                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, (float) z);
+                mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                        recordingResultListener, mCameraHandler);
+                if (!Double.isNaN(stepDuration)) {
+                    Logt.i(TAG, String.format(
+                            Locale.getDefault(),
+                            "Sleeping %.2f ms during video recording", stepDuration));
+                    mCameraThread.sleep((long) stepDuration);
+                }
+            }
+            Rect activeArray = mCameraCharacteristics.get(
+                    CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            int aaWidth = activeArray.right - activeArray.left;
+            int aaHeight = activeArray.bottom - activeArray.top;
+            JSONArray[] threeARegionRoutine = {
+                    threeARegionStart, threeARegionChange, threeARegionEnd};
+            if (threeARegionStart != null) {
+                for (JSONArray threeARegion : threeARegionRoutine){
+                    MeteringRectangle[] region = ItsUtils.getJsonWeightedRectsFromArray(
+                            threeARegion, /*normalized=*/true, aaWidth, aaHeight);
+                    Logt.i(TAG, String.format(
+                            Locale.getDefault(),
+                            "3A set to %s during preview recording.", Arrays.toString(region)));
+                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, region);
+                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, region);
+                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AWB_REGIONS, region);
+                    mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                            recordingResultListener, mCameraHandler);
+                    if (!Double.isNaN(threeARegionDuration)) {
+                        Logt.i(TAG, String.format(
+                                Locale.getDefault(),
+                                "Sleeping %.2f ms during recording", threeARegionDuration));
+                        mCameraThread.sleep((long) threeARegionDuration);
+                    } else {
+                        throw new ItsException("threeARegionDuration is not specified.");
+                    }
+                }
+            }
+            if (!Double.isNaN(stepDuration) || !Double.isNaN(threeARegionDuration)) {
+                mCameraThread.sleep(PREVIEW_RECORDING_FINAL_SLEEP_MS);
+            } else {
+                mCameraThread.sleep(recordingDuration * 1000L);  // recordingDuration is in seconds
+            }
+
+            // Stop repeating request and ensure frames in flight are sent to MediaRecorder
+            mSession.stopRepeating();
+            sessionListener.getStateWaiter().waitForState(
+                    BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+            pr.stopRecording();
+            // From the end of the recording capture results, keep number of frames of recording
+            List<RecordingResult> allResults =
+                    new ArrayList<>(recordingResultListener.mRecordingCaptureResults);
+            recordingResults = allResults.subList(
+                    Math.max(allResults.size() - pr.getNumFrames(), 0),
+                    allResults.size());
             mSession.close();
         } catch (CameraAccessException e) {
             throw new ItsException("Error configuring and creating capture request", e);
+        } catch (InterruptedException e) {
+            throw new ItsException("Interrupted while recording preview", e);
         }
 
         Log.i(TAG, "Preview recording complete: " + outputFilePath);
         // Send VideoRecordingObject for further processing.
         VideoRecordingObject obj = new VideoRecordingObject(outputFilePath, /* quality= */"preview",
-                videoSize, fileFormat, zoomRatio);
+                videoSize, fileFormat, zoomRatio, recordingResults);
         mSocketRunnableObj.sendVideoRecordingObject(obj);
     }
 
@@ -2646,19 +3159,24 @@ public class ItsService extends Service implements SensorEventListener {
         return previewSize;
     }
 
-    private void configureAndCreateExtensionSession(
+    private Surface configureAndCreateExtensionSession(
             Surface captureSurface,
             int extension,
-            CameraExtensionSession.StateCallback stateCallback) throws ItsException {
+            CameraExtensionSession.StateCallback stateCallback,
+            boolean has10bitOutput) throws ItsException {
         int captureWidth = mOutputImageReaders[0].getWidth();
         int captureHeight = mOutputImageReaders[0].getHeight();
         Size captureSize = new Size(captureWidth, captureHeight);
         Log.i(TAG, "Capture size: " + captureSize.toString());
         ArrayList outputConfig = new ArrayList<>();
-        SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
         Size previewSize = pickPreviewResolution(captureSize, extension);
-        preview.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-        Surface previewSurface = new Surface(preview);
+        mExtensionPreviewImageReader = ImageReader.newInstance(
+                previewSize.getWidth(),
+                previewSize.getHeight(),
+                ImageFormat.PRIVATE,
+                MAX_CONCURRENT_READER_BUFFERS,
+                HardwareBuffer.USAGE_CPU_READ_OFTEN | HardwareBuffer.USAGE_COMPOSER_OVERLAY);
+        Surface previewSurface = mExtensionPreviewImageReader.getSurface();
         outputConfig.add(new OutputConfiguration(captureSurface));
         outputConfig.add(new OutputConfiguration(previewSurface));
         ExtensionSessionConfiguration extSessionConfig = new ExtensionSessionConfiguration(
@@ -2671,12 +3189,14 @@ public class ItsService extends Service implements SensorEventListener {
         } catch (CameraAccessException e) {
             throw new ItsException("Error creating extension session: " + e);
         }
+        return previewSurface;
     }
 
     private void configureAndCreateCaptureSession(int requestTemplate, Surface recordSurface,
             int videoStabilizationMode, long dynamicRangeProfile,
             CameraCaptureSession.StateCallback stateCallback,
-            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax) throws CameraAccessException {
+            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
+            CameraCaptureSession.CaptureCallback captureCallback) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -2728,9 +3248,17 @@ public class ItsService extends Service implements SensorEventListener {
                     public void onConfigured(CameraCaptureSession session) {
                         mSession = session;
                         try {
-                            mSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, null);
+                            mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                                    captureCallback, mResultHandler);
                         } catch (CameraAccessException e) {
                             e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onReady(CameraCaptureSession session) {
+                        if (stateCallback != null) {
+                            stateCallback.onReady(session);
                         }
                     }
 
@@ -2775,11 +3303,20 @@ public class ItsService extends Service implements SensorEventListener {
     private String getOutputMediaFile(int cameraId, Size videoSize, String quality,
             int fileFormat, boolean stabilized, double zoomRatio) {
         return getOutputMediaFile(cameraId, videoSize, quality, fileFormat,
-                /* hlg10Enabled= */false, stabilized, zoomRatio);
+                /* hlg10Enabled= */false, stabilized, zoomRatio, /* minFps */0,
+                /* maxFps */0);
     }
 
     private String getOutputMediaFile(int cameraId, Size videoSize, String quality,
             int fileFormat, boolean hlg10Enabled, boolean stabilized, double zoomRatio) {
+        return getOutputMediaFile(cameraId, videoSize, quality, fileFormat,
+                hlg10Enabled, stabilized, zoomRatio, /* minFps */0,
+                /* maxFps */0);
+    }
+
+    private String getOutputMediaFile(int cameraId, Size videoSize, String quality,
+            int fileFormat, boolean hlg10Enabled, boolean stabilized, double zoomRatio,
+            int minFps, int maxFps) {
         // If any quality has file format other than 3gp and webm then the
         // recording file will have mp4 as default extension.
         String fileExtension = "";
@@ -2815,6 +3352,10 @@ public class ItsService extends Service implements SensorEventListener {
         if (stabilized) {
             fileName += "_stabilized";
         }
+        if (minFps > 0 && maxFps > 0) {
+            fileName += "_" + minFps + "_" + maxFps;
+        }
+
         File mediaFile = new File(fileName);
         return mediaFile + fileExtension;
     }
@@ -2835,19 +3376,19 @@ public class ItsService extends Service implements SensorEventListener {
         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
         Surface previewSurface = new Surface(preview);
         try {
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
+            mSessionListener = new BlockingSessionCallback();
             try {
                 mCountCapRes.set(0);
                 mCountJpg.set(0);
                 JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
                 prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                         /*inputFormat*/0,/*maxInputBuffers*/0,false);
+                        /*inputFormat*/0, /*maxInputBuffers*/0, false, /*reuseSession*/ false);
 
                 outputConfigs.add(new OutputConfiguration(mOutputImageReaders[0].getSurface()));
                 outputConfigs.add(new OutputConfiguration(previewSurface));
                 mCamera.createCaptureSessionByOutputConfigurations(
-                        outputConfigs, sessionListener, mCameraHandler);
-                mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+                        outputConfigs, mSessionListener, mCameraHandler);
+                mSession = mSessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
                 ImageReader.OnImageAvailableListener readerListener =
                         createAvailableListener(mCaptureCallback);
                 mOutputImageReaders[0].setOnImageAvailableListener(readerListener,
@@ -2923,11 +3464,6 @@ public class ItsService extends Service implements SensorEventListener {
             List<CaptureRequest.Builder> requests = ItsSerializer.deserializeRequestList(
                     mCamera, params, "captureRequests");
 
-            // optional background preview requests
-            List<CaptureRequest.Builder> backgroundRequests = ItsSerializer.deserializeRequestList(
-                    mCamera, params, "repeatRequests");
-            boolean backgroundRequest = backgroundRequests.size() > 0;
-
             int numSurfaces = 0;
             int numCaptureSurfaces = 0;
             BlockingExtensionSessionCallback sessionListener =
@@ -2938,40 +3474,79 @@ public class ItsService extends Service implements SensorEventListener {
             mCountRaw10.set(0);
             mCountRaw12.set(0);
             mCountCapRes.set(0);
+            mCountRaw10QuadBayer.set(0);
+            mCountRaw10Stats.set(0);
+            mCountRaw10QuadBayerStats.set(0);
+            mCountRaw.set(0);
+            mCountRawQuadBayer.set(0);
+            mCountRawStats.set(0);
+            mCountRawQuadBayerStats.set(0);
+
             mCaptureRawIsDng = false;
             mCaptureRawIsStats = false;
+            mCaptureRawIsQuadBayer = false;
+            mCaptureRawIsQuadBayerStats = false;
             mCaptureResults = new CaptureResult[requests.size()];
 
             JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
 
-            prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                    /*inputFormat*/0, /*maxInputBuffers*/0, backgroundRequest);
+            boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                    /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                    /*backgroundRequest*/ false, /*reuseSession*/ false);
             numSurfaces = mOutputImageReaders.length;
-            numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0);
+            numCaptureSurfaces = numSurfaces;
 
-            configureAndCreateExtensionSession(mOutputImageReaders[0].getSurface(), extension,
-                    sessionListener);
+            Surface previewSurface = configureAndCreateExtensionSession(
+                    mOutputImageReaders[0].getSurface(),
+                    extension,
+                    sessionListener,
+                    has10bitOutput);
 
-            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
-
-            for (int i = 0; i < numSurfaces; i++) {
-                ImageReader.OnImageAvailableListener readerListener;
-                if (backgroundRequest && i == numSurfaces - 1) {
-                    readerListener = createAvailableListenerDropper();
-                } else {
-                    readerListener = createAvailableListener(mCaptureCallback);
-                }
-                mOutputImageReaders[i].setOnImageAvailableListener(readerListener,
-                        mSaveHandlers[i]);
-            }
+            mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
 
             CaptureRequest.Builder captureBuilder = requests.get(0);
+
+            if (params.optBoolean("waitAE", true)) {
+                if (mExtensionPreviewImageReader == null) {
+                    throw new ItsException("Preview ImageReader has not been initialized!");
+                }
+                // Set repeating request and wait for AE convergence, using another ImageReader.
+                Logt.i(TAG, "Waiting for AE to converge before taking extensions capture.");
+                CaptureRequest.Builder previewRequestBuilder = mCamera.createCaptureRequest(
+                        CameraDevice.TEMPLATE_PREVIEW);
+                previewRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                        CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                previewRequestBuilder.addTarget(mExtensionPreviewImageReader.getSurface());
+                ImageReader.OnImageAvailableListener dropperListener =
+                        createAvailableListenerDropper();
+                mExtensionPreviewImageReader.setOnImageAvailableListener(dropperListener,
+                        mSaveHandlers[0]);
+                mExtensionSession.setRepeatingRequest(previewRequestBuilder.build(),
+                        new HandlerExecutor(mResultHandler),
+                        mExtAEResultListener);
+                mCountCallbacksRemaining.set(1);
+                long timeout = TIMEOUT_CALLBACK * 1000;
+                waitForCallbacks(timeout);
+                mExtensionSession.stopRepeating();
+                mResultThread.sleep(PIPELINE_WARMUP_TIME_MS);
+            }
+
+            ImageReader.OnImageAvailableListener readerListener =
+                    createExtensionAvailableListener(mCaptureCallback);
+            mOutputImageReaders[0].setOnImageAvailableListener(readerListener,
+                    mSaveHandlers[0]);
             captureBuilder.addTarget(mOutputImageReaders[0].getSurface());
             mExtensionSession.capture(captureBuilder.build(), new HandlerExecutor(mResultHandler),
                     mExtCaptureResultListener);
-            mCountCallbacksRemaining.set(1);
+            // Two callbacks: one for onCaptureResultAvailable and one for onImageAvailable
+            mCountCallbacksRemaining.set(2);
             long timeout = TIMEOUT_CALLBACK * 1000;
             waitForCallbacks(timeout);
+
+            if (mExtensionPreviewImageReader != null) {
+                mExtensionPreviewImageReader.close();
+                mExtensionPreviewImageReader = null;
+            }
 
             // Close session and wait until session is fully closed
             mExtensionSession.close();
@@ -2979,10 +3554,13 @@ public class ItsService extends Service implements SensorEventListener {
                 BlockingExtensionSessionCallback.SESSION_CLOSED, TIMEOUT_SESSION_CLOSE);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
+        } catch (InterruptedException e) {
+            throw new ItsException("Unexpected InterruptedException: ", e);
         }
     }
 
     private void doCapture(JSONObject params) throws ItsException {
+        boolean reuseSession = params.optBoolean("reuseSession", false);
         try {
             // Parse the JSON to get the list of capture requests.
             List<CaptureRequest.Builder> requests = ItsSerializer.deserializeRequestList(
@@ -2995,7 +3573,6 @@ public class ItsService extends Service implements SensorEventListener {
 
             int numSurfaces = 0;
             int numCaptureSurfaces = 0;
-            BlockingSessionCallback sessionListener = new BlockingSessionCallback();
             try {
                 mCountRawOrDng.set(0);
                 mCountJpg.set(0);
@@ -3003,48 +3580,48 @@ public class ItsService extends Service implements SensorEventListener {
                 mCountRaw10.set(0);
                 mCountRaw12.set(0);
                 mCountCapRes.set(0);
+                mCountRaw10QuadBayer.set(0);
+                mCountRaw10Stats.set(0);
+                mCountRaw10QuadBayerStats.set(0);
+                mCountRaw.set(0);
+                mCountRawQuadBayer.set(0);
+                mCountRawStats.set(0);
+                mCountRawQuadBayerStats.set(0);
+
                 mCaptureRawIsDng = false;
                 mCaptureRawIsStats = false;
+                mCaptureRawIsQuadBayer = false;
+                mCaptureRawIsQuadBayerStats = false;
                 mCaptureResults = new CaptureResult[requests.size()];
 
                 JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
+                boolean is10bitOutputPresent = false;
 
-                boolean is10bitOutputPresent = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                if (mOutputImageReaders == null) {
+                    Logt.i(TAG, "Preparing image readers with output specs in doCapture");
+                    is10bitOutputPresent = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
                         /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
-                        backgroundRequest);
+                        backgroundRequest, reuseSession);
+                }
                 numSurfaces = mOutputImageReaders.length;
                 numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0);
 
-                List<OutputConfiguration> outputConfigs =
-                        new ArrayList<OutputConfiguration>(numSurfaces);
-                for (int i = 0; i < numSurfaces; i++) {
-                    OutputConfiguration config = new OutputConfiguration(
-                            mOutputImageReaders[i].getSurface());
-                    if (mPhysicalStreamMap.get(i) != null) {
-                        config.setPhysicalCameraId(mPhysicalStreamMap.get(i));
-                    }
-                    if (mStreamUseCaseMap.get(i) != null) {
-                        config.setStreamUseCase(mStreamUseCaseMap.get(i));
-                    }
-                    if (jsonOutputSpecs != null) {
-                        if (i < jsonOutputSpecs.length()) {
-                            JSONObject surfaceObj = jsonOutputSpecs.getJSONObject(i);
-                            int colorSpaceInt = surfaceObj.optInt(
-                                "colorSpace", ColorSpaceProfiles.UNSPECIFIED);
-                            if (colorSpaceInt != ColorSpaceProfiles.UNSPECIFIED) {
-                                config.setColorSpace(ColorSpace.Named.values()[colorSpaceInt]);
-                            }
-                        }
-                    }
-                    if (is10bitOutputPresent) {
-                        // HLG10 is mandatory for all 10-bit output capable devices
-                        config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
-                    }
-                    outputConfigs.add(config);
+                List<OutputConfiguration> outputConfigs = getCaptureOutputConfigurations(
+                        jsonOutputSpecs, is10bitOutputPresent);
+                if (mSession != null && reuseSession && mOutputImageReaders != null &&
+                        mCaptureOutputConfigs.equals(outputConfigs)) {
+                    Logt.i(TAG, "Reusing camera capture session in doCapture()");
+                } else {
+                    Logt.i(TAG, "Need to create new capture session in doCapture()");
+                    mSessionListener = new BlockingSessionCallback();
+                    mCamera.createCaptureSessionByOutputConfigurations(
+                            outputConfigs, mSessionListener, mCameraHandler);
+                    mSession = mSessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+                    mSessionListener.getStateWaiter().waitForState(
+                                BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+                    Logt.i(TAG, "New capture session created.");
                 }
-                mCamera.createCaptureSessionByOutputConfigurations(outputConfigs,
-                        sessionListener, mCameraHandler);
-                mSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS);
+                mCaptureOutputConfigs = new ArrayList<OutputConfiguration>(outputConfigs);
 
                 for (int i = 0; i < numSurfaces; i++) {
                     ImageReader.OnImageAvailableListener readerListener;
@@ -3093,6 +3670,10 @@ public class ItsService extends Service implements SensorEventListener {
                 if (mCaptureRawIsDng) {
                     req.set(CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE, 1);
                 }
+                if (mCaptureRawIsQuadBayer || mCaptureRawIsQuadBayerStats) {
+                    req.set(CaptureRequest.SENSOR_PIXEL_MODE,
+                        CaptureRequest.SENSOR_PIXEL_MODE_MAXIMUM_RESOLUTION);
+                }
                 Long expTimeNs = req.get(CaptureRequest.SENSOR_EXPOSURE_TIME);
                 if (expTimeNs != null && expTimeNs > maxExpTimeNs) {
                     maxExpTimeNs = expTimeNs;
@@ -3113,11 +3694,19 @@ public class ItsService extends Service implements SensorEventListener {
             // If no timeouts are received after a timeout, then fail.
             waitForCallbacks(timeout);
 
-            // Close session and wait until session is fully closed
-            mSession.close();
-            sessionListener.getStateWaiter().waitForState(
-                    BlockingSessionCallback.SESSION_CLOSED, TIMEOUT_SESSION_CLOSE);
+            mSession.stopRepeating();
+            mSessionListener.getStateWaiter().waitForState(
+                    BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+            Logt.i(TAG, "Session is ready again after doing capture.");
 
+            // Close session and wait until session is fully closed, if desired.
+            if (!reuseSession) {
+                mSession.close();
+                mSessionListener.getStateWaiter().waitForState(
+                        BlockingSessionCallback.SESSION_CLOSED, TIMEOUT_SESSION_CLOSE);
+                mSession = null;
+                closeImageReaders();
+            }
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         } catch (InterruptedException e) {
@@ -3160,8 +3749,18 @@ public class ItsService extends Service implements SensorEventListener {
         mCountRaw10.set(0);
         mCountRaw12.set(0);
         mCountCapRes.set(0);
+        mCountRaw10QuadBayer.set(0);
+        mCountRaw10Stats.set(0);
+        mCountRaw10QuadBayerStats.set(0);
+        mCountRaw.set(0);
+        mCountRawQuadBayer.set(0);
+        mCountRawStats.set(0);
+        mCountRawQuadBayerStats.set(0);
+
         mCaptureRawIsDng = false;
         mCaptureRawIsStats = false;
+        mCaptureRawIsQuadBayer = false;
+        mCaptureRawIsQuadBayerStats = false;
 
         try {
             // Parse the JSON to get the list of capture requests.
@@ -3173,7 +3772,7 @@ public class ItsService extends Service implements SensorEventListener {
             Size inputSize = ItsUtils.getMaxOutputSize(mCameraCharacteristics, inputFormat);
             JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
             prepareImageReadersWithOutputSpecs(jsonOutputSpecs, inputSize, inputFormat,
-                    inputRequests.size(), /*backgroundRequest*/false);
+                    inputRequests.size(), /*backgroundRequest*/false, /*reuseSession*/ false);
 
             // Prepare a reprocessable session.
             int numOutputSurfaces = mOutputImageReaders.length;
@@ -3308,108 +3907,172 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    /**
+     * Computes the stats image from raw image byte array and sends the stats image buffer.
+     *
+     * @param statsFormat The format of stats images.
+     * @param cameraCharacteristics Camera characteristics object.
+     * @param img Image byte array.
+     * @param captureWidth The width of raw image.
+     * @param captureHeight The height of raw image.
+     * @param gridWidth The grid width.
+     * @param gridHeight The grid height.
+     * @param bufTag The tag of stats image buffer.
+     * @throws ItsException  If the stats image computation fails.
+     * @throws InterruptedException  If there is not enough quota available in the socket queue.
+     */
+    private void computeAndSendStatsImage(String statsFormat,
+        CameraCharacteristics cameraCharacteristics, byte[] img, int captureWidth,
+        int captureHeight, int gridWidth, int gridHeight, String bufTag)
+        throws ItsException, InterruptedException {
+        long startTimeMs = SystemClock.elapsedRealtime();
+        boolean isMaximumResolution = statsFormat.contains("QuadBayer");
+        Rect activeArrayCropRegion = ItsUtils.getActiveArrayCropRegion(
+            cameraCharacteristics, isMaximumResolution);
+        int aaw = activeArrayCropRegion.width();
+        int aah = activeArrayCropRegion.height();
+        int aax = activeArrayCropRegion.left;
+        int aay = activeArrayCropRegion.top;
+        float[] stats = StatsImage.computeStatsImage(img, statsFormat, captureWidth, captureHeight,
+            aax, aay, aaw, aah, gridWidth, gridHeight);
+        if (stats == null) {
+            throw new ItsException(String.format(Locale.getDefault(),
+                "Stats image computation fails with format %s.", statsFormat));
+        }
+        long endTimeMs = SystemClock.elapsedRealtime();
+        Logt.i(TAG, String.format(Locale.getDefault(),
+            "%s computation takes %d ms.", statsFormat, endTimeMs - startTimeMs));
+        int statsImgSize = stats.length * 4;
+        if (mSocketQueueQuota != null) {
+            mSocketQueueQuota.release(img.length);
+            mSocketQueueQuota.acquire(statsImgSize);
+        }
+        ByteBuffer bBuf = ByteBuffer.allocate(statsImgSize);
+        bBuf.order(ByteOrder.nativeOrder());
+        FloatBuffer fBuf = bBuf.asFloatBuffer();
+        fBuf.put(stats);
+        fBuf.position(0);
+        mSocketRunnableObj.sendResponseCaptureBuffer(bufTag, bBuf);
+    }
+
     private final CaptureCallback mCaptureCallback = new CaptureCallback() {
         @Override
         public void onCaptureAvailable(Image capture, String physicalCameraId) {
+            if (physicalCameraId != null && !physicalCameraId.isEmpty()) {
+                CameraCharacteristics physicalCameraCharacteristics = mPhysicalCameraChars.get(
+                    physicalCameraId);
+                if (physicalCameraCharacteristics != null) {
+                    mCameraCharacteristics = physicalCameraCharacteristics;
+                    Logt.i(TAG, String.format(Locale.getDefault(),
+                        "Physical camera Id is non-empty, set mCameraCharacteristics to the "
+                            + "characteristics of physical camera %s.",
+                        physicalCameraId));
+                }
+            }
+
             try {
                 int format = capture.getFormat();
+                final int captureWidth = capture.getWidth();
+                final int captureHeight = capture.getHeight();
                 if (format == ImageFormat.JPEG) {
                     Logt.i(TAG, "Received JPEG capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     int count = mCountJpg.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("jpegImage" + physicalCameraId,
-                            buf);
+                        buf);
                 } else if (format == ImageFormat.JPEG_R) {
                     Logt.i(TAG, "Received JPEG/R capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     int count = mCountJpg.getAndIncrement();
-                    mSocketRunnableObj.sendResponseCaptureBuffer("jpeg_rImage"+physicalCameraId,
-                            buf);
+                    mSocketRunnableObj.sendResponseCaptureBuffer("jpeg_rImage" + physicalCameraId,
+                        buf);
                 } else if (format == ImageFormat.PRIVATE) {
                     Logt.i(TAG, "Received PRIVATE capture");
                     // Private images have client opaque buffers
-                    mSocketRunnableObj.sendResponseCaptureBuffer("privImage"+physicalCameraId,
-                            null);
+                    mSocketRunnableObj.sendResponseCaptureBuffer("privImage" + physicalCameraId,
+                        null);
                 } else if (format == ImageFormat.YUV_420_888) {
                     Logt.i(TAG, "Received YUV capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     mSocketRunnableObj.sendResponseCaptureBuffer(
-                            "yuvImage"+physicalCameraId, buf);
+                        "yuvImage" + physicalCameraId, buf);
                 } else if (format == ImageFormat.RAW10) {
-                    Logt.i(TAG, "Received RAW10 capture");
+                    Logt.i(TAG, "Received RAW10 capture.");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
-                    ByteBuffer buf = ByteBuffer.wrap(img);
-                    int count = mCountRaw10.getAndIncrement();
-                    mSocketRunnableObj.sendResponseCaptureBuffer(
-                            "raw10Image"+physicalCameraId, buf);
+                    if (mCaptureRawIsStats) {
+                        String statsFormat = StatsFormat.RAW10_STATS.getValue();
+                        String bufTag = "raw10StatsImage" + physicalCameraId;
+                        computeAndSendStatsImage(statsFormat, mCameraCharacteristics, img,
+                            captureWidth, captureHeight, mCaptureStatsGridWidth,
+                            mCaptureStatsGridHeight, bufTag);
+                        mCountRaw10Stats.getAndIncrement();
+                    } else if (mCaptureRawIsQuadBayerStats) {
+                        String statsFormat = StatsFormat.RAW10_QUAD_BAYER_STATS.getValue();
+                        String bufTag = "raw10QuadBayerStatsImage" + physicalCameraId;
+                        computeAndSendStatsImage(statsFormat, mCameraCharacteristics, img,
+                            captureWidth, captureHeight, mCaptureStatsGridWidth,
+                            mCaptureStatsGridHeight, bufTag);
+                        mCountRaw10QuadBayerStats.getAndIncrement();
+                    } else if (mCaptureRawIsQuadBayer) {
+                        ByteBuffer buf = ByteBuffer.wrap(img);
+                        mSocketRunnableObj.sendResponseCaptureBuffer(
+                            "raw10QuadBayerImage" + physicalCameraId, buf);
+                        mCountRaw10QuadBayer.getAndIncrement();
+                    } else {
+                        ByteBuffer buf = ByteBuffer.wrap(img);
+                        int count = mCountRaw10.getAndIncrement();
+                        mSocketRunnableObj.sendResponseCaptureBuffer(
+                            "raw10Image" + physicalCameraId, buf);
+                    }
                 } else if (format == ImageFormat.RAW12) {
                     Logt.i(TAG, "Received RAW12 capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     int count = mCountRaw12.getAndIncrement();
-                    mSocketRunnableObj.sendResponseCaptureBuffer("raw12Image"+physicalCameraId, buf);
+                    mSocketRunnableObj.sendResponseCaptureBuffer("raw12Image" + physicalCameraId,
+                        buf);
                 } else if (format == ImageFormat.RAW_SENSOR) {
                     Logt.i(TAG, "Received RAW16 capture");
                     int count = mCountRawOrDng.getAndIncrement();
-                    if (! mCaptureRawIsDng) {
+                    if (!mCaptureRawIsDng) {
                         byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
-                        if (! mCaptureRawIsStats) {
+                        if (mCaptureRawIsStats) {
+                            String statsFormat = StatsFormat.RAW16_STATS.getValue();
+                            String bufTag = "rawStatsImage" + physicalCameraId;
+                            computeAndSendStatsImage(statsFormat, mCameraCharacteristics, img,
+                                captureWidth, captureHeight, mCaptureStatsGridWidth,
+                                mCaptureStatsGridHeight, bufTag);
+                            mCountRawStats.getAndIncrement();
+                        } else if (mCaptureRawIsQuadBayerStats) {
+                            String statsFormat = StatsFormat.RAW16_QUAD_BAYER_STATS.getValue();
+                            String bufTag = "rawQuadBayerStatsImage" + physicalCameraId;
+                            computeAndSendStatsImage(statsFormat, mCameraCharacteristics, img,
+                                captureWidth, captureHeight, mCaptureStatsGridWidth,
+                                mCaptureStatsGridHeight, bufTag);
+                            mCountRawQuadBayerStats.getAndIncrement();
+                        } else if (mCaptureRawIsQuadBayer) {
                             ByteBuffer buf = ByteBuffer.wrap(img);
                             mSocketRunnableObj.sendResponseCaptureBuffer(
-                                    "rawImage" + physicalCameraId, buf);
+                                "rawQuadBayerImage" + physicalCameraId, buf);
+                            mCountRawQuadBayer.getAndIncrement();
                         } else {
-                            // Compute the requested stats on the raw frame, and return the results
-                            // in a new "stats image".
-                            long startTimeMs = SystemClock.elapsedRealtime();
-                            int w = capture.getWidth();
-                            int h = capture.getHeight();
-                            int aaw = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .width();
-                            int aah = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .height();
-                            int aax = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .left;
-                            int aay = ItsUtils.getActiveArrayCropRegion(mCameraCharacteristics)
-                                              .top;
-
-                            if (w == aaw) {
-                                aax = 0;
-                            }
-                            if (h == aah) {
-                                aay = 0;
-                            }
-
-                            int gw = mCaptureStatsGridWidth;
-                            int gh = mCaptureStatsGridHeight;
-                            float[] stats = StatsImage.computeStatsImage(
-                                                             img, w, h, aax, aay, aaw, aah, gw, gh);
-                            long endTimeMs = SystemClock.elapsedRealtime();
-                            Log.e(TAG, "Raw stats computation takes " + (endTimeMs - startTimeMs) + " ms");
-                            int statsImgSize = stats.length * 4;
-                            if (mSocketQueueQuota != null) {
-                                mSocketQueueQuota.release(img.length);
-                                mSocketQueueQuota.acquire(statsImgSize);
-                            }
-                            ByteBuffer bBuf = ByteBuffer.allocate(statsImgSize);
-                            bBuf.order(ByteOrder.nativeOrder());
-                            FloatBuffer fBuf = bBuf.asFloatBuffer();
-                            fBuf.put(stats);
-                            fBuf.position(0);
+                            ByteBuffer buf = ByteBuffer.wrap(img);
                             mSocketRunnableObj.sendResponseCaptureBuffer(
-                                    "rawStatsImage"+physicalCameraId, bBuf);
+                                "rawImage" + physicalCameraId, buf);
+                            mCountRaw.getAndIncrement();
                         }
                     } else {
                         // Wait until the corresponding capture result is ready, up to a timeout.
                         long t0 = android.os.SystemClock.elapsedRealtime();
-                        while (! mThreadExitFlag
-                                && android.os.SystemClock.elapsedRealtime()-t0 < TIMEOUT_CAP_RES) {
+                        while (!mThreadExitFlag
+                            && android.os.SystemClock.elapsedRealtime() - t0 < TIMEOUT_CAP_RES) {
                             if (mCaptureResults[count] != null) {
                                 Logt.i(TAG, "Writing capture as DNG");
                                 DngCreator dngCreator = new DngCreator(
-                                        mCameraCharacteristics, mCaptureResults[count]);
+                                    mCameraCharacteristics, mCaptureResults[count]);
                                 ByteArrayOutputStream dngStream = new ByteArrayOutputStream();
                                 dngCreator.writeImage(dngStream, capture);
                                 byte[] dngArray = dngStream.toByteArray();
@@ -3435,12 +4098,12 @@ public class ItsService extends Service implements SensorEventListener {
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
                     mSocketRunnableObj.sendResponseCaptureBuffer(
-                            "y8Image"+physicalCameraId, buf);
+                        "y8Image" + physicalCameraId, buf);
                 } else {
                     throw new ItsException("Unsupported image format: " + format);
                 }
 
-                synchronized(mCountCallbacksRemaining) {
+                synchronized (mCountCallbacksRemaining) {
                     mCountCallbacksRemaining.decrementAndGet();
                     mCountCallbacksRemaining.notify();
                 }
@@ -3517,8 +4180,17 @@ public class ItsService extends Service implements SensorEventListener {
             logMsg.append("xform=[], ");
         }
         logMsg.append(String.format(
-                "foc=%.1f",
+                Locale.getDefault(),
+                "foc=%.1f, ",
                 result.get(CaptureResult.LENS_FOCUS_DISTANCE)));
+        logMsg.append(String.format(
+                Locale.getDefault(),
+                "zoom=%.1f, ",
+                result.get(CaptureResult.CONTROL_ZOOM_RATIO)));
+        logMsg.append(String.format(
+                Locale.getDefault(),
+                "timestamp=%d",
+                result.get(CaptureResult.SENSOR_TIMESTAMP)));
         return logMsg.toString();
     }
 
@@ -3671,6 +4343,40 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    private class RecordingResultListener extends CaptureResultListener {
+        private List<RecordingResult> mRecordingCaptureResults = new ArrayList<>();
+
+        @Override
+        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
+                long timestamp, long frameNumber) {
+        }
+
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
+                TotalCaptureResult result) {
+            try {
+                if (request == null || result == null) {
+                    throw new ItsException("Request/Result is invalid");
+                }
+
+                Logt.i(TAG, buildLogString(result));
+
+                RecordingResult partialResult = new RecordingResult();
+                partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
+                mRecordingCaptureResults.add(partialResult);
+            } catch (ItsException e) {
+                throw new ItsRuntimeException("Error handling capture result", e);
+            }
+        }
+
+        @Override
+        public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
+                CaptureFailure failure) {
+            Logt.e(TAG, "Script error: capture failed");
+        }
+
+    }
+
     private class AutoframingResultListener extends CaptureResultListener {
         private volatile boolean mStopped = false;
 
@@ -3778,6 +4484,42 @@ public class ItsService extends Service implements SensorEventListener {
                 synchronized(mCountCallbacksRemaining) {
                     mCountCallbacksRemaining.decrementAndGet();
                     mCountCallbacksRemaining.notify();
+                }
+            } catch (ItsException e) {
+                Logt.e(TAG, "Script error: ", e);
+            } catch (Exception e) {
+                Logt.e(TAG, "Script error: ", e);
+            }
+        }
+
+        @Override
+        public void onCaptureFailed(CameraExtensionSession session, CaptureRequest request) {
+            Logt.e(TAG, "Script error: capture failed");
+        }
+    };
+
+    private final ExtensionCaptureResultListener mExtAEResultListener =
+            new ExtensionCaptureResultListener() {
+        @Override
+        public void onCaptureProcessStarted(CameraExtensionSession session,
+                CaptureRequest request) {
+        }
+
+        @Override
+        public void onCaptureResultAvailable(CameraExtensionSession session,
+                CaptureRequest request,
+                TotalCaptureResult result) {
+            try {
+                if (request == null || result == null) {
+                    throw new ItsException("Request/result is invalid");
+                }
+                int aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                if (aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED
+                        || aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                    synchronized(mCountCallbacksRemaining) {
+                        mCountCallbacksRemaining.decrementAndGet();
+                        mCountCallbacksRemaining.notify();
+                    }
                 }
             } catch (ItsException e) {
                 Logt.e(TAG, "Script error: ", e);

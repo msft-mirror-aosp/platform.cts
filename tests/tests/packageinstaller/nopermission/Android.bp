@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -23,7 +24,7 @@ java_library_static {
     srcs: ["src/**/*.kt"],
 
     static_libs: [
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "androidx.legacy_legacy-support-v4",

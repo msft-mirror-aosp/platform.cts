@@ -16,6 +16,10 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+
 import android.media.MediaFormat;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
@@ -67,8 +71,15 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
         for (String mime : mMimeList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
             for (String encoder : listOfEncoders) {
+                if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{mime, encoder, isAsync});
                 }
@@ -124,6 +135,7 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
                 mimeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        boolean hasAV1 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
             ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
@@ -131,8 +143,13 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                 int instances4k = maxInstances / 3;
                 int instances1080p = maxInstances - instances4k;
                 for (int i = 0; i < instances4k; i++) {
-                    testList.add(
-                            new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
+                    if (hasAV1) {
+                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, 1080, 1920, 30,
+                                10000000));
+                    } else {
+                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, height, width, 30,
+                                bitrate));
+                    }
                 }
                 for (int i = 0; i < instances1080p; i++) {
                     testList.add(

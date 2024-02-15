@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.MemoryFile;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.cts.R;
@@ -63,6 +64,7 @@ import java.util.concurrent.TimeUnit;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputDeviceSensorManagerTest {
     private static final String TAG = "InputDeviceSensorManagerTest";
     private static final int SENSOR_VEC_LENGTH = 3;
@@ -88,7 +90,7 @@ public class InputDeviceSensorManagerTest {
     // Numbers of sensor samples to run.
     private static final int RUNNING_SAMPLES = 100;
     // Sensor raw value increment step for each sensor event.
-    private static final int SAMPLE_STEP = 925;
+    private static final int SAMPLE_STEP = 92;
     // Tolerance of sensor event values.
     private static final float TOLERANCE = 0.01f;
     // Linux accelerometer unit is per g,  Android unit is m/s^2
@@ -300,7 +302,7 @@ public class InputDeviceSensorManagerTest {
     private void testSensorManagerListenerForSensors(Sensor[] sensors) {
         final InputTestSensorEventListener[] listeners =
                 new InputTestSensorEventListener[sensors.length];
-        int[] dataVector = new int[]{2535, -2398, 31345};
+        int[] dataVector = new int[]{2535, -2398, 21345};
         long[] lastTimestamp = new long[sensors.length];
 
         for (int i = 0; i < sensors.length; i++) {

@@ -23,7 +23,9 @@ import android.media.AudioTrack;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Class for playing audio by using audio track.
@@ -34,7 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class NonBlockingAudioTrack {
     private static final String TAG = NonBlockingAudioTrack.class.getSimpleName();
 
-    class QueueElement {
+    private static final long END_OF_STREAM_PTS = Long.MAX_VALUE;
+
+    private static class QueueElement {
         ByteBuffer data;
         int size;
         long pts;
@@ -47,6 +51,13 @@ public class NonBlockingAudioTrack {
     private LinkedList<QueueElement> mQueue = new LinkedList<QueueElement>();
     private boolean mStopped;
     private int mBufferSizeInBytes;
+    private AtomicBoolean mStopWriting = new AtomicBoolean(false);
+
+    /**
+     * An offset (in nanoseconds) to add to presentation timestamps fed to the {@link AudioTrack}.
+     * This is used to simulate desynchronization between tracks.
+     */
+    private AtomicLong mAudioOffsetNs = new AtomicLong(0);
 
     public NonBlockingAudioTrack(int sampleRate, int channelCount, boolean hwAvSync,
                     int audioSessionId) {
@@ -121,6 +132,12 @@ public class NonBlockingAudioTrack {
         mAudioTrack.play();
     }
 
+    public void setEndOfStream() {
+        QueueElement element = new QueueElement();
+        element.pts  = END_OF_STREAM_PTS;
+        mQueue.add(element);
+    }
+
     public void stop() {
         if (mQueue.isEmpty()) {
             mAudioTrack.stop();
@@ -128,6 +145,14 @@ public class NonBlockingAudioTrack {
         } else {
             mStopped = true;
         }
+    }
+
+    public void setStopWriting(boolean stop) {
+        mStopWriting.set(stop);
+    }
+
+    public void setAudioOffsetNs(long audioOffsetNs) {
+        mAudioOffsetNs.set(audioOffsetNs);
     }
 
     public void pause() {
@@ -155,10 +180,34 @@ public class NonBlockingAudioTrack {
     public void process() {
         while (!mQueue.isEmpty()) {
             QueueElement element = mQueue.peekFirst();
+            if (mStopWriting.get()) {
+                break;
+            }
+
+            if (element.pts == END_OF_STREAM_PTS) {
+                // For tunnel mode, when an audio PTS gap is encountered, silence is rendered
+                // during the gap. As such, it's necessary to fade down the audio to avoid a
+                // bad user experience. This necessitates that the Audio HAL holds onto the
+                // last audio frame and delays releasing it to the output device until the
+                // subsequent audio frame is seen so that it knows whether there's a PTS gap
+                // or not. When the end-of-stream is reached, this means that the last audio
+                // frame has not been rendered yet. So, in order to release the last audio
+                // frame, a signal must be sent to the Audio HAL so the last frame gets
+                // released.
+                int written = mAudioTrack.write(ByteBuffer.allocate(0), 0,
+                                                AudioTrack.WRITE_NON_BLOCKING,
+                                                END_OF_STREAM_PTS);
+                if (written < 0) {
+                   throw new RuntimeException("AudioTrack.write failed (" + written + ")");
+                }
+                mQueue.removeFirst();
+                break;
+            }
+
             int written = mAudioTrack.write(element.data, element.size,
-                                            AudioTrack.WRITE_NON_BLOCKING, element.pts);
+                    AudioTrack.WRITE_NON_BLOCKING, element.pts + mAudioOffsetNs.get());
             if (written < 0) {
-                throw new RuntimeException("Audiotrack.write() failed.");
+                throw new RuntimeException("AudioTrack.write failed (" + written + ")");
             }
 
             mTotalBytesWritten.addAndGet(written);

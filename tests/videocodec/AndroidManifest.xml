@@ -25,14 +25,10 @@
         android:requestLegacyExternalStorage="true"
         android:largeHeap="true"
         android:usesCleartextTraffic="true">
-        <uses-library android:name="android.test.runner" />
     </application>
     <uses-sdk android:minSdkVersion="29"   android:targetSdkVersion="29" />
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.videocodec.cts"
         android:label="CTS VideoCodec tests of android.videocodec" >
-        <meta-data
-            android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 </manifest>

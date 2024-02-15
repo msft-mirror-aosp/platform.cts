@@ -21,16 +21,16 @@ import static com.google.common.truth.Truth.assertThat;
 import android.car.Car;
 import android.car.VehicleAreaType;
 import android.car.cts.utils.ShellPermissionUtils;
+import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
+import android.car.hardware.property.AreaIdConfig;
 import android.car.hardware.property.CarInternalErrorException;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.PropertyAccessDeniedSecurityException;
-import android.car.test.ApiCheckerRule.Builder;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.test.suitebuilder.annotation.SmallTest;
-import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -56,13 +56,6 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
     private final List<CarPropertyValue> mCarPropertyValues = new ArrayList<>();
     private final SparseArray<CarPropertyConfig> mPropIdToConfig = new SparseArray<>();
 
-    // TODO(b/242350638): add missing annotations, remove (on child bug of 242350638)
-    @Override
-    protected void configApiCheckerRule(Builder builder) {
-        Log.w(TAG, "Disabling API requirements check");
-        builder.disableAnnotationsCheck();
-    }
-
     @Before
     public void setUp() throws Exception {
         CarPropertyManager carPropertyManager = (CarPropertyManager) getCar().getCarManager(
@@ -71,20 +64,26 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
             List<CarPropertyConfig> configs = carPropertyManager.getPropertyList();
             for (CarPropertyConfig cfg : configs) {
                 mPropIdToConfig.put(cfg.getPropertyId(), cfg);
-                if (cfg.getAccess() == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                        || cfg.getAccess()
-                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                    if (cfg.isGlobalProperty()) {
-                        CarPropertyValue value = getCarPropertyValue(carPropertyManager,
-                                cfg, /*areaId=*/0);
+                if (!Flags.areaIdConfigAccess()) {
+                    if (cfg.getAccess() == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                            || cfg.getAccess()
+                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                        CarPropertyValue value = getCarPropertyValue(carPropertyManager, cfg,
+                                cfg.getAreaIds()[0]);
                         if (value != null) {
                             Assert.assertEquals(value.getPropertyId(), cfg.getPropertyId());
                             mCarPropertyValues.add(value);
                         }
-                    } else {
-                        for (int areaId : cfg.getAreaIds()) {
+                    }
+                } else {
+                    List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                    for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                        if (Flags.areaIdConfigAccess() && (areaIdConfig.getAccess()
+                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                                || areaIdConfig.getAccess()
+                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                             CarPropertyValue value = getCarPropertyValue(carPropertyManager, cfg,
-                                    areaId);
+                                    areaIdConfig.getAreaId());
                             if (value != null) {
                                 Assert.assertEquals(value.getPropertyId(), cfg.getPropertyId());
                                 mCarPropertyValues.add(value);

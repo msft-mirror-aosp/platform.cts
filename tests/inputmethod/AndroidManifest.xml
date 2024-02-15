@@ -19,6 +19,8 @@
      package="android.view.inputmethod.cts"
      android:targetSandboxVersion="2">
 
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+
     <queries>
         <intent>
             <action android:name="android.view.InputMethod" />
@@ -26,10 +28,13 @@
         <package android:name="com.android.cts.mocka11yime" />
         <package android:name="com.android.cts.mockspellchecker" />
         <package android:name="com.android.cts.mocklargeresourceime" />
+        <package android:name="com.android.cts.mockime"/>
+        <package android:name="com.android.cts.mockime2"/>
         <package android:name="com.android.cts.mockimewithsubtypes" />
     </queries>
 
     <application android:label="CtsInputMethodTestCases"
+         android:requestLegacyExternalStorage="true"
          android:multiArch="true"
          android:supportsRtl="true"
          android:debuggable="true"
@@ -71,8 +76,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:label="CTS tests of android.view.inputmethod"
          android:targetPackage="android.view.inputmethod.cts">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

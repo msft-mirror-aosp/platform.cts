@@ -26,8 +26,8 @@ import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.jetpack.utils.ExtensionUtil;
-import android.server.wm.jetpack.utils.SidecarUtil;
+import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
+import android.server.wm.jetpack.extensions.util.SidecarUtil;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 import android.view.Display;
 import android.view.WindowManager;
@@ -38,6 +38,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
@@ -50,20 +51,22 @@ import java.util.Arrays;
  * Tests for devices implementations include an Android-compatible display(s)
  * that has a minimum screen dimension greater than or equal to
  * {@link WindowManager#LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP} and support multi window.
+ * For more information, read
+ * <a href="https://source.android.com/docs/core/display/windowmanager-extensions">WindowManager
+ * Extensions</a>
  *
  * Build/Install/Run:
  * atest CtsWindowManagerJetpackTestCases:SdkAvailabilityTest
  */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
-@CddTest(requirements = {"7.1.1.1/C-2-1,C-2-2"})
+@CddTest(requirements = {"7.1.1.1/C-2-1,C-4-1"})
 public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
 
     @Before
     @Override
     public void setUp() {
         super.setUp();
-        assumeHasLargeScreenDisplayOrExtensionEnabled();
         assumeMultiWindowSupported();
     }
 
@@ -72,10 +75,16 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * to be used by Window Manager Jetpack library, and declares the window extension
      * is enabled.
      */
+    @ApiTest(apis = {
+            "androidx.window.extensions.WindowExtensionsProvider#getWindowExtensions",
+            "androidx.window.extensions.WindowExtensions#getVendorApiLevel",
+            "android.view.WindowManager#hasWindowExtensionsEnabled"
+    })
     @Test
     public void testWindowExtensionsAvailability() {
+        assumeHasLargeScreenDisplayOrExtensionEnabled();
         assertTrue("WindowExtension version is not latest",
-                ExtensionUtil.isExtensionVersionLatest());
+                ExtensionsUtil.isExtensionVersionLatest());
         assertTrue("Device must declared that the WindowExtension is enabled",
                 WindowManager.hasWindowExtensionsEnabled());
     }
@@ -84,9 +93,11 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * MUST support Activity Embedding APIs and make ActivityEmbeddingComponent available via
      * WindowExtensions interface.
      */
+    @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getActivityEmbeddingComponent"})
     @Test
     public void testActivityEmbeddingAvailability() {
-        WindowExtensions windowExtensions = ExtensionUtil.getWindowExtensions();
+        assumeHasLargeScreenDisplay();
+        WindowExtensions windowExtensions = ExtensionsUtil.getWindowExtensions();
         assertNotNull("WindowExtensions is not available", windowExtensions);
         ActivityEmbeddingComponent activityEmbeddingComponent =
                 windowExtensions.getActivityEmbeddingComponent();
@@ -98,19 +109,31 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * MUST also implement the stable version of sidecar API for compatibility with older
      * applications.
      */
+    @ApiTest(apis = {"androidx.window.sidecar.SidecarProvider#getApiVersion"})
     @Test
     public void testSidecarAvailability() {
+        assumeHasLargeScreenDisplayOrExtensionEnabled();
         assertTrue("Sidecar is not available", SidecarUtil.isSidecarVersionValid());
     }
 
-    private void assumeHasLargeScreenDisplayOrExtensionEnabled() {
+    private boolean hasLargeScreenDisplay() {
         final DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
-        boolean hasLargeScreenDisplay = Arrays.stream(displayManager.getDisplays())
+        return Arrays.stream(displayManager.getDisplays())
                 .filter(display -> display.getType() == Display.TYPE_INTERNAL)
                 .anyMatch(this::isLargeScreenDisplay);
+    }
+
+    private void assumeHasLargeScreenDisplay() {
         assumeTrue("Device does not has a minimum screen dimension greater than or equal to "
                         + WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP + "dp",
-                hasLargeScreenDisplay || WindowManager.hasWindowExtensionsEnabled());
+                hasLargeScreenDisplay());
+    }
+
+    private void assumeHasLargeScreenDisplayOrExtensionEnabled() {
+        assumeTrue("Device does not has a minimum screen dimension greater than or equal to "
+                        + WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP + "dp and window "
+                        + "extensions are not enabled.",
+                hasLargeScreenDisplay() || WindowManager.hasWindowExtensionsEnabled());
     }
 
     private void assumeMultiWindowSupported() {

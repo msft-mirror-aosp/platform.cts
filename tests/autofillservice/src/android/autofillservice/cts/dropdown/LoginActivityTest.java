@@ -75,6 +75,8 @@ import static com.android.compatibility.common.util.ShellUtils.tap;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure.ViewNode;
 import android.autofillservice.cts.R;
@@ -104,10 +106,15 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.autofill.FillContext;
 import android.service.autofill.SaveInfo;
 import android.util.Log;
@@ -128,6 +135,7 @@ import androidx.test.uiautomator.UiObject2;
 import com.android.compatibility.common.util.RetryableException;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -141,6 +149,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     private static final String TAG = "LoginActivityTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @After
     public void disablePcc() {
@@ -384,6 +396,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("THE DUDE");
     }
 
+    @FlakyTest(
+            bugId = 292280793,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset() throws Exception {
@@ -402,6 +417,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         autofillOneDatasetTest(BorderType.FOOTER_ONLY);
     }
 
+    @FlakyTest(
+            bugId = 292285138,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset_withHeaderAndFooter() throws Exception {
@@ -819,6 +837,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @FlakyTest(
+            bugId = 292285136,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillWhenViewHasChildAccessibilityNodes() throws Exception {
@@ -936,6 +957,28 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         callback.assertUiHiddenEvent(username);
 
         mUiBot.assertNoDatasets();
+    }
+
+    @Test
+    public void testUiNotShowAfterSessionEnds() throws Exception {
+        // Set service.
+        enableService();
+
+        // Set expectations.
+        sReplier.addResponse(new CannedDataset.Builder()
+                .setField(ID_USERNAME, "dude")
+                .setField(ID_PASSWORD, "sweet")
+                .setPresentation(createPresentation("The Dude"))
+                .build());
+        // Trigger auto-fill.
+        requestFocusOnUsername();
+        sReplier.getNextFillRequest();
+
+        // Call commit to end the session
+        final AutofillManager afm = mActivity.getAutofillManager();
+        afm.commit();
+
+        mUiBot.assertNoDatasetsEver();
     }
 
     @Presubmit
@@ -1466,6 +1509,47 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // Check the results.
         mActivity.assertAutoFilled();
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 281533566)
+    public void remoteViews_doesNotSpillAcrossUsers() throws Exception {
+        // Set service.
+        enableService();
+
+
+        RemoteViews firstRv = createPresentation("hello");
+        RemoteViews secondRv = createPresentation("world");
+
+        // bad url, should not be displayed
+        firstRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+        secondRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+
+        // Set expectations.
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                    .setField(ID_USERNAME, "dude", firstRv)
+                    .setField(ID_PASSWORD, "sweet", secondRv)
+                    .build())
+                .setHeader(firstRv)
+                .setFooter(secondRv)
+                .build());
+
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger auto-fill.
+        mActivity.onUsername(View::requestFocus);
+        sReplier.getNextFillRequest();
+
+        // Assert that the dataset is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasets("The Dude"));
+
+        // Assert that header/footer is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasetsWithBorders("hello", "world", "The Dude"));
     }
 
     /**
@@ -2176,6 +2260,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     @Test
     @AppModeFull(reason = "Unit test")
+    @RequiresFlagsEnabled("android.service.autofill.include_invisible_view_group_in_assist_structure")
     public void testNoContainers() throws Exception {
         // Set service.
         enableService();
@@ -2190,17 +2275,19 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         final FillRequest fillRequest = sReplier.getNextFillRequest();
 
-        // Assert it only has 1 root view with 10 "leaf" nodes:
+        // Assert it only has 1 root view with 12 "leaf" nodes:
         // 1.text view for app title
-        // 2.username text label
-        // 3.username text field
-        // 4.password text label
-        // 5.password text field
-        // 6.output text field
-        // 7.clear button
-        // 8.save button
-        // 9.login button
-        // 10.cancel button
+        // 2.invisible layout
+        // 3.edit text in the invisible layout
+        // 4.username text label
+        // 5.username text field
+        // 6.password text label
+        // 7.password text field
+        // 8.output text field
+        // 9.clear button
+        // 10.save button
+        // 11.login button
+        // 12.cancel button
         //
         // But it also has an intermediate container (for username) that should be included because
         // it has a resource id.
@@ -2208,7 +2295,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // get activity title
         final CharSequence activityTitle = mActivity.getPackageName() + "/"
                 + getActivityTitle(InstrumentationRegistry.getInstrumentation(), mActivity);
-        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 12, activityTitle);
+        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 14, activityTitle);
 
         // Make sure container with a resource id was included:
         final ViewNode usernameContainer = findNodeByResourceId(fillRequest.structure,
@@ -2386,11 +2473,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         requestFocusOnUsername();
@@ -2426,7 +2513,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -2447,11 +2534,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         mActivity.forceAutofillOnUsername();
@@ -2487,7 +2574,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -2947,7 +3034,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertNoDatasets();
 
         // Delete username
-        mUiBot.setTextByRelativeId(ID_USERNAME, "");
+        mUiBot.clearTextByRelativeId(ID_USERNAME);
 
         mActivity.expectAutoFill("dude", "sweet");
 
@@ -3029,7 +3116,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     public void testSwitchInputMethod_noNewFillRequest() throws Exception {
         // TODO(b/187664861): Find better solution for small display device.
         mUiBot.assumeMinimumResolution(500);
-
+	mUiBot.setScreenResolution();
         // Set service
         enableService();
 
@@ -3060,5 +3147,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // No new fill request
         sReplier.assertNoUnhandledFillRequests();
+        mUiBot.resetScreenResolution();
     }
 }

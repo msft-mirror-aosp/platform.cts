@@ -17,6 +17,7 @@
 package android.telecom.cts;
 
 import static android.telecom.cts.TestUtils.ACCOUNT_ID_1;
+import static android.telecom.cts.TestUtils.ACCOUNT_ID_EMERGENCY;
 import static android.telecom.cts.TestUtils.ACCOUNT_LABEL;
 import static android.telecom.cts.TestUtils.PACKAGE;
 
@@ -45,23 +46,26 @@ import java.util.concurrent.TimeUnit;
 public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockServices {
     private static final String TAG = "EmergencyCallOnSimCallManagerTest";
     public static final String SIM_CALL_MANAGER_COMPONENT =
-            "android.telecom.cts.CtsSimCallManagerConnectionService";
+            CtsConnectionService.class.getCanonicalName();
     public static final PhoneAccountHandle TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE =
             new PhoneAccountHandle(new ComponentName(PACKAGE, SIM_CALL_MANAGER_COMPONENT),
                     ACCOUNT_ID_1);
 
+    public static final PhoneAccountHandle TEST_SIM_EMERGENCY_PHONE_ACCOUNT_HANDLE =
+            new PhoneAccountHandle(new ComponentName(PACKAGE, SIM_CALL_MANAGER_COMPONENT),
+                    ACCOUNT_ID_EMERGENCY);
     public static final PhoneAccount TEST_SIM_CALL_MANAGER_ACCOUNT = PhoneAccount.builder(
                     TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE, ACCOUNT_LABEL)
             .setAddress(Uri.parse("tel:555-TEST"))
             .setSubscriptionAddress(Uri.parse("tel:555-TEST"))
-            .setCapabilities(PhoneAccount.CAPABILITY_CONNECTION_MANAGER)
+            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER
+                    | PhoneAccount.CAPABILITY_CONNECTION_MANAGER)
             .setHighlightColor(Color.RED)
             .setShortDescription(ACCOUNT_LABEL)
             .setSupportedUriSchemes(Arrays.asList("tel"))
             .build();
 
     private static final String TEST_PROVIDER = "test_provider";
-    private static final Uri TEST_ADDRESS_1 = Uri.fromParts("sip", "call1@test.com", null);
 
     @Override
     public void setUp() throws Exception {
@@ -71,8 +75,7 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
         if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         try {
-            setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
-
+            setupConnectionService(null, 0);
             mTelecomManager.registerPhoneAccount(TEST_SIM_CALL_MANAGER_ACCOUNT);
             TestUtils.enablePhoneAccount(getInstrumentation(),
                     TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
@@ -295,7 +298,7 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
         TestUtils.setTestEmergencyPhoneAccountPackageFilter(getInstrumentation(), mContext);
         // Emergency calls require special capabilities.
         TestUtils.registerEmergencyPhoneAccount(getInstrumentation(),
-                TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE,
+                TEST_SIM_EMERGENCY_PHONE_ACCOUNT_HANDLE,
                 TestUtils.ACCOUNT_LABEL + "E", "tel:555-EMER");
         mIsEmergencyCallingSetup = true;
     }
@@ -306,6 +309,6 @@ public class EmergencyCallOnSimCallManagerTest extends BaseTelecomTestWithMockSe
         TestUtils.clearSystemDialerOverride(getInstrumentation());
         TestUtils.clearTestEmergencyNumbers(getInstrumentation());
         TestUtils.clearTestEmergencyPhoneAccountPackageFilter(getInstrumentation());
-        mTelecomManager.unregisterPhoneAccount(TEST_SIM_CALL_MANAGER_PHONE_ACCOUNT_HANDLE);
+        mTelecomManager.unregisterPhoneAccount(TEST_SIM_EMERGENCY_PHONE_ACCOUNT_HANDLE);
     }
 }
