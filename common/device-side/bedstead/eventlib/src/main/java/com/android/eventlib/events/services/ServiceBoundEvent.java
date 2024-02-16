@@ -31,6 +31,8 @@ import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onBind(Intent)}
  */
@@ -109,6 +111,7 @@ public class ServiceBoundEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceBoundEventLogger setService(String serviceName) {
             mEvent.mService = ServiceInfo.builder()
                     .serviceClass(serviceName)
@@ -117,6 +120,7 @@ public class ServiceBoundEvent extends Event {
         }
 
         /** Sets the {@link Intent} which was used to bind to the service. */
+        @CanIgnoreReturnValue
         public ServiceBoundEventLogger setIntent(Intent intent) {
             mEvent.mIntent = new SerializableParcelWrapper<>(intent);
             return this;
