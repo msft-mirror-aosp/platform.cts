@@ -1971,6 +1971,10 @@ public class PerformanceClassEvaluator {
             this.setMeasuredValue(RequirementConstants.AV1_ENC_BITRATE, bitrate);
         }
 
+        public void setHlgEditingSupportedReq(boolean HlgEditingSupported) {
+            this.setMeasuredValue(RequirementConstants.HLG_EDITING, HlgEditingSupported);
+        }
+
         public void setPortraitResolutionSupportreq(boolean isPortraitSupported) {
             this.setMeasuredValue(RequirementConstants.PORTRAIT_RESOLUTION, isPortraitSupported);
         }
@@ -2079,6 +2083,22 @@ public class PerformanceClassEvaluator {
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_18, resolution, fps,
                     bitrate);
+        }
+
+        /**
+         * [5.1/H-1-20] MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+         * encoders present on the device at 4K resolution or the largest Camera-supported
+         * resolution, whichever is less.
+         */
+        public static VideoCodecRequirement createR5_1__H_1_20() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.HLG_EDITING)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_20, requirement);
         }
 
         /**
@@ -2323,6 +2343,11 @@ public class PerformanceClassEvaluator {
 
     public ConcurrentCodecRequirement addR5_1__H_1_19() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19());
+    }
+
+    /* Adds requirement 5.1/H-1-20 */
+    public VideoCodecRequirement addR5_1__H_1_20() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_20());
     }
 
     /* Adds requirement 5.1/H-1-21 */

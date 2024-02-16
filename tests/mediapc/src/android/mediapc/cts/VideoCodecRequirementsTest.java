@@ -18,6 +18,7 @@ package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1Level51;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
@@ -294,6 +295,53 @@ public class VideoCodecRequirementsTest {
         rAV1EncoderReq.setAv1EncResolution(height);
         rAV1EncoderReq.setAv1EncFps(fps);
         rAV1EncoderReq.setAv1EncBitrate(1);
+        pce.submitAndCheck();
+    }
+
+    /**
+     * MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+     * encoders present on the device at 4K resolution or the largest Camera-supported
+     * resolution, whichever is less.
+     */
+    @SmallTest
+    @RequiresFlagsEnabled(Flags.FLAG_HLG_EDITING)
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
+    @CddTest(requirement = "5.1/H-1-20")
+    public void testHlgEditingSupport() throws CameraAccessException {
+        final String[] mediaTypes =
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, MIMETYPE_VIDEO_AV1};
+
+        boolean isFeatureSupported = true;
+        Size size4k = new Size(3840, 2160);
+        int frameSize4k = size4k.getWidth() * size4k.getHeight();
+        Size maxRecordingSize = getMaxSupportedRecordingSize();
+        if (maxRecordingSize == null) {
+            maxRecordingSize = size4k;
+        } else {
+            int frameSize = maxRecordingSize.getWidth() * maxRecordingSize.getHeight();
+            maxRecordingSize = frameSize < frameSize4k ? maxRecordingSize : size4k;
+        }
+
+        outerloop:
+        for (String mediaType : mediaTypes) {
+            ArrayList<String> hwEncoders = selectHardwareCodecs(mediaType, null, null, true);
+            for (String encoder : hwEncoders) {
+                MediaFormat format =
+                        MediaFormat.createVideoFormat(mediaType, maxRecordingSize.getWidth(),
+                                maxRecordingSize.getHeight());
+                format.setFeatureEnabled(FEATURE_HlgEditing, true);
+                if (!MediaUtils.supports(encoder, format)) {
+                    isFeatureSupported = false;
+                    break outerloop;
+                }
+            }
+        }
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator.VideoCodecRequirement HlgEditingSupportReq =
+                pce.addR5_1__H_1_20();
+        HlgEditingSupportReq.setHlgEditingSupportedReq(isFeatureSupported);
+
         pce.submitAndCheck();
     }
 

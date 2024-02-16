@@ -49,6 +49,7 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
+    public static final String R5_1__H_1_20 = "r5_1__h_1_20"; // 5.1/H-1-20
     public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
     public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
 
@@ -142,6 +143,8 @@ public class RequirementConstants {
             "front_camerax_extension_night_supported";
     public static final String FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "front_camera2_extension_night_supported";
+
+    public static final String HLG_EDITING = "hlg_editing";
 
     public static final String LONG_RESOLUTION = "long_resolution_pixels";
 
