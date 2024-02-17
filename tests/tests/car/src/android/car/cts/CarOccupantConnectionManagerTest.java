@@ -86,7 +86,6 @@ public final class CarOccupantConnectionManagerTest extends AbstractCarTestCase 
     public void setUp() {
         mOccupantConnectionManager = getCar().getCarManager(CarOccupantConnectionManager.class);
         // CarOccupantConnectionManager is available on multi-display builds only.
-        // TODO(b/265091454): annotate the test with @RequireMultipleUsersOnMultipleDisplays.
         assumeNotNull("Skip the test because CarOccupantConnectionManager is not available on"
                 + " this build", mOccupantConnectionManager);
 
