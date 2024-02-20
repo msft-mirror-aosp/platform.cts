@@ -28,6 +28,7 @@ import android.content.Intent
 import android.os.OutcomeReceiver
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.compatibility.common.util.FeatureUtil
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.PipedInputStream
@@ -45,7 +46,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import libcore.util.EmptyArray
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -68,6 +71,8 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
     @CallSuper
     override fun setUp() {
         super.setUp()
+
+        assumeFalse(FeatureUtil.isWatch())
 
         // Assume Permission Transfer is enabled, otherwise skip the test.
         try {
@@ -166,6 +171,7 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
      * response from the device whose permissions are being restored.
      */
     @Test
+    @Ignore("b/324260135")
     fun test_startSystemDataTransfer_success() {
         val association = associate()
         requestPermissionTransferUserConsent(association.id, ACTION_CLICK_ALLOW)
@@ -180,6 +186,7 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
      * from the device whose permissions are being restored.
      */
     @Test(expected = CompanionException::class)
+    @Ignore("b/324260135")
     fun test_startSystemDataTransfer_failure() {
         val association = associate()
         requestPermissionTransferUserConsent(association.id, ACTION_CLICK_ALLOW)
@@ -196,6 +203,8 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
      */
     @Test
     fun test_receivePermissionRestore() {
+        assumeTrue(FeatureUtil.isWatch())
+
         val association = associate()
 
         // Generate data packet with permission restore request
