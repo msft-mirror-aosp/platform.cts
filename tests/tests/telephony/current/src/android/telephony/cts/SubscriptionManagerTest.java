@@ -54,6 +54,7 @@ import android.os.Looper;
 import android.os.ParcelUuid;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -84,6 +85,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1507,6 +1509,30 @@ public class SubscriptionManagerTest {
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
         assertEquals(info.getTransferStatus(), TRANSFER_STATUS_TRANSFERRED_OUT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_USER_ASSOCIATION_QUERY)
+    @Ignore("b/325654424")
+    public void testIsSubscriptionAssociatedWithUser() throws Exception {
+        // Testing with the current context user.
+        UserHandle currentUserHandle = InstrumentationRegistry.getContext().getUser();
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                (sm) -> sm.setSubscriptionUserHandle(mSubId, currentUserHandle));
+
+        assertTrue(ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.isSubscriptionAssociatedWithUser(mSubId)));
+
+        // Testing with any random user which is not the current context user.
+        UserHandle nonCurrentUserHandle = UserHandle.of(currentUserHandle.getIdentifier() + 1);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                (sm) -> sm.setSubscriptionUserHandle(mSubId, nonCurrentUserHandle));
+
+        assertFalse(ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                (sm) -> sm.isSubscriptionAssociatedWithUser(mSubId)));
+
     }
 
     private boolean isValidServiceCapability(int capability) {

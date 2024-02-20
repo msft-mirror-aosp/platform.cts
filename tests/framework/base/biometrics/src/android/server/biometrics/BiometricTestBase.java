@@ -17,8 +17,8 @@
 package android.server.biometrics;
 
 import static android.os.PowerManager.FULL_WAKE_LOCK;
-import static android.server.biometrics.SensorStates.SensorState;
-import static android.server.biometrics.SensorStates.UserState;
+import static android.server.biometrics.util.SensorStates.SensorState;
+import static android.server.biometrics.util.SensorStates.UserState;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -49,6 +49,13 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.biometrics.util.BiometricCallbackHelper;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.SensorStates;
+import android.server.biometrics.util.TestSessionList;
+import android.server.biometrics.util.Utils;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.UiDeviceUtils;
@@ -66,6 +73,7 @@ import com.android.server.biometrics.nano.BiometricServiceStateProto;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,6 +84,10 @@ import java.util.concurrent.Executor;
  * Base class containing useful functionality. Actual tests should be done in subclasses.
  */
 abstract class BiometricTestBase extends ActivityManagerTestBase implements TestSessionList.Idler {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BiometricTestBase";
     private static final String DUMPSYS_BIOMETRIC = Utils.DUMPSYS_BIOMETRIC;

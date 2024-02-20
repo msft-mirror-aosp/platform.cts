@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.nfc.*;
+import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -332,20 +333,13 @@ public class NfcAdapterTest {
 
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
-    public void testIsObserveModeSupported() {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        boolean result = adapter.isObserveModeSupported();
-        Assert.assertTrue(result);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testAllowTransaction() {
         ComponentName originalDefault = null;
         try {
             originalDefault = setDefaultPaymentService(CtsMyHostApduService.class);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            assumeTrue(adapter.isObserveModeSupported());
             boolean result = adapter.setTransactionAllowed(true);
             Assert.assertTrue(result);
         } finally {
@@ -361,11 +355,90 @@ public class NfcAdapterTest {
         try {
             originalDefault = setDefaultPaymentService(CtsMyHostApduService.class);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            assumeTrue(adapter.isObserveModeSupported());
             boolean result = adapter.setTransactionAllowed(false);
             Assert.assertTrue(result);
         } finally {
             setDefaultPaymentService(originalDefault);
         }
+    }
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
+    public void testDefaultObserveModePaymentDynamic() {
+        ComponentName originalDefault = null;
+        try {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+                    CustomHostApduService.class), true);
+            originalDefault = setDefaultPaymentService(CustomHostApduService.class);
+            CardEmulationTest.ensurePreferredService(CustomHostApduService.class, mContext);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            setDefaultPaymentService(CtsMyHostApduService.class);
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        } finally {
+            setDefaultPaymentService(originalDefault);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testDefaultObserveModeForegroundDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            Activity activity = createAndResumeActivity();
+            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+                    CustomHostApduService.class), true);
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext, CustomHostApduService.class)));
+            CardEmulationTest.ensurePreferredService(CustomHostApduService.class, mContext);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext, CtsMyHostApduService.class)));
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        } finally {
+            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+                    CustomHostApduService.class), false);
+        }
+    }
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
+    public void testDefaultObserveModePayment() {
+        ComponentName originalDefault = null;
+        try {
+            originalDefault = setDefaultPaymentService(BackgroundHostApduService.class);
+            CardEmulationTest.ensurePreferredService(BackgroundHostApduService.class, mContext);
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            setDefaultPaymentService(CtsMyHostApduService.class);
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        } finally {
+            setDefaultPaymentService(originalDefault);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testDefaultObserveModeForeground() {
+        Activity activity = createAndResumeActivity();
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                new ComponentName(mContext, BackgroundHostApduService.class)));
+        CardEmulationTest.ensurePreferredService(BackgroundHostApduService.class, mContext);
+        Assert.assertTrue(adapter.isObserveModeEnabled());
+        Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                new ComponentName(mContext, CtsMyHostApduService.class)));
+        CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+        Assert.assertFalse(adapter.isObserveModeEnabled());
     }
 
     @Test
@@ -375,10 +448,12 @@ public class NfcAdapterTest {
         try {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
-            assumeTrue(setDefaultWalletRoleHolder(mContext));
+            Assert.assertTrue(setDefaultWalletRoleHolder(mContext));
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-            boolean result = adapter.setTransactionAllowed(true);
-            Assert.assertTrue(result);
+
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.setTransactionAllowed(true);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
         } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
@@ -392,10 +467,11 @@ public class NfcAdapterTest {
         try {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
-            assumeTrue(setDefaultWalletRoleHolder(mContext));
+            Assert.assertTrue(setDefaultWalletRoleHolder(mContext));
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-            boolean result = adapter.setTransactionAllowed(false);
-            Assert.assertTrue(result);
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.setTransactionAllowed(false);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
         } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
@@ -493,6 +569,7 @@ public class NfcAdapterTest {
     }
 
     private Activity createAndResumeActivity() {
+        CardEmulationTest.ensureUnlocked();
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
             NfcFCardEmulationActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

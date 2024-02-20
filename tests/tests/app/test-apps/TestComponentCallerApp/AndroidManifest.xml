@@ -21,6 +21,9 @@
     <permission android:name="android.permission.COMPONENT_CALLER_HELPER_UNUSED_PERMISSION" />
     <permission android:name="android.permission.COMPONENT_CALLER_HELPER_PATH_PROVIDER_READ_PERMISSION" />
 
+    <!-- To allow background activity launches for the tests -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
     <application>
         <activity android:name=".TestInitialCallerActivity"
                   android:exported="true">
@@ -36,6 +39,37 @@
                 <data android:host="android.app.cts.testcomponentcaller.provider" />
             </intent-filter>
         </activity>
+        <activity android:name=".TestNewIntentCallerActivities$TestNewIntentGetCurrentCallerActivity"
+            android:exported="true"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ATTACH_DATA" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <data android:scheme="content" />
+                <data android:host="android.app.cts.componentcaller.provider" />
+                <data android:host="android.app.cts.testcomponentcaller.provider" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".TestNewIntentCallerActivities$TestNewIntentOverloadCallerActivity"
+            android:exported="true"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ATTACH_DATA" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <data android:scheme="content" />
+                <data android:host="android.app.cts.componentcaller.provider" />
+                <data android:host="android.app.cts.testcomponentcaller.provider" />
+            </intent-filter>
+        </activity>
+
         <provider android:name=".TestProvider"
             android:exported="true"
             android:grantUriPermissions="true"
