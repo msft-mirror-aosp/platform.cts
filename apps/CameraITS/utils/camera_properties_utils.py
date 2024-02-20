@@ -1046,3 +1046,25 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def optical_stabilization_supported(props):
+  """Returns whether optical image stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if optical image stabilization is supported.
+  """
+  optical_stabilization_modes = props[
+      'android.lens.info.availableOpticalStabilization'
+    ]
+  logging.debug('optical_stabilization_modes = %s',
+                str(optical_stabilization_modes))
+
+  # Check if OIS supported
+  ois_supported = (optical_stabilization_modes is not None and
+                   LENS_OPTICAL_STABILIZATION_MODE_ON in
+                   optical_stabilization_modes)
+  return ois_supported
