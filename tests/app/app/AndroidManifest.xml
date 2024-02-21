@@ -389,6 +389,13 @@
             </intent-filter>
         </service>
 
+        <service android:name="android.app.stubs.StubRemoteServiceMain"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.stubs.ISecondaryMain"/>
+            </intent-filter>
+        </service>
+
         <activity android:name="android.app.ActivityGroup"
              android:label="ActivityGroup"/>
 
