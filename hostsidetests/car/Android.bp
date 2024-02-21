@@ -48,6 +48,7 @@ java_test_host {
         "cts-statsd-atom-host-test-utils",
     ],
     data: [
+        ":CtsStatsdAtomApp",
         ":CtsCarApp",
         ":CtsCarWatchdogSharedApp",
         ":CtsCarWatchdogSecondSharedApp",
