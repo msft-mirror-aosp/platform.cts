@@ -30,6 +30,7 @@ android_test {
     libs: [
         "android.test.runner",
         "framework-pdf.impl",
+        "framework-pdf-v.impl",
     ],
     static_libs: [
         "androidx.test.rules",
