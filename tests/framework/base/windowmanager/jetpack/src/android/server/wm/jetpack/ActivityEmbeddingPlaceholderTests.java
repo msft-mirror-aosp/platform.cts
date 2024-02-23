@@ -27,7 +27,10 @@ import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerStateHelper;
+import android.server.wm.jetpack.utils.ActivityEmbeddingUtil;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.util.Pair;
@@ -167,8 +170,9 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      */
     @Test
     public void testPlaceholderFinishedWhenTaskWidthDecreased() {
-        final int taskWidth = getTaskWidth();
-        final int taskHeight = getTaskHeight();
+        final Rect taskBounds = getTaskBounds();
+        final int taskWidth = taskBounds.width();
+        final int taskHeight = taskBounds.height();
 
         // Set embedding rules with the parent window metrics only allowing side-by-side
         // activities on a task bounds at least the current bounds.
@@ -213,8 +217,9 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
                 (int) (currentSize.getHeight() * 0.5));
         mReportedDisplayMetrics.setSize(displaySize);
 
-        final double splitTaskWidth = getTaskWidth() * 1.05;
-        final double splitTaskHeight = getTaskHeight() * 1.05;
+        final Rect taskBounds = getTaskBounds();
+        final double splitTaskWidth = taskBounds.width() * 1.05;
+        final double splitTaskHeight = taskBounds.height() * 1.05;
 
         // Set embedding rules with the parent window metrics only allowing side-by-side
         // activities on a task bounds 5% larger than the current task bounds.
@@ -255,8 +260,9 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      */
     @Test
     public void testStickyPlaceholder() {
-        final int taskWidth = getTaskWidth();
-        final int taskHeight = getTaskHeight();
+        final Rect taskBounds = getTaskBounds();
+        final int taskWidth = taskBounds.width();
+        final int taskHeight = taskBounds.height();
 
         // Set embedding rules with isSticky set to true and the parent window metrics only
         // allowing side-by-side activities on a task width at least the current width.
@@ -374,5 +380,16 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         // Verify they are correctly split
         assertValidSplit(primaryActivity, placeholderActivity, splitPlaceholderRule);
         return new Pair<>(primaryActivity, placeholderActivity);
+    }
+
+    @NonNull
+    private Rect getTaskBounds() {
+        final Activity activity = startFullScreenActivityNewTask(TestActivity.class);
+        final Rect taskBounds = ActivityEmbeddingUtil
+                .getTaskBounds(activity, true /* shouldWaitForResume */);
+        activity.finish();
+        new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());
+
+        return taskBounds;
     }
 }
