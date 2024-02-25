@@ -1089,8 +1089,9 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected void configureContextOnly(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame) {
+    // reusable portions of configureCodec(...) are handled here
+    protected void configureCodecCommon(MediaFormat format, boolean isAsync,
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
 
@@ -1102,8 +1103,10 @@ public abstract class CodecTestBase {
                 (isAsync ? "asynchronous" : "synchronous")));
         mTestEnv.append(String.format("Component received input eos :- %s \n",
                 (signalEOSWithLastFrame ? "with full buffer" : "with empty buffer")));
+        mTestEnv.append(String.format("Component is :- %s \n",
+                (isEncoder ? "encoder" : "decoder")));
+        mTestEnv.append("Component configure flags :- ").append(flags).append("\n");
     }
-
 
     protected void configureCodec(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
@@ -1120,7 +1123,8 @@ public abstract class CodecTestBase {
             }
         }
 
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame, isEncoder,
+                flags);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
@@ -1139,7 +1143,8 @@ public abstract class CodecTestBase {
 
     protected void configureCodecInDetachedMode(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame) {
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
