@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright 2021 The Android Open Source Project
+  Copyright 2024 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,16 +15,12 @@
   limitations under the License.
   -->
 
-<resources>
-    <style name="no_starting_window" parent="@android:style/Theme.DeviceDefault">
-        <item name="android:windowDisablePreview">true</item>
-    </style>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sharedUserId="android.uid.system"
+    android:sharedUserMaxSdkVersion="32"
+    package="android.security.cts.BUG_311374917">
 
-    <style name="AppTheme" parent="no_starting_window">
-        <!--
-          On Wear, swipe to dismiss is enabled by default which can cause unintended handling of
-          back presses. This disables it.
-        -->
-        <item name="android:windowSwipeToDismiss">false</item>
-    </style>
-</resources>
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.security.cts.BUG_311374917" />
+</manifest>

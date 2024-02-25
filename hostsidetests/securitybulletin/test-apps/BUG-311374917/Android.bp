@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package {
@@ -20,9 +19,9 @@ package {
 }
 
 android_test_helper_app {
-    name: "CVE-2023-40086",
+    name: "BUG-311374917",
     defaults: [
-        "cts_defaults",
+        "cts_support_defaults",
     ],
     srcs: [
         "src/**/*.java",
@@ -34,6 +33,5 @@ android_test_helper_app {
         "androidx.test.core",
         "androidx.test.rules",
         "compatibility-device-util-axt",
-        "sts-device-util",
     ],
 }
