@@ -568,9 +568,10 @@ public final class UserManagerTest {
             "android.os.UserManager#isProfile",
             "android.os.UserManager#isUserOfType",
             "android.os.UserManager#getUserBadge"})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfile() throws Exception {
         UserHandle userHandle = null;
-        assumeTrue(android.os.Flags.allowPrivateProfile());
 
         try {
             try {
@@ -694,7 +695,8 @@ public final class UserManagerTest {
         if (android.multiuser.Flags.supportCommunalProfile()) {
             assertThat(umOfSys.isCommunalProfile()).isFalse();
         }
-        if (android.os.Flags.allowPrivateProfile()) {
+        if (android.os.Flags.allowPrivateProfile()
+                && android.multiuser.Flags.enablePrivateSpaceFeatures()) {
             assertThat(umOfSys.isPrivateProfile()).isFalse();
         }
     }
@@ -1087,9 +1089,10 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1102,9 +1105,10 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
         presetQuietModeStatus(true, profileHandle);
         assertThat(mUserManager.requestQuietModeEnabled(false, profileHandle))
@@ -1114,8 +1118,9 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1128,8 +1133,9 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1170,7 +1176,8 @@ public final class UserManagerTest {
     @RequireRunOnPrivateProfile
     @ApiTest(apis = {"android.os.UserManager#getProfileLabel"})
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    @RequiresFlagsEnabled(android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfileLabel_shouldNotBeNull() {
         final UserManager umOfProfile = sContext.getSystemService(UserManager.class);
         assert umOfProfile != null;
