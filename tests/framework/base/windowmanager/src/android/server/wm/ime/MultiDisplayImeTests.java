@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.display;
+package android.server.wm.ime;
 
 import static android.server.wm.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.server.wm.InputMethodVisibilityVerifier.expectImeVisible;
@@ -82,7 +82,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceDisplay:MultiDisplayImeTests
+ *     atest CtsWindowManagerDeviceIme:MultiDisplayImeTests
  */
 @Presubmit
 @android.server.wm.annotation.Group3

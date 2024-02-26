@@ -166,12 +166,23 @@ filegroup {
 
 filegroup {
     name: "CtsWindowManagerDeviceInsets-src",
-    srcs: ["src/**/insets/*.java"],
+    srcs: [
+        "src/**/insets/*.java",
+        "src/**/intent/Activities.java",
+    ],
 }
 
 filegroup {
     name: "CtsWindowManagerDeviceKeyguard-src",
     srcs: ["src/**/keyguard/*.java"],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceIme-src",
+    srcs: [
+        "src/**/ime/*.java",
+        "src/**/intent/Activities.java",
+    ],
 }
 
 filegroup {
@@ -250,6 +261,16 @@ android_test {
 
     srcs: [
         ":CtsWindowManagerDeviceInsets-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceIme",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceIme-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

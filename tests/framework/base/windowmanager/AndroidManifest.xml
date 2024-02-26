@@ -128,12 +128,12 @@
         <activity android:name="android.server.wm.display.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 
-        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivity"
+        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity"
              android:resizeableActivity="true"
              android:theme="@style/no_starting_window"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivity2"/>
-        <activity android:name="android.server.wm.display.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
+        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity2"/>
+        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
 
         <activity android:name="android.server.wm.display.MultiDisplayClientTests$ClientTestActivity"/>
         <activity android:name="android.server.wm.display.MultiDisplayClientTests$NoRelaunchActivity"
@@ -277,7 +277,7 @@
         <activity android:name="android.server.wm.activity.CloseOnOutsideTestActivity"
                   android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.window.DialogFrameTestActivity" />
-        <activity android:name="android.server.wm.display.DisplayCutoutTests$TestActivity"
+        <activity android:name="android.server.wm.insets.DisplayCutoutTests$TestActivity"
                   android:theme="@style/OptOutEdgeToEdge"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
                   android:screenOrientation="nosensor"
@@ -292,7 +292,7 @@
                   android:turnScreenOn="true"
                   android:showWhenLocked="true"/>
 
-        <activity android:name="android.server.wm.insets.PrivacyIndicatorBoundsTests$TestActivity"
+        <activity android:name="android.server.wm.other.PrivacyIndicatorBoundsTests$TestActivity"
                   android:configChanges="orientation|screenSize"
                   android:screenOrientation="nosensor"
                   android:turnScreenOn="true"
@@ -424,7 +424,7 @@
         <activity android:name="android.server.wm.activity.StartActivityAsUserActivity"
              android:directBootAware="true"/>
 
-        <activity android:name="android.server.wm.insets.WindowInsetsAnimationTestBase$TestActivity"
+        <activity android:name="android.server.wm.WindowInsetsAnimationTestBase$TestActivity"
             android:screenOrientation="locked"
             android:theme="@style/OptOutEdgeToEdge.NoActionBar"/>
         <activity android:name="android.server.wm.insets.WindowInsetsAnimationControllerTests$ControllerTestActivity"

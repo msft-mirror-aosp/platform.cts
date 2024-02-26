@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.insets;
+package android.server.wm.ime;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.graphics.Insets.NONE;
@@ -40,6 +40,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.MockImeHelper;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
+import android.server.wm.WindowInsetsAnimationTestBase;
 import android.view.WindowInsets;
 
 import androidx.test.filters.FlakyTest;
@@ -53,7 +54,7 @@ import org.mockito.InOrder;
 /**
  * Same as {@link WindowInsetsAnimationTests} but IME specific.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceInsets:WindowInsetsAnimationImeTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceIme:WindowInsetsAnimationImeTests
  */
 @Presubmit
 @android.server.wm.annotation.Group2

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.insets;
+package android.server.wm;
 
 import static android.graphics.Insets.NONE;
 import static android.view.WindowInsets.Type.ime;
@@ -38,8 +38,7 @@ import static org.mockito.Mockito.spy;
 import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.server.wm.WindowManagerTestBase;
-import android.server.wm.insets.WindowInsetsAnimationTestBase.AnimCallback.AnimationStep;
+import android.server.wm.WindowInsetsAnimationTestBase.AnimCallback.AnimationStep;
 import android.util.ArraySet;
 import android.util.Log;
 import android.view.View;
@@ -189,14 +188,14 @@ public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
                 this.alpha = alpha;
             }
 
-            WindowInsets insets;
-            float fraction;
-            float interpolatedFraction;
-            float alpha;
+            public WindowInsets insets;
+            public float fraction;
+            public float interpolatedFraction;
+            public float alpha;
         }
 
         WindowInsetsAnimation lastAnimation;
-        volatile boolean animationDone;
+        public volatile boolean animationDone;
         final ArrayList<AnimationStep> animationSteps = new ArrayList<>();
 
         public AnimCallback(int dispatchMode) {
@@ -231,16 +230,16 @@ public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
 
     protected static class MultiAnimCallback extends WindowInsetsAnimation.Callback {
 
-        WindowInsetsAnimation statusBarAnim;
-        WindowInsetsAnimation navBarAnim;
-        WindowInsetsAnimation imeAnim;
-        volatile boolean imeAnimStarted;
-        volatile boolean animationDone;
-        final ArrayList<AnimationStep> statusAnimSteps = new ArrayList<>();
-        final ArrayList<AnimationStep> navAnimSteps = new ArrayList<>();
-        final ArrayList<AnimationStep> imeAnimSteps = new ArrayList<>();
-        Runnable startRunnable;
-        final ArraySet<WindowInsetsAnimation> runningAnims = new ArraySet<>();
+        public WindowInsetsAnimation statusBarAnim;
+        public WindowInsetsAnimation navBarAnim;
+        public WindowInsetsAnimation imeAnim;
+        public volatile boolean imeAnimStarted;
+        public volatile boolean animationDone;
+        public final ArrayList<AnimationStep> statusAnimSteps = new ArrayList<>();
+        public final ArrayList<AnimationStep> navAnimSteps = new ArrayList<>();
+        public final ArrayList<AnimationStep> imeAnimSteps = new ArrayList<>();
+        public Runnable startRunnable;
+        public final ArraySet<WindowInsetsAnimation> runningAnims = new ArraySet<>();
 
         public MultiAnimCallback() {
             super(DISPATCH_MODE_STOP);
@@ -309,22 +308,22 @@ public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
     public static class TestActivity extends FocusableActivity {
 
         private final String mEditTextMarker =
-                "android.server.wm.insets.WindowInsetsAnimationTestBase.TestActivity"
+                "android.server.wm.WindowInsetsAnimationTestBase.TestActivity"
                         + SystemClock.elapsedRealtimeNanos();
 
-        AnimCallback mCallback =
+        public AnimCallback mCallback =
                 spy(new AnimCallback(WindowInsetsAnimation.Callback.DISPATCH_MODE_STOP));
-        WindowInsets mLastWindowInsets;
+        public WindowInsets mLastWindowInsets;
         /**
          * Save the WindowInsets when animation done. Acoid to mLastWindowInsets
          * always be updated after windowinsets animation done on low-ram devices.
          */
-        WindowInsets mLastPendingWindowInsets;
+        public WindowInsets mLastPendingWindowInsets;
 
-        View.OnApplyWindowInsetsListener mListener;
-        LinearLayout mView;
-        View mChild;
-        EditText mEditor;
+        public View.OnApplyWindowInsetsListener mListener;
+        public LinearLayout mView;
+        public View mChild;
+        public EditText mEditor;
 
         public class InsetsListener implements View.OnApplyWindowInsetsListener {
 
@@ -347,7 +346,7 @@ public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
         }
 
         @NonNull
-        String getEditTextMarker() {
+        public String getEditTextMarker() {
             return mEditTextMarker;
         }
 

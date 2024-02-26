@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.insets;
+package android.server.wm.other;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -23,7 +23,6 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-import static android.server.wm.insets.RoundedCornerTests.TestActivity.EXTRA_ORIENTATION;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
@@ -61,6 +60,7 @@ import org.junit.runners.Parameterized;
 public class PrivacyIndicatorBoundsTests extends ActivityManagerTestBase {
 
     private static final String TAG = PrivacyIndicatorBoundsTests.class.getSimpleName();
+    private static final String EXTRA_ORIENTATION = "extra.orientation";
     private static final long TIMEOUT_MS = 1000;
 
     @Parameterized.Parameters(name= "{1}({0})")
