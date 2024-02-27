@@ -451,6 +451,15 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+        <activity android:name="android.content.pm.cts.FakeLauncherActivity"
+                  android:enabled="false"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
 
         <!--Used by test for LauncherApps-->
         <activity-alias android:name="android.content.pm.cts.MockActivity_Disabled"
