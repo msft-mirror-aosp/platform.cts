@@ -16,6 +16,8 @@
 
 package android.car.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.car.cts.app.PowerPolicyTestCommandStatus;
 import android.car.cts.app.PowerPolicyTestCommandType;
 import android.car.cts.powerpolicy.CpmsFrameworkLayerStateInfo;
@@ -42,7 +44,6 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -84,7 +85,6 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
 
     @Before
     public void checkPrecondition() throws Exception {
-        waitForOnState();
         PowerPolicyTestHelper testHelper = new PowerPolicyTestHelper(
                 /* testcase= */ "pre-condition", /* step= */ "testStep1",
                 /* frameCpms= */ getCpmsFrameworkLayerStateInfo(),
@@ -101,6 +101,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testPowerPolicySilentMode_textDump() throws Exception {
         setUseProtoDump(false);
+        waitForOnState();
         testPowerPolicySilentMode();
     }
 
@@ -108,6 +109,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testPowerPolicySilentMode_protoDump() throws Exception {
         setUseProtoDump(true);
+        waitForOnState();
         testPowerPolicySilentMode();
     }
 
@@ -121,6 +123,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testDefaultStateMachineAtONState_textDump() throws Exception {
         setUseProtoDump(false);
+        waitForOnState();
         testDefaultStateMachineAtONState();
     }
 
@@ -134,6 +137,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testDefaultStateMachineAtONState_protoDump() throws Exception {
         setUseProtoDump(true);
+        waitForOnState();
         testDefaultStateMachineAtONState();
     }
 
@@ -141,6 +145,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testPowerPolicyChange_textDump() throws Exception {
         setUseProtoDump(false);
+        waitForOnState();
         testPowerPolicyChange();
     }
 
@@ -148,6 +153,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testPowerPolicyChange_protoDump() throws Exception {
         setUseProtoDump(true);
+        waitForOnState();
         testPowerPolicyChange();
     }
 
@@ -186,15 +192,22 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     }
 
     private SilentModeInfo getSilentModeInfo() throws Exception {
-        return executeAndParseCommand(
-                new SystemInfoParser<SilentModeInfo>(SilentModeInfo.class),
+        return executeAndParseCommand(new SystemInfoParser<SilentModeInfo>(SilentModeInfo.class),
                 SilentModeInfo.COMMAND);
     }
 
     private void checkSilentModeSupported() throws Exception {
-        SilentModeInfo smInfo = getSilentModeInfo();
-        Assume.assumeTrue("HW does not support silent mode. Skip the test",
-                smInfo.getMonitoringHWStateSignal());
+        if (mUseProtoDump) {
+            CarPowerDumpProto proto = ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(),
+                    CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
+            CpmsFrameworkLayerStateInfo info = CpmsFrameworkLayerStateInfo.parseProto(proto);
+            assumeTrue("HW does not support silent mode. Skip the test",
+                    info.isSilentModeSupported());
+        } else {
+            SilentModeInfo smInfo = getSilentModeInfo();
+            assumeTrue("HW does not support silent mode. Skip the test",
+                    smInfo.isSilentModeSupported());
+        }
     }
 
     private CpmsFrameworkLayerStateInfo getCpmsFrameworkLayerStateInfo()
