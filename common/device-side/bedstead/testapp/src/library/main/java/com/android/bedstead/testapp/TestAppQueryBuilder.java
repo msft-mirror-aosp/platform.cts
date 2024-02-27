@@ -50,6 +50,8 @@ public final class TestAppQueryBuilder implements Queryable {
     BooleanQueryHelper<TestAppQueryBuilder> mCrossProfile = new BooleanQueryHelper<>(this);
     SetQueryHelper<TestAppQueryBuilder, ActivityInfo> mActivities =
             new SetQueryHelper<>(this);
+    SetQueryHelper<TestAppQueryBuilder, ActivityInfo> mActivityAliases =
+            new SetQueryHelper<>(this);
     SetQueryHelper<TestAppQueryBuilder, ServiceInfo> mServices =
             new SetQueryHelper<>(this);
     BooleanQueryHelper<TestAppQueryBuilder> mIsDeviceAdmin = new BooleanQueryHelper<>(this);
@@ -193,6 +195,13 @@ public final class TestAppQueryBuilder implements Queryable {
     }
 
     /**
+     * Query for a {@link TestApp} by its activity aliases.
+     */
+    public SetQuery<TestAppQueryBuilder, ActivityInfo> whereActivityAliases() {
+        return mActivityAliases;
+    }
+
+    /**
      * Query for a {@link TestApp} by its services.
      */
     public SetQuery<TestAppQueryBuilder, ServiceInfo> whereServices() {
@@ -260,6 +269,7 @@ public final class TestAppQueryBuilder implements Queryable {
                 && Queryable.isEmptyQuery(mMaxSdkVersion)
                 && Queryable.isEmptyQuery(mTargetSdkVersion)
                 && Queryable.isEmptyQuery(mActivities)
+                && Queryable.isEmptyQuery(mActivityAliases)
                 && Queryable.isEmptyQuery(mServices)
                 && Queryable.isEmptyQuery(mPermissions)
                 && Queryable.isEmptyQuery(mTestOnly)
@@ -298,6 +308,10 @@ public final class TestAppQueryBuilder implements Queryable {
         }
 
         if (!SetQueryHelper.matches(mActivities, details.mActivities)) {
+            return false;
+        }
+
+        if (!SetQueryHelper.matches(mActivityAliases, details.mActivityAliases)) {
             return false;
         }
 
@@ -366,6 +380,7 @@ public final class TestAppQueryBuilder implements Queryable {
                 mMaxSdkVersion.describeQuery("maxSdkVersion"),
                 mTargetSdkVersion.describeQuery("targetSdkVersion"),
                 mActivities.describeQuery("activities"),
+                mActivityAliases.describeQuery("activityAliases"),
                 mServices.describeQuery("services"),
                 mPermissions.describeQuery("permissions"),
                 mSharedUserId.describeQuery("sharedUserId"),

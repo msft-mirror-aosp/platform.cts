@@ -138,6 +138,21 @@ public final class TestAppProvider {
                     .build());
         }
 
+        for (int i = 0; i < app.getActivityAliasesCount(); i++) {
+            TestappProtos.ActivityAlias activityAliasEntry = app.getActivityAliases(i);
+            ActivityInfo activityInfo = ActivityInfo.builder()
+                    .activityClass(activityAliasEntry.getName())
+                    .exported(activityAliasEntry.getExported())
+                    .intentFilters(intentFilterSetFromProtoList(
+                            activityAliasEntry.getIntentFiltersList()))
+                    .permission(activityAliasEntry.getPermission().equals("") ? null
+                            : activityAliasEntry.getPermission())
+                    .build();
+
+            details.mActivityAliases.add(activityInfo);
+
+        }
+
         for (int i = 0; i < app.getServicesCount(); i++) {
             TestappProtos.Service serviceEntry = app.getServices(i);
             details.mServices.add(ServiceInfo.builder()
