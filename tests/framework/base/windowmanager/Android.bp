@@ -186,6 +186,11 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDeviceInput-src",
+    srcs: ["src/**/input/*.java"],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceOther-src",
     srcs: [
         "src/**/other/*.java",
@@ -251,6 +256,16 @@ android_test {
 
     srcs: [
         ":CtsWindowManagerDeviceKeyguard-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceInput",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceInput-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

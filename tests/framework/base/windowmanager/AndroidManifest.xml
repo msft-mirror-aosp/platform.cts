@@ -414,7 +414,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.server.wm.window.WindowInputTests$TestActivity"
+        <activity android:name="android.server.wm.input.WindowInputTests$TestActivity"
             android:theme="@style/no_starting_window" />
 
         <activity android:name="android.server.wm.activity.ActivityRecordInputSinkTestsActivity"
@@ -456,7 +456,7 @@
             android:theme="@style/window_task_animation"
             android:exported="true"/>
 
-        <activity android:name="android.server.wm.window.WindowUntrustedTouchTest$TestActivity"
+        <activity android:name="android.server.wm.input.WindowUntrustedTouchTest$TestActivity"
                   android:exported="true"
                   android:configChanges="screenSize|screenLayout|orientation"
                   android:screenOrientation="nosensor" />

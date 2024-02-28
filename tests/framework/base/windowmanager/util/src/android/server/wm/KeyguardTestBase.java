@@ -11,10 +11,10 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
-package android.server.wm.keyguard;
+package android.server.wm;
 
 import static android.server.wm.app.Components.KeyguardDismissLoggerCallback.ENTRY_ON_DISMISS_CANCELLED;
 import static android.server.wm.app.Components.KeyguardDismissLoggerCallback.ENTRY_ON_DISMISS_ERROR;
@@ -22,22 +22,21 @@ import static android.server.wm.app.Components.KeyguardDismissLoggerCallback.ENT
 
 import android.app.KeyguardManager;
 import android.content.ComponentName;
-import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 
-class KeyguardTestBase extends ActivityManagerTestBase {
+public class KeyguardTestBase extends ActivityManagerTestBase {
 
-    final KeyguardManager mKeyguardManager = mKm;
+    public final KeyguardManager mKeyguardManager = mKm;
 
-    static void assertOnDismissSucceeded(ComponentName testingComponentName) {
+    public static void assertOnDismissSucceeded(ComponentName testingComponentName) {
         assertDismissCallback(testingComponentName, ENTRY_ON_DISMISS_SUCCEEDED);
     }
 
-    static void assertOnDismissCancelled(ComponentName testingComponentName) {
+    public static void assertOnDismissCancelled(ComponentName testingComponentName) {
         assertDismissCallback(testingComponentName, ENTRY_ON_DISMISS_CANCELLED);
     }
 
-    static void assertOnDismissError(ComponentName testingComponentName) {
+    public static void assertOnDismissError(ComponentName testingComponentName) {
         assertDismissCallback(testingComponentName, ENTRY_ON_DISMISS_ERROR);
     }
 

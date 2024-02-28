@@ -1,6 +1,3 @@
-# Android > Android OS & Apps > Framework (Java + Native) > Input Flinger
-# Bug template url: https://b.corp.google.com/issues/new?component=136048&template=115201 = per-file WallpaperWindowInput*
-
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > WM Shell > Picture-In-Picture
 # Bug template url: https://b.corp.google.com/issues/new?component=316251&template=1018197 = per-file PinnedStackTests.java
 

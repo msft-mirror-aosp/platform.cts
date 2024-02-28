@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.input;
 
 import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 import static android.server.wm.CliIntentExtra.extraBool;
@@ -52,7 +52,7 @@ import org.junit.Test;
  * Ensure moving windows and tapping is done synchronously.
  *
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceOther:WallpaperWindowInputTests
+ * atest CtsWindowManagerDeviceInput:WallpaperWindowInputTests
  */
 @Presubmit
 @android.server.wm.annotation.Group2

@@ -13,10 +13,6 @@
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Animations/Transitions
 # Bug template url: https://b.corp.google.com/issues/new?component=316275&template=1018192 = per-file *MoveAnimation*
 
-# Android > Android OS & Apps > Framework (Java + Native) > Input Flinger
-# Bug template url: https://b.corp.google.com/issues/new?component=136048&template=115201 = per-file *WindowInput*
-per-file WindowInputTests*,WindowFocusTests*,WindowUntrustedTouchTest* = file:platform/frameworks/base:/INPUT_OWNERS
-
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > WM Shell > Split screen
 # Bug template url: https://b.corp.google.com/issues/new?component=928697&template=1490890 = per-file *MultiWindow*
 

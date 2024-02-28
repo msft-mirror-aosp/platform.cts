@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.input;
 
 import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
@@ -23,7 +23,7 @@ import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
-import static android.server.wm.window.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
+import static android.server.wm.input.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
@@ -87,7 +87,7 @@ import java.util.function.Predicate;
 /**
  * Ensure moving windows and tapping is done synchronously.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceWindow:WindowInputTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceInput:WindowInputTests
  */
 @Presubmit
 public class WindowInputTests {

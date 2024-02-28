@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.keyguard;
+package android.server.wm.input;
 
 import static android.server.wm.UiDeviceUtils.pressEnterButton;
 
@@ -26,6 +26,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.KeyEventActivity;
+import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
 import android.view.KeyEvent;
 
@@ -39,7 +40,7 @@ import org.junit.Test;
 
 /**
  * Build/Install/Run:
- *     atest KeyguardInputTests
+ *     atest CtsWindowManagerDeviceInput:KeyguardInputTests
  */
 @Presubmit
 public class KeyguardInputTests extends KeyguardTestBase {
