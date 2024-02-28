@@ -74,11 +74,16 @@ public class BluetoothVolumeControlTest {
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
     private boolean mVolumeOffsetChangedCallbackCalled;
+    private boolean mAudioLocationChangedCallbackCalled;
+    private boolean mAudioDescriptionChangedCallbackCalled;
     private boolean mDeviceVolumeChangedCallbackCalled;
     private TestCallback mTestCallback;
     private Executor mTestExecutor;
     private BluetoothDevice mTestDevice;
+    private int mTestVocsInstanceId;
     private int mTestVolumeOffset;
+    private int mTestAudioLocation;
+    private String mTestAudioDescription;
     private int mTestVolume;
 
     @Rule
@@ -87,10 +92,43 @@ public class BluetoothVolumeControlTest {
 
     class TestCallback implements BluetoothVolumeControl.Callback {
         @Override
+        public void onVolumeOffsetChanged(
+                BluetoothDevice device,
+                int instanceId,
+                int volumeOffset) {
+            mVolumeOffsetChangedCallbackCalled = true;
+            assertTrue(device == mTestDevice);
+            assertTrue(instanceId == mTestVocsInstanceId);
+            assertTrue(volumeOffset == mTestVolumeOffset);
+        }
+
+        @Override
         public void onVolumeOffsetChanged(BluetoothDevice device, int volumeOffset) {
             mVolumeOffsetChangedCallbackCalled = true;
             assertTrue(device == mTestDevice);
             assertTrue(volumeOffset == mTestVolumeOffset);
+        }
+
+        @Override
+        public void onVolumeOffsetAudioLocationChanged(
+                BluetoothDevice device,
+                int instanceId,
+                int audioLocation) {
+            mAudioLocationChangedCallbackCalled = true;
+            assertTrue(device == mTestDevice);
+            assertTrue(instanceId == mTestVocsInstanceId);
+            assertTrue(audioLocation == mTestAudioLocation);
+        }
+
+        @Override
+        public void onVolumeOffsetAudioDescriptionChanged(
+                BluetoothDevice device,
+                int instanceId,
+                String audioDescription) {
+            mAudioDescriptionChangedCallbackCalled = true;
+            assertTrue(device == mTestDevice);
+            assertTrue(instanceId == mTestVocsInstanceId);
+            assertTrue(audioDescription == mTestAudioDescription);
         }
 
         @Override
@@ -149,7 +187,10 @@ public class BluetoothVolumeControlTest {
                 mBluetoothVolumeControl = null;
                 mIsProfileReady = false;
                 mTestDevice = null;
+                mTestVocsInstanceId = 0;
                 mTestVolumeOffset = 0;
+                mTestAudioLocation = 0;
+                mTestAudioDescription = null;
                 mTestCallback = null;
                 mTestExecutor = null;
             }
@@ -275,6 +316,24 @@ public class BluetoothVolumeControlTest {
         assertTrue(!mBluetoothVolumeControl.isVolumeOffsetAvailable(mTestDevice));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
+    @Test
+    public void getNumberOfVolumeOffsetInstances() {
+        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothVolumeControl);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        enforceConnectAndPrivileged(() -> mBluetoothVolumeControl
+                .getNumberOfVolumeOffsetInstances(mTestDevice));
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns 0 if bluetooth is not enabled
+        assertEquals(0, mBluetoothVolumeControl.getNumberOfVolumeOffsetInstances(mTestDevice));
+    }
+
     @Test
     public void volumeOffsetCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
@@ -288,6 +347,63 @@ public class BluetoothVolumeControlTest {
         mTestVolumeOffset = 1;
         mTestCallback.onVolumeOffsetChanged(mTestDevice, mTestVolumeOffset);
         assertTrue(mVolumeOffsetChangedCallbackCalled);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
+    @Test
+    public void volumeOffsetWithInstanceIdCallback() {
+        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothVolumeControl);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mVolumeOffsetChangedCallbackCalled = false;
+
+        /* Note. This is just for api coverage until proper testing tools are set up */
+        mTestVocsInstanceId = 1;
+        mTestVolumeOffset = 1;
+        mTestCallback.onVolumeOffsetChanged(mTestDevice, mTestVocsInstanceId, mTestVolumeOffset);
+        assertTrue(mVolumeOffsetChangedCallbackCalled);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
+    @Test
+    public void volumeOffsetAudioLocationCallback() {
+        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothVolumeControl);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mAudioLocationChangedCallbackCalled = false;
+
+        /* Note. This is just for api coverage until proper testing tools are set up */
+        mTestVocsInstanceId = 1;
+        mTestAudioLocation = 1;
+        mTestCallback.onVolumeOffsetAudioLocationChanged(
+                mTestDevice,
+                mTestVocsInstanceId,
+                mTestAudioLocation);
+        assertTrue(mAudioLocationChangedCallbackCalled);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
+    @Test
+    public void volumeOffsetAudioDescriptionCallback() {
+        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothVolumeControl);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mAudioDescriptionChangedCallbackCalled = false;
+
+        /* Note. This is just for api coverage until proper testing tools are set up */
+        mTestVocsInstanceId = 1;
+        mTestAudioDescription = "test";
+        mTestCallback.onVolumeOffsetAudioDescriptionChanged(
+                mTestDevice,
+                mTestVocsInstanceId,
+                mTestAudioDescription);
+        assertTrue(mAudioDescriptionChangedCallbackCalled);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_VOLUME_CONTROL_FOR_CONNECTED_DEVICES)
@@ -381,7 +497,7 @@ public class BluetoothVolumeControlTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrrupted");
+            Log.e(TAG, "waitForProfileConnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }
@@ -401,7 +517,7 @@ public class BluetoothVolumeControlTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrrupted");
+            Log.e(TAG, "waitForProfileDisconnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }

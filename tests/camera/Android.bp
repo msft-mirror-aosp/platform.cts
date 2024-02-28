@@ -14,6 +14,7 @@
 
 // Reusable Camera performance test classes and helpers
 package {
+    default_team: "trendy_team_camera_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -69,6 +70,7 @@ android_test {
         "MediaPerformanceClassCommon",
         "cts-wm-util",
         "cts-install-lib",
+        "androidx.camera_camera-camera2",
         "androidx.camera_camera-core",
         "androidx.camera_camera-extensions",
         "androidx.camera_camera-lifecycle",

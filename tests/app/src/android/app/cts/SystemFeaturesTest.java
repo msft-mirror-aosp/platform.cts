@@ -51,7 +51,6 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
@@ -70,9 +69,6 @@ import java.util.Set;
  */
 @RunWith(JUnit4.class)
 public class SystemFeaturesTest {
-    private static final String FEATURE_GOOGLE_ENTERPRISE_DEVICE =
-            "com.google.android.feature.ENTERPRISE_DEVICE";
-
     private Context mContext;
     private PackageManager mPackageManager;
     private Set<String> mAvailableFeatures;
@@ -333,16 +329,8 @@ public class SystemFeaturesTest {
     @Test
     public void testNfcFeatures() {
         if (NfcAdapter.getDefaultAdapter(mContext) != null) {
-            // Watches/Enterprise devices MAY support all FEATURE_NFC features when an NfcAdapter
-            // is available, but other MUST support them both.
-            if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                    || mPackageManager.hasSystemFeature(FEATURE_GOOGLE_ENTERPRISE_DEVICE)) {
-                assertOneAvailable(PackageManager.FEATURE_NFC,
-                    PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
-            } else {
-                assertAvailable(PackageManager.FEATURE_NFC);
-                assertAvailable(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
-            }
+            assertOneAvailable(PackageManager.FEATURE_NFC,
+                PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
         } else {
             assertNotAvailable(PackageManager.FEATURE_NFC);
             assertNotAvailable(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
@@ -610,7 +598,7 @@ public class SystemFeaturesTest {
                 !mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) &&
                 !mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) &&
                 !mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED) &&
-                !isAndroidEmulator() &&
+                !Build.IS_EMULATOR &&
                 !mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC) &&
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) &&
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
@@ -669,10 +657,6 @@ public class SystemFeaturesTest {
         } else {
             fail("Must support at least one of " + feature1 + " or " + feature2);
         }
-    }
-
-    private boolean isAndroidEmulator() {
-        return PropertyUtil.propertyEquals("ro.boot.qemu", "1");
     }
 
     private void assertFeature(boolean exist, String feature) {
