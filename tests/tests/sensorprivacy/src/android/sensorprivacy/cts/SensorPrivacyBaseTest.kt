@@ -115,7 +115,7 @@ abstract class SensorPrivacyBaseTest(
     }
 
     @After
-    fun tearDown() {
+    open fun tearDown() {
         finishTestApp()
         Thread.sleep(3000)
         setSensor(oldState)
@@ -341,8 +341,11 @@ abstract class SensorPrivacyBaseTest(
 //      assumeTrue(callWithShellPermissionIdentity { spm.requiresAuthentication() })
         val packageContext: Context = context.createPackageContext("android", 0)
         try {
-            assumeTrue(packageContext.resources.getBoolean(packageContext.resources
-                    .getIdentifier("config_sensorPrivacyRequiresAuthentication", "bool", "android"))
+            assumeTrue(
+                packageContext.resources.getBoolean(
+                    packageContext.resources
+                    .getIdentifier("config_sensorPrivacyRequiresAuthentication", "bool", "android")
+                )
             )
         } catch (e: NotFoundException) {
         // Since by default we want authentication to be required we
@@ -353,16 +356,20 @@ abstract class SensorPrivacyBaseTest(
         assertFalse(isSensorPrivacyEnabled())
         runWhileLocked {
             setSensor(true)
-            assertFalse("State was changed while device is locked",
-                    isSensorPrivacyEnabled())
+            assertFalse(
+                "State was changed while device is locked",
+                    isSensorPrivacyEnabled()
+            )
         }
 
         setSensor(true)
         assertTrue(isSensorPrivacyEnabled())
         runWhileLocked {
             setSensor(false)
-            assertTrue("State was changed while device is locked",
-                    isSensorPrivacyEnabled())
+            assertTrue(
+                "State was changed while device is locked",
+                    isSensorPrivacyEnabled()
+            )
         }
     }
 
@@ -409,7 +416,8 @@ abstract class SensorPrivacyBaseTest(
         // if sensor privacy is enabled (b/182204067)
         startTestApp(true)
         UiAutomatorUtils.waitFindObject(By.text(
-                Pattern.compile("Cancel", Pattern.CASE_INSENSITIVE))).click()
+                Pattern.compile("Cancel", Pattern.CASE_INSENSITIVE)
+        )).click()
         assertOpRunning(false)
         setSensor(false)
         eventually {
@@ -426,7 +434,8 @@ abstract class SensorPrivacyBaseTest(
         // if sensor privacy is enabled (b/182204067)
         startTestApp(true)
         UiAutomatorUtils.waitFindObject(By.text(
-                Pattern.compile("Cancel", Pattern.CASE_INSENSITIVE))).click()
+                Pattern.compile("Cancel", Pattern.CASE_INSENSITIVE)
+        )).click()
         val before = System.currentTimeMillis()
         setSensor(false)
         eventually {
@@ -498,8 +507,10 @@ abstract class SensorPrivacyBaseTest(
         assumeSensorToggleSupport()
         setSensor(true)
         startTestOverlayApp(false)
-        assertNotNull("Dialog never showed",
-                UiAutomatorUtils.waitFindObject(By.res(getDialogPositiveButtonId())))
+        assertNotNull(
+            "Dialog never showed",
+                UiAutomatorUtils.waitFindObject(By.res(getDialogPositiveButtonId()))
+        )
         val view = UiAutomatorUtils.waitFindObjectOrNull(By.text("This Should Be Hidden"), 10_000)
         assertNull("Overlay should not have shown.", view)
     }
@@ -513,7 +524,7 @@ abstract class SensorPrivacyBaseTest(
         assertFalse(isSensorPrivacyEnabled())
     }
 
-    private fun assumeSensorToggleSupport() {
+    protected fun assumeSensorToggleSupport() {
         assumeTrue(spm.supportsSensorToggle(sensor))
         assumeTrue(spm.supportsSensorToggle(TOGGLE_TYPE_SOFTWARE, sensor))
     }
@@ -563,10 +574,12 @@ abstract class SensorPrivacyBaseTest(
 
     private fun broadcastAndWait(action: String) {
         Log.i(TAG, "Broadcasting action '$action'")
-        runShellCommandOrThrow("am broadcast" +
+        runShellCommandOrThrow(
+            "am broadcast" +
                 " --user ${context.userId}" +
                 " -a $action" +
-                " -f ${Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS}")
+                " -f ${Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS}"
+        )
         SystemUtil.waitForBroadcastDispatch(FINISH_MIC_CAM_ACTIVITY_ACTION)
         Log.i(TAG, "Finished broadcasting action '$action'")
     }
@@ -643,10 +656,14 @@ abstract class SensorPrivacyBaseTest(
             for ((_, attrOp) in op.attributedOpEntries) {
                 val lastAccess = attrOp.getLastAccessTime(AppOpsManager.OP_FLAGS_ALL_TRUSTED)
                 val lastDuration = attrOp.getLastDuration(AppOpsManager.OP_FLAGS_ALL_TRUSTED)
-                assertTrue("lastAccess was $lastAccess, not between $before and $after",
-                        lastAccess in before..after)
-                assertTrue("lastAccess had duration $lastDuration, greater than ${after - before}",
-                lastDuration <= (after - before))
+                assertTrue(
+                    "lastAccess was $lastAccess, not between $before and $after",
+                        lastAccess in before..after
+                )
+                assertTrue(
+                    "lastAccess had duration $lastDuration, greater than ${after - before}",
+                lastDuration <= (after - before)
+                )
             }
         }
     }
@@ -657,8 +674,10 @@ abstract class SensorPrivacyBaseTest(
         val pin = "1234".toByteArray(StandardCharsets.UTF_8)
         try {
             runWithShellPermissionIdentity {
-                assumeTrue("Could not set lock.",
-                        km.setLock(KeyguardManager.PIN, pin, KeyguardManager.PIN, null))
+                assumeTrue(
+                    "Could not set lock.",
+                        km.setLock(KeyguardManager.PIN, pin, KeyguardManager.PIN, null)
+                )
             }
             getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP)
@@ -675,8 +694,10 @@ abstract class SensorPrivacyBaseTest(
             r.invoke()
         } finally {
             runWithShellPermissionIdentity {
-                assumeTrue("Could not remove lock.",
-                        km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, pin))
+                assumeTrue(
+                    "Could not remove lock.",
+                        km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, pin)
+                )
             }
 
             // Recycle the screen power in case the keyguard is stuck open
@@ -710,5 +731,4 @@ abstract class SensorPrivacyBaseTest(
             throw RuntimeException("Timed out waiting for window transition.")
         }
     }
-
 }
