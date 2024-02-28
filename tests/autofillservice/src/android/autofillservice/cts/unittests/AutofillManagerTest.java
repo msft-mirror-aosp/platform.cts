@@ -28,6 +28,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -50,6 +51,8 @@ public class AutofillManagerTest {
     private static final int AUTOFILL_DISABLE = 2;
     private static final String OUTSIDE_QUERYAUTOFILLSTATUS_APK =
             "TestAutofillServiceApp.apk";
+    private static final String OUTSIDE_QUERYAUTOFILLSTATUS_APK_INTENT_FILTER_REMOVED =
+            "TestAutofillServiceWithoutIntentFilter.apk";
 
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
@@ -57,6 +60,23 @@ public class AutofillManagerTest {
     @ClassRule
     public static final SettingsStateKeeperRule sPublicServiceSettingsKeeper =
             new SettingsStateKeeperRule(sContext, Settings.Secure.AUTOFILL_SERVICE);
+
+    @Test
+    @AsbSecurityTest(cveBugId = 324874908)
+    @AppModeFull(reason = "Package cannot install in instant app mode")
+    public void testAutofillServiceDisabledAfterUpdateRemoveIntentFilter() throws Exception {
+        // Enable calling application's AutofillService
+        enableOutsidePackageTestAutofillService();
+
+        // Verify the calling application's AutofillService is enabled
+        runQueryAutofillStatusActivityAndVerifyResult(AUTOFILL_ENABLE);
+
+        // Update the calling application package with the intent-filter removed in Android.Manifest
+        install(OUTSIDE_QUERYAUTOFILLSTATUS_APK_INTENT_FILTER_REMOVED);
+
+        // Verify now the autofill service is disabled
+        runQueryAutofillStatusActivityAndVerifyResult(AUTOFILL_DISABLE);
+    }
 
     @Test
     @AppModeFull(reason = "Package cannot install in instant app mode")
