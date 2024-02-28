@@ -49,7 +49,18 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
     private Surface mReaderSurface;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
-    private Function<Image, Boolean> mPredicate;
+    private int mImageBoundToSurfaceId;
+    private Function<ImageAndAttributes, Boolean> mPredicate;
+
+    public static class ImageAndAttributes {
+        public Image mImage;
+        public int mImageBoundToSurfaceId;
+
+        public ImageAndAttributes(Image image, int surfaceId) {
+            mImage = image;
+            mImageBoundToSurfaceId = surfaceId;
+        }
+    }
 
     @Override
     public void onImageAvailable(ImageReader reader) {
@@ -97,7 +108,7 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
     }
 
     public void createSurface(int width, int height, int format, int maxNumImages,
-            Function<Image, Boolean> predicate) {
+            int surfaceId, Function<ImageAndAttributes, Boolean> predicate) {
         if (mReader != null) {
             throw new RuntimeException(
                     "Current instance of ImageSurface already has a weak reference to some "
@@ -109,6 +120,7 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         mReader = ImageReader.newInstance(width, height, format, maxNumImages);
         mReader.setOnImageAvailableListener(this, mHandler);
         mReaderSurface = mReader.getSurface();
+        mImageBoundToSurfaceId = surfaceId;
         mPredicate = predicate;
         Log.v(LOG_TAG, String.format(Locale.getDefault(), "Created ImageReader size (%dx%d),"
                 + " format %d, maxNumImages %d", width, height, format, maxNumImages));
@@ -125,7 +137,8 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         assertNull("onImageAvailable() generated an exception: " + e, e);
         assertNotNull("received null for image", image);
         if (mPredicate != null) {
-            assertTrue("predicate failed on image instance", mPredicate.apply(image));
+            assertTrue("predicate failed on image instance",
+                    mPredicate.apply(new ImageAndAttributes(image, mImageBoundToSurfaceId)));
         }
         image.close();
     }

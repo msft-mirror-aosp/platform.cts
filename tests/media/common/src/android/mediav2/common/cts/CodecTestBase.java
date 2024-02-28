@@ -32,7 +32,6 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.display.DisplayManager;
-import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -1089,8 +1088,9 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected void configureContextOnly(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame) {
+    // reusable portions of configureCodec(...) are handled here
+    protected void configureCodecCommon(MediaFormat format, boolean isAsync,
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
 
@@ -1102,8 +1102,10 @@ public abstract class CodecTestBase {
                 (isAsync ? "asynchronous" : "synchronous")));
         mTestEnv.append(String.format("Component received input eos :- %s \n",
                 (signalEOSWithLastFrame ? "with full buffer" : "with empty buffer")));
+        mTestEnv.append(String.format("Component is :- %s \n",
+                (isEncoder ? "encoder" : "decoder")));
+        mTestEnv.append("Component configure flags :- ").append(flags).append("\n");
     }
-
 
     protected void configureCodec(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
@@ -1120,7 +1122,8 @@ public abstract class CodecTestBase {
             }
         }
 
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame, isEncoder,
+                flags);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
@@ -1139,7 +1142,8 @@ public abstract class CodecTestBase {
 
     protected void configureCodecInDetachedMode(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame) {
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
@@ -1435,8 +1439,8 @@ public abstract class CodecTestBase {
     }
 
     protected void setUpSurface(int width, int height, int format, int maxImages,
-            Function<Image, Boolean> predicate) {
-        mImageSurface.createSurface(width, height, format, maxImages, predicate);
+            int surfaceId, Function<ImageSurface.ImageAndAttributes, Boolean> predicate) {
+        mImageSurface.createSurface(width, height, format, maxImages, surfaceId, predicate);
         mSurface = mImageSurface.getSurface();
         assertNotNull("Surface created is null \n" + mTestConfig + mTestEnv, mSurface);
         assertTrue("Surface created is invalid \n" + mTestConfig + mTestEnv, mSurface.isValid());
