@@ -72,8 +72,6 @@ public class CarrierRoamingSatelliteTestBase {
     protected static ImsServiceConnector sServiceConnector;
     private static CarrierConfigReceiver sCarrierConfigReceiver;
 
-    private static boolean sSupportsImsHal = false;
-
     protected static void beforeAllTestsBase() throws Exception {
         logd(TAG, "beforeAllTestsBase");
 
@@ -236,10 +234,12 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
-    private static class ServiceStateListenerTest extends TelephonyCallback
+    protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
-        private final Semaphore mNonTerrestrialNetworkSemaphore = new Semaphore(0);
+        private final Semaphore mNtnConnectedSemaphore = new Semaphore(0);
+        private final Semaphore mNtnDisconnetedSemaphore = new Semaphore(0);
+
 
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
@@ -247,21 +247,37 @@ public class CarrierRoamingSatelliteTestBase {
 
             try {
                 if (serviceState.isUsingNonTerrestrialNetwork()) {
-                    mNonTerrestrialNetworkSemaphore.release();
+                    mNtnConnectedSemaphore.release();
+                } else {
+                    mNtnDisconnetedSemaphore.release();
                 }
             } catch (Exception e) {
                 loge(TAG, "onServiceStateChanged: Got exception=" + e);
             }
         }
 
-        public boolean waitForNonTerrestrialNetworkConnection() {
+        public boolean waitUntilNonTerrestrialNetworkConnected() {
             try {
-                if (!mNonTerrestrialNetworkSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mNtnConnectedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
                     loge(TAG, "Timeout to connect to non-terrestrial network");
                     return false;
                 }
             } catch (Exception e) {
-                loge(TAG, "ServiceStateListenerTest waitForNonTerrestrialNetworkConnection: "
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkConnected: "
+                        + "Got exception=" + e);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilNonTerrestrialNetworkDisconnected() {
+            try {
+                if (!mNtnDisconnetedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to disconnect to non-terrestrial network");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkDisconnected: "
                         + "Got exception=" + e);
                 return false;
             }
@@ -270,7 +286,8 @@ public class CarrierRoamingSatelliteTestBase {
 
         public void clearServiceStateChanges() {
             logd(TAG, "clearServiceStateChanges()");
-            mNonTerrestrialNetworkSemaphore.drainPermits();
+            mNtnConnectedSemaphore.drainPermits();
+            mNtnDisconnetedSemaphore.drainPermits();
         }
     }
 
@@ -370,7 +387,7 @@ public class CarrierRoamingSatelliteTestBase {
         // Enter service
         sMockModemManager.changeNetworkService(slotId, profile, true);
 
-        assertTrue(serviceStateListener.waitForNonTerrestrialNetworkConnection());
+        assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
     }
 
     protected static void removeSatelliteEnabledSim(int slotId, int profile) throws Exception {
