@@ -17,7 +17,8 @@
     <string name="app_name">CTS Verifier</string>
     <string name="module_id">noabi CtsVerifier</string>
 
-    <string name="title_version">CTS Verifier %1$s</string>
+    <string name="title_version">Verifier %1$s</string>
+    <string name="version_number_format">Version #: %d</string>
 
     <string name="pass_button_text">Pass</string>
     <string name="info_button_text">Info</string>
@@ -36,6 +37,9 @@
     <string name="search_label">TestListActivity</string>
     <string name="search_hint">Search Tests</string>
     <string name="search_title">Search</string>
+    <string name="system">System</string>
+    <string name="system_on">ON</string>
+    <string name="system_off">OFF</string>
 
     <!-- Strings for CtsReportLog warning -->
     <string name="reportlog_warning_title">CTS-Verifier Report Log</string>
@@ -2476,7 +2480,7 @@
         with Full Screen Intents.</string>
     <string name="fsi_lockscreen_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
-        Wait for a heads up notification to appear first in the list with a pill button.\n
+        Wait for a heads up notification to appear.\n
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not appear as described.
     </string>
@@ -2488,7 +2492,7 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait for a notification to appear on the screen with a pill button.\n
+        Wait for a notification to appear on the screen.\n
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not appear as described.
     </string>
@@ -4368,7 +4372,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Tap the \"DECLINE\" button and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Device Owner Requesting Bugreport Tests\" with message \"Bugreport sharing declined\" is present.\n
         \n
         Dismiss the notifications and mark test as passed or failed.
@@ -4383,7 +4388,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Tap the \"SHARE\" button and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Sharing bugreport...\" with an indefinite progress bar is present.\n
         - After a few minutes (time necessary to wait for bugreport being collected) notification titled \"Sharing bugreport...\" is automatically dismissed and notification titled \"Device Owner Requesting Bugreport Tests\" with message \"Bugreport shared successfully\" is present.\n
         \n
@@ -4398,7 +4404,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Wait for a few minutes (time necessary for bugreport to be collected) and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is dismissed.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Share bug report?\", that contains a message \"Your IT admin requested a bug report to help troubleshoot this device. Apps and data may be shared.\" and two buttons - \"DECLINE\" and \"SHARE\" is shown.\n
         \n
         Tap the \"DECLINE\" button and verify that:\n
@@ -4417,7 +4424,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Wait for a few minutes (time necessary for bugreport to be collected) and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is dismissed.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Share bug report?\", that contains a message \"Your IT admin requested a bug report to help troubleshoot this device. Apps and data may be shared.\" and two buttons - \"DECLINE\" and \"SHARE\" is shown.\n
         \n
         Tap the \"SHARE\" button and verify that:\n
@@ -7066,11 +7074,15 @@ Follow the instructions on the screen to measure the frequency response for the 
         keyboards, or styluses that are connected through USB or Bluetooth.\n\n
         Found %1$d built-in display(s). Are you ready to proceed?
     </string>
+    <string name="usi_test_verify_display_usi_support">Does the display \"%1$s\" support styluses
+        that use the USI protocol? \n\n
+        For more information about the Universal Stylus Initiative (USI) protocol, see:
+        http://universalstylus.org
+    </string>
     <string name="usi_test_verify_display_usi_version">The display \"%1$s\" reports its USI version
         as %2$s.\n\n
         Is this correct?
     </string>
-    <string name="usi_version_not_supported">not supported</string>
     <string name="usi_test_passed">Test Passed\n\n
         Press Pass.
     </string>
@@ -7078,7 +7090,12 @@ Follow the instructions on the screen to measure the frequency response for the 
         Reason: %1$s
     </string>
     <string name="usi_fail_reason_not_ready">Not ready to check for USI stylus versions.</string>
-    <string name="usi_fail_reason_incorrect_version">The USI version was incorrectly reported.
+    <string name="usi_fail_reason_version_not_found">The USI version for the display was not found.
+    </string>
+    <string name="usi_fail_reason_found_unexpected_version">The display reports support for a valid
+        USI version, even though it does not support USI.
+    </string>
+    <string name="usi_fail_reason_incorrect_version">The reported USI version is incorrect.
     </string>
 
     <!-- Strings for PreferredMixerAttributesTestActivity -->
@@ -7105,15 +7122,18 @@ Follow the instructions on the screen to measure the frequency response for the 
         This test verifies the support for Content Capture For Notes APIs on devices that have the
         ROLE_NOTES enabled.
 
-        \n\nIf the ROLE_NOTES is not enabled, no test should be shown in the list below, and you
-        should mark the CTS test as passed.
-
         \n\nFor this test you need to install CtsDefaultNotesApp.apk and set it as the Default notes
         app.
 
         \n\nFor some tests you will need to set up device owner.
 
         \n\nPlease clear the device owner after all the test cases are run, if it was set up.
+    </string>
+    <string name="ccfn_tests_info_skip">
+        This test verifies the support for Content Capture For Notes APIs on devices that have the
+        ROLE_NOTES enabled.
+
+        \n\nPlease mark this test as passed since ROLE_NOTES is not enabled on this device.
     </string>
     <!-- Dialogs -->
     <string name="set_default_notes_button_label">Set default notes app</string>

@@ -93,6 +93,8 @@ public class PermissionPolicyTest {
 
     private static final String OBSERVE_APP_USAGE_PERMISSION =
             "android.permission.OBSERVE_APP_USAGE";
+    private static final String SET_THEME_OVERLAY_CONTROLLER_READY_PERMISSION =
+            "android.permission.SET_THEME_OVERLAY_CONTROLLER_READY";
     private static final String MODIFY_DAY_NIGHT_MODE_PERMISSION =
             "android.permission.MODIFY_DAY_NIGHT_MODE";
 
@@ -113,6 +115,15 @@ public class PermissionPolicyTest {
 
     @Test
     public void platformPermissionPolicyIsUnaltered() throws Exception {
+        try {
+            platformPermissionPolicyIsUnaltered(R.raw.android_manifest_q2);
+            return;
+        } catch (Throwable ignored) {}
+
+        platformPermissionPolicyIsUnaltered(R.raw.android_manifest);
+    }
+
+    public void platformPermissionPolicyIsUnaltered(int manifestRes) throws Exception {
         Map<String, PermissionInfo> declaredPermissionsMap =
                 getPermissionsForPackage(sContext, PLATFORM_PACKAGE_NAME);
 
@@ -125,10 +136,8 @@ public class PermissionPolicyTest {
             declaredGroupsSet.add(declaredGroup.name);
         }
 
-        Set<String> expectedPermissionGroups = loadExpectedPermissionGroupNames(
-                R.raw.android_manifest);
-        List<ExpectedPermissionInfo> expectedPermissions = loadExpectedPermissions(
-                R.raw.android_manifest);
+        Set<String> expectedPermissionGroups = loadExpectedPermissionGroupNames(manifestRes);
+        List<ExpectedPermissionInfo> expectedPermissions = loadExpectedPermissions(manifestRes);
 
         if (sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
             expectedPermissions.addAll(loadExpectedPermissions(R.raw.automotive_android_manifest));
@@ -515,6 +524,7 @@ public class PermissionPolicyTest {
         switch (permissionName) {
             case SYNC_FLAGS_PERMISSION:
             case WRITE_FLAGS_PERMISSION:
+            case SET_THEME_OVERLAY_CONTROLLER_READY_PERMISSION:
                 return true;  // Added in u-qpr.
             case HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PERMISSION:
                 return parseDate(SECURITY_PATCH).before(HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PATCH_DATE);
