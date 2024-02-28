@@ -125,18 +125,18 @@
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"/>
 
-        <activity android:name="android.server.wm.display.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
+        <activity android:name="android.server.wm.multidisplay.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 
-        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity"
+        <activity android:name="android.server.wm.insets.MultiDisplayImeTests$ImeTestActivity"
              android:resizeableActivity="true"
              android:theme="@style/no_starting_window"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity2"/>
-        <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
+        <activity android:name="android.server.wm.insets.MultiDisplayImeTests$ImeTestActivity2"/>
+        <activity android:name="android.server.wm.insets.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
 
-        <activity android:name="android.server.wm.display.MultiDisplayClientTests$ClientTestActivity"/>
-        <activity android:name="android.server.wm.display.MultiDisplayClientTests$NoRelaunchActivity"
+        <activity android:name="android.server.wm.multidisplay.MultiDisplayClientTests$ClientTestActivity"/>
+        <activity android:name="android.server.wm.multidisplay.MultiDisplayClientTests$NoRelaunchActivity"
              android:resizeableActivity="true"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
 
@@ -332,16 +332,16 @@
         <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"/>
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
              android:screenOrientation="locked"
-             android:theme="@style/OptOutEdgeToEdge.NoStartingWindow"/>
-        <activity android:name="android.server.wm.window.WindowFocusTests$PrimaryActivity"/>
-        <activity android:name="android.server.wm.window.WindowFocusTests$SecondaryActivity"
+                  android:theme="@style/OptOutEdgeToEdge.NoStartingWindow"/>
+        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$PrimaryActivity"/>
+        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$SecondaryActivity"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.window.WindowFocusTests$TertiaryActivity"
+        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$TertiaryActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
         <activity android:name="android.server.wm.activity.ActivityCaptureCallbackTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.activity.ActivityCaptureCallbackTests$SecondaryActivity"/>
-        <activity android:name="android.server.wm.window.WindowFocusTests$LosingFocusActivity"/>
-        <activity android:name="android.server.wm.window.WindowFocusTests$AutoEngagePointerCaptureActivity" />
+        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$LosingFocusActivity"/>
+        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$AutoEngagePointerCaptureActivity" />
         <activity android:name="android.server.wm.MetricsActivity"
              android:exported="true"
              android:resizeableActivity="true"

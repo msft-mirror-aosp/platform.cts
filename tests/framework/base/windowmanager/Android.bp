@@ -180,6 +180,13 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDeviceMultiDisplay-src",
+    srcs: [
+        "src/**/multidisplay/*.java",
+    ],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceKeyguard-src",
     srcs: ["src/**/keyguard/*.java"],
 }
@@ -314,6 +321,17 @@ android_test {
     srcs: [
         ":CtsWindowManagerDeviceHelper-src",
         ":CtsWindowManagerDeviceTaskFragment-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceMultiDisplay",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceMultiDisplay-src",
+        ":CtsWindowManagerDeviceHelper-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

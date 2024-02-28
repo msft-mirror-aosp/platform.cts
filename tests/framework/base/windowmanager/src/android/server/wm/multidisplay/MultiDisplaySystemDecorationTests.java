@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,10 +11,10 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
-package android.server.wm.display;
+package android.server.wm.multidisplay;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.server.wm.BarTestUtils.assumeHasBars;
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceDisplay:MultiDisplaySystemDecorationTests
+ *     atest CtsWindowManagerDeviceMultiDisplay:MultiDisplaySystemDecorationTests
  *
  * This tests that verify the following should not be run for OEM device verification:
  * Wallpaper added if display supports system decorations (and not added otherwise)

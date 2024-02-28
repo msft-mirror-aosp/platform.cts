@@ -1,9 +1,6 @@
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Animations/Transitions > Layout
 # Bug template url: https://b.corp.google.com/issues/new?component=1517318&template=1946513 = per-file DisplayTests*
 
-# Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Multi-display
-# Bug template url: https://b.corp.google.com/issues/new?component=316280&template=1018196 = per-file *MultiDisplay*
-
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Surfaces
 # Bug template url: https://b.corp.google.com/issues/new?component=316245&template=1018194 = per-file *DisplayHashManagerTest*
 
