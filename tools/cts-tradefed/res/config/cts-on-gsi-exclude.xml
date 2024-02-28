@@ -169,4 +169,9 @@
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestationKmVersionMatchesFeatureVersionStrongBox" />
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest#testAllVariationsOfDeviceIdAttestationUsingStrongBox" />
 
+    <!-- b/318588433 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures from cts-on-gsi -->
+    <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures" />
+
+    <!-- b/319046794 -->
+    <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest" />
 </configuration>
