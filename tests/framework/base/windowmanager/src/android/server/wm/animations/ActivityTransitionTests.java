@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package android.server.wm.activity;
+package android.server.wm.animations;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static android.server.wm.activity.ActivityTransitionTests.CustomBackgroundTransitionActivity.BACKGROUND_COLOR_KEY;
-import static android.server.wm.activity.ActivityTransitionTests.CustomBackgroundTransitionActivity.ENTER_ANIM_KEY;
-import static android.server.wm.activity.ActivityTransitionTests.CustomBackgroundTransitionActivity.EXIT_ANIM_KEY;
-import static android.server.wm.activity.ActivityTransitionTests.EdgeExtensionActivity.BOTTOM;
-import static android.server.wm.activity.ActivityTransitionTests.EdgeExtensionActivity.DIRECTION_KEY;
-import static android.server.wm.activity.ActivityTransitionTests.EdgeExtensionActivity.LEFT;
-import static android.server.wm.activity.ActivityTransitionTests.EdgeExtensionActivity.RIGHT;
-import static android.server.wm.activity.ActivityTransitionTests.EdgeExtensionActivity.TOP;
+import static android.server.wm.animations.ActivityTransitionTests.CustomBackgroundTransitionActivity.BACKGROUND_COLOR_KEY;
+import static android.server.wm.animations.ActivityTransitionTests.CustomBackgroundTransitionActivity.ENTER_ANIM_KEY;
+import static android.server.wm.animations.ActivityTransitionTests.CustomBackgroundTransitionActivity.EXIT_ANIM_KEY;
+import static android.server.wm.animations.ActivityTransitionTests.EdgeExtensionActivity.BOTTOM;
+import static android.server.wm.animations.ActivityTransitionTests.EdgeExtensionActivity.DIRECTION_KEY;
+import static android.server.wm.animations.ActivityTransitionTests.EdgeExtensionActivity.LEFT;
+import static android.server.wm.animations.ActivityTransitionTests.EdgeExtensionActivity.RIGHT;
+import static android.server.wm.animations.ActivityTransitionTests.EdgeExtensionActivity.TOP;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.RoundedCorner.POSITION_BOTTOM_RIGHT;
@@ -84,7 +84,7 @@ import java.util.function.Function;
 
 /**
  * <p>Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:ActivityTransitionTests
+ * atest CtsWindowManagerDeviceAnimations:ActivityTransitionTests
  */
 @Presubmit
 public class ActivityTransitionTests extends ActivityManagerTestBase {
@@ -106,9 +106,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     static final int TRANSITION_TYPE_CLOSE = 0x2;
 
     static final String ACTION_UPDATE =
-            "android.server.wm.activity.ActivityTransitionTests.ACTION_UPDATE";
+            "android.server.wm.animations.ActivityTransitionTests.ACTION_UPDATE";
     static final String ACTION_FINISH =
-            "android.server.wm.activity.ActivityTransitionTests.ACTION_FINISH";
+            "android.server.wm.animations.ActivityTransitionTests.ACTION_FINISH";
 
     // We need to allow for some variation stemming from color conversions
     private static final float COLOR_VALUE_VARIANCE_TOLERANCE = 0.05f;

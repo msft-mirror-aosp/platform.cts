@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;

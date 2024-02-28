@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.server.wm.StateLogger.log;
-import static android.server.wm.window.DialogFrameTestActivity.EXTRA_TEST_CASE;
+import static android.server.wm.animations.DialogFrameTestActivity.EXTRA_TEST_CASE;
 
 import static org.junit.Assert.assertTrue;
 

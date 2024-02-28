@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.display;
+package android.server.wm.animations;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.provider.Settings.Global.STAY_ON_WHILE_PLUGGED_IN;

@@ -157,6 +157,13 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDeviceAnimations-src",
+    srcs: [
+        "src/**/animations/*.java",
+    ],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceDisplay-src",
     srcs: [
         "src/**/display/*.java",
@@ -235,6 +242,16 @@ android_test {
 
     srcs: [
         ":CtsWindowManagerDeviceBackNavigation-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceAnimations",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceAnimations-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.display;
+package android.server.wm.animations;
 
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.RoundedCorner.POSITION_BOTTOM_LEFT;
@@ -47,7 +47,7 @@ import org.junit.Test;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceDisplay:DisplayShapeTests
+ *     atest CtsWindowManagerDeviceAnimations:DisplayShapeTests
  */
 @Presubmit
 @android.server.wm.annotation.Group3

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.provider.Settings.Global.WINDOW_ANIMATION_SCALE;
 import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
@@ -56,7 +56,7 @@ import java.util.ArrayList;
 /**
  * Test whether WindowManager performs the correct layout after we make some changes to it.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceWindow:LayoutTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceAnimations:LayoutTests
  */
 @AppModeFull(reason = "Cannot write global settings as an instant app.")
 @Presubmit

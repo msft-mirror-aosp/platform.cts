@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
-import static android.server.wm.window.LocationOnScreenTests.TestActivity.COLOR_TOLERANCE;
-import static android.server.wm.window.LocationOnScreenTests.TestActivity.EXTRA_LAYOUT_PARAMS;
-import static android.server.wm.window.LocationOnScreenTests.TestActivity.TEST_COLOR_1;
-import static android.server.wm.window.LocationOnScreenTests.TestActivity.TEST_COLOR_2;
+import static android.server.wm.animations.LocationOnScreenTests.TestActivity.COLOR_TOLERANCE;
+import static android.server.wm.animations.LocationOnScreenTests.TestActivity.EXTRA_LAYOUT_PARAMS;
+import static android.server.wm.animations.LocationOnScreenTests.TestActivity.TEST_COLOR_1;
+import static android.server.wm.animations.LocationOnScreenTests.TestActivity.TEST_COLOR_2;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;

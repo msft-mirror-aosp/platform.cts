@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.server.wm.ComponentNameUtils.getWindowName;
-import static android.server.wm.window.DialogFrameTestActivity.DIALOG_WINDOW_NAME;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_EXPLICIT_POSITION_MATCH_PARENT;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_EXPLICIT_POSITION_MATCH_PARENT_NO_LIMITS;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_EXPLICIT_SIZE;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_EXPLICIT_SIZE_BOTTOM_RIGHT_GRAVITY;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_EXPLICIT_SIZE_TOP_LEFT_GRAVITY;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_MATCH_PARENT;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_NO_FOCUS;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_OVER_SIZED_DIMENSIONS;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_OVER_SIZED_DIMENSIONS_NO_LIMITS;
-import static android.server.wm.window.DialogFrameTestActivity.TEST_WITH_MARGINS;
+import static android.server.wm.animations.DialogFrameTestActivity.DIALOG_WINDOW_NAME;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_EXPLICIT_POSITION_MATCH_PARENT;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_EXPLICIT_POSITION_MATCH_PARENT_NO_LIMITS;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_EXPLICIT_SIZE;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_EXPLICIT_SIZE_BOTTOM_RIGHT_GRAVITY;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_EXPLICIT_SIZE_TOP_LEFT_GRAVITY;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_MATCH_PARENT;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_NO_FOCUS;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_OVER_SIZED_DIMENSIONS;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_OVER_SIZED_DIMENSIONS_NO_LIMITS;
+import static android.server.wm.animations.DialogFrameTestActivity.TEST_WITH_MARGINS;
 import static android.view.WindowInsets.Type.captionBar;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
@@ -55,7 +55,7 @@ import org.junit.Test;
 import java.util.List;
 
 /**
- * Build/Install/Run: atest CtsWindowManagerDeviceWindow:DialogFrameTests
+ * Build/Install/Run: atest CtsWindowManagerDeviceAnimations:DialogFrameTests
  *
  * <p>TODO: Consolidate this class with {@link ParentChildTestBase}.
  */

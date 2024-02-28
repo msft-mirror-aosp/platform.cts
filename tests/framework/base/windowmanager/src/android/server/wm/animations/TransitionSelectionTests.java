@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.activity;
+package android.server.wm.animations;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
@@ -63,7 +63,7 @@ import org.junit.Test;
  * TRANSIT_ACTIVITY_OPEN, TRANSIT_TASK_CLOSE, TRANSIT_WALLPAPER_OPEN, etc.). The exact animation is
  * unspecified and can be overridden.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceActivity:TransitionSelectionTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceAnimations:TransitionSelectionTests
  */
 @Presubmit
 public class TransitionSelectionTests extends ActivityManagerTestBase {

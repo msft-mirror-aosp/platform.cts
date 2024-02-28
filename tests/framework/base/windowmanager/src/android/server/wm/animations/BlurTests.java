@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.animations;
 
 import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.view.Display.DEFAULT_DISPLAY;

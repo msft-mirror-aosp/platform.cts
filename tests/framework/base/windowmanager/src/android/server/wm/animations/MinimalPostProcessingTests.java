@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.animations;
 
 import static android.app.ActivityTaskManager.INVALID_STACK_ID;
 import static android.server.wm.CliIntentExtra.extraString;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.display;
+package android.server.wm.animations;
 
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
@@ -43,7 +43,7 @@ import org.junit.Test;
  * an unsupported smallest width.
  *
  * <p>Build/Install/Run:
- *     atest CtsWindowManagerDeviceDisplay:DisplaySizeTest
+ *     atest CtsWindowManagerDeviceAnimations:DisplaySizeTest
  */
 @Presubmit
 @android.server.wm.annotation.Group3

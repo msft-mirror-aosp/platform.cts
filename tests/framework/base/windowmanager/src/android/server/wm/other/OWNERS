@@ -4,12 +4,6 @@
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > App Compat
 # Bug template url: https://b.corp.google.com/issues/new?component=970984&template=1516678 = per-file CompatScale*
 
-# Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Animations/Transitions > Layout
-# Bug template url: https://b.corp.google.com/issues/new?component=1517318&template=1946513 = per-file Blur*, MinimalPostProcessing*
-
-# Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Animations/Transitions
-# Bug template url: https://b.corp.google.com/issues/new?component=316275&template=1018192 = per-file WindowManagerTests*
-
 # Android > Android OS & Apps > Framework (Java + Native) > Window Manager > WM Shell > Drag and Drop
 # Bug template url: https://b.corp.google.com/issues/new?component=1214056&template=1713787 = per-file DragDrop*
 

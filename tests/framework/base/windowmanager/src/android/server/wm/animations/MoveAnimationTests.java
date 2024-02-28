@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -49,7 +49,7 @@ import org.junit.rules.TestRule;
  * </ul>
  *
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceWindow:MoveAnimationTests
+ *     atest CtsWindowManagerDeviceAnimations:MoveAnimationTests
  */
 public class MoveAnimationTests extends WindowManagerTestBase {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.window;
+package android.server.wm.animations;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.server.wm.ComponentNameUtils.getWindowName;
@@ -52,7 +52,7 @@ import java.util.List;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceWindow:ManifestLayoutTests
+ *     atest CtsWindowManagerDeviceAnimations:ManifestLayoutTests
  */
 @Presubmit
 public class ManifestLayoutTests extends ActivityManagerTestBase {
