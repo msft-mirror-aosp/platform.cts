@@ -1,4 +1,4 @@
-// Copyright (C) 2019 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,25 +16,16 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "CtsAccountsHostTestCases",
-    defaults: ["cts_defaults"],
-    srcs: ["src/**/*.java"],
-    libs: [
-        "tools-common-prebuilt",
-        "cts-tradefed",
-        "tradefed",
-        "platform-test-annotations-host",
-        "compatibility-host-util",
-        "truth",
-        "device-policy-log-verifier-util",
-    ],
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    data: [
-        ":CtsAccountManagerCrossUserApp",
-    ],
+cc_binary {
+    name: "debuggerd_cts_crasher",
+    srcs: ["debuggerd_cts_crasher.cpp"],
+    compile_multilib: "both",
+    multilib: {
+        lib32: {
+            suffix: "32",
+        },
+        lib64: {
+            suffix: "64",
+        },
+    },
 }
