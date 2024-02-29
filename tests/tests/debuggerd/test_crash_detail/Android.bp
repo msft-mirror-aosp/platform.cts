@@ -1,4 +1,4 @@
-// Copyright (C) 2019 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,24 +17,18 @@ package {
 }
 
 java_test_host {
-    name: "CtsAccountsHostTestCases",
-    defaults: ["cts_defaults"],
-    srcs: ["src/**/*.java"],
-    libs: [
-        "tools-common-prebuilt",
-        "cts-tradefed",
-        "tradefed",
-        "platform-test-annotations-host",
+    name: "CtsCrashDetailHostTestCases",
+    libs: ["tradefed"],
+    static_libs: [
+        "frameworks-base-hostutils",
+        "cts-install-lib-host",
         "compatibility-host-util",
-        "truth",
-        "device-policy-log-verifier-util",
     ],
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    srcs: [
+        "src/**/TestCrashDetail.java",
+        ":libtombstone_proto-src",
     ],
-    data: [
-        ":CtsAccountManagerCrossUserApp",
-    ],
+    data_device_bins_both: ["debuggerd_cts_crasher"],
+    test_config: "AndroidTest.xml",
+    test_suites: ["cts"],
 }
