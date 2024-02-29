@@ -97,7 +97,6 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.lang.ref.Reference;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -2094,7 +2093,7 @@ public class ASurfaceControlTest {
         } catch (InterruptedException e) {
             Assert.fail("interrupted");
         }
-        if (!verifySetFrameTimeline(true, mActivity.getSurfaceView().getHolder())) return;
+        if (!verifySetFrameTimeline(false, mActivity.getSurfaceView().getHolder())) return;
         mActivity.verifyScreenshot(
                 new PixelChecker(Color.RED) { //10000
                     @Override
