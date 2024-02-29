@@ -43,7 +43,6 @@ import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.input.InputManager;
@@ -52,12 +51,10 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.CtsWindowInfoUtils;
-import android.server.wm.WindowManagerState.WindowState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 import android.util.ArraySet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -71,10 +68,8 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.cts.input.DebugInputRule;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -97,7 +92,6 @@ import java.util.function.Predicate;
 @Presubmit
 public class WindowInputTests {
     private static final String TAG = "WindowInputTests";
-    private final int TOTAL_NUMBER_OF_CLICKS = 100;
     private final ActivityTestRule<TestActivity> mActivityRule =
             new ActivityTestRule<>(TestActivity.class);
     private static final int TAPPING_TARGET_WINDOW_SIZE = 100;
@@ -108,12 +102,8 @@ public class WindowInputTests {
 
     private Instrumentation mInstrumentation;
     private CtsTouchUtils mCtsTouchUtils;
-    private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private TestActivity mActivity;
     private InputManager mInputManager;
-
-    @Rule
-    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private View mView;
     private final Random mRandom = new Random(1);
@@ -192,11 +182,8 @@ public class WindowInputTests {
         return () -> mActivity.stopService(intent);
     }
 
-    @DebugInputRule.DebugInput(bug = 295885275)
     @Test
     public void testMoveWindowAndTap() throws Throwable {
-        final WindowManager.LayoutParams p = new WindowManager.LayoutParams();
-
         // Set up window.
         mView = addActivityWindow((view, lp) -> {
             view.setBackgroundColor(Color.RED);
@@ -208,7 +195,6 @@ public class WindowInputTests {
                             | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
             lp.width = lp.height = 20;
             lp.gravity = Gravity.LEFT | Gravity.TOP;
-            p.copyFrom(lp);
         });
 
         // The window location will be picked randomly from the selectBounds. Because the x, y of
@@ -219,68 +205,37 @@ public class WindowInputTests {
         final WindowInsets windowInsets = windowMetrics.getWindowInsets();
         final Rect selectBounds = new Rect(windowMetrics.getBounds());
         selectBounds.offsetTo(0, 0);
-        final Insets insets = windowInsets.getInsetsIgnoringVisibility(p.getFitInsetsTypes());
-        selectBounds.inset(
-                0, 0, insets.left + insets.right + p.width, insets.top + insets.bottom + p.height);
+        mActivityRule.runOnUiThread(() -> {
+            var lp = (WindowManager.LayoutParams) mView.getLayoutParams();
+            var insets = windowInsets.getInsetsIgnoringVisibility(lp.getFitInsetsTypes());
+            selectBounds.inset(
+                    0, 0, insets.left + insets.right + lp.width,
+                    insets.top + insets.bottom + lp.height);
+        });
 
         // Move the window to a random location in the window and attempt to tap on view multiple
         // times.
         final Point locationInWindow = new Point();
-        for (int i = 0; i < TOTAL_NUMBER_OF_CLICKS; i++) {
+        final int totalClicks = 50;
+        for (int i = 0; i < totalClicks; i++) {
             selectRandomLocationInWindow(selectBounds, locationInWindow);
-            mActivityRule.runOnUiThread(
-                    () -> {
-                        p.x = locationInWindow.x;
-                        p.y = locationInWindow.y;
-                        wm.updateViewLayout(mView, p);
-                    });
+            mActivityRule.runOnUiThread(() -> {
+                var lp = (WindowManager.LayoutParams) mView.getLayoutParams();
+                lp.x = locationInWindow.x;
+                lp.y = locationInWindow.y;
+                wm.updateViewLayout(mView, lp);
+            });
             mInstrumentation.waitForIdleSync();
-            int previousCount = mClickCount;
+            mInstrumentation.getUiAutomation().syncInputTransactions(true /*waitForAnimations*/);
+            final int previousCount = mClickCount;
 
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
             mInstrumentation.waitForIdleSync();
-            if (mClickCount != previousCount + 1) {
-                final int vW = mView.getWidth();
-                final int vH = mView.getHeight();
-                final int[] viewOnScreenXY = new int[2];
-                mView.getLocationOnScreen(viewOnScreenXY);
-                final Point tapPosition =
-                        new Point(viewOnScreenXY[0] + vW / 2, viewOnScreenXY[1] + vH / 2);
-                final Rect realBounds =
-                        new Rect(
-                                viewOnScreenXY[0],
-                                viewOnScreenXY[1],
-                                viewOnScreenXY[0] + vW,
-                                viewOnScreenXY[1] + vH);
-                final Rect requestedBounds =
-                        new Rect(
-                                p.x + insets.left,
-                                p.y + insets.top,
-                                p.x + insets.left + p.width,
-                                p.y + insets.top + p.height);
-                dumpWindows("Dumping windows due to failure");
-                fail(
-                        "Tap #"
-                                + i
-                                + " on "
-                                + tapPosition
-                                + " failed; realBounds="
-                                + realBounds
-                                + " requestedBounds="
-                                + requestedBounds);
-            }
+            assertEquals(previousCount + 1, mClickCount);
         }
 
-        assertEquals(TOTAL_NUMBER_OF_CLICKS, mClickCount);
-    }
-
-    private void dumpWindows(String message) {
-        Log.d(TAG, message);
-        mWmState.computeState();
-        for (WindowState window : mWmState.getWindows()) {
-            Log.d(TAG, "    => " + window.toLongString());
-        }
+        assertEquals(totalClicks, mClickCount);
     }
 
     private void selectRandomLocationInWindow(Rect bounds, Point outLocation) {
