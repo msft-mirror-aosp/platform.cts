@@ -46,7 +46,6 @@ import org.mockito.internal.util.reflection.FieldReader;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -340,7 +339,7 @@ public class NfcAdapterTest {
             originalDefault = setDefaultPaymentService(CtsMyHostApduService.class);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             assumeTrue(adapter.isObserveModeSupported());
-            boolean result = adapter.setTransactionAllowed(true);
+            boolean result = adapter.setObserveModeEnabled(false);
             Assert.assertTrue(result);
         } finally {
             setDefaultPaymentService(originalDefault);
@@ -356,7 +355,7 @@ public class NfcAdapterTest {
             originalDefault = setDefaultPaymentService(CtsMyHostApduService.class);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             assumeTrue(adapter.isObserveModeSupported());
-            boolean result = adapter.setTransactionAllowed(false);
+            boolean result = adapter.setObserveModeEnabled(true);
             Assert.assertTrue(result);
         } finally {
             setDefaultPaymentService(originalDefault);
@@ -370,7 +369,7 @@ public class NfcAdapterTest {
         try {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+            cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), true);
             originalDefault = setDefaultPaymentService(CustomHostApduService.class);
             CardEmulationTest.ensurePreferredService(CustomHostApduService.class, mContext);
@@ -391,7 +390,7 @@ public class NfcAdapterTest {
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         try {
             Activity activity = createAndResumeActivity();
-            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+            cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), true);
             Assert.assertTrue(cardEmulation.setPreferredService(activity,
                     new ComponentName(mContext, CustomHostApduService.class)));
@@ -402,7 +401,7 @@ public class NfcAdapterTest {
             CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
             Assert.assertFalse(adapter.isObserveModeEnabled());
         } finally {
-            cardEmulation.setDefaultToObserveModeForService(new ComponentName(mContext,
+            cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), false);
         }
     }
@@ -452,7 +451,7 @@ public class NfcAdapterTest {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
 
             assumeTrue(adapter.isObserveModeSupported());
-            adapter.setTransactionAllowed(true);
+            adapter.setObserveModeEnabled(false);
             Assert.assertFalse(adapter.isObserveModeEnabled());
         } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
@@ -470,7 +469,7 @@ public class NfcAdapterTest {
             Assert.assertTrue(setDefaultWalletRoleHolder(mContext));
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             assumeTrue(adapter.isObserveModeSupported());
-            adapter.setTransactionAllowed(false);
+            adapter.setObserveModeEnabled(true);
             Assert.assertTrue(adapter.isObserveModeEnabled());
         } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
@@ -497,7 +496,6 @@ public class NfcAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
     public void testSendVendorCmd() throws InterruptedException {
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
         CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
@@ -509,11 +507,11 @@ public class NfcAdapterTest {
             nfcAdapter.registerNfcVendorNciCallback(
                     Executors.newSingleThreadExecutor(), cb);
 
-            // Send random payload with a vendor gid.
-            byte[] payload = new byte[100];
-            new Random().nextBytes(payload);
+            // Android GET_CAPS command
             int gid = 0xF;
             int oid = 0xC;
+            byte[] payload = new byte[1];
+            payload[0] = 0;
             nfcAdapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, gid, oid, payload);
 
             // Wait for response.

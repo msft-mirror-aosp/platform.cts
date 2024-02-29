@@ -17,7 +17,6 @@ package android.wearable.cts;
 
 import static android.app.wearable.WearableSensingDataRequest.getMaxRequestSize;
 import static android.app.wearable.WearableSensingDataRequest.getRateLimit;
-import static android.app.wearable.WearableSensingDataRequest.getRateLimitWindowSize;
 import static android.wearable.cts.CtsWearableSensingService.whenCallbackTriggeredRespondWithServiceStatus;
 import static android.wearable.cts.CtsWearableSensingService.whenCallbackTriggeredRespondWithStatus;
 
@@ -28,6 +27,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -40,6 +40,7 @@ import android.app.wearable.WearableSensingDataRequest;
 import android.app.wearable.WearableSensingManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.ParcelFileDescriptor;
@@ -89,7 +90,7 @@ public class CtsWearableSensingServiceDeviceTest {
     private static final String CTS_SERVICE_NAME = CTS_PACKAGE_NAME + "/."
             + CtsWearableSensingService.class.getSimpleName();
     private static final int USER_ID = UserHandle.myUserId();
-    private static final int TEMPORARY_SERVICE_DURATION = 5000;
+    private static final int TEMPORARY_SERVICE_DURATION = 30000; // ms
 
     private static final String KEY_FOR_PROVIDE_DATA = "foo.bar.baz_key_for_provide_data";
     private static final int VALUE_TO_SEND = 1000;
@@ -132,6 +133,7 @@ public class CtsWearableSensingServiceDeviceTest {
         assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT,
                 VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE);
         mContext = getInstrumentation().getContext();
+        assumeFalse(isWatch(mContext));  // WearableSensingManagerService is not supported on WearOS
         mWearableSensingManager = mContext.getSystemService(WearableSensingManager.class);
         mDataRequestObserverPendingIntent = createDataRequestPendingIntent(mContext);
         PersistableBundle dataRequestDetails = new PersistableBundle();
@@ -341,8 +343,8 @@ public class CtsWearableSensingServiceDeviceTest {
         assertThat(dataRequestStatusLatch.await(3, SECONDS)).isTrue();
         assertThat(dataRequestStatusRef.get())
                 .isEqualTo(WearableSensingDataRequester.STATUS_SUCCESS);
-        // Wait for one window size plus some buffer to avoid interfering other tests
-        SystemClock.sleep(getRateLimitWindowSize().toMillis() + 200);
+        // Reset the rate limit to avoid interfering with other tests
+        resetDataRequestRateLimitWindowSize();
     }
 
     @Test
@@ -392,8 +394,8 @@ public class CtsWearableSensingServiceDeviceTest {
 
         CtsWearableSensingDataRequestBroadcastReceiver.awaitResult();
         // no exception means all requests are received before timeout
-        // Wait for one window size plus some buffer to avoid interfering other tests
-        SystemClock.sleep(getRateLimitWindowSize().toMillis() + 200);
+        // Reset the rate limit to avoid interfering with other tests
+        resetDataRequestRateLimitWindowSize();
     }
 
     @Test
@@ -430,8 +432,8 @@ public class CtsWearableSensingServiceDeviceTest {
         assertThat(dataRequestStatusLatch.await(3, SECONDS)).isTrue();
         assertThat(dataRequestStatusRef.get())
                 .isEqualTo(WearableSensingDataRequester.STATUS_TOO_FREQUENT);
-        // Wait for one window size plus some buffer to avoid interfering with other tests
-        SystemClock.sleep(getRateLimitWindowSize().toMillis() + 200);
+        // Reset the rate limit to avoid interfering other tests
+        resetDataRequestRateLimitWindowSize();
     }
 
     @Test
@@ -441,35 +443,40 @@ public class CtsWearableSensingServiceDeviceTest {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE);
-        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(
-                getRateLimit());
-        WearableSensingDataRequester dataRequester = registerAndGetDataRequester();
-        AtomicInteger dataRequestStatusRef =
-                new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
-        CountDownLatch dataRequestStatusLatch = new CountDownLatch(1);
+        // Allows this test to wait just 20 seconds instead of the full getRateLimitWindowSize()
+        // The window cannot be smaller than 20 seconds. It is lower-bounded by
+        // com.android.server.utils.quota.QuotaTracker#MIN_WINDOW_SIZE_MS
+        setDataRequestRateLimitWindowSizeToTwentySeconds();
+        try {
+            CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(getRateLimit());
+            WearableSensingDataRequester dataRequester = registerAndGetDataRequester();
+            AtomicInteger dataRequestStatusRef =
+                    new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
+            CountDownLatch dataRequestStatusLatch = new CountDownLatch(1);
 
-        // Reach the limit
-        for (int i = 0; i < getRateLimit(); i++) {
-            dataRequester.requestData(mDataRequest, status -> {});
+            // Reach the limit
+            for (int i = 0; i < getRateLimit(); i++) {
+                dataRequester.requestData(mDataRequest, status -> {});
+            }
+            CtsWearableSensingDataRequestBroadcastReceiver.awaitResult();
+            // Wait for one window size (overridden to 20 seconds above) plus some buffer
+            SystemClock.sleep(20200);
+            // Send one more
+            CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(1);
+            dataRequester.requestData(
+                    mDataRequest,
+                    (status) -> {
+                        dataRequestStatusRef.set(status);
+                        dataRequestStatusLatch.countDown();
+                    });
+
+            CtsWearableSensingDataRequestBroadcastReceiver.awaitResult();
+            assertThat(dataRequestStatusLatch.await(3, SECONDS)).isTrue();
+            assertThat(dataRequestStatusRef.get())
+                    .isEqualTo(WearableSensingDataRequester.STATUS_SUCCESS);
+        } finally {
+            resetDataRequestRateLimitWindowSize();
         }
-        CtsWearableSensingDataRequestBroadcastReceiver.awaitResult();
-        // Wait for one window size plus some buffer
-        SystemClock.sleep(getRateLimitWindowSize().toMillis() + 200);
-        // Send one more
-        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(1);
-        dataRequester.requestData(
-                mDataRequest,
-                (status) -> {
-                    dataRequestStatusRef.set(status);
-                    dataRequestStatusLatch.countDown();
-                });
-
-        CtsWearableSensingDataRequestBroadcastReceiver.awaitResult();
-        assertThat(dataRequestStatusLatch.await(3, SECONDS)).isTrue();
-        assertThat(dataRequestStatusRef.get())
-                .isEqualTo(WearableSensingDataRequester.STATUS_SUCCESS);
-        // Wait for one window size plus some buffer to avoid interfering other tests
-        SystemClock.sleep(getRateLimitWindowSize().toMillis() + 200);
     }
 
     @After
@@ -554,6 +561,16 @@ public class CtsWearableSensingServiceDeviceTest {
                 "cmd wearable_sensing get-last-status-code"));
     }
 
+    // This method will also reset the rate limit
+    private void setDataRequestRateLimitWindowSizeToTwentySeconds() {
+        runShellCommand("cmd wearable_sensing set-data-request-rate-limit-window-size 20");
+    }
+
+    // This method will also reset the rate limit
+    private void resetDataRequestRateLimitWindowSize() {
+        runShellCommand("cmd wearable_sensing set-data-request-rate-limit-window-size 0");
+    }
+
     private int getLastStatusCodeAmbientDetectionService() {
         return Integer.parseInt(runShellCommand(
                 "cmd ambient_context get-last-status-code"));
@@ -606,5 +623,10 @@ public class CtsWearableSensingServiceDeviceTest {
         int unusedRequestCode = 0;
         return PendingIntent.getBroadcast(
                 context, unusedRequestCode, intent, PendingIntent.FLAG_MUTABLE);
+    }
+
+    private static boolean isWatch(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

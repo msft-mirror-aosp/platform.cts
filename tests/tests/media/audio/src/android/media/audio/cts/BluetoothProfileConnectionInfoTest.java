@@ -16,11 +16,14 @@
 
 package android.media.audio.cts;
 
+import static android.media.audio.Flags.FLAG_SCO_MANAGED_BY_AUDIO;
+
 import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.BluetoothProfile;
 import android.media.BluetoothProfileConnectionInfo;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -81,6 +84,14 @@ public class BluetoothProfileConnectionInfoTest {
         assertEquals(info.isSuppressNoisyIntent(), supprNoisy);
         assertEquals(info.isLeOutput(), true);
         assertEquals(info.getVolume(), volume);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SCO_MANAGED_BY_AUDIO)
+    public void testCoverageHfp() {
+        final BluetoothProfileConnectionInfo info = BluetoothProfileConnectionInfo
+                .createHfpInfo();
+        assertEquals(info.getProfile(), BluetoothProfile.HEADSET);
     }
 }
 

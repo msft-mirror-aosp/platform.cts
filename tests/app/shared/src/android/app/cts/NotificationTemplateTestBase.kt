@@ -33,15 +33,15 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Before
 import kotlin.reflect.KClass
+import org.junit.Before
 
 open class NotificationTemplateTestBase {
 
     // Used to give time to visually inspect or attach a debugger before the checkViews block
     protected var waitBeforeCheckingViews: Long = 0
     protected var context: Context =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
+            InstrumentationRegistry.getInstrumentation().getTargetContext()
 
     @Before
     public fun baseSetUp() {
@@ -62,8 +62,10 @@ open class NotificationTemplateTestBase {
         val activityIntent = Intent(context, NotificationHostActivity::class.java)
         activityIntent.putExtra(NotificationHostActivity.EXTRA_REMOTE_VIEWS, views)
         heightDimen?.also {
-            activityIntent.putExtra(NotificationHostActivity.EXTRA_HEIGHT,
-                    context.resources.getDimensionPixelSize(it))
+            activityIntent.putExtra(
+                NotificationHostActivity.EXTRA_HEIGHT,
+                    context.resources.getDimensionPixelSize(it)
+            )
         }
         ActivityScenario.launch<NotificationHostActivity>(activityIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.RESUMED)
@@ -134,6 +136,12 @@ open class NotificationTemplateTestBase {
     protected fun NotificationHostActivity.requireViewWithText(text: String): TextView =
             findViewWithText(text) ?: throw RuntimeException("Unable to find view with text: $text")
 
+    protected fun NotificationHostActivity.requireViewWithTextContaining(
+        substring: String
+    ): TextView =
+        findViewWithTextContaining(substring)
+            ?: throw RuntimeException("Unable to find view with text containing: $substring")
+
     protected fun NotificationHostActivity.findViewWithText(text: String): TextView? {
         val views: MutableList<TextView> = ArrayList()
         collectViews(notificationRoot, TextView::class, views) { it.text?.toString() == text }
@@ -141,6 +149,20 @@ open class NotificationTemplateTestBase {
             0 -> return null
             1 -> return views[0]
             else -> throw RuntimeException("Found multiple views with text: $text")
+        }
+    }
+
+    protected fun NotificationHostActivity.findViewWithTextContaining(
+        substring: String
+    ): TextView? {
+        val views: MutableList<TextView> = ArrayList()
+        collectViews(notificationRoot, TextView::class, views) {
+            (it.text?.toString() ?: "").contains(substring)
+        }
+        when (views.size) {
+            0 -> return null
+            1 -> return views[0]
+            else -> throw RuntimeException("Found multiple views with text containing: $substring")
         }
     }
 

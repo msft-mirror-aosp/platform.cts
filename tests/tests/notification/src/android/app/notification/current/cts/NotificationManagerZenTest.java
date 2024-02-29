@@ -1129,9 +1129,10 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         Condition condition =
                 new Condition(rule.getConditionId(), "summary", Condition.STATE_TRUE);
         mNotificationManager.setAutomaticZenRuleState(id, condition);
-        // TODO: b/323398944 - Shouldn't be necessary, but the test is flaky without it.
-        runAsSystemUi(
-                () -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY));
+        if (!SdkLevel.isAtLeastV()) {
+            runAsSystemUi(
+                    () -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY));
+        }
 
         // delay for streams to get into correct mute states
         Thread.sleep(1000);
@@ -1162,16 +1163,19 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mAudioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, 1, 0);
         mAudioManager.setStreamVolume(AudioManager.STREAM_RING, 1, 0);
 
-        mNotificationManager.setNotificationPolicy(new NotificationManager.Policy(
-                PRIORITY_CATEGORY_ALARMS | PRIORITY_CATEGORY_MEDIA, 0, 0));
+        if (!SdkLevel.isAtLeastV()) {
+            mNotificationManager.setNotificationPolicy(new NotificationManager.Policy(
+                    PRIORITY_CATEGORY_ALARMS | PRIORITY_CATEGORY_MEDIA, 0, 0));
+        }
         AutomaticZenRule rule = createRule("test_alarms", INTERRUPTION_FILTER_ALARMS);
         String id = mNotificationManager.addAutomaticZenRule(rule);
         Condition condition =
                 new Condition(rule.getConditionId(), "summary", Condition.STATE_TRUE);
         mNotificationManager.setAutomaticZenRuleState(id, condition);
-        // TODO: b/323398944 - Shouldn't be necessary, but the test is flaky without it.
-        runAsSystemUi(
-                () -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY));
+        if (!SdkLevel.isAtLeastV()) {
+            runAsSystemUi(
+                    () -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY));
+        }
 
         // delay for streams to get into correct mute states
         Thread.sleep(1000);
@@ -2050,10 +2054,11 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
                 InstrumentationRegistry.getInstrumentation(), true);
 
         // Setup: no contacts, so nobody counts as "priority" in terms of senders.
-        // Construct a policy that doesn't specify anything about channels; apply it via zen rule
+        // Construct a policy that doesn't allow anything except priority channels through;
+        // apply it via zen rule
         AutomaticZenRule rule = createRule("test_channel_bypass",
                 INTERRUPTION_FILTER_PRIORITY);
-        rule.setZenPolicy(new ZenPolicy.Builder().build());
+        rule.setZenPolicy(new ZenPolicy.Builder().disallowAllSounds().build());
         String id = mNotificationManager.addAutomaticZenRule(rule);
 
         // enable rule
@@ -2739,6 +2744,30 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         AutomaticZenRule readRule2 = mNotificationManager.getAutomaticZenRule(underspecRuleId);
         assertThat(readRule2.getZenPolicy()).isEqualTo(
                 mDefaultPolicy.overwrittenWith(underspecified.getZenPolicy()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
+    public void getAutomaticZenRuleState_returnsRuleState() {
+        AutomaticZenRule rule = createRule("Test");
+
+        String ruleId = mNotificationManager.addAutomaticZenRule(rule);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(
+                Condition.STATE_FALSE);
+
+        mNotificationManager.setAutomaticZenRuleState(ruleId,
+                new Condition(rule.getConditionId(), "", Condition.STATE_TRUE));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(
+                Condition.STATE_TRUE);
+
+        mNotificationManager.setAutomaticZenRuleState(ruleId,
+                new Condition(rule.getConditionId(), "", Condition.STATE_FALSE));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(
+                Condition.STATE_FALSE);
+
+        mNotificationManager.removeAutomaticZenRule(ruleId);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(
+                Condition.STATE_UNKNOWN);
     }
 
     @Test

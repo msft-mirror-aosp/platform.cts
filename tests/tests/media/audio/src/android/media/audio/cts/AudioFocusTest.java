@@ -16,6 +16,9 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
+import static android.Manifest.permission.QUERY_AUDIO_STATE;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
@@ -49,14 +52,18 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
@@ -66,6 +73,8 @@ import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -77,6 +86,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(BedsteadJUnit4.class)
 @NonMainlineTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+
 public class AudioFocusTest {
     private static final String TAG = "AudioFocusTest";
 
@@ -113,12 +123,23 @@ public class AudioFocusTest {
     private int mInitialNotificationVolume;
     /** ringer mode to restore */
     private int mInitialRingerMode;
+    private boolean mHasVibration;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mAM = new AudioManager(mContext);
+
+        Vibrator vibrator = mContext.getSystemService(Vibrator.class);
+        mHasVibration = (vibrator != null) && vibrator.hasVibrator();
 
         mInitialRingerMode = mAM.getRingerMode();
         // need to set ringer mode to normal before starting the test so the volume (to be restored)
@@ -128,6 +149,10 @@ public class AudioFocusTest {
         mInitialNotificationVolume = mAM.getStreamVolume(
                 AudioAttributes.toLegacyStreamType(NOTIFICATION_ATTRIBUTES));
         Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
+        // for query of fade out duration, focus request/abandon test methods, and focus requests
+        // independently of test runner procstate
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                MODIFY_AUDIO_SETTINGS_PRIVILEGED, QUERY_AUDIO_STATE);
     }
 
     @After
@@ -146,6 +171,7 @@ public class AudioFocusTest {
                 mInitialNotificationVolume, 0);
         mAM.setRingerMode(mInitialRingerMode);
         Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
@@ -339,10 +365,6 @@ public class AudioFocusTest {
                         .setOnAudioFocusChangeListener(mediaListener, handler)
                         .build();
 
-
-        // for focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE);
         try {
             // call requests audio focus
             int res = mAM.requestAudioFocusForTest(callFocusReq, TEST_CALL_ID, 1977,
@@ -362,7 +384,6 @@ public class AudioFocusTest {
         } finally {
             mAM.abandonAudioFocusForTest(callFocusReq, TEST_CALL_ID);
             mAM.abandonAudioFocusRequest(mediaFocusReq);
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -400,9 +421,6 @@ public class AudioFocusTest {
                         .setOnAudioFocusChangeListener(driveListener, handler)
                         .build();
 
-        // for focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE);
         try {
             // media requests audio focus
             int res = mAM.requestAudioFocus(mediaFocusReq);
@@ -436,7 +454,6 @@ public class AudioFocusTest {
             mAM.abandonAudioFocusRequest(mediaFocusReq);
             handler.getLooper().quit();
             handlerThread.quitSafely();
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -476,9 +493,6 @@ public class AudioFocusTest {
                         .setOnAudioFocusChangeListener(driveListener, handler)
                         .build();
 
-        // for focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE);
         try {
             // media requests audio focus
             int res = mAM.requestAudioFocus(mediaFocusReq);
@@ -517,7 +531,6 @@ public class AudioFocusTest {
             mAM.abandonAudioFocusRequest(mediaFocusReq);
             handler.getLooper().quit();
             handlerThread.quitSafely();
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -533,9 +546,6 @@ public class AudioFocusTest {
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestMediaGainLossWithPlayer() throws Exception {
         Log.i(TAG, "testAudioFocusRequestMediaGainLossWithPlayer start");
-        // for query of fade out duration and focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE);
 
         final int NB_FOCUS_OWNERS = 2;
         final AudioFocusRequest[] focusRequests = new AudioFocusRequest[NB_FOCUS_OWNERS];
@@ -607,7 +617,6 @@ public class AudioFocusTest {
             }
             mAM.abandonAudioFocusForTest(focusRequests[FOCUS_SIMULATED], simFocusClientId);
             mAM.abandonAudioFocusRequest(focusRequests[FOCUS_UNDER_TEST]);
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -629,16 +638,17 @@ public class AudioFocusTest {
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     @RequireDoesNotHaveFeature(value = PackageManager.FEATURE_PC) // not required for Desktop
     @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
-    @RequiresFlagsEnabled(value = Flags.FLAG_FOCUS_EXCLUSIVE_WITH_RECORDING)
+    @RequiresFlagsEnabled(Flags.FLAG_FOCUS_EXCLUSIVE_WITH_RECORDING)
     public void testAudioFocusExclusive() throws Exception {
         Log.i(TAG, "testAudioFocusExclusive start");
         if (!mDeflakeApisAvailable) {
             Log.i(TAG, "running testAudioFocusExclusive without deflake test APIs");
         }
 
-        try (PermissionContext p = TestApis.permissions().withPermission(
+        /*try (PermissionContext p = TestApis.permissions().withPermission(
                 Manifest.permission.QUERY_AUDIO_STATE,
-                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) */
+        try {
             final int testUid = android.os.Process.myUid();
             if (mDeflakeApisAvailable) {
                 assertTrue(mAM.enterAudioFocusFreezeForTest(Arrays.asList(testUid)));
@@ -656,10 +666,13 @@ public class AudioFocusTest {
             assertTrue("Wrong shouldNotificationSoundPlay for ringer NORMAL + focus exclusive",
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
-            // RINGER_MODE_VIBRATE + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay false
-            assertFalse("Wrong shouldNotificationSoundPlay for ringer VIBRATE + focus exclusive",
-                    mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
+            if (mHasVibration) {
+                mAM.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+                // RINGER_MODE_VIBRATE + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay false
+                assertFalse(
+                        "Wrong shouldNotificationSoundPlay for ringer VIBRATE + focus exclusive",
+                        mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
+            }
 
             mAM.setRingerMode(AudioManager.RINGER_MODE_SILENT);
             // RINGER_MODE_SILENT + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay false
@@ -688,16 +701,12 @@ public class AudioFocusTest {
     @RequireDoesNotHaveFeature(value = PackageManager.FEATURE_PC) // not required for Desktop
     @RequireFeature(value = PackageManager.FEATURE_MICROPHONE)
     @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
-    @RequiresFlagsEnabled(value = Flags.FLAG_FOCUS_EXCLUSIVE_WITH_RECORDING)
+    @RequiresFlagsEnabled(Flags.FLAG_FOCUS_EXCLUSIVE_WITH_RECORDING)
     public void testAudioFocusExclusiveAndRecording() throws Exception {
         Log.i(TAG, "testAudioFocusExclusiveAndRecording start");
         if (!mDeflakeApisAvailable) {
             Log.i(TAG, "running testAudioFocusExclusiveAndRecording without deflake test APIs");
         }
-
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE,
-                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
 
         try {
             final int testUid = android.os.Process.myUid();
@@ -794,10 +803,6 @@ public class AudioFocusTest {
         if (!mDeflakeApisAvailable) {
             Log.i(TAG, "running " + testName + " without deflake test APIs");
         }
-        // for query of fade out duration and focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE,
-                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
 
         java.util.List<Integer> duckedUids;
         if (mDeflakeApisAvailable) {
@@ -942,7 +947,6 @@ public class AudioFocusTest {
             mAM.abandonAudioFocusRequest(focusRequests[FocusUnderTest]);
             mAM.abandonAudioFocusForTest(focusRequests[FocusHelperAssist], mediaFocusClientId);
             mAM.abandonAudioFocusForTest(focusRequests[FocusHelperMedia], assistFocusClientId);
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -1020,9 +1024,6 @@ public class AudioFocusTest {
 
     private void doTwoFocusOwnerOnePlayerFocusLoss(boolean playSpeech, boolean speechFocus,
             boolean pauseOnDuck) throws Exception {
-        // for query of fade out duration and focus request/abandon test methods
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_AUDIO_STATE);
 
         final int NB_FOCUS_OWNERS = 2;
         final AudioFocusRequest[] focusRequests = new AudioFocusRequest[NB_FOCUS_OWNERS];
@@ -1087,7 +1088,6 @@ public class AudioFocusTest {
             }
             mAM.abandonAudioFocusForTest(focusRequests[FOCUS_SIMULATED], simFocusClientId);
             mAM.abandonAudioFocusRequest(focusRequests[FOCUS_UNDER_TEST]);
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
     }
     //-----------------------------------

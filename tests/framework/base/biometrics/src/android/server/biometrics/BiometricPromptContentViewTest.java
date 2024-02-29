@@ -23,7 +23,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
@@ -36,7 +35,6 @@ import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.By;
@@ -49,7 +47,6 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -230,13 +227,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                         randomContentViewItem2);
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */);
-                ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
-                        ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
-                verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
-                assertWithMessage("Must be TYPE_BIOMETRIC").that(
-                        resultCaptor.getValue().getAuthenticationType()).isEqualTo(
-                        BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC);
+                successfullyAuthenticate(session, 0 /* userId */, callback);
             }
         }
     }
@@ -345,13 +336,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                         randomContentViewItem2);
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */);
-                ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
-                        ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
-                verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
-                assertWithMessage("Must be TYPE_BIOMETRIC").that(
-                        resultCaptor.getValue().getAuthenticationType()).isEqualTo(
-                        BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC);
+                successfullyAuthenticate(session, 0 /* userId */, callback);
             }
         }
     }
@@ -447,13 +432,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                         Until.findObject(By.text(contentViewLastItemText)));
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */);
-                ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
-                        ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
-                verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
-                assertWithMessage("Must be TYPE_BIOMETRIC").that(
-                        resultCaptor.getValue().getAuthenticationType()).isEqualTo(
-                        BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC);
+                successfullyAuthenticate(session, 0 /* userId */, callback);
             }
         }
     }

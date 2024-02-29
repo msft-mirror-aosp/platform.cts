@@ -2646,6 +2646,10 @@ public class CameraTestUtils extends Assert {
             String filePath, ColorSpace colorSpace) {
         checkImage(image, width, height, format, colorSpace);
 
+        if (format == ImageFormat.PRIVATE) {
+            return;
+        }
+
         /**
          * TODO: validate timestamp:
          * 1. capture result timestamp against the image timestamp (need
@@ -5235,5 +5239,20 @@ public class CameraTestUtils extends Assert {
         for (T[] k : keys) {
             checkKeysAreSupported(k, supportedKeys, expectedResult);
         }
+    }
+
+    /**
+     * Check if the camera device keeps stabilization off
+     *
+     * @param result The capture request builder
+     * @return true if stabilization is OFF
+     */
+    public static boolean isStabilizationOff(CaptureRequest request) {
+        Integer stabilizationMode = request.get(
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE);
+        assertNotNull("Value of Key CONTROL_VIDEO_STABILIZATION_MODE shouldn't be null",
+                stabilizationMode);
+
+        return (stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
     }
 }

@@ -35,9 +35,6 @@ import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.server.biometrics.util.BiometricCallbackHelper;
-import android.server.biometrics.util.BiometricServiceState;
-import android.server.biometrics.util.Utils;
 import android.server.wm.TestJournalProvider;
 import android.server.wm.WindowManagerState;
 import android.util.Log;
@@ -105,13 +102,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
 
         // Auth and check again now
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
     }
 
@@ -250,13 +241,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
 
         // Accept authentication and end
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 1, callbackState.mNumAuthRejected);
     }
 

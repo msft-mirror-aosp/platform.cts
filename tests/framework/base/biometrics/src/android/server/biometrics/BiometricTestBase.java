@@ -17,8 +17,8 @@
 package android.server.biometrics;
 
 import static android.os.PowerManager.FULL_WAKE_LOCK;
-import static android.server.biometrics.util.SensorStates.SensorState;
-import static android.server.biometrics.util.SensorStates.UserState;
+import static android.server.biometrics.SensorStates.SensorState;
+import static android.server.biometrics.SensorStates.UserState;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -33,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import android.app.Instrumentation;
 import android.content.ComponentName;
@@ -51,11 +52,6 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.biometrics.util.BiometricCallbackHelper;
-import android.server.biometrics.util.BiometricServiceState;
-import android.server.biometrics.util.SensorStates;
-import android.server.biometrics.util.TestSessionList;
-import android.server.biometrics.util.Utils;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.UiDeviceUtils;
@@ -74,6 +70,7 @@ import com.android.server.biometrics.nano.BiometricServiceStateProto;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -220,7 +217,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         return false;
     }
 
-    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId)
+    private void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId)
             throws Exception {
         session.acceptAuthentication(userId);
         mInstrumentation.waitForIdleSync();
@@ -237,6 +234,28 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
 
         assertEquals("Failed to become idle after authenticating",
                 STATE_AUTH_IDLE, getCurrentState().mState);
+    }
+
+    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId,
+            TestJournal journal) throws Exception {
+        successfullyAuthenticate(session, userId);
+        mInstrumentation.waitForIdleSync();
+        BiometricCallbackHelper.State callbackState = getCallbackState(journal);
+        assertNotNull(callbackState);
+        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        assertEquals(callbackState.toString(), 0, callbackState.mAcquiredReceived.size());
+        assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
+    }
+
+    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId,
+            BiometricPrompt.AuthenticationCallback callback) throws Exception {
+        successfullyAuthenticate(session, userId);
+        ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
+                ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
+        verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
+        assertEquals("Must be TYPE_BIOMETRIC",
+                BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC,
+                resultCaptor.getValue().getAuthenticationType());
     }
 
     protected void successfullyEnterCredential() throws Exception {

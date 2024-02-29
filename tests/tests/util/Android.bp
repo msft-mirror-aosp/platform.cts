@@ -29,7 +29,6 @@ java_defaults {
         "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
         "ravenwood-junit",
     ],
-    platform_apis: true,
     min_sdk_version: "30",
 }
 
@@ -44,12 +43,11 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-statsd",
-        "mcts-statsd",
     ],
     srcs: [
         "src/**/*.java",
     ],
+    platform_apis: true,
 }
 
 android_ravenwood_test {

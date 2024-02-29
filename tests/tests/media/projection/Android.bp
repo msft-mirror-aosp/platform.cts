@@ -13,7 +13,7 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_lse_app_compat",
+    default_team: "trendy_team_lse_desktop_os_experience",
     // See: http://go/android-license-faq
     default_applicable_licenses: [
         "Android-Apache-2.0",
@@ -32,6 +32,7 @@ java_defaults {
         "cts-wm-util",
         "junit",
         "junit-params",
+        "platform-compat-test-rules",
         "testng",
         "truth",
     ],

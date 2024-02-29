@@ -47,10 +47,6 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.biometrics.util.BiometricServiceState;
-import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.UiObject2;
@@ -61,7 +57,6 @@ import com.android.server.biometrics.nano.SensorStateProto;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.Random;
@@ -204,7 +199,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                         new CancellationSignal());
 
                 assertTrue(prompt.isConfirmationRequired());
-                successfullyAuthenticate(session, 0 /* userId */);
+                successfullyAuthenticate(session, 0 /* userId */, callback);
             }
         }
     }
@@ -568,14 +563,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 assertEquals(randomNegativeButtonText, actualNegativeButton.getText());
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */);
-
-                ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
-                        ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
-                verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
-                assertEquals("Must be TYPE_BIOMETRIC",
-                        BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC,
-                        resultCaptor.getValue().getAuthenticationType());
+                successfullyAuthenticate(session, 0 /* userId */, callback);
             }
         }
     }

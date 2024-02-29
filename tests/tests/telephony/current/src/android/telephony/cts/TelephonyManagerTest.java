@@ -143,6 +143,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
+import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.uicc.IccUtils;
 
@@ -2930,6 +2931,46 @@ public class TelephonyManagerTest {
         }
     }
 
+    @Test
+    public void testSetLine1NumberUpdatesSubscriptionInfo() throws Exception {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        // get a random 10 digit number
+        final String randomLine1Number = String.format(
+                "%010d",
+                (long) (10_000_000_000L * Math.random()));
+
+        ThrowingRunnable r = () -> {
+            String originalLine1Number = mTelephonyManager.getLine1Number();
+            String originalAlpha = mTelephonyManager.getLine1AlphaTag();
+
+            try {
+                // Check to see whether the original Line1Number was overridden
+                mTelephonyManager.setLine1NumberForDisplay(null, null);
+                if (Objects.equals(originalLine1Number, mTelephonyManager.getLine1Number())) {
+                    // Number wasn't overridden
+                    originalLine1Number = null;
+                }
+                if (Objects.equals(originalAlpha, mTelephonyManager.getLine1AlphaTag())) {
+                    // Alpha tag wasn't overridden
+                    originalAlpha = null;
+                }
+
+                mTelephonyManager.setLine1NumberForDisplay(originalAlpha, randomLine1Number);
+                final SubscriptionInfo subInfo =
+                        mSubscriptionManager.getActiveSubscriptionInfo(mTestSub);
+                assertEquals(randomLine1Number, subInfo.getNumber());
+            } finally {
+                mTelephonyManager.setLine1NumberForDisplay(originalAlpha, originalLine1Number);
+            }
+        };
+
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                r);
+    }
+
     /**
      * Tests that UiccCardsInfo methods don't crash.
      */
@@ -4093,9 +4134,81 @@ public class TelephonyManagerTest {
         });
     }
 
+    private class AllowedNetworkTypesListener extends TelephonyCallback
+            implements TelephonyCallback.AllowedNetworkTypesListener {
+        @Override
+        public void onAllowedNetworkTypesChanged(int reason, long allowedNetworkType) {
+            try {
+                Log.d(TAG, "onAllowedNetworkTypesChanged");
+                if (mExpectedReason == reason
+                        && mExpectedAllowedNetworkType == allowedNetworkType) {
+                    verifyExpectedGetAllowedNetworkType(reason);
+                }
+            } catch (SecurityException se) {
+                fail("testSetAllowedNetworkTypes: SecurityException not expected");
+            }
+        }
+
+        private CountDownLatch mLatch;
+        private int mExpectedReason;
+        private long mExpectedAllowedNetworkType;
+        public void setExpectedAllowedNetworkType(
+                int expectedReason, long expectedAllowedNetworkType, int expectedLatchcount) {
+            mExpectedReason = expectedReason;
+            mExpectedAllowedNetworkType = expectedAllowedNetworkType;
+            mLatch = new CountDownLatch(expectedLatchcount);
+        }
+
+        public void verifyExpectedGetAllowedNetworkType(int reason) {
+            long allowedNetworkType = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager,
+                    (tm) -> {
+                        return tm.getAllowedNetworkTypesForReason(reason);
+                    },
+                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
+            );
+            if (mExpectedAllowedNetworkType == allowedNetworkType) {
+                mLatch.countDown();
+            }
+        }
+    }
+
+    private void verifySetAndGetAllowedNetworkTypesForReason(AllowedNetworkTypesListener listener,
+            int reason, long allowedNetworkTypes) throws Exception {
+
+        // Try the test three times, and stop test when get success once during the test.
+        int retries = 3;
+        listener.setExpectedAllowedNetworkType(reason, allowedNetworkTypes, 1);
+        for (int count = 0; count < retries; count++) {
+            // setAllowedNetworkTypesForReason
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    (tm) -> tm.setAllowedNetworkTypesForReason(reason, allowedNetworkTypes),
+                    "android.permission.MODIFY_PHONE_STATE");
+
+            // test getAllowedNetworkTypesForReason.
+            // Since this is testing the getAllowedNetworkTypesForReason it helps to speed up the
+            // test by doing the get here first rather than waiting for the event change.
+            listener.verifyExpectedGetAllowedNetworkType(reason);
+
+            // if getAllowedNetworkTypesForReason return not-expected value, then wait for a while
+            // by listening onAllowedNetworkTypesChanged
+            if (listener.mLatch.await(TOLERANCE, TimeUnit.MILLISECONDS)) {
+                break;
+            }
+        }
+
+        // Check to see if the result is expected at least once.
+        assertEquals(0, listener.mLatch.getCount());
+    }
+
     @Test
-    public void testSetAllowedNetworkTypesForReason_moreReason() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+    public void testSetAllowedNetworkTypesForReason_moreReason() throws Exception {
+
+        // Register telephony callback for AllowedNetworkTypesListener
+        AllowedNetworkTypesListener listener = new AllowedNetworkTypesListener();
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.registerTelephonyCallback(mSimpleExecutor, listener));
 
         // test without permission: verify SecurityException
         long allowedNetworkTypes1 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
@@ -4107,70 +4220,19 @@ public class TelephonyManagerTest {
         long allowedNetworkTypes4 = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_HSPA;
 
-        try {
-            mIsAllowedNetworkTypeChanged = true;
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER,
-                            allowedNetworkTypes1),
-                    "android.permission.MODIFY_PHONE_STATE");
+        // test all allowedNetworkTypes
+        verifySetAndGetAllowedNetworkTypesForReason(listener,
+                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER, allowedNetworkTypes1);
+        verifySetAndGetAllowedNetworkTypesForReason(listener,
+                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER, allowedNetworkTypes2);
+        verifySetAndGetAllowedNetworkTypesForReason(listener,
+                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER, allowedNetworkTypes3);
+        verifySetAndGetAllowedNetworkTypesForReason(listener,
+                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G, allowedNetworkTypes4);
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER,
-                            allowedNetworkTypes2),
-                    "android.permission.MODIFY_PHONE_STATE");
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
-                            allowedNetworkTypes3),
-                    "android.permission.MODIFY_PHONE_STATE");
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G,
-                            allowedNetworkTypes4),
-                    "android.permission.MODIFY_PHONE_STATE");
-            long deviceAllowedNetworkTypes1 = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager,
-                    (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER);
-                    },
-                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
-            );
-            long deviceAllowedNetworkTypes2 = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager,
-                    (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
-                    },
-                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
-            );
-            long deviceAllowedNetworkTypes3 = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER);
-                    },
-                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
-            );
-            long deviceAllowedNetworkTypes4 = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G);
-                    },
-                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
-            );
-            assertEquals(allowedNetworkTypes1, deviceAllowedNetworkTypes1);
-            assertEquals(allowedNetworkTypes2, deviceAllowedNetworkTypes2);
-            assertEquals(allowedNetworkTypes3, deviceAllowedNetworkTypes3);
-            assertEquals(allowedNetworkTypes4, deviceAllowedNetworkTypes4);
-        } catch (SecurityException se) {
-            fail("testSetAllowedNetworkTypes: SecurityException not expected");
-        }
+        // Unregister telephony callback
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(listener));
     }
 
     @Test
@@ -7237,7 +7299,8 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_GET_EMERGENCY_ROLE_HOLDER_API_ENABLED)
     @ApiTest(apis = {"android.telephony.TelephonyManager#getEmergencyAssistancePackage"})
     public void testGetEmergencyAssistancePackage() {
-        if (ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+        if (mTelephonyManager.isVoiceCapable()
+            && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
             assertNotNull(ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                             (tm) -> tm.getEmergencyAssistancePackage()));
