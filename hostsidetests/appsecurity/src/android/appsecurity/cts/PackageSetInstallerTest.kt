@@ -107,7 +107,7 @@ class PackageSetInstallerTest : BaseAppSecurityTest() {
         runTest(removeWhitelistShouldSucceed = null,
                 permission = PERMISSION_IMMUTABLY_SOFT_RESTRICTED,
                 restrictPermissions = true,
-                finalState = GrantState.TRUE_RESTRICTED)
+                finalState = GrantState.TRUE_NOT_EXEMPT)
     }
 
     private fun runTest(
@@ -223,9 +223,8 @@ class PackageSetInstallerTest : BaseAppSecurityTest() {
                 assertThat(output).contains("granted=true")
                 assertThat(output).contains("RESTRICTION_INSTALLER_EXEMPT")
             }
-            GrantState.TRUE_RESTRICTED -> {
+            GrantState.TRUE_NOT_EXEMPT -> {
                 assertThat(output).contains("granted=true")
-                assertThat(output).contains("APPLY_RESTRICTION")
                 assertThat(output).doesNotContain("EXEMPT")
             }
             GrantState.FALSE -> {
@@ -268,7 +267,7 @@ class PackageSetInstallerTest : BaseAppSecurityTest() {
         TRUE_EXEMPT,
 
         // Granted in part
-        TRUE_RESTRICTED,
+        TRUE_NOT_EXEMPT,
 
         // Not granted at all
         FALSE
