@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+/*
  * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
+ */
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root_view"
-    android:background="#FFFFFF"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" >
-</LinearLayout>
+package android.sensitivecontentprotection.cts;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+/**
+ * A simple activity that contains a TextView marked as containing sensitive content.
+ */
+public class SensitiveContentActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.sensitive_content_activity);
+    }
+}
