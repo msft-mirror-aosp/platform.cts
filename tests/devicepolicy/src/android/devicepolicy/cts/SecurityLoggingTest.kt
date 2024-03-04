@@ -579,16 +579,14 @@ class SecurityLoggingTest {
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
     @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
-    fun setAuditLogEventCallback_resetToNull_notInvoked() {
+    fun setAuditLogEventCallback_callbackCleared_notInvoked() {
         ensureNoAdditionalFullUsers()
 
         localDpm.setAuditLogEnabled(true)
         try {
             val callback = QueueingEventCallback()
             localDpm.setAuditLogEventCallback(executor, callback)
-
-            // TODO: Update API so that executor is not needed for clearing.
-            localDpm.setAuditLogEventCallback(executor, null)
+            localDpm.clearAuditLogEventCallback()
 
             val eventPredicate = makeUniqueEvent()
             TestApis.devicePolicy().forceSecurityLogs()
