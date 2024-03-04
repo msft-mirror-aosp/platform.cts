@@ -36,12 +36,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
@@ -49,8 +45,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.RemoteException;
-import android.service.notification.NotificationListenerService;
-import android.service.notification.StatusBarNotification;
 import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
@@ -123,7 +117,7 @@ public class BaseAppVerifierImpl {
     }
 
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
-        AppControlWrapper control = mBindUtils.bindToApplication(mContext, applicationName);
+        AppControlWrapper control = mBindUtils.bindToApp(mContext, applicationName);
         if (isManagedConnectionService(applicationName)) {
             registerManagedPhoneAccount();
         }
@@ -154,7 +148,7 @@ public class BaseAppVerifierImpl {
 
     public void tearDownApp(AppControlWrapper appControl) {
         if (appControl != null) {
-            mBindUtils.unbindFromApplication(mContext, appControl);
+            mBindUtils.unbindFromApp(mContext, appControl);
         }
     }
 
