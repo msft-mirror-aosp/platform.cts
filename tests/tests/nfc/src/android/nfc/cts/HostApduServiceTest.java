@@ -59,7 +59,7 @@ public class HostApduServiceTest {
   public void testProcessPollingFrame() {
         ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>();
         PollingFrame frame =
-                new PollingFrame(PollingFrame.POLLING_LOOP_TYPE_A, new byte[0], 0, 0);
+                new PollingFrame(PollingFrame.POLLING_LOOP_TYPE_A, new byte[0], 0, 0, false);
         frames.add(frame);
         service.processPollingFrames(frames);
     }

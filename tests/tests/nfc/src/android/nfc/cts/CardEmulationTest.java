@@ -764,7 +764,9 @@ public class CardEmulationTest {
                 HexFormat.of().parseHex(annotationStringHex)));
         Assert.assertTrue(adapter.setObserveModeEnabled(true));
         Assert.assertTrue(adapter.isObserveModeEnabled());
-        notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+        List<PollingFrame> receivedFrames =
+                notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+        Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
         Assert.assertFalse(adapter.isObserveModeEnabled());
         adapter.notifyHceDeactivated();
         Assert.assertTrue(adapter.isObserveModeEnabled());
@@ -790,7 +792,9 @@ public class CardEmulationTest {
                     HexFormat.of().parseHex(annotationStringHex)));
             Assert.assertTrue(adapter.setObserveModeEnabled(true));
             Assert.assertTrue(adapter.isObserveModeEnabled());
-            notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
             Assert.assertFalse(adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
             Assert.assertTrue(adapter.isObserveModeEnabled());
@@ -821,7 +825,9 @@ public class CardEmulationTest {
                 HexFormat.of().parseHex(annotationStringHex)));
         Assert.assertTrue(adapter.setObserveModeEnabled(true));
         Assert.assertTrue(adapter.isObserveModeEnabled());
-        notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+        List<PollingFrame> receivedFrames =
+                notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+        Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
         Assert.assertFalse(adapter.isObserveModeEnabled());
         adapter.notifyHceDeactivated();
         Assert.assertTrue(adapter.isObserveModeEnabled());
@@ -852,7 +858,9 @@ public class CardEmulationTest {
                     HexFormat.of().parseHex(annotationStringHex)));
             Assert.assertTrue(adapter.setObserveModeEnabled(true));
             Assert.assertTrue(adapter.isObserveModeEnabled());
-            notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
             Assert.assertFalse(adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
             Assert.assertTrue(adapter.isObserveModeEnabled());
@@ -905,11 +913,11 @@ public class CardEmulationTest {
     }
 
     private PollingFrame createFrame(@PollingFrameType int type) {
-        return new PollingFrame(type, null, 8, 0);
+        return new PollingFrame(type, null, 8, 0, false);
     }
 
     private PollingFrame createFrameWithData(@PollingFrameType int type, byte[] data) {
-        return new PollingFrame(type, data, 8, 0);
+        return new PollingFrame(type, data, 8, 0, false);
     }
 
     private ComponentName setDefaultPaymentService(Class serviceClass) {
@@ -979,7 +987,8 @@ public class CardEmulationTest {
         }
     }
 
-    private void notifyPollingLoopAndWait(List<PollingFrame> frames, String serviceName) {
+    private List<PollingFrame> notifyPollingLoopAndWait(List<PollingFrame> frames,
+            String serviceName) {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         sCurrentPollLoopReceiver = new PollLoopReceiver(frames, serviceName);
         for (PollingFrame frame : frames) {
@@ -994,7 +1003,9 @@ public class CardEmulationTest {
         }
         sCurrentPollLoopReceiver.test();
         Assert.assertEquals(frames.size(), sCurrentPollLoopReceiver.mFrameIndex);
+        List<PollingFrame> receivedFrames =  sCurrentPollLoopReceiver.mReceivedFrames;
         sCurrentPollLoopReceiver = null;
+        return receivedFrames;
     }
 
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
