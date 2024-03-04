@@ -19,13 +19,8 @@ package android.systemui.cts;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -34,7 +29,6 @@ import android.view.DisplayCutout;
 import android.view.WindowInsets;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,8 +53,8 @@ public class LightBarTestBase {
 
     protected Bitmap takeStatusBarScreenshot(LightBarBaseActivity activity) {
         Bitmap fullBitmap = getInstrumentation().getUiAutomation().takeScreenshot();
-        return Bitmap.createBitmap(fullBitmap, activity.getLeft(), 0, activity.getRight(),
-                activity.getTop());
+        return Bitmap.createBitmap(fullBitmap, activity.getLeft(), 0,
+                activity.getWidth(), activity.getTop());
     }
 
     protected Bitmap takeNavigationBarScreenshot(LightBarBaseActivity activity) {
