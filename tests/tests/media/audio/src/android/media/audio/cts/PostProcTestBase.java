@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package android.media.cts;
+package android.media.audio.cts;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.audiofx.AudioEffect;
 import android.os.Looper;
-import android.test.AndroidTestCase;
 
-public class PostProcTestBase extends AndroidTestCase {
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Rule;
+
+public class PostProcTestBase {
     protected int mSession = -1;
     protected boolean mHasControl = false;
     protected boolean mIsEnabled = false;
@@ -31,8 +37,15 @@ public class PostProcTestBase extends AndroidTestCase {
     protected Looper mLooper = null;
     protected final Object mLock = new Object();
     protected int mChangedParameter = -1;
-    protected final static String BUNDLE_VOLUME_EFFECT_UUID =
+    protected static final String BUNDLE_VOLUME_EFFECT_UUID =
             "119341a0-8469-11df-81f9-0002a5d5c51b";
+
+    @Rule
+    public EffectBeforeAfterRule mBeforeAfterRule = new EffectBeforeAfterRule();
+
+    protected static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getContext();
+    }
 
     protected boolean hasAudioOutput() {
         return getContext().getPackageManager().hasSystemFeature(
@@ -59,7 +72,7 @@ public class PostProcTestBase extends AndroidTestCase {
         AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         assertNotNull("could not get AudioManager", am);
         int sessionId = am.generateAudioSessionId();
-        assertTrue("Could not generate session id", sessionId>0);
+        assertTrue("Could not generate session id", sessionId > 0);
         return sessionId;
     }
 
