@@ -26,6 +26,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchA
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
+import static android.accessibilityservice.cts.utils.DisplayUtils.getNavBarHeight;
 import static android.accessibilityservice.cts.utils.DisplayUtils.getStatusBarHeight;
 import static android.app.WindowConfiguration.WINDOWING_MODE_SPLIT_SCREEN_PRIMARY;
 import static android.app.WindowConfiguration.WINDOWING_MODE_SPLIT_SCREEN_SECONDARY;
@@ -843,6 +844,7 @@ public class AccessibilityWindowQueryTest {
                 }, activity),
                 addWindow(R.string.button2, params -> {
                     params.gravity = Gravity.BOTTOM;
+                    params.y = getNavBarHeight(activity);
                 }, activity)
         };
     }
