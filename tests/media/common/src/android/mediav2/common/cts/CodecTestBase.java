@@ -133,6 +133,9 @@ public abstract class CodecTestBase {
     public static final boolean BOARD_SDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean BOARD_SDK_IS_BEFORE_U =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
     public static final boolean BOARD_SDK_IS_AT_LEAST_202404 =
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
