@@ -138,6 +138,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON_TEXT = "grant_dialog_button_no_upgrade"
         const val ALERT_DIALOG_MESSAGE = "android:id/message"
         const val ALERT_DIALOG_OK_BUTTON = "android:id/button1"
+        const val ALERT_DIALOG_DESC_CONFIRM = "confirm"
         const val APP_PERMISSION_RATIONALE_CONTAINER_VIEW =
             "com.android.permissioncontroller:id/app_permission_rationale_container"
         const val APP_PERMISSION_RATIONALE_CONTENT_VIEW =
@@ -962,7 +963,13 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 targetSdk <= Build.VERSION_CODES.S_V2 &&
                 permission in MEDIA_PERMISSIONS
             if (shouldShowStorageWarning) {
-                click(By.res(ALERT_DIALOG_OK_BUTTON))
+                if (isWatch) {
+                    val confirmPattern = Pattern.compile(Pattern.quote(ALERT_DIALOG_DESC_CONFIRM),
+                    Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+                    click(By.desc(confirmPattern))
+                } else {
+                    click(By.res(ALERT_DIALOG_OK_BUTTON))
+                }
             } else if (!alreadyChecked && isLegacyApp && wasGranted) {
                 if (!isTv) {
                     // Wait for alert dialog to popup, then scroll to the bottom of it
