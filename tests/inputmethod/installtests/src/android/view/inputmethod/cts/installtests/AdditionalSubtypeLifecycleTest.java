@@ -54,7 +54,6 @@ import com.google.common.truth.Truth;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -267,7 +266,6 @@ public final class AdditionalSubtypeLifecycleTest {
      */
     @Test
     @EnsureHasSecondaryUser
-    @Ignore("Can be enabled when b/328098968 is fixed")
     public void testClearAdditionalInputMethodSubtypeUponClearDataForBackgroundUser()
             throws Exception  {
         final UserReference currentUser = sDeviceState.initialUser();
