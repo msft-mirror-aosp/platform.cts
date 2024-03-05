@@ -1378,7 +1378,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             // connectionless handwriting session is committed.
             EditText delegate =
                     ((View) delegatorView.getParent()).findViewById(R.id.handwriting_delegate);
-            assertThat(delegate.getText().toString()).isEqualTo("abc");
+            TestUtils.waitOnMainUntil(() -> delegate.getText().toString().equals("abc"),
+                    TIMEOUT_IN_SECONDS, "Delegate should receive text");
         }
     }
 
