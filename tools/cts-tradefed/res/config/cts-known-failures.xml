@@ -346,4 +346,24 @@
 
     <!-- b/301216478 -->
     <option name="compatibility:exclude-filter" value="CtsSandboxedFledgeManagerTests com.android.tests.sandbox.fledge.SandboxedFledgeManagerTest#loadSdkAndRunFledgeFlow" />
+
+    <!-- b/320761239 -->
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#cannotUseTooManyAttributions" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#noteFromTwoProxiesAndVerifyProxyInfo" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedProxyVerifyRunningAndTime" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedAndUntrustedProxyVerifyProxyInfo" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessSmsAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessCallLogAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessContactsAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessCalendarAttributeToAnother" />
+
+    <!-- b/318756444 -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled" />
+
+    <!-- b/326655855 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+
+    <!-- b/328010720 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
 </configuration>

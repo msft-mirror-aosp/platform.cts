@@ -101,6 +101,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             "com.android.permissioncontroller:id/permission_allow_selected_button"
         const val DONT_SELECT_MORE_BUTTON =
             "com.android.permissioncontroller:id/permission_dont_allow_more_selected_button"
+        const val EDIT_PHOTOS_BUTTON = "com.android.permissioncontroller:id/edit_selected_button"
         const val ALLOW_BUTTON =
                 "com.android.permissioncontroller:id/permission_allow_button"
         const val ALLOW_FOREGROUND_BUTTON =
@@ -138,6 +139,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON_TEXT = "grant_dialog_button_no_upgrade"
         const val ALERT_DIALOG_MESSAGE = "android:id/message"
         const val ALERT_DIALOG_OK_BUTTON = "android:id/button1"
+        const val ALERT_DIALOG_DESC_CONFIRM = "confirm"
         const val APP_PERMISSION_RATIONALE_CONTAINER_VIEW =
             "com.android.permissioncontroller:id/app_permission_rationale_container"
         const val APP_PERMISSION_RATIONALE_CONTENT_VIEW =
@@ -531,7 +533,12 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
 
         // Clear the low target SDK warning message if it's expected
         if (getTargetSdk() <= MAX_SDK_FOR_SDK_WARNING) {
-            clearTargetSdkWarning(timeoutMillis = QUICK_CHECK_TIMEOUT_MILLIS)
+            if (isWatch) {
+                // Warning takes longer to clear on watch
+                clearTargetSdkWarning()
+            } else {
+                clearTargetSdkWarning(timeoutMillis = QUICK_CHECK_TIMEOUT_MILLIS)
+            }
             waitForIdle()
         }
 
@@ -579,7 +586,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     )
 
     protected fun clickPermissionRequestAllowButton(timeoutMillis: Long = 20000) {
-        if (isAutomotive) {
+        if (isAutomotive || isWatch) {
             click(By.text(getPermissionControllerString(ALLOW_BUTTON_TEXT)), timeoutMillis)
         } else {
             click(By.res(ALLOW_BUTTON), timeoutMillis)
@@ -637,7 +644,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     }
 
     protected fun clickPermissionRequestAllowForegroundButton(timeoutMillis: Long = 10_000) {
-        if (isAutomotive) {
+        if (isAutomotive || isWatch) {
             click(By.text(
                     getPermissionControllerString(ALLOW_FOREGROUND_BUTTON_TEXT)), timeoutMillis)
         } else {
@@ -957,7 +964,13 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 targetSdk <= Build.VERSION_CODES.S_V2 &&
                 permission in MEDIA_PERMISSIONS
             if (shouldShowStorageWarning) {
-                click(By.res(ALERT_DIALOG_OK_BUTTON))
+                if (isWatch) {
+                    val confirmPattern = Pattern.compile(Pattern.quote(ALERT_DIALOG_DESC_CONFIRM),
+                    Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+                    click(By.desc(confirmPattern))
+                } else {
+                    click(By.res(ALERT_DIALOG_OK_BUTTON))
+                }
             } else if (!alreadyChecked && isLegacyApp && wasGranted) {
                 if (!isTv) {
                     // Wait for alert dialog to popup, then scroll to the bottom of it
@@ -973,8 +986,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 // Due to the limited real estate, Wear uses buttons with icons instead of text
                 // for dialogs
                 if (isWatch) {
-                    click(By.res(
-                        "com.android.permissioncontroller:id/wear_alertdialog_positive_button"))
+                    click(By.desc(getPermissionControllerString("ok")))
                 } else {
                     val resources = context.createPackageContext(
                         packageManager.permissionControllerPackageName, 0
