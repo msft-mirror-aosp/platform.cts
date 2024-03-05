@@ -22,7 +22,6 @@ import its_base_test
 import its_session_utils
 from mobly import test_runner
 import opencv_processing_utils
-import run_all_tests
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.01  # 1% of image size
@@ -85,7 +84,7 @@ class CheckAlignmentTest(its_base_test.ItsBaseTest):
       logging.info('Starting %s for camera %s', _NAME, cam.get_camera_name())
 
       # Load chart for scene
-      run_all_tests.load_scenes_on_tablet(_SCENE, self.tablet.serial)
+      its_session_utils.copy_scenes_to_tablet(_SCENE, self.tablet.serial)
       its_session_utils.load_scene(
           cam, props, _SCENE, self.tablet, self.chart_distance)
 
