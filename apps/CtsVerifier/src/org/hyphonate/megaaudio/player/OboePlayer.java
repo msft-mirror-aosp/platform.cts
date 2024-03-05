@@ -66,6 +66,11 @@ public class OboePlayer extends Player {
         return getChannelCountN(mNativePlayer);
     }
 
+    @Override
+    public boolean isMMap() {
+        return isMMapN(mNativePlayer);
+    }
+
     private int setupStream(PlayerBuilder builder) {
         mChannelCount = builder.getChannelCount();
         mSampleRate = builder.getSampleRate();
@@ -148,6 +153,8 @@ public class OboePlayer extends Player {
     private native int getSharingModeN(long nativePlayer);
 
     private native int getChannelCountN(long nativePlayer);
+
+    private native boolean isMMapN(long nativePlayer);
 
     private native boolean getTimestampN(long nativePlayer, AudioTimestamp timestamp);
 
