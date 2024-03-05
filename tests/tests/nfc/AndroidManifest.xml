@@ -65,6 +65,9 @@
                 <action android:name="com.cts.PollingLoopFired" />
             </intent-filter>
         </receiver>
+        <activity android:name="android.nfc.cts.interactive.TagVerifierActivity"
+                  android:theme="@style/Theme.AppCompat.Light"
+        android:exported="true"/>
     </application>
 
     <!-- This is a self-instrumenting test package. -->
