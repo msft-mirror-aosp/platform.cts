@@ -18,12 +18,8 @@ package android.packageinstaller.install.cts
 
 import android.Manifest
 import android.app.Activity
-import android.content.pm.Flags
 import android.content.pm.PackageInstaller
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -31,16 +27,12 @@ import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.fail
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
 class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
-    @JvmField
-    @Rule
-    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
         const val TEST_INSTALLER_APK_NAME = "CtsEmptyInstallerApp.apk"
@@ -85,7 +77,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that we can enforce the update ownership when the first install.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_whenInitialInstall_hasUpdateOwner() {
         // First install the test app with enforcing the update ownership.
         startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP)
@@ -104,7 +95,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that we cannot enforce the update ownership when the update.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_whenUpdate_hasNoUpdateOwner() {
         // First install the test app without enforcing the update ownership.
         installTestPackage()
@@ -179,7 +169,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * it's not the update owner even if it has granted INSTALL_PACKAGES permission.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateByNonOwner_hasUserAction() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
@@ -211,7 +200,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      *  system server sends another STATUS_PENDING_USER_ACTION to the user.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateViaIntentByNonOwner_hasUserAction() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
@@ -265,7 +253,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that the update owner will be cleared once the installer changes.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateByNonOwner_hasNoUpdateOwner() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
@@ -284,7 +271,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that the update owner will retain if the installer doesn't change.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_notRequestWhenUpdate_ownerRetained() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i " + context.opPackageName)
@@ -304,7 +290,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * update ownership.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified() {
         installTestPackage()
         assertInstalled()
@@ -334,7 +319,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * isn't changed.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership() {
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
         assertInstalled()
