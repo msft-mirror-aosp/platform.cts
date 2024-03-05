@@ -637,6 +637,20 @@ public abstract class CodecTestBase {
                 .getSupportedHdrTypes().length > 0;
     }
 
+    public static boolean isFormatSupported(String name, String mediaType, MediaFormat format) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                boolean isSupported = true;
+                if (format != null) {
+                    isSupported = cap.isFormatSupported(format);
+                }
+                if (isSupported) return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean areFormatsSupported(String name, String mediaType,
             List<MediaFormat> formats) throws IOException {
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
@@ -910,12 +924,19 @@ public abstract class CodecTestBase {
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                mustTestAllCodecs, ComponentClass.ALL);
+                mustTestAllCodecs, ComponentClass.ALL, null /* features */);
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch) {
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                mustTestAllCodecs, selectSwitch, null);
+    }
+
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+            boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
+            ComponentClass selectSwitch, String[] features) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
                 needAudio, needVideo);
         ArrayList<String> cddRequiredMediaTypesList =
@@ -924,7 +945,7 @@ public abstract class CodecTestBase {
         int argLength = exhaustiveArgsList.get(0).length;
         for (String mediaType : mediaTypes) {
             ArrayList<String> totalListOfCodecs =
-                    selectCodecs(mediaType, null, null, isEncoder, selectSwitch);
+                    selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
             if (codecPrefix != null || codecFilter != null) {
                 for (String codec : totalListOfCodecs) {
