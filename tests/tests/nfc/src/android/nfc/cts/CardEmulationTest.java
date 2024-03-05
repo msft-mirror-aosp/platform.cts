@@ -969,7 +969,8 @@ public class CardEmulationTest {
                     Assert.fail("received more frames than sent: " + receivedFrame);
                 }
                 Assert.assertEquals(mFrames.get(mFrameIndex).getType(), receivedFrame.getType());
-                Assert.assertEquals(mFrames.get(mFrameIndex).getGain(), receivedFrame.getGain());
+                Assert.assertEquals(mFrames.get(mFrameIndex).getVendorSpecificGain(),
+                        receivedFrame.getVendorSpecificGain());
                 Assert.assertArrayEquals(mFrames.get(mFrameIndex).getData(),
                         receivedFrame.getData());
                 mFrameIndex++;
