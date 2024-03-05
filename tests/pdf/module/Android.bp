@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,30 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
-
 android_test {
-    name: "CtsPdfTestCases",
-    defaults: ["cts_defaults"],
-    compile_multilib: "both",
-    libs: ["android.test.runner"],
-    static_libs: [
-        "androidx.test.rules",
-        "mockito-target-minus-junit4",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "androidx.annotation_annotation",
-        "junit",
-    ],
+    name: "CtsPdfModuleTestCases",
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
     srcs: [
         "src/**/*.java",
     ],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    exclude_srcs: [
+        "src/**/PdfRendererTest.java",
+        "src/**/PdfFormFillingTest.java",
     ],
-    sdk_version: "test_current",
+    compile_multilib: "both",
+    test_suites: [
+        "general-tests",
+        "cts",
+    ],
+    sdk_version: "module_current",
+    min_sdk_version: "30",
+    target_sdk_version: "current",
+    libs: [
+        "android.test.runner",
+        "framework-pdf.impl",
+    ],
+    static_libs: [
+        "androidx.test.rules",
+        "mockito-target-minus-junit4",
+        "cts-install-lib",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "junit",
+    ],
 }

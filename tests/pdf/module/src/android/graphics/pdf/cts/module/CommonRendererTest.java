@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package android.graphics.pdf.cts;
+package android.graphics.pdf.cts.module;
 
-import static android.graphics.pdf.cts.Utils.A4_HEIGHT_PTS;
-import static android.graphics.pdf.cts.Utils.A4_PORTRAIT;
-import static android.graphics.pdf.cts.Utils.A4_WIDTH_PTS;
-import static android.graphics.pdf.cts.Utils.SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR;
-import static android.graphics.pdf.cts.Utils.createPreVRenderer;
-import static android.graphics.pdf.cts.Utils.createRenderer;
-import static android.graphics.pdf.cts.Utils.createRendererUsingNewConstructor;
-import static android.graphics.pdf.cts.Utils.getColorProbes;
-import static android.graphics.pdf.cts.Utils.renderAndCompare;
-import static android.graphics.pdf.cts.Utils.renderPreV;
-import static android.graphics.pdf.cts.Utils.renderPreVAndCompare;
-import static android.graphics.pdf.cts.Utils.renderWithTransform;
+import static android.graphics.pdf.cts.module.Utils.A4_HEIGHT_PTS;
+import static android.graphics.pdf.cts.module.Utils.A4_PORTRAIT;
+import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
+import static android.graphics.pdf.cts.module.Utils.createPreVRenderer;
+import static android.graphics.pdf.cts.module.Utils.getColorProbes;
+import static android.graphics.pdf.cts.module.Utils.renderPreV;
+import static android.graphics.pdf.cts.module.Utils.renderPreVAndCompare;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -37,7 +32,6 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Rect;
-import android.graphics.pdf.PdfRenderer;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
 
@@ -49,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 // This class contains common page API #render tests for PdfRendererPreV and PdfRenderer.
+//TODO(mayankkk): Update the tests to test PdfRenderer API once it is moved to Mainline Module
 @RunWith(AndroidJUnit4.class)
 public class CommonRendererTest {
 
@@ -91,31 +86,31 @@ public class CommonRendererTest {
 
     @Test
     public void renderNoTransformationAndComparePointsForScreen() throws Exception {
-        renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, false, false));
-
-        // Render and compare with new overloaded constructor.
-        renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, false, true));
+//        renderNoTransformationAndComparePoints(
+//                getBitmap(RenderParams.RENDER_MODE_FOR_DISPLAY, false, false));
+//
+//        // Render and compare with new overloaded constructor.
+//        renderNoTransformationAndComparePoints(
+//                getBitmap(RenderParams.RENDER_MODE_FOR_DISPLAY, false, true));
 
         // Assert PreV API
         renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, true, true));
+                getBitmap(RenderParams.RENDER_MODE_FOR_DISPLAY, true, true));
 
     }
 
     @Test
     public void renderNoTransformationAndComparePointsForPrint() throws Exception {
-        renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_PRINT, false, false));
-
-        // Render and compare with new overloaded constructor.
-        renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_PRINT, false, true));
+//        renderNoTransformationAndComparePoints(
+//                getBitmap(RenderParams.RENDER_MODE_FOR_PRINT, false, false));
+//
+//        // Render and compare with new overloaded constructor.
+//        renderNoTransformationAndComparePoints(
+//                getBitmap(RenderParams.RENDER_MODE_FOR_PRINT, false, true));
 
         // Assert PreV API
         renderNoTransformationAndComparePoints(
-                getBitmap(PdfRenderer.Page.RENDER_MODE_FOR_PRINT, true, true));
+                getBitmap(RenderParams.RENDER_MODE_FOR_PRINT, true, true));
 
     }
 
@@ -125,7 +120,7 @@ public class CommonRendererTest {
 
         transform.setValues(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1});
 
-        assertException(null, transform, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        assertException(null, transform, RenderParams.RENDER_MODE_FOR_DISPLAY);
     }
 
     @Test
@@ -168,7 +163,7 @@ public class CommonRendererTest {
     public void renderWithBadLowerCornerOfClip() throws Exception {
         Rect clip = new Rect(0, 0, A4_WIDTH_PTS + 20, A4_HEIGHT_PTS + 20);
 
-        assertException(clip, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        assertException(clip, null, RenderParams.RENDER_MODE_FOR_DISPLAY);
 
     }
 
@@ -176,13 +171,13 @@ public class CommonRendererTest {
     public void renderWithBadUpperCornerOfClip() throws Exception {
         Rect clip = new Rect(-20, -20, A4_WIDTH_PTS, A4_HEIGHT_PTS);
 
-        assertException(clip, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        assertException(clip, null, RenderParams.RENDER_MODE_FOR_DISPLAY);
     }
 
     @Test
     public void renderTwoModes() throws Exception {
         assertException(null, null,
-                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY | PdfRenderer.Page.RENDER_MODE_FOR_PRINT);
+                RenderParams.RENDER_MODE_FOR_DISPLAY | RenderParams.RENDER_MODE_FOR_PRINT);
     }
 
     @Test
@@ -201,27 +196,6 @@ public class CommonRendererTest {
     }
 
     @Test
-    public void renderOnNullBitmap_throwsException() throws Exception {
-        try (PdfRenderer renderer = createRenderer(A4_PORTRAIT, mContext);
-             PdfRenderer.Page page = renderer.openPage(0)) {
-            assertThrows(NullPointerException.class,
-                    () -> page.render(null, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY));
-        }
-    }
-
-    @Test
-    public void renderOnNullBitmapWithNewConstructor_throwsException() throws Exception {
-        try (PdfRenderer renderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
-                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
-             PdfRenderer.Page page = renderer.openPage(0)) {
-            assertThrows(NullPointerException.class,
-                    () -> page.render(null, null, null, new RenderParams.Builder(
-                            PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY).setRenderFlags(
-                            RenderParams.FLAG_RENDER_HIGHLIGHT_ANNOTATIONS).build()));
-        }
-    }
-
-    @Test
     public void renderPreVOnNUllBitmap_throwsException() throws Exception {
         try (PdfRendererPreV renderer = createPreVRenderer(A4_PORTRAIT, mContext, null);
              PdfRendererPreV.Page page = renderer.openPage(0)) {
@@ -231,16 +205,17 @@ public class CommonRendererTest {
     }
 
     private void assertException(Rect destClip, Matrix transformation, int renderMode) {
-        assertThrows(IllegalArgumentException.class,
-                () -> renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, destClip,
-                        transformation, renderMode, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
-                        false, mContext));
-
-        // Render and compare with new overloaded constructor.
-        assertThrows(IllegalArgumentException.class,
-                () -> renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, destClip,
-                        transformation, renderMode, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, true,
-                        mContext));
+//        assertThrows(IllegalArgumentException.class,
+//                () -> renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, destClip,
+//                        transformation, renderMode, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
+//                        false, mContext));
+//
+//        // Render and compare with new overloaded constructor.
+//        assertThrows(IllegalArgumentException.class,
+//                () -> renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, destClip,
+//                        transformation, renderMode, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
+//                        true,
+//                        mContext));
 
         // asserts PreV API
         assertThrows(IllegalArgumentException.class,
@@ -250,18 +225,20 @@ public class CommonRendererTest {
 
     private void assertUsingRenderAndCompare(int width, int height, Rect clip, Matrix transform)
             throws Exception {
-        renderAndCompare(width, height, A4_PORTRAIT, clip, transform,
-                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
-                false, mContext);
-
-        // Render and compare with new overloaded constructor.
-        renderAndCompare(width, height, A4_PORTRAIT, clip, transform,
-                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
-                true, mContext);
+//        renderAndCompare(width, height, A4_PORTRAIT, clip, transform,
+//                RenderParams.RENDER_MODE_FOR_DISPLAY, RenderParams
+//                .FLAG_RENDER_TEXT_ANNOTATIONS,
+//                false, mContext);
+//
+//        // Render and compare with new overloaded constructor.
+//        renderAndCompare(width, height, A4_PORTRAIT, clip, transform,
+//                RenderParams.RENDER_MODE_FOR_DISPLAY, RenderParams
+//                .FLAG_RENDER_TEXT_ANNOTATIONS,
+//                true, mContext);
 
         // For PreV API
         renderPreVAndCompare(width, height, A4_PORTRAIT, clip, transform,
-                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
+                RenderParams.RENDER_MODE_FOR_DISPLAY, RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS,
                 mContext);
     }
 
@@ -272,8 +249,11 @@ public class CommonRendererTest {
                     RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, mContext);
         }
 
-        return renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, null, null, renderMode,
-                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, useNewConstructor, mContext);
+        return null;
+
+//        return renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, null, null,
+//        renderMode,
+//                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, useNewConstructor, mContext);
     }
 
 }
