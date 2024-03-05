@@ -106,12 +106,13 @@ public class PollingLoopEmulatorActivity extends BaseEmulatorActivity {
         NfcDialogs.createHceTapReaderDialog(this,
                     getEmulatorHelpString(this, mNfcTech, mCustomFrame)).show();
         setTitle(getEmulatorString(this, mNfcTech, mCustomFrame));
-        mAdapter.setObserveModeEnabled(true);
-        getPassButton().setEnabled(false);
+
         setupServices(this, PollingLoopService.COMPONENT);
         mCardEmulation.setPreferredService(this,
                 new ComponentName(this.getApplicationContext(),
                         PollingLoopService.class));
+        mAdapter.setObserveModeEnabled(true);
+        getPassButton().setEnabled(false);
         mNfcACount = 0;
         mNfcBCount = 0;
         mNfcOnCount = 0;
