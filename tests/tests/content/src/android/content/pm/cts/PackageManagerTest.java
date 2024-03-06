@@ -30,6 +30,7 @@ import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
+import static android.content.pm.Flags.FLAG_IMPROVE_HOME_APP_BEHAVIOR;
 import static android.content.pm.Flags.FLAG_PROVIDE_INFO_OF_APK_IN_APEX;
 import static android.content.pm.Flags.FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS;
 import static android.content.pm.Flags.FLAG_QUARANTINED_ENABLED;
@@ -161,6 +162,7 @@ import androidx.core.content.FileProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -360,11 +362,14 @@ public class PackageManagerTest {
     @Rule
     public final Expect expect = Expect.create();
 
+    private UiDevice mUiDevice;
+
     @Before
     public void setup() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
+        mUiDevice = UiDevice.getInstance(mInstrumentation);
     }
 
     @After
@@ -2673,6 +2678,76 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             setComponentEnabledSettingsAndWaitForBroadcasts(enabledSettings);
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_IMPROVE_HOME_APP_BEHAVIOR)
+    public void testEnableAndResetComponentSetting_pressHomeButton_notShowResolverActivity()
+            throws Exception {
+        final ComponentName componentName = new ComponentName(PACKAGE_NAME,
+                "android.content.pm.cts.FakeLauncherActivity");
+        final String resolverActivity = getResolverActivity();
+
+        try {
+            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                    android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    List.of(new ComponentEnabledSetting(componentName,
+                            COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP)));
+
+            // Press home button to trigger the resolver activity dialog to select the default home.
+            mUiDevice.pressHome();
+
+            // The resolver activity shouldn't be shown.
+            assertThrows(AssertionFailedError.class,
+                    () -> TestUtils.waitUntil(
+                            "Waiting for the resolver activity to be shown.",
+                            5 /* timeoutSecond */, () -> hasResolverActivity(resolverActivity)));
+        } finally {
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    List.of(new ComponentEnabledSetting(componentName,
+                            COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP)));
+            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+
+        // Press home button to trigger the resolver activity dialog to select the default home.
+        mUiDevice.pressHome();
+
+        // The resolver activity shouldn't be shown.
+        assertThrows(AssertionFailedError.class,
+                () -> TestUtils.waitUntil(
+                        "Waiting for the resolver activity to be shown.",
+                        5 /* timeoutSecond */, () -> hasResolverActivity(resolverActivity)));
+    }
+
+    private String getResolverActivity() {
+        int resId = Resources.getSystem().getIdentifier(
+                "config_customResolverActivity", "string", "android");
+        String customResolverActivity = mContext.getString(resId);
+        Log.d(TAG, "getResolverActivity customResolverActivity=" + customResolverActivity);
+        if (TextUtils.isEmpty(customResolverActivity)) {
+            // If custom resolver activity is not in use, it will use the Android default.
+            return "android/com.android.internal.app.ResolverActivity";
+        }
+        return customResolverActivity;
+    }
+
+    private boolean hasResolverActivity(String resolverActivity) throws Exception {
+        String commandOutput = mUiDevice.executeShellCommand("dumpsys activity activities");
+        final String[] lines = commandOutput.split("\\n", -1);
+
+        if (lines == null) {
+            return false;
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            final String line = lines[i];
+            if (line.contains("Resumed:") && line.contains(resolverActivity)) {
+                Log.d(TAG, "hasResolverActivity find line=" + line);
+                return true;
+            }
+        }
+        return false;
     }
 
     @Test
