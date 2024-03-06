@@ -147,6 +147,10 @@ public class WallpaperManagerTest {
         mWallpaperManager = WallpaperManager.getInstance(mContext);
         assumeTrue("Device does not support wallpapers", mWallpaperManager.isWallpaperSupported());
 
+        // TODO(b/328312997): revisit this test once we have a strategy for live wallpaper on AAOS.
+        assumeFalse("AAOS doesn't support FEATURE_LIVE_WALLPAPER",
+                mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
+
         MockitoAnnotations.initMocks(this);
         final HandlerThread handlerThread = new HandlerThread("TestCallbacks");
         handlerThread.start();
