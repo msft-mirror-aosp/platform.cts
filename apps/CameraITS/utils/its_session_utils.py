@@ -70,6 +70,17 @@ _VALIDATE_LIGHTING_REGIONS = {
     'bottom-right': (1-_VALIDATE_LIGHTING_PATCH_W,
                      1-_VALIDATE_LIGHTING_PATCH_H),
 }
+_MODULAR_MACRO_OFFSET = 0.35  # Determined empirically from modular rig testing
+_VALIDATE_LIGHTING_REGIONS_MODULAR_UW = {
+    'top-left': (_MODULAR_MACRO_OFFSET, _MODULAR_MACRO_OFFSET),
+    'bottom-left': (_MODULAR_MACRO_OFFSET,
+                    1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_H),
+    'top-right': (1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_W,
+                  _MODULAR_MACRO_OFFSET),
+    'bottom-right': (1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_W,
+                     1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_H),
+}
+_VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
 _VALIDATE_LIGHTING_THRESH_DARK = 0.15  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
@@ -2343,7 +2354,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     cap = cam.do_capture(
         capture_request_utils.auto_capture_request(), cam.CAP_YUV)
     y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
-    validate_lighting(y_plane, scene, log_path=log_path)
+    validate_lighting(y_plane, scene, log_path=log_path, fov=float(camera_fov))
 
 
 def copy_scenes_to_tablet(scene, tablet_id):
@@ -2367,7 +2378,7 @@ def copy_scenes_to_tablet(scene, tablet_id):
 
 
 def validate_lighting(y_plane, scene, state='ON', log_path=None,
-                      tablet_state='ON'):
+                      tablet_state='ON', fov=None):
   """Validates the lighting level in scene corners based on empirical values.
 
   Args:
@@ -2376,6 +2387,7 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
     state: string 'ON' or 'OFF'
     log_path: [Optional] path to store artifacts
     tablet_state: string 'ON' or 'OFF'
+    fov: [Optional] float, calculated camera FoV
 
   Returns:
     boolean True if lighting validated, else raise AssertionError
@@ -2390,8 +2402,12 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
   else:
     validate_lighting_thresh = _VALIDATE_LIGHTING_THRESH
 
+  validate_lighting_regions = _VALIDATE_LIGHTING_REGIONS
+  if fov and fov > _VALIDATE_LIGHTING_MACRO_FOV_THRESH:
+    validate_lighting_regions = _VALIDATE_LIGHTING_REGIONS_MODULAR_UW
+
   # Test patches from each corner.
-  for location, coordinates in _VALIDATE_LIGHTING_REGIONS.items():
+  for location, coordinates in validate_lighting_regions.items():
     patch = image_processing_utils.get_image_patch(
         y_plane, coordinates[0], coordinates[1],
         _VALIDATE_LIGHTING_PATCH_W, _VALIDATE_LIGHTING_PATCH_H)
