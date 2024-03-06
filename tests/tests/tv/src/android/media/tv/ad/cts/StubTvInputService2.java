@@ -16,37 +16,36 @@
 
 package android.media.tv.ad.cts;
 
-
 import android.content.Context;
-import android.media.tv.ad.TvAdService;
+import android.media.tv.TvInputService;
+import android.net.Uri;
 import android.view.Surface;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-/**
- * Stub implementation of {@link android.media.tv.ad.TvAdService}.
- */
-public class StubTvAdService extends TvAdService {
+public class StubTvInputService2 extends TvInputService {
+    static String sTvInputSessionId;
+    public static StubSessionImpl2 sStubSessionImpl2;
 
-    public static StubSessionImpl sSession;
-    @Nullable
-    @Override
-    public Session onCreateSession(@NonNull String serviceId, @NonNull String type) {
-        sSession = new StubSessionImpl(this);
-        return sSession;
+    public static String getSessionId() {
+        return sTvInputSessionId;
     }
 
-    public static class StubSessionImpl extends TvAdService.Session {
-        public int mStartAdServiceCount;
-        public int mStopAdServiceCount;
+    @Override
+    public Session onCreateSession(String inputId, String tvInputSessionId) {
+        sTvInputSessionId = tvInputSessionId;
+        sStubSessionImpl2 = new StubSessionImpl2(this);
+        return sStubSessionImpl2;
+    }
 
-        /**
-         * Creates a new Session.
-         *
-         * @param context The context of the application
-         */
-        public StubSessionImpl(@NonNull Context context) {
+    @Override
+    public Session onCreateSession(String inputId) {
+        return new StubSessionImpl2(this);
+    }
+
+    public static class StubSessionImpl2 extends Session {
+
+        StubSessionImpl2(Context context) {
             super(context);
         }
 
@@ -54,12 +53,11 @@ public class StubTvAdService extends TvAdService {
          * Resets values.
          */
         public void resetValues() {
-            mStartAdServiceCount = 0;
-            mStopAdServiceCount = 0;
         }
 
         @Override
         public void onRelease() {
+            sTvInputSessionId = null;
         }
 
         @Override
@@ -68,13 +66,16 @@ public class StubTvAdService extends TvAdService {
         }
 
         @Override
-        public void onStartAdService() {
-            mStartAdServiceCount++;
+        public void onSetStreamVolume(float volume) {
         }
 
         @Override
-        public void onStopAdService() {
-            mStopAdServiceCount++;
+        public boolean onTune(Uri channelUri) {
+            return false;
+        }
+
+        @Override
+        public void onSetCaptionEnabled(boolean enabled) {
         }
     }
 }
