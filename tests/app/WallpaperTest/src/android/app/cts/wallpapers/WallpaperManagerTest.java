@@ -25,6 +25,7 @@ import static android.app.cts.wallpapers.WallpaperManagerTestUtils.WallpaperStat
 import static android.app.cts.wallpapers.WallpaperManagerTestUtils.runAndAwaitChanges;
 import static android.app.cts.wallpapers.WallpaperManagerTestUtils.runAndAwaitColorChanges;
 import static android.app.cts.wallpapers.util.WallpaperTestUtils.isSimilar;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
@@ -172,6 +173,10 @@ public class WallpaperManagerTest {
         mWallpaperManager = WallpaperManager.getInstance(mContext);
         sWallpaperManager = mWallpaperManager;
         assumeTrue("Device does not support wallpapers", mWallpaperManager.isWallpaperSupported());
+
+        // TODO(b/328312997): revisit this test once we have a strategy for live wallpaper on AAOS.
+        assumeFalse("AAOS doesn't support FEATURE_LIVE_WALLPAPER",
+                mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
 
         MockitoAnnotations.initMocks(this);
         final HandlerThread handlerThread = new HandlerThread("TestCallbacks");
