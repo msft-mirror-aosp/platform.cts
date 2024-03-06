@@ -2303,9 +2303,10 @@ public class PackageManagerTest {
                         packageName));
     }
 
-    private String executeShellCommand(String command, byte[] input) throws IOException {
+    static String executeShellCommand(String command, byte[] input) throws IOException {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
         final ParcelFileDescriptor[] pfds =
-                mInstrumentation.getUiAutomation().executeShellCommandRw(
+                instrumentation.getUiAutomation().executeShellCommandRw(
                         command);
         ParcelFileDescriptor stdout = pfds[0];
         ParcelFileDescriptor stdin = pfds[1];
@@ -2326,11 +2327,19 @@ public class PackageManagerTest {
     }
 
     private void installArchived(ArchivedPackageInfo archivedPackageInfo, int expectedStatus,
-                                 String expectedResultStartsWith) throws Exception {
-        var packageInstaller = mContext.getPackageManager().getPackageInstaller();
+                                String expectedResultStartsWith) throws Exception {
+        installArchivedAsUser(
+                archivedPackageInfo, expectedStatus, expectedResultStartsWith, mContext.getUser());
+    }
+
+    static void installArchivedAsUser(ArchivedPackageInfo archivedPackageInfo, int expectedStatus,
+                                String expectedResultStartsWith, UserHandle user) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        var userContext = instrumentation.getContext().createContextAsUser(user, 0);
+        var packageInstaller = userContext.getPackageManager().getPackageInstaller();
         final CompletableFuture<Integer> status = new CompletableFuture<>();
         final CompletableFuture<String> statusMessage = new CompletableFuture<>();
-        SystemUtil.runWithShellPermissionIdentity(mInstrumentation.getUiAutomation(), () -> {
+        SystemUtil.runWithShellPermissionIdentity(instrumentation.getUiAutomation(), () -> {
             var params = new SessionParams(MODE_FULL_INSTALL);
             packageInstaller.installPackageArchived(archivedPackageInfo, params,
                     new IntentSender((IIntentSender) new IIntentSender.Stub() {
