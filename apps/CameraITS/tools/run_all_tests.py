@@ -38,7 +38,6 @@ YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
-LOAD_SCENE_DELAY = 1  # seconds
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -305,26 +304,6 @@ def are_devices_similar(device_id_1, device_id_2):
                     property_value_1, property_value_2, property_to_match)
       return False
   return True
-
-
-def load_scenes_on_tablet(scene, tablet_id):
-  """Copies scenes onto the tablet before running the tests.
-
-  Args:
-    scene: Name of the scene to copy image files.
-    tablet_id: adb id of tablet
-  """
-  logging.info('Copying files to tablet: %s', tablet_id)
-  scene_dir = os.listdir(
-      os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene))
-  for file_name in scene_dir:
-    if file_name.endswith('.png') or file_name.endswith('.mp4'):
-      src_scene_file = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests',
-                                    scene, file_name)
-      cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
-      subprocess.Popen(cmd.split())
-  time.sleep(LOAD_SCENE_DELAY)
-  logging.info('Finished copying files to tablet.')
 
 
 def check_manual_scenes(device_id, camera_id, scene, out_path):
@@ -801,7 +780,7 @@ def main():
       if auto_scene_switch:
         # Copy scene images onto the tablet
         if 'scene0' not in testing_scene:
-          load_scenes_on_tablet(testing_scene, tablet_id)
+          its_session_utils.copy_scenes_to_tablet(testing_scene, tablet_id)
       else:
         # Check manual scenes for correctness
         if ('scene0' not in testing_scene and
