@@ -15,9 +15,6 @@
  * limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root_view"
-    android:background="#FFFFFF"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" >
-</LinearLayout>
+<resources>
+    <drawable name="black">#77ffffff</drawable>
+</resources>
