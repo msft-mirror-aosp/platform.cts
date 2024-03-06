@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 
 import android.content.res.AssetManager;
 import android.os.Build;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.util.Log;
 
@@ -44,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class BuildVersionTest {
 

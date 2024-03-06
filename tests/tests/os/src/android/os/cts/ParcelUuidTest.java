@@ -20,11 +20,13 @@ import static org.junit.Assert.assertEquals;
 
 import android.os.Parcel;
 import android.os.ParcelUuid;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import org.junit.Test;
 
 import java.util.UUID;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ParcelUuidTest {
     private static final String TEST_UUID = "41217664-9172-527a-b3d5-edabb50a7d69";
 
