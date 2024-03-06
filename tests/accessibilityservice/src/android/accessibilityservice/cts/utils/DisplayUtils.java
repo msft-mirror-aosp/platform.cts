@@ -42,6 +42,11 @@ public class DisplayUtils {
                 .getInsets(WindowInsets.Type.statusBars()).top;
     }
 
+    public static int getNavBarHeight(Activity activity) {
+        return activity.getWindow().getDecorView().getRootWindowInsets()
+                .getInsets(WindowInsets.Type.statusBars()).bottom;
+    }
+
     public static class VirtualDisplaySession implements AutoCloseable {
         private VirtualDisplay mVirtualDisplay;
         private ImageReader mReader;
