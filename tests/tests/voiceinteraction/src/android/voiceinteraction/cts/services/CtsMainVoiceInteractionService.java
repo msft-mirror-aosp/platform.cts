@@ -18,7 +18,6 @@ package android.voiceinteraction.cts.services;
 
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
-import static android.Manifest.permission.RECEIVE_SANDBOX_TRIGGER_AUDIO;
 import static android.Manifest.permission.RECORD_AUDIO;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
@@ -26,7 +25,6 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.service.voice.VoiceInteractionService;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,16 +40,10 @@ public class CtsMainVoiceInteractionService extends BaseVoiceInteractionService 
 
     private final Handler mHandler;
 
-    private boolean mVoiceActivationPermissionEnabled;
-
     public CtsMainVoiceInteractionService() {
         HandlerThread handlerThread = new HandlerThread("CtsMainVoiceInteractionService");
         handlerThread.start();
         mHandler = Handler.createAsync(handlerThread.getLooper());
-    }
-
-    public void setVoiceActivationPermissionEnabled(boolean val) {
-        mVoiceActivationPermissionEnabled = val;
     }
 
     /**
@@ -62,13 +54,6 @@ public class CtsMainVoiceInteractionService extends BaseVoiceInteractionService 
         mDetectorInitializedLatch = new CountDownLatch(1);
         List<String> requestedPermissions = new ArrayList<String>(
                 Arrays.asList(MANAGE_HOTWORD_DETECTION, CAPTURE_AUDIO_HOTWORD, RECORD_AUDIO));
-
-        // TODO(b/305787465): Remove this block and request RECEIVE_SANDBOX_TRIGGER_AUDIO directly
-        //  once flag has been fully ramped up.
-        if (mVoiceActivationPermissionEnabled) {
-            Log.i(TAG, "Requesting voice activation permissions!");
-            requestedPermissions.add(RECEIVE_SANDBOX_TRIGGER_AUDIO);
-        }
 
         mHandler.post(() -> runWithShellPermissionIdentity(() -> {
             callCreateAlwaysOnHotwordDetector(mNoOpHotwordDetectorCallback,
