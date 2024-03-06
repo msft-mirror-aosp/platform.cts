@@ -24,6 +24,7 @@ import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
@@ -62,7 +63,10 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         ITestDevice device = testInfo.getDevice();
         sPrimaryUserId = device.getPrimaryUserId();
         sSecondaryUserId = createSecondaryUser(device);
-        sEnterpriseProfileUserId = getOrCreateEnterpriseProfile(testInfo.getDevice());
+        LogUtil.CLog.w("primary user id: " + sPrimaryUserId);
+        LogUtil.CLog.w("secondary user id: " + sSecondaryUserId);
+        assumeTrue("Could not find or create enterprise profile on this device",
+                setUpEnterpriseProfile(testInfo.getDevice()));
         sDevice = device;
     }
 
@@ -83,24 +87,38 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         return profileId;
     }
 
-    /** Gets or creates an enterprise profile and returns the user id. */
-    private static int getOrCreateEnterpriseProfile(ITestDevice device)
+    /**
+     * Gets or creates an enterprise profile and sets the user id. Returns false if could neither
+     * get or create an enterprise profile.
+     */
+    private static boolean setUpEnterpriseProfile(ITestDevice device)
             throws DeviceNotAvailableException {
         // Search for a managed profile
         for (UserInfo userInfo : device.getUserInfos().values()) {
+            LogUtil.CLog.w("user id: " + userInfo.userId());
             if (userInfo.isManagedProfile()) {
-                return userInfo.userId();
+                LogUtil.CLog.w("managed profile id: " + userInfo.userId());
+                sEnterpriseProfileUserId = userInfo.userId();
+                return true;
             }
         }
-        // If no managed profile, set up a temporary one
-        int parentProfile = device.getCurrentUser();
-        // Create a managed profile "work" under the current profile which should be the main user
-        String createUserOutput = device.executeShellCommand(
-                "pm create-user --profileOf " + parentProfile + " --managed work");
-        int profileId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
-        assertThat(device.startUser(profileId, /*waitFlag=*/ true)).isTrue();
-        sIsTemporaryEnterpriseProfile = true;
-        return profileId;
+        try {
+            // If no managed profile, set up a temporary one
+            int parentProfile = device.getCurrentUser();
+            LogUtil.CLog.w("parent profile id: " + parentProfile);
+            // Create a managed profile "work" under the current profile which should be the main
+            // user
+            String createUserOutput = device.executeShellCommand(
+                    "pm create-user --profileOf " + parentProfile + " --managed work");
+            LogUtil.CLog.w("createUserOutput: " + createUserOutput);
+            sEnterpriseProfileUserId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
+            assertThat(device.startUser(sEnterpriseProfileUserId, /*waitFlag=*/ true)).isTrue();
+            sIsTemporaryEnterpriseProfile = true;
+            return true;
+        } catch (Exception e) {
+            LogUtil.CLog.w("Could not set up enterprise profile for test: %s", e);
+            return false;
+        }
     }
 
     @Before
