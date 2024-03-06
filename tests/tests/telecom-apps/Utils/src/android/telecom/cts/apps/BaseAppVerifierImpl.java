@@ -119,7 +119,7 @@ public class BaseAppVerifierImpl {
     }
 
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
-        AppControlWrapper control = mBindUtils.bindToApplication(mContext, applicationName);
+        AppControlWrapper control = mBindUtils.bindToApp(mContext, applicationName);
         if (isManagedConnectionService(applicationName)) {
             for (PhoneAccount pA : mManagedAccounts) {
                 registerManagedPhoneAccount(pA);
@@ -144,7 +144,7 @@ public class BaseAppVerifierImpl {
 
     public void tearDownApp(AppControlWrapper appControl) {
         if (appControl != null) {
-            mBindUtils.unbindFromApplication(mContext, appControl);
+            mBindUtils.unbindFromApp(mContext, appControl);
         }
     }
 
