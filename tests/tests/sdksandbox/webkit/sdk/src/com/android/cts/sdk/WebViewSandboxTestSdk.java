@@ -79,9 +79,7 @@ public class WebViewSandboxTestSdk extends SdkSandboxTestScenarioRunner {
         return rootLayout;
     }
 
-    // TODO(b/327028536): temporarily removed @Override as this method is
-    // not available on this branch.
-    // @Override
+    @Override
     public void cleanUpOnTestFinish() {
         // Enforcing UI thread cleanup after Binder thread execution to match test origin
         // and prevent threading issues.
