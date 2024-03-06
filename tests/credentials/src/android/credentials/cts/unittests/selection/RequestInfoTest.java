@@ -84,6 +84,7 @@ public class RequestInfoTest {
                 .isEqualTo(IS_SHOW_ALL_OPTIONS_REQUESTED);
         assertThat(requestInfo.getDefaultProviderIds())
                 .containsExactlyElementsIn(DEFAULT_PROVIDER_IDS);
+        assertThat(requestInfo.getRegistryProviderIds()).isEmpty();
         assertThat(requestInfo.getGetCredentialRequest()).isNull();
         assertThat(requestInfo.getCreateCredentialRequest()).isEqualTo(createCredentialRequest);
     }
@@ -117,6 +118,7 @@ public class RequestInfoTest {
         assertThat(requestInfo.isShowAllOptionsRequested())
                 .isEqualTo(IS_SHOW_ALL_OPTIONS_REQUESTED);
         assertThat(requestInfo.getDefaultProviderIds()).isEmpty();
+        assertThat(requestInfo.getRegistryProviderIds()).isEmpty();
         assertThat(requestInfo.getCreateCredentialRequest()).isNull();
     }
 
@@ -149,5 +151,6 @@ public class RequestInfoTest {
         assertThat(requestInfo2.hasPermissionToOverrideDefault()).isFalse();
         assertThat(requestInfo2.isShowAllOptionsRequested()).isTrue();
         assertThat(requestInfo2.getDefaultProviderIds()).isEmpty();
+        assertThat(requestInfo2.getRegistryProviderIds()).isEmpty();
     }
 }
