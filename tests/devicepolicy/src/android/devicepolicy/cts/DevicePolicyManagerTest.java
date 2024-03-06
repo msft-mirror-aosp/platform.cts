@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts;
 
-import static android.app.admin.flags.Flags.FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED;
+import static android.app.admin.flags.Flags.FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_ENABLED;
 
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 
@@ -41,10 +41,8 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 /**
@@ -133,12 +131,11 @@ public final class DevicePolicyManagerTest {
                 TestApis.context().instrumentationContext().getUser()));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
-    @Ignore
     public void setMaxPolicyStorageLimit_setsLimit() {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
@@ -152,23 +149,21 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
-    @Ignore
     public void setMaxPolicyStorageLimit_noPermission_throwsException() {
         assertThrows(
                 SecurityException.class, () -> sDevicePolicyManager.setMaxPolicyStorageLimit(-1));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getMaxPolicyStorageLimit")
-    @Ignore
     public void getMaxPolicyStorageLimit_noPermission_throwsException() {
         assertThrows(
                 SecurityException.class, () -> sDevicePolicyManager.getMaxPolicyStorageLimit());

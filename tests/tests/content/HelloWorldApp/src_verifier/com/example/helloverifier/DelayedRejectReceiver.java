@@ -38,10 +38,12 @@ public class DelayedRejectReceiver extends BroadcastReceiver {
         // Allow after 30secs.
         context.getPackageManager().extendVerificationTimeout(id, PackageManager.VERIFICATION_ALLOW,
                 30000);
+        final PendingResult pendingResult = goAsync();
         // Reject after 15secs.
         (new Handler(context.getMainLooper())).postDelayed(() -> {
             context.getPackageManager().verifyPendingInstall(id,
                     PackageManager.VERIFICATION_REJECT);
+            pendingResult.finish();
         }, 15000);
     }
 }

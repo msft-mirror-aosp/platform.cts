@@ -66,4 +66,8 @@ public final class ShellCommandUtils {
         return "am wait-for-broadcast-barrier";
     }
 
+    /** Command to clear package data. */
+    public static String clearPackageData(String packageName, int userId) {
+        return String.format("pm clear --user %d %s", userId, packageName);
+    }
 }

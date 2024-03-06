@@ -54,6 +54,9 @@ public class DuplexAudioManager {
     private AudioDeviceInfo mRecorderSelectedDevice;
     private int mInputPreset = Recorder.INPUT_PRESET_NONE;
 
+    private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
+    private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
+
     public DuplexAudioManager(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
         setSources(sourceProvider, sinkProvider);
     }
@@ -108,9 +111,6 @@ public class DuplexAudioManager {
         mRecorderSampleRate = sampleRate;
     }
 
-    private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
-    private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
-
     public void setPlayerSharingMode(int mode) {
         mPlayerSharingMode = mode;
     }
@@ -125,7 +125,6 @@ public class DuplexAudioManager {
 
     public int getRecorderChannelCount() {
         return mRecorder != null ? mRecorder.getChannelCount() : -1;
-
     }
 
     /**
@@ -294,24 +293,47 @@ public class DuplexAudioManager {
 
     /**
      * Don't call this until the streams are started
-     * @return true if both player and recorder are using the specified sharing mode set with
-     * with setPlayerSharingMode() and setRecorderSharingMode().
+     * @return true if the player is using the specified sharing mode set with
+     * setPlayerSharingMode().
      */
-    public boolean validateSharingModes() {
+    public boolean isSpecifiedPlayerSharingMode() {
         boolean playerOK = false;
         if (mPlayer != null) {
             int sharingMode = mPlayer.getSharingMode();
             playerOK = sharingMode == mPlayerSharingMode
                     || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
         }
+        return playerOK;
+    }
 
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorder is using the specified sharing mode set with
+     * setRecorderSharingMode().
+     */
+    public boolean isSpecifiedRecorderSharingMode() {
         boolean recorderOK = false;
         if (mRecorder != null) {
             int sharingMode = mRecorder.getSharingMode();
             recorderOK = sharingMode == mRecorderSharingMode
                     || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
         }
+        return recorderOK;
+    }
 
-        return playerOK && recorderOK;
+    /**
+     * Don't call this until the streams are started
+     * @return true if the player is using MMAP.
+     */
+    public boolean isPlayerStreamMMap() {
+        return mPlayer.isMMap();
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorders is using MMAP.
+     */
+    public boolean isRecorderStreamMMap() {
+        return mRecorder.isMMap();
     }
 }

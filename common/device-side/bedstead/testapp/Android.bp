@@ -4,6 +4,7 @@ package {
 
 java_library_static {
     name: "TestApp_JavaProtos",
+    sdk_version: "core_current",
     host_supported: true,
     proto: {
         type: "lite",

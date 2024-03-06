@@ -485,7 +485,16 @@ public abstract class CodecTestBase {
     public static void checkFormatSupport(String codecName, String mediaType, boolean isEncoder,
             ArrayList<MediaFormat> formats, String[] features, SupportClass supportRequirements)
             throws IOException {
-        if (!areFormatsSupported(codecName, mediaType, formats)) {
+        boolean hasSupport = true;
+        if (formats != null) {
+            hasSupport &= areFormatsSupported(codecName, mediaType, formats);
+        }
+        if (features != null) {
+            for (String feature : features) {
+                hasSupport &= isFeatureSupported(codecName, mediaType, feature);
+            }
+        }
+        if (!hasSupport) {
             switch (supportRequirements) {
                 case CODEC_ALL:
                     fail("format(s) not supported by codec: " + codecName + " for mediaType : "

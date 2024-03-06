@@ -32,38 +32,38 @@ public class AudioDeviceUtils {
             new HashMap<Integer, String>();
 
     private static void initDeviceTypeStrings() {
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_UNKNOWN, "TYPE_UNKNOWN");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE, "TYPE_BUILTIN_EARPIECE");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, "TYPE_BUILTIN_SPEAKER");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_WIRED_HEADSET, "TYPE_WIRED_HEADSET");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_WIRED_HEADPHONES, "TYPE_WIRED_HEADPHONES");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_LINE_ANALOG, "TYPE_LINE_ANALOG");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_LINE_DIGITAL, "TYPE_LINE_DIGITAL");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLUETOOTH_SCO, "TYPE_BLUETOOTH_SCO");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "TYPE_BLUETOOTH_A2DP");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI, "TYPE_HDMI");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI_ARC, "TYPE_HDMI_ARC");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_DEVICE, "TYPE_USB_DEVICE");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_ACCESSORY, "TYPE_USB_ACCESSORY");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_DOCK, "TYPE_DOCK");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_FM, "TYPE_FM");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_MIC, "TYPE_BUILTIN_MIC");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_FM_TUNER, "TYPE_FM_TUNER");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_TV_TUNER, "TYPE_TV_TUNER");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_TELEPHONY, "TYPE_TELEPHONY");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_AUX_LINE, "TYPE_AUX_LINE");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_IP, "TYPE_IP");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUS, "TYPE_BUS");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_HEADSET, "TYPE_USB_HEADSET");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HEARING_AID, "TYPE_HEARING_AID");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_UNKNOWN, "UNKNOWN");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE, "BUILTIN_EARPIECE");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, "BUILTIN_SPEAKER");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_WIRED_HEADSET, "WIRED_HEADSET");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_WIRED_HEADPHONES, "WIRED_HEADPHONES");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_LINE_ANALOG, "LINE_ANALOG");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_LINE_DIGITAL, "LINE_DIGITAL");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLUETOOTH_SCO, "BLUETOOTH_SCO");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "BLUETOOTH_A2DP");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI, "HDMI");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI_ARC, "HDMI_ARC");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_DEVICE, "USB_DEVICE");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_ACCESSORY, "USB_ACCESSORY");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_DOCK, "DOCK");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_FM, "FM");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_MIC, "BUILTIN_MIC");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_FM_TUNER, "FM_TUNER");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_TV_TUNER, "TV_TUNER");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_TELEPHONY, "TELEPHONY");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_AUX_LINE, "AUX_LINE");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_IP, "IP");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUS, "BUS");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_USB_HEADSET, "USB_HEADSET");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HEARING_AID, "HEARING_AID");
         sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
-                "TYPE_BUILTIN_SPEAKER_SAFE");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_REMOTE_SUBMIX, "TYPE_REMOTE_SUBMIX");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_HEADSET, "TYPE_BLE_HEADSET");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_SPEAKER, "TYPE_BLE_SPEAKER");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_ECHO_REFERENCE, "TYPE_ECHO_REFERENCE");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI_EARC, "TYPE_HDMI_EARC");
-        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_BROADCAST, "TYPE_BLE_BROADCAST");
+                "BUILTIN_SPEAKER_SAFE");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_REMOTE_SUBMIX, "REMOTE_SUBMIX");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_HEADSET, "BLE_HEADSET");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_SPEAKER, "BLE_SPEAKER");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_ECHO_REFERENCE, "ECHO_REFERENCE");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_HDMI_EARC, "HDMI_EARC");
+        sDeviceTypeStrings.put(AudioDeviceInfo.TYPE_BLE_BROADCAST, "BLE_BROADCAST");
     }
 
     static {
@@ -71,10 +71,19 @@ public class AudioDeviceUtils {
     }
 
     /**
-     * @param deviceType
-     * @return a human-readable device type name.
+     * @param deviceType The AudioDeviceInfo type ID of the desired device.
+     * @return a human-readable full device type name.
      */
     public static String getDeviceTypeName(int deviceType) {
+        String typeName = sDeviceTypeStrings.get(deviceType);
+        return typeName != null ? "TYPE_" + typeName : "invalid type";
+    }
+
+    /**
+     * @param deviceType The AudioDeviceInfo type ID of the desired device.
+     * @return a human-readable abreviated device type name.
+     */
+    public static String getShortDeviceTypeName(int deviceType) {
         String typeName = sDeviceTypeStrings.get(deviceType);
         return typeName != null ? typeName : "invalid type";
     }

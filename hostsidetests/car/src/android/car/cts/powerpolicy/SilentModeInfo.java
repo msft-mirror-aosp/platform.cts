@@ -19,22 +19,28 @@ package android.car.cts.powerpolicy;
 import java.util.Objects;
 
 public final class SilentModeInfo {
-    private static final String[] ATTR_HEADERS = {"Monitoring HW state signal",
-            "Silent mode by HW state signal", "Forced silent mode"};
+    private static final String[] ATTR_HEADERS = {"Silent mode supported",
+            "Monitoring HW state signal", "Silent mode by HW state signal", "Forced silent mode"};
     private static final int NUMBER_OF_ATTRS = 3;
 
     public static final String COMMAND = "cmd car_service silent-mode query";
-    public static final SilentModeInfo NO_SILENT = new SilentModeInfo(true, false, false);
-    public static final SilentModeInfo FORCED_SILENT = new SilentModeInfo(false, true, true);
+    public static final SilentModeInfo NO_SILENT = new SilentModeInfo(true, true, false, false);
+    public static final SilentModeInfo FORCED_SILENT = new SilentModeInfo(true, false, true, true);
 
     private final boolean mForcedSilentMode;
+    private final boolean mSilentModeSupported;
     private final boolean mMonitoringHWStateSignal;
     private final boolean mSilentModeByHWStateSignal;
 
-    private SilentModeInfo(boolean monitoring, boolean byHW, boolean forced) {
+    private SilentModeInfo(boolean supported, boolean monitoring, boolean byHW, boolean forced) {
+        mSilentModeSupported = supported;
         mMonitoringHWStateSignal = monitoring;
         mSilentModeByHWStateSignal = byHW;
         mForcedSilentMode = forced;
+    }
+
+    public boolean isSilentModeSupported() {
+        return mSilentModeSupported;
     }
 
     public boolean getForcedSilentMode() {
@@ -52,19 +58,20 @@ public final class SilentModeInfo {
         SilentModeInfo that = (SilentModeInfo) o;
         return mMonitoringHWStateSignal == that.mMonitoringHWStateSignal
                 && mSilentModeByHWStateSignal == that.mSilentModeByHWStateSignal
-                && mForcedSilentMode == that.mForcedSilentMode;
+                && mForcedSilentMode == that.mForcedSilentMode
+                && mSilentModeSupported == that.mSilentModeSupported;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mMonitoringHWStateSignal,
+        return Objects.hash(mSilentModeSupported, mMonitoringHWStateSignal,
                 mSilentModeByHWStateSignal, mForcedSilentMode);
     }
 
     @Override
     public String toString() {
-        return String.format("SilentModeInfo: %b, %b, %b", mMonitoringHWStateSignal,
-                mSilentModeByHWStateSignal, mForcedSilentMode);
+        return String.format("SilentModeInfo: %b, %b, %b, %b", mSilentModeSupported,
+                mMonitoringHWStateSignal, mSilentModeByHWStateSignal, mForcedSilentMode);
     }
 
     public static SilentModeInfo parse(String cmdOutput) throws Exception {
@@ -91,6 +98,6 @@ public final class SilentModeInfo {
             attrs[hdrIdx] = Boolean.parseBoolean(val.trim());
         }
 
-        return new SilentModeInfo(attrs[0], attrs[1], attrs[2]);
+        return new SilentModeInfo(attrs[0], attrs[1], attrs[2], attrs[3]);
     }
 }

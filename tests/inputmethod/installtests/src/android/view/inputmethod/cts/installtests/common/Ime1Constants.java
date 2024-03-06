@@ -40,9 +40,14 @@ public final class Ime1Constants {
     public static final String APK_PATH = "/data/local/tmp/cts/inputmethod/CtsInputMethod1.apk";
 
     /**
+     * The {@link ComponentName} of test IME 1.
+     */
+    public static final ComponentName COMPONENT_NAME = new ComponentName(PACKAGE, CLASS);
+
+    /**
      * IME ID of test IME 1.
      */
-    public static final String IME_ID = new ComponentName(PACKAGE, CLASS).flattenToShortString();
+    public static final String IME_ID = COMPONENT_NAME.flattenToShortString();
 
     /**
      * Authority name of command {@link android.content.ContentProvider} in IME1.

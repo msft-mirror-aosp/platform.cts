@@ -308,7 +308,7 @@ class AspectRatioAndCropTest(its_base_test.ItsBaseTest):
               img, img_name, image_fov_utils.CIRCLE_MIN_AREA,
               image_fov_utils.CIRCLE_COLOR)
           opencv_processing_utils.append_circle_center_to_img(
-              circle, img, img_name)
+              circle, img, img_name, save_img=False)  # imgs saved on FAILs
 
           # Check pass/fail for fov coverage for all fmts in AR_CHECKED
           img /= 255  # image_processing_utils uses [0, 1].

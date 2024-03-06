@@ -42,7 +42,8 @@ DataCallbackResult OboePlayer::onAudioReady(AudioStream *oboeStream, void *audio
                                             int32_t numFrames) {
     StreamState streamState = oboeStream->getState();
     if (streamState != StreamState::Open && streamState != StreamState::Started) {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "  streamState:%d", streamState);
+        __android_log_print(ANDROID_LOG_ERROR, TAG,
+            "  streamState:%d", static_cast<int>(streamState));
     }
     if (streamState == StreamState::Disconnected) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "  streamState::Disconnected");
@@ -124,7 +125,7 @@ StreamBase::Result OboePlayer::setupStream(int32_t channelCount, int32_t sampleR
             mAudioSource->init(desiredSize , mChannelCount);
         }
     }
-    __android_log_print(ANDROID_LOG_INFO, TAG, " Done - error:%d", result);
+    __android_log_print(ANDROID_LOG_INFO, TAG, " Done - error:%d", static_cast<int>(result));
     return OboeErrorToMegaAudioError(result);
 }
 
@@ -214,6 +215,11 @@ JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getSharing
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getChannelCountN(
             JNIEnv *env, jobject thiz, jlong native_player) {
     return ((OboePlayer*)(native_player))->getChannelCount();
+}
+
+JNIEXPORT jboolean JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_isMMapN(
+            JNIEnv *env, jobject thiz, jlong native_player) {
+    return ((OboePlayer*)(native_player))->isMMap();
 }
 
 JNIEXPORT jboolean JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getTimestampN(

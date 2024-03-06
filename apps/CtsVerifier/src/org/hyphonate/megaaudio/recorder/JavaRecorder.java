@@ -82,6 +82,12 @@ public class JavaRecorder extends Recorder {
         return mAudioRecord != null ?  mAudioRecord.getChannelCount() : -1;
     }
 
+    @Override
+    public boolean isMMap() {
+        // Java Streams are never MMAP
+        return false;
+    }
+
     /**
      * The buff to receive the recorder samples
      */

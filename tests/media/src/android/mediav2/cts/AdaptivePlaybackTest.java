@@ -32,7 +32,9 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,6 +48,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -62,8 +65,16 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     private final String[] mSrcFiles;
     private final SupportClass mSupportRequirements;
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private static final HashSet<String> MUST_SUPPORT_APB = new HashSet<>();
 
     private long mMaxPts = 0;
+
+    static {
+        MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_VP8);
+        MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_VP9);
+        MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_AVC);
+        MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+    }
 
     public AdaptivePlaybackTest(String decoder, String mediaType, String[] srcFiles,
             SupportClass supportRequirements, String allTestParams) {
@@ -233,21 +244,26 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     /**
      * Test video decoder for seamless resolution changes.
      */
+    @CddTest(requirement = "5.3/C-1-1")
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback")
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testAdaptivePlayback() throws IOException, InterruptedException {
-        Assume.assumeTrue("codec: " + mCodecName + " does not support FEATURE_AdaptivePlayback",
-                isFeatureSupported(mCodecName, mMediaType,
-                        MediaCodecInfo.CodecCapabilities.FEATURE_AdaptivePlayback));
+        boolean hasSupport = isFeatureSupported(mCodecName, mMediaType,
+                MediaCodecInfo.CodecCapabilities.FEATURE_AdaptivePlayback);
+        if (MUST_SUPPORT_APB.contains(mMediaType)) {
+            Assert.assertTrue("codec: " + mCodecName + " is required to support "
+                    + "FEATURE_AdaptivePlayback" + " for mediaType: " + mMediaType, hasSupport);
+        } else {
+            Assume.assumeTrue("codec: " + mCodecName + " does not support FEATURE_AdaptivePlayback",
+                    hasSupport);
+        }
         ArrayList<MediaFormat> formats = new ArrayList<>();
         for (String file : mSrcFiles) {
             formats.add(setUpSource(MEDIA_DIR + file));
             mExtractor.release();
         }
-        checkFormatSupport(mCodecName, mMediaType, false, formats,
-                new String[]{MediaCodecInfo.CodecCapabilities.FEATURE_AdaptivePlayback},
-                mSupportRequirements);
+        checkFormatSupport(mCodecName, mMediaType, false, formats, null, mSupportRequirements);
         formats.clear();
         int totalSize = 0;
         for (String srcFile : mSrcFiles) {

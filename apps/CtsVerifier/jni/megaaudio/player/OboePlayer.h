@@ -42,9 +42,6 @@ public:
 
     int getLastErrorCallbackResult();
 
-    void setMMap(bool isMMap);
-    bool isMMap();
-
 private:
     // AudioTimestamp Field IDs
     JavaVM* mJvm;

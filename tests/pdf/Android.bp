@@ -30,7 +30,7 @@ android_test {
         "junit",
     ],
     srcs: [
-        "src/**/PdfDocumentTest.java",
+        "src/**/*.java",
     ],
     // Tag this module as a cts test artifact
     test_suites: [

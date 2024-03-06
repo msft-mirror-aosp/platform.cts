@@ -609,7 +609,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
   return circle
 
 
-def append_circle_center_to_img(circle, img, img_name):
+def append_circle_center_to_img(circle, img, img_name, save_img=True):
   """Append circle center and image center to image and save image.
 
   Draws line from circle center to image center and then labels end-points.
@@ -620,6 +620,7 @@ def append_circle_center_to_img(circle, img, img_name):
     circle: dict with circle location vals.
     img: numpy float image array in RGB, with pixel values in [0,255].
     img_name: string with image info of format and size.
+    save_img: optional boolean to not save image
   """
   line_width_scaling_factor = 500
   text_move_scaling_factor = 3
@@ -662,7 +663,8 @@ def append_circle_center_to_img(circle, img, img_name):
   text_imgct_y = move_text_dist * move_text_down_image + img_center_y
   cv2.putText(img, 'image center', (text_imgct_x, text_imgct_y),
               cv2.FONT_HERSHEY_SIMPLEX, font_size, CV2_RED, line_width)
-  image_processing_utils.write_image(img/255, img_name, True)  # [0, 1] values
+  if save_img:
+    image_processing_utils.write_image(img/255, img_name, True)  # [0, 1] values
 
 
 def is_circle_cropped(circle, size):

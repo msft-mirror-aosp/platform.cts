@@ -259,6 +259,12 @@ public abstract class StreamBase {
     public abstract int getChannelCount();
 
     /**
+     * Note: The stream must be created before calling this method.
+     * @return true if the underlying stream is an MMAP stream, false otherwise.
+     */
+    public abstract boolean isMMap();
+
+    /**
      * @return The last error callback result (these must match Oboe). See Oboe constants
      */
     public abstract int getLastErrorCallbackResult();

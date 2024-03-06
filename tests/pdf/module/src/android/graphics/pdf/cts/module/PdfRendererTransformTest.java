@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package android.graphics.pdf.cts;
+package android.graphics.pdf.cts.module;
 
-import static android.graphics.pdf.cts.Utils.A4_HEIGHT_PTS;
-import static android.graphics.pdf.cts.Utils.A4_PORTRAIT;
-import static android.graphics.pdf.cts.Utils.A4_WIDTH_PTS;
-import static android.graphics.pdf.cts.Utils.renderAndCompare;
-import static android.graphics.pdf.cts.Utils.renderPreVAndCompare;
+import static android.graphics.pdf.cts.module.Utils.A4_HEIGHT_PTS;
+import static android.graphics.pdf.cts.module.Utils.A4_PORTRAIT;
+import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
+import static android.graphics.pdf.cts.module.Utils.renderPreVAndCompare;
 
 import android.content.Context;
 import android.graphics.Matrix;
@@ -121,14 +120,16 @@ public class PdfRendererTransformTest {
 
     // Note that the size annotation refers to the "size" of each individual parameterized run,
     // and not the "full" run.
+    //TODO(mayankkk): Update the tests to test PdfRenderer once PdfRenderer is added into
+    // mainline module.
     @SmallTest
     @Test
     public void test() throws Exception {
-        renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
-                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, false, mContext);
-
-        renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
-                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, true, mContext);
+//        renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
+//                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, false, mContext);
+//
+//        renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
+//                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, true, mContext);
 
         // Test's PreV API.
         renderPreVAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
