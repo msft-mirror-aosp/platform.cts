@@ -177,14 +177,14 @@ JNIEXPORT jdouble JNICALL
 JNIEXPORT jboolean JNICALL
     Java_com_android_cts_verifier_audio_audiolib_AudioUtils_isMMapSupported(JNIEnv *env __unused) {
 
-    return oboe::AAudioExtensions().isMMapSupported();
+    return oboe::AAudioExtensions::getInstance().isMMapSupported();
 }
 
 JNIEXPORT jboolean JNICALL
     Java_com_android_cts_verifier_audio_audiolib_AudioUtils_isMMapExclusiveSupported(
         JNIEnv *env __unused) {
 
-    return oboe::AAudioExtensions().isMMapExclusiveSupported();
+    return oboe::AAudioExtensions::getInstance().isMMapExclusiveSupported();
 }
 
 }

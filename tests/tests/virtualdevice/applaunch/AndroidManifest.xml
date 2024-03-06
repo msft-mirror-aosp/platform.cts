@@ -41,6 +41,9 @@
                 <action android:name="android.virtualdevice.applaunch.INTERCEPTED_RECEIVER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".VirtualDeviceImeTest$ImeActivity"
+            android:windowSoftInputMode="stateVisible" />
         <service android:name=".AppComponents$TestService" />
         <service android:name=".VirtualDeviceImeTest$DefaultDeviceTestIme"
             android:label="Default device Test IME"

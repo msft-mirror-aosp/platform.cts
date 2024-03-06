@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.pdf.cts;
+package android.graphics.pdf.cts.module;
 
 import static org.junit.Assert.fail;
 
@@ -48,12 +48,13 @@ import java.util.Objects;
 /**
  * Utilities for this package
  */
+//TODO(mayankkk): Update the utilities once the PdfRenderer API is added to Mainline module.
 class Utils {
     static final int A4_WIDTH_PTS = 595;
     static final int A4_HEIGHT_PTS = 841;
 
-    static final int PROTECTED_PDF = android.graphics.pdf.cts.R.raw.sample_test_protected;
-    static final int SAMPLE_PDF = android.graphics.pdf.cts.R.raw.sample_test;
+    static final int PROTECTED_PDF = android.graphics.pdf.cts.module.R.raw.sample_test_protected;
+    static final int SAMPLE_PDF = android.graphics.pdf.cts.module.R.raw.sample_test;
 
     static final LoadParams LOAD_PARAMS = new LoadParams.Builder().setPassword("qwerty").build();
 
@@ -63,8 +64,8 @@ class Utils {
     static final LoadParams INCORRECT_LOAD_PARAMS = new LoadParams.Builder().setPassword(
             "abc-def").build();
 
-    static final int A4_PORTRAIT = android.graphics.pdf.cts.R.raw.a4_portrait_rgbb;
-    static final int A5_PORTRAIT = android.graphics.pdf.cts.R.raw.a5_portrait_rgbb;
+    static final int A4_PORTRAIT = android.graphics.pdf.cts.module.R.raw.a4_portrait_rgbb;
+    static final int A5_PORTRAIT = android.graphics.pdf.cts.module.R.raw.a5_portrait_rgbb;
     private static final String LOG_TAG = "Utils";
     private static final Map<Integer, File> sFiles = new ArrayMap<>();
     private static final Map<Integer, Bitmap> sRenderedBitmaps = new ArrayMap<>();
@@ -96,10 +97,11 @@ class Utils {
      * @return the renderer
      * @throws IOException If anything went wrong
      */
-    @NonNull
     static PdfRenderer createRendererUsingNewConstructor(@RawRes int docRes,
             @NonNull Context context, @Nullable LoadParams loadParams) throws IOException {
-        return new PdfRenderer(getParcelFileDescriptorFromResourceId(docRes, context), loadParams);
+        return null;
+        // return new PdfRenderer(getParcelFileDescriptorFromResourceId(docRes, context),
+        // loadParams);
     }
 
     /**
@@ -181,15 +183,16 @@ class Utils {
         Bitmap bm = Bitmap.createBitmap(bmWidth, bmHeight, Bitmap.Config.ARGB_8888);
 
         if (useNewConstructor) {
-            try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                try (PdfRenderer.Page page = renderer.openPage(0)) {
-                    page.render(bm, clipping, transformation, new RenderParams.Builder(
-                            renderMode).setRenderFlags(renderFlag).build());
-
-                    return bm;
-                }
-            }
+            return bm;
+//            try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
+//                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+//                try (PdfRenderer.Page page = renderer.openPage(0)) {
+//                    page.render(bm, clipping, transformation, new RenderParams.Builder(
+//                            renderMode).setRenderFlags(renderFlag).build());
+//
+//                    return bm;
+//                }
+//            }
         } else {
             try (PdfRenderer renderer = createRenderer(docRes, context)) {
                 try (PdfRenderer.Page page = renderer.openPage(0)) {
@@ -223,23 +226,23 @@ class Utils {
             @Nullable Rect clipping, @Nullable Matrix transformation, int renderMode,
             int renderFlag, boolean useNewConstructor, @NonNull Context context)
             throws IOException {
-        Bitmap renderedBm;
+        Bitmap renderedBm = null;
 
         if (useNewConstructor) {
-            renderedBm = sNewRenderBitmaps.get(docRes);
-
-            if (renderedBm == null) {
-                try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
-                        SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                    try (PdfRenderer.Page page = renderer.openPage(0)) {
-                        renderedBm = Bitmap.createBitmap(page.getWidth(), page.getHeight(),
-                                Bitmap.Config.ARGB_8888);
-                        page.render(renderedBm, null, null, new RenderParams.Builder(
-                                renderMode).setRenderFlags(renderFlag).build());
-                    }
-                }
-                sNewRenderBitmaps.put(docRes, renderedBm);
-            }
+//            renderedBm = sNewRenderBitmaps.get(docRes);
+//
+//            if (renderedBm == null) {
+//                try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
+//                        SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+//                    try (PdfRenderer.Page page = renderer.openPage(0)) {
+//                        renderedBm = Bitmap.createBitmap(page.getWidth(), page.getHeight(),
+//                                Bitmap.Config.ARGB_8888);
+//                        page.render(renderedBm, null, null, new RenderParams.Builder(
+//                                renderMode).setRenderFlags(renderFlag).build());
+//                    }
+//                }
+//                sNewRenderBitmaps.put(docRes, renderedBm);
+//            }
         } else {
             renderedBm = sRenderedBitmaps.get(docRes);
 
