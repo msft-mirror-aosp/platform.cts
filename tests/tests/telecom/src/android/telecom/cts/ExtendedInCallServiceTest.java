@@ -388,7 +388,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testIncomingCallFromBlockedNumber_IsRejected() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
