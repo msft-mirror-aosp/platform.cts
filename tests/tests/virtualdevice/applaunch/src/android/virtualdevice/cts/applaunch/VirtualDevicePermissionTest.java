@@ -73,7 +73,7 @@ public class VirtualDevicePermissionTest {
             Manifest.permission.HIGH_SAMPLING_RATE_SENSORS;
     private static final String NORMAL_PERMISSION_NOT_GRANTED = Manifest.permission.SET_ALARM;
     // Dangerous permissions specified in AndroidManifest.xml are automatically granted to CTS apps
-    private static final String DANGEROUS_PERMISSION_GRANTED = Manifest.permission.RECORD_AUDIO;
+    private static final String DANGEROUS_PERMISSION_GRANTED = Manifest.permission.READ_CONTACTS;
     // Tests have not been granted CAMERA permission as per AndroidManifest.xml
     private static final String DANGEROUS_PERMISSION_NOT_GRANTED =
             Manifest.permission.READ_PHONE_NUMBERS;

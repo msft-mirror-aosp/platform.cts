@@ -69,7 +69,7 @@
      * The test module otherwise does not use these permissions.
      -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Needed to test the camera blocking behavior. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
