@@ -2354,12 +2354,11 @@ def copy_scenes_to_tablet(scene, tablet_id):
     tablet_id: device id of tablet
   """
   logging.info('Copying files to tablet: %s', tablet_id)
-  scene_dir = os.listdir(
-      os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene))
+  scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene)
+  scene_dir = os.listdir(scene_path)
   for file_name in scene_dir:
     if file_name.endswith('.png') or file_name.endswith('.mp4'):
-      src_scene_file = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests',
-                                    scene, file_name)
+      src_scene_file = os.path.join(scene_path, file_name)
       cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
       subprocess.Popen(cmd.split())
   time.sleep(_COPY_SCENE_DELAY_SEC)
