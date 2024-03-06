@@ -26,6 +26,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchA
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
+import static android.accessibilityservice.cts.utils.DisplayUtils.getNavBarHeight;
 import static android.accessibilityservice.cts.utils.DisplayUtils.getStatusBarHeight;
 import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
@@ -883,6 +884,7 @@ public class AccessibilityWindowQueryTest {
                 }, activity),
                 addWindow(R.string.button2, params -> {
                     params.gravity = Gravity.BOTTOM;
+                    params.y = getNavBarHeight(activity);
                 }, activity)
         };
     }
