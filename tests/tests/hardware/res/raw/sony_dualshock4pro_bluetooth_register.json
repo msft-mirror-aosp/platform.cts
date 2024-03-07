@@ -2,7 +2,7 @@
   "id": 1,
   "command": "register",
   "name": "Sony DS4 Pro (model CUH-ZCT2U)(Bluetooth Test)",
-  "uniq": "12345678901234567",
+  "uniq": "aa:bb:cc:dd:ee:ff",
   "vid": 0x054c,
   "pid": 0x09cc,
   "bus": "bluetooth",
