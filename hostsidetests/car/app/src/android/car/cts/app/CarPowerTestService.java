@@ -353,8 +353,8 @@ public final class CarPowerTestService extends Service {
                     (state) -> {
                         mReceivedStates.add(state);
                         mLatch.countDown();
-                        Log.i(TAG, "Listener observed state: " + state + ", received "
-                                + "states: " + mReceivedStates + ", mLatch count:"
+                        Log.i(TAG, "Listener without completion observed state: " + state
+                                + ", received states: " + mReceivedStates + ", mLatch count:"
                                 + mLatch.getCount());
                     });
             Log.i(TAG, "Listener without completion set");
@@ -387,6 +387,9 @@ public final class CarPowerTestService extends Service {
                             }
                         }
                         mLatch.countDown();
+                        Log.i(TAG, "Listener with completion observed state: " + state
+                                + ", received states: " + mReceivedStates + ", mLatch count:"
+                                + mLatch.getCount());
                     });
             Log.i(TAG, "Listener with completion set");
         }
