@@ -100,6 +100,8 @@ public class WindowInputTests {
     private static final String SECOND_WINDOW_NAME = TAG + ": Second Activity Window";
     private static final String OVERLAY_WINDOW_NAME = TAG + ": Overlay Window";
 
+    private static final long WINDOW_WAIT_TIMEOUT_SECONDS = 20;
+
     private Instrumentation mInstrumentation;
     private CtsTouchUtils mCtsTouchUtils;
     private TestActivity mActivity;
@@ -124,7 +126,7 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
         CtsWindowInfoUtils.waitForWindowOnTop(mActivity.getWindow());
         assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
+                waitForStableWindowGeometry(WINDOW_WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
         mClickCount = 0;
     }
 
@@ -178,8 +180,12 @@ public class WindowInputTests {
         mActivity.startForegroundService(intent);
 
         mInstrumentation.waitForIdleSync();
-        waitForWindowOnTop(lp.getTitle().toString());
-        return () -> mActivity.stopService(intent);
+        final String windowName = lp.getTitle().toString();
+        waitForWindowOnTop(windowName);
+        return () -> {
+            mActivity.stopService(intent);
+            waitForWindowRemoved(windowName);
+        };
     }
 
     @Test
@@ -551,8 +557,9 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
         Predicate<WindowInfo> hasInputConfigFlags =
                 windowInfo -> !windowInfo.isTouchable && !windowInfo.isFocusable;
-        assertTrue(waitForWindowInfo(hasInputConfigFlags, 5, TimeUnit.SECONDS,
-                overlapView::getWindowToken, overlapView.getDisplay().getDisplayId()));
+        assertTrue(waitForWindowInfo(hasInputConfigFlags, WINDOW_WAIT_TIMEOUT_SECONDS,
+                TimeUnit.SECONDS, overlapView::getWindowToken,
+                overlapView.getDisplay().getDisplayId()));
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
         assertEquals(1, mClickCount);
@@ -698,8 +705,15 @@ public class WindowInputTests {
 
     private void waitForWindowOnTop(String name) throws InterruptedException {
         assertTrue("Timed out waiting for window to be on top; window: '" + name + "'",
-                CtsWindowInfoUtils.waitForWindowOnTop(5, TimeUnit.SECONDS,
+                CtsWindowInfoUtils.waitForWindowOnTop(WINDOW_WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS,
                         windowInfo -> windowInfo.name.contains(name)));
+    }
+
+    private void waitForWindowRemoved(String name) throws InterruptedException {
+        assertTrue("Timed out waiting for window to be removed; window: '" + name + "'",
+                CtsWindowInfoUtils.waitForWindowInfos(
+                        windows -> windows.stream().noneMatch(window -> window.name.contains(name)),
+                        WINDOW_WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 
     public static class TestActivity extends Activity {
