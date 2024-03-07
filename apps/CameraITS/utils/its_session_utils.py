@@ -79,6 +79,8 @@ _TAG_STR = 'tag'
 _CAMERA_ID_STR = 'cameraId'
 _USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
+_COPY_SCENE_DELAY_SEC = 1
+_DST_SCENE_DIR = '/sdcard/Download/'
 
 
 def validate_tablet_brightness(tablet_name, brightness):
@@ -2342,6 +2344,25 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
         capture_request_utils.auto_capture_request(), cam.CAP_YUV)
     y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
     validate_lighting(y_plane, scene, log_path=log_path)
+
+
+def copy_scenes_to_tablet(scene, tablet_id):
+  """Copies scenes onto the tablet before running the tests.
+
+  Args:
+    scene: Name of the scene to copy image files.
+    tablet_id: device id of tablet
+  """
+  logging.info('Copying files to tablet: %s', tablet_id)
+  scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene)
+  scene_dir = os.listdir(scene_path)
+  for file_name in scene_dir:
+    if file_name.endswith('.png') or file_name.endswith('.mp4'):
+      src_scene_file = os.path.join(scene_path, file_name)
+      cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
+      subprocess.Popen(cmd.split())
+  time.sleep(_COPY_SCENE_DELAY_SEC)
+  logging.info('Finished copying files to tablet.')
 
 
 def validate_lighting(y_plane, scene, state='ON', log_path=None,

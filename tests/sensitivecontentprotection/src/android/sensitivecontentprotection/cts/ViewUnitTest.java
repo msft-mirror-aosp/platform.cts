@@ -42,8 +42,8 @@ public class ViewUnitTest {
     private Context mContext;
 
     @Rule
-    public ActivityScenarioRule<SimpleActivity> mActivityScenarioRule = new ActivityScenarioRule<>(
-            SimpleActivity.class);
+    public ActivityScenarioRule<SensitiveContentActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(SensitiveContentActivity.class);
 
     @Before
     public void setup() {

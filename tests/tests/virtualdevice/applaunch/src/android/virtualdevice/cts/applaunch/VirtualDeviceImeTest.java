@@ -266,8 +266,11 @@ public class VirtualDeviceImeTest {
         showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isNotEqualTo(mDefaultDeviceDefaultImeId);
-        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
-                .isNotEqualTo(mVirtualDeviceImeId);
+
+        assertThat(Condition.waitFor("IME show on default display",
+                () -> !mVirtualDeviceImeId.equals(
+                        mInputMethodManager.getCurrentInputMethodInfo().getId())))
+                .isTrue();
         verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
@@ -357,6 +360,11 @@ public class VirtualDeviceImeTest {
     @Test
     public void setDisplayImePolicy_changeAtRuntime() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
+        waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+
         virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
         showSoftInputOnDisplay(mVirtualDisplayId);
@@ -368,12 +376,6 @@ public class VirtualDeviceImeTest {
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
-
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
-        waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
-        reset(mDefaultDeviceImeListener);
-        showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @ApiTest(apis = {
@@ -400,6 +402,9 @@ public class VirtualDeviceImeTest {
         virtualDevice.setDisplayImePolicy(noImeDisplayId, DISPLAY_IME_POLICY_HIDE);
         waitForImePolicy(noImeDisplayId, DISPLAY_IME_POLICY_HIDE);
 
+        showSoftInputOnDisplay(noImeDisplayId);
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(Display.DEFAULT_DISPLAY);
@@ -407,10 +412,6 @@ public class VirtualDeviceImeTest {
         showSoftInputOnDisplay(localImeDisplayId);
         verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(localImeDisplayId);
-
-        reset(mDefaultDeviceImeListener);
-        showSoftInputOnDisplay(noImeDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @ApiTest(apis = {

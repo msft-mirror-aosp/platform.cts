@@ -106,7 +106,7 @@ public class VirtualDeviceRule implements TestRule {
     private final FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
-    private final Context mContext = getInstrumentation().getContext();
+    private final Context mContext = getInstrumentation().getTargetContext();
     private final VirtualDeviceManager mVirtualDeviceManager =
             mContext.getSystemService(VirtualDeviceManager.class);
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();

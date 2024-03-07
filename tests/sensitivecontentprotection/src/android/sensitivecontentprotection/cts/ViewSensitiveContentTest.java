@@ -58,9 +58,9 @@ public class ViewSensitiveContentTest {
         MediaProjection mediaProjection = mMediaProjectionHelper.startMediaProjection();
         assertThat(mediaProjection).isNotNull();
 
-        // SimpleActivity has a sensitive view, so screen capture should be blocked.
-        try (ActivityScenario<SimpleActivity> activityScenario =
-                ActivityScenario.launch(SimpleActivity.class)) {
+        // SensitiveContentActivity has a sensitive view, so screen capture should be blocked.
+        try (ActivityScenario<SensitiveContentActivity> activityScenario =
+                ActivityScenario.launch(SensitiveContentActivity.class)) {
             activityScenario.onActivity(activity -> {
                 BitmapPixelChecker pixelChecker = new BitmapPixelChecker(Color.BLACK);
                 BitmapPixelChecker.validateScreenshot(mName, activity, pixelChecker,

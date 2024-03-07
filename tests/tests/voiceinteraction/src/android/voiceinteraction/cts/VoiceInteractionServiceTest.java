@@ -89,7 +89,7 @@ import java.util.concurrent.TimeoutException;
  */
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode")
-public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
+public class VoiceInteractionServiceTest {
 
     @ClassRule
     @Rule
@@ -134,9 +134,6 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
 
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
-
-        // Set whether voice activation permission enabled.
-        mService.setVoiceActivationPermissionEnabled(mVoiceActivationPermissionEnabled);
 
         VoiceInteractionTestReceiver.reset();
     }
