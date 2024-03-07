@@ -111,6 +111,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
@@ -168,7 +169,6 @@ public class ItsService extends Service implements SensorEventListener {
     // Timeouts, in seconds.
     private static final int TIMEOUT_CALLBACK = 20;
     private static final int TIMEOUT_3A = 10;
-    private static final int TIMEOUT_AUTOFRAMING = 10;
 
     // Time given for background requests to warm up pipeline
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
@@ -176,7 +176,6 @@ public class ItsService extends Service implements SensorEventListener {
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
     private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
-    private static final long TIMEOUT_STATE_MS = 500;
     private static final long TIMEOUT_SESSION_CLOSE = 3000;
     private static final long TIMEOUT_SESSION_READY = 3000;
     private static final long TIMEOUT_CAPTURE_PREVIEW_FRAME_SECONDS = 10;
@@ -216,14 +215,13 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String EVCOMP_KEY = "evComp";
     public static final String AUTO_FLASH_KEY = "autoFlash";
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
-    public static final String AUTOFRAMING_KEY = "autoframing";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
     public static final String SETTINGS_KEY = "settings";
     public static final int AVAILABILITY_TIMEOUT_MS = 10;
 
     private static final HashMap<Integer, String> CAMCORDER_PROFILE_QUALITIES_MAP;
     static {
-        CAMCORDER_PROFILE_QUALITIES_MAP = new HashMap<Integer, String>();
+        CAMCORDER_PROFILE_QUALITIES_MAP = new HashMap<>();
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_480P, "480P");
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_1080P, "1080P");
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_2160P, "2160P");
@@ -238,7 +236,7 @@ public class ItsService extends Service implements SensorEventListener {
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_QHD, "QHD");
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_QVGA, "QVGA");
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_VGA, "VGA");
-    };
+    }
 
     // Queryable stream combinations constants
     private static final int PRIV = 0;
@@ -256,7 +254,7 @@ public class ItsService extends Service implements SensorEventListener {
     private static final int MAXIMUM_4_3 = 14;
     private static final int MAXIMUM_16_9 = 15;
 
-    private static HashMap<Integer, String> sFormatMap = new HashMap<Integer, String>();
+    private static HashMap<Integer, String> sFormatMap = new HashMap<>();
     static {
         sFormatMap.put(PRIV, "priv");
         sFormatMap.put(JPEG, "jpeg");
@@ -273,25 +271,24 @@ public class ItsService extends Service implements SensorEventListener {
     private CameraExtensionSession mExtensionSession = null;
     private ImageReader[] mOutputImageReaders = null;
     private ImageReader mThreeAOutputImageReader = null;
-    private SparseArray<String> mPhysicalStreamMap = new SparseArray<String>();
-    private SparseArray<Long> mStreamUseCaseMap = new SparseArray<Long>();
+    private SparseArray<String> mPhysicalStreamMap = new SparseArray<>();
+    private SparseArray<Long> mStreamUseCaseMap = new SparseArray<>();
     private ImageReader mInputImageReader = null;
     private ImageReader mExtensionPreviewImageReader = null;
     private CameraCharacteristics mCameraCharacteristics = null;
     private CameraExtensionCharacteristics mCameraExtensionCharacteristics = null;
-    private HashMap<String, CameraCharacteristics> mPhysicalCameraChars =
-            new HashMap<String, CameraCharacteristics>();
+    private HashMap<String, CameraCharacteristics> mPhysicalCameraChars = new HashMap<>();
     private ItsUtils.ItsCameraIdList mItsCameraIdList = null;
 
     // To reuse mSession, track output configurations, image reader args, and session listener.
-    private List<OutputConfiguration> mCaptureOutputConfigs = new ArrayList<OutputConfiguration>();
+    private List<OutputConfiguration> mCaptureOutputConfigs = new ArrayList<>();
     private ImageReaderArgs mImageReaderArgs = ImageReaderArgs.EMPTY;
     private BlockingSessionCallback mSessionListener = null;
 
     private Vibrator mVibrator = null;
 
-    private HandlerThread mSaveThreads[] = new HandlerThread[MAX_NUM_OUTPUT_SURFACES];
-    private Handler mSaveHandlers[] = new Handler[MAX_NUM_OUTPUT_SURFACES];
+    private HandlerThread[] mSaveThreads = new HandlerThread[MAX_NUM_OUTPUT_SURFACES];
+    private Handler[] mSaveHandlers = new Handler[MAX_NUM_OUTPUT_SURFACES];
     private HandlerThread mResultThread = null;
     private Handler mResultHandler = null;
 
@@ -302,13 +299,11 @@ public class ItsService extends Service implements SensorEventListener {
     private Semaphore mSocketQueueQuota = null;
     private int mMemoryQuota = -1;
     private LinkedList<Integer> mInflightImageSizes = new LinkedList<>();
-    private volatile BlockingQueue<ByteBuffer> mSocketWriteQueue =
-            new LinkedBlockingDeque<ByteBuffer>();
+    private volatile BlockingQueue<ByteBuffer> mSocketWriteQueue = new LinkedBlockingDeque<>();
     private final Object mSocketWriteEnqueueLock = new Object();
     private final Object mSocketWriteDrainLock = new Object();
 
-    private volatile BlockingQueue<Object[]> mSerializerQueue =
-            new LinkedBlockingDeque<Object[]>();
+    private volatile BlockingQueue<Object[]> mSerializerQueue = new LinkedBlockingDeque<>();
 
     private final AtomicInteger mCountCallbacksRemaining = new AtomicInteger();
     private AtomicInteger mCountRawOrDng = new AtomicInteger();
@@ -330,13 +325,12 @@ public class ItsService extends Service implements SensorEventListener {
     private boolean mCaptureRawIsQuadBayerStats;
     private int mCaptureStatsGridWidth;
     private int mCaptureStatsGridHeight;
-    private CaptureResult mCaptureResults[] = null;
+    private CaptureResult[] mCaptureResults = null;
     private MediaRecorder mMediaRecorder;
     private Surface mRecordSurface;
     private CaptureRequest.Builder mCaptureRequestBuilder;
 
     private volatile ConditionVariable mInterlock3A = new ConditionVariable(true);
-    private volatile ConditionVariable mInterlockAutoframing = new ConditionVariable(true);
 
     final Object m3AStateLock = new Object();
     private volatile boolean mConvergedAE = false;
@@ -358,11 +352,11 @@ public class ItsService extends Service implements SensorEventListener {
     final Object mAutoframingStateLock = new Object();
     private volatile boolean mConvergedAutoframing = false;
 
-    class MySensorEvent {
+    static class MySensorEvent {
         public Sensor sensor;
         public int accuracy;
         public long timestamp;
-        public float values[];
+        public float[] values;
     }
 
     CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
@@ -400,7 +394,7 @@ public class ItsService extends Service implements SensorEventListener {
         public int fileFormat;
         public double zoomRatio;
         public Map<String, String> metadata = new HashMap<>();
-        List<RecordingResult> perFrameCaptureResults = new ArrayList<>();
+        public List<RecordingResult> perFrameCaptureResults;
 
         public VideoRecordingObject(String recordedOutputPath,
                 String quality, Size videoSize, int videoFrameRate,
@@ -426,10 +420,6 @@ public class ItsService extends Service implements SensorEventListener {
         public boolean isFrameRateValid() {
             return videoFrameRate != INVALID_FRAME_RATE;
         }
-
-        public void addMetadata(String key, String value) {
-            metadata.put(key, value);
-        }
     }
 
     // For capturing motion sensor traces.
@@ -449,7 +439,7 @@ public class ItsService extends Service implements SensorEventListener {
     // Camera test instrumentation
     private CameraTestInstrumentation mCameraInstrumentation;
     // Camera PerformanceTest metric
-    private final ArrayList<Metric> mResults = new ArrayList<Metric>();
+    private final ArrayList<Metric> mResults = new ArrayList<>();
 
     private static final int SERIALIZER_SURFACES_ID = 2;
     private static final int SERIALIZER_PHYSICAL_METADATA_ID = 3;
@@ -458,8 +448,9 @@ public class ItsService extends Service implements SensorEventListener {
         void onCaptureAvailable(Image capture, String physicalCameraId);
     }
 
-    public abstract class CaptureResultListener extends CameraCaptureSession.CaptureCallback {}
-    public abstract class ExtensionCaptureResultListener extends
+    public abstract static class CaptureResultListener extends
+            CameraCaptureSession.CaptureCallback {}
+    public abstract static class ExtensionCaptureResultListener extends
             CameraExtensionSession.ExtensionCaptureCallback {}
 
     @Override
@@ -481,7 +472,7 @@ public class ItsService extends Service implements SensorEventListener {
             mCameraListener = new BlockingStateCallback();
 
             // Register for motion events.
-            mEvents = new LinkedList<MySensorEvent>();
+            mEvents = new LinkedList<>();
             mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
             mAccelSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mMagSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -510,7 +501,7 @@ public class ItsService extends Service implements SensorEventListener {
             }
 
             // Create a thread to handle object serialization.
-            (new Thread(new SerializerRunnable())).start();;
+            (new Thread(new SerializerRunnable())).start();
 
             // Create a thread to receive capture results and process them.
             mResultThread = new HandlerThread("ResultThread");
@@ -674,7 +665,7 @@ public class ItsService extends Service implements SensorEventListener {
         try {
             mUnavailablePhysicalCameras = getUnavailablePhysicalCameras(
                     unavailablePhysicalCamEventQueue, cameraId);
-            Log.i(TAG, "Unavailable cameras:" + Arrays.asList(mUnavailablePhysicalCameras.toString()));
+            Log.i(TAG, "Unavailable cameras:" + List.of(mUnavailablePhysicalCameras.toString()));
             if (cmdObj.has("overrideToPortrait")) {
                 mCamera = mBlockingCameraManager.openCamera(cameraId,
                         cmdObj.getBoolean("overrideToPortrait"), mCameraListener, mCameraHandler);
@@ -727,7 +718,7 @@ public class ItsService extends Service implements SensorEventListener {
                 unavailablePhysicalCamEventQueue.clear();
             }
             // Reset OutputConfigurations and ImageReader args
-            mCaptureOutputConfigs = new ArrayList<OutputConfiguration>();
+            mCaptureOutputConfigs = new ArrayList<>();
             mImageReaderArgs = ImageReaderArgs.EMPTY;
             closeImageReaders();
         } catch (Exception e) {
@@ -744,7 +735,7 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.i(TAG, "Serializer thread starting");
             while (! mThreadExitFlag) {
                 try {
-                    Object objs[] = mSerializerQueue.take();
+                    Object[] objs = mSerializerQueue.take();
                     JSONObject jsonObj = new JSONObject();
                     String tag = null;
                     for (int i = 0; i < objs.length; i++) {
@@ -785,10 +776,7 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                     mSocketRunnableObj.sendResponse(tag, null, jsonObj, null);
                     Logt.i(TAG, String.format("Serialized %s", tag));
-                } catch (org.json.JSONException e) {
-                    Logt.e(TAG, "Error serializing object", e);
-                    break;
-                } catch (ItsException e) {
+                } catch (JSONException | ItsException e) {
                     Logt.e(TAG, "Error serializing object", e);
                     break;
                 } catch (java.lang.InterruptedException e) {
@@ -879,7 +867,6 @@ public class ItsService extends Service implements SensorEventListener {
         // * Serialized JSON object on a single line (newline-terminated)
 
         private Socket mOpenSocket = null;
-        private SocketWriteRunnable mSocketWriteRunnable = null;
 
         @Override
         public void run() {
@@ -891,7 +878,7 @@ public class ItsService extends Service implements SensorEventListener {
             }
 
             // Create a new thread to handle writes to this socket.
-            mSocketWriteRunnable = new SocketWriteRunnable(null);
+            SocketWriteRunnable socketWriteRunnable = new SocketWriteRunnable(null);
 
             while (!mThreadExitFlag) {
                 // Receive the socket-open request from the host.
@@ -908,8 +895,8 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                     mSocketWriteQueue.clear();
                     mInflightImageSizes.clear();
-                    mSocketWriteRunnable.setOpenSocket(mOpenSocket);
-                    mSocketWriteRunnable.checkAndStartThread();
+                    socketWriteRunnable.setOpenSocket(mOpenSocket);
+                    socketWriteRunnable.checkAndStartThread();
                     Logt.i(TAG, "Socket connected");
                 } catch (IOException e) {
                     Logt.e(TAG, "Socket open error: ", e);
@@ -947,7 +934,7 @@ public class ItsService extends Service implements SensorEventListener {
                         mInflightImageSizes.clear();
                         mOpenSocket.close();
                         mOpenSocket = null;
-                        mSocketWriteRunnable.setOpenSocket(null);
+                        socketWriteRunnable.setOpenSocket(null);
                         Logt.i(TAG, "Socket disconnected");
                     }
                 } catch (java.io.IOException e) {
@@ -964,7 +951,7 @@ public class ItsService extends Service implements SensorEventListener {
                     if (mOpenSocket != null) {
                         mOpenSocket.close();
                         mOpenSocket = null;
-                        mSocketWriteRunnable.setOpenSocket(null);
+                        socketWriteRunnable.setOpenSocket(null);
                     }
                 }
             } catch (java.io.IOException e) {
@@ -1024,7 +1011,7 @@ public class ItsService extends Service implements SensorEventListener {
                     mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
                 } else if ("isStreamCombinationSupported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
-                    doCheckStreamCombination(cameraId, cmdObj);
+                    doCheckStreamCombination(cmdObj);
                 } else if ("isCameraPrivacyModeSupported".equals(cmdObj.getString("cmdName"))) {
                     doCheckCameraPrivacyModeSupport();
                 } else if ("isPrimaryCamera".equals(cmdObj.getString("cmdName"))) {
@@ -1104,8 +1091,7 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("doCaptureWithFlash".equals(cmdObj.getString("cmdName"))) {
                     doCaptureWithFlash(cmdObj);
                 } else if ("doGetUnavailablePhysicalCameras".equals(cmdObj.getString("cmdName"))) {
-                    String cameraId = cmdObj.getString("cameraId");
-                    doGetUnavailablePhysicalCameras(cameraId);
+                    doGetUnavailablePhysicalCameras();
                 } else if ("doCaptureWithExtensions".equals(cmdObj.getString("cmdName"))) {
                     int extension = cmdObj.getInt("extension");
                     doCaptureWithExtensions(cmdObj, extension);
@@ -1576,7 +1562,7 @@ public class ItsService extends Service implements SensorEventListener {
             if (cameraId.equals(unavailableIdCombo.first)) {
                 unavailablePhysicalCameras.add(unavailableIdCombo.second);
             }
-        };
+        }
         return unavailablePhysicalCameras;
     }
 
@@ -1616,16 +1602,14 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private void doCheckStreamCombination(String cameraId, JSONObject params) throws ItsException {
+    private void doCheckStreamCombination(JSONObject params) throws ItsException {
         try {
-            JSONObject obj = new JSONObject();
             JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
             prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
                     /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
                     /*reuseSession*/ false);
             int numSurfaces = mOutputImageReaders.length;
-            List<OutputConfiguration> outputConfigs =
-                    new ArrayList<OutputConfiguration>(numSurfaces);
+            List<OutputConfiguration> outputConfigs = new ArrayList<>(numSurfaces);
             for (int i = 0; i < numSurfaces; i++) {
                 OutputConfiguration config = new OutputConfiguration(
                         mOutputImageReaders[i].getSurface());
@@ -1677,9 +1661,7 @@ public class ItsService extends Service implements SensorEventListener {
 
         } catch (UnsupportedOperationException e) {
             mSocketRunnableObj.sendResponse("streamCombinationSupport", "unsupportedOperation");
-        } catch (IllegalArgumentException e) {
-            throw new ItsException("Error checking stream combination", e);
-        } catch (CameraAccessException e) {
+        } catch (IllegalArgumentException | CameraAccessException e) {
             throw new ItsException("Error checking stream combination", e);
         }
     }
@@ -1691,7 +1673,7 @@ public class ItsService extends Service implements SensorEventListener {
                 hasPrivacySupport ? "true" : "false");
     }
 
-    private void doGetUnavailablePhysicalCameras(String cameraId) throws ItsException {
+    private void doGetUnavailablePhysicalCameras() throws ItsException {
         try {
             JSONArray cameras = new JSONArray();
             JSONObject jsonObj = new JSONObject();
@@ -1700,7 +1682,7 @@ public class ItsService extends Service implements SensorEventListener {
             }
             jsonObj.put("unavailablePhysicalCamerasArray", cameras);
             Log.i(TAG, "unavailablePhysicalCameras : " +
-                    Arrays.asList(mUnavailablePhysicalCameras.toString()));
+                    List.of(mUnavailablePhysicalCameras.toString()));
             mSocketRunnableObj.sendResponse("unavailablePhysicalCameras", null, jsonObj, null);
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
@@ -1763,35 +1745,6 @@ public class ItsService extends Service implements SensorEventListener {
             }
         }
         mSocketRunnableObj.sendResponse("maxCamcorderProfileSize", maxProfileSize.toString());
-    }
-
-    private Set<Pair<String, String>> getUnavailablePhysicalCameras() throws ItsException {
-        final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
-                new LinkedBlockingQueue<>();
-        try {
-            CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
-                @Override
-                public void onPhysicalCameraUnavailable(String cameraId, String physicalCameraId) {
-                    unavailablePhysicalCamEventQueue.offer(new Pair<>(cameraId, physicalCameraId));
-                }
-            };
-            mCameraManager.registerAvailabilityCallback(ac, mCameraHandler);
-            Set<Pair<String, String>> unavailablePhysicalCameras =
-                    new HashSet<Pair<String, String>>();
-            Pair<String, String> candidatePhysicalIds =
-                    unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                    java.util.concurrent.TimeUnit.MILLISECONDS);
-            while (candidatePhysicalIds != null) {
-                unavailablePhysicalCameras.add(candidatePhysicalIds);
-                candidatePhysicalIds =
-                        unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                        java.util.concurrent.TimeUnit.MILLISECONDS);
-            }
-            mCameraManager.unregisterAvailabilityCallback(ac);
-            return unavailablePhysicalCameras;
-        } catch (Exception e) {
-            throw new ItsException("Exception: ", e);
-        }
     }
 
     private void doCheckPrimaryCamera(String cameraId) throws ItsException {
@@ -3728,12 +3681,8 @@ public class ItsService extends Service implements SensorEventListener {
             if (mSession != null) {
                 mSession.close();
             }
-            if (previewSurface != null) {
-                previewSurface.release();
-            }
-            if (preview != null) {
-                preview.release();
-            }
+            previewSurface.release();
+            preview.release();
         }
     }
 
@@ -3772,10 +3721,8 @@ public class ItsService extends Service implements SensorEventListener {
             boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
                     /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
                     /*backgroundRequest*/ false, /*reuseSession*/ false);
-            numSurfaces = mOutputImageReaders.length;
-            numCaptureSurfaces = numSurfaces;
 
-            Surface previewSurface = configureAndCreateExtensionSession(
+            configureAndCreateExtensionSession(
                     mOutputImageReaders[0].getSurface(),
                     extension,
                     sessionListener,
@@ -4386,11 +4333,7 @@ public class ItsService extends Service implements SensorEventListener {
                     mCountCallbacksRemaining.decrementAndGet();
                     mCountCallbacksRemaining.notify();
                 }
-            } catch (IOException e) {
-                Logt.e(TAG, "Script error: ", e);
-            } catch (InterruptedException e) {
-                Logt.e(TAG, "Script error: ", e);
-            } catch (ItsException e) {
+            } catch (IOException | InterruptedException | ItsException e) {
                 Logt.e(TAG, "Script error: ", e);
             }
         }
@@ -4737,51 +4680,6 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.e(TAG, "Script error: capture failed");
         }
 
-    }
-
-    private class AutoframingResultListener extends CaptureResultListener {
-        private volatile boolean mStopped = false;
-
-        @Override
-        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
-                long timestamp, long frameNumber) {
-        }
-
-        @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
-                TotalCaptureResult result) {
-            try {
-                if (mStopped) {
-                    return;
-                }
-
-                if (request == null || result == null) {
-                    throw new ItsException("Request/Result is invalid");
-                }
-
-                Logt.i(TAG, buildLogString(result));
-
-                synchronized (mAutoframingStateLock) {
-                    if (result.get(CaptureResult.CONTROL_AUTOFRAMING_STATE) != null) {
-                        mConvergedAutoframing = result.get(CaptureResult.CONTROL_AUTOFRAMING_STATE)
-                                == CaptureResult.CONTROL_AUTOFRAMING_STATE_CONVERGED;
-                    }
-                }
-                mInterlockAutoframing.open();
-            } catch (ItsException e) {
-                Logt.e(TAG, "Script error: ", e);
-            }
-        }
-
-        @Override
-        public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
-                CaptureFailure failure) {
-            Logt.e(TAG, "Script error: capture failed");
-        }
-
-        public void stop() {
-            mStopped = true;
-        }
     }
 
     private final CaptureResultListener mCaptureResultListener = new CaptureResultListener() {
