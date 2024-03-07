@@ -197,6 +197,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             for (Future<Double> result : resultList) {
                 achievedFrameRate += result.get();
             }
+            pool.shutdown();
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
