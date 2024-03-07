@@ -349,9 +349,6 @@ public class ItsService extends Service implements SensorEventListener {
                 new LinkedBlockingQueue<>();
     private Set<String> mUnavailablePhysicalCameras;
 
-    final Object mAutoframingStateLock = new Object();
-    private volatile boolean mConvergedAutoframing = false;
-
     static class MySensorEvent {
         public Sensor sensor;
         public int accuracy;
@@ -429,7 +426,7 @@ public class ItsService extends Service implements SensorEventListener {
     private Sensor mGyroSensor = null;
     private Sensor mRotationVector = null;
     private volatile LinkedList<MySensorEvent> mEvents = null;
-    private volatile Object mEventLock = new Object();
+    private final Object mEventLock = new Object();
     private volatile boolean mEventsEnabled = false;
     private HandlerThread mSensorThread = null;
     private Handler mSensorHandler = null;
@@ -1010,7 +1007,6 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getItsVersion".equals(cmdObj.getString("cmdName"))) {
                     mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
                 } else if ("isStreamCombinationSupported".equals(cmdObj.getString("cmdName"))) {
-                    String cameraId = cmdObj.getString("cameraId");
                     doCheckStreamCombination(cmdObj);
                 } else if ("isCameraPrivacyModeSupported".equals(cmdObj.getString("cmdName"))) {
                     doCheckCameraPrivacyModeSupport();
@@ -1032,8 +1028,7 @@ public class ItsService extends Service implements SensorEventListener {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
-                    String cameraId = cmdObj.getString("cameraId");
-                    doGetSupportedPreviewSizes(cameraId);
+                    doGetSupportedPreviewSizes();
                 } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
                     doGetQueryableStreamCombinations();
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
@@ -1230,7 +1225,6 @@ public class ItsService extends Service implements SensorEventListener {
                 throws ItsException {
             try {
                 JSONArray jsonSurfaces = new JSONArray();
-                int n = props.size();
                 for (String s : props.keySet()) {
                     JSONObject jsonSurface = new JSONObject();
                     jsonSurface.put(s, ItsSerializer.serialize(props.get(s)));
@@ -2570,11 +2564,10 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doGetSupportedVideoSizesCapped(String id) throws ItsException {
         int cameraId = Integer.parseInt(id);
-        StringBuilder profiles = new StringBuilder();
         // s1440p which is the max supported stream size in a combination, when preview
         // stabilization is on.
         Size maxPreviewSize = new Size(1920, 1440);
-        ArrayList<Size> outputSizes = new ArrayList<Size>();
+        ArrayList<Size> outputSizes = new ArrayList<>();
         for (Map.Entry<Integer, String> entry : CAMCORDER_PROFILE_QUALITIES_MAP.entrySet()) {
             if (CamcorderProfile.hasProfile(cameraId, entry.getKey())) {
                 CamcorderProfile camcorderProfile = getCamcorderProfile(cameraId, entry.getKey());
@@ -2612,7 +2605,7 @@ public class ItsService extends Service implements SensorEventListener {
         return arrList.contains(mode);
     }
 
-    private void doGetSupportedPreviewSizes(String id) throws ItsException {
+    private void doGetSupportedPreviewSizes() throws ItsException {
         StreamConfigurationMap configMap = mCameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         if (!StreamConfigurationMap.isOutputSupportedFor(SurfaceHolder.class)) {
@@ -2765,7 +2758,7 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private class MediaCodecListener extends MediaCodec.Callback {
+    private static class MediaCodecListener extends MediaCodec.Callback {
         private final MediaMuxer mMediaMuxer;
         private final Object mCondition;
         private int mTrackId = -1;
@@ -2903,7 +2896,7 @@ public class ItsService extends Service implements SensorEventListener {
                 profileId + " cameraId: " + cameraDeviceId + " size: " + videoSize + " in HLG10!");
         mediaCodec.start();
         try {
-            Thread.sleep(recordingDuration * 1000); // recordingDuration is in seconds
+            Thread.sleep(recordingDuration * 1000L); // recordingDuration is in seconds
         } catch (InterruptedException e) {
             throw new ItsException("Unexpected InterruptedException: ", e);
         }
@@ -2960,7 +2953,7 @@ public class ItsService extends Service implements SensorEventListener {
                 zoomRatio);
         assert(outputFilePath != null);
         Log.i(TAG, "Video recording outputFilePath:"+ outputFilePath);
-        setupMediaRecorderWithProfile(cameraDeviceId, camcorderProfile, outputFilePath);
+        setupMediaRecorderWithProfile(camcorderProfile, outputFilePath);
         // Prepare MediaRecorder
         try {
             mMediaRecorder.prepare();
@@ -2973,7 +2966,7 @@ public class ItsService extends Service implements SensorEventListener {
         try {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
-                    /*callback =*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
+                    /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
@@ -2984,7 +2977,7 @@ public class ItsService extends Service implements SensorEventListener {
                 profileId + " cameraId: " + cameraDeviceId + " size: " + videoSize);
             mMediaRecorder.start();
             try {
-                Thread.sleep(recordingDuration*1000); // recordingDuration is in seconds
+                Thread.sleep(recordingDuration * 1000L); // recordingDuration is in seconds
             } catch (InterruptedException e) {
                 throw new ItsException("Unexpected InterruptedException: ", e);
             }
@@ -3314,8 +3307,7 @@ public class ItsService extends Service implements SensorEventListener {
                 /* previewSurface */ surface,
                 /* captureSurface */ null,
                 extension,
-                sessionListener,
-                /* has10bitOutput*/ false);
+                sessionListener);
 
         Log.d(TAG, "capturePreviewFrameWithExtension [start extension session]");
         mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
@@ -3367,29 +3359,26 @@ public class ItsService extends Service implements SensorEventListener {
     private Surface configureAndCreateExtensionSession(
             Surface captureSurface,
             int extension,
-            CameraExtensionSession.StateCallback stateCallback,
-            boolean has10bitOutput) throws ItsException {
+            CameraExtensionSession.StateCallback stateCallback) throws ItsException {
         return configureAndCreateExtensionSession(
             null,
             captureSurface,
             extension,
-            stateCallback,
-            has10bitOutput);
+            stateCallback);
     }
 
     private Surface configureAndCreateExtensionSession(
             Surface previewSurface,
             Surface captureSurface,
             int extension,
-            CameraExtensionSession.StateCallback stateCallback,
-            boolean has10bitOutput) throws ItsException {
-        ArrayList outputConfig = new ArrayList<>();
+            CameraExtensionSession.StateCallback stateCallback) throws ItsException {
+        List<OutputConfiguration> outputConfig = new ArrayList<>();
         Size captureSize = null;
         if (captureSurface != null) {
             int captureWidth = mOutputImageReaders[0].getWidth();
             int captureHeight = mOutputImageReaders[0].getHeight();
             captureSize = new Size(captureWidth, captureHeight);
-            Log.i(TAG, "Capture size: " + captureSize.toString());
+            Log.i(TAG, "Capture size: " + captureSize);
             outputConfig.add(new OutputConfiguration(captureSurface));
         }
 
@@ -3483,7 +3472,7 @@ public class ItsService extends Service implements SensorEventListener {
                             mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                                     captureCallback, mResultHandler);
                         } catch (CameraAccessException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, "CameraCaptureSession configuration failed.", e);
                         }
                     }
 
@@ -3524,7 +3513,7 @@ public class ItsService extends Service implements SensorEventListener {
     // Set video and audio source should be done before setting the CamcorderProfile.
     // Output file path should be set after setting the CamcorderProfile.
     // These events should always be done in this particular order.
-    private void setupMediaRecorderWithProfile(int cameraId, CamcorderProfile camcorderProfile,
+    private void setupMediaRecorderWithProfile(CamcorderProfile camcorderProfile,
             String outputFilePath) {
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -3642,7 +3631,6 @@ public class ItsService extends Service implements SensorEventListener {
                 mConvergeAETriggered = false;
             }
             long tstart = System.currentTimeMillis();
-            boolean triggeredAE = false;
             while (!mPrecaptureTriggered) {
                 if (!mInterlock3A.block(TIMEOUT_3A * 1000) ||
                         System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
@@ -3692,8 +3680,6 @@ public class ItsService extends Service implements SensorEventListener {
             List<CaptureRequest.Builder> requests = ItsSerializer.deserializeRequestList(
                     mCamera, params, "captureRequests");
 
-            int numSurfaces = 0;
-            int numCaptureSurfaces = 0;
             BlockingExtensionSessionCallback sessionListener =
                     new BlockingExtensionSessionCallback();
             mCountRawOrDng.set(0);
@@ -3716,17 +3702,10 @@ public class ItsService extends Service implements SensorEventListener {
             mCaptureRawIsQuadBayerStats = false;
             mCaptureResults = new CaptureResult[requests.size()];
 
-            JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
-
-            boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
-                    /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
-                    /*backgroundRequest*/ false, /*reuseSession*/ false);
-
             configureAndCreateExtensionSession(
                     mOutputImageReaders[0].getSurface(),
                     extension,
-                    sessionListener,
-                    has10bitOutput);
+                    sessionListener);
 
             mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
 
@@ -4204,14 +4183,14 @@ public class ItsService extends Service implements SensorEventListener {
                     Logt.i(TAG, "Received JPEG capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
-                    int count = mCountJpg.getAndIncrement();
+                    mCountJpg.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("jpegImage" + physicalCameraId,
                         buf);
                 } else if (format == ImageFormat.JPEG_R) {
                     Logt.i(TAG, "Received JPEG/R capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
-                    int count = mCountJpg.getAndIncrement();
+                    mCountJpg.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("jpeg_rImage" + physicalCameraId,
                         buf);
                 } else if (format == ImageFormat.PRIVATE) {
@@ -4249,7 +4228,6 @@ public class ItsService extends Service implements SensorEventListener {
                         mCountRaw10QuadBayer.getAndIncrement();
                     } else {
                         ByteBuffer buf = ByteBuffer.wrap(img);
-                        int count = mCountRaw10.getAndIncrement();
                         mSocketRunnableObj.sendResponseCaptureBuffer(
                             "raw10Image" + physicalCameraId, buf);
                     }
@@ -4257,7 +4235,7 @@ public class ItsService extends Service implements SensorEventListener {
                     Logt.i(TAG, "Received RAW12 capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
                     ByteBuffer buf = ByteBuffer.wrap(img);
-                    int count = mCountRaw12.getAndIncrement();
+                    mCountRaw12.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("raw12Image" + physicalCameraId,
                         buf);
                 } else if (format == ImageFormat.RAW_SENSOR) {
@@ -4794,7 +4772,7 @@ public class ItsService extends Service implements SensorEventListener {
         }
     };
 
-    private class CaptureCallbackWaiter extends CameraCaptureSession.CaptureCallback {
+    private static class CaptureCallbackWaiter extends CameraCaptureSession.CaptureCallback {
         private final LinkedBlockingQueue<TotalCaptureResult> mResultQueue =
                 new LinkedBlockingQueue<>();
 
