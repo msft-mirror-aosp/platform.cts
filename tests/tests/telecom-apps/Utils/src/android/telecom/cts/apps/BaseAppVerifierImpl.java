@@ -25,6 +25,8 @@ import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForManaged;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_CLEANUP_STUCK_CALLS;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_RESET_CAR;
+import static android.telecom.cts.apps.ShellCommandExecutor.dumpTelecom;
+import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallState;
 import static android.telecom.cts.apps.WaitForInCallService.waitForInCallServiceBinding;
@@ -54,6 +56,7 @@ import android.telecom.CallException;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.util.Log;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
@@ -65,6 +68,7 @@ import java.util.List;
  * application that is bound to in the cts/tests/tests/telecom-apps dir.
  */
 public class BaseAppVerifierImpl {
+    static final String TAG = BaseAppVerifierImpl.class.getSimpleName();
     static final boolean HAS_TELECOM = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     private static final String REGISTER_SIM_SUBSCRIPTION_PERMISSION =
             "android.permission.REGISTER_SIM_SUBSCRIPTION";
@@ -92,22 +96,43 @@ public class BaseAppVerifierImpl {
     }
 
     public void setUp() throws Exception {
-        ShellCommandExecutor.executeShellCommand(mInstrumentation, COMMAND_RESET_CAR);
+        executeShellCommand(mInstrumentation, COMMAND_RESET_CAR);
         AppOpsManager aom = mContext.getSystemService(AppOpsManager.class);
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
                 (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_PROCESS_OUTGOING_CALLS,
                         Process.myUid(), AppOpsManager.MODE_ALLOWED));
         mPreviousDefaultDialer = ShellCommandExecutor.getDefaultDialer(mInstrumentation);
         ShellCommandExecutor.setDefaultDialer(mInstrumentation, mCallingPackageName);
+        // In order to isolate cascading test failures, cleanup the telecom or cts test process
+        maybeCleanupTelecom();
     }
 
     public void tearDown() throws Exception {
-        ShellCommandExecutor.executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
+        executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
         if (!mPreviousDefaultDialer.equals("")) {
             ShellCommandExecutor.setDefaultDialer(mInstrumentation, mPreviousDefaultDialer);
         }
         clearUserDefaultPhoneAccountOverride();
         ShellIdentityUtils.dropShellPermissionIdentity();
+    }
+
+    public void maybeCleanupTelecom() {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        try {
+            if (mTelecomManager.isInCall()) {
+                Log.w(TAG, "maybeCleanupTelecom: Telecom is in a call");
+                dumpTelecom(mInstrumentation);
+                executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
+            }
+            if (BindUtils.hasBoundTestApp()) {
+                Log.w(TAG, "maybeCleanupTelecom: A test app is bound when it should not be");
+                BindUtils.printBoundTestApps();
+            }
+        } catch (Exception e) {
+            // ignore exception
+        }
     }
 
     public static boolean shouldTestTelecom(Context context) {
