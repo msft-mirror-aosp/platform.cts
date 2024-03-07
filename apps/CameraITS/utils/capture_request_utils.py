@@ -210,6 +210,7 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
     ]
   out_sizes.sort(reverse=True, key=lambda s: s[0])  # 1st pass, sort by width
   out_sizes.sort(reverse=True, key=lambda s: s[0] * s[1])  # sort by area
+  logging.debug('Available %s output sizes: %s', fmt, out_sizes)
   return out_sizes
 
 
