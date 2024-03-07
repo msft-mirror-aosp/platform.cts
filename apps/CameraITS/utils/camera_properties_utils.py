@@ -58,8 +58,7 @@ def check_front_or_rear_camera(props):
     assertionError if not front or rear camera.
   """
   facing = props['android.lens.facing']
-  if not (facing == camera_properties_utils.LENS_FACING['BACK']
-      or facing == camera_properties_utils.LENS_FACING['FRONT']):
+  if not (facing == LENS_FACING['BACK'] or facing == LENS_FACING['FRONT']):
     raise AssertionError('Unknown lens facing: {facing}.')
 
 

@@ -83,6 +83,8 @@ public abstract class BaseNotificationManagerTest {
 
     static final String STUB_PACKAGE_NAME = "android.app.stubs";
     protected static final String NOTIFICATION_CHANNEL_ID = "NotificationManagerTest";
+    protected static final NotificationChannel NOTIFICATION_CHANNEL = new NotificationChannel(
+            NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT);
     protected static final String SHARE_SHORTCUT_CATEGORY =
             "android.app.stubs.SHARE_SHORTCUT_CATEGORY";
     protected static final String SHARE_SHORTCUT_ID = "shareShortcut";
@@ -118,8 +120,7 @@ public abstract class BaseNotificationManagerTest {
         assertEquals("Previous test left system in a bad state ",
                 0, mNotificationManager.getActiveNotifications().length);
 
-        mNotificationManager.createNotificationChannel(new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT));
+        mNotificationManager.createNotificationChannel(NOTIFICATION_CHANNEL);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mPackageManager = mContext.getPackageManager();
         mAudioManager = mContext.getSystemService(AudioManager.class);

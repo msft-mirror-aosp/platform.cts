@@ -19,6 +19,7 @@ package android.view.inputmethod.cts.installtests;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import android.Manifest;
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -50,6 +51,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @LargeTest
@@ -74,6 +77,7 @@ public final class InputMethodServiceSwitchingTest {
         final int currentUserId = currentUser.id();
 
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
+        assertImeInInputMethodList(Ime1Constants.IME_ID, currentUserId);
 
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
 
@@ -94,6 +98,7 @@ public final class InputMethodServiceSwitchingTest {
         final int currentUserId = currentUser.id();
 
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
+        assertImeInInputMethodList(Ime1Constants.IME_ID, currentUserId);
 
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
 
@@ -128,6 +133,26 @@ public final class InputMethodServiceSwitchingTest {
                                         PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0),
                 Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE,
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+    }
+
+    @NonNull
+    private static List<InputMethodInfo> getInputMethodList(int userId) {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final Context context = instrumentation.getTargetContext();
+        final InputMethodManager imm =
+                Objects.requireNonNull(context.getSystemService(InputMethodManager.class));
+        return SystemUtil.runWithShellPermissionIdentity(
+                () -> imm.getInputMethodListAsUser(userId),
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                Manifest.permission.QUERY_ALL_PACKAGES);
+    }
+
+    private static void assertImeInInputMethodList(String imeId, int userId) throws Exception {
+        PollingCheck.check(String.format("Ime %s must be in the IME list.", imeId), TIMEOUT,
+                () -> getInputMethodList(userId)
+                        .stream()
+                        .map(InputMethodInfo::getId)
+                        .anyMatch(imeId::equals));
     }
 
     private static void assertImeInCurrentInputMethodInfo(String imeId, int userId)

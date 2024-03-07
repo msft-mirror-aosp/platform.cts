@@ -824,6 +824,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         channelMap.put(channel2.getId(), channel2);
         channelMap.put(channel3.getId(), channel3);
         channelMap.put(channel4.getId(), channel4);
+        channelMap.put(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL);
         mNotificationManager.createNotificationChannel(channel1);
         mNotificationManager.createNotificationChannel(channel2);
         mNotificationManager.createNotificationChannel(channel3);
@@ -833,19 +834,14 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         List<NotificationChannel> channels = mNotificationManager.getNotificationChannels();
         for (NotificationChannel nc : channels) {
-            if (NotificationChannel.DEFAULT_CHANNEL_ID.equals(nc.getId())) {
-                continue;
-            }
-            if (NOTIFICATION_CHANNEL_ID.equals(nc.getId())) {
-                continue;
-            }
             assertFalse(channel3.getId().equals(nc.getId()));
             if (!channelMap.containsKey(nc.getId())) {
-                // failed cleanup from prior test run; ignore
-                continue;
+                fail("Found extra channel " + nc.getId());
             }
             compareChannels(channelMap.get(nc.getId()), nc);
         }
+        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this test
+        assertEquals(4, channels.size());
     }
 
     @Test

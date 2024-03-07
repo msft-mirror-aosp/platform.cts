@@ -55,6 +55,9 @@ class UinputTouchDevice(
         uinputDevice = createDevice(instrumentation, if (useDisplaySize) size else null)
         inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
         associateWith(display)
+
+        // Wait for display transitions to idle as associating an input device with a display could
+        // trigger one because of a display configuration change
         WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
         instrumentation.uiAutomation.syncInputTransactions()
     }

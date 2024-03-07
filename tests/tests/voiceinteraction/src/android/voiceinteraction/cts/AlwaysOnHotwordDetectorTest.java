@@ -95,7 +95,7 @@ import java.util.concurrent.TimeoutException;
 /** Tests for {@link AlwaysOnHotwordDetector} APIs. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode hotword detector")
-public class AlwaysOnHotwordDetectorTest extends AbstractHdsTestCase {
+public class AlwaysOnHotwordDetectorTest {
 
     private static final String TAG = "AlwaysOnHotwordDetectorTest";
     // The VoiceInteractionService used by this test
@@ -201,9 +201,6 @@ public class AlwaysOnHotwordDetectorTest extends AbstractHdsTestCase {
         // Hook up SoundTriggerInstrumentation to inject/observe STHAL operations.
         // Requires MANAGE_SOUND_TRIGGER
         runWithShellPermissionIdentity(mInstrumentationObserver::attachInstrumentation);
-
-        // Set whether voice activation permission check is enabled.
-        getService().setVoiceActivationPermissionEnabled(mVoiceActivationPermissionEnabled);
     }
 
     @After
@@ -884,7 +881,6 @@ public class AlwaysOnHotwordDetectorTest extends AbstractHdsTestCase {
                     AppOpsManager.OPSTR_RECEIVE_AMBIENT_TRIGGER_AUDIO,
                     AppOpsManager.OPSTR_RECORD_AUDIO_HOTWORD,
                     AppOpsManager.OPSTR_RECORD_AUDIO,
-                    RECEIVE_SANDBOX_TRIGGER_AUDIO_OP_STR,
                 };
 
         getInstrumentation()
@@ -932,7 +928,6 @@ public class AlwaysOnHotwordDetectorTest extends AbstractHdsTestCase {
                     AppOpsManager.OPSTR_RECEIVE_AMBIENT_TRIGGER_AUDIO,
                     AppOpsManager.OPSTR_RECORD_AUDIO_HOTWORD,
                     AppOpsManager.OPSTR_RECORD_AUDIO,
-                    RECEIVE_SANDBOX_TRIGGER_AUDIO_OP_STR,
                 };
 
         getInstrumentation()
