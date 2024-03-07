@@ -21,10 +21,10 @@ import android.content.ComponentName
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.FeatureUtil
-import kotlin.test.assertFailsWith
 import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertFailsWith
 
 /**
  * Test RequestNotificationsTest api.
@@ -35,6 +35,11 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class RequestNotificationsTest : UiAutomationTestBase(null, null) {
+
+    override fun setUp() {
+        super.setUp()
+        assumeFalse(FeatureUtil.isWatch())
+    }
 
     @Test
     fun test_requestNotifications() {
@@ -53,13 +58,6 @@ class RequestNotificationsTest : UiAutomationTestBase(null, null) {
         } else {
             confirmationUi.waitUntilNotificationVisible()
         }
-    }
-
-    override fun setUp() {
-        // The CompanionDeviceManager app is not available on Wear.
-        assumeFalse("Skipping test for wear devices", FeatureUtil.isWatch())
-
-        super.setUp()
     }
 
     override fun tearDown() {

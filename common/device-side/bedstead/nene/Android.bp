@@ -6,6 +6,7 @@ java_library_host {
     name: "NeneCommon",
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
 }
 
@@ -13,6 +14,7 @@ android_library {
     name: "NeneCommonAndroid",
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     sdk_version: "current",
@@ -28,6 +30,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     static_libs: [
@@ -49,6 +52,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
@@ -58,6 +62,7 @@ android_library {
         "NeneCommonAndroid",
         "RemoteFrameworkClasses",
         "androidx.test.uiautomator_uiautomator",
+        "modules-utils-binary-xml",
     ],
     min_sdk_version: "29",
     lint: {
@@ -69,6 +74,7 @@ android_test {
     name: "NeneTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -84,6 +90,7 @@ android_test {
         "compatibility-device-util-axt",
         "truth",
         "testng", // for assertThrows
+        "modules-utils-binary-xml",
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",
@@ -97,6 +104,7 @@ android_test {
     name: "InteractiveNeneTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -126,6 +134,7 @@ android_test {
     name: "NeneBenchmarks",
     srcs: [
         "src/benchmarks/java/**/benchmarks/*.java",
+        "src/benchmarks/java/**/benchmarks/*.kt",
         "src/benchmarks/java/**/benchmarks/*.proto",
     ],
     test_suites: [

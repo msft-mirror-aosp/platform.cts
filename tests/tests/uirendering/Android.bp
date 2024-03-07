@@ -36,6 +36,8 @@ android_test {
         "kotlin-test",
         "testng",
         "junit-params",
+        "flag-junit",
+        "hwui_flags_java_lib",
     ],
     jni_libs: ["libctsuirendering_jni"],
 
