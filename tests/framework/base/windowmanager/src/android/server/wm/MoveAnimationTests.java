@@ -16,11 +16,15 @@
 
 package android.server.wm;
 
-import android.app.Activity;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
 import android.view.Display;
@@ -30,15 +34,12 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test the following APIs for controlling FLAG_NO_MOVE_ANIMATION:
@@ -99,6 +100,13 @@ public class MoveAnimationTests extends WindowManagerTestBase {
             attrs.gravity = Gravity.RIGHT | Gravity.BOTTOM;
             getWindow().setAttributes(attrs);
         }
+    }
+
+    @Before
+    public void setUp() {
+        // Skipping this test on watch as Wear does not support overlapping activities
+        assumeFalse("Skipping test: Wear OS does not support overlapping activities ",
+                FeatureUtil.isWatch());
     }
 
     @Test
