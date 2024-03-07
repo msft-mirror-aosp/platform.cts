@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,29 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.app.cts.broadcasts;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-public class MockReceiverDisableable extends BroadcastReceiver {
-    public static final int RESULT_CODE = 99;
+/**
+ * This class is used for testing android.content.BroadcastReceiver.
+ *
+ * @see BroadcastReceiver
+ */
+public class MockReceiverAbort extends BroadcastReceiver {
+    public static final int RESULT_CODE = 3;
+    public static final String RESULT_DATA = "abort";
+    public static final String RESULT_EXTRAS_ABORT_KEY = "abort";
+    public static final String RESULT_EXTRAS_ABORT_VALUE = "abort value";
 
-    @Override
     public void onReceive(Context context, Intent intent) {
-        setResultCode(RESULT_CODE);
+        Bundle map = getResultExtras(false);
+        map.putString(RESULT_EXTRAS_ABORT_KEY, RESULT_EXTRAS_ABORT_VALUE);
+        setResult(RESULT_CODE, RESULT_DATA, map);
+
+        abortBroadcast();
     }
 }

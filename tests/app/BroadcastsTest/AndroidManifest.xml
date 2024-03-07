@@ -17,6 +17,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.broadcasts">
 
+    <permission android:name="com.android.cts.broadcasts.SIGNATURE_PERMISSION"
+                android:protectionLevel="signature"/>
+
+    <uses-permission android:name="com.android.cts.broadcasts.SIGNATURE_PERMISSION"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
     <queries>
@@ -27,6 +31,38 @@
     <application android:label="CtsBroadcastTestCases"
                  android:requestLegacyExternalStorage="true">
         <uses-library android:name="android.test.runner"/>
+
+        <receiver android:name="android.app.cts.broadcasts.MockReceiverFirst"
+                  android:exported="true">
+            <intent-filter android:priority="3">
+                <action android:name="com.android.cts.broadcasts.BROADCAST_TESTABORT"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="android.app.cts.broadcasts.MockReceiverAbort"
+                  android:exported="true">
+            <intent-filter android:priority="2">
+                <action android:name="com.android.cts.broadcasts.BROADCAST_TESTABORT"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="android.app.cts.broadcasts.MockReceiver"
+                  android:permission="com.android.cts.broadcasts.SIGNATURE_PERMISSION"
+                  android:exported="true">
+            <intent-filter android:priority="1">
+                <action android:name="com.android.cts.broadcasts.BROADCAST_MOCKTEST"/>
+                <action android:name="com.android.cts.broadcasts.BROADCAST_TESTABORT"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver that will be explicitly disabled at runtime -->
+        <receiver android:name="android.app.cts.broadcasts.MockReceiverDisableable"
+                  android:enabled="true"
+                  android:exported="true">
+            <intent-filter android:priority="1">
+                <action android:name="com.android.cts.broadcasts.BROADCAST_DISABLED"/>
+            </intent-filter>
+        </receiver>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

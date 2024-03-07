@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.app.cts.broadcasts;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -26,17 +26,20 @@ import android.os.Bundle;
  *
  * @see BroadcastReceiver
  */
-public class MockReceiverAbort extends BroadcastReceiver {
-    public static final int RESULT_CODE = 3;
-    public static final String RESULT_DATA = "abort";
-    public static final String RESULT_EXTRAS_ABORT_KEY = "abort";
-    public static final String RESULT_EXTRAS_ABORT_VALUE = "abort value";
+public class MockReceiver extends BroadcastReceiver {
+    public static final int RESULT_CODE = 4;
+    public static final String RESULT_DATA = "add";
+    public static final String RESULT_EXTRAS_INVARIABLE_KEY = "invariable";
+    public static final String RESULT_EXTRAS_INVARIABLE_VALUE = "invariable value";
+    public static final String RESULT_EXTRAS_REMOVE_KEY = "remove";
+    public static final String RESULT_EXTRAS_REMOVE_VALUE = "remove value";
+    public static final String RESULT_EXTRAS_ADD_KEY = "add";
+    public static final String RESULT_EXTRAS_ADD_VALUE = "add value";
 
     public void onReceive(Context context, Intent intent) {
         Bundle map = getResultExtras(false);
-        map.putString(RESULT_EXTRAS_ABORT_KEY, RESULT_EXTRAS_ABORT_VALUE);
+        map.remove(RESULT_EXTRAS_REMOVE_KEY);
+        map.putString(RESULT_EXTRAS_ADD_KEY, RESULT_EXTRAS_ADD_VALUE);
         setResult(RESULT_CODE, RESULT_DATA, map);
-
-        abortBroadcast();
     }
 }

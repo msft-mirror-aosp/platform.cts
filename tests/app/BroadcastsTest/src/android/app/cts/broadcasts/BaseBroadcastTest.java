@@ -328,7 +328,7 @@ abstract class BaseBroadcastTest {
             Log.e(TAG, "Service got disconnected: " + componentName);
         }
 
-        private IBinder getService() throws Exception {
+        public IBinder getService() throws Exception {
             final IBinder service = mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC,
                     TimeUnit.SECONDS);
             return service;

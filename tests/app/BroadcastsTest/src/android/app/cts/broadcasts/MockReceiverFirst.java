@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.app.cts.broadcasts;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
