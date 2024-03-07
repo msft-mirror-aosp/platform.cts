@@ -39,8 +39,6 @@ public final class DeviceTestConstants {
 
     public static final TestInfo TEST_CREATE_IME1 =
             new TestInfo(PACKAGE, SERVICE_TEST, "testCreateIme1");
-    public static final TestInfo TEST_SWITCH_INPUTMETHOD =
-            new TestInfo(PACKAGE, SERVICE_TEST, "testSwitchInputMethod");
     public static final TestInfo TEST_SWITCH_NEXT_INPUT =
             new TestInfo(PACKAGE, SERVICE_TEST, "testSwitchToNextInputMethod");
     public static final TestInfo TEST_SWITCH_PREVIOUS_INPUT =

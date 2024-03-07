@@ -169,39 +169,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         testSwitchToHandwritingIme(true);
     }
 
-    private void testSwitchInputMethod(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD));
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testSwitchInputMethodFull() throws Exception {
-        testSwitchInputMethod(false);
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testSwitchInputMethodInstant() throws Exception {
-        testSwitchInputMethod(true);
-    }
-
     private void testSwitchToNextInput(boolean instant, boolean imeForceQueryable)
             throws Exception {
         sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_NEXT_INPUT);

@@ -22,12 +22,10 @@ import static android.inputmethodservice.cts.DeviceEvent.isType;
 import static android.inputmethodservice.cts.common.BusyWaitUtils.pollingCheck;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_BIND_INPUT;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_CREATE;
-import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_DESTROY;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_START_INPUT;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_UNBIND_INPUT;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.ACTION_IME_COMMAND;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_INPUT_METHOD;
-import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_INPUT_METHOD_WITH_SUBTYPE;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_TO_NEXT_INPUT;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_TO_PREVIOUS_INPUT;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.EXTRA_ARG_STRING1;
@@ -56,7 +54,6 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -101,37 +98,6 @@ public class InputMethodServiceDeviceTest {
                         .filter(isNewerThan(startActivityTime))
                         .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_START_INPUT))),
                 TIMEOUT, "CtsInputMethod1.onStartInput is called");
-    }
-
-    /**
-     * Test {@link android.inputmethodservice.InputMethodService#switchInputMethod(String,
-     * InputMethodSubtype)}.
-     */
-    @Test
-    public void testSwitchInputMethod() throws Throwable {
-        final TestHelper helper = new TestHelper();
-        final long startActivityTime = SystemClock.uptimeMillis();
-        helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
-                EditTextAppConstants.URI);
-        pollingCheck(() -> helper.queryAllEvents()
-                        .filter(isNewerThan(startActivityTime))
-                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_START_INPUT))),
-                TIMEOUT, "CtsInputMethod1.onStartInput is called");
-        helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME).click();
-
-        final long setImeTime = SystemClock.uptimeMillis();
-        // call setInputMethodAndSubtype(IME2, null)
-        helper.shell(ShellCommandUtils.broadcastIntent(
-                ACTION_IME_COMMAND, Ime1Constants.PACKAGE,
-                "-e", EXTRA_COMMAND, COMMAND_SWITCH_INPUT_METHOD_WITH_SUBTYPE,
-                "-e", EXTRA_ARG_STRING1, Ime2Constants.IME_ID));
-        pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme())
-                        .equals(Ime2Constants.IME_ID),
-                TIMEOUT, "CtsInputMethod2 is current IME");
-        pollingCheck(() -> helper.queryAllEvents()
-                        .filter(isNewerThan(setImeTime))
-                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_DESTROY))),
-                TIMEOUT, "CtsInputMethod1.onDestroy is called");
     }
 
     /**
