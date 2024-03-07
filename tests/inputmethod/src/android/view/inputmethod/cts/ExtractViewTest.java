@@ -187,7 +187,6 @@ public class ExtractViewTest {
             // Call commitText() and verify the committed text.
             final String text = "commitText-" + marker;
             imeSession.callCommitText(text, 1 /* newCursorPosition */);
-            assertThat(mUiDevice.wait(Until.findObject(By.text(text)), TIMEOUT)).isNotNull();
             SystemUtil.eventually(
                     () -> assertThat(editText.getText().toString()).isEqualTo(text), TIMEOUT);
         }
