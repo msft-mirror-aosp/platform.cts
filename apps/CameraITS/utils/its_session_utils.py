@@ -2255,6 +2255,68 @@ class ItsSession(object):
     logging.debug('Facing to camera IDs: %s', facing_to_ids)
     return facing_to_ids
 
+  def is_low_light_boost_available(self, camera_id, extension=-1):
+    """Checks if low light boost is available for camera id and extension.
+
+    If the extension is not provided (or -1) then low light boost support is
+    checked for a camera2 session.
+
+    Args:
+      camera_id: int; device ID
+      extension: int; extension type
+    Returns:
+      True if low light boost is available and false otherwise.
+    """
+    cmd = {
+        'cmdName': 'isLowLightBoostAvailable',
+        'cameraId': camera_id,
+        'extension': extension
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'isLowLightBoostAvailable':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def do_capture_preview_frame(self,
+                               camera_id,
+                               preview_size,
+                               frame_num=0,
+                               extension=-1,
+                               cap_request={}):
+    """Captures the nth preview frame from the preview stream.
+
+    By default the 0th frame is the first frame. The extension type can also be
+    provided or -1 to use Camera2 which is the default.
+
+    Args:
+      camera_id: int; device ID
+      preview_size: int; preview size
+      frame_num: int; frame number to capture
+      extension: int; extension type
+      cap_request: dict; python dict specifying the key/value pair of capture
+        request keys, which will be converted to JSON and sent to the device.
+    Returns:
+      Single JPEG frame capture as numpy array of bytes
+    """
+    cmd = {
+        'cmdName': 'doCapturePreviewFrame',
+        'cameraId': camera_id,
+        'previewSize': preview_size,
+        'frameNum': frame_num,
+        'extension': extension,
+        'captureRequest': cap_request,
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, buf = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'jpegImage':
+      raise error_util.CameraItsError('Invalid command response')
+    return buf
+
 
 def parse_camera_ids(ids):
   """Parse the string of camera IDs into array of CameraIdCombo tuples.
