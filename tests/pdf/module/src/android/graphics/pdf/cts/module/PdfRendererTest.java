@@ -576,7 +576,7 @@ public class PdfRendererTest {
     public void write_protectedPdf_withSecurity() throws Exception {
         PdfRenderer expectedRenderer = createRendererUsingNewConstructor(PROTECTED_PDF, mContext,
                 LOAD_PARAMS);
-        File filePath = getFile(mContext, "protectedPdf1.pdf");
+        File filePath = getFile(mContext, "Protected.pdf");
         String absolutePath = filePath.getAbsolutePath();
         ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(filePath,
                 ParcelFileDescriptor.MODE_READ_WRITE);
@@ -599,10 +599,10 @@ public class PdfRendererTest {
 
     @Test
     public void write_withUnprotected() throws Exception {
-        assertWriteWithUnprotectedPdf(createRenderer(SAMPLE_PDF, mContext), "newPdf1.pdf");
+        assertWriteWithUnprotectedPdf(createRenderer(SAMPLE_PDF, mContext), "Unprotected.pdf");
 
         assertWriteWithUnprotectedPdf(createRendererUsingNewConstructor(SAMPLE_PDF, mContext,
-                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR), "newPdf.pdf");
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR), "NewUnprotected.pdf");
     }
 
     private void assertWriteWithUnprotectedPdf(PdfRenderer expectedRenderer, String fileName)
