@@ -293,6 +293,11 @@
     <!-- b/326655855 -->
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
 
+    <!-- b/326656256 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+
     <!-- b/328010720 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
