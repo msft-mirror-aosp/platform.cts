@@ -39,6 +39,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.CallLog;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
@@ -60,6 +61,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -1588,6 +1590,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      */
     @CddTest(requirements = "7.4.1.2/C-12-1,C-12-2")
     @ApiTest(apis = {"android.telecom.TelecomManager#isInSelfManagedCall"})
+    @RequiresFlagsEnabled(Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
     public void testIsInSelfManagedCall() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
