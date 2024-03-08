@@ -17,6 +17,19 @@
 package android.view.cts.util;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nCreateInputReceiver;
+import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nDeleteInputReceiver;
+import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nGetInputTransferToken;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_create;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_fromJava;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_release;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_apply;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_create;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_releaseBuffer;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_reparent;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setOnCommitCallback;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setVisibility;
 
 import android.app.Service;
 import android.content.Context;
@@ -32,6 +45,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceControl;
@@ -39,6 +53,7 @@ import android.view.SurfaceControl.Transaction;
 import android.view.SurfaceControlViewHost;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.cts.util.ASurfaceControlInputReceiverTestUtils.InputReceiver;
 import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 import android.view.cts.util.aidl.IMotionEventReceiver;
 import android.widget.FrameLayout;
@@ -62,6 +77,9 @@ public class EmbeddedSCVHService extends Service {
     private SlowView mSlowView;
 
     private SurfaceControl mSurfaceControl;
+    private long mNativeSurfaceControl;
+    private long mBuffer;
+    private long mNativeBatchedInputReceiver;
 
     private WindowManager mWm;
 
@@ -167,7 +185,7 @@ public class EmbeddedSCVHService extends Service {
         }
 
         @Override
-        public String attachEmbeddedSurfaceControl(SurfaceControl parentSc, int displayId,
+        public String attachEmbeddedSurfaceControl(SurfaceControl parentSc,
                 InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
                 @Nullable IMotionEventReceiver receiver) {
             CountDownLatch registeredLatch = new CountDownLatch(1);
@@ -184,7 +202,7 @@ public class EmbeddedSCVHService extends Service {
                 surface.unlockCanvasAndPost(c);
 
                 mEmbeddedInputTransferToken = mWm.registerBatchedSurfaceControlInputReceiver(
-                        displayId, hostToken, mSurfaceControl, Choreographer.getInstance(),
+                        hostToken, mSurfaceControl, Choreographer.getInstance(),
                         event -> {
                             if (event instanceof MotionEvent) {
                                 if (transferTouchToHost) {
@@ -229,6 +247,76 @@ public class EmbeddedSCVHService extends Service {
                     mWm.unregisterSurfaceControlInputReceiver(mSurfaceControl);
                     new Transaction().reparent(mSurfaceControl, null);
                     mSurfaceControl.release();
+                }
+            });
+        }
+
+        @Override
+        public boolean attachEmbeddedASurfaceControl(SurfaceControl parentSc,
+                InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+                @Nullable IMotionEventReceiver receiver) {
+            CountDownLatch registeredLatch = new CountDownLatch(2);
+            mHandler.post(() -> {
+                mNativeSurfaceControl = nSurfaceControl_create(
+                        nSurfaceControl_fromJava(parentSc));
+                long surfaceTransaction = nSurfaceTransaction_create();
+                nSurfaceTransaction_setVisibility(mNativeSurfaceControl, surfaceTransaction, true);
+                mBuffer = nSurfaceTransaction_setSolidBuffer(mNativeSurfaceControl,
+                        surfaceTransaction,
+                        width, height, Color.RED);
+                nSurfaceTransaction_setOnCommitCallback(surfaceTransaction,
+                        (latchTime, presentTime) -> registeredLatch.countDown());
+                nSurfaceTransaction_apply(surfaceTransaction);
+
+                mNativeBatchedInputReceiver = nCreateInputReceiver(true /* batched */,
+                        hostToken, mNativeSurfaceControl, new InputReceiver() {
+                            @Override
+                            public boolean onMotionEvent(MotionEvent motionEvent) {
+                                if (transferTouchToHost && mEmbeddedInputTransferToken != null
+                                        && motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                                    mWm.transferTouchGesture(mEmbeddedInputTransferToken,
+                                            hostToken);
+                                }
+
+                                try {
+                                    receiver.onMotionEventReceived(MotionEvent.obtain(motionEvent));
+                                } catch (RemoteException e) {
+                                    Log.e(TAG, "Failed to send motion event to host", e);
+                                }
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onKeyEvent(KeyEvent keyEvent) {
+                                return false;
+                            }
+                        });
+                mEmbeddedInputTransferToken = nGetInputTransferToken(mNativeBatchedInputReceiver);
+                registeredLatch.countDown();
+            });
+
+            try {
+                if (!registeredLatch.await(WAIT_TIME_S, TimeUnit.SECONDS)) {
+                    Log.e(TAG, "Failed to wait for input to be registered");
+                    return false;
+                }
+            } catch (InterruptedException e) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void tearDownEmbeddedASurfaceControl() {
+            mHandler.post(() -> {
+                if (mNativeSurfaceControl != 0) {
+                    long surfaceTransaction = nSurfaceTransaction_create();
+                    nSurfaceTransaction_reparent(mNativeSurfaceControl, 0, surfaceTransaction);
+                    nSurfaceTransaction_apply(surfaceTransaction);
+                    nSurfaceControl_release(mNativeSurfaceControl);
+
+                    nSurfaceTransaction_releaseBuffer(mBuffer);
+                    nDeleteInputReceiver(mNativeBatchedInputReceiver);
                 }
             });
         }
