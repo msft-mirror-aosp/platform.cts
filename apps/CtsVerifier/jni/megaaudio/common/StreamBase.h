@@ -37,6 +37,8 @@ public:
 
     StreamBase() :
         mChannelCount(0),
+        mChannelMask(0),
+        mNumExchangeChannels(0),
         mSampleRate(0),
         mRouteDeviceId(ROUTING_DEVICE_NONE),
         mBufferSizeInFrames(-1) {}
@@ -84,6 +86,9 @@ public:
 protected:
     // Audio attributes
     int32_t mChannelCount;
+    int32_t mChannelMask;
+    int32_t mNumExchangeChannels;   // this may be mChannelCount or the number of channels
+                                    // associated with mChannelMask
     int32_t mSampleRate;
     int32_t mRouteDeviceId;
     int32_t mBufferSizeInFrames;

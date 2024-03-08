@@ -183,7 +183,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
         // Open the streams.
         // Note AudioSources and AudioSinks get allocated at this point
         if (mDuplexAudioManager.buildStreams(BuilderBase.TYPE_OBOE, BuilderBase.TYPE_OBOE)
-                    ==  StreamBase.OK
+                ==  StreamBase.OK
                 && mDuplexAudioManager.start() == StreamBase.OK) {
             mPlaying = true;
         } else {
