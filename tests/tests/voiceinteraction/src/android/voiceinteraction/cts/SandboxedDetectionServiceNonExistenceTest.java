@@ -39,7 +39,7 @@ import java.util.Objects;
  * or VisualQueryDetectionService.
  */
 @AppModeFull(reason = "No real ue case for instant mode hotword detection service")
-public final class SandboxedDetectionServiceNonExistenceTest {
+public final class SandboxedDetectionServiceNonExistenceTest extends AbstractHdsTestCase {
     private static final String TAG = "SandboxedDetectionServiceNonExistenceTest";
     private static final String SERVICE_COMPONENT =
             "android.voiceinteraction.cts.services.CtsMainVoiceInteractionService";
@@ -59,6 +59,9 @@ public final class SandboxedDetectionServiceNonExistenceTest {
 
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
+
+        // Set whether voice activation permission enabled.
+        mService.setVoiceActivationPermissionEnabled(mVoiceActivationPermissionEnabled);
     }
 
     public String getTestVoiceInteractionService() {

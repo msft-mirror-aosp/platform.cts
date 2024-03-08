@@ -45,6 +45,8 @@ import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.UiObject2;

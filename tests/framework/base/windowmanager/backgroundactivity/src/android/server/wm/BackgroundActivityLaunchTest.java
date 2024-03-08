@@ -76,12 +76,18 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.window.flags.Flags;
 
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -95,11 +101,16 @@ import java.util.concurrent.TimeoutException;
  * the result and see if it starts an activity successfully.
  */
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String TAG = "BackgroundActivityLaunchTest";
 
@@ -1105,6 +1116,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequireFeature(PackageManager.FEATURE_APP_WIDGETS)
+    @RequireDoesNotHaveFeature(PackageManager.FEATURE_LEANBACK_ONLY)
     public void testAppWidgetConfigNoBalBypass() throws Exception {
         // Click bind widget button and then go home screen so app A will enter background state
         // with bind widget ability.
@@ -1179,12 +1192,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     private void clickAllowBindWidget(Components app, ResultReceiver resultReceiver)
             throws Exception {
-        PackageManager pm = mContext.getPackageManager();
-        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS)).isTrue();
-        // Skip on auto and TV devices only as they don't support appwidget bind.
-        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)).isFalse();
-        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)).isFalse();
-
         // Create appWidgetId so we can send it to app, to request bind widget and start config
         // activity.
         UiDevice device = UiDevice.getInstance(mInstrumentation);
@@ -1204,6 +1211,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
         // Find settings package and bind widget activity and click the create button.
         String settingsPkgName = "";
+        PackageManager pm = mContext.getPackageManager();
         List<ResolveInfo> ris = pm.queryIntentActivities(appWidgetIntent,
                 PackageManager.MATCH_DEFAULT_ONLY);
         for (ResolveInfo ri : ris) {

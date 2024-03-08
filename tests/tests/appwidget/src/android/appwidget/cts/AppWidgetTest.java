@@ -65,15 +65,18 @@ import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.DeviceConfig;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService.RemoteViewsFactory;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.DeviceConfigStateHelper;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,6 +85,7 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -96,6 +100,8 @@ public class AppWidgetTest extends AppWidgetTestCase {
     private static final long OPERATION_TIMEOUT = 20 * 1000; // 20 sec
 
     private final Object mLock = new Object();
+    private final DeviceConfigStateHelper mDeviceConfigStateHelper = new DeviceConfigStateHelper(
+            DeviceConfig.NAMESPACE_SYSTEMUI);
 
     @Before
     public void setUpDexmaker() throws Exception {
@@ -103,6 +109,11 @@ public class AppWidgetTest extends AppWidgetTestCase {
         // Dexmaker is used by mockito.
         System.setProperty("dexmaker.dexcache", getInstrumentation()
                 .getTargetContext().getCacheDir().getPath());
+    }
+
+    @After
+    public void cleanUp() throws Exception {
+        mDeviceConfigStateHelper.close();
     }
 
     @AppModeInstant(reason = "Instant apps cannot provide or host app widgets")
@@ -1437,25 +1448,33 @@ public class AppWidgetTest extends AppWidgetTestCase {
     @ApiTest(apis = {
             "android.appwidget.AppWidgetManager#setWidgetPreview",
             "android.appwidget.AppWidgetManager#getWidgetPreview",
+            "android.appwidget.AppWidgetManager#removeWidgetPreview",
+            "android.appwidget.AppWidgetProviderInfo#generatedPreviewCategories",
     })
     @Test
     public void testSetGeneratedPreview() {
+        // Disable setWidgetPreview rate limit for tests
+        setGeneratedPreviewRateLimit(/* resetIntervalMs= */ 0,
+                /* maxCallsPerInterval */ Integer.MAX_VALUE);
+
         final Context context = getInstrumentation().getTargetContext();
         final ComponentName provider = getFirstWidgetComponent();
         final AppWidgetProviderInfo initialInfo = getFirstAppWidgetProviderInfo();
         assertThat(initialInfo.generatedPreviewCategories).isEqualTo(0);
         assertThat(getAppWidgetManager().getWidgetPreview(initialInfo.provider,
-                    initialInfo.getProfile(), WIDGET_CATEGORY_HOME_SCREEN)).isNull();
+                initialInfo.getProfile(), WIDGET_CATEGORY_HOME_SCREEN)).isNull();
         assertThat(getAppWidgetManager().getWidgetPreview(initialInfo.provider,
-                    initialInfo.getProfile(), WIDGET_CATEGORY_KEYGUARD)).isNull();
+                initialInfo.getProfile(), WIDGET_CATEGORY_KEYGUARD)).isNull();
 
         final RemoteViews whiteLayout = new RemoteViews(context.getPackageName(),
                 R.layout.simple_white_layout);
         final RemoteViews blackLayout = new RemoteViews(context.getPackageName(),
                 R.layout.simple_black_layout);
 
-        getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN, whiteLayout);
-        getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_KEYGUARD, blackLayout);
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                whiteLayout)).isTrue();
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_KEYGUARD,
+                blackLayout)).isTrue();
 
         final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
         assertThat(info.generatedPreviewCategories).isEqualTo(
@@ -1471,7 +1490,8 @@ public class AppWidgetTest extends AppWidgetTestCase {
         assertThat(keyguardPreview.getLayoutId()).isEqualTo(blackLayout.getLayoutId());
 
         // Update previews for homescreen
-        getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN, blackLayout);
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                blackLayout)).isTrue();
         final RemoteViews updatedPreview = getAppWidgetManager().getWidgetPreview(info.provider,
                 info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN);
         assertThat(updatedPreview).isNotNull();
@@ -1483,9 +1503,57 @@ public class AppWidgetTest extends AppWidgetTestCase {
         final AppWidgetProviderInfo newInfo = getFirstAppWidgetProviderInfo();
         assertThat(newInfo.generatedPreviewCategories).isEqualTo(0);
         assertThat(getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
-                    WIDGET_CATEGORY_HOME_SCREEN)).isNull();
+                WIDGET_CATEGORY_HOME_SCREEN)).isNull();
         assertThat(getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
-                    WIDGET_CATEGORY_KEYGUARD)).isNull();
+                WIDGET_CATEGORY_KEYGUARD)).isNull();
+    }
+
+    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
+    @RequiresFlagsEnabled(Flags.FLAG_GENERATED_PREVIEWS)
+    @ApiTest(apis = {
+            "android.appwidget.AppWidgetManager#setWidgetPreview",
+            "android.appwidget.AppWidgetManager#removeWidgetPreview",
+    })
+    @Test
+    public void testGeneratedPreviewRateLimiting() {
+        // Set rate limit to 1 per 5 seconds.
+        final long resetIntervalMs = Duration.ofSeconds(5).toMillis();
+        setGeneratedPreviewRateLimit(resetIntervalMs, /* maxCallsPerInterval= */ 1);
+
+        // Disable and reenable provider to ensure provider's API call count is reset.
+        final Context context = getInstrumentation().getTargetContext();
+        final ComponentName provider = getFirstWidgetComponent();
+        context.getPackageManager().setComponentEnabledSetting(provider,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                /* flags= */ PackageManager.SYNCHRONOUS | PackageManager.DONT_KILL_APP);
+        context.getPackageManager().setComponentEnabledSetting(provider,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                /* flags= */ PackageManager.SYNCHRONOUS | PackageManager.DONT_KILL_APP);
+
+        final RemoteViews whiteLayout = new RemoteViews(context.getPackageName(),
+                R.layout.simple_white_layout);
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                whiteLayout)).isTrue();
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                whiteLayout)).isFalse();
+        try {
+            Thread.sleep(resetIntervalMs);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                whiteLayout)).isTrue();
+        getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
+    }
+
+    private void setGeneratedPreviewRateLimit(long resetIntervalMs, int maxCallsPerInterval) {
+        final DeviceConfig.Properties props = new DeviceConfig.Properties.Builder(
+                DeviceConfig.NAMESPACE_SYSTEMUI)
+                .setLong("generated_preview_api_reset_interval_ms", resetIntervalMs)
+                .setInt("generated_preview_api_max_calls_per_interval", maxCallsPerInterval)
+                .build();
+        mDeviceConfigStateHelper.set(props);
     }
 
     private void waitForCallCount(AtomicInteger counter, int expectedCount) {

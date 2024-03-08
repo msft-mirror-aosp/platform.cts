@@ -28,8 +28,19 @@ import its_session_utils
 import opencv_processing_utils
 
 _ANDROID11_API_LEVEL = 30
+_COMMON_SIZES = (
+    (1920, 1080),
+    (1440, 1080),
+    (1280, 720),
+    (960, 720),
+    (720, 480),
+    (640, 480)
+)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_SIZE = (1920, 1080)
+_PREVIEW_4x3 = (1440, 1080)
+_PRIVATE_FORMAT = 'priv'
+
 
 # Before API level 30, only resolutions with the following listed aspect ratio
 # are checked. Device launched after API level 30 will need to pass the test
@@ -92,6 +103,10 @@ def _create_format_list():
                       'cmpr': 'raw', 'cmpr_size': None})
   format_list.append({'iter': 'jpeg', 'iter_max': None,
                       'cmpr': 'yuv', 'cmpr_size': _PREVIEW_SIZE})
+  format_list.append({'iter': 'yuv', 'iter_max': None,
+                      'cmpr': 'priv', 'cmpr_size': _PREVIEW_SIZE})
+  format_list.append({'iter': 'yuv', 'iter_max': None,
+                      'cmpr': 'priv', 'cmpr_size': _PREVIEW_4x3})
   return format_list
 
 
@@ -287,8 +302,11 @@ class AspectRatioAndCropTest(its_base_test.ItsBaseTest):
         if not sizes:  # Device might not support RAW.
           continue
         w_cmpr, h_cmpr = sizes[0][0], sizes[0][1]
-        for size_iter in capture_request_utils.get_available_output_sizes(
-            fmt_iter, props, fmt['iter_max']):
+        test_sizes = capture_request_utils.get_available_output_sizes(
+            fmt_iter, props, fmt['iter_max'])
+        if fmt_cmpr == _PRIVATE_FORMAT:
+          test_sizes = [size for size in test_sizes if size in _COMMON_SIZES]
+        for size_iter in test_sizes:
           w_iter, h_iter = size_iter[0], size_iter[1]
           # Skip same format/size combination: ITS doesn't handle that properly.
           if w_iter*h_iter == w_cmpr*h_cmpr and fmt_iter == fmt_cmpr:
@@ -297,44 +315,47 @@ class AspectRatioAndCropTest(its_base_test.ItsBaseTest):
                           'format': fmt_iter}]
           out_surface.append({'width': w_cmpr, 'height': h_cmpr,
                               'format': fmt_cmpr})
-          cap = cam.do_capture(req, out_surface)[0]
-          _check_basic_correctness(cap, fmt_iter, w_iter, h_iter)
-          logging.debug('Captured %s with %s %dx%d. Compared size: %dx%d',
-                        fmt_iter, fmt_cmpr, w_iter, h_iter, w_cmpr, h_cmpr)
-          img = image_processing_utils.convert_capture_to_rgb_image(cap)
-          img *= 255  # cv2 uses [0, 255].
-          img_name = f'{name_with_log_path}_{fmt_iter}_with_{fmt_cmpr}_w{w_iter}_h{h_iter}.png'
-          circle = opencv_processing_utils.find_circle(
-              img, img_name, image_fov_utils.CIRCLE_MIN_AREA,
-              image_fov_utils.CIRCLE_COLOR)
-          opencv_processing_utils.append_circle_center_to_img(
-              circle, img, img_name, save_img=False)  # imgs saved on FAILs
+          if cam.is_stream_combination_supported(out_surface):
+            cap = cam.do_capture(req, out_surface)[0]
+            _check_basic_correctness(cap, fmt_iter, w_iter, h_iter)
+            logging.debug('Captured %s with %s %dx%d. Compared size: %dx%d',
+                          fmt_iter, fmt_cmpr, w_iter, h_iter, w_cmpr, h_cmpr)
+            img = image_processing_utils.convert_capture_to_rgb_image(cap)
+            img *= 255  # cv2 uses [0, 255].
+            img_name = f'{name_with_log_path}_{fmt_iter}_with_{fmt_cmpr}_w{w_iter}_h{h_iter}.png'
+            circle = opencv_processing_utils.find_circle(
+                img, img_name, image_fov_utils.CIRCLE_MIN_AREA,
+                image_fov_utils.CIRCLE_COLOR)
+            opencv_processing_utils.append_circle_center_to_img(
+                circle, img, img_name, save_img=False)  # imgs saved on FAILs
 
-          # Check pass/fail for fov coverage for all fmts in AR_CHECKED
-          img /= 255  # image_processing_utils uses [0, 1].
-          if _is_checked_aspect_ratio(first_api_level, w_iter, h_iter):
-            fov_chk_msg = image_fov_utils.check_fov(
-                circle, ref_fov, w_iter, h_iter)
-            if fov_chk_msg:
-              failed_fov.append(fov_chk_msg)
+            # Check pass/fail for fov coverage for all fmts in AR_CHECKED
+            img /= 255  # image_processing_utils uses [0, 1].
+            if _is_checked_aspect_ratio(first_api_level, w_iter, h_iter):
+              fov_chk_msg = image_fov_utils.check_fov(
+                  circle, ref_fov, w_iter, h_iter)
+              if fov_chk_msg:
+                failed_fov.append(fov_chk_msg)
+                image_processing_utils.write_image(img, img_name, True)
+
+            # Check pass/fail for aspect ratio.
+            ar_chk_msg = image_fov_utils.check_ar(
+                circle, aspect_ratio_gt, w_iter, h_iter,
+                f'{fmt_iter} with {fmt_cmpr}')
+            if ar_chk_msg:
+              failed_ar.append(ar_chk_msg)
               image_processing_utils.write_image(img, img_name, True)
 
-          # Check pass/fail for aspect ratio.
-          ar_chk_msg = image_fov_utils.check_ar(
-              circle, aspect_ratio_gt, w_iter, h_iter,
-              f'{fmt_iter} with {fmt_cmpr}')
-          if ar_chk_msg:
-            failed_ar.append(ar_chk_msg)
-            image_processing_utils.write_image(img, img_name, True)
-
-          # Check pass/fail for crop.
-          if run_crop_test:
-            crop_chk_msg = image_fov_utils.check_crop(
-                circle, cc_ct_gt, w_iter, h_iter,
-                f'{fmt_iter} with {fmt_cmpr}', crop_thresh_factor)
-            if crop_chk_msg:
-              failed_crop.append(crop_chk_msg)
-              image_processing_utils.write_image(img, img_name, True)
+            # Check pass/fail for crop.
+            if run_crop_test:
+              crop_chk_msg = image_fov_utils.check_crop(
+                  circle, cc_ct_gt, w_iter, h_iter,
+                  f'{fmt_iter} with {fmt_cmpr}', crop_thresh_factor)
+              if crop_chk_msg:
+                failed_crop.append(crop_chk_msg)
+                image_processing_utils.write_image(img, img_name, True)
+          else:
+            continue
 
       # Print any failed test results.
       _print_failed_test_results(failed_ar, failed_fov, failed_crop,

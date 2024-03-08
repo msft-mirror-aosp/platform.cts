@@ -28,5 +28,8 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.HostTest" >
         <option name="jar" value="CtsCrashDetailHostTestCases.jar" />
+        <!-- 1 minute; on Pixel 8 Pro each test takes around 10 s, adding some margin for
+             slower devices. -->
+        <option name="test-case-timeout" value="60000" />
     </test>
 </configuration>

@@ -48,7 +48,11 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelUuid;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SystemUserOnly;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.provider.VoicemailContract;
 import android.telephony.AccessNetworkConstants;
@@ -70,11 +74,13 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.UiccUtil;
+import com.android.internal.telephony.flags.Flags;
 
 import com.google.common.collect.Range;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -102,6 +108,9 @@ import javax.annotation.Nonnull;
 // TODO(b/130187425): Split CarrierApiTest apart to have separate test classes for functionality
 @RunWith(AndroidJUnit4.class)
 public class CarrierApiTest extends BaseCarrierApiTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "CarrierApiTest";
 
     private TelephonyManager mTelephonyManager;
@@ -109,6 +118,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private SubscriptionManager mSubscriptionManager;
     private ContentProviderClient mVoicemailProvider;
     private ContentProviderClient mStatusProvider;
+    private PackageManager mPackageManager;
     private Uri mVoicemailContentUri;
     private Uri mStatusContentUri;
     private String selfPackageName;
@@ -195,6 +205,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         mStatusContentUri = VoicemailContract.Status.buildSourceUri(selfPackageName);
         mStatusProvider =
                 context.getContentResolver().acquireContentProviderClient(mStatusContentUri);
+        mPackageManager = context.getPackageManager();
         mListenerThread = new HandlerThread("CarrierApiTest");
         mListenerThread.start();
     }
@@ -503,6 +514,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
     public void testTelephonyApisAreAccessible() {
         // The following methods may return any value depending on the state of the device. Simply
         // call them to make sure they do not throw any exceptions. Methods that return a device
@@ -530,6 +542,51 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             // TODO(b/235490259): test all slots once TM#isModemEnabledForSlot allows
             mTelephonyManager.isModemEnabledForSlot(
                     SubscriptionManager.getSlotIndex(mTelephonyManager.getSubscriptionId()));
+        } catch (SecurityException e) {
+            fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
+    public void testTelephonyApisAreAccessibleWithFeatureMapping() {
+        // The following methods may return any value depending on the state of the device. Simply
+        // call them to make sure they do not throw any exceptions. Methods that return a device
+        // identifier will be accessible to apps with carrier privileges in Q, but this may change
+        // in a future release.
+        try {
+            mTelephonyManager.getDeviceId();
+            mTelephonyManager.getDeviceSoftwareVersion();
+
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
+                mTelephonyManager.getImei();
+            }
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
+                mTelephonyManager.getMeid();
+            }
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
+                mTelephonyManager.getNai();
+                mTelephonyManager.getSimSerialNumber();
+                mTelephonyManager.getSubscriberId();
+                mTelephonyManager.getGroupIdLevel1();
+                mTelephonyManager.getLine1Number();
+                mTelephonyManager.getForbiddenPlmns();
+                mTelephonyManager.setForbiddenPlmns(new ArrayList<String>());
+                // TODO(b/235490259): test all slots once TM#isModemEnabledForSlot allows
+                mTelephonyManager.isModemEnabledForSlot(
+                        SubscriptionManager.getSlotIndex(mTelephonyManager.getSubscriptionId()));
+            }
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+                mTelephonyManager.getDataNetworkType();
+                mTelephonyManager.getServiceState();
+                mTelephonyManager.getManualNetworkSelectionPlmn();
+            }
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+                mTelephonyManager.getVoiceNetworkType();
+                mTelephonyManager.getVoiceMailNumber();
+                mTelephonyManager.getVisualVoicemailPackageName();
+                mTelephonyManager.getVoiceMailAlphaTag();
+            }
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
         }
@@ -1442,5 +1499,10 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
     private boolean isWear() {
         return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+    /** Checks whether the telephony feature is supported. */
+    private boolean hasFeature(String feature) {
+        return mPackageManager == null ? false : mPackageManager.hasSystemFeature(feature);
     }
 }

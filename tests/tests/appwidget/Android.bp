@@ -39,6 +39,7 @@ android_test {
         "junit",
         "compatibility-device-util-axt",
         "cts-wm-util",
+        "androidx.test.core",
     ],
     libs: ["android.test.base"],
     // Tag this module as a cts test artifact

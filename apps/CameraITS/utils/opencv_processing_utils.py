@@ -1006,10 +1006,15 @@ def get_patch_from_aruco_markers(
     outer_rect_coordinates[index] = tuple(corner[index])
 
   # Ensure that the image is not rotated
-  assert((outer_rect_coordinates[1][1] - outer_rect_coordinates[0][1])
-         <= IMAGE_ROTATION_THRESHOLD)
-  assert((outer_rect_coordinates[3][1] - outer_rect_coordinates[2][1])
-         <= IMAGE_ROTATION_THRESHOLD)
+  bottom_y_diff = outer_rect_coordinates[3][1] - outer_rect_coordinates[2][1]
+  top_y_diff = outer_rect_coordinates[1][1] - outer_rect_coordinates[0][1]
+
+  if ((top_y_diff > IMAGE_ROTATION_THRESHOLD) or
+      (bottom_y_diff> IMAGE_ROTATION_THRESHOLD)):
+    raise AssertionError('Image rotation is not within the threshold. '
+                         f'Actual bottom_y_diff: {bottom_y_diff}, '
+                         f'top_y_diff: {top_y_diff} '
+                         f'Expected {IMAGE_ROTATION_THRESHOLD}')
   top_left = tuple(map(int, outer_rect_coordinates[0]))
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
   cv2.rectangle(input_img, top_left, bottom_right,

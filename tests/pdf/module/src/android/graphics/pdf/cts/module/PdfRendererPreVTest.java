@@ -384,7 +384,7 @@ public class PdfRendererPreVTest {
     @Test
     public void write_protectedPdf_withSecurity() throws Exception {
         PdfRendererPreV expectedRenderer = createPreVRenderer(PROTECTED_PDF, mContext, LOAD_PARAMS);
-        File filePath = getFile(mContext, "protectedPdf1.pdf");
+        File filePath = getFile(mContext, "ProtectedPreV.pdf");
         String absolutePath = filePath.getAbsolutePath();
         ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(filePath,
                 ParcelFileDescriptor.MODE_READ_WRITE);
@@ -408,7 +408,7 @@ public class PdfRendererPreVTest {
     @Test
     public void write_withUnprotected() throws Exception {
         PdfRendererPreV expectedRenderer = createPreVRenderer(SAMPLE_PDF, mContext, null);
-        File filePath = getFile(mContext, "unprotected.pdf");
+        File filePath = getFile(mContext, "UnprotectedPreV.pdf");
         String absolutePath = filePath.getAbsolutePath();
         ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(filePath,
                 ParcelFileDescriptor.MODE_READ_WRITE);

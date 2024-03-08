@@ -19,7 +19,6 @@ package android.telecom.cts.apps;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.os.ParcelFileDescriptor;
-import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.telecom.PhoneAccountHandle;
@@ -36,14 +35,13 @@ import java.nio.charset.StandardCharsets;
  */
 public class ShellCommandExecutor {
     private static final String sTAG = ShellCommandExecutor.class.getSimpleName();
-    public static final String COMMAND_RESET_CAR = "telecom cleanup";
-    public static final String COMMAND_GET_DEFAULT_DIALER = "telecom get-default-dialer";
-    public static final String COMMAND_SET_DEFAULT_DIALER = "telecom set-default-dialer ";
-    public static final String COMMAND_ENABLE = "telecom set-phone-account-enabled ";
-    public static final String COMMAND_CLEANUP_STUCK_CALLS = "telecom cleanup-stuck-calls";
-
-    private static final String COMMAND_SET_DEFAULT_PHONE_ACCOUNT =
-            "telecom set-user-selected-outgoing-phone-account ";
+    public static final String COMMAND_RESET_CAR = "cmd telecom cleanup";
+    public static final String COMMAND_GET_DEFAULT_DIALER = "cmd telecom get-default-dialer";
+    public static final String COMMAND_SET_DEFAULT_DIALER = "cmd telecom set-default-dialer ";
+    public static final String COMMAND_ENABLE = "cmd telecom set-phone-account-enabled ";
+    public static final String COMMAND_CLEANUP_STUCK_CALLS = "cmd telecom cleanup-stuck-calls";
+    public static final String COMMAND_SET_DEFAULT_PHONE_ACCOUNT =
+            "cmd telecom set-user-selected-outgoing-phone-account ";
 
     /**
      * Executes the given shell command and returns the output in a string. Note that even

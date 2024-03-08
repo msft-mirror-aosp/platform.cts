@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.biometrics;
+package android.server.biometrics.util;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -218,7 +218,7 @@ public class Utils {
         keyGenerator.generateKey();
     }
 
-    static void createTimeBoundSecretKey(String keyName, int authTypes, boolean useStrongBox)
+    public static void createTimeBoundSecretKey(String keyName, int authTypes, boolean useStrongBox)
             throws Exception {
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);

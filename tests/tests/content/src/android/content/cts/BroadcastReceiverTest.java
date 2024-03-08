@@ -18,6 +18,13 @@ package android.content.cts;
 
 import static android.content.Context.RECEIVER_EXPORTED;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.app.BroadcastOptions;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -35,12 +42,16 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.ActivityInstrumentationTestCase2;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.server.am.nano.ActivityManagerServiceDumpBroadcastsProto;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -52,8 +63,9 @@ import java.util.concurrent.TimeUnit;
  * Test {@link BroadcastReceiver}.
  * TODO:  integrate the existing tests.
  */
+@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<MockActivity> {
+public class BroadcastReceiverTest {
     private static final int RESULT_INITIAL_CODE = 1;
     private static final String RESULT_INITIAL_DATA = "initial data";
 
@@ -82,19 +94,19 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
             new ComponentName("android.content.cts",
                     "android.content.cts.MockReceiverDisableable");
 
-    public BroadcastReceiverTest() {
-        super(TEST_PACKAGE_NAME, MockActivity.class);
+    private Context mContext;
+
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
+    @Test
     public void testConstructor() {
         new MockReceiverInternal();
     }
 
+    @Test
     public void testAccessDebugUnregister() {
         MockReceiverInternal mockReceiver = new MockReceiverInternal();
         assertFalse(mockReceiver.getDebugUnregister());
@@ -106,6 +118,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertFalse(mockReceiver.getDebugUnregister());
     }
 
+    @Test
     public void testSetOrderedHint() {
         MockReceiverInternal mockReceiver = new MockReceiverInternal();
 
@@ -204,25 +217,25 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         }
     }
 
-    public void testOnReceive () throws InterruptedException {
-        final MockActivity activity = getActivity();
-
+    @Test
+    public void testOnReceive() throws InterruptedException {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
-        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
 
         assertEquals(0, internalReceiver.getResultCode());
         assertEquals(null, internalReceiver.getResultData());
         assertEquals(null, internalReceiver.getResultExtras(false));
 
-        activity.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
         internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
 
-        activity.unregisterReceiver(internalReceiver);
+        mContext.unregisterReceiver(internalReceiver);
     }
 
+    @Test
     @AppModeFull
     public void testManifestReceiverPackage() throws InterruptedException {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
@@ -232,7 +245,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 MockReceiver.RESULT_EXTRAS_INVARIABLE_VALUE);
         map.putString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY,
                 MockReceiver.RESULT_EXTRAS_REMOVE_VALUE);
-        getInstrumentation().getContext().sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_MOCKTEST)
                         .setPackage(TEST_PACKAGE_NAME).addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 null, internalReceiver,
@@ -251,6 +264,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertNull(resultExtras.getString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY));
     }
 
+    @Test
     @AppModeFull
     public void testManifestReceiverComponent() throws InterruptedException {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
@@ -260,9 +274,9 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 MockReceiver.RESULT_EXTRAS_INVARIABLE_VALUE);
         map.putString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY,
                 MockReceiver.RESULT_EXTRAS_REMOVE_VALUE);
-        getInstrumentation().getContext().sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_MOCKTEST)
-                        .setClass(getActivity(), MockReceiver.class)
+                        .setClass(mContext, MockReceiver.class)
                         .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 null, internalReceiver,
                 null, RESULT_INITIAL_CODE, RESULT_INITIAL_DATA, map);
@@ -280,6 +294,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertNull(resultExtras.getString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY));
     }
 
+    @Test
     @AppModeFull
     public void testManifestReceiverPermission() throws InterruptedException {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
@@ -289,7 +304,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 MockReceiver.RESULT_EXTRAS_INVARIABLE_VALUE);
         map.putString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY,
                 MockReceiver.RESULT_EXTRAS_REMOVE_VALUE);
-        getInstrumentation().getContext().sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_MOCKTEST)
                         .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 SIGNATURE_PERMISSION, internalReceiver,
@@ -308,6 +323,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertNull(resultExtras.getString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY));
     }
 
+    @Test
     public void testNoManifestReceiver() throws InterruptedException {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
 
@@ -316,7 +332,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 MockReceiver.RESULT_EXTRAS_INVARIABLE_VALUE);
         map.putString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY,
                 MockReceiver.RESULT_EXTRAS_REMOVE_VALUE);
-        getInstrumentation().getContext().sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_MOCKTEST).addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 null, internalReceiver,
                 null, RESULT_INITIAL_CODE, RESULT_INITIAL_DATA, map);
@@ -334,6 +350,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 resultExtras.getString(MockReceiver.RESULT_EXTRAS_REMOVE_KEY));
     }
 
+    @Test
     @AppModeFull
     public void testAbortBroadcast() throws InterruptedException {
         MockReceiverInternalOrder internalOrderReceiver = new MockReceiverInternalOrder();
@@ -350,7 +367,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         // The order of the receiver is:
         // MockReceiverFirst --> MockReceiverAbort --> MockReceiver --> internalOrderReceiver.
         // And MockReceiver is the receiver which will be aborted.
-        getInstrumentation().getContext().sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_TESTABORT)
                         .setPackage(TEST_PACKAGE_NAME).addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 null, internalOrderReceiver,
@@ -370,9 +387,9 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 resultExtras.getString(MockReceiverAbort.RESULT_EXTRAS_ABORT_KEY));
     }
 
+    @Test
     public void testReceiverNotExported() throws Exception {
-        final Context context = getInstrumentation().getContext();
-        context.sendBroadcast(new Intent(ACTION_TEST_NOT_EXPORTED));
+        mContext.sendBroadcast(new Intent(ACTION_TEST_NOT_EXPORTED));
         try {
             assertFalse(COUNT_DOWN_LATCH.await(10, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
@@ -380,9 +397,9 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         }
     }
 
+    @Test
     public void testDisabledBroadcastReceiver() throws Exception {
-        final Context context = getInstrumentation().getContext();
-        PackageManager pm = context.getPackageManager();
+        PackageManager pm = mContext.getPackageManager();
 
         MockReceiverInternalVerifyUncalled lastReceiver =
                 new MockReceiverInternalVerifyUncalled(RESULT_INITIAL_CODE);
@@ -392,7 +409,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP);
 
-        context.sendOrderedBroadcast(
+        mContext.sendOrderedBroadcast(
                 new Intent(ACTION_BROADCAST_DISABLED).addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
                 null, lastReceiver,
                 null, RESULT_INITIAL_CODE, RESULT_INITIAL_DATA, new Bundle());
@@ -401,46 +418,44 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertEquals(RESULT_INTERNAL_FINAL_CODE, lastReceiver.getResultCode());
     }
 
+    @Test
     public void testPeekService() throws InterruptedException {
-        final MockActivity activity = getActivity();
-
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
-        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
 
-        activity.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
         internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
         assertNull(internalReceiver.getIBinder());
 
-        Intent intent = new Intent(activity, MockService.class);
+        Intent intent = new Intent(mContext, MockService.class);
         MyServiceConnection msc = new MyServiceConnection();
-        assertTrue(activity.bindService(intent, msc, Service.BIND_AUTO_CREATE));
+        assertTrue(mContext.bindService(intent, msc, Service.BIND_AUTO_CREATE));
         assertTrue(msc.waitForService(START_SERVICE_TIMEOUT));
 
         internalReceiver.reset();
-        activity.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
         internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
         assertNotNull(internalReceiver.getIBinder());
-        activity.unbindService(msc);
-        activity.stopService(intent);
-        activity.unregisterReceiver(internalReceiver);
+        mContext.unbindService(msc);
+        mContext.stopService(intent);
+        mContext.unregisterReceiver(internalReceiver);
     }
 
+    @Test
     public void testAsync() throws Exception {
-        final MockActivity activity = getActivity();
-
         final MockAsyncReceiver asyncReceiver = new MockAsyncReceiver();
         final IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
-        activity.registerReceiver(asyncReceiver, filter, RECEIVER_EXPORTED);
+        mContext.registerReceiver(asyncReceiver, filter, RECEIVER_EXPORTED);
 
         final Intent intent = new Intent(ACTION_BROADCAST_INTERNAL)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         final MockReceiverInternal resultReceiver = new MockReceiverInternal();
-        activity.sendOrderedBroadcast(intent, null, resultReceiver, null, 24, null, null);
+        mContext.sendOrderedBroadcast(intent, null, resultReceiver, null, 24, null, null);
 
         final PendingResult res = asyncReceiver.pendingResult.get(SEND_BROADCAST_TIMEOUT,
                 TimeUnit.MILLISECONDS);
@@ -451,21 +466,21 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
         assertEquals(42, resultReceiver.getResultCode());
     }
 
+    @Test
     public void testNewPhotoBroadcast_notReceived() throws InterruptedException {
-        final MockActivity activity = getActivity();
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_PICTURE);
-        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
         assertFalse(internalReceiver.waitForReceiverNoException(SEND_BROADCAST_TIMEOUT));
     }
 
+    @Test
     public void testNewVideoBroadcast_notReceived() throws InterruptedException {
-        final MockActivity activity = getActivity();
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_VIDEO);
-        activity.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
         assertFalse(internalReceiver.waitForReceiverNoException(SEND_BROADCAST_TIMEOUT));
     }
 
@@ -481,6 +496,7 @@ public class BroadcastReceiverTest extends ActivityInstrumentationTestCase2<Mock
      * documented developer expectations.
      */
     @CddTest(requirements = {"3.5/C-0-2"})
+    @Test
     public void testModern() throws Exception {
         final ActivityManagerServiceDumpBroadcastsProto dump = dumpBroadcasts();
         final String msg = "Devices must ship with the modern broadcast queue "

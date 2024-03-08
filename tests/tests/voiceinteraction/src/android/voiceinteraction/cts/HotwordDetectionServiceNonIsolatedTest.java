@@ -43,7 +43,7 @@ import java.util.Objects;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode hotword detection service")
-public class HotwordDetectionServiceNonIsolatedTest {
+public class HotwordDetectionServiceNonIsolatedTest extends AbstractHdsTestCase {
 
     private static final String TAG = "HotwordDetectionServiceNonIsolatedTest";
 
@@ -67,6 +67,9 @@ public class HotwordDetectionServiceNonIsolatedTest {
 
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
+
+        // Set whether voice activation permission enabled.
+        mService.setVoiceActivationPermissionEnabled(mVoiceActivationPermissionEnabled);
     }
 
     public String getTestVoiceInteractionService() {

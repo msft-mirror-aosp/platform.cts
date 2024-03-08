@@ -55,6 +55,7 @@ android_test {
         "android.view.inputmethod.flags-aconfig-java",
         "com.android.input.flags-aconfig-java",
         "ui-trace-collector",
+        "collector-device-lib",
     ],
 
     jni_libs: [

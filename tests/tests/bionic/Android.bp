@@ -69,7 +69,6 @@ cc_defaults {
     test_suites: [
         "general-tests",
         "mts-mainline-infra",
-        "mcts-mainline-infra",
     ],
 
     data: [

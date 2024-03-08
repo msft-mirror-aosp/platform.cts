@@ -39,10 +39,6 @@ public final class DeviceTestConstants {
 
     public static final TestInfo TEST_CREATE_IME1 =
             new TestInfo(PACKAGE, SERVICE_TEST, "testCreateIme1");
-    public static final TestInfo TEST_SWITCH_IME1_TO_IME2 =
-            new TestInfo(PACKAGE, SERVICE_TEST, "testSwitchIme1ToIme2");
-    public static final TestInfo TEST_SWITCH_INPUTMETHOD =
-            new TestInfo(PACKAGE, SERVICE_TEST, "testSwitchInputMethod");
     public static final TestInfo TEST_SWITCH_NEXT_INPUT =
             new TestInfo(PACKAGE, SERVICE_TEST, "testSwitchToNextInputMethod");
     public static final TestInfo TEST_SWITCH_PREVIOUS_INPUT =
@@ -51,8 +47,6 @@ public final class DeviceTestConstants {
             new TestInfo(PACKAGE, SERVICE_TEST, "testInputUnbindsOnImeStopped");
     public static final TestInfo TEST_INPUT_UNBINDS_ON_APP_STOPPED =
             new TestInfo(PACKAGE, SERVICE_TEST, "testInputUnbindsOnAppStopped");
-    public static final TestInfo TEST_IME_VISIBILITY_AFTER_IME_SWITCHING =
-            new TestInfo(PACKAGE, SERVICE_TEST, "testImeVisibilityAfterImeSwitching");
     public static final TestInfo TEST_IME_SWITCHING_WITHOUT_WINDOW_FOCUS_AFTER_DISPLAY_OFF_ON =
             new TestInfo(PACKAGE, SERVICE_TEST,
                     "testImeSwitchingWithoutWindowFocusAfterDisplayOffOn");
