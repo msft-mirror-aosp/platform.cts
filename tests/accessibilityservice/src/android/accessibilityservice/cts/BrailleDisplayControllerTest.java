@@ -717,9 +717,9 @@ public class BrailleDisplayControllerTest {
         disconnect_disconnectsExistingConnection();
         TestUtils.waitOn(mDeviceWaitObject, () -> {
             synchronized (mDeviceWaitObject) {
-                return mDeviceCount == 0;
+                return mDeviceCount == 0 && !(new File(HIDRAW_NODE_0).exists());
             }
-        }, CALLBACK_TIMEOUT_MS, "Expected all HIDRAW devices removed");
+        }, CALLBACK_TIMEOUT_MS, "Expected " + HIDRAW_NODE_0 + " to be removed");
 
         try (OutputStream testHidrawNode = createTestHidrawNode(HIDRAW_NODE_0)) {
             expectConnectionSuccess(mController, mExecutor, mBluetoothDevice1);
