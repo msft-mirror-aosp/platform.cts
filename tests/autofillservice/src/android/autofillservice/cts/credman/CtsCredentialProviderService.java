@@ -48,6 +48,8 @@ import java.util.concurrent.TimeUnit;
 public class CtsCredentialProviderService extends CredentialProviderService {
     private static final String TAG = "CredentialProviderServiceCts";
 
+    private static final String USERNAME = "defaultUsername";
+
     private static CountDownLatch sRespondLatch = new CountDownLatch(1);
 
     @Override
@@ -70,13 +72,15 @@ public class CtsCredentialProviderService extends CredentialProviderService {
         BeginGetCredentialResponse.Builder builder = new BeginGetCredentialResponse.Builder();
         for (BeginGetCredentialOption option: request.getBeginGetCredentialOptions()) {
             if (option instanceof BeginGetPasswordOption) {
+                Intent intent = new Intent("android.autofillservice.cts.credman.GET_PASSWORD");
+                intent.putExtra("username", USERNAME);
                 builder.addCredentialEntry(new PasswordCredentialEntry.Builder(
                         getApplicationContext(),
-                        "defaultUsername",
-                        PendingIntent.getService(
+                        USERNAME,
+                        PendingIntent.getActivity(
                                 getApplicationContext(),
-                                /* requestCode= */ 0,
-                                new Intent(),
+                                /* requestCode= */ 1,
+                                intent,
                                 PendingIntent.FLAG_IMMUTABLE),
                         (BeginGetPasswordOption) option).build());
             }
