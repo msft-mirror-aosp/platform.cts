@@ -92,6 +92,18 @@ public class TestCrashDetail extends BaseHostJUnit4Test {
         return null;
     }
 
+    private Tombstone waitForTombstone() throws Exception {
+        // Tombstoned might take some time to write the tombstone.
+        // Retry until we reach the test case timeout.
+        while (true) {
+            Tombstone tombstoneProto = findTombstone();
+            if (tombstoneProto != null) {
+                return tombstoneProto;
+            }
+            Thread.sleep(2000);
+        }
+    }
+
     private Tombstone runCrasher(String cmd) throws Exception {
         // See cts/tests/tests/debuggerd/debuggerd_cts_crasher.cpp
         CommandResult result =
@@ -99,7 +111,7 @@ public class TestCrashDetail extends BaseHostJUnit4Test {
                         .executeShellV2Command(
                                 "/data/local/tmp/debuggerd_cts_crasher " + cmd + " " + mUUID);
         assertThat(result.getExitCode()).isNotEqualTo(0);
-        Tombstone tombstoneProto = findTombstone();
+        Tombstone tombstoneProto = waitForTombstone();
         assertThat(tombstoneProto).isNotNull();
         return tombstoneProto;
     }

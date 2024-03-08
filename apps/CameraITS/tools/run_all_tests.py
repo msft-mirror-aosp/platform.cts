@@ -76,6 +76,7 @@ _TABLET_SCENES = (
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_night'),
+    os.path.join('scene_extensions', 'scene_low_light_boost'),
     'scene_video',
 )
 
@@ -94,6 +95,7 @@ _MANUAL_SCENES = ('scene5',)
 # Scene extensions
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_night'),
+                      os.path.join('scene_extensions', 'scene_low_light_boost'),
                       )
 
 # All possible scenes
@@ -137,6 +139,11 @@ _SCENE_REQ = types.MappingProxyType({
         'A tablet displayed scene with a white circle '
         'and four smaller circles inside of it. '
         'See tests/scene_extensions/scene_night/scene_night.png'
+    ),
+    os.path.join('scene_extensions', 'scene_low_light_boost'): (
+        'A tablet displayed scene with a grid of squares of varying '
+        'brightness. See '
+        'tests/scene_extensions/scene_low_light_boost/scene_low_light_boost.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
@@ -193,8 +200,15 @@ _LIGHTING_CONTROL_TESTS = (
     'test_preview_min_frame_rate.py',
     'test_led_snapshot.py',
     'test_night_extension.py',
+    'test_low_light_boost_extension.py',
     'test_hdr_extension.py',
     )
+
+_EXTENSION_NAMES = (
+    'hdr',
+    'low_light_boost',
+    'night',
+)
 
 _DST_SCENE_DIR = '/sdcard/Download/'
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
@@ -556,9 +570,10 @@ def main():
     if s.startswith('flash') or s.startswith('extensions'):
       scenes[i] = f'scene_{s}'
     # Handle scene_extensions
-    if s.startswith('hdr') or s.startswith('night'):
+    if any(s.startswith(extension) for extension in _EXTENSION_NAMES):
       scenes[i] = f'scene_extensions/scene_{s}'
-    if s.startswith('scene_hdr') or s.startswith('scene_night'):
+    if (any(s.startswith('scene_' + extension)
+            for extension in _EXTENSION_NAMES)):
       scenes[i] = f'scene_extensions/{s}'
 
   # Read config file and extract relevant TestBed

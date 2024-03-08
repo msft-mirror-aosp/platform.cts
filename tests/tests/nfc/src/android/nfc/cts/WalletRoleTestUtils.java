@@ -26,6 +26,8 @@ import android.app.role.OnRoleHoldersChangedListener;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.res.Resources;
+import android.text.TextUtils;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -48,28 +50,13 @@ public final class WalletRoleTestUtils {
     static final String PAYMENT_AID_2 = "A000000004101018";
     static final String NON_PAYMENT_AID_1 = "F053414950454D";
 
+    private static final String WALLET_OVERLAY_CONFIG = "config_defaultWallet";
+    private static final String CERTIFICATE_SEPARATOR = ":";
+
     static final List<String> WALLET_HOLDER_AIDS = Arrays.asList("A000000004101011",
             "A000000004101012",
             "A000000004101013",
             "A000000004101018");
-
-    static class RoleContext {
-        String mOriginalHolder;
-        Context mContext;
-        RoleContext(Context context) {
-            mContext = context;
-            mOriginalHolder = null;
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
-            mOriginalHolder = getDefaultWalletRoleHolder(context);
-            setDefaultWalletRoleHolder(context);
-        }
-
-        void clear() {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation().dropShellPermissionIdentity();
-        }
-    }
 
     static ComponentName getWalletRoleHolderService() {
         return new ComponentName(WALLET_HOLDER_PACKAGE_NAME,
@@ -136,8 +123,15 @@ public final class WalletRoleTestUtils {
     }
 
     static String getDefaultWalletRoleHolder(Context context) {
-        RoleManager roleManager = context.getSystemService(RoleManager.class);
-        return roleManager.getDefaultApplication(RoleManager.ROLE_WALLET);
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+            RoleManager roleManager = context.getSystemService(RoleManager.class);
+            return roleManager.getDefaultApplication(RoleManager.ROLE_WALLET);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     static void runWithRole(Context context, String roleHolder, Runnable runnable) {
@@ -181,8 +175,6 @@ public final class WalletRoleTestUtils {
 
     static void runWithRoleNone(Context context, Runnable runnable) {
         try {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
             String currentHolder = getDefaultWalletRoleHolder(context);
             RoleManager roleManager = context.getSystemService(RoleManager.class);
             CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -218,6 +210,58 @@ public final class WalletRoleTestUtils {
         } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    static void clearRoleHolders(Context context) {
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
+            RoleManager roleManager = context.getSystemService(RoleManager.class);
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            AtomicReference<Boolean> result = new AtomicReference<>(false);
+            roleManager.clearRoleHoldersAsUser(RoleManager.ROLE_WALLET, 0,
+                    context.getUser(), MoreExecutors.directExecutor(), aBoolean -> {
+                        try {
+                            // Wait a second to make sure all other callbacks are also fired on
+                            // their respective executors.
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        result.set(aBoolean);
+                        countDownLatch.countDown();
+                    });
+            countDownLatch.await(4000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    static String getOverLayDefaultHolder(Context context) {
+        Resources resources = context.getResources();
+        int resourceId = resources.getIdentifier(WALLET_OVERLAY_CONFIG,
+                "string", "android");
+        if (resourceId == 0) {
+            return null;
+        }
+        String defaultHolders;
+        try {
+            defaultHolders = resources.getString(resourceId);
+        } catch (Resources.NotFoundException e) {
+            return null;
+        }
+        if (TextUtils.isEmpty(defaultHolders)) {
+            return null;
+        }
+        int certificateSeparatorIndex = defaultHolders.indexOf(CERTIFICATE_SEPARATOR);
+        if (certificateSeparatorIndex != -1) {
+            return defaultHolders.substring(0, certificateSeparatorIndex);
+        } else {
+            return defaultHolders;
         }
     }
 }
