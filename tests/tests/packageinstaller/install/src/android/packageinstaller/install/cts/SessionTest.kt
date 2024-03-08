@@ -32,6 +32,9 @@ import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
 import android.os.Build
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
@@ -43,6 +46,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -52,6 +56,9 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
 class SessionTest : PackageInstallerTestBase() {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val uiAutomation: UiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -197,6 +204,7 @@ class SessionTest : PackageInstallerTestBase() {
      * Check that can't install when FRP mode is enabled.
      */
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FRP_ENFORCEMENT)
     fun confirmFrpInstallationFails() {
         try {
             setSecureFrp(true)

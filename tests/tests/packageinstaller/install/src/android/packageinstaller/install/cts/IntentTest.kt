@@ -21,6 +21,9 @@ import android.content.Intent
 import android.content.pm.InstallSourceInfo
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
@@ -32,12 +35,16 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
 class IntentTest : PackageInstallerTestBase() {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
         // An invalid package name that exceeds the maximum file name length.
@@ -165,6 +172,7 @@ class IntentTest : PackageInstallerTestBase() {
      * Check that we can't install an app via a package-installer intent if Secure FRP is enabled
      */
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FRP_ENFORCEMENT)
     fun packageNotInstalledSecureFrp() {
         setSecureFrp(true)
         try {
