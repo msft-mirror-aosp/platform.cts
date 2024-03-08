@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.CallLog;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
@@ -62,6 +63,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -785,6 +787,69 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
             if (selfManagedConnection != null) {
                 tearDownControl(selfManagedConnection);
             }
+        }
+    }
+
+    /**
+     * Test the scenario where a user starts a self-managed call and while that call is active,
+     * starts a sim based call. This tests simulates that the self-managed Connection does
+     * not respond to a hold request, which MUST trigger the self-managed Connection to disconnect.
+     */
+    @ApiTest(apis = {"android.telecom.Connection#onHold"})
+    @RequiresFlagsEnabled(Flags.FLAG_TRANSACTIONAL_CS_VERIFIER)
+    public void testSelfManagedAndSimBasedCallHoldFailure() throws Exception {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        SelfManagedConnection connection = null;
+        Connection simBasedConnection = null;
+
+        Bundle extras = new Bundle();
+        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
+                TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
+
+        try {
+            registerSimAccountIfNeeded();
+            connection = placeSelfManagedCallAndGetConnection(TestUtils.TEST_SELF_MANAGED_HANDLE_2,
+                    TEST_ADDRESS_2);
+            Call selfManagedCall = getInCallService().getLastCall();
+            assertNotNull("SM call expected", selfManagedCall);
+            mInCallCallbacks.resetLock();
+
+            // start an incoming SIM based call
+            addAndVerifyNewIncomingCall(createTestNumber(), null);
+            simBasedConnection = verifyConnectionForIncomingCall();
+
+            // Answer SIM call and do not respond to hold request with SM call
+            connection.setSuppressHoldResponse(true);
+            Call incomingCall = getInCallService().getLastCall();
+            assertNotEquals("Incoming Managed Call not found", incomingCall,
+                    selfManagedCall);
+            assertNotNull("Incoming Managed call expected", incomingCall);
+            incomingCall.answer(VideoProfile.STATE_AUDIO_ONLY);
+
+            // SM call will be disconnected due to no response to hold and SIM call will move to
+            // active
+            assertCallState(selfManagedCall, Call.STATE_DISCONNECTED);
+            assertCallState(incomingCall, Call.STATE_ACTIVE);
+
+            // end incoming SIM based call
+            simBasedConnection.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
+            simBasedConnection.destroy();
+            //assert the incoming call is disconnected
+            assertCallState(incomingCall, Call.STATE_DISCONNECTED);
+            assertIsInCall(false);
+
+        } finally {
+            unregisterSimPhoneAccount();
+            if (connection != null && connection.getState() != Connection.STATE_DISCONNECTED) {
+                connection.disconnectAndDestroy();
+            }
+            if (simBasedConnection != null && simBasedConnection.getState()
+                    != Connection.STATE_DISCONNECTED) {
+                simBasedConnection.onDisconnect();
+            }
+            assertIsInCall(false);
         }
     }
 
