@@ -102,13 +102,13 @@ public class GeocodeProviderBaseTest {
 
         @Override
         public void onReverseGeocode(
-                ReverseGeocodeRequest request, OutcomeReceiver<List<Address>, Exception> callback) {
+                ReverseGeocodeRequest request, OutcomeReceiver<List<Address>, Throwable> callback) {
             callback.onResult(Collections.emptyList());
         }
 
         @Override
         public void onForwardGeocode(
-                ForwardGeocodeRequest request, OutcomeReceiver<List<Address>, Exception> callback) {
+                ForwardGeocodeRequest request, OutcomeReceiver<List<Address>, Throwable> callback) {
             callback.onResult(Collections.emptyList());
         }
     }
