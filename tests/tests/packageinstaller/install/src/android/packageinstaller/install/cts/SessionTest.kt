@@ -144,26 +144,36 @@ class SessionTest : PackageInstallerTestBase() {
     @Test
     fun setApplicationEnabledSettingPersistent() {
         installWithApplicationEnabledSetting()
-        assertEquals(COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DEFAULT,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         disablePackage()
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         // enabled setting should be reset to default after reinstall
         installWithApplicationEnabledSetting()
-        assertEquals(COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DEFAULT,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         disablePackage()
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         // enabled setting should now be persisted after reinstall
         installWithApplicationEnabledSetting(true)
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
     }
 
     /**
@@ -278,8 +288,11 @@ class SessionTest : PackageInstallerTestBase() {
     private fun disablePackage() {
         uiAutomation.adoptShellPermissionIdentity()
         try {
-            pm.setApplicationEnabledSetting(TEST_APK_PACKAGE_NAME,
-                COMPONENT_ENABLED_STATE_DISABLED, 0)
+            pm.setApplicationEnabledSetting(
+                TEST_APK_PACKAGE_NAME,
+                COMPONENT_ENABLED_STATE_DISABLED,
+                0
+            )
         } finally {
             uiAutomation.dropShellPermissionIdentity()
         }
@@ -288,7 +301,11 @@ class SessionTest : PackageInstallerTestBase() {
     private fun commitSessionWithImmutablePendingIntent(session: PackageInstaller.Session) {
         var intent = Intent(INSTALL_ACTION_CB).setPackage(context.getPackageName())
         val pendingIntent = PendingIntent.getBroadcast(
-                        context, 0 /* requestCode */, intent, FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE)
+            context,
+            0, // requestCode
+            intent,
+            FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE
+        )
         session.commit(pendingIntent.intentSender)
     }
 }

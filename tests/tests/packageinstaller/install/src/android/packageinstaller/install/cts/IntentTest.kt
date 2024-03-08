@@ -112,8 +112,10 @@ class IntentTest : PackageInstallerTestBase() {
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
         assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-        assertEquals(getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName)
+        assertEquals(
+            getInstallSourceInfo().initiatingPackageName,
+                getInstallSourceInfo().installingPackageName
+        )
     }
 
     /**
@@ -130,8 +132,10 @@ class IntentTest : PackageInstallerTestBase() {
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
         assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-        assertEquals(getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName)
+        assertEquals(
+            getInstallSourceInfo().initiatingPackageName,
+                getInstallSourceInfo().installingPackageName
+        )
     }
 
     /**
@@ -184,14 +188,15 @@ class IntentTest : PackageInstallerTestBase() {
             val installation = startInstallationViaIntent()
 
             assertNotNull(
-                "Error dialog not shown", uiDevice.wait(
-                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)), TIMEOUT
+                "Error dialog not shown",
+                uiDevice.wait(
+                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    TIMEOUT
                 )
             )
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
             assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
         }
