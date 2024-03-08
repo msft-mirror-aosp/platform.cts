@@ -38,6 +38,7 @@ _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PERCENTAGE_CHANGE_THRESHOLD = 0.5
 _RECORDING_DURATION = 400  # milliseconds
+_SHARPNESS_RTOL = 0.02  # 2%
 _SKIP_INITIAL_FRAMES = 15
 _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
@@ -101,6 +102,46 @@ def _remove_frame_files(dir_name, save_files_list):
     for image in glob.glob('%s/*.png' % dir_name):
       if image not in save_files_list:
         os.remove(image)
+
+
+def _do_af_check(uw_img, w_img, log_path):
+  """Checks the AF behavior between the uw and w img.
+
+  Args:
+    uw_img: image captured using UW lens
+    w_img: image captured using W lens
+    log_path: path to save the image
+  """
+  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
+  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
+  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
+
+  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
+  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
+
+  if not math.isclose(sharpness_w, sharpness_uw, reltol=_SHARPNESS_RTOL):
+    raise AssertionError('Sharpness change is greater than the threshold value.'
+                         f'RTOL: {_SHARPNESS_RTOL}')
+
+
+def _compute_slanted_edge_sharpness(input_img, file_name):
+  """Computes sharpness of the slanted edge image.
+
+  Extracts the slanted edge patch from the input_img and
+  saves it in the file_name path. Computes the sharpness of the
+  slanted edge patch. Larger value means the image is sharper.
+
+  Args:
+    input_img: numpy flat RGB/luma image array
+    file_name: file name of the saved patch
+  Returns:
+    sharpness_level: Sharpness estimation value based on the
+    average of gradient magnitude.
+  """
+  slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
+      input_img)
+  image_processing_utils.write_image(slanted_edge_patch/255, file_name)
+  return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
 
 
 def _do_awb_check(uw_img, w_img):
@@ -207,7 +248,7 @@ def _extract_main_patch(img_rgb, img_path, lens_suffix):
   """
   aruco_path = img_path.with_name(
       f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
-  corners, ids = opencv_processing_utils.find_aruco_markers(
+  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
       img_rgb, aruco_path)
   if len(ids) != _ARUCO_MARKERS_COUNT:
     raise AssertionError(
@@ -382,20 +423,20 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
-      uw_rectangle_patch = _extract_main_patch(uw_img, uw_path, 'uw')
+      uw_chart_patch = _extract_main_patch(uw_img, uw_path, 'uw')
 
-      # Get 4 quadrant patches from the uw_rectangle_patch and do
+      # Get 4 quadrant patches from the uw_chart_patch and do
       # AE and AWB checks on each of them
       uw_four_patches = _get_four_quadrant_patches(
-          uw_rectangle_patch, uw_path, 'uw')
+          uw_chart_patch, uw_path, 'uw')
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
-      w_rectangle_patch = _extract_main_patch(w_img, w_path, 'w')
-      # Get 4 quadrant patches from the w_rectangle_patch and do
+      w_chart_patch = _extract_main_patch(w_img, w_path, 'w')
+      # Get 4 quadrant patches from the w_chart_patch and do
       # AE and AWB checks on each of them
       w_four_patches = _get_four_quadrant_patches(
-          w_rectangle_patch, uw_path, 'w')
+          w_chart_patch, uw_path, 'w')
 
       for uw_patch, w_patch, color in zip(
           uw_four_patches, w_four_patches, _COLORS):
@@ -406,7 +447,8 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         # AWB Check : Verify that R/G and B/G ratios are within the limits
         _do_awb_check(uw_patch, w_patch)
 
-    # TODO(ruchamk): AF check using slanted edge
+      # AF check using slanted edge
+      _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
 
 if __name__ == '__main__':
   test_runner.main()
