@@ -302,6 +302,7 @@ public class PdfRendererPreVTest {
 
         assertThat(firstPageRects.size()).isEqualTo(1);
         assertThat(firstPageRects.get(0).getBounds().size()).isEqualTo(1);
+        assertThat(firstPageRects.get(0).getTextStartIndex()).isEqualTo(2);
         // the rects area should be less than the page area
         assertThat(calculateArea(firstPageRects)).isLessThan(firstPageHeight * firstPageWidth);
         firstPage.close();
