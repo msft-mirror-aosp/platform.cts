@@ -48,7 +48,6 @@ import java.util.Objects;
 /**
  * Utilities for this package
  */
-//TODO(mayankkk): Update the utilities once the PdfRenderer API is added to Mainline module.
 class Utils {
     static final int A4_WIDTH_PTS = 595;
     static final int A4_HEIGHT_PTS = 841;
@@ -99,9 +98,7 @@ class Utils {
      */
     static PdfRenderer createRendererUsingNewConstructor(@RawRes int docRes,
             @NonNull Context context, @Nullable LoadParams loadParams) throws IOException {
-        return null;
-        // return new PdfRenderer(getParcelFileDescriptorFromResourceId(docRes, context),
-        // loadParams);
+        return new PdfRenderer(getParcelFileDescriptorFromResourceId(docRes, context), loadParams);
     }
 
     /**
@@ -183,16 +180,15 @@ class Utils {
         Bitmap bm = Bitmap.createBitmap(bmWidth, bmHeight, Bitmap.Config.ARGB_8888);
 
         if (useNewConstructor) {
-            return bm;
-//            try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
-//                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-//                try (PdfRenderer.Page page = renderer.openPage(0)) {
-//                    page.render(bm, clipping, transformation, new RenderParams.Builder(
-//                            renderMode).setRenderFlags(renderFlag).build());
-//
-//                    return bm;
-//                }
-//            }
+            try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
+                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+                try (PdfRenderer.Page page = renderer.openPage(0)) {
+                    page.render(bm, clipping, transformation, new RenderParams.Builder(
+                            renderMode).setRenderFlags(renderFlag).build());
+
+                    return bm;
+                }
+            }
         } else {
             try (PdfRenderer renderer = createRenderer(docRes, context)) {
                 try (PdfRenderer.Page page = renderer.openPage(0)) {
@@ -226,23 +222,23 @@ class Utils {
             @Nullable Rect clipping, @Nullable Matrix transformation, int renderMode,
             int renderFlag, boolean useNewConstructor, @NonNull Context context)
             throws IOException {
-        Bitmap renderedBm = null;
+        Bitmap renderedBm;
 
         if (useNewConstructor) {
-//            renderedBm = sNewRenderBitmaps.get(docRes);
-//
-//            if (renderedBm == null) {
-//                try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
-//                        SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-//                    try (PdfRenderer.Page page = renderer.openPage(0)) {
-//                        renderedBm = Bitmap.createBitmap(page.getWidth(), page.getHeight(),
-//                                Bitmap.Config.ARGB_8888);
-//                        page.render(renderedBm, null, null, new RenderParams.Builder(
-//                                renderMode).setRenderFlags(renderFlag).build());
-//                    }
-//                }
-//                sNewRenderBitmaps.put(docRes, renderedBm);
-//            }
+            renderedBm = sNewRenderBitmaps.get(docRes);
+
+            if (renderedBm == null) {
+                try (PdfRenderer renderer = createRendererUsingNewConstructor(docRes, context,
+                        SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+                    try (PdfRenderer.Page page = renderer.openPage(0)) {
+                        renderedBm = Bitmap.createBitmap(page.getWidth(), page.getHeight(),
+                                Bitmap.Config.ARGB_8888);
+                        page.render(renderedBm, null, null, new RenderParams.Builder(
+                                renderMode).setRenderFlags(renderFlag).build());
+                    }
+                }
+                sNewRenderBitmaps.put(docRes, renderedBm);
+            }
         } else {
             renderedBm = sRenderedBitmaps.get(docRes);
 
