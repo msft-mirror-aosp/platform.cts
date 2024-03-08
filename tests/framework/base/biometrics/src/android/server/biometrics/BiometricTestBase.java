@@ -44,7 +44,6 @@ import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.PromptContentView;
-import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -452,7 +451,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 BiometricPrompt.AuthenticationCallback.class);
         showDefaultBiometricPromptWithContents(sensorId, userId, false /* requireConfirmation */,
                 callback, "Title", "Subtitle", "Description",
-                new PromptVerticalListContentView.Builder().build(), "Negative Button");
+                null, "Negative Button");
         successfullyAuthenticate(session, userId);
     }
 
