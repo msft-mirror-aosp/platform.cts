@@ -19,6 +19,7 @@ package android.content.cts.contenturitestapp;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.util.Log;
 
 /**
  * Test Activities for testing the Activity Manifest attribute
@@ -32,6 +33,7 @@ public class TestActivities {
             TEST_PACKAGE + ".ActivityRequireContentUriPermissionFromCallerTest$TestReceiver");
     private static final String TEST_RECEIVER_ACTION =
             "android.content.cts.REQUIRE_CONTENT_URI_TEST_RECEIVER_ACTION";
+    private static final String EXTRA_IS_RESULT = "isResult";
 
     public static class NoneContentUriActivity extends BaseActivity {}
 
@@ -44,19 +46,28 @@ public class TestActivities {
     public static class ReadAndWriteContentUriActivity extends BaseActivity {}
 
     private static class BaseActivity extends Activity {
+        private static final String TAG = "BaseActivity";
+
         @Override
         public void onStart() {
             super.onStart();
-            String streamString = getIntent().getStringExtra(Intent.EXTRA_STREAM);
-            String referrerName = getIntent().getStringExtra(Intent.EXTRA_REFERRER_NAME);
+            Intent intent = getIntent();
+            Log.i(TAG, "intent: " + intent);
+            String streamString = intent.getStringExtra(Intent.EXTRA_STREAM);
+            String referrerName = intent.getStringExtra(Intent.EXTRA_REFERRER_NAME);
+            boolean isResult = intent.getBooleanExtra(EXTRA_IS_RESULT, false);
 
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setComponent(TEST_RECEIVER);
-            broadcastIntent.setAction(TEST_RECEIVER_ACTION);
+            Intent resIntent = new Intent();
+            resIntent.putExtra(Intent.EXTRA_STREAM, streamString);
+            resIntent.putExtra(Intent.EXTRA_REFERRER_NAME, referrerName);
 
-            broadcastIntent.putExtra(Intent.EXTRA_STREAM, streamString);
-            broadcastIntent.putExtra(Intent.EXTRA_REFERRER_NAME, referrerName);
-            sendBroadcast(broadcastIntent);
+            if (isResult) {
+                setResult(RESULT_OK, resIntent);
+            } else {
+                resIntent.setComponent(TEST_RECEIVER);
+                resIntent.setAction(TEST_RECEIVER_ACTION);
+                sendBroadcast(resIntent);
+            }
             finish();
         }
     }
