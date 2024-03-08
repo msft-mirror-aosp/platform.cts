@@ -1312,7 +1312,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
     // Test case for eyes free videography extension mode
     @Test
-    @RequiresFlagsEnabled(com.android.internal.camera.flags.Flags.FLAG_CONCERT_MODE)
+    @RequiresFlagsEnabled(com.android.internal.camera.flags.Flags.FLAG_CONCERT_MODE_API)
     public void testEyesFreeExtension() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
