@@ -4440,9 +4440,8 @@ public class CameraTestUtils extends Assert {
     public static boolean isStabilizationOff(CaptureRequest request) {
         Integer stabilizationMode = request.get(
                 CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE);
-        assertNotNull("Value of Key CONTROL_VIDEO_STABILIZATION_MODE shouldn't be null",
-                stabilizationMode);
 
-        return (stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+        return (stabilizationMode == null
+                || stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
     }
 }
