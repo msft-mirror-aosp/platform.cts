@@ -16,11 +16,7 @@
   ~ limitations under the License
   -->
 <resources>
-    <!--
-        TODO(b/309578419): Move this test to a targetSdk level which is lower than V.
-    -->
     <style name="LightBarThemeBase" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
     <style name="LightBarTheme" parent="@style/LightBarThemeBase">
         <item name="android:windowLightStatusBar">true</item>

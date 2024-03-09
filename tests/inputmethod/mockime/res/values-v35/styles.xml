@@ -16,5 +16,10 @@
   -->
 
 <resources>
-    <style name="MockImeTheme" parent="@android:style/Theme.DeviceDefault.InputMethod" />
+    <!--
+        TODO(b/309578419): Make MockIme handle insets properly and then remove this.
+    -->
+    <style name="MockImeTheme" parent="@android:style/Theme.DeviceDefault.InputMethod">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
 </resources>
