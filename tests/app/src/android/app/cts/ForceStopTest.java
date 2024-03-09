@@ -15,32 +15,41 @@
  */
 package android.app.cts;
 
+import static android.app.Flags.FLAG_APP_START_INFO;
 import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.app.ActivityManager;
+import android.app.ApplicationStartInfo;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
 import android.app.stubs.BootReceiver;
 import android.app.stubs.CommandReceiver;
+import android.app.stubs.ISecondary;
 import android.app.stubs.SimpleActivity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.ConditionVariable;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -49,6 +58,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AmUtils;
 
@@ -57,6 +67,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +88,8 @@ public final class ForceStopTest {
     private Instrumentation mInstrumentation;
 
     private long mTimestampMs;
+
+    private int mUnstoppedReason = -3;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -317,6 +330,90 @@ public final class ForceStopTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
+    public void testApplicationStartInfoWasForceStopped_bindService() throws Exception {
+        // Check bindService after a force-stop
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+        int startReason = getStartReasonFromAppPackageService();
+        assertEquals("ForceStop reason is not SERVICE",
+                ApplicationStartInfo.START_REASON_SERVICE, startReason);
+
+        // Check bindService after stop-app
+        executeShellCommand("am stop-app " + APP_PACKAGE);
+        startReason = getStartReasonFromAppPackageService();
+        assertNotEquals("ForceStop reason should not be returned, should be -ve",
+                ApplicationStartInfo.START_REASON_SERVICE, startReason);
+
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
+    public void testApplicationStartInfoWasForceStopped_activity() throws Exception {
+        // Check startActivity after a force-stop
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+
+        final Intent intent = createSimpleActivityIntent();
+
+        final ConditionVariable gotActivityStarted = new ConditionVariable();
+        final BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+                if (SimpleActivity.ACTION_ACTIVITY_STARTED.equals(action)) {
+                    gotActivityStarted.open();
+                }
+            }
+        };
+        final IntentFilter filter = new IntentFilter();
+        filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
+        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+
+        mTargetContext.startActivity(intent);
+        assertTrue("Activity didn't start", gotActivityStarted.block(DELAY_MILLIS));
+
+        final int startReason = getStartReasonFromAppPackageService();
+        assertEquals("ForceStop reason is not ACTIVITY",
+                ApplicationStartInfo.START_REASON_START_ACTIVITY, startReason);
+
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+    }
+
+    /**
+     * Returns the start reason only if the app was force-stopped earlier, else returns -ve.
+     */
+    private int getStartReasonFromAppPackageService() {
+        final ConditionVariable serviceConnected = new ConditionVariable();
+
+        Intent serviceIntent = new Intent("android.app.stubs.ISecondaryMain");
+        serviceIntent.setPackage(APP_PACKAGE);
+        mUnstoppedReason = -2;
+        mTargetContext.bindService(serviceIntent, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                try {
+                    mUnstoppedReason =
+                            (ISecondary.Stub.asInterface(service)).getWasForceStoppedReason();
+                } catch (RemoteException re) {
+                }
+                serviceConnected.open();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+            }
+        }, Context.BIND_AUTO_CREATE);
+
+        assertTrue("Couldn't connect to android.app.stubs.ISecondaryMain",
+                serviceConnected.block(DELAY_MILLIS));
+        return mUnstoppedReason;
+    }
+
+    @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testPendingIntentCancellation() throws Exception {
         final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
@@ -395,5 +492,10 @@ public final class ForceStopTest {
             // Wait for the broadcast
             return mBroadcastCondition.block(DELAY_MILLIS);
         }
+    }
+
+    private String executeShellCommand(String cmd) throws IOException {
+        final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
+        return uiDevice.executeShellCommand(cmd).trim();
     }
 }

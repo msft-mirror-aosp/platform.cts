@@ -18,4 +18,6 @@
     <style name="Theme_NoSwipeDismiss">
         <item name="android:windowSwipeToDismiss">false</item>
     </style>
+
+    <style name="AppTheme" parent="@android:style/Theme.Holo.NoActionBar" />
 </resources>
