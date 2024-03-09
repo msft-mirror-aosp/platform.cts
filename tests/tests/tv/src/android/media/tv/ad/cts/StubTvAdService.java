@@ -38,6 +38,8 @@ public class StubTvAdService extends TvAdService {
     }
 
     public static class StubSessionImpl extends TvAdService.Session {
+        public int mStartAdServiceCount;
+        public int mStopAdServiceCount;
 
         /**
          * Creates a new Session.
@@ -48,14 +50,31 @@ public class StubTvAdService extends TvAdService {
             super(context);
         }
 
+        /**
+         * Resets values.
+         */
+        public void resetValues() {
+            mStartAdServiceCount = 0;
+            mStopAdServiceCount = 0;
+        }
+
         @Override
         public void onRelease() {
-
         }
 
         @Override
         public boolean onSetSurface(@Nullable Surface surface) {
             return false;
+        }
+
+        @Override
+        public void onStartAdService() {
+            mStartAdServiceCount++;
+        }
+
+        @Override
+        public void onStopAdService() {
+            mStopAdServiceCount++;
         }
     }
 }

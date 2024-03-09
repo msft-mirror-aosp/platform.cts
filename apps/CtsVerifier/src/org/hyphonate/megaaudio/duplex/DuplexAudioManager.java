@@ -37,6 +37,8 @@ public class DuplexAudioManager {
     // Player
     //TODO - explain these constants
     private int mNumPlayerChannels = 2;
+    private int mPlayerChannelMask = 0;
+
     private int mPlayerSampleRate = 48000;
     private int mNumPlayerBurstFrames;
 
@@ -100,8 +102,22 @@ public class DuplexAudioManager {
         mRecorderSelectedDevice = deviceInfo;
     }
 
+    /**
+     * Specifies the number of player (index) channels.
+     * @param numChannels The number of index channels for the player.
+     */
     public void setNumPlayerChannels(int numChannels) {
         mNumPlayerChannels = numChannels;
+        mPlayerChannelMask = 0;
+    }
+
+    /**
+     * Specifies the positional-mask for the player.
+     * @param mask - An AudioFormat position mask.
+     */
+    public void setPlayerChannelMask(int mask) {
+        mPlayerChannelMask = mask;
+        mNumPlayerChannels = 0;
     }
 
     public void setNumRecorderChannels(int numChannels) {
@@ -145,8 +161,6 @@ public class DuplexAudioManager {
         // Recorder
         if ((recorderType & BuilderBase.TYPE_MASK) != BuilderBase.TYPE_NONE) {
             try {
-//                mNumRecorderBufferFrames = Recorder.calcMinBufferFramesStatic(
-//                        mNumRecorderChannels, mRecorderSampleRate);
                 mNumRecorderBufferFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
                 RecorderBuilder builder = (RecorderBuilder) new RecorderBuilder()
                         .setRecorderType(recorderType)
@@ -177,6 +191,11 @@ public class DuplexAudioManager {
                         .setRouteDevice(mPlayerSelectedDevice)
                         .setNumExchangeFrames(mNumPlayerBurstFrames)
                         .setPerformanceMode(BuilderBase.PERFORMANCE_MODE_LOWLATENCY);
+                if (mNumPlayerChannels == 0) {
+                    builder.setChannelMask(mPlayerChannelMask);
+                } else {
+                    builder.setChannelCount(mNumPlayerChannels);
+                }
                 mPlayer = builder.build();
             } catch (PlayerBuilder.BadStateException ex) {
                 Log.e(TAG, "Player - BadStateException" + ex);
@@ -191,20 +210,20 @@ public class DuplexAudioManager {
 
     public int start() {
         if (LOG) {
-            Log.i(TAG, "start()...");
+            Log.d(TAG, "start()...");
         }
 
         int result = StreamBase.OK;
         if (mPlayer != null && (result = mPlayer.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  player fails result:" + result);
+                Log.d(TAG, "  player fails result:" + result);
             }
             return result;
         }
 
         if (mRecorder != null && (result = mRecorder.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  recorder fails result:" + result);
+                Log.d(TAG, "  recorder fails result:" + result);
             }
             // Shut down
             stop();
@@ -213,19 +232,16 @@ public class DuplexAudioManager {
         }
 
         if (LOG) {
-            Log.i(TAG, "  result:" + result);
+            Log.d(TAG, "  result:" + result);
         }
         return result;
     }
 
     public int stop() {
         if (LOG) {
-            Log.i(TAG, "stop()");
+            Log.d(TAG, "stop()");
         }
         int playerResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mPlayer:" + mPlayer);
-        }
         if (mPlayer != null) {
             int result1 = mPlayer.stopStream();
             int result2 = mPlayer.teardownStream();
@@ -233,9 +249,6 @@ public class DuplexAudioManager {
         }
 
         int recorderResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mRecorder:" + mRecorder);
-        }
         if (mRecorder != null) {
             int result1 = mRecorder.stopStream();
             int result2 = mRecorder.teardownStream();
@@ -245,7 +258,7 @@ public class DuplexAudioManager {
         int ret = playerResult != StreamBase.OK ? playerResult : recorderResult;
 
         if (LOG) {
-            Log.i(TAG, "  returns:" + ret);
+            Log.d(TAG, "  returns:" + ret);
         }
         return ret;
     }
