@@ -124,11 +124,6 @@ abstract class BaseBroadcastTest {
                 mAm.forceDelayBroadcastDelivery(targetPackage, delayedDurationMs));
     }
 
-    protected boolean isModernBroadcastQueueEnabled() {
-        return SystemUtil.runWithShellPermissionIdentity(() ->
-                mAm.isModernBroadcastQueueEnabled());
-    }
-
     protected boolean isAppFreezerEnabled() throws Exception {
         final ActivityManager am = mContext.getSystemService(ActivityManager.class);
         return am.getService().isAppFreezerEnabled();

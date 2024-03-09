@@ -1089,30 +1089,11 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected void configureCodec(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame, boolean isEncoder) {
-        configureCodec(format, isAsync, signalEOSWithLastFrame, isEncoder, 0);
-    }
-
-    protected void configureCodec(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame, boolean isEncoder, int flag) {
-        if (IS_AT_LEAST_R && ((flag & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
-            if (!isAsync || !signalEOSWithLastFrame) {
-                throw new RuntimeException("Block model feature testing requires mode of operation"
-                        + " to be asynchronous and eos to be signalled along with last frame");
-            }
-        }
+    protected void configureContextOnly(MediaFormat format, boolean isAsync,
+            boolean signalEOSWithLastFrame) {
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
-        // signalEOS flag has nothing to do with configure. We are using this flag to try all
-        // available configure apis
-        if (signalEOSWithLastFrame) {
-            mCodec.configure(format, mSurface, null,
-                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flag);
-        } else {
-            mCodec.configure(format, mSurface,
-                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flag, null);
-        }
+
         mTestEnv.setLength(0);
         mTestEnv.append("###################      Test Environment       #####################\n");
         mTestEnv.append(String.format("Component under test :- %s \n", mCodecName));
@@ -1121,6 +1102,54 @@ public abstract class CodecTestBase {
                 (isAsync ? "asynchronous" : "synchronous")));
         mTestEnv.append(String.format("Component received input eos :- %s \n",
                 (signalEOSWithLastFrame ? "with full buffer" : "with empty buffer")));
+    }
+
+
+    protected void configureCodec(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
+        configureCodec(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                isEncoder, 0 /* flags */);
+    }
+
+    protected void configureCodec(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder, int flags) {
+        if (IS_AT_LEAST_R && ((flags & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
+            if (!isAsync || !cryptoCallAndSignalEosWithLastFrame) {
+                throw new RuntimeException("Block model feature testing requires mode of operation"
+                        + " to be asynchronous and eos to be signalled along with last frame");
+            }
+        }
+
+        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+
+        // signalEOS flag has nothing to do with configure. We are using this flag to try all
+        // available configure apis
+        if (cryptoCallAndSignalEosWithLastFrame) {
+            mCodec.configure(format, mSurface, null /* crypto */,
+                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flags);
+        } else {
+            mCodec.configure(format, mSurface,
+                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flags,
+                    null /* descrambler */);
+        }
+        if (ENABLE_LOGS) {
+            Log.v(LOG_TAG, "codec configured");
+        }
+    }
+
+    protected void configureCodecInDetachedMode(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame) {
+        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+
+        // signalEOS flag has nothing to do with configure. We are using this flag to try all
+        // available configure apis
+        if (cryptoCallAndSignalEosWithLastFrame) {
+            mCodec.configure(format, null /* surface */, null /* crypto */,
+                    MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
+        } else {
+            mCodec.configure(format, null /* surface */,
+                    MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE, null /* descrambler */);
+        }
         if (ENABLE_LOGS) {
             Log.v(LOG_TAG, "codec configured");
         }

@@ -36,10 +36,12 @@ android_test {
         "platform-test-annotations",
         "truth",
         "cts-install-lib",
+        "flag-junit",
         "kotlin-test",
         "Nene",
         "Harrier",
         "android.content.pm.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
     ],
 
     test_suites: [

@@ -43,6 +43,7 @@
 
         <activity android:label="@string/accessibility_query_window_test_activity"
              android:name=".activities.AccessibilityWindowQueryActivity"
+             android:theme="@style/AppTheme"
              android:supportsPictureInPicture="true"
              android:screenOrientation="locked"/>
 

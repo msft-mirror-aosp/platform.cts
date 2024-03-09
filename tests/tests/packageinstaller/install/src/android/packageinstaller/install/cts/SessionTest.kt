@@ -32,6 +32,9 @@ import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
 import android.os.Build
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
@@ -43,6 +46,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -52,6 +56,9 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
 class SessionTest : PackageInstallerTestBase() {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val uiAutomation: UiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -144,26 +151,36 @@ class SessionTest : PackageInstallerTestBase() {
     @Test
     fun setApplicationEnabledSettingPersistent() {
         installWithApplicationEnabledSetting()
-        assertEquals(COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DEFAULT,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         disablePackage()
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         // enabled setting should be reset to default after reinstall
         installWithApplicationEnabledSetting()
-        assertEquals(COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DEFAULT,
+                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         disablePackage()
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
 
         // enabled setting should now be persisted after reinstall
         installWithApplicationEnabledSetting(true)
-        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
-            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME))
+        assertEquals(
+            COMPONENT_ENABLED_STATE_DISABLED,
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+        )
     }
 
     /**
@@ -187,6 +204,7 @@ class SessionTest : PackageInstallerTestBase() {
      * Check that can't install when FRP mode is enabled.
      */
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FRP_ENFORCEMENT)
     fun confirmFrpInstallationFails() {
         try {
             setSecureFrp(true)
@@ -278,8 +296,11 @@ class SessionTest : PackageInstallerTestBase() {
     private fun disablePackage() {
         uiAutomation.adoptShellPermissionIdentity()
         try {
-            pm.setApplicationEnabledSetting(TEST_APK_PACKAGE_NAME,
-                COMPONENT_ENABLED_STATE_DISABLED, 0)
+            pm.setApplicationEnabledSetting(
+                TEST_APK_PACKAGE_NAME,
+                COMPONENT_ENABLED_STATE_DISABLED,
+                0
+            )
         } finally {
             uiAutomation.dropShellPermissionIdentity()
         }
@@ -288,7 +309,11 @@ class SessionTest : PackageInstallerTestBase() {
     private fun commitSessionWithImmutablePendingIntent(session: PackageInstaller.Session) {
         var intent = Intent(INSTALL_ACTION_CB).setPackage(context.getPackageName())
         val pendingIntent = PendingIntent.getBroadcast(
-                        context, 0 /* requestCode */, intent, FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE)
+            context,
+            0, // requestCode
+            intent,
+            FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE
+        )
         session.commit(pendingIntent.intentSender)
     }
 }
