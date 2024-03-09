@@ -28,6 +28,7 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -65,6 +66,8 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
             "android.permission.MODIFY_PHONE_STATE";
     private static final String REGISTER_SIM_SUBSCRIPTION_PERMISSION =
             "android.permission.REGISTER_SIM_SUBSCRIPTION";
+    private static final String INTERACT_ACROSS_PROFILES =
+            "android.permission.INTERACT_ACROSS_PROFILES";
 
     // telecom cts test package (default package that registers phoneAccounts)
     private static final ComponentName TEST_COMPONENT_NAME =
@@ -599,6 +602,81 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
         // ensure the test starts without any phone accounts registered to the test package
         cleanupPhoneAccounts();
 
+        List<PhoneAccountHandle> handles = mTelecomManager.getCallCapablePhoneAccounts();
+        List<PhoneAccountHandle> handlesAcrossProfiles = ShellIdentityUtils
+                .invokeMethodWithShellPermissions(mTelecomManager,
+                        (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),
+                                INTERACT_ACROSS_PROFILES);
+
+        assertEquals(handles.size(), handlesAcrossProfiles.size());
+
+        Random random = new Random(SEED);
+        PhoneAccountHandle handle1 = TestUtils.createPhoneAccountHandle(
+                random, TestUtils.PACKAGE, TestUtils.REMOTE_COMPONENT,
+                Process.myUserHandle().getIdentifier());
+        PhoneAccountHandle handle2 = TestUtils.createPhoneAccountHandle(
+                random, TestUtils.PACKAGE, TestUtils.REMOTE_COMPONENT,
+                Process.myUserHandle().getIdentifier());
+        PhoneAccount account1 = new PhoneAccount.Builder(
+                handle1, this.getClass().getName())
+                .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER)
+                .build();
+        PhoneAccount account2 = new PhoneAccount.Builder(
+                handle2, this.getClass().getName())
+                .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER)
+                .build();
+
+        try {
+            mTelecomManager.registerPhoneAccount(account1);
+            mTelecomManager.registerPhoneAccount(account2);
+            TestUtils.enablePhoneAccount(getInstrumentation(), handle1);
+            TestUtils.enablePhoneAccount(getInstrumentation(), handle2);
+
+            handles = mTelecomManager.getCallCapablePhoneAccounts();
+            handlesAcrossProfiles = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),
+                                    INTERACT_ACROSS_PROFILES);
+
+            assertEquals(handles, handlesAcrossProfiles);
+            assertTrue(handles.contains(handle1));
+            assertTrue(handles.contains(handle2));
+
+            //test for disabled account
+            TestUtils.disablePhoneAccount(getInstrumentation(), handle2);
+
+            handles = mTelecomManager.getCallCapablePhoneAccounts();
+            handlesAcrossProfiles = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),
+                                    INTERACT_ACROSS_PROFILES);
+            List<PhoneAccountHandle> handlesAcrossProfilesWithDisabledAccount = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(true),
+                                    INTERACT_ACROSS_PROFILES);
+
+            assertEquals(handles, handlesAcrossProfiles);
+            assertEquals(handles.size() + 1, handlesAcrossProfilesWithDisabledAccount.size());
+            assertTrue(handlesAcrossProfiles.containsAll(handles));
+            assertTrue(handlesAcrossProfilesWithDisabledAccount.contains(handle2));
+        } catch (IllegalArgumentException e) {
+            // allow test pass ...
+        } finally {
+            cleanupPhoneAccounts();
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.telecom.TelecomManager#getCallCapablePhoneAccounts",
+            "android.telecom.TelecomManager#getCallCapablePhoneAccountsAcrossProfiles"})
+    public void testGetCallCapablePhoneAccountsAcrossProfilesWithWorkProfile() throws Exception {
+        if (!mShouldTestTelecom || !Flags.workProfileApiSplit() || !hasWorkProfile()) {
+            return;
+        }
+
+        // ensure the test starts without any phone accounts registered to the test package
+        cleanupPhoneAccounts();
+
         Random random = new Random(SEED);
         PhoneAccountHandle currentHandle = TestUtils.createPhoneAccountHandle(
                 random, TestUtils.PACKAGE, TestUtils.REMOTE_COMPONENT,
@@ -624,8 +702,10 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
             TestUtils.enablePhoneAccount(getInstrumentation(), otherHandle);
 
             List<PhoneAccountHandle> handlesCurrent = mTelecomManager.getCallCapablePhoneAccounts();
-            List<PhoneAccountHandle> handlesAcrossProfiles = mTelecomManager
-                    .getCallCapablePhoneAccountsAcrossProfiles();
+            List<PhoneAccountHandle> handlesAcrossProfiles = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),
+                                    INTERACT_ACROSS_PROFILES);
 
             assertEquals(handlesAcrossProfiles.size(), handlesCurrent.size() + 1);
             assertTrue(handlesAcrossProfiles.containsAll(handlesCurrent));
@@ -635,9 +715,14 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
             TestUtils.disablePhoneAccount(getInstrumentation(), currentHandle);
 
             handlesCurrent = mTelecomManager.getCallCapablePhoneAccounts();
-            handlesAcrossProfiles = mTelecomManager.getCallCapablePhoneAccountsAcrossProfiles();
-            List<PhoneAccountHandle> handlesAcrossProfilesWithDisabledAccount = mTelecomManager
-                    .getCallCapablePhoneAccountsAcrossProfiles(true);
+            handlesAcrossProfiles = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),
+                                    INTERACT_ACROSS_PROFILES);
+            List<PhoneAccountHandle> handlesAcrossProfilesWithDisabledAccount = ShellIdentityUtils
+                    .invokeMethodWithShellPermissions(mTelecomManager,
+                            (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(true),
+                                    INTERACT_ACROSS_PROFILES);
 
             assertEquals(handlesAcrossProfiles.size(), handlesCurrent.size() + 1);
             assertEquals(handlesAcrossProfilesWithDisabledAccount.size(),
@@ -856,6 +941,17 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
                     READ_PRIVILEGED_PHONE_STATE).size();
         }
         return 0;
+    }
+
+    private boolean hasWorkProfile() {
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        for (final UserHandle userHandle : userManager.getUserProfiles()) {
+            if (userManager.isManagedProfile(userHandle.getIdentifier())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

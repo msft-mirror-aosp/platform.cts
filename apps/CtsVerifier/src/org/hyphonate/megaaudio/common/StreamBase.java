@@ -83,6 +83,8 @@ public abstract class StreamBase {
      */
     protected int mChannelCount;
 
+    protected int mChannelMask;
+
     /**
      * The sample rate for this stream
      */

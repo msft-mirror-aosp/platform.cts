@@ -211,6 +211,7 @@ _EXTENSION_NAMES = (
 )
 
 _DST_SCENE_DIR = '/sdcard/Download/'
+_SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
@@ -329,9 +330,17 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
     scene: Name of the scene to copy image files.
     out_path: output file location
   """
+  hidden_physical_id = None
+  if its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
+    split_camera_ids = camera_id.split(its_session_utils.SUB_CAMERA_SEPARATOR)
+    if len(split_camera_ids) == _SUB_CAMERA_LEVELS:
+      camera_id = split_camera_ids[0]
+      hidden_physical_id = split_camera_ids[1]
+
   with its_session_utils.ItsSession(
       device_id=device_id,
-      camera_id=camera_id) as cam:
+      camera_id=camera_id,
+      hidden_physical_id=hidden_physical_id) as cam:
     props = cam.get_camera_properties()
     props = cam.override_with_hidden_physical_camera_props(props)
 

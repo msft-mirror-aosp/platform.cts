@@ -24,6 +24,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "guava",
+        "platformprotosnano",
         "truth",
         "testng",
     ],

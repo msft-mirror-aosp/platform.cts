@@ -558,22 +558,9 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
      * {@link ITestDevice#reboot()} would reset them.
      */
     protected void restartSystemServer() throws Exception {
-        long uptimeBefore = getSystemServerUptime();
-        CLog.d("Uptime before restart: %d", uptimeBefore);
-
         restartOrReboot();
 
         getDevice().waitForDeviceAvailable();
-
-        // Also checks for uptime - it might be an overkill, but at least it will add more logs,
-        // which could help in case of issues
-        CommonTestUtils.waitUntil("timed out waiting until for new system server uptime",
-                SYSTEM_RESTART_TIMEOUT_SEC, () -> {
-                    long uptimeAfter = getSystemServerUptime();
-                    CLog.d("Uptime after restart: %d", uptimeAfter);
-                    return uptimeAfter != -1 && uptimeAfter != uptimeBefore;
-                });
-
         waitForCarServiceReady();
     }
 
@@ -589,23 +576,6 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
 
         CLog.d("Only root user can restart system server; rebooting instead");
         getDevice().reboot();
-    }
-
-    /**
-     * Gets the system server uptime (or {@code -1} if not available).
-     */
-    protected long getSystemServerUptime() throws DeviceNotAvailableException {
-        // Do not use getDevice().getIntProperty because it internally caches the value and will
-        // not return the latest value.
-        try {
-            return Long.parseLong(getDevice().executeShellCommand(
-                    "getprop sys.system_server.start_uptime").strip());
-        } catch (DeviceNotAvailableException e) {
-            throw e;
-        } catch (Exception e) {
-            CLog.w("Failed to getprop sys.system_server.start_uptime", e);
-            return -1;
-        }
     }
 
     /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.app.cts.broadcasts;
 
 import static android.content.Context.RECEIVER_EXPORTED;
 
@@ -26,14 +26,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.BroadcastOptions;
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.BroadcastReceiver.PendingResult;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -43,13 +41,11 @@ import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.server.am.nano.ActivityManagerServiceDumpBroadcastsProto;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,13 +55,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Test {@link BroadcastReceiver}.
- * TODO:  integrate the existing tests.
- */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BroadcastsTestRunner.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class BroadcastReceiverTest {
+public class BroadcastReceiverTest extends BaseBroadcastTest {
     private static final int RESULT_INITIAL_CODE = 1;
     private static final String RESULT_INITIAL_DATA = "initial data";
 
@@ -73,33 +65,25 @@ public class BroadcastReceiverTest {
     private static final String RESULT_INTERNAL_FINAL_DATA = "internal final data";
 
     private static final String ACTION_BROADCAST_INTERNAL =
-            "android.content.cts.BroadcastReceiverTest.BROADCAST_INTERNAL";
+            "com.android.cts.broadcasts.BROADCAST_INTERNAL";
     private static final String ACTION_BROADCAST_MOCKTEST =
-            "android.content.cts.BroadcastReceiverTest.BROADCAST_MOCKTEST";
+            "com.android.cts.broadcasts.BROADCAST_MOCKTEST";
     private static final String ACTION_TEST_NOT_EXPORTED =
-            "android.content.cts.BroadcastReceiverTest.TEST_NOT_EXPORTED";
+            "com.android.cts.broadcasts.TEST_NOT_EXPORTED";
     private static final String ACTION_BROADCAST_TESTABORT =
-            "android.content.cts.BroadcastReceiverTest.BROADCAST_TESTABORT";
+            "com.android.cts.broadcasts.BROADCAST_TESTABORT";
     private static final String ACTION_BROADCAST_DISABLED =
-            "android.content.cts.BroadcastReceiverTest.BROADCAST_DISABLED";
-    private static final String TEST_PACKAGE_NAME = "android.content.cts";
+            "com.android.cts.broadcasts.BROADCAST_DISABLED";
+    private static final String TEST_PACKAGE_NAME = "com.android.cts.broadcasts";
 
-    private static final String SIGNATURE_PERMISSION = "android.content.cts.SIGNATURE_PERMISSION";
+    private static final String SIGNATURE_PERMISSION =
+            "com.android.cts.broadcasts.SIGNATURE_PERMISSION";
 
     private static final long SEND_BROADCAST_TIMEOUT = 15000;
-    private static final long START_SERVICE_TIMEOUT  = 3000;
 
     private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
-    private static final ComponentName DISABLEABLE_RECEIVER =
-            new ComponentName("android.content.cts",
-                    "android.content.cts.MockReceiverDisableable");
-
-    private Context mContext;
-
-    @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-    }
+    private static final ComponentName DISABLEABLE_RECEIVER = new ComponentName(TEST_PACKAGE_NAME,
+            "android.app.cts.broadcasts.MockReceiverDisableable");
 
     @Test
     public void testConstructor() {
@@ -133,17 +117,23 @@ public class BroadcastReceiverTest {
     private class MockReceiverInternal extends BroadcastReceiver  {
         protected boolean mCalledOnReceive = false;
         private IBinder mIBinder;
+        private final Intent mServiceIntentToPeek;
+
+        MockReceiverInternal() {
+            this(null);
+        }
+
+        MockReceiverInternal(Intent serviceIntentToPeek) {
+            mServiceIntentToPeek = serviceIntentToPeek;
+        }
 
         @Override
         public synchronized void onReceive(Context context, Intent intent) {
             mCalledOnReceive = true;
-            Intent serviceIntent = new Intent(context, MockService.class);
-            mIBinder = peekService(context, serviceIntent);
+            if (mServiceIntentToPeek != null) {
+                mIBinder = peekService(context, mServiceIntentToPeek);
+            }
             notifyAll();
-        }
-
-        public boolean hasCalledOnReceive() {
-            return mCalledOnReceive;
         }
 
         public void reset() {
@@ -184,7 +174,7 @@ public class BroadcastReceiverTest {
     private class MockReceiverInternalVerifyUncalled extends MockReceiverInternal {
         final int mExpectedInitialCode;
 
-        public MockReceiverInternalVerifyUncalled(int initialCode) {
+        MockReceiverInternalVerifyUncalled(int initialCode) {
             mExpectedInitialCode = initialCode;
         }
 
@@ -218,26 +208,27 @@ public class BroadcastReceiverTest {
     }
 
     @Test
-    public void testOnReceive() throws InterruptedException {
+    public void testOnReceive() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
         mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        try {
+            assertEquals(0, internalReceiver.getResultCode());
+            assertEquals(null, internalReceiver.getResultData());
+            assertEquals(null, internalReceiver.getResultExtras(false));
 
-        assertEquals(0, internalReceiver.getResultCode());
-        assertEquals(null, internalReceiver.getResultData());
-        assertEquals(null, internalReceiver.getResultExtras(false));
-
-        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
-        internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
-
-        mContext.unregisterReceiver(internalReceiver);
+            mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
+            internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
+        } finally {
+            mContext.unregisterReceiver(internalReceiver);
+        }
     }
 
     @Test
     @AppModeFull
-    public void testManifestReceiverPackage() throws InterruptedException {
+    public void testManifestReceiverPackage() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
 
         Bundle map = new Bundle();
@@ -266,7 +257,7 @@ public class BroadcastReceiverTest {
 
     @Test
     @AppModeFull
-    public void testManifestReceiverComponent() throws InterruptedException {
+    public void testManifestReceiverComponent() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
 
         Bundle map = new Bundle();
@@ -296,7 +287,7 @@ public class BroadcastReceiverTest {
 
     @Test
     @AppModeFull
-    public void testManifestReceiverPermission() throws InterruptedException {
+    public void testManifestReceiverPermission() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
 
         Bundle map = new Bundle();
@@ -324,7 +315,7 @@ public class BroadcastReceiverTest {
     }
 
     @Test
-    public void testNoManifestReceiver() throws InterruptedException {
+    public void testNoManifestReceiver() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
 
         Bundle map = new Bundle();
@@ -352,7 +343,7 @@ public class BroadcastReceiverTest {
 
     @Test
     @AppModeFull
-    public void testAbortBroadcast() throws InterruptedException {
+    public void testAbortBroadcast() throws Exception {
         MockReceiverInternalOrder internalOrderReceiver = new MockReceiverInternalOrder();
 
         assertEquals(0, internalOrderReceiver.getResultCode());
@@ -419,30 +410,33 @@ public class BroadcastReceiverTest {
     }
 
     @Test
-    public void testPeekService() throws InterruptedException {
-        MockReceiverInternal internalReceiver = new MockReceiverInternal();
+    public void testPeekService() throws Exception {
+        final Intent serviceIntent = new Intent().setComponent(
+                new ComponentName(HELPER_PKG1, HELPER_SERVICE));
+        MockReceiverInternal internalReceiver = new MockReceiverInternal(serviceIntent);
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_BROADCAST_INTERNAL);
         mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
+        try {
+            mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
+            internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
+            assertNull(internalReceiver.getIBinder());
 
-        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
-        internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
-        assertNull(internalReceiver.getIBinder());
-
-        Intent intent = new Intent(mContext, MockService.class);
-        MyServiceConnection msc = new MyServiceConnection();
-        assertTrue(mContext.bindService(intent, msc, Service.BIND_AUTO_CREATE));
-        assertTrue(msc.waitForService(START_SERVICE_TIMEOUT));
-
-        internalReceiver.reset();
-        mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
-        internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
-        assertNotNull(internalReceiver.getIBinder());
-        mContext.unbindService(msc);
-        mContext.stopService(intent);
-        mContext.unregisterReceiver(internalReceiver);
+            final TestServiceConnection connection = bindToHelperService(HELPER_PKG1);
+            try {
+                assertNotNull(connection.getService());
+                internalReceiver.reset();
+                mContext.sendBroadcast(new Intent(ACTION_BROADCAST_INTERNAL)
+                        .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
+                internalReceiver.waitForReceiver(SEND_BROADCAST_TIMEOUT);
+                assertNotNull(internalReceiver.getIBinder());
+            } finally {
+                connection.unbind();
+            }
+        } finally {
+            mContext.unregisterReceiver(internalReceiver);
+        }
     }
 
     @Test
@@ -467,7 +461,7 @@ public class BroadcastReceiverTest {
     }
 
     @Test
-    public void testNewPhotoBroadcast_notReceived() throws InterruptedException {
+    public void testNewPhotoBroadcast_notReceived() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_PICTURE);
@@ -476,7 +470,7 @@ public class BroadcastReceiverTest {
     }
 
     @Test
-    public void testNewVideoBroadcast_notReceived() throws InterruptedException {
+    public void testNewVideoBroadcast_notReceived() throws Exception {
         MockReceiverInternal internalReceiver = new MockReceiverInternal();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Camera.ACTION_NEW_VIDEO);
@@ -518,29 +512,6 @@ public class BroadcastReceiverTest {
                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             FileUtils.copy(in, out);
             return out.toByteArray();
-        }
-    }
-
-    static class MyServiceConnection implements ServiceConnection {
-        private boolean serviceConnected;
-
-        public synchronized void onServiceConnected(ComponentName name, IBinder service) {
-            serviceConnected = true;
-            notifyAll();
-        }
-
-        public synchronized void onServiceDisconnected(ComponentName name) {
-        }
-
-        public synchronized boolean waitForService(long timeout) {
-            if (!serviceConnected) {
-                try {
-                    wait(timeout);
-                } catch (InterruptedException ignored) {
-                    // ignored
-                }
-            }
-            return serviceConnected;
         }
     }
 }

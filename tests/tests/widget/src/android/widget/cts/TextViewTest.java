@@ -9480,6 +9480,21 @@ public class TextViewTest {
         assertEquals(measuredWidth, textView.getMeasuredWidth());
     }
 
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void setGetShiftDrawingOffsetForStartOverhang() {
+        TextView textView = new TextView(mActivity);
+
+        // false by default
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(true);
+        assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(false);
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+    }
+
     private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {
         return (event.getContentChangeTypes() & changeType) == changeType;
     }

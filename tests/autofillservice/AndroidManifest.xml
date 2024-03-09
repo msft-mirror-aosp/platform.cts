@@ -179,6 +179,15 @@
         <activity android:name=".activities.SimpleAfterLoginActivity"/>
         <activity android:name=".activities.SimpleBeforeLoginActivity"/>
         <activity android:name=".activities.NonAutofillableActivity"/>
+        <activity
+            android:name=".credman.CtsGetPasswordActivity"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.autofillservice.cts.credman.GET_PASSWORD" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <receiver android:name=".testcore.SelfDestructReceiver"
              android:exported="true"

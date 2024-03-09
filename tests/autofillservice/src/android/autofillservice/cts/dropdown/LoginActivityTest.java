@@ -112,7 +112,6 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.autofill.FillContext;
@@ -149,6 +148,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     private static final String TAG = "LoginActivityTest";
+
+    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE =
+            "include_invisible_view_group_in_assist_structure";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -2260,10 +2262,13 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     @Test
     @AppModeFull(reason = "Unit test")
-    @RequiresFlagsEnabled("android.service.autofill.include_invisible_view_group_in_assist_structure")
     public void testNoContainers() throws Exception {
         // Set service.
         enableService();
+
+        // Enable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
 
         // Set expectations.
         sReplier.addResponse(NO_RESPONSE);

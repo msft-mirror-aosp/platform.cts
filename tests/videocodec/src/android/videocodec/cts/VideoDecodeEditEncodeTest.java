@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
 import static android.mediav2.common.cts.CodecEncoderTestBase.muxOutput;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.Q_DEQ_TIMEOUT_US;
+import static android.mediav2.common.cts.VideoErrorManager.computeFrameVariance;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +42,7 @@ import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputSurface;
 import android.mediav2.common.cts.RawResource;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
@@ -676,9 +678,6 @@ public class VideoDecodeEditEncodeTest {
     private double computeVariance(RawResource yuv) throws IOException {
         Preconditions.assertTestFileExists(yuv.mFileName);
         assertEquals("has support for 8 bit clips only", 1, yuv.mBytesPerSample);
-        final int bSize = 16;
-        assertTrue("chosen block size is too large with respect to image dimensions",
-                yuv.mWidth > bSize && yuv.mHeight > bSize);
         double variance = 0;
         int blocks = 0;
         try (RandomAccessFile refStream = new RandomAccessFile(new File(yuv.mFileName), "r")) {
@@ -691,27 +690,9 @@ public class VideoDecodeEditEncodeTest {
                 if (bytesReadRef == -1) break;
                 assertEquals("bad, reading unaligned frame size", bytesReadRef, ySize);
                 refStream.skipBytes(uvSize);
-                for (int i = 0; i < yuv.mHeight - bSize; i += bSize) {
-                    for (int j = 0; j < yuv.mWidth - bSize; j += bSize) {
-                        long sse = 0, sum = 0;
-                        int offset = i * yuv.mWidth + j;
-                        for (int p = 0; p < bSize; p++) {
-                            for (int q = 0; q < bSize; q++) {
-                                int sample = luma[offset + p * yuv.mWidth + q];
-                                sum += sample;
-                                sse += sample * sample;
-                            }
-                        }
-                        double meanOfSquares = ((double) sse) / (bSize * bSize);
-                        double mean = ((double) sum) / (bSize * bSize);
-                        double squareOfMean = mean * mean;
-                        double blockVariance = (meanOfSquares - squareOfMean);
-                        assertTrue("variance can't be negative", blockVariance >= 0.0f);
-                        variance += blockVariance;
-                        assertTrue("caution overflow", variance >= 0.0);
-                        blocks++;
-                    }
-                }
+                Pair<Double, Integer> var = computeFrameVariance(yuv.mWidth, yuv.mHeight, luma);
+                variance += var.first;
+                blocks += var.second;
             }
             return variance / blocks;
         }

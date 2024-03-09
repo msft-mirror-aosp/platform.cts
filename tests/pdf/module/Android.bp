@@ -19,10 +19,6 @@ android_test {
     srcs: [
         "src/**/*.java",
     ],
-    exclude_srcs: [
-        "src/**/PdfRendererTest.java",
-        "src/**/PdfFormFillingTest.java",
-    ],
     compile_multilib: "both",
     test_suites: [
         "general-tests",

@@ -965,11 +965,12 @@ def find_aruco_markers(input_img, output_img_path):
   Returns:
     corners: list of detected corners
     ids: list of int ids for each ArUco markers in the input_img
+    rejected_params: list of rejected corners
   """
   parameters = cv2.aruco.DetectorParameters_create()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  corners, ids, _ = cv2.aruco.detectMarkers(
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
   if ids is None:
     e_msg = 'ArUco markers not detected.'
@@ -979,7 +980,7 @@ def find_aruco_markers(input_img, output_img_path):
   logging.debug('Corners of the ArUco markers detected: %s', corners)
   cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
   image_processing_utils.write_image(input_img/255, output_img_path)
-  return corners, ids
+  return corners, ids, rejected_params
 
 
 def get_patch_from_aruco_markers(
@@ -1010,7 +1011,7 @@ def get_patch_from_aruco_markers(
   top_y_diff = outer_rect_coordinates[1][1] - outer_rect_coordinates[0][1]
 
   if ((top_y_diff > IMAGE_ROTATION_THRESHOLD) or
-      (bottom_y_diff> IMAGE_ROTATION_THRESHOLD)):
+      (bottom_y_diff > IMAGE_ROTATION_THRESHOLD)):
     raise AssertionError('Image rotation is not within the threshold. '
                          f'Actual bottom_y_diff: {bottom_y_diff}, '
                          f'top_y_diff: {top_y_diff} '
@@ -1021,3 +1022,38 @@ def get_patch_from_aruco_markers(
                 tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
   return input_img[top_left[1]:bottom_right[1],
                    top_left[0]:bottom_right[0]].copy()
+
+
+def get_slanted_edge_from_patch(input_img):
+  """Returns the slanted edge patch from the input img.
+
+  Args:
+    input_img: input img in numpy array with ArUco markers
+      to be detected
+  Returns: Numpy float image array of the slanted edge patch
+  """
+  slanted_edge_coordinates = {}
+  parameters = cv2.aruco.DetectorParameters_create()
+  # ArUco markers used are 4x4
+  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+  _, _, rejected_params = cv2.aruco.detectMarkers(
+      input_img, aruco_dict, parameters=parameters)
+  final_corner = {}
+  for corner in rejected_params:
+    final_corner = corner.reshape(4, 2)
+
+  slanted_edge_coordinates[0] = tuple(map(int, final_corner[0]))
+  slanted_edge_coordinates[3] = tuple(map(int, final_corner[3]))
+  square_w = abs(final_corner[0][1] - final_corner[3][1])
+  slanted_edge_coordinates[1] = (final_corner[0][0] +
+                                 square_w, final_corner[0][1])
+  slanted_edge_coordinates[2] = (final_corner[3][0] +
+                                 square_w, final_corner[3][1])
+  logging.debug('slanted_edge_coordinates: %s', slanted_edge_coordinates)
+  top_left = tuple(map(int, slanted_edge_coordinates[0]))
+  bottom_right = tuple(map(int, slanted_edge_coordinates[2]))
+  cv2.rectangle(input_img, top_left, bottom_right,
+                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
+  slanted_edge = input_img[top_left[1]:bottom_right[1],
+                           top_left[0]:bottom_right[0]]
+  return slanted_edge
