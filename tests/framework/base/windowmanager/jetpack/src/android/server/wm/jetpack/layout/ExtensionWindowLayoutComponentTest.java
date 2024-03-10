@@ -46,6 +46,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Rect;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
 import android.hardware.display.DisplayManager;
@@ -244,8 +245,9 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_windowLayoutInfoListener_deviceStateChanged()
             throws Throwable {
-        final int[] supportedDeviceStates = mDeviceStateManager.getSupportedStates();
-        assumeTrue(supportedDeviceStates.length > 1);
+        final List<DeviceState> supportedDeviceStates =
+                mDeviceStateManager.getSupportedDeviceStates();
+        assumeTrue(supportedDeviceStates.size() > 1);
 
         TestActivity testActivity = startFullScreenActivityNewTask(
                 TestActivity.class, null /* activityId */);
@@ -258,8 +260,9 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         TestValueCountConsumer<DeviceStateRequest> deviceStateCallbackConsumer =
                 new TestValueCountConsumer<>();
         deviceStateCallbackConsumer.setCount(1);
-        for (int deviceState : supportedDeviceStates) {
-            DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceState).build();
+        for (DeviceState deviceState : supportedDeviceStates) {
+            final int deviceStateId = deviceState.getIdentifier();
+            DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceStateId).build();
             DeviceStateUtils.runWithControlDeviceStatePermission(() ->
                     mDeviceStateManager.requestBaseStateOverride(
                             request,
@@ -753,9 +756,13 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     private boolean isHalfOpenedSupported() {
         DeviceStateManager deviceStateManager = mContext.getSystemService(DeviceStateManager.class);
 
-        final int[] supportedStates = deviceStateManager.getSupportedStates();
+        final List<DeviceState> supportedStates = deviceStateManager.getSupportedDeviceStates();
+        final int[] supportedStateIdentifiers = new int[supportedStates.size()];
+        for (int i = 0; i < supportedStates.size(); i++) {
+            supportedStateIdentifiers[i] = supportedStates.get(i).getIdentifier();
+        }
         final int[] halfOpenedDeviceStates = getHalfOpenedDeviceStates(mContext);
-        return containsAny(supportedStates, halfOpenedDeviceStates);
+        return containsAny(supportedStateIdentifiers, halfOpenedDeviceStates);
     }
 
     // TODO(b/326289376) replace with API from DeviceStateManager.

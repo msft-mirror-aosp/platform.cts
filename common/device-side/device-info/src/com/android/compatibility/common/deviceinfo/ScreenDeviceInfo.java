@@ -18,6 +18,7 @@ package com.android.compatibility.common.deviceinfo;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,6 +38,7 @@ import com.android.compatibility.common.util.DummyActivity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -110,7 +112,12 @@ public final class ScreenDeviceInfo extends DeviceInfo {
 
         // Get the supported device states on device if DeviceStateManager is available
         if (deviceStateManager != null) {
-            store.addArrayResult("device_states", deviceStateManager.getSupportedStates());
+            List<DeviceState> deviceStates = deviceStateManager.getSupportedDeviceStates();
+            int[] stateIdentifiers = new int[deviceStates.size()];
+            for (int i = 0; i < deviceStates.size(); i++) {
+                stateIdentifiers[i] = deviceStates.get(i).getIdentifier();
+            }
+            store.addArrayResult("device_states", stateIdentifiers);
         }
     }
 

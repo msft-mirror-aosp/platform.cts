@@ -28,6 +28,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -298,8 +299,8 @@ public class CameraUtils {
                     + " or not. Defaulting to not-foldable.");
             return false;
         }
-        Set<Integer> supportedStates = Arrays.stream(
-                deviceStateManager.getSupportedStates()).boxed().collect(Collectors.toSet());
+        Set<Integer> supportedStates = deviceStateManager.getSupportedDeviceStates().stream().map(
+                DeviceState::getIdentifier).collect(Collectors.toSet());
 
         Resources systemRes = Resources.getSystem();
         int foldedStatesArrayIdentifier = systemRes.getIdentifier("config_foldedDeviceStates",
