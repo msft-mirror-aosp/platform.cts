@@ -2167,11 +2167,6 @@ package android {
     field public static final int notification_large_icon_width = 17104901; // 0x1050005
     field public static final int system_app_widget_background_radius = 17104904; // 0x1050008
     field public static final int system_app_widget_inner_radius = 17104905; // 0x1050009
-    field public static final int system_corner_radius_large;
-    field public static final int system_corner_radius_medium;
-    field public static final int system_corner_radius_small;
-    field public static final int system_corner_radius_xlarge;
-    field public static final int system_corner_radius_xsmall;
     field public static final int thumbnail_height = 17104897; // 0x1050001
     field public static final int thumbnail_width = 17104898; // 0x1050002
   }
@@ -7029,6 +7024,7 @@ package android.app {
     method public void deleteNotificationChannelGroup(String);
     method public android.service.notification.StatusBarNotification[] getActiveNotifications();
     method public android.app.AutomaticZenRule getAutomaticZenRule(String);
+    method @FlaggedApi("android.app.modes_api") public int getAutomaticZenRuleState(@NonNull String);
     method public java.util.Map<java.lang.String,android.app.AutomaticZenRule> getAutomaticZenRules();
     method public int getBubblePreference();
     method @NonNull public android.app.NotificationManager.Policy getConsolidatedNotificationPolicy();
@@ -8090,7 +8086,7 @@ package android.app.admin {
     method public CharSequence getStartUserSessionMessage(@NonNull android.content.ComponentName);
     method @Deprecated public boolean getStorageEncryption(@Nullable android.content.ComponentName);
     method public int getStorageEncryptionStatus();
-    method @FlaggedApi("android.app.admin.flags.esim_management_enabled") @NonNull @RequiresPermission(android.Manifest.permission.MANAGE_DEVICE_POLICY_MANAGED_SUBSCRIPTIONS) public java.util.Set<java.lang.Integer> getSubscriptionsIds();
+    method @FlaggedApi("android.app.admin.flags.esim_management_enabled") @NonNull @RequiresPermission(android.Manifest.permission.MANAGE_DEVICE_POLICY_MANAGED_SUBSCRIPTIONS) public java.util.Set<java.lang.Integer> getSubscriptionIds();
     method @Nullable public android.app.admin.SystemUpdatePolicy getSystemUpdatePolicy();
     method @Nullable public android.os.PersistableBundle getTransferOwnershipBundle();
     method @Nullable public java.util.List<android.os.PersistableBundle> getTrustAgentConfiguration(@Nullable android.content.ComponentName, @NonNull android.content.ComponentName);
@@ -10093,7 +10089,7 @@ package android.content {
     method public CharSequence coerceToText(android.content.Context);
     method public String getHtmlText();
     method public android.content.Intent getIntent();
-    method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @Nullable public android.app.PendingIntent getPendingIntent();
+    method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @Nullable public android.content.IntentSender getIntentSender();
     method public CharSequence getText();
     method @Nullable public android.view.textclassifier.TextLinks getTextLinks();
     method public android.net.Uri getUri();
@@ -10104,7 +10100,7 @@ package android.content {
     method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item build();
     method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setHtmlText(@Nullable String);
     method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setIntent(@Nullable android.content.Intent);
-    method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setPendingIntent(@Nullable android.app.PendingIntent);
+    method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setIntentSender(@Nullable android.content.IntentSender);
     method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setText(@Nullable CharSequence);
     method @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") @NonNull public android.content.ClipData.Item.Builder setUri(@Nullable android.net.Uri);
   }
@@ -10737,7 +10733,6 @@ package android.content {
     field public static final String DROPBOX_SERVICE = "dropbox";
     field public static final String EUICC_SERVICE = "euicc";
     field public static final String FILE_INTEGRITY_SERVICE = "file_integrity";
-    field public static final String FINGERPRINT_SERVICE = "fingerprint";
     field public static final String GAME_SERVICE = "game";
     field public static final String GRAMMATICAL_INFLECTION_SERVICE = "grammatical_inflection";
     field public static final String HARDWARE_PROPERTIES_SERVICE = "hardware_properties";
@@ -11080,6 +11075,7 @@ package android.content {
     method public boolean hasCategory(String);
     method public boolean hasExtra(String);
     method public boolean hasFileDescriptors();
+    method @FlaggedApi("android.security.enforce_intent_filter_match") public boolean isMismatchingFilter();
     method public static android.content.Intent makeMainActivity(android.content.ComponentName);
     method public static android.content.Intent makeMainSelectorActivity(String, String);
     method public static android.content.Intent makeRestartActivityTask(android.content.ComponentName);
@@ -13221,7 +13217,7 @@ package android.content.pm {
     field public static final String FEATURE_TELEPHONY_RADIO_ACCESS = "android.hardware.telephony.radio.access";
     field public static final String FEATURE_TELEPHONY_SUBSCRIPTION = "android.hardware.telephony.subscription";
     field @Deprecated public static final String FEATURE_TELEVISION = "android.hardware.type.television";
-    field @FlaggedApi("com.android.net.thread.flags.thread_enabled") public static final String FEATURE_THREAD_NETWORK = "android.hardware.thread_network";
+    field @FlaggedApi("com.android.net.thread.flags.thread_enabled_platform") public static final String FEATURE_THREAD_NETWORK = "android.hardware.thread_network";
     field public static final String FEATURE_TOUCHSCREEN = "android.hardware.touchscreen";
     field public static final String FEATURE_TOUCHSCREEN_MULTITOUCH = "android.hardware.touchscreen.multitouch";
     field public static final String FEATURE_TOUCHSCREEN_MULTITOUCH_DISTINCT = "android.hardware.touchscreen.multitouch.distinct";
@@ -20363,54 +20359,6 @@ package android.hardware.display {
     method @NonNull public android.hardware.display.VirtualDisplayConfig.Builder setFlags(int);
     method @NonNull public android.hardware.display.VirtualDisplayConfig.Builder setRequestedRefreshRate(@FloatRange(from=0.0f) float);
     method @NonNull public android.hardware.display.VirtualDisplayConfig.Builder setSurface(@Nullable android.view.Surface);
-  }
-
-}
-
-package android.hardware.fingerprint {
-
-  @Deprecated public class FingerprintManager {
-    method @Deprecated @RequiresPermission(anyOf={android.Manifest.permission.USE_BIOMETRIC, android.Manifest.permission.USE_FINGERPRINT}) public void authenticate(@Nullable android.hardware.fingerprint.FingerprintManager.CryptoObject, @Nullable android.os.CancellationSignal, int, @NonNull android.hardware.fingerprint.FingerprintManager.AuthenticationCallback, @Nullable android.os.Handler);
-    method @Deprecated @RequiresPermission(android.Manifest.permission.USE_FINGERPRINT) public boolean hasEnrolledFingerprints();
-    method @Deprecated @RequiresPermission(android.Manifest.permission.USE_FINGERPRINT) public boolean isHardwareDetected();
-    field public static final int FINGERPRINT_ACQUIRED_GOOD = 0; // 0x0
-    field public static final int FINGERPRINT_ACQUIRED_IMAGER_DIRTY = 3; // 0x3
-    field public static final int FINGERPRINT_ACQUIRED_INSUFFICIENT = 2; // 0x2
-    field public static final int FINGERPRINT_ACQUIRED_PARTIAL = 1; // 0x1
-    field public static final int FINGERPRINT_ACQUIRED_TOO_FAST = 5; // 0x5
-    field public static final int FINGERPRINT_ACQUIRED_TOO_SLOW = 4; // 0x4
-    field public static final int FINGERPRINT_ERROR_CANCELED = 5; // 0x5
-    field public static final int FINGERPRINT_ERROR_HW_NOT_PRESENT = 12; // 0xc
-    field public static final int FINGERPRINT_ERROR_HW_UNAVAILABLE = 1; // 0x1
-    field public static final int FINGERPRINT_ERROR_LOCKOUT = 7; // 0x7
-    field public static final int FINGERPRINT_ERROR_LOCKOUT_PERMANENT = 9; // 0x9
-    field public static final int FINGERPRINT_ERROR_NO_FINGERPRINTS = 11; // 0xb
-    field public static final int FINGERPRINT_ERROR_NO_SPACE = 4; // 0x4
-    field public static final int FINGERPRINT_ERROR_TIMEOUT = 3; // 0x3
-    field public static final int FINGERPRINT_ERROR_UNABLE_TO_PROCESS = 2; // 0x2
-    field public static final int FINGERPRINT_ERROR_USER_CANCELED = 10; // 0xa
-    field public static final int FINGERPRINT_ERROR_VENDOR = 8; // 0x8
-  }
-
-  @Deprecated public abstract static class FingerprintManager.AuthenticationCallback {
-    ctor @Deprecated public FingerprintManager.AuthenticationCallback();
-    method @Deprecated public void onAuthenticationError(int, CharSequence);
-    method @Deprecated public void onAuthenticationFailed();
-    method @Deprecated public void onAuthenticationHelp(int, CharSequence);
-    method @Deprecated public void onAuthenticationSucceeded(android.hardware.fingerprint.FingerprintManager.AuthenticationResult);
-  }
-
-  @Deprecated public static class FingerprintManager.AuthenticationResult {
-    method @Deprecated public android.hardware.fingerprint.FingerprintManager.CryptoObject getCryptoObject();
-  }
-
-  @Deprecated public static final class FingerprintManager.CryptoObject {
-    ctor @Deprecated public FingerprintManager.CryptoObject(@NonNull java.security.Signature);
-    ctor @Deprecated public FingerprintManager.CryptoObject(@NonNull javax.crypto.Cipher);
-    ctor @Deprecated public FingerprintManager.CryptoObject(@NonNull javax.crypto.Mac);
-    method @Deprecated public javax.crypto.Cipher getCipher();
-    method @Deprecated public javax.crypto.Mac getMac();
-    method @Deprecated public java.security.Signature getSignature();
   }
 
 }
@@ -43248,6 +43196,7 @@ package android.telecom {
     method @Deprecated @RequiresPermission(anyOf={android.Manifest.permission.READ_PHONE_STATE, android.Manifest.permission.READ_SMS, android.Manifest.permission.READ_PHONE_NUMBERS}, conditional=true) public String getLine1Number(android.telecom.PhoneAccountHandle);
     method @NonNull @RequiresPermission(android.Manifest.permission.MANAGE_OWN_CALLS) public java.util.List<android.telecom.PhoneAccountHandle> getOwnSelfManagedPhoneAccounts();
     method public android.telecom.PhoneAccount getPhoneAccount(android.telecom.PhoneAccountHandle);
+    method @FlaggedApi("com.android.server.telecom.flags.get_registered_phone_accounts") @NonNull public java.util.List<android.telecom.PhoneAccount> getRegisteredPhoneAccounts();
     method @NonNull @RequiresPermission(android.Manifest.permission.READ_PHONE_STATE) public java.util.List<android.telecom.PhoneAccountHandle> getSelfManagedPhoneAccounts();
     method public android.telecom.PhoneAccountHandle getSimCallManager();
     method @Nullable public android.telecom.PhoneAccountHandle getSimCallManagerForSubscription(int);
@@ -53189,7 +53138,7 @@ package android.view {
     field public static final int DRAG_FLAG_GLOBAL_URI_READ = 1; // 0x1
     field public static final int DRAG_FLAG_GLOBAL_URI_WRITE = 2; // 0x2
     field public static final int DRAG_FLAG_OPAQUE = 512; // 0x200
-    field @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") public static final int DRAG_FLAG_START_PENDING_INTENT_ON_UNHANDLED_DRAG = 8192; // 0x2000
+    field @FlaggedApi("com.android.window.flags.delegate_unhandled_drags") public static final int DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG = 8192; // 0x2000
     field @Deprecated public static final int DRAWING_CACHE_QUALITY_AUTO = 0; // 0x0
     field @Deprecated public static final int DRAWING_CACHE_QUALITY_HIGH = 1048576; // 0x100000
     field @Deprecated public static final int DRAWING_CACHE_QUALITY_LOW = 524288; // 0x80000

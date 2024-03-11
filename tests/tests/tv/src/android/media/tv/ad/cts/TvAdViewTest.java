@@ -118,7 +118,7 @@ public class TvAdViewTest {
                 return true;
             }
         };
-        mTvAdView.setOnUnhandledInputEventListener(getExecutor(), mOnUnhandledInputEventListener);
+        mTvAdView.setOnUnhandledInputEventListener(mOnUnhandledInputEventListener);
         new PollingCheck(TIME_OUT_MS) {
             @Override
             protected boolean check() {

@@ -60,8 +60,8 @@ public class LoginCredentialMixedActivity extends LoginActivity {
                 mPasswordEditText.setText(pwCredential.getPassword());
             }
         };
-        this.mUsernameEditText.setCredentialManagerRequest(builder.build(), outcomeReceiver);
-        this.mPasswordEditText.setCredentialManagerRequest(builder.build(), outcomeReceiver);
+        this.mUsernameEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
+        this.mPasswordEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
     }
 
     @Override

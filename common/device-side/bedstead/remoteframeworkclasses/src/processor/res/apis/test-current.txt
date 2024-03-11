@@ -1032,7 +1032,10 @@ package android.content {
   }
 
   public class Intent implements java.lang.Cloneable android.os.Parcelable {
+    method @NonNull public android.content.Intent addExtendedFlags(int);
+    method public int getExtendedFlags();
     field public static final String ACTION_USER_STOPPED = "android.intent.action.USER_STOPPED";
+    field public static final int EXTENDED_FLAG_FILTER_MISMATCH = 1; // 0x1
   }
 
   public class SyncAdapterType implements android.os.Parcelable {
@@ -1548,6 +1551,7 @@ package android.hardware.biometrics {
 
   public static class BiometricPrompt.Builder {
     method @NonNull @RequiresPermission(anyOf={android.Manifest.permission.TEST_BIOMETRIC, "android.permission.USE_BIOMETRIC_INTERNAL"}) public android.hardware.biometrics.BiometricPrompt.Builder setAllowBackgroundAuthentication(boolean);
+    method @FlaggedApi("android.multiuser.enable_biometrics_to_unlock_private_space") @NonNull @RequiresPermission(anyOf={android.Manifest.permission.TEST_BIOMETRIC, "android.permission.USE_BIOMETRIC_INTERNAL"}) public android.hardware.biometrics.BiometricPrompt.Builder setAllowBackgroundAuthentication(boolean, boolean);
     method @NonNull @RequiresPermission(anyOf={android.Manifest.permission.TEST_BIOMETRIC, "android.permission.USE_BIOMETRIC_INTERNAL"}) public android.hardware.biometrics.BiometricPrompt.Builder setAllowedSensorIds(@NonNull java.util.List<java.lang.Integer>);
   }
 
@@ -1702,15 +1706,7 @@ package android.hardware.display {
     field public static final int SWITCHING_TYPE_WITHIN_GROUPS = 1; // 0x1
     field public static final int VIRTUAL_DISPLAY_FLAG_OWN_FOCUS = 16384; // 0x4000
     field public static final int VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS = 512; // 0x200
-  }
-
-}
-
-package android.hardware.fingerprint {
-
-  @Deprecated public class FingerprintManager {
-    method @Deprecated @NonNull @RequiresPermission(android.Manifest.permission.TEST_BIOMETRIC) public android.hardware.biometrics.BiometricTestSession createTestSession(int);
-    method @Deprecated @NonNull @RequiresPermission(android.Manifest.permission.TEST_BIOMETRIC) public java.util.List<android.hardware.biometrics.SensorProperties> getSensorProperties();
+    field public static final int VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 64; // 0x40
   }
 
 }
@@ -1757,6 +1753,10 @@ package android.hardware.input {
   public class InputSettings {
     method @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public static void setMaximumObscuringOpacityForTouch(@NonNull android.content.Context, @FloatRange(from=0, to=1) float);
     field public static final int DEFAULT_POINTER_SPEED = 0; // 0x0
+  }
+
+  public class VirtualKeyboard implements java.io.Closeable {
+    method public int getInputDeviceId();
   }
 
 }
@@ -3062,6 +3062,14 @@ package android.service.autofill.augmented {
     method @Nullable public android.view.inputmethod.InlineSuggestionsRequest getInlineSuggestionsRequest();
     method @Nullable public android.service.autofill.augmented.PresentationParams getPresentationParams();
     method public int getTaskId();
+  }
+
+}
+
+package android.service.chooser {
+
+  @FlaggedApi("android.service.chooser.enable_chooser_result") public final class ChooserResult implements android.os.Parcelable {
+    ctor public ChooserResult(int, @Nullable android.content.ComponentName, boolean);
   }
 
 }

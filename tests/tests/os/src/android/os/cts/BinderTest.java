@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.WorkSource;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
@@ -82,6 +83,16 @@ public class BinderTest {
                 dumpArgs);
 
         mBinder.dump(new FileDescriptor(), dumpArgs);
+    }
+
+    @Test
+    @IgnoreUnderRavenwood
+    public void testHandleShellCommand() throws Exception {
+        String[] cmdArgs = new String[]{"4", "8", "15", "16", "23", "42"};
+
+        mBinder.handleShellCommand(ParcelFileDescriptor.dup(FileDescriptor.in),
+                ParcelFileDescriptor.dup(FileDescriptor.out),
+                ParcelFileDescriptor.dup(FileDescriptor.err), cmdArgs);
     }
 
     @Test

@@ -48,6 +48,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final long TIMEOUT_MS = 5_000;
     private static final int SUSPEND_SEC = 3;
     private static final long WAIT_FOR_SUSPEND_MS = SUSPEND_SEC * 1000 + 2000;
+    private static final String PRODUCT_MODEL_PROPERTY = "ro.product.model";
+    private static final String GOLDFISH_PROPERTY = "ro.kernel.qemu";
+    private static final String CUTTLEFISH_DEVICE_NAME_PREFIX = "Cuttlefish";
     private static final String POWER_ON = "ON";
     private static final String POWER_STATE_PATTERN =
             "mCurrentState:.*CpmsState=([A-Z_]+)\\(\\d+\\)";
@@ -100,6 +103,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
         testSetListenerInternal(/* listenerName= */ "listener-s2r", /* suspendType= */ "s2r",
                 /* completionType= */ "without-completion",
@@ -116,6 +121,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
         testSetListenerInternal(/* listenerName= */ "listener-s2r", /* suspendType= */ "s2r",
                 /* completionType= */ "without-completion",
@@ -132,6 +139,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
         testSetListenerInternal(/* listenerName= */ "listener-s2d", /* suspendType= */ "s2d",
                 /* completionType= */ "without-completion",
@@ -148,6 +157,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
         testSetListenerInternal(/* listenerName= */ "listener-s2d", /* suspendType= */ "s2d",
                 /* completionType= */ "without-completion",
@@ -164,6 +175,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
         testSetListenerInternal(/* listenerName= */ "listener-wc-s2r", /* suspendType= */ "s2r",
                 /* completionType= */ "with-completion",
@@ -180,6 +193,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_textDump() throws Exception {
+        assumeEmulatorBuild();
         setUseProtoDump(false);
         testSetListenerInternal(/* listenerName= */ "listener-wc-s2r", /* suspendType= */ "s2r",
                 /* completionType= */ "with-completion",
@@ -196,6 +210,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
         testSetListenerInternal(/* listenerName= */ "listener-wc-s2d", /* suspendType= */ "s2d",
                 /* completionType= */ "with-completion",
@@ -212,6 +228,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
         testSetListenerInternal(/* listenerName= */ "listener-wc-s2d", /* suspendType= */ "s2d",
                 /* completionType= */ "with-completion",
@@ -287,6 +305,13 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
                     return logcat.contains(logcatMsg);
                 }
             });
+    }
+
+    // TODO(b/328617252): remove this method once ADB reconnection from suspend is stable
+    private void assumeEmulatorBuild() throws Exception {
+        assumeTrue(getDevice().getProperty(PRODUCT_MODEL_PROPERTY).startsWith(
+                CUTTLEFISH_DEVICE_NAME_PREFIX)
+                || getDevice().getProperty(GOLDFISH_PROPERTY).equals("1"));
     }
 
     private boolean isSuspendSupported(String suspendType) throws Exception {

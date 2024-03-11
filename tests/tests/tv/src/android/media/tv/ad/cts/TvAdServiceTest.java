@@ -121,7 +121,7 @@ public class TvAdServiceTest {
         }
         assertNotNull(mStubInfo);
         mTvAdView.setCallback(getExecutor(), mCallback);
-        mTvAdView.setOnUnhandledInputEventListener(getExecutor(),
+        mTvAdView.setOnUnhandledInputEventListener(
                 new TvAdView.OnUnhandledInputEventListener() {
                     @Override
                     public boolean onUnhandledInputEvent(InputEvent event) {

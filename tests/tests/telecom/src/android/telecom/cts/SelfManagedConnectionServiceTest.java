@@ -35,7 +35,6 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
@@ -56,7 +55,6 @@ import android.telecom.VideoProfile;
 import android.telecom.cts.selfmanagedcstestapp.ICtsSelfManagedConnectionServiceControl;
 import android.telecom.cts.selfmanagedcstestappone.CtsSelfManagedConnectionServiceControlOne;
 import android.util.Log;
-import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -1600,46 +1598,34 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         // Specific user defined scenarios:
         // Verify TelecomManager#isInSelfManagedCall for specified user -> true.
         verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                TEST_SELF_MANAGED_HANDLE_1.getUserHandle(), new Pair(false, false));
-        // Deliberately pass in different UserHandle different from the calling user to ensure that
-        // the API indicates that there aren't any ongoing calls -> false.
+                TEST_SELF_MANAGED_HANDLE_1.getUserHandle());
+        // Deliberately pass in different UserHandle different from the phone account handle user to
+        // ensure that the API indicates that there aren't any ongoing calls -> false.
         verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID), new Pair(false, false));
+                UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID));
 
-        // Cross-user scenarios:
-        // Deliberately pass in different UserHandle to ensure that cross users functionality
-        // works as intended -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1, null, new Pair(true, true));
-        // Ensure that not setting cross user will verify the calls on the caller -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                null, new Pair(true, false));
+        // Cross-user scenario: ensure that passing UserHandle.ALL correctly identifies calls for
+        // any user with self-managed calls.
+        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1, UserHandle.ALL);
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 
     private void verifyIsInSelfManagedCallCrossUsers(PhoneAccountHandle handle,
-            UserHandle userHandle, Pair<Boolean, Boolean> handleCrossUser) throws Exception {
+            UserHandle userHandle) throws Exception {
         SelfManagedConnection connection = null;
 
         boolean assertIsInSelfManagedCall = true;
-        if (!handleCrossUser.first && !handle.getUserHandle().equals(userHandle)) {
-            assertIsInSelfManagedCall = false;
-        } else if (handleCrossUser.first && !handleCrossUser.second
-                && !Binder.getCallingUserHandle().equals(handle.getUserHandle())) {
+        if (!userHandle.equals(UserHandle.ALL) && !handle.getUserHandle().equals(userHandle)) {
             assertIsInSelfManagedCall = false;
         }
 
         try {
             connection = placeSelfManagedCallAndGetConnection(handle, TEST_ADDRESS_1);
             boolean isInSelfManagedCall;
-            if (handleCrossUser.first) {
-                isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
-                        handle.getComponentName().getPackageName(), handleCrossUser.second);
-            } else {
-                isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
-                        handle.getComponentName().getPackageName(), userHandle);
-            }
+            isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
+                    handle.getComponentName().getPackageName(), userHandle);
             assertEquals(assertIsInSelfManagedCall, isInSelfManagedCall);
         } finally {
             if (connection != null) {

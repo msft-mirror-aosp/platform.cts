@@ -487,7 +487,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       # mirror the capture across the vertical axis if captured by front facing
       # camera
       should_mirror = (props['android.lens.facing'] ==
-                camera_properties_utils.LENS_FACING['FRONT'])
+                       camera_properties_utils.LENS_FACING['FRONT'])
 
       # do camera2 capture
       if is_low_light_boost_supported:

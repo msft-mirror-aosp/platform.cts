@@ -47,6 +47,7 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -194,7 +195,11 @@ public class VirtualCameraTest {
         VirtualCameraConfig config = createVirtualCameraConfig(CAMERA_WIDTH, CAMERA_HEIGHT,
                 CAMERA_FORMAT, CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, CAMERA_LENS_FACING,
                 CAMERA_NAME, mExecutor, mVirtualCameraCallback);
-        mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
+        try {
+            mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("Virtual camera is not available on this device", e);
+        }
     }
 
     @After
