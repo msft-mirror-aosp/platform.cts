@@ -76,8 +76,10 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       cap = cam.do_capture(
           capture_request_utils.auto_capture_request(), cam.CAP_YUV)
       y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
+      # In the sensor fusion rig, there is no tablet, so tablet_state is OFF.
       its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', log_path=self.log_path)
+          y_plane, self.scene, state='OFF', tablet_state='OFF',
+          log_path=self.log_path)
 
       logging.debug('Taking preview recording in darkened scene.')
       # determine camera capabilities for preview
