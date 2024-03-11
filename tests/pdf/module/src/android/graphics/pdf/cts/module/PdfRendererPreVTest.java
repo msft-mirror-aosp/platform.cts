@@ -90,6 +90,11 @@ public class PdfRendererPreVTest {
     }
 
     @Test
+    public void constructRenderer_fromNonPDF_withoutLoadParams() throws Exception {
+        assertThrows(IOException.class, () -> createPreVRenderer(R.raw.testimage, mContext, null));
+    }
+
+    @Test
     public void constructRenderer_protectedPdfWithWrongPassword_throwsException() throws Exception {
         assertThrows(SecurityException.class,
                 () -> createPreVRenderer(PROTECTED_PDF, mContext, INCORRECT_LOAD_PARAMS));
