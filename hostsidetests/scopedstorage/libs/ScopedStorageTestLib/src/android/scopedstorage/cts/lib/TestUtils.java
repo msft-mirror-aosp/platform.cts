@@ -1021,7 +1021,8 @@ public class TestUtils {
 
             try {
                 getContentResolver().delete(uri, Bundle.EMPTY);
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                Log.e("Exception while deleting files", exception.getMessage());
             }
         }
     }
