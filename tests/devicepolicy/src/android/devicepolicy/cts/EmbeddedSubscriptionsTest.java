@@ -65,11 +65,11 @@ public final class EmbeddedSubscriptionsTest {
     @Test
     public void getSubscriptionIds_initiallyEmpty() {
         Set<Integer> managedSubscriptions =
-                sDeviceState.dpc().devicePolicyManager().getSubscriptionsIds();
+                sDeviceState.dpc().devicePolicyManager().getSubscriptionIds();
         assertThat(managedSubscriptions).isEmpty();
     }
 
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#getSubscriptionsIds")
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#getSubscriptionIds")
     @CannotSetPolicyTest(policy = EmbeddedSubscription.class)
     @RequiresFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
     @Postsubmit(reason = "new test")
@@ -78,6 +78,6 @@ public final class EmbeddedSubscriptionsTest {
         assertThrows(SecurityException.class, () -> sDeviceState
                 .dpc()
                 .devicePolicyManager()
-                .getSubscriptionsIds());
+                .getSubscriptionIds());
     }
 }
