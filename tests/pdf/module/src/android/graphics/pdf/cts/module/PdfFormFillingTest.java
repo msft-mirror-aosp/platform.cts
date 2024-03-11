@@ -26,9 +26,9 @@ import android.content.Context;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.pdf.PdfRenderer;
-import android.graphics.pdf.models.ChoiceOption;
 import android.graphics.pdf.models.FormEditRecord;
 import android.graphics.pdf.models.FormWidgetInfo;
+import android.graphics.pdf.models.ListItem;
 
 import androidx.annotation.RawRes;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -38,10 +38,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class PdfFormFillingTest {
@@ -86,11 +84,11 @@ public class PdfFormFillingTest {
 
     private static FormWidgetInfo makeCombobox(int widgetIndex, Rect widgetRect, boolean readOnly,
             String textValue, String accessibilityLabel, boolean editableText, float fontSize,
-            List<ChoiceOption> choiceOptions) {
+            List<ListItem> listItems) {
         FormWidgetInfo.Builder builder = new FormWidgetInfo.Builder(
                 FormWidgetInfo.WIDGET_TYPE_COMBOBOX, widgetIndex, widgetRect, textValue,
                 accessibilityLabel).setReadOnly(readOnly).setEditableText(
-                editableText).setChoiceOptions(choiceOptions);
+                editableText).setListItems(listItems);
         if (fontSize > 0) {
             builder.setFontSize(fontSize);
         }
@@ -99,10 +97,10 @@ public class PdfFormFillingTest {
 
     private static FormWidgetInfo makeListbox(int widgetIndex, Rect widgetRect, boolean readOnly,
             String textValue, String accessibilityLabel, boolean multiSelect,
-            List<ChoiceOption> choiceOptions) {
+            List<ListItem> listItems) {
         return new FormWidgetInfo.Builder(FormWidgetInfo.WIDGET_TYPE_LISTBOX, widgetIndex,
                 widgetRect, textValue, accessibilityLabel).setReadOnly(readOnly).setMultiSelect(
-                multiSelect).setChoiceOptions(choiceOptions).build();
+                multiSelect).setListItems(listItems).build();
     }
 
     private static FormWidgetInfo makeTextField(int widgetIndex, Rect widgetRect, boolean readOnly,
@@ -197,10 +195,10 @@ public class PdfFormFillingTest {
 
     @Test
     public void getFormWidgetInfo_editableCombobox() throws Exception {
-        List<ChoiceOption> expectedChoices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Foo", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Bar", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Qux", /* selected= */ false));
+        List<ListItem> expectedChoices = Arrays.asList(
+                new ListItem(/* label= */ "Foo", /* selected= */ false),
+                new ListItem(/* label= */ "Bar", /* selected= */ false),
+                new ListItem(/* label= */ "Qux", /* selected= */ false));
         FormWidgetInfo expected = makeCombobox(
                 /* widgetIndex= */ 0,
                 /* widgetRect= */ new Rect(100, 220, 200, 250),
@@ -209,40 +207,40 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ expectedChoices);
+                /* listItems= */ expectedChoices);
 
         verifyFormWidgetInfo(COMBOBOX_FORM, 0, new Point(150, 235), expected);
     }
 
     @Test
     public void getFormWidgetInfo_unEditableCombobox() throws Exception {
-        List<ChoiceOption> expectedChoices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Apple", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Banana", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Cherry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Date", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Elderberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Guava", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Honeydew", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Indian Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Jackfruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Kiwi", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Lemon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Mango", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nectarine", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Orange", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Persimmon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quince", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Raspberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Strawberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Tamarind", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ugli Fruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Voavanga", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Wolfberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Xigua", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Yangmei", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Zucchini", /* selected= */ false));
+        List<ListItem> expectedChoices = Arrays.asList(
+                new ListItem(/* label= */ "Apple", /* selected= */ false),
+                new ListItem(/* label= */ "Banana", /* selected= */ true),
+                new ListItem(/* label= */ "Cherry", /* selected= */ false),
+                new ListItem(/* label= */ "Date", /* selected= */ false),
+                new ListItem(/* label= */ "Elderberry", /* selected= */ false),
+                new ListItem(/* label= */ "Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Guava", /* selected= */ false),
+                new ListItem(/* label= */ "Honeydew", /* selected= */ false),
+                new ListItem(/* label= */ "Indian Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Jackfruit", /* selected= */ false),
+                new ListItem(/* label= */ "Kiwi", /* selected= */ false),
+                new ListItem(/* label= */ "Lemon", /* selected= */ false),
+                new ListItem(/* label= */ "Mango", /* selected= */ false),
+                new ListItem(/* label= */ "Nectarine", /* selected= */ false),
+                new ListItem(/* label= */ "Orange", /* selected= */ false),
+                new ListItem(/* label= */ "Persimmon", /* selected= */ false),
+                new ListItem(/* label= */ "Quince", /* selected= */ false),
+                new ListItem(/* label= */ "Raspberry", /* selected= */ false),
+                new ListItem(/* label= */ "Strawberry", /* selected= */ false),
+                new ListItem(/* label= */ "Tamarind", /* selected= */ false),
+                new ListItem(/* label= */ "Ugli Fruit", /* selected= */ false),
+                new ListItem(/* label= */ "Voavanga", /* selected= */ false),
+                new ListItem(/* label= */ "Wolfberry", /* selected= */ false),
+                new ListItem(/* label= */ "Xigua", /* selected= */ false),
+                new ListItem(/* label= */ "Yangmei", /* selected= */ false),
+                new ListItem(/* label= */ "Zucchini", /* selected= */ false));
         FormWidgetInfo expected = makeCombobox(
                 /* widgetIndex= */ 1,
                 /* widgetRect= */ new Rect(100, 170, 200, 200),
@@ -251,7 +249,7 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo1",
                 /* editableText= */ false,
                 /* fontSize= */ 0f,
-                /* choiceOptions= */ expectedChoices);
+                /* listItems= */ expectedChoices);
 
         verifyFormWidgetInfo(COMBOBOX_FORM, 0, new Point(150, 185), expected);
     }
@@ -267,25 +265,25 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_ReadOnly",
                 /* editableText= */ false,
                 /* fontSize= */ 0f,
-                /* choiceOptions= */ List.of());
+                /* listItems= */ List.of());
 
         verifyFormWidgetInfo(COMBOBOX_FORM, 0, new Point(150, 85), expected);
     }
 
     @Test
     public void getFormWidgetInfo_listbox() throws Exception {
-        List<ChoiceOption> expectedChoices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ false),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+        List<ListItem> expectedChoices = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ false),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ true));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ true));
         FormWidgetInfo expected = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ new Rect(100, 470, 200, 500),
@@ -293,25 +291,25 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Saskatchewan",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ expectedChoices);
+                /* listItems= */ expectedChoices);
 
         verifyFormWidgetInfo(LISTBOX_FORM, 0, new Point(150, 485), expected);
     }
 
     @Test
     public void getFormWidgetInfo_multiselectListbox() throws Exception {
-        List<ChoiceOption> expectedChoices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ false),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+        List<ListItem> expectedChoices = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ false),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ true));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ true));
         FormWidgetInfo expected = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ new Rect(100, 470, 200, 500),
@@ -319,7 +317,7 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Saskatchewan",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ expectedChoices);
+                /* listItems= */ expectedChoices);
 
         verifyFormWidgetInfo(LISTBOX_FORM, 0, new Point(150, 485), expected);
     }
@@ -334,7 +332,7 @@ public class PdfFormFillingTest {
                 /* textValue= */ "",
                 /* accessibilityLabel= */ "Listbox_ReadOnly",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ List.of());
+                /* listItems= */ List.of());
 
         verifyFormWidgetInfo(LISTBOX_FORM, 0, new Point(150, 85), expected);
     }
@@ -398,34 +396,34 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_ReadOnly",
                 /* editableText= */ false,
                 /* fontSize= */ 0f,
-                /* choiceOptions= */ List.of());
-        List<ChoiceOption> combo1Choices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Apple", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Banana", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Cherry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Date", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Elderberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Guava", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Honeydew", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Indian Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Jackfruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Kiwi", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Lemon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Mango", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nectarine", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Orange", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Persimmon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quince", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Raspberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Strawberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Tamarind", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ugli Fruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Voavanga", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Wolfberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Xigua", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Yangmei", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Zucchini", /* selected= */ false));
+                /* listItems= */ List.of());
+        List<ListItem> combo1Choices = Arrays.asList(
+                new ListItem(/* label= */ "Apple", /* selected= */ false),
+                new ListItem(/* label= */ "Banana", /* selected= */ true),
+                new ListItem(/* label= */ "Cherry", /* selected= */ false),
+                new ListItem(/* label= */ "Date", /* selected= */ false),
+                new ListItem(/* label= */ "Elderberry", /* selected= */ false),
+                new ListItem(/* label= */ "Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Guava", /* selected= */ false),
+                new ListItem(/* label= */ "Honeydew", /* selected= */ false),
+                new ListItem(/* label= */ "Indian Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Jackfruit", /* selected= */ false),
+                new ListItem(/* label= */ "Kiwi", /* selected= */ false),
+                new ListItem(/* label= */ "Lemon", /* selected= */ false),
+                new ListItem(/* label= */ "Mango", /* selected= */ false),
+                new ListItem(/* label= */ "Nectarine", /* selected= */ false),
+                new ListItem(/* label= */ "Orange", /* selected= */ false),
+                new ListItem(/* label= */ "Persimmon", /* selected= */ false),
+                new ListItem(/* label= */ "Quince", /* selected= */ false),
+                new ListItem(/* label= */ "Raspberry", /* selected= */ false),
+                new ListItem(/* label= */ "Strawberry", /* selected= */ false),
+                new ListItem(/* label= */ "Tamarind", /* selected= */ false),
+                new ListItem(/* label= */ "Ugli Fruit", /* selected= */ false),
+                new ListItem(/* label= */ "Voavanga", /* selected= */ false),
+                new ListItem(/* label= */ "Wolfberry", /* selected= */ false),
+                new ListItem(/* label= */ "Xigua", /* selected= */ false),
+                new ListItem(/* label= */ "Yangmei", /* selected= */ false),
+                new ListItem(/* label= */ "Zucchini", /* selected= */ false));
         FormWidgetInfo combo1 = makeCombobox(
                 /* widgetIndex= */ 1,
                 /* widgetRect= */ new Rect(100, 170, 200, 200),
@@ -434,11 +432,11 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo1",
                 /* editableText= */ false,
                 /* fontSize= */ 0f,
-                /* choiceOptions= */ combo1Choices);
-        List<ChoiceOption> editableChoices = Arrays.asList(
-                new ChoiceOption(/* label= */ "Foo", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Bar", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Qux", /* selected= */ false));
+                /* listItems= */ combo1Choices);
+        List<ListItem> editableChoices = Arrays.asList(
+                new ListItem(/* label= */ "Foo", /* selected= */ false),
+                new ListItem(/* label= */ "Bar", /* selected= */ false),
+                new ListItem(/* label= */ "Qux", /* selected= */ false));
         FormWidgetInfo editable = makeCombobox(
                 /* widgetIndex= */ 0,
                 /* widgetRect= */ new Rect(100, 220, 200, 250),
@@ -447,9 +445,9 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ editableChoices);
+                /* listItems= */ editableChoices);
 
-        verifyFormWidgetInfos(COMBOBOX_FORM, 0, Set.of(FormWidgetInfo.WIDGET_TYPE_COMBOBOX),
+        verifyFormWidgetInfos(COMBOBOX_FORM, 0, new int[]{FormWidgetInfo.WIDGET_TYPE_COMBOBOX},
                 Arrays.asList(editable, combo1, readOnly));
     }
 
@@ -526,10 +524,10 @@ public class PdfFormFillingTest {
     @Test
     public void applyEdit_setChoiceSelectionOnCombobox() throws Exception {
         Rect comboboxArea = new Rect(100, 220, 200, 250);
-        List<ChoiceOption> choicesBefore = Arrays.asList(
-                new ChoiceOption(/* label= */ "Foo", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Bar", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Qux", /* selected= */ false));
+        List<ListItem> choicesBefore = Arrays.asList(
+                new ListItem(/* label= */ "Foo", /* selected= */ false),
+                new ListItem(/* label= */ "Bar", /* selected= */ false),
+                new ListItem(/* label= */ "Qux", /* selected= */ false));
         FormWidgetInfo widgetBefore = makeCombobox(
                 /* widgetIndex= */ 0,
                 /* widgetRect= */ comboboxArea,
@@ -538,14 +536,14 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
         FormEditRecord selectBar = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 0).setSelectedIndices(Set.of(1)).build();
-        List<ChoiceOption> choicesAfter = Arrays.asList(
-                new ChoiceOption(/* label= */ "Foo", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Bar", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Qux", /* selected= */ false));
+                /* widgetIndex= */ 0).setSelectedIndices(new int[]{1}).build();
+        List<ListItem> choicesAfter = Arrays.asList(
+                new ListItem(/* label= */ "Foo", /* selected= */ false),
+                new ListItem(/* label= */ "Bar", /* selected= */ true),
+                new ListItem(/* label= */ "Qux", /* selected= */ false));
         FormWidgetInfo widgetAfter = makeCombobox(
                 /* widgetIndex= */ 0,
                 /* widgetRect= */ comboboxArea,
@@ -554,7 +552,7 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ choicesAfter);
+                /* listItems= */ choicesAfter);
 
         verifyApplyEdit(COMBOBOX_FORM, 0, new Point(150, 235), widgetBefore, selectBar, widgetAfter,
                 List.of(comboboxArea));
@@ -563,10 +561,10 @@ public class PdfFormFillingTest {
     @Test
     public void applyEdit_setTextOnCombobox() throws Exception {
         Rect comboboxArea = new Rect(100, 220, 200, 250);
-        List<ChoiceOption> choicesBefore = Arrays.asList(
-                new ChoiceOption(/* label= */ "Foo", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Bar", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Qux", /* selected= */ false));
+        List<ListItem> choicesBefore = Arrays.asList(
+                new ListItem(/* label= */ "Foo", /* selected= */ false),
+                new ListItem(/* label= */ "Bar", /* selected= */ false),
+                new ListItem(/* label= */ "Qux", /* selected= */ false));
         FormWidgetInfo widgetBefore = makeCombobox(
                 /* widgetIndex= */ 0,
                 /* widgetRect= */ comboboxArea,
@@ -575,7 +573,7 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
         FormEditRecord setText = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_SET_TEXT,
                 /* pageNumber= */ 0,
                 /* widgetIndex= */ 0).setText("Gecko tail").build();
@@ -587,7 +585,7 @@ public class PdfFormFillingTest {
                 /* accessibilityLabel= */ "Combo_Editable",
                 /* editableText= */ true,
                 /* fontSize= */ 12.0f,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
 
         verifyApplyEdit(COMBOBOX_FORM, 0, new Point(150, 235), widgetBefore, setText, widgetAfter,
                 List.of(comboboxArea));
@@ -597,18 +595,18 @@ public class PdfFormFillingTest {
     @Test
     public void applyEdit_setChoiceSelectionOnListbox() throws Exception {
         Rect widgetArea = new Rect(100, 470, 200, 500);
-        List<ChoiceOption> choicesBefore = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ false),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+        List<ListItem> choicesBefore = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ false),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ true));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ true));
         FormWidgetInfo widgetBefore = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ widgetArea,
@@ -616,23 +614,23 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Saskatchewan",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
         FormEditRecord clearSelection = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 6).setSelectedIndices(Set.of(0)).build();
-        List<ChoiceOption> choicesAfter = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ true),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+                /* widgetIndex= */ 6).setSelectedIndices(new int[]{0}).build();
+        List<ListItem> choicesAfter = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ true),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ false));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ false));
         FormWidgetInfo widgetAfter = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ widgetArea,
@@ -640,7 +638,7 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Alberta",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ choicesAfter);
+                /* listItems= */ choicesAfter);
 
         verifyApplyEdit(LISTBOX_FORM, 0, new Point(150, 485), widgetBefore, clearSelection,
                 widgetAfter, List.of(widgetArea));
@@ -649,33 +647,33 @@ public class PdfFormFillingTest {
     @Test
     public void applyEdit_setMultipleChoiceSelectionOnListbox() throws Exception {
         Rect widgetArea = new Rect(100, 170, 200, 200);
-        List<ChoiceOption> choicesBefore = Arrays.asList(
-                new ChoiceOption(/* label= */ "Apple", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Banana", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Cherry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Date", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Elderberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Guava", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Honeydew", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Indian Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Jackfruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Kiwi", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Lemon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Mango", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nectarine", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Orange", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Persimmon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quince", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Raspberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Strawberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Tamarind", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ugli Fruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Voavanga", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Wolfberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Xigua", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Yangmei", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Zucchini", /* selected= */ false));
+        List<ListItem> choicesBefore = Arrays.asList(
+                new ListItem(/* label= */ "Apple", /* selected= */ false),
+                new ListItem(/* label= */ "Banana", /* selected= */ true),
+                new ListItem(/* label= */ "Cherry", /* selected= */ false),
+                new ListItem(/* label= */ "Date", /* selected= */ false),
+                new ListItem(/* label= */ "Elderberry", /* selected= */ false),
+                new ListItem(/* label= */ "Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Guava", /* selected= */ false),
+                new ListItem(/* label= */ "Honeydew", /* selected= */ false),
+                new ListItem(/* label= */ "Indian Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Jackfruit", /* selected= */ false),
+                new ListItem(/* label= */ "Kiwi", /* selected= */ false),
+                new ListItem(/* label= */ "Lemon", /* selected= */ false),
+                new ListItem(/* label= */ "Mango", /* selected= */ false),
+                new ListItem(/* label= */ "Nectarine", /* selected= */ false),
+                new ListItem(/* label= */ "Orange", /* selected= */ false),
+                new ListItem(/* label= */ "Persimmon", /* selected= */ false),
+                new ListItem(/* label= */ "Quince", /* selected= */ false),
+                new ListItem(/* label= */ "Raspberry", /* selected= */ false),
+                new ListItem(/* label= */ "Strawberry", /* selected= */ false),
+                new ListItem(/* label= */ "Tamarind", /* selected= */ false),
+                new ListItem(/* label= */ "Ugli Fruit", /* selected= */ false),
+                new ListItem(/* label= */ "Voavanga", /* selected= */ false),
+                new ListItem(/* label= */ "Wolfberry", /* selected= */ false),
+                new ListItem(/* label= */ "Xigua", /* selected= */ false),
+                new ListItem(/* label= */ "Yangmei", /* selected= */ false),
+                new ListItem(/* label= */ "Zucchini", /* selected= */ false));
         FormWidgetInfo widgetBefore = makeListbox(
                 /* widgetIndex= */ 1,
                 /* widgetRect= */ widgetArea,
@@ -683,38 +681,38 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Banana",
                 /* accessibilityLabel= */ "Listbox_MultiSelect",
                 /* multiSelect= */ true,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
         FormEditRecord selectMultiple = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setSelectedIndices(Set.of(1, 2, 3)).build();
-        List<ChoiceOption> choicesAfter = Arrays.asList(
-                new ChoiceOption(/* label= */ "Apple", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Banana", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Cherry", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Date", /* selected= */ true),
-                new ChoiceOption(/* label= */ "Elderberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Guava", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Honeydew", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Indian Fig", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Jackfruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Kiwi", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Lemon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Mango", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nectarine", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Orange", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Persimmon", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quince", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Raspberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Strawberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Tamarind", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ugli Fruit", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Voavanga", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Wolfberry", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Xigua", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Yangmei", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Zucchini", /* selected= */ false));
+                /* widgetIndex= */ 1).setSelectedIndices(new int[]{1, 2, 3}).build();
+        List<ListItem> choicesAfter = Arrays.asList(
+                new ListItem(/* label= */ "Apple", /* selected= */ false),
+                new ListItem(/* label= */ "Banana", /* selected= */ true),
+                new ListItem(/* label= */ "Cherry", /* selected= */ true),
+                new ListItem(/* label= */ "Date", /* selected= */ true),
+                new ListItem(/* label= */ "Elderberry", /* selected= */ false),
+                new ListItem(/* label= */ "Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Guava", /* selected= */ false),
+                new ListItem(/* label= */ "Honeydew", /* selected= */ false),
+                new ListItem(/* label= */ "Indian Fig", /* selected= */ false),
+                new ListItem(/* label= */ "Jackfruit", /* selected= */ false),
+                new ListItem(/* label= */ "Kiwi", /* selected= */ false),
+                new ListItem(/* label= */ "Lemon", /* selected= */ false),
+                new ListItem(/* label= */ "Mango", /* selected= */ false),
+                new ListItem(/* label= */ "Nectarine", /* selected= */ false),
+                new ListItem(/* label= */ "Orange", /* selected= */ false),
+                new ListItem(/* label= */ "Persimmon", /* selected= */ false),
+                new ListItem(/* label= */ "Quince", /* selected= */ false),
+                new ListItem(/* label= */ "Raspberry", /* selected= */ false),
+                new ListItem(/* label= */ "Strawberry", /* selected= */ false),
+                new ListItem(/* label= */ "Tamarind", /* selected= */ false),
+                new ListItem(/* label= */ "Ugli Fruit", /* selected= */ false),
+                new ListItem(/* label= */ "Voavanga", /* selected= */ false),
+                new ListItem(/* label= */ "Wolfberry", /* selected= */ false),
+                new ListItem(/* label= */ "Xigua", /* selected= */ false),
+                new ListItem(/* label= */ "Yangmei", /* selected= */ false),
+                new ListItem(/* label= */ "Zucchini", /* selected= */ false));
         FormWidgetInfo widgetAfter = makeListbox(
                 /* widgetIndex= */ 1,
                 /* widgetRect= */ widgetArea,
@@ -722,7 +720,7 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Banana",
                 /* accessibilityLabel= */ "Listbox_MultiSelect",
                 /* multiSelect= */ true,
-                /* choiceOptions= */ choicesAfter);
+                /* listItems= */ choicesAfter);
 
         verifyApplyEdit(LISTBOX_FORM, 0, new Point(150, 185), widgetBefore, selectMultiple,
                 widgetAfter, List.of(widgetArea));
@@ -731,18 +729,18 @@ public class PdfFormFillingTest {
     @Test
     public void applyEdit_clearSelectionOnListbox() throws Exception {
         Rect widgetArea = new Rect(100, 470, 200, 500);
-        List<ChoiceOption> choicesBefore = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ false),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+        List<ListItem> choicesBefore = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ false),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ true));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ true));
         FormWidgetInfo widgetBefore = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ widgetArea,
@@ -750,23 +748,23 @@ public class PdfFormFillingTest {
                 /* textValue= */ "Saskatchewan",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ choicesBefore);
+                /* listItems= */ choicesBefore);
         FormEditRecord clearSelection = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 6).setSelectedIndices(Set.of()).build();
-        List<ChoiceOption> choicesAfter = Arrays.asList(
-                new ChoiceOption(/* label= */ "Alberta", /* selected= */ false),
-                new ChoiceOption(/* label= */ "British Columbia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Manitoba", /* selected= */ false),
-                new ChoiceOption(/* label= */ "New Brunswick", /* selected= */ false),
-                new ChoiceOption(
+                /* widgetIndex= */ 6).setSelectedIndices(new int[0]).build();
+        List<ListItem> choicesAfter = Arrays.asList(
+                new ListItem(/* label= */ "Alberta", /* selected= */ false),
+                new ListItem(/* label= */ "British Columbia", /* selected= */ false),
+                new ListItem(/* label= */ "Manitoba", /* selected= */ false),
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
+                new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Nova Scotia", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Ontario", /* selected= */ false), new ChoiceOption(
+                new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
+                new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
                         /* label= */ "Prince Edward Island", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Quebec", /* selected= */ false),
-                new ChoiceOption(/* label= */ "Saskatchewan", /* selected= */ false));
+                new ListItem(/* label= */ "Quebec", /* selected= */ false),
+                new ListItem(/* label= */ "Saskatchewan", /* selected= */ false));
         FormWidgetInfo widgetAfter = makeListbox(
                 /* widgetIndex= */ 6,
                 /* widgetRect= */ widgetArea,
@@ -774,7 +772,7 @@ public class PdfFormFillingTest {
                 /* textValue= */ "",
                 /* accessibilityLabel= */ "Listbox_SingleSelectLastSelected",
                 /* multiSelect= */ false,
-                /* choiceOptions= */ choicesAfter);
+                /* listItems= */ choicesAfter);
 
         verifyApplyEdit(LISTBOX_FORM, 0, new Point(150, 485), widgetBefore, clearSelection,
                 widgetAfter, List.of(widgetArea));
@@ -879,7 +877,7 @@ public class PdfFormFillingTest {
         FormEditRecord setChoiceOnCB = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setSelectedIndices(Set.of(1, 2, 3)).build();
+                /* widgetIndex= */ 1).setSelectedIndices(new int[]{1, 2, 3}).build();
 
         verifyApplyEditThrowsException(CLICK_FORM, 0, setChoiceOnCB);
     }
@@ -899,7 +897,7 @@ public class PdfFormFillingTest {
         FormEditRecord setChoiceOnROCB = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setSelectedIndices(Set.of(1)).build();
+                /* widgetIndex= */ 2).setSelectedIndices(new int[]{1}).build();
 
         verifyApplyEditThrowsException(COMBOBOX_FORM, 0, setChoiceOnROCB);
     }
@@ -909,7 +907,7 @@ public class PdfFormFillingTest {
         FormEditRecord setBadChoice = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setSelectedIndices(Set.of(100, 365, 1436)).build();
+                /* widgetIndex= */ 1).setSelectedIndices(new int[]{100, 365, 1436}).build();
 
         verifyApplyEditThrowsException(COMBOBOX_FORM, 0, setBadChoice);
     }
@@ -950,7 +948,7 @@ public class PdfFormFillingTest {
         FormEditRecord pickMultipleOnSingleChoice = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 0).setSelectedIndices(Set.of(1, 2)).build();
+                /* widgetIndex= */ 0).setSelectedIndices(new int[]{1, 2}).build();
 
         verifyApplyEditThrowsException(LISTBOX_FORM, 0, pickMultipleOnSingleChoice);
     }
@@ -960,7 +958,7 @@ public class PdfFormFillingTest {
         FormEditRecord setChoiceOnROLB = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setSelectedIndices(Set.of(1)).build();
+                /* widgetIndex= */ 2).setSelectedIndices(new int[]{1}).build();
 
         verifyApplyEditThrowsException(LISTBOX_FORM, 0, setChoiceOnROLB);
     }
@@ -1006,319 +1004,12 @@ public class PdfFormFillingTest {
         FormEditRecord setChoiceOnTF = new FormEditRecord.Builder(
                 FormEditRecord.EDIT_TYPE_SET_INDICES,
                 /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setSelectedIndices(Set.of(1, 2, 3)).build();
+                /* widgetIndex= */ 1).setSelectedIndices(new int[]{1, 2, 3}).build();
 
         verifyApplyEditThrowsException(TEXT_FORM, 0, setChoiceOnTF);
     }
 
-    @Test
-    public void applyEdits_multipleFormEditRecords_returnsEmptyList() throws IOException {
-        Rect checkboxWidgetArea = new Rect(135, 70, 155, 90);
-        FormWidgetInfo checkboxBefore = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-        Point checkBoxPoint = new Point(145, 80);
-        FormEditRecord checkboxRecord = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setClickPoint(checkBoxPoint).build();
-        FormWidgetInfo checkboxAfter = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "true",
-                /* accessibilityLabel= */ "checkbox");
-
-        Rect radioButtonWidgetArea = new Rect(85, 230, 105, 250);
-        FormWidgetInfo radioButtonBefore = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        Point radioButtonPoint = new Point(95, 240);
-        FormEditRecord radioButtonRecord = new FormEditRecord.Builder(
-                FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 5).setClickPoint(radioButtonPoint).build();
-        FormWidgetInfo radioButtonAfter = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "true",
-                /* accessibilityLabel= */ "");
-
-        List<Point> positions = List.of(new Point[]{checkBoxPoint, radioButtonPoint});
-        List<FormWidgetInfo> beforeWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxBefore, radioButtonBefore});
-        List<FormWidgetInfo> afterWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxAfter, radioButtonAfter});
-        List<FormEditRecord> records = List.of(
-                new FormEditRecord[]{checkboxRecord, radioButtonRecord});
-
-        verifyApplyEdits(CLICK_FORM, 0, positions, beforeWidgetInfos, records, afterWidgetInfos);
-    }
-
-    @Test
-    public void applyEdits_singleInvalidFormEditRecord_returnsRecord() throws IOException {
-        Rect checkboxWidgetArea = new Rect(135, 70, 155, 90);
-        FormWidgetInfo checkboxBefore = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-        Point checkBoxPoint = new Point(145, 80);
-        FormEditRecord checkboxRecord = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setClickPoint(checkBoxPoint).build();
-        FormWidgetInfo checkboxAfter = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "true",
-                /* accessibilityLabel= */ "checkbox");
-
-        Rect radioButtonWidgetArea = new Rect(85, 230, 105, 250);
-        FormWidgetInfo radioButtonBefore = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        Point radioButtonPoint = new Point(95, 240);
-        FormEditRecord radioButtonRecord = new FormEditRecord.Builder(
-                FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setClickPoint(new Point(0, 0)).build();
-        FormWidgetInfo radioButtonAfter = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-
-        List<Point> positions = List.of(new Point[]{checkBoxPoint, radioButtonPoint});
-        List<FormWidgetInfo> beforeWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxBefore, radioButtonBefore});
-        List<FormWidgetInfo> afterWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxAfter, radioButtonAfter});
-        List<FormEditRecord> records = List.of(
-                new FormEditRecord[]{checkboxRecord, radioButtonRecord});
-
-        verifyApplyEditsNotNull(CLICK_FORM, 0, positions, beforeWidgetInfos, records,
-                afterWidgetInfos, List.of(radioButtonRecord));
-    }
-
-    @Test
-    public void applyEdits_multipleInvalidFormEditRecord_returnsFirstRecord() throws IOException {
-        Rect checkboxWidgetArea = new Rect(135, 70, 155, 90);
-        FormWidgetInfo checkboxBefore = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-        Point checkBoxPoint = new Point(145, 80);
-        FormEditRecord checkboxRecord = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setClickPoint(new Point(0, 0)).build();
-        FormWidgetInfo checkboxAfter = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-
-        Rect radioButtonWidgetArea = new Rect(85, 230, 105, 250);
-        FormWidgetInfo radioButtonBefore = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        Point radioButtonPoint = new Point(95, 240);
-        FormEditRecord radioButtonRecord = new FormEditRecord.Builder(
-                FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setClickPoint(new Point(0, 0)).build();
-        FormWidgetInfo radioButtonAfter = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-
-        List<Point> positions = List.of(new Point[]{checkBoxPoint, radioButtonPoint});
-        List<FormWidgetInfo> beforeWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxBefore, radioButtonBefore});
-        List<FormWidgetInfo> afterWidgetInfos = List.of(
-                new FormWidgetInfo[]{checkboxAfter, radioButtonAfter});
-        List<FormEditRecord> records = List.of(
-                new FormEditRecord[]{checkboxRecord, radioButtonRecord});
-
-        verifyApplyEditsNotNull(CLICK_FORM, 0, positions, beforeWidgetInfos, records,
-                afterWidgetInfos, List.of(checkboxRecord, radioButtonRecord));
-    }
-
-    @Test
-    public void applyEdits_documentClosed_throwsIllegalStateException() throws IOException {
-        Rect checkboxWidgetArea = new Rect(135, 70, 155, 90);
-        FormWidgetInfo checkboxBefore = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-        Point checkBoxPoint = new Point(145, 80);
-        FormEditRecord checkboxRecord = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setClickPoint(checkBoxPoint).build();
-        FormWidgetInfo checkboxAfter = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "true",
-                /* accessibilityLabel= */ "checkbox");
-
-        Rect radioButtonWidgetArea = new Rect(85, 230, 105, 250);
-        FormWidgetInfo radioButtonBefore = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        Point radioButtonPoint = new Point(95, 240);
-        FormEditRecord radioButtonRecord = new FormEditRecord.Builder(
-                FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setClickPoint(new Point(0, 0)).build();
-        FormWidgetInfo radioButtonAfter = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        List<FormEditRecord> records = List.of(
-                new FormEditRecord[]{checkboxRecord, radioButtonRecord});
-        verifyApplyEditsDocumentClosed(CLICK_FORM, 0, records);
-    }
-
-    @Test
-    public void applyEdits_pageClosed_throwsIllegalStateException() throws IOException {
-        Rect checkboxWidgetArea = new Rect(135, 70, 155, 90);
-        FormWidgetInfo checkboxBefore = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "checkbox");
-        Point checkBoxPoint = new Point(145, 80);
-        FormEditRecord checkboxRecord = new FormEditRecord.Builder(FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 1).setClickPoint(checkBoxPoint).build();
-        FormWidgetInfo checkboxAfter = makeCheckbox(
-                /* widgetIndex= */ 1,
-                /* widgetRect= */ checkboxWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "true",
-                /* accessibilityLabel= */ "checkbox");
-
-        Rect radioButtonWidgetArea = new Rect(85, 230, 105, 250);
-        FormWidgetInfo radioButtonBefore = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        Point radioButtonPoint = new Point(95, 240);
-        FormEditRecord radioButtonRecord = new FormEditRecord.Builder(
-                FormEditRecord.EDIT_TYPE_CLICK,
-                /* pageNumber= */ 0,
-                /* widgetIndex= */ 2).setClickPoint(new Point(0, 0)).build();
-        FormWidgetInfo radioButtonAfter = makeRadioButton(
-                /* widgetIndex= */ 5,
-                /* widgetRect= */ radioButtonWidgetArea,
-                /* readOnly= */ false,
-                /* textValue= */ "false",
-                /* accessibilityLabel= */ "");
-        List<FormEditRecord> records = List.of(
-                new FormEditRecord[]{checkboxRecord, radioButtonRecord});
-        verifyApplyEditsPageClosed(CLICK_FORM, 0, records);
-    }
-
-    private void verifyApplyEdits(@RawRes int docRes, int pageNum, List<Point> positions,
-            List<FormWidgetInfo> expectedInfosBefore, List<FormEditRecord> editRecords,
-            List<FormWidgetInfo> expectedInfosAfter) throws IOException {
-        try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
-            try (PdfRenderer.Page page = renderer.openPage(pageNum)) {
-                for (int i = 0; i < positions.size(); i++) {
-                    FormWidgetInfo beforeInfo = page.getFormWidgetInfoAtPosition(positions.get(i).x,
-                            positions.get(i).y);
-                    assertEquals(expectedInfosBefore.get(i), beforeInfo);
-                }
-
-                List<FormEditRecord> result = page.applyEdits(editRecords);
-                assertEquals(0, result.size());
-
-                for (int i = 0; i < positions.size(); i++) {
-                    FormWidgetInfo afterInfo = page.getFormWidgetInfoAtPosition(positions.get(i).x,
-                            positions.get(i).y);
-                    assertEquals(expectedInfosAfter.get(i), afterInfo);
-                }
-            }
-        }
-    }
-
-    private void verifyApplyEditsNotNull(@RawRes int docRes, int pageNum, List<Point> positions,
-            List<FormWidgetInfo> expectedInfosBefore, List<FormEditRecord> editRecords,
-            List<FormWidgetInfo> expectedInfosAfter, List<FormEditRecord> invalidRecords)
-            throws IOException {
-        try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
-            try (PdfRenderer.Page page = renderer.openPage(pageNum)) {
-                for (int i = 0; i < positions.size(); i++) {
-                    FormWidgetInfo beforeInfo = page.getFormWidgetInfoAtPosition(positions.get(i).x,
-                            positions.get(i).y);
-                    assertEquals(expectedInfosBefore.get(i), beforeInfo);
-                }
-
-                List<FormEditRecord> result = page.applyEdits(editRecords);
-                assertEquals(invalidRecords, result);
-
-                for (int i = 0; i < positions.size(); i++) {
-                    FormWidgetInfo afterInfo = page.getFormWidgetInfoAtPosition(positions.get(i).x,
-                            positions.get(i).y);
-                    assertEquals(expectedInfosAfter.get(i), afterInfo);
-                }
-            }
-        }
-    }
-
-    private void verifyApplyEditsDocumentClosed(@RawRes int docRes, int pageNum,
-            List<FormEditRecord> editRecords) throws IOException {
-        PdfRenderer renderer = createRenderer(docRes, mContext);
-        PdfRenderer.Page page = renderer.openPage(pageNum);
-        page.close();
-        renderer.close();
-        assertThrows(IllegalStateException.class, () -> page.applyEdits(editRecords));
-    }
-
-    private void verifyApplyEditsPageClosed(@RawRes int docRes, int pageNum,
-            List<FormEditRecord> editRecords) throws IOException {
-        try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
-            PdfRenderer.Page page = renderer.openPage(pageNum);
-            page.close();
-            assertThrows(IllegalStateException.class, () -> page.applyEdits(editRecords));
-        }
-    }
-
     private void verifyFormType(@RawRes int docRes, int expectedFormType) throws Exception {
-        verifyFormTypeVPlus(docRes, expectedFormType);
-    }
-
-    private void verifyFormTypeVPlus(@RawRes int docRes, int expectedFormType) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
             int formType = renderer.getPdfFormType();
             assertEquals(expectedFormType, formType);
@@ -1326,11 +1017,6 @@ public class PdfFormFillingTest {
     }
 
     private void verifyFormWidgetInfo(@RawRes int docRes, int pageNum, Point position,
-            FormWidgetInfo expectedInfo) throws Exception {
-        verifyFormWidgetInfoVPlus(docRes, pageNum, position, expectedInfo);
-    }
-
-    private void verifyFormWidgetInfoVPlus(@RawRes int docRes, int pageNum, Point position,
             FormWidgetInfo expectedInfo) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
             try (PdfRenderer.Page page = renderer.openPage(pageNum)) {
@@ -1344,13 +1030,8 @@ public class PdfFormFillingTest {
         }
     }
 
-    private void verifyFormWidgetInfos(@RawRes int docRes, int pageNum, Set<Integer> widgetTypes,
+    private void verifyFormWidgetInfos(@RawRes int docRes, int pageNum, int[] widgetTypes,
             List<FormWidgetInfo> expectedInfos) throws Exception {
-        verifyFormWidgetInfosVPlus(docRes, pageNum, widgetTypes, expectedInfos);
-    }
-
-    private void verifyFormWidgetInfosVPlus(@RawRes int docRes, int pageNum,
-            Set<Integer> widgetTypes, List<FormWidgetInfo> expectedInfos) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
             try (PdfRenderer.Page page = renderer.openPage(pageNum)) {
                 List<FormWidgetInfo> foundInfos = page.getFormWidgetInfos(widgetTypes);
@@ -1365,13 +1046,6 @@ public class PdfFormFillingTest {
     }
 
     private void verifyApplyEdit(@RawRes int docRes, int pageNum, Point position,
-            FormWidgetInfo expectedInfoBefore, FormEditRecord editRecord,
-            FormWidgetInfo expectedInfoAfter, List<Rect> expectedInvalidRects) throws Exception {
-        verifyApplyEditVPlus(docRes, pageNum, position, expectedInfoBefore, editRecord,
-                expectedInfoAfter, expectedInvalidRects);
-    }
-
-    private void verifyApplyEditVPlus(@RawRes int docRes, int pageNum, Point position,
             FormWidgetInfo expectedInfoBefore, FormEditRecord editRecord,
             FormWidgetInfo expectedInfoAfter, List<Rect> expectedInvalidRects) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
@@ -1394,11 +1068,6 @@ public class PdfFormFillingTest {
     }
 
     private void verifyApplyEditThrowsException(@RawRes int docRes, int pageNum,
-            FormEditRecord editRecord) throws Exception {
-        verifyApplyEditThrowsExceptionVPlus(docRes, pageNum, editRecord);
-    }
-
-    private void verifyApplyEditThrowsExceptionVPlus(@RawRes int docRes, int pageNum,
             FormEditRecord editRecord) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
             try (PdfRenderer.Page page = renderer.openPage(pageNum)) {

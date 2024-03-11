@@ -382,7 +382,7 @@ class ItsSession(object):
     if self._hidden_physical_id:
       if not camera_properties_utils.logical_multi_camera(props):
         logging.debug('cam %s not a logical multi-camera: no change in props.',
-                       self._hidden_physical_id)
+                      self._hidden_physical_id)
         return props
       physical_ids = camera_properties_utils.logical_multi_camera_physical_ids(
           props)
