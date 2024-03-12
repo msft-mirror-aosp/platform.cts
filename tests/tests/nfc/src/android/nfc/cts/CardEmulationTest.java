@@ -502,6 +502,47 @@ public class CardEmulationTest {
 
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testCustomPollingLoopToCustomWithPrefixDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        ComponentName customServiceName = new ComponentName(mContext, CustomHostApduService.class);
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        String annotationStringHexPrefix = HexFormat.of().toHexDigits(testName.hashCode());
+        String annotationStringHex = annotationStringHexPrefix + "123456789ABCDF";
+        String annotationStringHexPattern = annotationStringHexPrefix + ".*";
+        Assert.assertTrue(cardEmulation.registerPollingLoopPatternFilterForService(
+                customServiceName, annotationStringHexPattern, false));
+        ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+        frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex)));
+        notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+        Assert.assertTrue(cardEmulation.removePollingLoopPatternFilterForService(customServiceName,
+                annotationStringHexPrefix));
+        adapter.notifyHceDeactivated();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testCustomPollingLoopToCustomWithPrefix() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        String annotationStringHexPrefix = HexFormat.of().toHexDigits(testName.hashCode());
+        String annotationStringHex = annotationStringHexPrefix + "123456789ABCDF";
+
+        ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+        frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex)));
+        notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+
+        adapter.notifyHceDeactivated();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testThreeWayConflictPollingLoopToForegroundDynamic() {
         ComponentName originalDefault = null;
@@ -736,7 +777,6 @@ public class CardEmulationTest {
             String testName = new Object() {
             }.getClass().getEnclosingMethod().getName();
             String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
-            android.util.Log.i("PLF", annotationStringHex);
             ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
             frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
                     HexFormat.of().parseHex(annotationStringHex)));
