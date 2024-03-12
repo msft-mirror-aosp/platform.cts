@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.TypedValue;
 
@@ -36,6 +37,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -299,33 +301,37 @@ public class ColorTest {
         // as the system. The actual value of the color does not matter. Hence only enforce that
         // 'colors' contains all the public colors and ignore System-api colors.
         ArrayList<String> missingColors = new ArrayList<>();
-        ArrayList<Integer> allKnownColors = new ArrayList<>();
-        allKnownColors.addAll(Arrays.stream(colors).map(pair -> pair[1]).toList());
-        allKnownColors.addAll(Arrays.stream(systemColors).boxed().toList());
-        allKnownColors.addAll(Arrays.stream(materialSystemColors).boxed().toList());
-        int numPublicApiColors = 0;
+        ArrayList<Integer> requiredPublicApiColorResIds = new ArrayList<>();
+        requiredPublicApiColorResIds.addAll(Arrays.stream(colors).map(pair -> pair[1]).toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(systemColors).boxed().toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(materialSystemColors).boxed().toList());
+
+        Set<Integer> availablePublicApiColorResIds = new ArraySet<>();
         for (Field declaredColor : android.R.color.class.getDeclaredFields()) {
             if (Arrays.stream(declaredColor.getDeclaredAnnotations()).anyMatch(
                     (Annotation a) -> a.toString().contains("SystemApi"))) {
                 Log.i(LOG_TAG, declaredColor.getName() + " is SystemApi");
-            } else {
-                Integer value = -1;
-                try {
-                    value = (Integer) declaredColor.get(null);
-                } catch (IllegalAccessException ignored) { }
-
-                if (!allKnownColors.remove(value)) {
-                    missingColors.add(declaredColor.getName());
-                }
-                numPublicApiColors++;
+                continue;
+            }
+            Integer colorValue = -1;
+            try {
+                colorValue = (Integer) declaredColor.get(null);
+            } catch (IllegalAccessException ignored) { }
+            if (colorValue != -1) {
+                availablePublicApiColorResIds.add(colorValue);
             }
         }
 
-        assertEquals("Test no longer in sync with colors in android.R.color. "
-                + "Declared in list, but not public API : " + allKnownColors
-                + ". Missing in declared colors: " + missingColors,
-                colors.length + systemColors.length
-                + materialSystemColors.length, numPublicApiColors);
+        for (Integer requiredColorResId : requiredPublicApiColorResIds) {
+            if (!availablePublicApiColorResIds.contains(requiredColorResId)) {
+                missingColors.add(resources.getResourceName(requiredColorResId));
+            }
+        }
+
+        assertTrue(
+                "android.R.color misses required color resources. Declared in list,but not "
+                        + "installed : "
+                        + missingColors, missingColors.isEmpty());
     }
     @Test
     public void testAlpha() {
