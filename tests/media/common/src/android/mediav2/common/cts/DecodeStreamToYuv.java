@@ -168,7 +168,7 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
         mCodec.releaseOutputBuffer(bufferIndex, false);
     }
 
-    static YUVImage getImage(Image image) {
+    public static YUVImage getImage(Image image) {
         YUVImage yuvImage = new YUVImage();
         int format = image.getFormat();
         assertTrue("unexpected image format",
@@ -232,6 +232,10 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
             yuvImage.mData.add(bb);
         }
         return yuvImage;
+    }
+
+    public static ArrayList<byte[]> unWrapYUVImage(YUVImage image) {
+        return image.mData;
     }
 
     void writeImage(Image image) {
