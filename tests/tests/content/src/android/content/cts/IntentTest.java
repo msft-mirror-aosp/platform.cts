@@ -16,6 +16,9 @@
 
 package android.content.cts;
 
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.content.Intent.FLAG_RECEIVER_OFFLOAD;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -24,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -52,6 +56,7 @@ import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.test.mock.MockContext;
 import android.util.AttributeSet;
@@ -77,11 +82,13 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood() ? null :
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Intent mIntent;
     private static final String TEST_ACTION = "android.content.IntentTest_test";
@@ -1561,9 +1568,14 @@ public class IntentTest {
         IntentSender sender = PendingIntent.getActivity(
                 mContext, 0, mIntent, PendingIntent.FLAG_IMMUTABLE).getIntentSender();
         target = Intent.createChooser(mIntent, null, sender);
-        assertEquals(sender, target.getParcelableExtra(
-                Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER, IntentSender.class));
 
+        if (android.service.chooser.Flags.enableChooserResult()) {
+            assertEquals(sender, target.getParcelableExtra(
+                    Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER, IntentSender.class));
+        } else {
+            assertEquals(sender, target.getParcelableExtra(
+                    Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER, IntentSender.class));
+        }
         // Asser that setting the data URI *without* a permission granting flag *doesn't* copy
         // anything to ClipData.
         Uri data = Uri.parse("some://uri");
@@ -2194,6 +2206,24 @@ public class IntentTest {
     }
 
     @Test
+    public void testIntegerEncoding() throws Exception {
+        var intent = new Intent("action#action")
+                .setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND)
+                .addExtendedFlags(FLAG_RECEIVER_OFFLOAD)
+                .addExtendedFlags(FLAG_RECEIVER_FOREGROUND);
+        var uri = intent.toUri(Intent.URI_INTENT_SCHEME);
+        var otherIntent = Intent.parseUri(uri, Intent.URI_INTENT_SCHEME);
+
+        assertEquals(otherIntent.getFlags(), intent.getFlags());
+        assertEquals(otherIntent.getExtendedFlags(), intent.getExtendedFlags());
+
+        var badUri = "intent:#Intent;action=action%23action;launchFlags=0x990000000;"
+                + "extendedLaunchFlags=0x890000000;end";
+        assertThrows(NumberFormatException.class,
+                () -> Intent.parseUri(badUri, Intent.URI_INTENT_SCHEME));
+    }
+
+    @Test
     public void testEncoding() throws URISyntaxException {
         // This doesn't validate setPackage, as it's not possible to have both an explicit package
         // and a selector but the inner selector Intent later on will cover setPackage
@@ -2221,12 +2251,15 @@ public class IntentTest {
                 .putExtra("extraKey#selector", "extraValue#selector");
         intent.setSelector(selectorIntent);
 
+        intent.setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND);
+
         var uriString = intent.toUri(Intent.URI_INTENT_SCHEME);
         var deserialized = Intent.parseUri(uriString, Intent.URI_INTENT_SCHEME);
 
         assertThat(uriString).isEqualTo(
                 "intent:#Intent;action=action%23base;category=category%23base;type=type%23base;"
-                        + "identifier=identifier%23base;component=package.sub%23base/"
+                        + "identifier=identifier%23base;launchFlags=0x90000000;"
+                        + "component=package.sub%23base/"
                         + ".Class%23Base;S.extraKey%23base=extraValue%23base;SEL;"
                         + "category=category%23selector;type=type%23selector;"
                         + "identifier=identifier%23selector;package=package%23selector;"

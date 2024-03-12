@@ -37,6 +37,8 @@ public class DuplexAudioManager {
     // Player
     //TODO - explain these constants
     private int mNumPlayerChannels = 2;
+    private int mPlayerChannelMask = 0;
+
     private int mPlayerSampleRate = 48000;
     private int mNumPlayerBurstFrames;
 
@@ -53,6 +55,9 @@ public class DuplexAudioManager {
     private AudioSinkProvider mSinkProvider;
     private AudioDeviceInfo mRecorderSelectedDevice;
     private int mInputPreset = Recorder.INPUT_PRESET_NONE;
+
+    private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
+    private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
 
     public DuplexAudioManager(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
         setSources(sourceProvider, sinkProvider);
@@ -97,8 +102,22 @@ public class DuplexAudioManager {
         mRecorderSelectedDevice = deviceInfo;
     }
 
+    /**
+     * Specifies the number of player (index) channels.
+     * @param numChannels The number of index channels for the player.
+     */
     public void setNumPlayerChannels(int numChannels) {
         mNumPlayerChannels = numChannels;
+        mPlayerChannelMask = 0;
+    }
+
+    /**
+     * Specifies the positional-mask for the player.
+     * @param mask - An AudioFormat position mask.
+     */
+    public void setPlayerChannelMask(int mask) {
+        mPlayerChannelMask = mask;
+        mNumPlayerChannels = 0;
     }
 
     public void setNumRecorderChannels(int numChannels) {
@@ -107,9 +126,6 @@ public class DuplexAudioManager {
     public void setRecorderSampleRate(int sampleRate) {
         mRecorderSampleRate = sampleRate;
     }
-
-    private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
-    private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
 
     public void setPlayerSharingMode(int mode) {
         mPlayerSharingMode = mode;
@@ -125,7 +141,6 @@ public class DuplexAudioManager {
 
     public int getRecorderChannelCount() {
         return mRecorder != null ? mRecorder.getChannelCount() : -1;
-
     }
 
     /**
@@ -146,8 +161,6 @@ public class DuplexAudioManager {
         // Recorder
         if ((recorderType & BuilderBase.TYPE_MASK) != BuilderBase.TYPE_NONE) {
             try {
-//                mNumRecorderBufferFrames = Recorder.calcMinBufferFramesStatic(
-//                        mNumRecorderChannels, mRecorderSampleRate);
                 mNumRecorderBufferFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
                 RecorderBuilder builder = (RecorderBuilder) new RecorderBuilder()
                         .setRecorderType(recorderType)
@@ -178,6 +191,11 @@ public class DuplexAudioManager {
                         .setRouteDevice(mPlayerSelectedDevice)
                         .setNumExchangeFrames(mNumPlayerBurstFrames)
                         .setPerformanceMode(BuilderBase.PERFORMANCE_MODE_LOWLATENCY);
+                if (mNumPlayerChannels == 0) {
+                    builder.setChannelMask(mPlayerChannelMask);
+                } else {
+                    builder.setChannelCount(mNumPlayerChannels);
+                }
                 mPlayer = builder.build();
             } catch (PlayerBuilder.BadStateException ex) {
                 Log.e(TAG, "Player - BadStateException" + ex);
@@ -192,20 +210,20 @@ public class DuplexAudioManager {
 
     public int start() {
         if (LOG) {
-            Log.i(TAG, "start()...");
+            Log.d(TAG, "start()...");
         }
 
         int result = StreamBase.OK;
         if (mPlayer != null && (result = mPlayer.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  player fails result:" + result);
+                Log.d(TAG, "  player fails result:" + result);
             }
             return result;
         }
 
         if (mRecorder != null && (result = mRecorder.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  recorder fails result:" + result);
+                Log.d(TAG, "  recorder fails result:" + result);
             }
             // Shut down
             stop();
@@ -214,19 +232,16 @@ public class DuplexAudioManager {
         }
 
         if (LOG) {
-            Log.i(TAG, "  result:" + result);
+            Log.d(TAG, "  result:" + result);
         }
         return result;
     }
 
     public int stop() {
         if (LOG) {
-            Log.i(TAG, "stop()");
+            Log.d(TAG, "stop()");
         }
         int playerResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mPlayer:" + mPlayer);
-        }
         if (mPlayer != null) {
             int result1 = mPlayer.stopStream();
             int result2 = mPlayer.teardownStream();
@@ -234,9 +249,6 @@ public class DuplexAudioManager {
         }
 
         int recorderResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mRecorder:" + mRecorder);
-        }
         if (mRecorder != null) {
             int result1 = mRecorder.stopStream();
             int result2 = mRecorder.teardownStream();
@@ -246,7 +258,7 @@ public class DuplexAudioManager {
         int ret = playerResult != StreamBase.OK ? playerResult : recorderResult;
 
         if (LOG) {
-            Log.i(TAG, "  returns:" + ret);
+            Log.d(TAG, "  returns:" + ret);
         }
         return ret;
     }
@@ -294,24 +306,47 @@ public class DuplexAudioManager {
 
     /**
      * Don't call this until the streams are started
-     * @return true if both player and recorder are using the specified sharing mode set with
-     * with setPlayerSharingMode() and setRecorderSharingMode().
+     * @return true if the player is using the specified sharing mode set with
+     * setPlayerSharingMode().
      */
-    public boolean validateSharingModes() {
+    public boolean isSpecifiedPlayerSharingMode() {
         boolean playerOK = false;
         if (mPlayer != null) {
             int sharingMode = mPlayer.getSharingMode();
             playerOK = sharingMode == mPlayerSharingMode
                     || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
         }
+        return playerOK;
+    }
 
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorder is using the specified sharing mode set with
+     * setRecorderSharingMode().
+     */
+    public boolean isSpecifiedRecorderSharingMode() {
         boolean recorderOK = false;
         if (mRecorder != null) {
             int sharingMode = mRecorder.getSharingMode();
             recorderOK = sharingMode == mRecorderSharingMode
                     || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
         }
+        return recorderOK;
+    }
 
-        return playerOK && recorderOK;
+    /**
+     * Don't call this until the streams are started
+     * @return true if the player is using MMAP.
+     */
+    public boolean isPlayerStreamMMap() {
+        return mPlayer.isMMap();
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorders is using MMAP.
+     */
+    public boolean isRecorderStreamMMap() {
+        return mRecorder.isMMap();
     }
 }

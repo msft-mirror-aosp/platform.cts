@@ -16,6 +16,8 @@
 
 package android.server.biometrics;
 
+import static com.android.systemui.Flags.constraintBp;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -33,8 +35,10 @@ import android.hardware.biometrics.PromptContentItemBulletedText;
 import android.hardware.biometrics.PromptContentItemPlainText;
 import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
+import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.By;
@@ -51,6 +55,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Basic test cases for content view on biometric prompt.
@@ -195,6 +201,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                         true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
                         randomDescription, randomContentView, randomNegativeButtonText);
 
+                final UiObject2 actualLogo = findView(LOGO_VIEW);
+                final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
                 final UiObject2 actualTitle = findView(TITLE_VIEW);
                 final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
                 final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
@@ -210,6 +218,9 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 final UiObject2 actualContentViewItemTextView2 =
                         actualContentViewItemListFirstRow.getChildren().get(1);
 
+                assertThat(actualLogo.getVisibleBounds()).isNotNull();
+                assertThat(actualLogoDescription.getText())
+                        .isEqualTo("CtsBiometricsTestCases");
                 assertThat(actualTitle.getText()).isEqualTo(randomTitle);
                 assertThat(actualSubtitle.getText()).isEqualTo(randomSubtitle);
                 // With content view set, description should be null.
@@ -355,6 +366,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @CddTest(requirements = {"7.3.10/C-4-2"})
     @ApiTest(apis = {
             "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
@@ -434,6 +447,70 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 // Finish auth
                 successfullyAuthenticate(session, 0 /* userId */, callback);
             }
+        }
+    }
+
+    /**
+     * Tests that the values specified through the public APIs are shown on the BiometricPrompt UI
+     * when credential auth is requested.
+     *
+     * Upon successful authentication, checks that the result is
+     * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
+     */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setTitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setSubtitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setDescription",
+            "android.hardware.biometrics."
+                    + "PromptVerticalListContentView.Builder#build",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
+    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @Test
+    public void testSimpleCredentialAuth_withContentView_showsTwoStep() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        assumeTrue(!isWatch() || constraintBp());
+        try (CredentialSession session = new CredentialSession()) {
+            session.setCredential();
+
+            final Random random = new Random();
+            final String randomTitle = String.valueOf(random.nextInt(10000));
+            final String randomSubtitle = String.valueOf(random.nextInt(10000));
+            final String randomDescription = String.valueOf(random.nextInt(10000));
+
+            CountDownLatch latch = new CountDownLatch(1);
+            BiometricPrompt.AuthenticationCallback callback =
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(
+                                BiometricPrompt.AuthenticationResult result) {
+                            assertWithMessage("Must be TYPE_CREDENTIAL").that(
+                                    result.getAuthenticationType()).isEqualTo(
+                                    BiometricPrompt.AUTHENTICATION_RESULT_TYPE_DEVICE_CREDENTIAL);
+                            latch.countDown();
+                        }
+                    };
+            showCredentialOnlyBiometricPromptWithContents(callback, new CancellationSignal(),
+                    true /* shouldShow */, randomTitle, randomSubtitle, randomDescription,
+                    new PromptVerticalListContentView.Builder().build());
+
+            final UiObject2 actualTitle = findView(TITLE_VIEW);
+            final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
+            final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
+            assertThat(actualTitle.getText()).isEqualTo(randomTitle);
+            // With content view set, subtitle should be null.
+            assertThat(actualSubtitle).isNull();
+            // With content view set, description should be null.
+            assertThat(actualDescription).isNull();
+
+            // Finish auth
+            successfullyEnterCredential();
+            latch.await(3, TimeUnit.SECONDS);
         }
     }
 }

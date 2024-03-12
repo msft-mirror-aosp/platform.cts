@@ -52,6 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -201,7 +202,7 @@ public class BluetoothA2dpTest {
                 .getSupportedCodecTypes());
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        List<BluetoothCodecType> supportedCodecTypes =
+        Collection<BluetoothCodecType> supportedCodecTypes =
                 mBluetoothA2dp.getSupportedCodecTypes();
         assertNotNull(supportedCodecTypes);
 

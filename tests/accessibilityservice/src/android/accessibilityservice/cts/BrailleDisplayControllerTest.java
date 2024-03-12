@@ -43,6 +43,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -171,6 +172,7 @@ public class BrailleDisplayControllerTest {
 
     @Before
     public void setup() throws Exception {
+        assumeTrue(SystemProperties.getBoolean("ro.accessibility.support_hidraw", true));
         mService = mServiceRule.getService();
         assertThat(mService).isNotNull();
         mController = mService.getBrailleDisplayController();
@@ -715,9 +717,9 @@ public class BrailleDisplayControllerTest {
         disconnect_disconnectsExistingConnection();
         TestUtils.waitOn(mDeviceWaitObject, () -> {
             synchronized (mDeviceWaitObject) {
-                return mDeviceCount == 0;
+                return mDeviceCount == 0 && !(new File(HIDRAW_NODE_0).exists());
             }
-        }, CALLBACK_TIMEOUT_MS, "Expected all HIDRAW devices removed");
+        }, CALLBACK_TIMEOUT_MS, "Expected " + HIDRAW_NODE_0 + " to be removed");
 
         try (OutputStream testHidrawNode = createTestHidrawNode(HIDRAW_NODE_0)) {
             expectConnectionSuccess(mController, mExecutor, mBluetoothDevice1);

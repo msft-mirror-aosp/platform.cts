@@ -221,7 +221,7 @@ public class CanvasTests extends ActivityTestBase {
                             .rotate(45, 1, 0, 0)
                             .scale(2, 2, 0)
                             .rotate(45, 0, 0, 1);
-                    canvas.concat44(mat);
+                    canvas.concat(mat);
                     canvas.drawRect(-10, -10, 10, 10, paint);
                 })
                 .runWithVerifier(new SamplePointVerifier(testPoints, colors));

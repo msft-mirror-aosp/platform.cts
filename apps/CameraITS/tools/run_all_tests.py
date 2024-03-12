@@ -38,7 +38,6 @@ YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
-LOAD_SCENE_DELAY = 1  # seconds
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -77,6 +76,7 @@ _TABLET_SCENES = (
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_night'),
+    os.path.join('scene_extensions', 'scene_low_light_boost'),
     'scene_video',
 )
 
@@ -95,6 +95,7 @@ _MANUAL_SCENES = ('scene5',)
 # Scene extensions
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_night'),
+                      os.path.join('scene_extensions', 'scene_low_light_boost'),
                       )
 
 # All possible scenes
@@ -138,6 +139,11 @@ _SCENE_REQ = types.MappingProxyType({
         'A tablet displayed scene with a white circle '
         'and four smaller circles inside of it. '
         'See tests/scene_extensions/scene_night/scene_night.png'
+    ),
+    os.path.join('scene_extensions', 'scene_low_light_boost'): (
+        'A tablet displayed scene with a grid of squares of varying '
+        'brightness. See '
+        'tests/scene_extensions/scene_low_light_boost/scene_low_light_boost.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
@@ -194,10 +200,18 @@ _LIGHTING_CONTROL_TESTS = (
     'test_preview_min_frame_rate.py',
     'test_led_snapshot.py',
     'test_night_extension.py',
+    'test_low_light_boost_extension.py',
     'test_hdr_extension.py',
     )
 
+_EXTENSION_NAMES = (
+    'hdr',
+    'low_light_boost',
+    'night',
+)
+
 _DST_SCENE_DIR = '/sdcard/Download/'
+_SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
@@ -307,26 +321,6 @@ def are_devices_similar(device_id_1, device_id_2):
   return True
 
 
-def load_scenes_on_tablet(scene, tablet_id):
-  """Copies scenes onto the tablet before running the tests.
-
-  Args:
-    scene: Name of the scene to copy image files.
-    tablet_id: adb id of tablet
-  """
-  logging.info('Copying files to tablet: %s', tablet_id)
-  scene_dir = os.listdir(
-      os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene))
-  for file_name in scene_dir:
-    if file_name.endswith('.png') or file_name.endswith('.mp4'):
-      src_scene_file = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests',
-                                    scene, file_name)
-      cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
-      subprocess.Popen(cmd.split())
-  time.sleep(LOAD_SCENE_DELAY)
-  logging.info('Finished copying files to tablet.')
-
-
 def check_manual_scenes(device_id, camera_id, scene, out_path):
   """Halt run to change scenes.
 
@@ -336,9 +330,17 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
     scene: Name of the scene to copy image files.
     out_path: output file location
   """
+  hidden_physical_id = None
+  if its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
+    split_camera_ids = camera_id.split(its_session_utils.SUB_CAMERA_SEPARATOR)
+    if len(split_camera_ids) == _SUB_CAMERA_LEVELS:
+      camera_id = split_camera_ids[0]
+      hidden_physical_id = split_camera_ids[1]
+
   with its_session_utils.ItsSession(
       device_id=device_id,
-      camera_id=camera_id) as cam:
+      camera_id=camera_id,
+      hidden_physical_id=hidden_physical_id) as cam:
     props = cam.get_camera_properties()
     props = cam.override_with_hidden_physical_camera_props(props)
 
@@ -577,9 +579,10 @@ def main():
     if s.startswith('flash') or s.startswith('extensions'):
       scenes[i] = f'scene_{s}'
     # Handle scene_extensions
-    if s.startswith('hdr') or s.startswith('night'):
+    if any(s.startswith(extension) for extension in _EXTENSION_NAMES):
       scenes[i] = f'scene_extensions/scene_{s}'
-    if s.startswith('scene_hdr') or s.startswith('scene_night'):
+    if (any(s.startswith('scene_' + extension)
+            for extension in _EXTENSION_NAMES)):
       scenes[i] = f'scene_extensions/{s}'
 
   # Read config file and extract relevant TestBed
@@ -801,7 +804,7 @@ def main():
       if auto_scene_switch:
         # Copy scene images onto the tablet
         if 'scene0' not in testing_scene:
-          load_scenes_on_tablet(testing_scene, tablet_id)
+          its_session_utils.copy_scenes_to_tablet(testing_scene, tablet_id)
       else:
         # Check manual scenes for correctness
         if ('scene0' not in testing_scene and

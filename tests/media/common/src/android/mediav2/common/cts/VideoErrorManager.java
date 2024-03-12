@@ -17,8 +17,10 @@
 package android.mediav2.common.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.util.Log;
+import android.util.Pair;
 
 import com.android.compatibility.common.util.Preconditions;
 
@@ -82,6 +84,43 @@ public class VideoErrorManager {
         mAvgPSNR = new double[3];
         Arrays.fill(mAvgPSNR, 0.0);
         mFramesPSNR = new ArrayList<>();
+    }
+
+    public static <T> Pair<Double, Integer> computeFrameVariance(int width, int height, T luma) {
+        final int bSize = 16;
+        assertTrue("chosen block size is too large with respect to image dimensions",
+                width > bSize && height > bSize);
+        double varianceSum = 0;
+        int blocks = 0;
+        for (int i = 0; i < height - bSize; i += bSize) {
+            for (int j = 0; j < width - bSize; j += bSize) {
+                long sse = 0, sum = 0;
+                int offset = i * width + j;
+                for (int p = 0; p < bSize; p++) {
+                    for (int q = 0; q < bSize; q++) {
+                        int sample;
+                        if (luma instanceof byte[]) {
+                            sample = ((byte[]) luma)[offset + p * width + q];
+                        } else if (luma instanceof short[]) {
+                            sample = ((short[]) luma)[offset + p * width + q];
+                        } else {
+                            throw new IllegalArgumentException("Unsupported data type");
+                        }
+                        sum += sample;
+                        sse += sample * sample;
+                    }
+                }
+                double meanOfSquares = ((double) sse) / (bSize * bSize);
+                double mean = ((double) sum) / (bSize * bSize);
+                double squareOfMean = mean * mean;
+                double blockVariance = (meanOfSquares - squareOfMean);
+                assertTrue("variance can't be negative", blockVariance >= 0.0f);
+                varianceSum += blockVariance;
+                assertTrue("caution overflow", varianceSum >= 0.0);
+                blocks++;
+            }
+        }
+        return Pair.create(varianceSum, blocks);
     }
 
     static double computeMSE(byte[] data0, byte[] data1, int bytesPerSample) {

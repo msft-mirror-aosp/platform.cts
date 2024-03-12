@@ -40,13 +40,13 @@ import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
-import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.UiObject2;
@@ -194,8 +194,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
 
-                BiometricPrompt prompt = showDefaultBiometricPrompt(props.getSensorId(),
-                        0 /* userId */, true /* requireConfirmation */, callback,
+                BiometricPrompt prompt = showDefaultBiometricPrompt(props.getSensorId(), callback,
                         new CancellationSignal());
 
                 assertTrue(prompt.isConfirmationRequired());
@@ -205,8 +204,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
     }
 
     @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricManager#canAuthenticate",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
@@ -220,8 +217,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
     @ApiTest(apis = {
             "android.hardware.biometrics."
-                    + "BiometricManager#canAuthenticate",
-            "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate",
@@ -233,8 +228,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
     }
 
     @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricManager#canAuthenticate",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
@@ -248,8 +241,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
     @ApiTest(apis = {
             "android.hardware.biometrics."
-                    + "BiometricManager#canAuthenticate",
-            "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate",
@@ -262,8 +253,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
     }
 
     @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricManager#canAuthenticate",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
@@ -393,7 +382,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
                     + "BiometricPrompt.AuthenticationCallback#onAuthenticationSucceeded",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
-    @RequiresFlagsDisabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
     @Test
     public void testWhenCredentialEnrolled() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -475,8 +463,8 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
 
-                showDefaultBiometricPrompt(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, new CancellationSignal());
+                showDefaultBiometricPrompt(props.getSensorId(), callback,
+                        new CancellationSignal());
 
                 verify(callback).onAuthenticationError(anyInt(), anyObject());
             }
@@ -550,8 +538,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
                 showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
                         true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
-                        randomDescription, new PromptVerticalListContentView.Builder().build(),
-                        randomNegativeButtonText);
+                        randomDescription, null /* contentView */, randomNegativeButtonText);
 
                 final UiObject2 actualTitle = findView(TITLE_VIEW);
                 final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
@@ -586,7 +573,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
                     + "BiometricPrompt#authenticate",
             "android.hardware.biometrics."
                     + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
-    @RequiresFlagsDisabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
     @Test
     public void testSimpleCredentialAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -611,7 +597,8 @@ public class BiometricSimpleTests extends BiometricTestBase {
                         }
                     };
             showCredentialOnlyBiometricPromptWithContents(callback, new CancellationSignal(),
-                    true /* shouldShow */, randomTitle, randomSubtitle, randomDescription);
+                    true /* shouldShow */, randomTitle, randomSubtitle, randomDescription,
+                    null /* contentView */);
 
             final UiObject2 actualTitle = findView(TITLE_VIEW);
             final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
@@ -648,8 +635,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                         mock(BiometricPrompt.AuthenticationCallback.class);
                 CancellationSignal cancellationSignal = new CancellationSignal();
 
-                showDefaultBiometricPrompt(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, cancellationSignal);
+                showDefaultBiometricPrompt(props.getSensorId(), callback, cancellationSignal);
 
                 cancelAuthentication(cancellationSignal);
                 verify(callback).onAuthenticationError(eq(BiometricPrompt.BIOMETRIC_ERROR_CANCELED),

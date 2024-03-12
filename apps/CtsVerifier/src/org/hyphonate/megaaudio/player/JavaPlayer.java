@@ -77,16 +77,30 @@ public class JavaPlayer extends Player {
         return mAudioTrack != null ? mAudioTrack.getChannelCount() : -1;
     }
 
+    @Override
+    public boolean isMMap() {
+        // Java Streams are never MMAP
+        return false;
+    }
+
+    /**
+     * Calculate the number of channels taking into account channel mask or channel count.
+     */
+    private int calcChannelCount() {
+        return mChannelCount != 0 ? mChannelCount : Integer.bitCount(mChannelMask);
+    }
+
     /**
      * Allocates the array for the burst buffer.
      */
     private void allocBurstBuffer() {
         if (LOG) {
-            Log.i(TAG, "allocBurstBuffer() mNumExchangeFrames:" + mNumExchangeFrames);
+            Log.d(TAG, "allocBurstBuffer() mNumExchangeFrames:" + mNumExchangeFrames);
         }
+
         // pad it by 1 frame. This allows some sources to not have to worry about
         // handling the end-of-buffer edge case. i.e. a "Guard Point" for interpolation.
-        mAudioBuffer = new float[(mNumExchangeFrames + 1) * mChannelCount];
+        mAudioBuffer = new float[(mNumExchangeFrames + 1) * calcChannelCount()];
     }
 
     //
@@ -108,17 +122,19 @@ public class JavaPlayer extends Player {
      */
     private int setupStream(PlayerBuilder builder) {
         mChannelCount = builder.getChannelCount();
+        mChannelMask = builder.getChannelMask();
         mSampleRate = builder.getSampleRate();
         mNumExchangeFrames = builder.getNumExchangeFrames();
         mPerformanceMode = builder.getJavaPerformanceMode();
         int routeDeviceId = builder.getRouteDeviceId();
         if (LOG) {
-            Log.i(TAG, "setupStream()");
-            Log.i(TAG, "  chans:" + mChannelCount);
-            Log.i(TAG, "  rate: " + mSampleRate);
-            Log.i(TAG, "  frames: " + mNumExchangeFrames);
-            Log.i(TAG, "  perf mode: " + mPerformanceMode);
-            Log.i(TAG, "  route device: " + routeDeviceId);
+            Log.d(TAG, "setupStream()");
+            Log.d(TAG, "  chans:" + mChannelCount);
+            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
+            Log.d(TAG, "  rate: " + mSampleRate);
+            Log.d(TAG, "  frames: " + mNumExchangeFrames);
+            Log.d(TAG, "  perf mode: " + mPerformanceMode);
+            Log.d(TAG, "  route device: " + routeDeviceId);
         }
 
         mAudioSource = mSourceProvider.getJavaSource();
@@ -127,11 +143,17 @@ public class JavaPlayer extends Player {
         try {
             AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
             formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                .setSampleRate(mSampleRate)
+                    .setSampleRate(mSampleRate);
                 // setChannelIndexMask() won't give us a FAST_PATH
                 // .setChannelIndexMask(
                 //      StreamBase.channelCountToIndexMask(mChannelCount))
-                .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
+                // .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
+            if (mChannelCount != 0) {
+                formatBuilder.setChannelMask(
+                        StreamBase.channelCountToOutPositionMask(mChannelCount));
+            } else {
+                formatBuilder.setChannelMask(mChannelMask);
+            }
             AudioTrack.Builder audioTrackBuilder = new AudioTrack.Builder();
             audioTrackBuilder.setAudioFormat(formatBuilder.build())
                 .setPerformanceMode(mPerformanceMode);
@@ -141,9 +163,9 @@ public class JavaPlayer extends Player {
             mAudioTrack.setPreferredDevice(builder.getRouteDevice());
 
             if (LOG) {
-                Log.i(TAG, "  mAudioTrack.getBufferSizeInFrames(): "
+                Log.d(TAG, "  mAudioTrack.getBufferSizeInFrames(): "
                         + mAudioTrack.getBufferSizeInFrames());
-                Log.i(TAG, "  mAudioTrack.getBufferCapacityInFrames() :"
+                Log.d(TAG, "  mAudioTrack.getBufferCapacityInFrames() :"
                         + mAudioTrack.getBufferCapacityInFrames());
             }
         }  catch (UnsupportedOperationException ex) {
@@ -160,7 +182,7 @@ public class JavaPlayer extends Player {
     @Override
     public int teardownStream() {
         if (LOG) {
-            Log.i(TAG, "teardownStream()");
+            Log.d(TAG, "teardownStream()");
         }
         stopStream();
 
@@ -246,13 +268,16 @@ public class JavaPlayer extends Player {
     private class StreamPlayerRunnable implements Runnable {
         @Override
         public void run() {
-            final int mNumPlaySamples = mNumExchangeFrames * mChannelCount;
+            int channelCount = calcChannelCount();
+            final int mNumPlaySamples = mNumExchangeFrames * channelCount;
             if (LOG) {
-                Log.i(TAG, "mNumPlaySamples: " + mNumPlaySamples);
+                Log.d(TAG, "mNumExchangeFrames:" + mNumExchangeFrames);
+                Log.d(TAG, "channelCount:" + channelCount);
+                Log.d(TAG, "mNumPlaySamples: " + mNumPlaySamples);
             }
             mAudioTrack.play();
             while (mPlaying) {
-                mAudioSource.pull(mAudioBuffer, mNumExchangeFrames, mChannelCount);
+                mAudioSource.pull(mAudioBuffer, mNumExchangeFrames, channelCount);
 
                 onPull();
 
@@ -265,7 +290,7 @@ public class JavaPlayer extends Player {
                 } else if (numSamplesWritten < mNumPlaySamples) {
                     // end of stream
                     if (LOG) {
-                        Log.i(TAG, "Stream Complete.");
+                        Log.d(TAG, "Stream Complete.");
                     }
                     stopStream();
                 }

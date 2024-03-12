@@ -241,14 +241,22 @@ public class OptionalFeatureHostTest extends CarHostJUnit4TestCase {
             throws Exception {
         String output = getDevice().executeShellCommand(
                 "dumpsys car_service --services CarFeatureController");
-        Pattern pattern = Pattern.compile(featureDumpName + ":\\[(.*)\\]");
-        Matcher m = pattern.matcher(output);
-        if (!m.find()) {
+        Pattern listPattern = Pattern.compile(featureDumpName + ":\\[(.*)\\]");
+        Pattern setPattern = Pattern.compile(featureDumpName + ":\\{(.*)\\}");
+        Matcher listMatcher = listPattern.matcher(output);
+        Matcher setMatcher = setPattern.matcher(output);
+        Matcher matcher;
+        if (listMatcher.find()) {
+            matcher = listMatcher;
+        } else if (setMatcher.find()) {
+            matcher = setMatcher;
+        } else {
             return Collections.EMPTY_LIST;
         }
-        String[] features = m.group(1).split(", ");
+        String[] features = matcher.group(1).split(", ");
         ArrayList<String> featureList = new ArrayList<>(features.length);
-        for (String feature : features) {
+        for (int i = 0; i < features.length; i++) {
+            String feature = features[i];
             if (feature.isEmpty()) {
                 continue;
             }

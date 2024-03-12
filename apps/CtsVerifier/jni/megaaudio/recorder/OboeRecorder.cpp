@@ -183,6 +183,12 @@ Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getChannelCountN(
     return ((OboeRecorder*)native_recorder)->getChannelCount();
 }
 
+JNIEXPORT jboolean JNICALL
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_isMMapN(
+        JNIEnv *env, jobject thiz, jlong native_recorder) {
+    return ((OboeRecorder*)native_recorder)->isMMap();
+}
+
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getStreamStateN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
     return (int)((OboeRecorder*)(native_recorder))->getState();

@@ -3225,6 +3225,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 softApConfigBuilder.setMaxChannelBandwidth(SoftApInfo.CHANNEL_WIDTH_80MHZ);
             }
 
+            if (Flags.androidVWifiApi()
+                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
+                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                OuiKeyedData vendorDataElement =
+                        new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
+                softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
+            }
+
             // Test SoftApConfiguration set and get
             verifySetGetSoftApConfig(softApConfigBuilder.build());
 

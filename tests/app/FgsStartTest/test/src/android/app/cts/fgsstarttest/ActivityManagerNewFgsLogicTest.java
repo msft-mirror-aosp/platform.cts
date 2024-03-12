@@ -159,7 +159,7 @@ public class ActivityManagerNewFgsLogicTest {
         Log.i(TAG, "cleanUpHelperAppState: " + helperPackageName);
 
         SystemUtil.runShellCommand("am force-stop --user current " + helperPackageName);
-        Thread.sleep(500);
+        Thread.sleep(300);
 
         SystemUtil.runShellCommand("am set-standby-bucket --user current " + helperPackageName
                  + " active");
@@ -199,8 +199,10 @@ public class ActivityManagerNewFgsLogicTest {
                 new ComponentName(helperPackageName, EmptyService.class.getName()));
 
         Log.i(TAG, "Binding " + helperPackageName);
-        context.bindService(i, sc, Context.BIND_AUTO_CREATE + Context.BIND_WAIVE_PRIORITY
+        var result = context.bindService(i, sc,
+                Context.BIND_AUTO_CREATE + Context.BIND_WAIVE_PRIORITY
                         + Context.BIND_NOT_FOREGROUND);
+        assertTrue("Couldn't bind the service", result);
 
         awaitLatch(latch, "service binding");
 

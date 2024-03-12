@@ -4357,7 +4357,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2. Go to OEM unlocking settings, if this device has this Settings option. It is often located under \"Developer options\".\n
         Confirm that:\n
            - Oem Unlocking is disabled.\n
-           - Enabling Oem unlocking is not possible and triggers a support message.\n\n
+           - Enabling Oem unlocking is not possible, and pressing the button or menu option to enable it triggers a support message (if pressing is possible).\n\n
         Return back to this page.
     </string>
     <string name="device_owner_user_restriction_set">Set restriction</string>
@@ -5878,6 +5878,51 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
     <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
+
+    <!-- Multichannel Mixdown Test -->
+    <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
+    <string name="audio_multichannel_mixdown_info">
+        This test verifies that for High Channel Count Positional Playback (QUAD, 5.1, 7.1, 7.1.4),
+        all playback channels are represented in a stereo mix. It does not verify placement
+        in the output field.\n
+        This test requires a 2-channel loopback device such as a 2-channel USB audio interface
+        correctly configured for audio loopback (see the Audio Loopback Latency test for more
+        information).\n
+        Since this is a new test, at this time the test process need only be executed and the
+        test will be allowed to pass even if incorrect multi-channel playback is noted.
+    </string>
+    <string name="audio_mixdown_clearresults">Clear Results</string>
+
+    <string name="audio_mixdown_stereo">Stereo</string>
+    <string name="audio_mixdown_quad">Quad</string>
+    <string name="audio_mixdown_sevendotone">7.1</string>
+    <string name="audio_mixdown_fivedotone">5.1</string>
+    <string name="audio_mixdown_sevendotonedotfour">7.1.4</string>
+
+    <!-- Channel Position Names -->
+    <string name="audio_channel_mask_left">Left</string>
+    <string name="audio_channel_mask_right">Right</string>
+    <string name="audio_channel_mask_center">Center</string>
+    <string name="audio_channel_mask_sideleft">Side Left</string>
+    <string name="audio_channel_mask_sideright">Side Right</string>
+    <string name="audio_channel_mask_backleft">Back Left</string>
+    <string name="audio_channel_mask_backright">Back Right</string>
+    <string name="audio_channel_mask_lowfreq">Low Freq</string>
+    <string name="audio_channel_mask_topfrontleft">Top Front Left</string>
+    <string name="audio_channel_mask_topfrontright">Top Front Right</string>
+    <string name="audio_channel_mask_topbackleft">Top Back Left</string>
+    <string name="audio_channel_mask_topbackright">Top Back Right</string>
+
+    <!-- Mixdown Route Names -->
+    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset</string>
+    <string name="audio_mixdown_usbdevice">USB Device</string>
+    <string name="audio_mixdown_usbheadset">USB Headset</string>
+
+    <!-- Mixdown status strings -->
+    <string name="audio_mixdown_invalidinput">Invalid Input</string>
+    <string name="audio_mixdown_invalidoutput">Invalid Output</string>
+    <string name="audio_mixdown_testcanceled">Test Canceled</string>
 
     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>

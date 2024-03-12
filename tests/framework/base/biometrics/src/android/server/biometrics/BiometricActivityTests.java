@@ -31,10 +31,11 @@ import static org.junit.Assume.assumeTrue;
 
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
-import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.server.biometrics.util.BiometricCallbackHelper;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.server.wm.TestJournalProvider;
 import android.server.wm.WindowManagerState;
 import android.util.Log;
@@ -338,7 +339,6 @@ public class BiometricActivityTests extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
-    @RequiresFlagsDisabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_biometricNotEnrolled()
             throws Exception {
@@ -347,13 +347,14 @@ public class BiometricActivityTests extends BiometricTestBase {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             for (SensorProperties prop : mSensorProperties) {
-                try (BiometricTestSession session =
-                             mBiometricManager.createTestSession(prop.getSensorId());
-                     ActivitySession activitySession =
-                             new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
-                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(
-                            session, prop.getSensorId(), false /* shouldEnrollBiometric */,
-                            activitySession);
+                try (
+                        BiometricTestSession session = mBiometricManager.createTestSession(
+                                prop.getSensorId());
+                        ActivitySession activitySession = new ActivitySession(this,
+                                CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)
+                ) {
+                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(session,
+                            prop.getSensorId(), false /* shouldEnrollBiometric */, activitySession);
                 }
             }
         }
@@ -372,7 +373,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             try (ActivitySession activitySession =
-                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)){
+                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
                 testBiometricOrCredential_credentialButtonInvoked_forConfiguration(null,
                         0 /* sensorId */, false /* shouldEnrollBiometric */, activitySession);
             }

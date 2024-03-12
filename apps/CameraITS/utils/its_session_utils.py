@@ -70,6 +70,17 @@ _VALIDATE_LIGHTING_REGIONS = {
     'bottom-right': (1-_VALIDATE_LIGHTING_PATCH_W,
                      1-_VALIDATE_LIGHTING_PATCH_H),
 }
+_MODULAR_MACRO_OFFSET = 0.35  # Determined empirically from modular rig testing
+_VALIDATE_LIGHTING_REGIONS_MODULAR_UW = {
+    'top-left': (_MODULAR_MACRO_OFFSET, _MODULAR_MACRO_OFFSET),
+    'bottom-left': (_MODULAR_MACRO_OFFSET,
+                    1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_H),
+    'top-right': (1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_W,
+                  _MODULAR_MACRO_OFFSET),
+    'bottom-right': (1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_W,
+                     1-_MODULAR_MACRO_OFFSET-_VALIDATE_LIGHTING_PATCH_H),
+}
+_VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
 _VALIDATE_LIGHTING_THRESH_DARK = 0.15  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
@@ -79,6 +90,8 @@ _TAG_STR = 'tag'
 _CAMERA_ID_STR = 'cameraId'
 _USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
+_COPY_SCENE_DELAY_SEC = 1
+_DST_SCENE_DIR = '/sdcard/Download/'
 
 
 def validate_tablet_brightness(tablet_name, brightness):
@@ -368,7 +381,9 @@ class ItsSession(object):
     """
     if self._hidden_physical_id:
       if not camera_properties_utils.logical_multi_camera(props):
-        raise AssertionError(f'{self._camera_id} is not a logical multi-camera')
+        logging.debug('cam %s not a logical multi-camera: no change in props.',
+                      self._hidden_physical_id)
+        return props
       physical_ids = camera_properties_utils.logical_multi_camera_physical_ids(
           props)
       if self._hidden_physical_id not in physical_ids:
@@ -1291,7 +1306,7 @@ class ItsSession(object):
       flash: str; constant describing the desired flash mode.
         Acceptable values: 'OFF' and 'AUTO'.
       facing: str; constant describing the direction the camera lens faces.
-        Acceptable values: camera_properties_utils.LENS_FACING_{BACK, FRONT}
+        Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
     Returns:
       The host-side path of the capture.
     """
@@ -2213,9 +2228,9 @@ class ItsSession(object):
     camera_ids = self.get_camera_ids()
     primary_rear_camera_id = camera_ids.get('primaryRearCameraId', '')
     primary_front_camera_id = camera_ids.get('primaryFrontCameraId', '')
-    if facing == camera_properties_utils.LENS_FACING_BACK:
+    if facing == camera_properties_utils.LENS_FACING['BACK']:
       primary_camera_id = primary_rear_camera_id
-    elif facing == camera_properties_utils.LENS_FACING_FRONT:
+    elif facing == camera_properties_utils.LENS_FACING['FRONT']:
       primary_camera_id = primary_front_camera_id
     else:
       raise NotImplementedError('Cameras not facing either front or back '
@@ -2252,6 +2267,68 @@ class ItsSession(object):
       ids.sort()
     logging.debug('Facing to camera IDs: %s', facing_to_ids)
     return facing_to_ids
+
+  def is_low_light_boost_available(self, camera_id, extension=-1):
+    """Checks if low light boost is available for camera id and extension.
+
+    If the extension is not provided (or -1) then low light boost support is
+    checked for a camera2 session.
+
+    Args:
+      camera_id: int; device ID
+      extension: int; extension type
+    Returns:
+      True if low light boost is available and false otherwise.
+    """
+    cmd = {
+        'cmdName': 'isLowLightBoostAvailable',
+        'cameraId': camera_id,
+        'extension': extension
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'isLowLightBoostAvailable':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def do_capture_preview_frame(self,
+                               camera_id,
+                               preview_size,
+                               frame_num=0,
+                               extension=-1,
+                               cap_request={}):
+    """Captures the nth preview frame from the preview stream.
+
+    By default the 0th frame is the first frame. The extension type can also be
+    provided or -1 to use Camera2 which is the default.
+
+    Args:
+      camera_id: int; device ID
+      preview_size: int; preview size
+      frame_num: int; frame number to capture
+      extension: int; extension type
+      cap_request: dict; python dict specifying the key/value pair of capture
+        request keys, which will be converted to JSON and sent to the device.
+    Returns:
+      Single JPEG frame capture as numpy array of bytes
+    """
+    cmd = {
+        'cmdName': 'doCapturePreviewFrame',
+        'cameraId': camera_id,
+        'previewSize': preview_size,
+        'frameNum': frame_num,
+        'extension': extension,
+        'captureRequest': cap_request,
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, buf = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'jpegImage':
+      raise error_util.CameraItsError('Invalid command response')
+    return buf
 
 
 def parse_camera_ids(ids):
@@ -2341,11 +2418,30 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     cap = cam.do_capture(
         capture_request_utils.auto_capture_request(), cam.CAP_YUV)
     y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
-    validate_lighting(y_plane, scene, log_path=log_path)
+    validate_lighting(y_plane, scene, log_path=log_path, fov=float(camera_fov))
+
+
+def copy_scenes_to_tablet(scene, tablet_id):
+  """Copies scenes onto the tablet before running the tests.
+
+  Args:
+    scene: Name of the scene to copy image files.
+    tablet_id: device id of tablet
+  """
+  logging.info('Copying files to tablet: %s', tablet_id)
+  scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene)
+  scene_dir = os.listdir(scene_path)
+  for file_name in scene_dir:
+    if file_name.endswith('.png') or file_name.endswith('.mp4'):
+      src_scene_file = os.path.join(scene_path, file_name)
+      cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
+      subprocess.Popen(cmd.split())
+  time.sleep(_COPY_SCENE_DELAY_SEC)
+  logging.info('Finished copying files to tablet.')
 
 
 def validate_lighting(y_plane, scene, state='ON', log_path=None,
-                      tablet_state='ON'):
+                      tablet_state='ON', fov=None):
   """Validates the lighting level in scene corners based on empirical values.
 
   Args:
@@ -2354,6 +2450,7 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
     state: string 'ON' or 'OFF'
     log_path: [Optional] path to store artifacts
     tablet_state: string 'ON' or 'OFF'
+    fov: [Optional] float, calculated camera FoV
 
   Returns:
     boolean True if lighting validated, else raise AssertionError
@@ -2368,8 +2465,12 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
   else:
     validate_lighting_thresh = _VALIDATE_LIGHTING_THRESH
 
+  validate_lighting_regions = _VALIDATE_LIGHTING_REGIONS
+  if fov and fov > _VALIDATE_LIGHTING_MACRO_FOV_THRESH:
+    validate_lighting_regions = _VALIDATE_LIGHTING_REGIONS_MODULAR_UW
+
   # Test patches from each corner.
-  for location, coordinates in _VALIDATE_LIGHTING_REGIONS.items():
+  for location, coordinates in validate_lighting_regions.items():
     patch = image_processing_utils.get_image_patch(
         y_plane, coordinates[0], coordinates[1],
         _VALIDATE_LIGHTING_PATCH_W, _VALIDATE_LIGHTING_PATCH_H)

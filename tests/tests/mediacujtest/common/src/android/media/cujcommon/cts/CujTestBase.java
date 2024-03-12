@@ -86,6 +86,13 @@ public class CujTestBase {
   }
 
   /**
+   * Whether the device supports picture-in-picture feature.
+   */
+  public static boolean deviceSupportPipMode(final Activity activity) {
+    return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE);
+  }
+
+  /**
    * Whether the device is a watch.
    */
   public static boolean isWatchDevice(final Activity activity) {

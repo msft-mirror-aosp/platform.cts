@@ -47,6 +47,7 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -194,7 +195,11 @@ public class VirtualCameraTest {
         VirtualCameraConfig config = createVirtualCameraConfig(CAMERA_WIDTH, CAMERA_HEIGHT,
                 CAMERA_FORMAT, CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, CAMERA_LENS_FACING,
                 CAMERA_NAME, mExecutor, mVirtualCameraCallback);
-        mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
+        try {
+            mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("Virtual camera is not available on this device", e);
+        }
     }
 
     @After
@@ -408,6 +413,21 @@ public class VirtualCameraTest {
             Image image = captureImage(imageReader, VirtualCameraTest::paintInputSurfaceRed);
 
             assertThat(image.getFormat()).isEqualTo(YUV_420_888);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
+            assertThat(imageHasColor(image, Color.RED)).isTrue();
+        }
+    }
+
+    @Test
+    public void virtualCamera_captureDownscaledYuv420_succeeds() throws Exception {
+        try (ImageReader imageReader =
+                     createImageReader(YUV_420_888, CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2)) {
+            Image image = captureImage(imageReader, VirtualCameraTest::paintInputSurfaceRed);
+
+            assertThat(image.getFormat()).isEqualTo(YUV_420_888);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH / 2);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT / 2);
             assertThat(imageHasColor(image, Color.RED)).isTrue();
         }
     }
@@ -418,6 +438,8 @@ public class VirtualCameraTest {
             Image image = captureImage(imageReader);
 
             assertThat(image.getFormat()).isEqualTo(YUV_420_888);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
             assertThat(imageHasColor(image, Color.BLACK)).isTrue();
         }
     }
@@ -428,6 +450,21 @@ public class VirtualCameraTest {
             Image image = captureImage(imageReader, VirtualCameraTest::paintInputSurfaceRed);
 
             assertThat(image.getFormat()).isEqualTo(JPEG);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
+            assertThat(imageHasColor(image, Color.RED)).isTrue();
+        }
+    }
+
+    @Test
+    public void virtualCamera_captureDownscaledJpeg_succeeds() throws Exception {
+        try (ImageReader imageReader =
+                     createImageReader(JPEG, CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2)) {
+            Image image = captureImage(imageReader, VirtualCameraTest::paintInputSurfaceRed);
+
+            assertThat(image.getFormat()).isEqualTo(JPEG);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH / 2);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT / 2);
             assertThat(imageHasColor(image, Color.RED)).isTrue();
         }
     }
@@ -438,6 +475,8 @@ public class VirtualCameraTest {
             Image image = captureImage(imageReader);
 
             assertThat(image.getFormat()).isEqualTo(JPEG);
+            assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
+            assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
             assertThat(imageHasColor(image, Color.BLACK)).isTrue();
         }
     }
@@ -476,8 +515,6 @@ public class VirtualCameraTest {
                         any());
                 Image image = reader.acquireLatestImage();
                 assertThat(image).isNotNull();
-                assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
-                assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
                 return image;
             }
         }
@@ -501,6 +538,12 @@ public class VirtualCameraTest {
 
     private static ImageReader createImageReader(@ImageFormat.Format int pixelFormat) {
         return ImageReader.newInstance(CAMERA_WIDTH, CAMERA_HEIGHT,
+                pixelFormat, IMAGE_READER_MAX_IMAGES);
+    }
+
+    private static ImageReader createImageReader(
+            @ImageFormat.Format int pixelFormat, int width, int height) {
+        return ImageReader.newInstance(width, height,
                 pixelFormat, IMAGE_READER_MAX_IMAGES);
     }
 

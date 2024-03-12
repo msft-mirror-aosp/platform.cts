@@ -23,24 +23,22 @@ import static org.junit.Assume.assumeTrue;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
-import android.os.ParcelFileDescriptor;
 import android.view.accessibility.AccessibilityManager;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.car.rotary.RotaryProtos;
+import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 
 public final class CarRotaryImeTest extends AbstractCarTestCase {
-
-    private static final String TAG = CarRotaryImeTest.class.getSimpleName();
+    private static final long POLLING_CHECK_TIMEOUT_MILLIS = 3000L;
 
     private static final ComponentName ROTARY_SERVICE_COMPONENT_NAME =
             ComponentName.unflattenFromString("com.android.car.rotary/.RotaryService");
@@ -50,61 +48,134 @@ public final class CarRotaryImeTest extends AbstractCarTestCase {
             mContext.getSystemService(AccessibilityManager.class);
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
+    private final UiAutomation mUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(
+                    UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+
+    @Before
+    public void setUp() {
+        assumeHasRotaryService();
+    }
 
     /**
      * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
      * resource, it's the component name of an existing IME.
      */
     @Test
-    public void rotaryInputMethodValidIfSpecified() throws Exception {
-        assumeHasRotaryService();
-
-        String rotaryInputMethod = dumpsysRotaryServiceProto().getRotaryInputMethod();
-
+    public void rotaryInputMethodValidIfSpecified() {
+        String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
         assumeTrue("Rotary input method not specified, skipping test",
                 !rotaryInputMethod.isEmpty());
+
         assertWithMessage("isValidIme(" + rotaryInputMethod + ")")
                 .that(isValidIme(rotaryInputMethod)).isTrue();
+    }
+
+    /**
+     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
+     * resource and is not empty, the rotary IME must be different from the touch IME.
+     */
+    @Test
+    public void rotaryImeNotTouchIme() {
+        String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
+        assumeTrue("Rotary input method not specified, skipping test",
+                !rotaryInputMethod.isEmpty());
+
+        String defaultTouchInputMethod = getStringValueFromDumpsys("defaultTouchInputMethod");
+        assertWithMessage("rotary IME(" + rotaryInputMethod + ") must be different"
+                + "from default touch IME(" + defaultTouchInputMethod + ")")
+                .that(rotaryInputMethod.equals(defaultTouchInputMethod)).isFalse();
+
+        String touchInputMethod = getStringValueFromDumpsys("touchInputMethod");
+        assertWithMessage("rotary IME(" + rotaryInputMethod + ") must be different"
+                + "from touch IME(" + touchInputMethod + ")")
+                .that(rotaryInputMethod.equals(touchInputMethod)).isFalse();
+    }
+
+    /**
+     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
+     * resource and is not empty, when it is in rotary mode, the current IME must be the rotary IME.
+     */
+    @Test
+    public void rotaryImeInRotaryMode() {
+        String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
+        assumeTrue("Rotary input method not specified, skipping test",
+                !rotaryInputMethod.isEmpty());
+
+        // Inject a KeyEvent (nudge_up) to ensure it is in rotary mode.
+        mUiAutomation.executeShellCommand("cmd car_service inject-key 280");
+        PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
+                () -> getStringValueFromDumpsys("inRotaryMode").equals("true"),
+                "It should be in rotary mode after injecting KeyEvent");
+
+        String currentInput = mInputMethodManager.getCurrentInputMethodInfo().getComponent()
+                .flattenToShortString();
+
+        assertWithMessage("In rotary mode, the current IME should be the rotary"
+                + " IME(" + rotaryInputMethod + "), but was (" + currentInput + ")")
+                .that(rotaryInputMethod.equals(currentInput)).isTrue();
+    }
+
+    /**
+     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
+     * resource and is not empty, when it is not in rotary mode, the current IME must not be the
+     * rotary IME.
+     */
+    @Test
+    public void rotaryImeNotInTouchMode() {
+        String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
+        assumeTrue("Rotary input method not specified, skipping test",
+                !rotaryInputMethod.isEmpty());
+
+        String inRotaryMode = getStringValueFromDumpsys("inRotaryMode");
+        // UiAutomation will kill other AccessibilityServices, including RotaryService. When
+        // RotaryService is automatically recreated, it will be in touch mode by default.
+        // However, this behavior might change in the future. So skip the test in case this behavior
+        // changes.
+        assumeTrue("It should not be in rotary mode in the beginning",
+                inRotaryMode.equals("false"));
+
+        String currentInput = mInputMethodManager.getCurrentInputMethodInfo().getComponent()
+                .flattenToShortString();
+        assertWithMessage("In touch mode, the current IME should not be the"
+                + " rotary IME(" + rotaryInputMethod + "), but was rotary IME")
+                .that(rotaryInputMethod.equals(currentInput)).isFalse();
     }
 
     /**
      * The default touch input method must be specified via the {@code default_touch_input_method}
      * string resource, and it must be the component name of an existing IME.
      */
-    @Ignore("TODO(b/184390443)")
     @Test
-    public void defaultTouchInputMethodSpecifiedAndValid() throws Exception {
-        assumeHasRotaryService();
-
-        String defaultTouchInputMethod = dumpsysRotaryServiceProto().getDefaultTouchInputMethod();
+    public void defaultTouchInputMethodSpecifiedAndValid() {
+        String defaultTouchInputMethod = getStringValueFromDumpsys("defaultTouchInputMethod");
 
         assertWithMessage("defaultTouchInputMethod").that(defaultTouchInputMethod).isNotEmpty();
         assertWithMessage("isValidIme(" + defaultTouchInputMethod + ")")
                 .that(isValidIme(defaultTouchInputMethod)).isTrue();
     }
 
-    private RotaryProtos.RotaryService dumpsysRotaryServiceProto() throws IOException {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation(
-                UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-        ParcelFileDescriptor pfd = uiAutomation.executeShellCommand(
-                "dumpsys activity service " + ROTARY_SERVICE_COMPONENT_NAME.flattenToString()
-                        + " proto");
-        try (FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd)) {
-            // TODO(b/184973707): Remove this code once ActivityManager supports dumping a service
-            //                    in proto format.
-            // Skip over:
-            //   SERVICE com.android.car.rotary/.RotaryService ... pid=... user=10
-            //   __Client:
-            //   ____
-            // where underscores represent spaces.
-            byte[] buffer = new byte[1];
-            while (fis.read(buffer) > 0 && buffer[0] != ':') {
-                // Do nothing.
+    // TODO(b/327507413): switch to proto-based dumpsys.
+    private String getStringValueFromDumpsys(String key) {
+        try {
+            String dumpsysOutput = SystemUtil.runShellCommand(mUiAutomation,
+                    "dumpsys activity service "
+                            + ROTARY_SERVICE_COMPONENT_NAME.flattenToShortString());
+            // dumpsys output contains string like:
+            // lastTouchedNode=null
+            // rotaryInputMethod=com.android.car.rotaryime/.RotaryIme
+            // defaultTouchInputMethod=com.google.android.apps.automotive.inputmethod/
+            // .InputMethodService"
+            // hunNudgeDirection=FOCUS_UP
+            int startIndex = dumpsysOutput.indexOf(key) + key.length() + 1;
+            int endIndex = dumpsysOutput.indexOf('\n', startIndex);
+            String value = dumpsysOutput.substring(startIndex, endIndex);
+            if (!"null".equals(value)) {
+                return value;
             }
-            // Skip carriage return and four space indent.
-            fis.skip(5);
-
-            return RotaryProtos.RotaryService.parseFrom(fis);
+            return "";
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -19,7 +19,6 @@ package android.app.stubs;
 import android.app.Application;
 import android.content.res.Configuration;
 
-
 public class MockApplication extends Application {
 
     public boolean isOnCreateCalled;

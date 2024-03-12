@@ -22,8 +22,10 @@ import android.content.Context
 import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.Flags.FLAG_ARCHIVING
 import android.content.pm.Flags.FLAG_NULLABLE_DATA_DIR
 import android.content.pm.PackageInfo
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.MATCH_ANY_USER
 import android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES
@@ -37,11 +39,13 @@ import android.content.pm.PackageManager.PackageInfoFlags
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver
 import android.content.pm.cts.PackageManagerTest.CTS_SHIM_PACKAGE_NAME
 import android.content.pm.cts.PackageManagerTest.getInstalledState
+import android.content.pm.cts.PackageManagerTest.installArchivedAsUser
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.AppModeNonSdkSandbox
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -49,7 +53,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
@@ -76,6 +82,7 @@ import org.junit.runners.model.Statement
 @EnsureHasSecondaryUser
 @RunWith(BedsteadJUnit4::class)
 @AppModeFull(reason = "Cannot query other apps if instant")
+@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot query other apps")
 class PackageManagerShellCommandMultiUserTest {
 
     @JvmField
@@ -978,6 +985,40 @@ class PackageManagerShellCommandMultiUserTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ARCHIVING)
+    fun testInstallArchived() {
+        installArchivedPackageAsUser(TEST_APP_PACKAGE, TEST_HW5, primaryUser)
+        assertTrue(isPackagePresentForUser(TEST_APP_PACKAGE, primaryUser))
+        assertTrue(isPackagePresentForUser(TEST_APP_PACKAGE, secondaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+        assertThat(getInstalledState(TEST_APP_PACKAGE, primaryUser.id()))
+                .isEqualTo("false")
+        assertThat(getInstalledState(TEST_APP_PACKAGE, secondaryUser.id()))
+                .isEqualTo("false")
+
+        val newUser = TestApis.users().createUser()
+                .type(TestApis.users().supportedType(UserType.SECONDARY_USER_TYPE_NAME))
+                .createAndStart()
+        try {
+            assertThat(getInstalledState(TEST_APP_PACKAGE, primaryUser.id()))
+                    .isEqualTo("false")
+            assertThat(getInstalledState(TEST_APP_PACKAGE, secondaryUser.id()))
+                    .isEqualTo("false")
+            assertThat(getInstalledState(TEST_APP_PACKAGE, newUser.id()))
+                    .isEqualTo("false")
+
+            // Now install normally
+            installPackageAsUser(TEST_HW5, primaryUser)
+            assertTrue(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+            assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+            assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, newUser))
+        } finally {
+            newUser.removeWhenPossible()
+        }
+    }
+
     private fun getUserManager(): UserManager {
         return context.getSystemService(UserManager::class.java)!!
     }
@@ -1013,6 +1054,22 @@ class PackageManagerShellCommandMultiUserTest {
             .isEqualTo("Success\n")
     }
 
+    private fun installArchivedPackageAsUser(
+            packageName: String,
+            baseName: String,
+            user: UserReference
+    ) {
+        installPackageAsUser(baseName, user)
+        val archivedPackage = context.packageManager.getArchivedPackage(packageName)
+        assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
+        installArchivedAsUser(
+                archivedPackage,
+                PackageInstaller.STATUS_SUCCESS,
+                null,
+                user.userHandle()
+        )
+    }
+
     private fun uninstallPackageAsUser(packageName: String, user: UserReference) =
         assertThat(SystemUtil.runShellCommand("pm uninstall --user ${user.id()} $packageName"))
             .isEqualTo("Success\n")
@@ -1020,13 +1077,18 @@ class PackageManagerShellCommandMultiUserTest {
     private fun uninstallPackageWithKeepData(packageName: String, user: UserReference) =
         SystemUtil.runShellCommand("pm uninstall -k --user ${user.id()} $packageName")
 
-    private fun uninstallPackageSilently(packageName: String) =
+    private fun uninstallPackageSilently(packageName: String): String =
         SystemUtil.runShellCommand("pm uninstall $packageName")
 
     private fun isAppInstalledForUser(packageName: String, user: UserReference) =
         SystemUtil.runShellCommand("pm list packages --user ${user.id()} $packageName")
             .split("\\r?\\n".toRegex())
             .any { it == "package:$packageName" }
+
+    private fun isPackagePresentForUser(packageName: String, user: UserReference) =
+            SystemUtil.runShellCommand("pm list packages -a --user ${user.id()} $packageName")
+                    .split("\\r?\\n".toRegex())
+                    .any { it == "package:$packageName" }
 
     private fun setSystemProperty(name: String, value: String) =
         assertThat(SystemUtil.runShellCommand("setprop $name $value"))

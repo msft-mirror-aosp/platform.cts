@@ -16,8 +16,15 @@
 package android.autofillservice.cts.activities;
 
 import android.autofillservice.cts.R;
+import android.credentials.CredentialOption;
+import android.credentials.GetCredentialException;
+import android.credentials.GetCredentialRequest;
+import android.credentials.GetCredentialResponse;
 import android.os.Bundle;
+import android.os.OutcomeReceiver;
 import android.widget.EditText;
+
+import androidx.credentials.PasswordCredential;
 
 /**
  * Same as {@link LoginActivity}, but with login fields integrated with CredentialManager, and an
@@ -25,29 +32,36 @@ import android.widget.EditText;
  */
 public class LoginCredentialMixedActivity extends LoginActivity {
 
-    private static final String CREDENTIAL_HINT =
-            "credential={\"get\":{\"credentialOptions\":[{\"type\":\"android.credentials."
-                    + "TYPE_PASSWORD_CREDENTIAL\",\"requestData\":{\"androidx.credentials.BUNDLE"
-                    + "_KEY_IS_AUTO_SELECT_ALLOWED\":false,\"androidx.credentials.BUNDLE_KEY_"
-                    + "ALLOWED_USER_IDS\":[]},\"candidateQueryData\":{\"androidx.credentials."
-                    + "BUNDLE_KEY_IS_AUTO_SELECT_ALLOWED\":false,\"androidx.credentials.BUNDLE_"
-                    + "KEY_ALLOWED_USER_IDS\":[]},\"isSystemProviderRequired\":false}]}}";
     private static final String USERNAME_HINT = "username";
     private static final String PASSWORD_HINT = "password";
     private static final String CREDIT_HINT = "creditCardNumber";
-
-    // a complete credential hint has a json credential option appended to the hint.
-    private static final String INCOMPLETE_CREDENTIAL_HINT = "credential";
 
     private EditText mCreditEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.mUsernameEditText.setAutofillHints(USERNAME_HINT, CREDENTIAL_HINT);
-        this.mPasswordEditText.setAutofillHints(PASSWORD_HINT, CREDENTIAL_HINT);
+        this.mUsernameEditText.setAutofillHints(USERNAME_HINT);
+        this.mPasswordEditText.setAutofillHints(PASSWORD_HINT);
         this.mCreditEditText = findViewById(R.id.card_number);
-        this.mCreditEditText.setAutofillHints(CREDIT_HINT, INCOMPLETE_CREDENTIAL_HINT);
+        this.mCreditEditText.setAutofillHints(CREDIT_HINT);
+        GetCredentialRequest.Builder builder = new GetCredentialRequest.Builder(new Bundle());
+        builder.addCredentialOption(
+                new CredentialOption.Builder(
+                        "android.credentials.TYPE_PASSWORD_CREDENTIAL",
+                        new Bundle(),
+                        new Bundle()).build());
+        OutcomeReceiver<GetCredentialResponse, GetCredentialException> outcomeReceiver = result -> {
+            androidx.credentials.Credential credential = androidx.credentials.Credential.createFrom(
+                    result.getCredential().getType(), result.getCredential().getData());
+            if (credential instanceof PasswordCredential) {
+                PasswordCredential pwCredential = (PasswordCredential) credential;
+                mUsernameEditText.setText(pwCredential.getId());
+                mPasswordEditText.setText(pwCredential.getPassword());
+            }
+        };
+        this.mUsernameEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
+        this.mPasswordEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
     }
 
     @Override

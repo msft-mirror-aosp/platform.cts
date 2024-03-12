@@ -30,7 +30,9 @@ import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
+import static android.content.pm.Flags.FLAG_IMPROVE_HOME_APP_BEHAVIOR;
 import static android.content.pm.Flags.FLAG_PROVIDE_INFO_OF_APK_IN_APEX;
+import static android.content.pm.Flags.FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS;
 import static android.content.pm.Flags.FLAG_QUARANTINED_ENABLED;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
@@ -160,6 +162,7 @@ import androidx.core.content.FileProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -300,7 +303,12 @@ public class PackageManagerTest {
     private static final String HELLO_WORLD_SETTINGS = SAMPLE_APK_BASE
             + "HelloWorldSettings.apk";
 
-    private static final String HELLO_WORLD_SETTINGS_PACKAGE_NAME = "com.android.settings.app";
+    private static final String HELLO_WORLD_SETTINGS2 = SAMPLE_APK_BASE
+            + "HelloWorldSettings2.apk";
+
+    private static final String HELLO_WORLD_SETTINGS_PACKAGE_NAME = "android.test.settings";
+
+    private static final String HELLO_WORLD_SETTINGS2_PACKAGE_NAME = "android.test.settings2";
 
     private static final String MOCK_LAUNCHER_PACKAGE_NAME = "android.content.cts.mocklauncherapp";
     private static final String MOCK_LAUNCHER_APK = SAMPLE_APK_BASE
@@ -354,11 +362,14 @@ public class PackageManagerTest {
     @Rule
     public final Expect expect = Expect.create();
 
+    private UiDevice mUiDevice;
+
     @Before
     public void setup() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
+        mUiDevice = UiDevice.getInstance(mInstrumentation);
     }
 
     @After
@@ -2189,7 +2200,8 @@ public class PackageManagerTest {
     }
 
     @Test
-    public void testInstallAppSharedSystemUid() {
+    @RequiresFlagsEnabled(FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS)
+    public void testInstallAppSharedSystemUidAllowlisted() {
         var result = SystemUtil.runShellCommand("pm install -t -g " + HELLO_WORLD_SETTINGS);
         if (result.contains("no signatures that match those in shared user android.uid.system")) {
             // This is a <unit> test, not a proper CTS.
@@ -2198,11 +2210,27 @@ public class PackageManagerTest {
             // Otherwise the install will still fail, but for a different reason.
             return;
         }
+        assertThat(result).isEqualTo("Success\n");
+        uninstallPackage(HELLO_WORLD_SETTINGS_PACKAGE_NAME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS)
+    public void testInstallAppSharedSystemUid() {
+        var result = SystemUtil.runShellCommand("pm install -t -g " + HELLO_WORLD_SETTINGS2);
+        if (result.contains("no signatures that match those in shared user android.uid.system")) {
+            // This is a <unit> test, not a proper CTS.
+            // While certificate for HelloWorldSettings is "platform", it might not be THE platform.
+            // This test works correctly if platform and cts are built using the same certificate.
+            // Otherwise the install will still fail, but for a different reason.
+            return;
+        }
         if (!Build.IS_DEBUGGABLE) {
-            assertThat(result).contains("Non-preload app associated with system signature");
+            assertThat(result).contains("Non-preload app " + HELLO_WORLD_SETTINGS2_PACKAGE_NAME
+                    + " signed with platform signature and joining shared uid");
         } else {
             assertThat(result).isEqualTo("Success\n");
-            uninstallPackage(HELLO_WORLD_SETTINGS_PACKAGE_NAME);
+            uninstallPackage(HELLO_WORLD_SETTINGS2_PACKAGE_NAME);
         }
     }
 
@@ -2280,9 +2308,10 @@ public class PackageManagerTest {
                         packageName));
     }
 
-    private String executeShellCommand(String command, byte[] input) throws IOException {
+    static String executeShellCommand(String command, byte[] input) throws IOException {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
         final ParcelFileDescriptor[] pfds =
-                mInstrumentation.getUiAutomation().executeShellCommandRw(
+                instrumentation.getUiAutomation().executeShellCommandRw(
                         command);
         ParcelFileDescriptor stdout = pfds[0];
         ParcelFileDescriptor stdin = pfds[1];
@@ -2303,11 +2332,19 @@ public class PackageManagerTest {
     }
 
     private void installArchived(ArchivedPackageInfo archivedPackageInfo, int expectedStatus,
-                                 String expectedResultStartsWith) throws Exception {
-        var packageInstaller = mContext.getPackageManager().getPackageInstaller();
+                                String expectedResultStartsWith) throws Exception {
+        installArchivedAsUser(
+                archivedPackageInfo, expectedStatus, expectedResultStartsWith, mContext.getUser());
+    }
+
+    static void installArchivedAsUser(ArchivedPackageInfo archivedPackageInfo, int expectedStatus,
+                                String expectedResultStartsWith, UserHandle user) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        var userContext = instrumentation.getContext().createContextAsUser(user, 0);
+        var packageInstaller = userContext.getPackageManager().getPackageInstaller();
         final CompletableFuture<Integer> status = new CompletableFuture<>();
         final CompletableFuture<String> statusMessage = new CompletableFuture<>();
-        SystemUtil.runWithShellPermissionIdentity(mInstrumentation.getUiAutomation(), () -> {
+        SystemUtil.runWithShellPermissionIdentity(instrumentation.getUiAutomation(), () -> {
             var params = new SessionParams(MODE_FULL_INSTALL);
             packageInstaller.installPackageArchived(archivedPackageInfo, params,
                     new IntentSender((IIntentSender) new IIntentSender.Stub() {
@@ -2641,6 +2678,76 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             setComponentEnabledSettingsAndWaitForBroadcasts(enabledSettings);
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_IMPROVE_HOME_APP_BEHAVIOR)
+    public void testEnableAndResetComponentSetting_pressHomeButton_notShowResolverActivity()
+            throws Exception {
+        final ComponentName componentName = new ComponentName(PACKAGE_NAME,
+                "android.content.pm.cts.FakeLauncherActivity");
+        final String resolverActivity = getResolverActivity();
+
+        try {
+            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                    android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    List.of(new ComponentEnabledSetting(componentName,
+                            COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP)));
+
+            // Press home button to trigger the resolver activity dialog to select the default home.
+            mUiDevice.pressHome();
+
+            // The resolver activity shouldn't be shown.
+            assertThrows(AssertionFailedError.class,
+                    () -> TestUtils.waitUntil(
+                            "Waiting for the resolver activity to be shown.",
+                            5 /* timeoutSecond */, () -> hasResolverActivity(resolverActivity)));
+        } finally {
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    List.of(new ComponentEnabledSetting(componentName,
+                            COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP)));
+            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+
+        // Press home button to trigger the resolver activity dialog to select the default home.
+        mUiDevice.pressHome();
+
+        // The resolver activity shouldn't be shown.
+        assertThrows(AssertionFailedError.class,
+                () -> TestUtils.waitUntil(
+                        "Waiting for the resolver activity to be shown.",
+                        5 /* timeoutSecond */, () -> hasResolverActivity(resolverActivity)));
+    }
+
+    private String getResolverActivity() {
+        int resId = Resources.getSystem().getIdentifier(
+                "config_customResolverActivity", "string", "android");
+        String customResolverActivity = mContext.getString(resId);
+        Log.d(TAG, "getResolverActivity customResolverActivity=" + customResolverActivity);
+        if (TextUtils.isEmpty(customResolverActivity)) {
+            // If custom resolver activity is not in use, it will use the Android default.
+            return "android/com.android.internal.app.ResolverActivity";
+        }
+        return customResolverActivity;
+    }
+
+    private boolean hasResolverActivity(String resolverActivity) throws Exception {
+        String commandOutput = mUiDevice.executeShellCommand("dumpsys activity activities");
+        final String[] lines = commandOutput.split("\\n", -1);
+
+        if (lines == null) {
+            return false;
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            final String line = lines[i];
+            if (line.contains("Resumed:") && line.contains(resolverActivity)) {
+                Log.d(TAG, "hasResolverActivity find line=" + line);
+                return true;
+            }
+        }
+        return false;
     }
 
     @Test
@@ -3926,6 +4033,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS)
     public void testUidRemovedBroadcastNotReceivedForSharedUid() throws Exception {
         // Installing a test app that shares SYSTEM_UID
         var result = SystemUtil.runShellCommand("pm install -t -g " + HELLO_WORLD_SETTINGS);
