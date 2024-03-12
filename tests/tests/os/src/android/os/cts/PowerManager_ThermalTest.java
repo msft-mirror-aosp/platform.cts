@@ -29,6 +29,7 @@ import android.content.Context;
 import android.os.Flags;
 import android.os.PowerManager;
 import android.os.PowerManager.OnThermalStatusChangedListener;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -51,6 +52,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class PowerManager_ThermalTest {
     private static final long CALLBACK_TIMEOUT_MILLI_SEC = 5000;
     private UiDevice mUiDevice;

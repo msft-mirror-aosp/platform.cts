@@ -30,8 +30,10 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class MessengerTest extends AndroidTestCase {
 
     private Messenger mMessenger;
