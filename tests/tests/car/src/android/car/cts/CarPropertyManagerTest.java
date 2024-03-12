@@ -120,6 +120,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -517,6 +519,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             WindshieldWipersSwitch.OTHER)
                     .build();
+
+    private static final ImmutableSet<Integer> PROPERTIES_NOT_EXPOSED_THROUGH_CPM = ImmutableSet.of(
+            VehiclePropertyIds.INVALID,
+            VehiclePropertyIds.AP_POWER_STATE_REQ,
+            VehiclePropertyIds.AP_POWER_STATE_REPORT,
+            VehiclePropertyIds.AP_POWER_BOOTUP_REASON,
+            VehiclePropertyIds.DISPLAY_BRIGHTNESS,
+            VehiclePropertyIds.PER_DISPLAY_BRIGHTNESS,
+            VehiclePropertyIds.HW_KEY_INPUT,
+            VehiclePropertyIds.SEAT_HEADREST_HEIGHT_POS,
+            VehiclePropertyIds.VEHICLE_MAP_SERVICE,
+            VehiclePropertyIds.OBD2_LIVE_FRAME,
+            VehiclePropertyIds.OBD2_FREEZE_FRAME,
+            VehiclePropertyIds.OBD2_FREEZE_FRAME_INFO,
+            VehiclePropertyIds.OBD2_FREEZE_FRAME_CLEAR
+    );
 
     private static final ImmutableList<Integer>
             PERMISSION_READ_DRIVER_MONITORING_SETTINGS_PROPERTIES = ImmutableList.<Integer>builder()
@@ -1338,6 +1356,38 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             String propertyName = VehiclePropertyIds.toString(propertyId);
             expectWithMessage("Property: " + propertyName + " is not a defined system property")
                     .that(propertyId).isIn(allSystemPropertyIds);
+        }
+    }
+
+    @Test
+    public void testAllPropertiesHaveVehiclePropertyVerifier() {
+        Set<Integer> verifierPropertyIds = new ArraySet<>();
+        for (VehiclePropertyVerifier verifier : getAllVerifiers()) {
+            expectWithMessage("Verifier for property: " + verifier.getPropertyName()
+                            + " has been included twice!")
+                    .that(verifierPropertyIds.add(verifier.getPropertyId())).isTrue();
+        }
+
+        for (Field field : VehiclePropertyIds.class.getDeclaredFields()) {
+            boolean isIntConstant = field.getType() == int.class
+                    && field.getModifiers() == (Modifier.STATIC | Modifier.FINAL | Modifier.PUBLIC);
+            if (!isIntConstant) {
+                continue;
+            }
+
+            Integer propertyId = null;
+            try {
+                propertyId = field.getInt(null);
+            } catch (Exception e) {
+                assertWithMessage("Failed trying to find value for " + field.getName() + ", " + e)
+                        .fail();
+            }
+            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)) {
+                continue;
+            }
+            expectWithMessage("Property: " + VehiclePropertyIds.toString(propertyId) + " does not "
+                            + "have a VehiclePropertyVerifier included in getAllVerifiers()")
+                    .that(propertyId).isIn(verifierPropertyIds);
         }
     }
 
