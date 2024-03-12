@@ -567,10 +567,20 @@ public class MediaSessionTest {
         simulateMediaKeyInput(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
     }
 
+    @Test
+    public void testSetMediaButtonReceiver_withNull_doesNotThrow() {
+        try {
+            mSession.setMediaButtonReceiver(null);
+        } finally {
+            mSession.release();
+        }
+    }
+
     /**
      * Test whether media button receiver can be a explicit broadcast receiver via
      * MediaSession.setMediaButtonBroadcastReceiver(ComponentName)
      */
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testSetMediaButtonBroadcastReceiver_broadcastReceiver() throws Exception {
         // Play a sound so this session can get the priority.

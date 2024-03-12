@@ -277,6 +277,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       Assume.assumeFalse(
           "Skipping " + mTestType + " as watch doesn't support picture-in-picture mode yet",
           isWatchDevice(mActivity));
+      Assume.assumeTrue(
+          "Skipping " + mTestType + " as device doesn't support picture-in-picture feature",
+          deviceSupportPipMode(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

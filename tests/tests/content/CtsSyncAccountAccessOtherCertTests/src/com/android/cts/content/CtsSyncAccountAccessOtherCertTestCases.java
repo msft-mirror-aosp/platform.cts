@@ -108,7 +108,7 @@ public class CtsSyncAccountAccessOtherCertTestCases {
 
         // If running in a test harness the Account Manager never denies access to an account. Hence
         // the permission request will not trigger. b/72114924
-        assumeFalse(ActivityManager.isRunningInTestHarness());
+        assumeFalse(ActivityManager.isRunningInUserTestHarness());
 
         // We need to ensure there are no other notifications present
         // so that the search for the permission notification does not fail
@@ -116,8 +116,13 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         if (uiDevice.openNotification()) {
             Thread.sleep(1000);
             UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
-            UiObject2 clear =
-                    scrollable.scrollUntil(Direction.DOWN, Until.findObject(By.text("Clear all")));
+            UiObject2 clear;
+            if (scrollable != null) {
+                clear = scrollable.scrollUntil(Direction.DOWN,
+                                        Until.findObject(By.text("Clear all")));
+            } else {
+                clear = uiDevice.findObject(By.text("Clear all"));
+            }
             assumeNotNull(clear);
             clear.click();
         }

@@ -45,6 +45,8 @@ android_test {
         "cts-wm-util",
         "cts_window-extensions",
         "statsdprotonano",
+        "android.view.inputmethod.flags-aconfig-java",
+        "flag-junit",
     ],
     srcs: [
         "src/**/*.java",
@@ -64,6 +66,7 @@ android_test {
         ":CtsInputMethodStandaloneTestApp",
         ":CtsMockLargeResourceInputMethod",
         ":CtsMockInputMethodWithSubtypes",
+        ":CtsInputMethodTestLauncher",
     ],
     per_testcase_directory: true,
 }

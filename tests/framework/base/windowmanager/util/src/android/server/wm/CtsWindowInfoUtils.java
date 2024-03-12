@@ -16,19 +16,22 @@
 
 package android.server.wm;
 
+import static junit.framework.Assert.assertTrue;
+
 import android.Manifest;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
-import android.view.Display;
 import android.window.WindowInfosListenerForTest;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
@@ -39,8 +42,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
-
-import org.junit.rules.TestName;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -200,14 +201,14 @@ public class CtsWindowInfoUtils {
 
     /**
      * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(int, TimeUnit, Supplier)}. Adopts
-     * required permissions and waits five seconds before timing out.
+     * required permissions and waits at least five seconds before timing out.
      *
      * @param window The window to wait on.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
     public static boolean waitForWindowOnTop(@NonNull Window window) throws InterruptedException {
-        return waitForWindowOnTop(5, TimeUnit.SECONDS,
+        return waitForWindowOnTop(HW_TIMEOUT_MULTIPLIER * 5, TimeUnit.SECONDS,
                 () -> window.getDecorView().getWindowToken());
     }
 
@@ -328,7 +329,6 @@ public class CtsWindowInfoUtils {
 
     private static void runWithSurfaceFlingerPermission(@NonNull InterruptableRunnable runnable)
             throws InterruptedException {
-
         Set<String> shellPermissions =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation()
                         .getAdoptedShellPermissions();
@@ -428,7 +428,7 @@ public class CtsWindowInfoUtils {
                     latch.countDown();
                 }
             };
-            timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
+            timer.schedule(task[0], 200 * HW_TIMEOUT_MULTIPLIER);
         };
 
         runWithSurfaceFlingerPermission(() -> {
@@ -457,15 +457,16 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier) throws InterruptedException {
-        Rect bounds = getWindowBounds(windowTokenSupplier);
+            @NonNull Supplier<IBinder> windowTokenSupplier, boolean useGlobalInjection)
+            throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
             return false;
         }
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
@@ -483,20 +484,47 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindow(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
+            boolean useGlobalInjection)
             throws InterruptedException {
-        Rect bounds = getWindowBounds(windowTokenSupplier);
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
             return false;
         }
 
         final Point coord = new Point(bounds.left + (offset != null ? offset.x : 0),
                 bounds.top + (offset != null ? offset.y : 0));
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
-    private static Rect getWindowBounds(@NonNull Supplier<IBinder> windowTokenSupplier)
+    public static Rect getWindowBoundsInWindowSpace(@NonNull Supplier<IBinder> windowTokenSupplier)
+            throws InterruptedException {
+        Rect bounds = new Rect();
+        Predicate<WindowInfo> predicate = windowInfo -> {
+            if (!windowInfo.bounds.isEmpty()) {
+                if (!windowInfo.transform.isIdentity()) {
+                    RectF rectF = new RectF(windowInfo.bounds);
+                    windowInfo.transform.mapRect(rectF);
+                    bounds.set((int) rectF.left, (int) rectF.top, (int) rectF.right,
+                            (int) rectF.bottom);
+                } else {
+                    bounds.set(windowInfo.bounds);
+                }
+                return true;
+            }
+
+            return false;
+        };
+
+        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
+                windowTokenSupplier)) {
+            return null;
+        }
+        return bounds;
+    }
+
+    public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
@@ -504,24 +532,27 @@ public class CtsWindowInfoUtils {
                 bounds.set(windowInfo.bounds);
                 return true;
             }
+
             return false;
         };
 
-        if (!waitForWindowInfo(predicate, 5, TimeUnit.SECONDS, windowTokenSupplier)) {
+        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
+                windowTokenSupplier)) {
             return null;
         }
         return bounds;
     }
 
-    private static void sendTap(Instrumentation instrumentation, Point coord) {
+    private static void sendTap(Instrumentation instrumentation, Point coord,
+            boolean useGlobalInjection) {
         // Get anchor coordinates on the screen
         final long downTime = SystemClock.uptimeMillis();
 
-        UiAutomation uiAutomation = instrumentation.getUiAutomation();
         CtsTouchUtils ctsTouchUtils = new CtsTouchUtils(instrumentation.getTargetContext());
-        ctsTouchUtils.injectDownEvent(uiAutomation, downTime, coord.x, coord.y, true, null);
-        ctsTouchUtils.injectUpEvent(uiAutomation, downTime, false, coord.x, coord.y,
-                true, null);
+        ctsTouchUtils.injectDownEvent(instrumentation, downTime, coord.x, coord.y,
+                /* eventInjectionListener= */ null, useGlobalInjection);
+        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y,
+                /*waitForAnimations=*/ true, null, useGlobalInjection);
 
         instrumentation.waitForIdleSync();
     }
@@ -559,22 +590,29 @@ public class CtsWindowInfoUtils {
         return true;
     }
 
-    public static void dumpWindowsOnScreen(String tag, TestName testName)
-            throws InterruptedException {
-        dumpWindowsOnScreen(tag, testName.getMethodName());
-    }
-
     public static void dumpWindowsOnScreen(String tag, String message)
             throws InterruptedException {
         waitForWindowInfos(windowInfos -> {
-            if (windowInfos.size() == 0) {
+            if (windowInfos.isEmpty()) {
                 return false;
             }
-            Log.d(tag, "Dumping windows on screen for test " + message);
+            Log.d(tag, "Dumping windows on screen: " + message);
             for (var windowInfo : windowInfos) {
                 Log.d(tag, "     " + windowInfo);
             }
             return true;
         }, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Assert the condition and dump the window states if the condition fails.
+     */
+    public static void assertAndDumpWindowState(String tag, String message, boolean condition)
+            throws InterruptedException {
+        if (!condition) {
+            dumpWindowsOnScreen(tag, message);
+        }
+
+        assertTrue(message, condition);
     }
 }
