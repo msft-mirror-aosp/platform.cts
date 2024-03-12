@@ -1607,6 +1607,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 layout.addView(clickableView, layoutParams);
                 return layout;
             });
+            addVirtualStylusIdForTestSession();
             View clickableView = clickableViewRef.get();
             expectBindInput(stream, Process.myPid(), TIMEOUT);
             // click on view with stylus to launch new activity
