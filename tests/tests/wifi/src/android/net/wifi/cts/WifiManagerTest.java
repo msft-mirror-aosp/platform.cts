@@ -3978,6 +3978,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // skip the test when there is no Country Code available
             return;
         }
+        if (!PropertyUtil.isVndkApiLevelAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            // skip the test if vendor version is lower than T
+            return;
+        }
         TestActiveCountryCodeChangedCallback testCountryCodeChangedCallback =
                 new TestActiveCountryCodeChangedCallback();
         TestExecutor executor = new TestExecutor();
