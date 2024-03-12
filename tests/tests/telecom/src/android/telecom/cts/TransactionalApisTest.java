@@ -1062,6 +1062,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
+            assertNumCalls(getInCallService(), 1);
             TestParcelable originalParcelable = createTestParcelable();
             mCall1.mCallControl.sendEvent(OTT_TEST_EVENT_NAME,
                     createTestBundle(originalParcelable));
