@@ -84,6 +84,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
     private static final int MAX_TRACE_RETRIES = 3;
 
+    private String initialDebugPropertyValue = null;
+
     private class ShellThread extends Thread {
 
         private String mCmd;
@@ -112,11 +114,16 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         getDevice().executeShellV2Command("settings delete global enable_gpu_debug_layers");
         getDevice().executeShellV2Command("settings delete global gpu_debug_app");
         getDevice().executeShellV2Command("settings delete global gpu_debug_layer_app");
+        getDevice().setProperty(DEBUG_PROPERTY, initialDebugPropertyValue);
     }
 
     /** Clean up before starting any tests. Apply the necessary layer settings if we need them */
     @Before
     public void init() throws Exception {
+        initialDebugPropertyValue = getDevice().getProperty(DEBUG_PROPERTY);
+        if (initialDebugPropertyValue == null) {
+            initialDebugPropertyValue = "";
+        }
         cleanup();
         String layerApp = getDevice().getProperty(LAYER_PACKAGE_PROPERTY);
         if (layerApp != null && !layerApp.isEmpty()) {
@@ -127,6 +134,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             getDevice().executeShellV2Command("settings put global gpu_debug_layers " + LAYER_NAME);
         }
         installPackage(APK);
+        getDevice().setProperty(DEBUG_PROPERTY, "1");
     }
 
     /**
@@ -135,7 +143,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testProfilingDataProducersAvailable() throws Exception {
-        getDevice().setProperty(DEBUG_PROPERTY, "1");
         String profilingSupport = getDevice().getProperty(PROFILING_PROPERTY);
         if (profilingSupport == null || !profilingSupport.equals("true")) {
             return;
