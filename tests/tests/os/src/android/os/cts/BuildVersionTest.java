@@ -16,6 +16,8 @@
 
 package android.os.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.in;
@@ -48,7 +50,7 @@ import java.util.Set;
 public class BuildVersionTest {
 
     private static final String LOG_TAG = "BuildVersionTest";
-    private static final int EXPECTED_SDK = 34;
+    private static final List<Integer> EXPECTED_SDKS = List.of(34);
     private static final String EXPECTED_BUILD_VARIANT = "user";
     private static final String EXPECTED_KEYS = "release-keys";
     private static final String PLATFORM_RELEASES_FILE = "platform_releases.txt";
@@ -66,8 +68,8 @@ public class BuildVersionTest {
             assertEquals("BUILD.VERSION.RELEASE_OR_CODENAME", Build.VERSION.CODENAME,
                     Build.VERSION.RELEASE_OR_CODENAME);
         }
-        assertEquals("Build.VERSION.SDK", "" + EXPECTED_SDK, Build.VERSION.SDK);
-        assertEquals("Build.VERSION.SDK_INT", EXPECTED_SDK, Build.VERSION.SDK_INT);
+        assertThat(EXPECTED_SDKS).contains(Integer.parseInt(Build.VERSION.SDK));
+        assertThat(EXPECTED_SDKS).contains(Build.VERSION.SDK_INT);
     }
 
     @Test
