@@ -158,7 +158,6 @@ public class ASurfaceControlTestActivity extends Activity {
 
     public void createSurface(SurfaceHolderCallback surfaceHolderCallback) {
         awaitReadyState();
-
         mHandler.post(() -> {
             mSurfaceView.getHolder().addCallback(surfaceHolderCallback);
             mParent.addView(mSurfaceView, mLayoutParams);
@@ -195,10 +194,9 @@ public class ASurfaceControlTestActivity extends Activity {
         int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, window);
 
         int checkedPixels = 0;
-        for (Rect bounds : pixelChecker.getBoundsToCheck(swBitmap, window)) {
+        for (Rect bounds : pixelChecker.getBoundsToCheck(swBitmap)) {
             checkedPixels += bounds.width() * bounds.height();
         }
-
         boolean success = pixelChecker.checkPixels(numMatchingPixels, swBitmap.getWidth(),
                 swBitmap.getHeight());
         if (!success) {
@@ -250,7 +248,7 @@ public class ASurfaceControlTestActivity extends Activity {
         }
 
         @Override
-        public List<Rect> getBoundsToCheck(Bitmap bitmap, Window window) {
+        public List<Rect> getBoundsToCheck(Bitmap bitmap) {
             return mBoundsToCheck;
         }
     }
@@ -275,10 +273,13 @@ public class ASurfaceControlTestActivity extends Activity {
         int getNumMatchingPixels(Bitmap bitmap, Window window) {
             int numMatchingPixels = 0;
             int numErrorsLogged = 0;
-            for (Rect boundsToCheck : getBoundsToCheck(bitmap, window)) {
+            Insets insets = window.getDecorView().getRootWindowInsets().getInsets(systemBars());
+            int offsetX = OFFSET_X + insets.left;
+            int offsetY = OFFSET_Y + insets.top;
+            for (Rect boundsToCheck : getBoundsToCheck(bitmap)) {
                 for (int x = boundsToCheck.left; x < boundsToCheck.right; x++) {
                     for (int y = boundsToCheck.top; y < boundsToCheck.bottom; y++) {
-                        int color = bitmap.getPixel(x + OFFSET_X, y + OFFSET_Y);
+                        int color = bitmap.getPixel(x + offsetX, y + offsetY);
                         if (getExpectedColor(x, y).matchesColor(color)) {
                             numMatchingPixels++;
                         } else if (DEBUG && mLogWhenNoMatch && numErrorsLogged < 100) {
@@ -299,11 +300,8 @@ public class ASurfaceControlTestActivity extends Activity {
         }
 
         public abstract boolean checkPixels(int matchingPixelCount, int width, int height);
-        public List<Rect> getBoundsToCheck(Bitmap bitmap, Window window) {
-            Insets insets = window.getDecorView().getRootWindowInsets().getInsets(systemBars());
-            Rect ret = new Rect(1, 1, DEFAULT_LAYOUT_WIDTH - 1, DEFAULT_LAYOUT_HEIGHT - 1);
-            ret.offset(insets.left, insets.top);
-            return List.of(ret);
+        public List<Rect> getBoundsToCheck(Bitmap bitmap) {
+            return List.of(new Rect(1, 1, DEFAULT_LAYOUT_WIDTH - 1, DEFAULT_LAYOUT_HEIGHT - 1));
         }
 
         public PixelColor getExpectedColor(int x, int y) {
