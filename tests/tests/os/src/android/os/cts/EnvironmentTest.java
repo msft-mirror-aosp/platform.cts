@@ -22,6 +22,7 @@ import android.content.pm.ApplicationInfo;
 import android.os.Environment;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.system.StructStatVfs;
 
@@ -38,6 +39,7 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class EnvironmentTest extends TestCase {
 
     private static final Context sContext =

@@ -630,6 +630,10 @@
                 <action android:name="android.content.cts.REQUIRE_CONTENT_URI_TEST_RECEIVER_ACTION" />
             </intent-filter>
         </receiver>
+
+        <activity
+            android:name="android.content.cts.ActivityRequireContentUriPermissionFromCallerTest$StartActivityForResultTestActivity"
+            android:exported="true"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

@@ -17,6 +17,8 @@
 
 package android.os.cts;
 
+import android.platform.test.annotations.AppModeSdkSandbox;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import com.android.compatibility.common.util.CpuFeatures;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CpuFeaturesTest extends TestCase {
 
     private static void assertHwCap(String name, int hwcaps, int flag) {

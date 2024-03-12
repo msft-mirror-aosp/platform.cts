@@ -49,6 +49,7 @@ import android.os.PowerManager.LowPowerStandbyPolicy;
 import android.os.PowerManager.LowPowerStandbyPortDescription;
 import android.os.PowerManager.WakeLock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.ArraySet;
 
 import androidx.annotation.NonNull;
@@ -82,6 +83,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(BedsteadJUnit4.class)
 public class LowPowerStandbyTest {
     private static final String DEVICE_CONFIG_NAMESPACE = "low_power_standby";

@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.os.WorkSource;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class WorkSourceTest {
     private WorkSource wsNew(int uid) {
         return new WorkSource(uid);

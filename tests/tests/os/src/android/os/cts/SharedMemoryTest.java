@@ -34,6 +34,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SharedMemory;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.ErrnoException;
 import android.system.OsConstants;
 
@@ -56,6 +57,7 @@ import java.util.concurrent.TimeoutException;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SharedMemoryTest {
 
     static {

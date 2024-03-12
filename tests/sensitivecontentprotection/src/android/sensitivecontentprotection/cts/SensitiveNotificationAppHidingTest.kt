@@ -121,6 +121,8 @@ class SensitiveNotificationAppHidingTest {
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
         notificationHelper.disableListener(NLS_PACKAGE_NAME)
+        notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
+
         notificationManager = context.getSystemService(NotificationManager::class.java)!!
         // clear the deck so that our getActiveNotifications results are predictable
         notificationManager.cancelAll()
@@ -128,7 +130,7 @@ class SensitiveNotificationAppHidingTest {
             NotificationChannel(NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT)
         )
 
-        notificationAssistant = notificationHelper.enableAssistant(context.packageName)
+        notificationAssistant = notificationHelper.enableAssistant(NLS_PACKAGE_NAME)
         notificationAssistant.mMarkSensitiveContent = true
 
         setUpNotifListener()
@@ -138,6 +140,7 @@ class SensitiveNotificationAppHidingTest {
     fun teardown() {
         notificationManager.cancelAll()
         notificationHelper.disableListener(NLS_PACKAGE_NAME)
+        notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
     }
 
     @Test

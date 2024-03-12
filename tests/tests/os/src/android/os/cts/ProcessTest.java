@@ -33,6 +33,8 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.Process;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -57,6 +59,7 @@ import org.junit.runner.RunWith;
  *
  * We have more test in cts/tests/process/ too.
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ProcessTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
@@ -269,6 +272,7 @@ public class ProcessTest {
      * Tests {@link Process#isSdkSandbox() (boolean)} API.
      */
     @Test
+    @AppModeNonSdkSandbox
     public void testIsSdkSandbox() {
         assertFalse(Process.isSdkSandbox());
     }

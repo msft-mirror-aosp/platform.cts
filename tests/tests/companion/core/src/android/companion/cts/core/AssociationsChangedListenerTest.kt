@@ -99,7 +99,7 @@ class AssociationsChangedListenerTest : CoreTestBase() {
         }
 
         testApp.disassociate(MAC_ADDRESS_A)
-        // The listener shouldn't get involved after removed the onAssociationsChangedListener.
+        // The listener shouldn't get invoked after removing the onAssociationsChangedListener.
         assertEmpty(listener.invocations)
     }
 

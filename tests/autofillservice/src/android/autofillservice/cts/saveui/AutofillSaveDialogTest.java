@@ -31,8 +31,6 @@ import android.autofillservice.cts.activities.LoginMixedImportantForCredentialMa
 import android.autofillservice.cts.activities.SimpleAfterLoginActivity;
 import android.autofillservice.cts.activities.SimpleBeforeLoginActivity;
 import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.content.Context;
@@ -54,6 +52,8 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE = "ignore_view_state_reset_to_empty";
 
 
     // This does not assert that icon is actually hidden, this has to be done manually.
@@ -273,10 +273,14 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.ignore_view_state_reset_to_empty")
     public void testShowSaveUiAfterLoginViewReset() throws Exception {
         // Set service.
         enableService();
+
+        // Enable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
+
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
@@ -322,10 +326,14 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.ignore_view_state_reset_to_empty")
     public void testDontShowSaveUiIfViewIsResetToEmptyProgressively() throws Exception {
         // Set service.
         enableService();
+
+        // Enable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
+
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
@@ -373,10 +381,14 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     }
 
     @Test
-    @RequiresFlagsDisabled("android.service.autofill.ignore_view_state_reset_to_empty")
     public void testDontShowSaveUiAfterLoginViewResetIfFlagNotSet() throws Exception {
         // Set service.
         enableService();
+
+        // Disable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,

@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -29,6 +30,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ParcelFileDescriptor_AutoCloseInputStreamTest {
     @Test

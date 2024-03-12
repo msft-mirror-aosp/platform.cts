@@ -21,8 +21,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.ResultReceiver;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ResultReceiverTest extends AndroidTestCase {
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private static final long DURATION = 100l;

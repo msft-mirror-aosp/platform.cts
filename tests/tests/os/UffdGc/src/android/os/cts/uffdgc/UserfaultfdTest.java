@@ -18,18 +18,21 @@ package android.os.cts.uffdgc;
 
 import static org.junit.Assert.assertEquals;
 
+import android.os.Build.VERSION_CODES;
+import android.platform.test.annotations.AppModeSdkSandbox;
+
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.FeatureUtil;
+
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.FeatureUtil;
-
-import android.os.Build.VERSION_CODES;
-import androidx.test.runner.AndroidJUnit4;
-
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class UserfaultfdTest {
 
   static {

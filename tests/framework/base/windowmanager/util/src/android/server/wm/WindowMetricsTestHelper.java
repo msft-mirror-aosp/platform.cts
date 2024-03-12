@@ -40,6 +40,7 @@ import android.view.WindowMetrics;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.window.flags.Flags;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -194,6 +195,10 @@ public class WindowMetricsTestHelper {
     }
 
     private static int configExcludedInsetsTypes() {
+        // If the insets is decoupled from configuration, no insets type should be excluded.
+        if (Flags.insetsDecoupledConfiguration()) {
+            return 0;
+        }
         // The device owners can choose to decouple the display cutout from the configuration app
         // bounds to ensure a better experience. Return the legacy value if the decouple config is
         // not set to true.

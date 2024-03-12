@@ -241,15 +241,15 @@ public class BluetoothHidHostTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        // Verify returns IllegalArgumentException when invalid input is given
+        // Verify throws NullPointerException when null BluetoothDevice is used
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> {
                     mHidHost.getPreferredTransport(null);
                 });
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        // Verify returns false if bluetooth is not enabled
+        // Verify returns TRANSPORT_AUTO if bluetooth is not enabled
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         assertEquals(
                 BluetoothDevice.TRANSPORT_AUTO,
                 mHidHost.getPreferredTransport(testDevice));
@@ -286,16 +286,16 @@ public class BluetoothHidHostTest {
         assertFalse(
                 mHidHost.setPreferredTransport(
                         testDevice, BluetoothDevice.TRANSPORT_AUTO));
-        // Verify returns IllegalArgumentException when invalid input is given
+
+        // Verify throws NullPointerException when null BluetoothDevice is used
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> {
                     mHidHost.setPreferredTransport(null, BluetoothDevice.TRANSPORT_AUTO);
                 });
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-
         // Verify returns false if bluetooth is not enabled
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         assertFalse(
                 mHidHost.setPreferredTransport(
                         testDevice, BluetoothDevice.TRANSPORT_AUTO));

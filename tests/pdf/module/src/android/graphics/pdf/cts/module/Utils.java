@@ -16,18 +16,22 @@
 
 package android.graphics.pdf.cts.module;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.pdf.LoadParams;
 import android.graphics.pdf.PdfRenderer;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
 import android.graphics.pdf.models.PageMatchBounds;
+import android.graphics.pdf.models.selection.SelectionBoundary;
 import android.os.ParcelFileDescriptor;
 import android.util.ArrayMap;
 import android.util.Log;
@@ -551,5 +555,11 @@ class Utils {
         }
 
         return probes;
+    }
+
+    static void assertSelectionBoundary(SelectionBoundary selectionBoundary, int expectedIndex,
+            Point expectedPoint) {
+        assertThat(selectionBoundary.getIndex()).isEqualTo(expectedIndex);
+        assertThat(selectionBoundary.getPoint()).isEqualTo(expectedPoint);
     }
 }

@@ -227,6 +227,11 @@ JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getChannel
     return ((OboePlayer*)(native_player))->getChannelCount();
 }
 
+JNIEXPORT jboolean JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_isMMapN(
+            JNIEnv *env, jobject thiz, jlong native_player) {
+    return ((OboePlayer*)(native_player))->isMMap();
+}
+
 JNIEXPORT jboolean JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getTimestampN(
             JNIEnv *env, jobject thiz, jlong native_player, jobject timestamp) {
     return ((OboePlayer*)native_player)->getJavaTimestamp(timestamp);

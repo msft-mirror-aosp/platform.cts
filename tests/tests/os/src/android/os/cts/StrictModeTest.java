@@ -46,6 +46,7 @@ import android.net.TrafficStats;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy.Builder;
@@ -66,6 +67,7 @@ import android.os.strictmode.UntaggedSocketViolation;
 import android.os.strictmode.Violation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.system.Os;
 import android.system.OsConstants;
@@ -116,6 +118,7 @@ import java.util.zip.GZIPOutputStream;
 
 /** Tests for {@link StrictMode} */
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StrictModeTest {
     private static final String TAG = "StrictModeTest";
     private static final String REMOTE_SERVICE_ACTION = "android.app.REMOTESERVICE";
@@ -868,9 +871,9 @@ public class StrictModeTest {
     @Presubmit
     @ApiTest(apis = {
             "android.content.Context#createWindowContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -902,10 +905,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.app.Activity",
-            "android.content.Context#getSystemSrvice",
+            "android.app.Activity#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -942,9 +945,9 @@ public class StrictModeTest {
             "android.content.Context#createWindowContext",
             "android.content.Context#createConfigurationContext",
             "android.content.Context#createAttributionContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1000,9 +1003,9 @@ public class StrictModeTest {
     @ApiTest(apis = {
             "android.content.Context#createWindowContext",
             "android.content.Context#createDisplayContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1043,9 +1046,9 @@ public class StrictModeTest {
     @Presubmit
     @ApiTest(apis = {
             "android.content.Context#createConfigurationContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1088,9 +1091,9 @@ public class StrictModeTest {
     @ApiTest(apis = {
             "android.content.Context#createConfigurationContext",
             "android.content.Context#createDisplayContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1133,10 +1136,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.app.Service",
-            "android.content.Context#getSystemSrvice",
+            "android.app.Service#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1181,10 +1184,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.window.WindowProviderService",
-            "android.content.Context#getSystemSrvice",
+            "android.window.WindowProviderService#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
             "android.view.WindowManager#addView",
     })
@@ -1248,6 +1251,10 @@ public class StrictModeTest {
      * instant mode.
      */
     private boolean isWallpaperSupported() {
+        if (Process.isSdkSandbox()) {
+            // SDK Sandbox does not have access to WallpaperManager.
+            return false;
+        }
         final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getContext());
         return wallpaperManager != null && wallpaperManager.isWallpaperSupported();
     }

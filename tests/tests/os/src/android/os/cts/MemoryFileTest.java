@@ -22,7 +22,9 @@ import java.io.OutputStream;
 
 import junit.framework.TestCase;
 import android.os.MemoryFile;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class MemoryFileTest extends TestCase {
     MemoryFile mMemoryFile;
 

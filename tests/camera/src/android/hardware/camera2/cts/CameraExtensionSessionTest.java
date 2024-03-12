@@ -16,6 +16,7 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.helpers.AssertHelpers.assertArrayContains;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -32,12 +33,14 @@ import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
+import com.android.internal.camera.flags.Flags;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
 import com.android.ex.camera2.pos.AutoFocusStateMachine;
 
+import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -57,6 +60,8 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.helpers.CameraErrorCollector;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestRule;
+import android.hardware.camera2.params.ColorSpaceProfiles;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.ExtensionSessionConfiguration;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.OutputConfiguration;
@@ -747,6 +752,272 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         extensionImageReader.close();
                         mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_EXTENSION_10_BIT,
+        Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET})
+    public void test10bitRepeatingAndCaptureCombined() throws Exception {
+        final int IMAGE_COUNT = 5;
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+            updatePreviewSurfaceTexture();
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
+            for (Integer extension : supportedExtensions) {
+                boolean captureProgressSupported = extensionChars.isCaptureProcessProgressAvailable(
+                        extension);
+                int captureFormat = ImageFormat.YCBCR_P010;
+                List<Size> extensionSizes = extensionChars.getExtensionSupportedSizes(extension,
+                        captureFormat);
+                if (extensionSizes.isEmpty()) {
+                    continue;
+                }
+
+                int[] capabilities = extensionChars.get(extension,
+                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                assertNotNull(capabilities);
+                assertArrayContains("Supports YCBCR_P010 format but "
+                        + "REQUEST_AVAILABLE_CAPABILITIES does not contain "
+                        + "REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT", capabilities,
+                        CameraCharacteristics
+                        .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
+
+                Size maxSize = CameraTestUtils.getMaxSize(extensionSizes.toArray(new Size[0]));
+                SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
+                        1);
+                ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
+                        captureFormat, /*maxImages*/ 1, imageListener,
+                        mTestRule.getHandler());
+                Surface imageReaderSurface = extensionImageReader.getSurface();
+                OutputConfiguration readerOutput = new OutputConfiguration(imageReaderSurface);
+
+                DynamicRangeProfiles dynamicRangeProfiles = extensionChars
+                        .get(extension,
+                        CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES);
+                assertNotNull(dynamicRangeProfiles);
+                assertTrue(dynamicRangeProfiles.getSupportedProfiles()
+                        .contains(DynamicRangeProfiles.HLG10));
+
+                // HLG10 is supported for all 10-bit capable devices
+                readerOutput.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+
+                List<OutputConfiguration> outputConfigs = new ArrayList<>();
+                outputConfigs.add(readerOutput);
+
+                // Pick a supported preview/repeating size with aspect ratio close to the
+                // multi-frame capture size
+                List<Size> repeatingSizes = extensionChars.getExtensionSupportedSizes(extension,
+                        mSurfaceTexture.getClass());
+                Size maxRepeatingSize =
+                        CameraTestUtils.getMaxSize(repeatingSizes.toArray(new Size[0]));
+                List<Size> previewSizes = getSupportedPreviewSizes(id,
+                        mTestRule.getCameraManager(),
+                        getPreviewSizeBound(mTestRule.getWindowManager(), PREVIEW_SIZE_BOUND));
+                List<Size> supportedPreviewSizes =
+                        previewSizes.stream().filter(repeatingSizes::contains).collect(
+                                Collectors.toList());
+                if (!supportedPreviewSizes.isEmpty()) {
+                    float targetAr =
+                            ((float) maxSize.getWidth()) / maxSize.getHeight();
+                    for (Size s : supportedPreviewSizes) {
+                        float currentAr = ((float) s.getWidth()) / s.getHeight();
+                        if (Math.abs(targetAr - currentAr) < 0.01) {
+                            maxRepeatingSize = s;
+                            break;
+                        }
+                    }
+                }
+
+                mSurfaceTexture.setDefaultBufferSize(maxRepeatingSize.getWidth(),
+                        maxRepeatingSize.getHeight());
+                Surface texturedSurface = new Surface(mSurfaceTexture);
+                OutputConfiguration previewOutput = new OutputConfiguration(texturedSurface);
+                previewOutput.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+                outputConfigs.add(previewOutput);
+
+                BlockingExtensionSessionCallback sessionListener =
+                        new BlockingExtensionSessionCallback(mock(
+                                CameraExtensionSession.StateCallback.class));
+                ExtensionSessionConfiguration configuration =
+                        new ExtensionSessionConfiguration(extension, outputConfigs,
+                                new HandlerExecutor(mTestRule.getHandler()),
+                                sessionListener);
+
+                ColorSpaceProfiles colorSpaceProfiles = extensionChars
+                        .get(extension,
+                        CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+                if (colorSpaceProfiles != null) {
+                    Set<ColorSpace.Named> compatibleColorSpaces =
+                            colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(
+                            captureFormat, DynamicRangeProfiles.HLG10);
+                    if (!compatibleColorSpaces.isEmpty()) {
+                        configuration.setColorSpace(compatibleColorSpaces.iterator().next());
+                    }
+                }
+
+                String streamName = "test_extension_10_bit_repeating_and_capture";
+                mReportLog = new DeviceReportLog(REPORT_LOG_NAME, streamName);
+                mReportLog.addValue("camera_id", id, ResultType.NEUTRAL, ResultUnit.NONE);
+                mReportLog.addValue("extension_id", extension, ResultType.NEUTRAL,
+                        ResultUnit.NONE);
+                double[] captureTimes = new double[IMAGE_COUNT];
+                boolean captureResultsSupported =
+                        !extensionChars.getAvailableCaptureResultKeys(extension).isEmpty();
+
+                try {
+                    mTestRule.openDevice(id);
+                    CameraDevice camera = mTestRule.getCamera();
+                    camera.createExtensionSession(configuration);
+                    CameraExtensionSession extensionSession =
+                            sessionListener.waitAndGetSession(
+                                    SESSION_CONFIGURE_TIMEOUT_MS);
+                    assertNotNull(extensionSession);
+
+                    CaptureRequest.Builder captureBuilder =
+                            mTestRule.getCamera().createCaptureRequest(
+                                    android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW);
+                    captureBuilder.addTarget(texturedSurface);
+                    CameraExtensionSession.ExtensionCaptureCallback repeatingCallbackMock =
+                            mock(CameraExtensionSession.ExtensionCaptureCallback.class);
+                    SimpleCaptureCallback repeatingCaptureCallback =
+                            new SimpleCaptureCallback(extension, repeatingCallbackMock,
+                                    extensionChars.getAvailableCaptureResultKeys(extension),
+                                    mCollector);
+
+                    CaptureRequest repeatingRequest = captureBuilder.build();
+                    int repeatingSequenceId =
+                            extensionSession.setRepeatingRequest(repeatingRequest,
+                                    new HandlerExecutor(mTestRule.getHandler()),
+                                    repeatingCaptureCallback);
+
+                    Thread.sleep(REPEATING_REQUEST_TIMEOUT_MS);
+
+                    verify(repeatingCallbackMock, atLeastOnce())
+                            .onCaptureStarted(eq(extensionSession), eq(repeatingRequest),
+                                    anyLong());
+                    verify(repeatingCallbackMock, atLeastOnce())
+                            .onCaptureProcessStarted(extensionSession, repeatingRequest);
+                    if (captureResultsSupported) {
+                        verify(repeatingCallbackMock,
+                                timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).atLeastOnce())
+                                .onCaptureResultAvailable(eq(extensionSession),
+                                        eq(repeatingRequest), any(TotalCaptureResult.class));
+                    }
+                    verify(repeatingCallbackMock, times(0)).onCaptureProcessProgressed(
+                            any(CameraExtensionSession.class), any(CaptureRequest.class), anyInt());
+
+                    captureBuilder = mTestRule.getCamera().createCaptureRequest(
+                            CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    captureBuilder.addTarget(imageReaderSurface);
+                    CameraExtensionSession.ExtensionCaptureCallback captureMockCallback =
+                            mock(CameraExtensionSession.ExtensionCaptureCallback.class);
+                    SimpleCaptureCallback captureCallback =
+                            new SimpleCaptureCallback(extension, captureMockCallback,
+                                    extensionChars.getAvailableCaptureResultKeys(extension),
+                                    mCollector);
+
+                    for (int i = 0; i < IMAGE_COUNT; i++) {
+                        CaptureRequest request = captureBuilder.build();
+                        long startTimeMs = SystemClock.elapsedRealtime();
+                        captureCallback.resetCaptureProgress();
+                        int sequenceId = extensionSession.capture(request,
+                                new HandlerExecutor(mTestRule.getHandler()), captureCallback);
+
+                        Image img =
+                                imageListener.getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
+                        captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
+
+                        validateImage(img, maxSize.getWidth(),
+                                maxSize.getHeight(), captureFormat, null);
+
+                        long imgTs = img.getTimestamp();
+                        img.close();
+
+                        verify(captureMockCallback,
+                                timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                .onCaptureStarted(eq(extensionSession), eq(request), eq(imgTs));
+                        verify(captureMockCallback, times(1))
+                                .onCaptureStarted(eq(extensionSession), eq(request), anyLong());
+                        verify(captureMockCallback,
+                                timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                .onCaptureProcessStarted(extensionSession, request);
+                        verify(captureMockCallback,
+                                timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                .onCaptureSequenceCompleted(extensionSession, sequenceId);
+                        if (captureResultsSupported) {
+                            verify(captureMockCallback,
+                                    timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                    .onCaptureResultAvailable(eq(extensionSession), eq(request),
+                                    any(TotalCaptureResult.class));
+                        }
+                        if (captureProgressSupported) {
+                            verify(captureMockCallback,
+                                    timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                    .onCaptureProcessProgressed(eq(extensionSession),
+                                    eq(request), eq(100));
+                        }
+                    }
+
+                    mReportLog.addValue("width", maxSize.getWidth(), ResultType.NEUTRAL,
+                            ResultUnit.NONE);
+                    mReportLog.addValue("height", maxSize.getHeight(),
+                            ResultType.NEUTRAL, ResultUnit.NONE);
+                    mReportLog.addValue("format", captureFormat, ResultType.NEUTRAL,
+                            ResultUnit.NONE);
+                    long avgCaptureLatency = (long) Stat.getAverage(captureTimes);
+                    mReportLog.addValue("avg_latency", avgCaptureLatency,
+                            ResultType.LOWER_BETTER, ResultUnit.MS);
+
+                    verify(captureMockCallback, times(0))
+                            .onCaptureSequenceAborted(any(CameraExtensionSession.class),
+                                    anyInt());
+                    verify(captureMockCallback, times(0))
+                            .onCaptureFailed(any(CameraExtensionSession.class),
+                                    any(CaptureRequest.class));
+                    verify(captureMockCallback, times(0))
+                            .onCaptureFailed(any(CameraExtensionSession.class),
+                                    any(CaptureRequest.class), anyInt());
+                    Range<Long> latencyRange =
+                            extensionChars.getEstimatedCaptureLatencyRangeMillis(extension,
+                                    maxSize, captureFormat);
+                    if (latencyRange != null) {
+                        String msg = String.format("Camera [%s]: The measured average "
+                                        + "capture latency of %d ms. for extension type %d  "
+                                        + "with image format: %d and size: %dx%d must be "
+                                        + "within the advertised range of [%d, %d] ms.",
+                                id, avgCaptureLatency, extension, captureFormat,
+                                maxSize.getWidth(), maxSize.getHeight(),
+                                latencyRange.getLower(), latencyRange.getUpper());
+                        assertTrue(msg, latencyRange.contains(avgCaptureLatency));
+                    }
+
+                    extensionSession.stopRepeating();
+
+                    verify(repeatingCallbackMock,
+                            timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                            .onCaptureSequenceCompleted(extensionSession, repeatingSequenceId);
+                    verify(repeatingCallbackMock, times(0))
+                            .onCaptureSequenceAborted(any(CameraExtensionSession.class),
+                            anyInt());
+
+                    extensionSession.close();
+
+                    sessionListener.getStateWaiter().waitForState(
+                            BlockingExtensionSessionCallback.SESSION_CLOSED,
+                            SESSION_CLOSE_TIMEOUT_MS);
+                } finally {
+                    mTestRule.closeDevice(id);
+                    extensionImageReader.close();
+                    mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                 }
             }
         }

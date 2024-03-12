@@ -2094,7 +2094,7 @@ public class ASurfaceControlTest {
         } catch (InterruptedException e) {
             Assert.fail("interrupted");
         }
-        if (!verifySetFrameTimeline(true, mActivity.getSurfaceView().getHolder())) return;
+        if (!verifySetFrameTimeline(false, mActivity.getSurfaceView().getHolder())) return;
         mActivity.verifyScreenshot(
                 new PixelChecker(Color.RED) { //10000
                     @Override

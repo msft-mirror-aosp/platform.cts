@@ -16,6 +16,7 @@
 
 package android.server.biometrics;
 
+import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
 import static com.android.systemui.Flags.constraintBp;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -71,7 +72,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_maxItemNumber() {
         final String contentViewDescription = "Content view description";
@@ -93,7 +94,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_maxEachItemCharacterNumber() {
         final String contentViewDescription = "Content view description";
@@ -146,7 +147,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#addListItem",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setDescription"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void testSimpleBiometricAuth_nonConvenience_setContentView() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -259,7 +260,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt#authenticate",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void testSimpleBiometricAuth_nonConvenience_setContentView_itemTooLongFor2Column()
             throws Exception {
@@ -371,7 +372,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt#authenticate",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void testSimpleBiometricAuth_nonConvenience_setContentView_scrollability()
             throws Exception {
@@ -470,7 +471,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt#authenticate",
             "android.hardware.biometrics."
                     + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void testSimpleCredentialAuth_withContentView_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
