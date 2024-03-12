@@ -146,6 +146,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -2225,6 +2226,96 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             assertThat(eventCount.get()).isEqualTo(0);
         } finally {
             touchExplorationService.disableSelfAndRemove();
+        }
+    }
+
+    @AsbSecurityTest(cveBugId = 326485767)
+    @Test
+    public void testUpdateServiceWithoutIntent_disablesService() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
+        final String v1ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV1.apk";
+        final String v2ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV2.apk";
+        final String v3ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV3.apk";
+        final String packageName = "foo.bar.updateservice";
+        final ComponentName service = ComponentName.createRelative(packageName, ".StubService");
+
+        // Match AccessibilityManagerService#COMPONENT_NAME_SEPARATOR
+        final String componentNameSeparator = ":";
+        final String originalEnabledServicesSetting = getEnabledServicesSetting();
+        try {
+            // Install the apk in this test method, instead of as part of the target preparer, to
+            // allow repeated --iterations of the test.
+            assertThat(ShellUtils.runShellCommand("pm install " + v1ApkPath)).startsWith("Success");
+            // Wait for the service to register as installed.
+            TestUtils.waitUntil(
+                    "Failed to install service:" + v1ApkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Enable the service and wait until AccessibilityManager reports it is
+            // enabled.
+            final String servicesToEnable = service.flattenToShortString();
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
+                    .run();
+            // Wait for the service to be enabled.
+            TestUtils.waitUntil(
+                    "Failed to enable service:" + servicesToEnable,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            getEnabledServices().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Update to a new version that doesn't have the intent declared.
+            assertThat(ShellUtils.runShellCommand("pm install " + v2ApkPath)).startsWith("Success");
+
+            // Wait for the install to finish and the service to be disabled.
+            TestUtils.waitUntil(
+                    "The service is still in the enabled services list.",
+                    TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            Arrays.asList(getEnabledServicesSetting().split(componentNameSeparator))
+                                            .stream()
+                                            .filter(comp -> comp.startsWith(packageName))
+                                            .count()
+                                    == 0);
+
+            // Update to version 3 that does have the intent declared.
+            // The service should not re-enable.
+            assertThat(ShellUtils.runShellCommand("pm install " + v3ApkPath)).startsWith("Success");
+
+            // confirm the service is still not enabled.
+            assertThrows(
+                    "The service is still in the enabled services list.",
+                    AssertionError.class,
+                    () ->
+                            TestUtils.waitUntil(
+                                    "The service is still in the enabled services list.",
+                                    TIMEOUT_SERVICE_ENABLE / 1000,
+                                    () ->
+                                            Arrays.asList(getEnabledServicesSetting()
+                                            .split(componentNameSeparator))
+                                                            .stream().filter(comp ->
+                                                            comp.startsWith(packageName))
+                                                            .count() == 1));
+
+        } finally {
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                            originalEnabledServicesSetting)
+                    .run();
+            ShellUtils.runShellCommand("pm uninstall " + packageName);
         }
     }
 
