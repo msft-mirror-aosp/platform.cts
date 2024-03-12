@@ -16,6 +16,8 @@
 
 package android.server.biometrics;
 
+import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -67,7 +69,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoRes_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -88,7 +90,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoRes_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -108,7 +110,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoBitmap_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -129,7 +131,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoBitmap_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -151,7 +153,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoRes",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoResAndBitmap_throwsException() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
