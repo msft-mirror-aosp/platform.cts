@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
@@ -40,6 +41,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuildTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 

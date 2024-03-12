@@ -28,12 +28,14 @@ import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BinderIntegrationTest extends ActivityTestsBase {
     // states of mStartState
     private static final int STATE_START_1 = 0;

@@ -37,20 +37,22 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public final class CarRotaryImeTest extends AbstractCarTestCase {
+// Note: this test must not extend AbstractCarTestCase. See b/328536639.
+public final class CarRotaryImeTest {
     private static final long POLLING_CHECK_TIMEOUT_MILLIS = 3000L;
 
     private static final ComponentName ROTARY_SERVICE_COMPONENT_NAME =
             ComponentName.unflattenFromString("com.android.car.rotary/.RotaryService");
+
+    private static final UiAutomation sUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(
+            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final AccessibilityManager mAccessibilityManager =
             mContext.getSystemService(AccessibilityManager.class);
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
-    private final UiAutomation mUiAutomation =
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(
-                    UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
     @Before
     public void setUp() {
@@ -102,11 +104,7 @@ public final class CarRotaryImeTest extends AbstractCarTestCase {
         assumeTrue("Rotary input method not specified, skipping test",
                 !rotaryInputMethod.isEmpty());
 
-        // Inject a KeyEvent (nudge_up) to ensure it is in rotary mode.
-        mUiAutomation.executeShellCommand("cmd car_service inject-key 280");
-        PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
-                () -> getStringValueFromDumpsys("inRotaryMode").equals("true"),
-                "It should be in rotary mode after injecting KeyEvent");
+        ensureInRotaryMode();
 
         String currentInput = mInputMethodManager.getCurrentInputMethodInfo().getComponent()
                 .flattenToShortString();
@@ -127,13 +125,7 @@ public final class CarRotaryImeTest extends AbstractCarTestCase {
         assumeTrue("Rotary input method not specified, skipping test",
                 !rotaryInputMethod.isEmpty());
 
-        String inRotaryMode = getStringValueFromDumpsys("inRotaryMode");
-        // UiAutomation will kill other AccessibilityServices, including RotaryService. When
-        // RotaryService is automatically recreated, it will be in touch mode by default.
-        // However, this behavior might change in the future. So skip the test in case this behavior
-        // changes.
-        assumeTrue("It should not be in rotary mode in the beginning",
-                inRotaryMode.equals("false"));
+        ensureInTouchMode();
 
         String currentInput = mInputMethodManager.getCurrentInputMethodInfo().getComponent()
                 .flattenToShortString();
@@ -156,9 +148,9 @@ public final class CarRotaryImeTest extends AbstractCarTestCase {
     }
 
     // TODO(b/327507413): switch to proto-based dumpsys.
-    private String getStringValueFromDumpsys(String key) {
+    private static String getStringValueFromDumpsys(String key) {
         try {
-            String dumpsysOutput = SystemUtil.runShellCommand(mUiAutomation,
+            String dumpsysOutput = SystemUtil.runShellCommand(sUiAutomation,
                     "dumpsys activity service "
                             + ROTARY_SERVICE_COMPONENT_NAME.flattenToShortString());
             // dumpsys output contains string like:
@@ -177,6 +169,22 @@ public final class CarRotaryImeTest extends AbstractCarTestCase {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void ensureInRotaryMode() {
+        // Inject a KeyEvent (nudge_up) to ensure it is in rotary mode.
+        sUiAutomation.executeShellCommand("cmd car_service inject-key 280");
+        PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
+                () -> getStringValueFromDumpsys("inRotaryMode").equals("true"),
+                "It should be in rotary mode after injecting KeyEvent");
+    }
+
+    private static void ensureInTouchMode() {
+        // Inject a touch event to ensure it is in touch mode.
+        sUiAutomation.executeShellCommand("input tap 0 0");
+        PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
+                () -> getStringValueFromDumpsys("inRotaryMode").equals("false"),
+                "It should be in touch mode after injecting touch event");
     }
 
     private void assumeHasRotaryService() {

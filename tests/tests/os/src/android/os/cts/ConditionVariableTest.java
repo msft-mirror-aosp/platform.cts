@@ -18,9 +18,11 @@ package android.os.cts;
 import junit.framework.TestCase;
 
 import android.os.ConditionVariable;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.TestThread;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ConditionVariableTest extends TestCase {
     private static final int WAIT_TIME = 3000;
     private static final int BLOCK_TIME = 1000;

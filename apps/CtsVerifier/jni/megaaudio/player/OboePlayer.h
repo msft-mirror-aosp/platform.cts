@@ -42,9 +42,6 @@ public:
 
     int getLastErrorCallbackResult();
 
-    void setMMap(bool isMMap);
-    bool isMMap();
-
     static oboe::ChannelMask javaChannelMaskToOboeChannelMask(int32_t javaMask);
     static int32_t javaChannelMaskToChannelCount(int32_t javaMask);
 
