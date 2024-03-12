@@ -16,9 +16,9 @@
 
 package android.server.wm.jetpack;
 
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_1;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionVersion;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionLatest;
+
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.Presubmit;
@@ -41,10 +41,11 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class WindowExtensionsImplTest {
 
+    /** Verifies that the extensions API level is aligned or higher than the current level. */
     @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getVendorApiLevel"})
     @Test
     public void testVerifiesExtensionVendorApiLevel() {
         assumeExtensionSupportedDevice();
-        assertTrue(getExtensionVersion().compareTo(EXTENSION_VERSION_1) >= 0);
+        assertTrue(isExtensionVersionLatest());
     }
 }
