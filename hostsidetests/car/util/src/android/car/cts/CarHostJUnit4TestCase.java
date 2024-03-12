@@ -304,6 +304,31 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
     }
 
     /**
+     * Waits until the user switch to {@code userId} completes.
+     *
+     * <p>There is asynchronous part of a user switch after the core user switch. This method
+     * ensures a user switch to {@code userId} completes by {@code CarService}.
+     */
+    protected void waitForUserSwitchCompleted(int userId) throws Exception {
+        CommonTestUtils.waitUntil("timed out (" + DEFAULT_TIMEOUT_SEC
+                + "s) waiting for the last active userId to be " + userId
+                + ", but it is " + getLastActiveUserId(),
+                DEFAULT_TIMEOUT_SEC,
+                () -> getLastActiveUserId() == userId);
+    }
+
+    /**
+     * Gets the global settings value of android.car.LAST_ACTIVE_USER_ID, which is set by
+     * {@code CarUserService} when a user switch completes.
+     *
+     * @return userId of the current active user.
+     */
+    protected int getLastActiveUserId() throws Exception {
+        return executeAndParseCommand(output -> Integer.parseInt(output.trim()),
+                "cmd settings get global android.car.LAST_ACTIVE_USER_ID");
+    }
+
+    /**
      * Creates a full user with car service shell command.
      */
     protected int createFullUser(String name) throws Exception {
