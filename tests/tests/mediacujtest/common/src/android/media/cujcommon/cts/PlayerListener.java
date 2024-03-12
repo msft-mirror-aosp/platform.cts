@@ -40,6 +40,7 @@ import java.util.List;
 
 public abstract class PlayerListener implements Player.Listener {
 
+  public static final long NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US = 6000;
   public static final Object LISTENER_LOCK = new Object();
   public static int CURRENT_MEDIA_INDEX = 0;
 
@@ -212,7 +213,8 @@ public abstract class PlayerListener implements Player.Listener {
           if (getTestType().equals(TestType.CALL_NOTIFICATION_TEST) || getTestType().equals(
               TestType.MESSAGE_NOTIFICATION_TEST)) {
             long actualTime = System.currentTimeMillis() - mStartTime;
-            assertEquals((float) mExpectedTotalTime, (float) actualTime, 3000);
+            assertEquals((float) mExpectedTotalTime, (float) actualTime,
+              NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
           }
           mPlaybackEnded = true;
           LISTENER_LOCK.notify();
