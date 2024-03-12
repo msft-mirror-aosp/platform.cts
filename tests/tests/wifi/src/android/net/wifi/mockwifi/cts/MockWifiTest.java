@@ -363,7 +363,8 @@ public class MockWifiTest {
         // Add extra 4 seconds as the scan result timestamp to simulate the real behavior
         // like scan result will return after scan triggered 4 ~ 6 seconds.
         // It also avoid the timing issue cause scan result is filtered with old scan time.
-        scanResult.tsf = (SystemClock.elapsedRealtime() + 4) * 1000;
+        // Note: The unit of the tsf is micro second.
+        scanResult.tsf = (SystemClock.elapsedRealtime() + 4 * 1000) * 1000;
         scanResult.capability = testCapability;
         scanResult.radioChainInfos = new ArrayList<>(Arrays.asList(
                 new RadioChainInfo(radioChainIds[0], radioChainLevels[0]),
