@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Representation of a constructor in the API with parameters (arguments). */
-class ApiConstructor implements Comparable<ApiConstructor> {
+public class ApiConstructor implements Comparable<ApiConstructor> {
 
     private final String mName;
 
@@ -36,7 +35,7 @@ class ApiConstructor implements Comparable<ApiConstructor> {
     // A list of test APKs (aka CTS modules) that use this method.
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
-    ApiConstructor(String name, List<String> parameterTypes, boolean deprecated) {
+    public ApiConstructor(String name, List<String> parameterTypes, boolean deprecated) {
         mName = name;
         mParameterTypes = new ArrayList<String>(parameterTypes);
         mDeprecated = deprecated;
