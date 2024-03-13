@@ -108,4 +108,5 @@
     -->
     <style name="OptOutEdgeToEdge" parent="@android:style/Theme.DeviceDefault" />
     <style name="OptOutEdgeToEdge.NoActionBar" parent="@android:style/Theme.Material.NoActionBar" />
+    <style name="OptOutEdgeToEdge.NoStartingWindow" parent="no_starting_window" />
  </resources>
