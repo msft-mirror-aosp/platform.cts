@@ -98,6 +98,7 @@ public class OnDeviceIntelligenceManagerTest {
     private static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
     private static final String KEY_SERVICE_ENABLED = "service_enabled";
 
+    public static final int REQUEST_TYPE_GET_PACKAGE_NAME = 1000;
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
 
     private Context mContext;
@@ -458,6 +459,7 @@ public class OnDeviceIntelligenceManagerTest {
 //===================== Tests for Processing and Cancellation signals  ==========================
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void cancellationPropagatedWhenInvokedDuringRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -497,6 +499,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void cancellationPropagatedWhenInvokedBeforeMakingRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -534,6 +537,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void signalPropagatedWhenSignalIsInvokedBeforeAndDuringRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -571,6 +575,7 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @SkipSetupAndTeardown
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -589,6 +594,7 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @SkipSetupAndTeardown
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -621,6 +627,35 @@ public class OnDeviceIntelligenceManagerTest {
                                 Log.e(TAG, "Final Result : ", error);
                             }
                         }));
+    }
+
+// ========= Test package manager returns parent process package name for isolated_compute_app ====
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void inferenceServiceShouldReturnParentPackageName() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        CompletableFuture<String> packageNameFuture = new CompletableFuture<>();
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_PACKAGE_NAME, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        packageNameFuture.complete(result.getPairValue());
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(packageNameFuture.get()).isEqualTo(CTS_PACKAGE_NAME);
     }
 
     //===================== Tests for accessing file from isolated process via non-isolated =======
@@ -656,7 +691,7 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
         assertThat(fileContents.get()).isEqualTo(TEST_CONTENT);
     }
-    
+
     private void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }

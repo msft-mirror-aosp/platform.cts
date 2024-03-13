@@ -24,9 +24,11 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.os.Process;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
@@ -99,7 +101,14 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
-        callback.onResult(Bundle.EMPTY);
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_PACKAGE_NAME) {
+            PackageManager mPm = getPackageManager();
+            Bundle bundle = new Bundle();
+            bundle.putString(TEST_KEY, mPm.getNameForUid(Process.myUid()));
+            callback.onResult(bundle);
+            return;
+        }
+
         if (cancellationSignal != null) {
             try {
                 Thread.sleep(100);
