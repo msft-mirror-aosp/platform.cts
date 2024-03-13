@@ -16,8 +16,10 @@
 
 package com.android.cts.apicoverage;
 
-import com.android.cts.apicoverage.TestSuiteProto.*;
-import com.android.cts.apicoverage.CtsReportProto.*;
+import com.android.cts.apicoverage.CtsReportProto.CtsReport;
+import com.android.cts.apicoverage.TestSuiteProto.TestSuite;
+import com.android.cts.apicoverage.TestSuiteProto.TestSuiteContent;
+import com.android.cts.apicommon.ApiCoverage;
 
 import org.xml.sax.SAXException;
 

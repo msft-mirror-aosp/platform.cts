@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -31,6 +31,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 
 import androidx.annotation.NonNull;
 

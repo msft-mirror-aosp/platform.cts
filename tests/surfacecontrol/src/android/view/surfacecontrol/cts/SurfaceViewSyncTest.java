@@ -34,9 +34,9 @@ import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.view.cts.surfacevalidator.AnimationFactory;
 import android.view.cts.surfacevalidator.AnimationTestCase;
-import android.view.cts.surfacevalidator.CapturedActivityWithResource;
 import android.view.cts.surfacevalidator.PixelChecker;
 import android.view.cts.surfacevalidator.ViewFactory;
+import android.view.cts.util.CapturedActivityWithResource;
 import android.widget.FrameLayout;
 
 import androidx.test.filters.LargeTest;

@@ -28,8 +28,8 @@ import android.view.Gravity;
 import android.view.SurfaceControlViewHost;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.cts.surfacevalidator.IAttachEmbeddedWindow;
-import android.view.cts.surfacevalidator.SurfaceControlViewHostHelper;
+import android.view.cts.util.SurfaceControlViewHostHelper;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util.aidl;
 
 import android.os.IBinder;
 import android.view.SurfaceControlViewHost.SurfacePackage;
 import android.view.WindowManager.LayoutParams;
 import android.view.SurfaceControl;
-import android.view.cts.surfacevalidator.IMotionEventReceiver;
+import android.view.cts.util.aidl.IMotionEventReceiver;
 import android.window.InputTransferToken;
 
 interface IAttachEmbeddedWindow {

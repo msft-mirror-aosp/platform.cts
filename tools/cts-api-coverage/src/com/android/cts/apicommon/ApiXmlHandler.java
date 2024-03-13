@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * {@link DefaultHandler} that builds an empty {@link ApiCoverage} object from scanning current.xml.
  */
-class CurrentXmlHandler extends DefaultHandler {
+public class ApiXmlHandler extends DefaultHandler {
 
     private String mCurrentPackageName;
 
@@ -69,8 +69,8 @@ class CurrentXmlHandler extends DefaultHandler {
             ApiPackage apiPackage = new ApiPackage(mCurrentPackageName);
             mApiCoverage.addPackage(apiPackage);
 
-        } else if ("class".equalsIgnoreCase(localName) ||
-                "interface".equalsIgnoreCase(localName)) {
+        } else if ("class".equalsIgnoreCase(localName)
+                || "interface".equalsIgnoreCase(localName)) {
             if (isEnum(attributes)) {
                 mIgnoreCurrentClass = true;
                 return;
@@ -135,7 +135,7 @@ class CurrentXmlHandler extends DefaultHandler {
         }
     }
 
-    static String getValue(Attributes attributes, String key) {
+    public static String getValue(Attributes attributes, String key) {
         // Strip away generics <...> and make inner classes always use a "." rather than "$".
         return attributes.getValue(key)
                 .replaceAll("<.+>", "")

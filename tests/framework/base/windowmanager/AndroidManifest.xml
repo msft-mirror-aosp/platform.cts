@@ -332,7 +332,7 @@
         <activity android:name="android.server.wm.window.LocationInWindowTests$TestActivity"/>
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
              android:screenOrientation="locked"
-             android:theme="@style/no_starting_window"/>
+             android:theme="@style/OptOutEdgeToEdge.NoStartingWindow"/>
         <activity android:name="android.server.wm.window.WindowFocusTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.window.WindowFocusTests$SecondaryActivity"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>

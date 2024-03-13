@@ -81,9 +81,9 @@ public final class ScreenDeviceInfo extends DeviceInfo {
         // TODO (b/202855636) store info from both extensions and sidecar if both are present
         if (ExtensionsUtil.isExtensionVersionValid()) {
             // Extensions is available on device.
-            final Version extensionVersion = ExtensionsUtil.getExtensionVersion();
+            final int extensionVersion = ExtensionsUtil.getExtensionVersion();
             store.addResult("wm_jetpack_version",
-                    "[Extensions]" + extensionVersion.toString());
+                    "[Extensions]" + extensionVersion);
             final Activity activity = ScreenDeviceInfo.this.launchActivity(
                     "com.android.compatibility.common.deviceinfo",
                     DummyActivity.class,

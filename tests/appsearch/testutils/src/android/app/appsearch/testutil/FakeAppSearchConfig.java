@@ -220,6 +220,12 @@ public final class FakeAppSearchConfig implements FrameworkAppSearchConfig {
     }
 
     @Override
+    public long getAppFunctionCallTimeoutMillis() {
+        throwIfClosed();
+        return DEFAULT_APP_FUNCTION_CALL_TIMEOUT_MILLIS;
+    }
+
+    @Override
     public int getIntegerIndexBucketSplitThreshold() {
         throwIfClosed();
         return DEFAULT_INTEGER_INDEX_BUCKET_SPLIT_THRESHOLD;

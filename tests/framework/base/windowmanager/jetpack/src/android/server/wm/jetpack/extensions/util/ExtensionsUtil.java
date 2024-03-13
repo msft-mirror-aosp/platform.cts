@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -51,27 +52,33 @@ public class ExtensionsUtil {
 
     private static final String EXTENSION_TAG = "Extension";
 
-    public static final Version EXTENSION_VERSION_1 = new Version(1, 0, 0, "");
+    public static final int EXTENSION_VERSION_DISABLED = 0;
 
-    public static final Version EXTENSION_VERSION_2 = new Version(1, 1, 0, "");
+    public static final int EXTENSION_VERSION_1 = 1;
+
+    public static final int EXTENSION_VERSION_2 = 2;
+
+    /**
+     * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
+     * Extensions versions</a>.
+     */
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 5;
 
     /**
      * Returns the current version of {@link WindowExtensions} if present on the device.
      */
-    @NonNull
-    public static Version getExtensionVersion() {
+    public static int getExtensionVersion() {
         try {
             WindowExtensions extensions = getWindowExtensions();
             if (extensions != null) {
-                return new Version(extensions.getVendorApiLevel() /* major */, 0 /* minor */,
-                        0 /* patch */, "" /* description */);
+                return extensions.getVendorApiLevel();
             }
         } catch (NoClassDefFoundError e) {
             Log.d(EXTENSION_TAG, "Extension version not found");
         } catch (UnsupportedOperationException e) {
             Log.d(EXTENSION_TAG, "Stub Extension");
         }
-        return Version.UNKNOWN;
+        return EXTENSION_VERSION_DISABLED;
     }
 
     /**
@@ -81,13 +88,17 @@ public class ExtensionsUtil {
      * @param targetVersion minimum version to be checked.
      * @return true if the version on the device is at least the target version inclusively.
      */
-    public static boolean isExtensionVersionAtLeast(Version targetVersion) {
-        final Version version = getExtensionVersion();
-        return version.compareTo(targetVersion) >= 0;
+    public static boolean isExtensionVersionAtLeast(int targetVersion) {
+        final int version = getExtensionVersion();
+        return version >= targetVersion;
     }
 
+    /**
+     * Returns {@code true} if the version reported on the device is greater than or equal to the
+     * corresponding platform version.
+     */
     public static boolean isExtensionVersionLatest() {
-        return isExtensionVersionAtLeast(EXTENSION_VERSION_2);
+        return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM);
     }
 
     /**
@@ -97,10 +108,10 @@ public class ExtensionsUtil {
      *                       succeed
      */
     public static void assumeVendorApiLevelAtLeast(int vendorApiLevel) {
-        final Version version = getExtensionVersion();
+        final int version = getExtensionVersion();
         assumeTrue(
-                "Needs vendorApiLevel " + vendorApiLevel + " but has " + version.getMajor(),
-                version.getMajor() >= vendorApiLevel
+                "Needs vendorApiLevel " + vendorApiLevel + " but has " + version,
+                version >= vendorApiLevel
         );
     }
 
@@ -108,9 +119,9 @@ public class ExtensionsUtil {
      * Returns {@code true} if the extensions version is greater than 0.
      */
     public static boolean isExtensionVersionValid() {
-        final Version version = getExtensionVersion();
+        final int version = getExtensionVersion();
         // Check that the extension version on the device is at least the minimum valid version.
-        return version.compareTo(EXTENSION_VERSION_1) >= 0;
+        return version > EXTENSION_VERSION_DISABLED;
     }
 
     /**
@@ -133,11 +144,11 @@ public class ExtensionsUtil {
      * valid.
      */
     public static void assumeExtensionSupportedDevice() {
-        final boolean extensionNotNull = getWindowExtensions() != null;
-        assumeTrue("Device does not support extensions", extensionNotNull);
-        // If extensions are on the device, make sure that the version is valid.
-        assertTrue("Extension version is invalid, must be at least "
-                + EXTENSION_VERSION_1.toString(), isExtensionVersionValid());
+        assumeNotNull("Device does not contain extensions library", getWindowExtensions());
+
+        // If extensions are supported on the device, make sure that the version is valid.
+        assertTrue("Extension version is invalid, must be at least " + EXTENSION_VERSION_1,
+                isExtensionVersionValid());
     }
 
     /**
@@ -378,7 +389,7 @@ public class ExtensionsUtil {
     @Nullable
     public static WindowAreaComponent getExtensionWindowAreaComponent() {
         WindowExtensions extension = getWindowExtensions();
-        if (extension == null || extension.getVendorApiLevel() < 2) {
+        if (extension == null || extension.getVendorApiLevel() < EXTENSION_VERSION_2) {
             return null;
         }
         return extension.getWindowAreaComponent();

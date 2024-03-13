@@ -19,7 +19,7 @@ package android.view.surfacecontrol.cts;
 
 import android.platform.test.annotations.Presubmit;
 import android.view.cts.surfacevalidator.CapturedActivity;
-import android.view.cts.surfacevalidator.SyncValidatorSCVHTestCase;
+import android.view.cts.util.SyncValidatorSCVHTestCase;
 
 import androidx.test.rule.ActivityTestRule;
 

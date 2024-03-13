@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Representation of a package in the API containing classes. */
-class ApiPackage implements HasCoverage {
+public class ApiPackage implements HasCoverage {
 
     private final String mName;
 
     private final Map<String, ApiClass> mApiClassMap = new ConcurrentHashMap<>();
 
-    ApiPackage(String name) {
+    public ApiPackage(String name) {
         mName = name;
     }
 

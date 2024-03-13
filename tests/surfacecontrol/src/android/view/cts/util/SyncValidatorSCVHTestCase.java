@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
@@ -35,6 +35,9 @@ import android.view.SurfaceControlViewHost.SurfacePackage;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.cts.surfacevalidator.ISurfaceValidatorTestCase;
+import android.view.cts.surfacevalidator.PixelChecker;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.window.SurfaceSyncGroup;

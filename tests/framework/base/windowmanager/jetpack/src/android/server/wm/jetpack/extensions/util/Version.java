@@ -29,6 +29,8 @@ import java.util.regex.Pattern;
 /**
  * Class encapsulating a version with major, minor, patch and description values. Copied from
  * androidx.window.Version.
+ *
+ * This is used for {@link SidecarUtil}.
  */
 public final class Version implements Comparable<Version> {
     public static final Version UNKNOWN = new Version(0, 0, 0, "");

@@ -203,6 +203,10 @@
         <option name="push-file" key="CtsMultiArchApp64_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_targetSdk33_x86.apk" />
         <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_arm.apk" />
         <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_x86.apk" />
+        <option name="push-file" key="HelloInstallerApp.apk" value="/data/local/tmp/cts/content/HelloInstallerApp.apk" />
+        <option name="push-file" key="HelloInstallerAppUpdated.apk" value="/data/local/tmp/cts/content/HelloInstallerAppUpdated.apk"/>
+        <option name="push-file" key="HelloInstallerAppAbsent.apk" value="/data/local/tmp/cts/content/HelloInstallerAppAbsent.apk" />
+        <option name="push-file" key="HelloInstallerAppAbsentUpdated.apk" value="/data/local/tmp/cts/content/HelloInstallerAppAbsentUpdated.apk"/>
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

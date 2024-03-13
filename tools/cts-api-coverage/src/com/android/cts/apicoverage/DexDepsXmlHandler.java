@@ -16,6 +16,11 @@
 
 package com.android.cts.apicoverage;
 
+import com.android.cts.apicommon.ApiClass;
+import com.android.cts.apicommon.ApiCoverage;
+import com.android.cts.apicommon.ApiPackage;
+import com.android.cts.apicommon.ApiXmlHandler;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -51,17 +56,17 @@ class DexDepsXmlHandler extends DefaultHandler {
             throws SAXException {
         super.startElement(uri, localName, name, attributes);
         if ("package".equalsIgnoreCase(localName)) {
-            mCurrentPackageName = CurrentXmlHandler.getValue(attributes, "name");
+            mCurrentPackageName = ApiXmlHandler.getValue(attributes, "name");
         } else if ("class".equalsIgnoreCase(localName)
                 || "interface".equalsIgnoreCase(localName)) {
-            mCurrentClassName = CurrentXmlHandler.getValue(attributes, "name");
+            mCurrentClassName = ApiXmlHandler.getValue(attributes, "name");
         } else if ("constructor".equalsIgnoreCase(localName)) {
             mCurrentParameterTypes.clear();
         }  else if ("method".equalsIgnoreCase(localName)) {
-            mCurrentMethodName = CurrentXmlHandler.getValue(attributes, "name");
+            mCurrentMethodName = ApiXmlHandler.getValue(attributes, "name");
             mCurrentParameterTypes.clear();
         } else if ("parameter".equalsIgnoreCase(localName)) {
-            mCurrentParameterTypes.add(CurrentXmlHandler.getValue(attributes, "type"));
+            mCurrentParameterTypes.add(ApiXmlHandler.getValue(attributes, "type"));
         }
     }
 

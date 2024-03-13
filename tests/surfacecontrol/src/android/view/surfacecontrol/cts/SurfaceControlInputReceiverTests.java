@@ -54,9 +54,9 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.view.cts.surfacevalidator.EmbeddedSCVHService;
-import android.view.cts.surfacevalidator.IAttachEmbeddedWindow;
-import android.view.cts.surfacevalidator.IMotionEventReceiver;
+import android.view.cts.util.EmbeddedSCVHService;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
+import android.view.cts.util.aidl.IMotionEventReceiver;
 import android.window.InputTransferToken;
 import android.window.WindowInfosListenerForTest;
 
