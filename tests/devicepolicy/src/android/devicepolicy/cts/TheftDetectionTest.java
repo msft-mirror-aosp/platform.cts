@@ -53,7 +53,7 @@ public final class TheftDetectionTest {
     @CanSetPolicyTest(policy = TheftDetection.class)
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_THEFT_IMPL_ENABLED)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#isTheftDetectionTriggered")
-    public void isTheftDetectionTriggered_defaultToFalse() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().isTheftDetectionTriggered()).isFalse();
+    public void isDevicePotentiallyStolen_defaultToFalse() {
+        assertThat(sDeviceState.dpc().devicePolicyManager().isDevicePotentiallyStolen()).isFalse();
     }
 }
