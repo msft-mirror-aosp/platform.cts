@@ -16,6 +16,7 @@
 
 package android.os.cts;
 
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.test.AndroidTestCase;
 
@@ -25,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CustomClassLoaderTest extends AndroidTestCase {
     File tf;
 

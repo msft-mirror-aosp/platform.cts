@@ -27,6 +27,7 @@ import static android.graphics.pdf.cts.module.Utils.LOAD_PARAMS;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_PDF;
+import static android.graphics.pdf.cts.module.Utils.assertSelectionBoundary;
 import static android.graphics.pdf.cts.module.Utils.calculateArea;
 import static android.graphics.pdf.cts.module.Utils.createRenderer;
 import static android.graphics.pdf.cts.module.Utils.createRendererUsingNewConstructor;
@@ -644,14 +645,19 @@ public class PdfRendererTest {
         SelectionBoundary start = new SelectionBoundary(point);
         SelectionBoundary stop = new SelectionBoundary(point);
         // first query
-        PageSelection firstTextSelection = firstPage.selectContent(start, stop, true);
+        PageSelection firstTextSelection = firstPage.selectContent(start, stop, /* isRtl = */ true);
         // second query
         Point leftPoint = new Point(93, 139);
         Point rightPoint = new Point(147, 139);
         PageSelection secondTextSelection = firstPage.selectContent(
-                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), true);
+                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), /* isRtl = */
+                true);
 
         // first selected text is: "this"
+        assertThat(firstTextSelection.getPage()).isEqualTo(1);
+        assertThat(firstTextSelection.isRtl()).isTrue();
+        assertSelectionBoundary(firstTextSelection.getLeft(), -1, new Point(72, 103));
+        assertSelectionBoundary(firstTextSelection.getRight(), -1, new Point(91, 103));
         assertPageSelection(firstTextSelection, 1, 1);
         assertThat(firstTextSelection.getTextSelections().get(
                 0).getSelectedTextContents().getText()).isEqualTo("This");
@@ -679,9 +685,13 @@ public class PdfRendererTest {
         Point leftPoint = new Point(93, 139);
         Point rightPoint = new Point(135, 168);
         PageSelection textSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
-                new SelectionBoundary(rightPoint), true);
+                new SelectionBoundary(rightPoint), /* isRtl = */ true);
 
         assertPageSelection(textSelection, 2, 1);
+        assertThat(textSelection.getPage()).isEqualTo(1);
+        assertThat(textSelection.isRtl()).isTrue();
+        assertSelectionBoundary(textSelection.getLeft(), -1, new Point(93, 139));
+        assertSelectionBoundary(textSelection.getRight(), -1, new Point(135, 163));
         assertThat(textSelection.getTextSelections().get(
                 0).getSelectedTextContents().getText().lines().toList().size()).isEqualTo(2);
         assertThat(textSelection.getTextSelections().get(
@@ -709,9 +719,14 @@ public class PdfRendererTest {
         Point leftPoint = new Point(275, 163);
         Point rightPoint = new Point(65, 125);
         PageSelection fourthTextSelection = firstPage.selectContent(
-                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), false);
+                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), /* isRtl = */
+                false);
 
         assertPageSelection(fourthTextSelection, 3, 1);
+        assertThat(fourthTextSelection.getPage()).isEqualTo(1);
+        assertThat(fourthTextSelection.isRtl()).isFalse();
+        assertSelectionBoundary(fourthTextSelection.getLeft(), -1, new Point(71, 127));
+        assertSelectionBoundary(fourthTextSelection.getRight(), -1, new Point(275, 163));
         assertThat(fourthTextSelection.getTextSelections().get(
                 0).getSelectedTextContents().getText().lines().toList().get(0)).isEqualTo(
                 "just for use in the Virtual Mechanics tutorials. More text. And more ");
@@ -724,6 +739,32 @@ public class PdfRendererTest {
 
         firstPage.close();
         renderer.close();
+    }
+
+    @Test
+    public void selectPageText_withCharIndex() throws Exception {
+        assertSelectPageText_withCharIndex(createRenderer(SAMPLE_PDF, mContext));
+
+        assertSelectPageText_withCharIndex(
+                createRendererUsingNewConstructor(PROTECTED_PDF, mContext, LOAD_PARAMS));
+
+    }
+
+    private void assertSelectPageText_withCharIndex(PdfRenderer renderer) {
+        PdfRenderer.Page page = renderer.openPage(0);
+
+        Point rightPoint = new Point(225, 168);
+        PageSelection pageSelection = page.selectContent(new SelectionBoundary(2),
+                new SelectionBoundary(rightPoint), /* isRtl = */ true);
+
+        assertThat(pageSelection.getPage()).isEqualTo(0);
+        assertThat(pageSelection.isRtl()).isTrue();
+        assertSelectionBoundary(pageSelection.getLeft(), -1, new Point(71, 52));
+        assertSelectionBoundary(pageSelection.getRight(), -1, new Point(225, 52));
+
+        assertThat(pageSelection.getTextSelections().get(
+                0).getSelectedTextContents().getText()).isEqualTo(
+                "Simple PDF File, which will be ");
     }
 
     @Test
@@ -751,7 +792,7 @@ public class PdfRendererTest {
         Point leftPoint = new Point(157, 330);
         Point rightPoint = new Point(157, 330);
         PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
-                new SelectionBoundary(rightPoint), true);
+                new SelectionBoundary(rightPoint), /* isRtl = */ true);
 
         assertThat(pageSelection).isNull();
 
@@ -773,7 +814,8 @@ public class PdfRendererTest {
 
         Point point = new Point(157, 330);
         assertThrows(NullPointerException.class,
-                () -> firstPage.selectContent(new SelectionBoundary(point), null, true));
+                () -> firstPage.selectContent(new SelectionBoundary(point), null, /* isRtl = */
+                        true));
     }
 
     @Test

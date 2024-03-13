@@ -29,6 +29,7 @@ import android.app.time.cts.shell.TimeDetectorShellHelper;
 import android.app.time.cts.shell.TimeDetectorShellHelper.TestUnixEpochTime;
 import android.app.time.cts.shell.device.InstrumentationShellCommandExecutor;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Range;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -48,6 +49,7 @@ import java.time.temporal.ChronoUnit;
 
 /** Tests for {@link SystemClock#currentNetworkTimeClock()}. */
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SystemClockNetworkTimeTest {
 
     private static final int ARBITRARY_UNCERTAINTY_MILLIS = 100;

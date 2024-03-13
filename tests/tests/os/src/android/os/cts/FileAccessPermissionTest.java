@@ -19,6 +19,7 @@ package android.os.cts;
 import android.os.Environment;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
 import java.io.File;
@@ -46,6 +47,7 @@ import java.io.IOException;
  *
  * TODO: Combine this file with {@link android.permission.cts.FileSystemPermissionTest}
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class FileAccessPermissionTest extends AndroidTestCase {
 
     /**

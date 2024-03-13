@@ -798,6 +798,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 .runTest();
     }
 
+    @FlakyTest(bugId = 300314534)
     @Test
     public void testBatchEdit_commitAndSetComposingRegion_webView() throws Exception {
         assumeTrue(hasFeatureWebView());

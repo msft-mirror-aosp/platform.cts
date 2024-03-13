@@ -252,6 +252,9 @@ public final class CommonUserRestrictions {
     /** See {@code android.os.UserManager#DISALLOW_SIM_GLOBALLY} */
     public static final String DISALLOW_SIM_GLOBALLY = "no_sim_globally";
 
+    /** See {@code android.os.UserManager#DISALLOW_THREAD_NETWORK} */
+    public static final String DISALLOW_THREAD_NETWORK = "no_thread_network";
+
     /** See {@code Manifest#ACTION_USER_RESTRICTIONS_CHANGED} */
     public static final String ACTION_USER_RESTRICTIONS_CHANGED =
             "android.os.action.USER_RESTRICTIONS_CHANGED";
@@ -330,6 +333,7 @@ public final class CommonUserRestrictions {
             DISALLOW_ADD_WIFI_CONFIG,
             DISALLOW_CELLULAR_2G,
             DISALLOW_ULTRA_WIDEBAND_RADIO,
-            DISALLOW_CONFIG_DEFAULT_APPS
+            DISALLOW_CONFIG_DEFAULT_APPS,
+            DISALLOW_THREAD_NETWORK,
     };
 }

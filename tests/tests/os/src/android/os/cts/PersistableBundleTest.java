@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.os.PersistableBundle;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import org.junit.Test;
 
@@ -28,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class PersistableBundleTest {
     private static final double DELTA_DOUBLE = 0.0d;
 

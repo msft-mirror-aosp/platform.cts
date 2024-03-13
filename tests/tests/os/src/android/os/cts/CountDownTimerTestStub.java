@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CountDownTimerTestStub extends Activity {
     public boolean onFinished;
     public ArrayList<Long> tickTimes;
