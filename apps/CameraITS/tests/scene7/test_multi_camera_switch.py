@@ -50,8 +50,8 @@ def _get_preview_test_size(cam, camera_id):
   Returns the max supported preview size.
 
   Args:
-    cam: camera object
-    camera_id: str; camera device id under test
+    cam: camera object.
+    camera_id: str; camera device id under test.
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
@@ -70,14 +70,14 @@ def _collect_data(cam, preview_size, zoom_start, zoom_end, step_size):
   Captures camera preview frames from the passed device.
 
   Args:
-    cam: camera object
-    preview_size: str; preview resolution. ex. '1920x1080'
-    zoom_start: (float) is the starting zoom ratio during recording
-    zoom_end: (float) is the ending zoom ratio during recording
-    step_size: (float) is the step for zoom ratio during recording
+    cam: camera object.
+    preview_size: str; preview resolution. ex. '1920x1080'.
+    zoom_start: (float) is the starting zoom ratio during recording.
+    zoom_end: (float) is the ending zoom ratio during recording.
+    step_size: (float) is the step for zoom ratio during recording.
 
   Returns:
-    recording object as described by cam.do_preview_recording_with_dynamic_zoom
+    recording object as described by cam.do_preview_recording_with_dynamic_zoom.
   """
   # TODO(ruchamk): Check for physical camera id change in ItsService
   recording_obj = cam.do_preview_recording_with_dynamic_zoom(
@@ -95,8 +95,8 @@ def _remove_frame_files(dir_name, save_files_list):
   """Removes the generated frame files from test dir.
 
   Args:
-    dir_name: test directory name
-    save_files_list: list of files not to be removed
+    dir_name: test directory name.
+    save_files_list: list of files not to be removed.
   """
   if os.path.exists(dir_name):
     for image in glob.glob('%s/*.png' % dir_name):
@@ -108,9 +108,9 @@ def _do_af_check(uw_img, w_img, log_path):
   """Checks the AF behavior between the uw and w img.
 
   Args:
-    uw_img: image captured using UW lens
-    w_img: image captured using W lens
-    log_path: path to save the image
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+    log_path: path to save the image.
   """
   file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
   sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
@@ -132,8 +132,8 @@ def _compute_slanted_edge_sharpness(input_img, file_name):
   slanted edge patch. Larger value means the image is sharper.
 
   Args:
-    input_img: numpy flat RGB/luma image array
-    file_name: file name of the saved patch
+    input_img: numpy flat RGB/luma image array.
+    file_name: file name of the saved patch.
   Returns:
     sharpness_level: Sharpness estimation value based on the
     average of gradient magnitude.
@@ -148,8 +148,8 @@ def _do_awb_check(uw_img, w_img):
   """Checks the ratio of R/G and B/G for UW and W img.
 
   Args:
-    uw_img: image captured using UW lens
-    w_img: image captured using W lens
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
   """
   uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img)
   logging.debug('UW R/G ratio: %s', uw_r_g_ratio)
@@ -176,10 +176,10 @@ def _get_color_ratios(img):
   """Computes the ratios of R/G and B/G for img.
 
   Args:
-    img: RGB img in numpy format
+    img: RGB img in numpy format.
   Returns:
-    r_g_ratio: Ratio of R and G channel means
-    b_g_ratio: Ratio of B and G channel means
+    r_g_ratio: Ratio of R and G channel means.
+    b_g_ratio: Ratio of B and G channel means.
   """
   img_means = image_processing_utils.compute_image_means(img)
   img_means = [i * _CH_FULL_SCALE for i in img_means]
@@ -192,10 +192,10 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   """Checks that the luma change is within range.
 
   Args:
-    uw_img: image captured using UW lens
-    w_img: image captured using W lens
-    log_path: path to save the image
-    suffix: str; patch suffix to be used in file name
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+    log_path: path to save the image.
+    suffix: str; patch suffix to be used in file name.
   """
   file_stem = f'{os.path.join(log_path, _NAME)}_{suffix}'
   uw_y = _extract_y(
@@ -219,10 +219,10 @@ def _extract_y(img_rgb, file_name):
 
   The y img is saved with file_name in the test dir.
   Args:
-    img_rgb: An openCV image in RGB order
-    file_name: file name along with the path to save the image
+    img_rgb: An openCV image in RGB order.
+    file_name: file name along with the path to save the image.
   Returns:
-    An openCV image converted to Y
+    An openCV image converted to Y.
   """
   img_bgr = img_rgb[:, :, ::-1]
   img_y = opencv_processing_utils.convert_to_y(img_bgr)
@@ -240,11 +240,11 @@ def _extract_main_patch(img_rgb, img_path, lens_suffix):
   without the aruco markers in it.
 
   Args:
-    img_rgb: An openCV image in RGB order
-    img_path: Path to save the image
-    lens_suffix: str; suffix used to save the image
+    img_rgb: An openCV image in RGB order.
+    img_path: Path to save the image.
+    lens_suffix: str; suffix used to save the image.
   Returns:
-    rectangle_patch: numpy float image array of the rectangle patch
+    rectangle_patch: numpy float image array of the rectangle patch.
   """
   aruco_path = img_path.with_name(
       f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
@@ -265,11 +265,11 @@ def _get_four_quadrant_patches(img, img_path, lens_suffix):
   """Divides the img in 4 equal parts and returns the patches.
 
   Args:
-    img: an openCV image in RGB order
-    img_path: path to save the image
-    lens_suffix: str; suffix used to save the image
+    img: an openCV image in RGB order.
+    img_path: path to save the image.
+    lens_suffix: str; suffix used to save the image.
   Returns:
-    four_quadrant_patches: list of 4 patches
+    four_quadrant_patches: list of 4 patches.
   """
   num_rows = 2
   num_columns = 2
@@ -424,17 +424,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
       uw_chart_patch = _extract_main_patch(uw_img, uw_path, 'uw')
-
-      # Get 4 quadrant patches from the uw_chart_patch and do
-      # AE and AWB checks on each of them
       uw_four_patches = _get_four_quadrant_patches(
           uw_chart_patch, uw_path, 'uw')
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
       w_chart_patch = _extract_main_patch(w_img, w_path, 'w')
-      # Get 4 quadrant patches from the w_chart_patch and do
-      # AE and AWB checks on each of them
       w_four_patches = _get_four_quadrant_patches(
           w_chart_patch, uw_path, 'w')
 

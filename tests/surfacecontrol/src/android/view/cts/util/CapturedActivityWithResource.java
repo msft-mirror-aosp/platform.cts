@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util;
 
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.view.cts.surfacevalidator.CapturedActivity;
 import android.view.surfacecontrol.cts.R;
 
 public class CapturedActivityWithResource extends CapturedActivity {

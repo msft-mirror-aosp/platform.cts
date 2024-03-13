@@ -280,7 +280,8 @@ public final class CarOccupantConnectionManagerTest extends AbstractCarTestCase 
 
         private Car mCar;
         private CarOccupantConnectionManager mOccupantConnectionManager;
-        private Boolean mRejected = Boolean.FALSE;
+        private Object mOnConnectionInitiatedLock = new Object();
+        private boolean mRejected = false;
 
         private final Car.CarServiceLifecycleListener mCarServiceLifecycleListener =
                 (car, ready) -> {
@@ -331,7 +332,7 @@ public final class CarOccupantConnectionManagerTest extends AbstractCarTestCase 
                 throw new RuntimeException(e);
             }
 
-            synchronized (mRejected) {
+            synchronized (mOnConnectionInitiatedLock) {
                 // If the sender didn't cancel the request, reject the first request, and accept
                 // the second request.
                 if (!mRejected) {

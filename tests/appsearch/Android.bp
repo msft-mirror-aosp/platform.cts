@@ -25,6 +25,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "testng",
+        "appsearch_flags_java_lib",
     ],
     srcs: [
         "src/**/*.java",

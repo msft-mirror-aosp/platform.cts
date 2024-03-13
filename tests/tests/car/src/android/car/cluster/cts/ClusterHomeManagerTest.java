@@ -54,7 +54,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public final class ClusterHomeManagerTest {
-    private static final long TIMEOUT_MS = 5_000;
+    private static final long TIMEOUT_MS = 10_000;
     private static final String CLUSTER_HOME_SERVICE = "ClusterHomeService";
     private static final String DUMP_TPL_COUNT = "mTrustedPresentationListenerCount";
     private static final String DUMP_CLUSTER_SURFACE = "mClusterActivitySurface";

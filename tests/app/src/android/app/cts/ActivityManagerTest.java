@@ -15,6 +15,7 @@
  */
 package android.app.cts;
 
+import static android.app.Activity.RESULT_OK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_CAMERA;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
@@ -30,6 +31,8 @@ import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN;
 import static android.content.Intent.ACTION_MAIN;
 import static android.content.Intent.CATEGORY_HOME;
+import static android.content.Intent.EXTRA_REMOTE_CALLBACK;
+import static android.content.Intent.EXTRA_RETURN_RESULT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
@@ -102,6 +105,7 @@ import android.os.NewUserRequest;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.os.RemoteCallback;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -147,6 +151,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -166,7 +171,6 @@ public final class ActivityManagerTest {
     private static final long WAITFOR_PROCSTAT_TIMEOUT_MSEC = 30000;
     private static final String SERVICE_NAME = "android.app.stubs.MockService";
     private static final long WAIT_TIME = 2000;
-    private static final long WAITFOR_ORDERED_BROADCAST_DRAINED = 60000;
     // A secondary test activity from another APK.
     static final String SIMPLE_PACKAGE_NAME = "com.android.cts.launcherapps.simpleapp";
     static final String SIMPLE_ACTIVITY = ".SimpleActivity";
@@ -177,12 +181,6 @@ public final class ActivityManagerTest {
     // The action sent back by the SIMPLE_APP after a restart.
     private static final String ACTIVITY_LAUNCHED_ACTION =
             "com.android.cts.launchertests.LauncherAppsTests.LAUNCHED_ACTION";
-    // The action sent back by the SIMPLE_APP_IMMEDIATE_EXIT when it terminates.
-    private static final String ACTIVITY_EXIT_ACTION =
-            "com.android.cts.launchertests.LauncherAppsTests.EXIT_ACTION";
-    // The action sent back by the SIMPLE_APP_CHAIN_EXIT when the task chain ends.
-    private static final String ACTIVITY_CHAIN_EXIT_ACTION =
-            "com.android.cts.launchertests.LauncherAppsTests.CHAIN_EXIT_ACTION";
     // The action sent to identify the time track info.
     private static final String ACTIVITY_TIME_TRACK_INFO = "com.android.cts.TIME_TRACK_INFO";
 
@@ -192,7 +190,6 @@ public final class ActivityManagerTest {
     private static final String PACKAGE_NAME_WEDGED_STARTUP = "com.android.wedged_start";
 
     private static final String CANT_SAVE_STATE_1_PACKAGE_NAME = "com.android.test.cantsavestate1";
-    private static final String ACTION_FINISH = "com.android.test.action.FINISH";
 
     private static final String MCC_TO_UPDATE = "987";
     private static final String MNC_TO_UPDATE = "654";
@@ -912,7 +909,8 @@ public final class ActivityManagerTest {
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE));
 
         // The application finished tracker.
-        ActivityReceiverFilter appEndReceiver = new ActivityReceiverFilter(ACTIVITY_EXIT_ACTION);
+        BlockingResultReceiver appEndReceiver = new BlockingResultReceiver();
+        intent.putExtra(EXTRA_REMOTE_CALLBACK, appEndReceiver.getRemoteCallback());
 
         // The filter for the time event.
         ActivityReceiverFilter timeReceiver = new ActivityReceiverFilter(ACTIVITY_TIME_TRACK_INFO);
@@ -920,9 +918,8 @@ public final class ActivityManagerTest {
         // Run the activity.
         mTargetContext.startActivity(intent, options.toBundle());
 
-        // Wait until it finishes and end the reciever then.
-        assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
-        appEndReceiver.close();
+        // Wait until it finishes and end the receiver then.
+        assertEquals(RESULT_OK, appEndReceiver.getResult());
 
         if (!noHomeScreen()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
@@ -1075,8 +1072,8 @@ public final class ActivityManagerTest {
                     PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE));
 
         // The application finished tracker.
-        ActivityReceiverFilter appEndReceiver = new ActivityReceiverFilter(
-                ACTIVITY_CHAIN_EXIT_ACTION);
+        BlockingResultReceiver appEndReceiver = new BlockingResultReceiver();
+        intent.putExtra(EXTRA_REMOTE_CALLBACK, appEndReceiver.getRemoteCallback());
 
         // The filter for the time event.
         ActivityReceiverFilter timeReceiver = new ActivityReceiverFilter(ACTIVITY_TIME_TRACK_INFO);
@@ -1085,8 +1082,8 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent, options.toBundle());
 
         // Wait until it finishes and end the reciever then.
-        assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
-        appEndReceiver.close();
+        assertEquals(RESULT_OK, appEndReceiver.getResult());
+        Log.e("SOSO", "Done waiting for activity exit");
 
         if (!noHomeScreen()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
@@ -2841,5 +2838,26 @@ public final class ActivityManagerTest {
     private void assumeNonHeadlessSystemUserMode() {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
+    }
+
+    private static class BlockingResultReceiver {
+        private final BlockingQueue<Integer> mBlockingQueue = new LinkedBlockingQueue<>();
+        private final RemoteCallback mRemoteCallback;
+
+        BlockingResultReceiver() {
+            mRemoteCallback = new RemoteCallback(bundle -> {
+                final int result = bundle.getInt(EXTRA_RETURN_RESULT, RESULT_FAIL);
+                mBlockingQueue.offer(result);
+            });
+        }
+
+        public RemoteCallback getRemoteCallback() {
+            return mRemoteCallback;
+        }
+
+        public int getResult() throws InterruptedException {
+            final Integer result = mBlockingQueue.poll(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS);
+            return result == null ? RESULT_TIMEOUT : result.intValue();
+        }
     }
 }

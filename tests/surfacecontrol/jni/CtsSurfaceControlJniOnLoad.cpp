@@ -20,6 +20,7 @@
 
 extern int register_android_view_cts_ASurfaceControlTest(JNIEnv *);
 extern int register_android_view_surfacecontrol_cts_ChoreographerNativeTest(JNIEnv* env);
+extern int register_android_view_cts_AInputTransferTokenTest(JNIEnv* env);
 
 jint JNI_OnLoad(JavaVM *vm, void *) {
     JNIEnv *env = NULL;
@@ -30,6 +31,9 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
       return JNI_ERR;
     }
     if (register_android_view_surfacecontrol_cts_ChoreographerNativeTest(env)) {
+        return JNI_ERR;
+    }
+    if (register_android_view_cts_AInputTransferTokenTest(env)) {
         return JNI_ERR;
     }
     return JNI_VERSION_1_4;

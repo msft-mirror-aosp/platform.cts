@@ -47,6 +47,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
+import android.Manifest;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -186,6 +187,14 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_VERIFIER_REJECT = "HelloVerifierReject.apk";
     private static final String TEST_VERIFIER_DELAYED_REJECT = "HelloVerifierDelayedReject.apk";
     private static final String TEST_VERIFIER_DISABLED = "HelloVerifierDisabled.apk";
+
+    private static final String TEST_INSTALLER_APP = "HelloInstallerApp.apk";
+    private static final String TEST_INSTALLER_APP_UPDATED =
+            "HelloInstallerAppUpdated.apk";
+
+    private static final String TEST_INSTALLER_APP_ABSENT = "HelloInstallerAppAbsent.apk";
+    private static final String TEST_INSTALLER_APP_ABSENT_UPDATED =
+            "HelloInstallerAppAbsentUpdated.apk";
 
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
 
@@ -2346,6 +2355,117 @@ public class PackageManagerShellCommandInstallTest {
 
     }
 
+    @Test
+    public void testEmergencyInstallerNoAttribute() throws Exception {
+        installPackage(TEST_INSTALLER_APP_ABSENT);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.EMERGENCY_INSTALL_PACKAGES);
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_absent_updated",
+                    TEST_INSTALLER_APP_ABSENT_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testEmergencyInstallerNoPermission() throws Exception {
+        installPackage(TEST_INSTALLER_APP);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_updated", TEST_INSTALLER_APP_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    // We can't test updating a system app with INSTALL_PACKAGES in CTS tests; this positive test
+    // will be in GTS tests instead.
+    @Test
+    public void testEmergencyInstallerNonSystemApp() throws Exception {
+        installPackage(TEST_INSTALLER_APP);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.EMERGENCY_INSTALL_PACKAGES);
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_updated", TEST_INSTALLER_APP_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
 
     private List<SharedLibraryInfo> getSharedLibraries() {
         getUiAutomation().adoptShellPermissionIdentity();
