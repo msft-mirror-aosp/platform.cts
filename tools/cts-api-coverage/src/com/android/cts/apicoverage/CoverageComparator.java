@@ -16,15 +16,11 @@
 
 package com.android.cts.apicoverage;
 
+import com.android.cts.apicommon.HasCoverage;
+
 import java.util.Comparator;
 
-interface HasCoverage {
-    float getCoveragePercentage();
-    int getMemberSize();
-    String getName();
-}
-
-class CoverageComparator implements Comparator<HasCoverage> {
+public class CoverageComparator implements Comparator<HasCoverage> {
     public int compare(HasCoverage entity, HasCoverage otherEntity) {
         int lhsPct = Math.round(entity.getCoveragePercentage());
         int rhsPct = Math.round(otherEntity.getCoveragePercentage());
