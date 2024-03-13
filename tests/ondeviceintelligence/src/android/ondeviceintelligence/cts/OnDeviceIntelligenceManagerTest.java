@@ -35,10 +35,12 @@ import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceManager;
 import android.app.ondeviceintelligence.ProcessingCallback;
+import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -57,8 +59,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+import org.junit.runners.model.Statement;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -397,7 +405,6 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
-
         Feature feature = new Feature.Builder(1).build();
         mOnDeviceIntelligenceManager.processRequest(feature,
                 new Bundle(), 1, null,
@@ -422,13 +429,123 @@ public class OnDeviceIntelligenceManagerTest {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
-        CountDownLatch statusLatch = new CountDownLatch(2);
+        CountDownLatch statusLatch = new CountDownLatch(1);
 
         Feature feature = new Feature.Builder(1).build();
         mOnDeviceIntelligenceManager.processRequestStreaming(feature,
                 new Bundle(), 1,
                 null, null, EXECUTOR,
                 new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+//===================== Tests for Processing and Cancellation signals  ==========================
+
+    @Test
+    public void cancellationPropagatedWhenInvokedDuringRequest() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        Feature feature = new Feature.Builder(1).build();
+        CompletableFuture<Bundle> resultBundle = new CompletableFuture<>();
+        mOnDeviceIntelligenceManager.processRequestStreaming(feature,
+                new Bundle(), 1, cancellationSignal,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        resultBundle.complete(result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+
+        cancellationSignal.cancel(); //cancel
+
+        assertThat(statusLatch.await(2, SECONDS)).isTrue();
+        assertThat(resultBundle.get()).isNotNull();
+        assertThat(resultBundle.get().containsKey("test_key")).isTrue();
+        assertThat(resultBundle.get().getBoolean(TEST_KEY)).isTrue();
+    }
+
+    @Test
+    public void cancellationPropagatedWhenInvokedBeforeMakingRequest() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        cancellationSignal.cancel(); //cancel
+        Feature feature = new Feature.Builder(1).build();
+        CompletableFuture<Bundle> resultBundle = new CompletableFuture<>();
+        mOnDeviceIntelligenceManager.processRequestStreaming(feature,
+                new Bundle(), 1, cancellationSignal,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        resultBundle.complete(result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(resultBundle.get()).isNotNull();
+        assertThat(resultBundle.get().containsKey("test_key")).isTrue();
+        assertThat(resultBundle.get().getBoolean(TEST_KEY)).isTrue();
+    }
+
+    @Test
+    public void signalPropagatedWhenSignalIsInvokedBeforeAndDuringRequest() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(4);
+        ProcessingSignal processingSignal = new ProcessingSignal();
+        processingSignal.sendSignal(PersistableBundle.EMPTY);
+        processingSignal.sendSignal(PersistableBundle.EMPTY);
+        Feature feature = new Feature.Builder(1).build();
+        mOnDeviceIntelligenceManager.processRequestStreaming(feature,
+                new Bundle(), 1, null,
+                processingSignal, EXECUTOR, new StreamingProcessingCallback() {
                     @Override
                     public void onPartialResult(@NonNull Bundle partialResult) {
                         Log.i(TAG, "New Content : " + partialResult);
@@ -446,7 +563,64 @@ public class OnDeviceIntelligenceManagerTest {
                         Log.e(TAG, "Final Result : ", error);
                     }
                 });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        processingSignal.sendSignal(PersistableBundle.EMPTY);
+        assertThat(statusLatch.await(2, SECONDS)).isTrue();
+    }
+
+    //===================== Tests for Manager Methods When No Service is Configured ==================
+
+    @Test
+    @SkipSetupAndTeardown
+    public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        mOnDeviceIntelligenceManager =
+                (OnDeviceIntelligenceManager)
+                        mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
+        clearTestableOnDeviceIntelligenceService();
+        // Test throws IllegalStateException
+        assertThrows("no service configured to perform getVersion",
+                IllegalStateException.class,
+                () -> mOnDeviceIntelligenceManager.getVersion(EXECUTOR,
+                        result -> Log.i(TAG, "Feature : =" + result)));
+    }
+
+
+    @Test
+    @SkipSetupAndTeardown
+    public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        mOnDeviceIntelligenceManager =
+                (OnDeviceIntelligenceManager)
+                        mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
+        clearTestableOnDeviceIntelligenceService();
+        Feature feature = new Feature.Builder(1).build();
+        // Test throws IllegalStateException
+        assertThrows(
+                "no service configured for processRequestStreaming",
+                IllegalStateException.class,
+                () -> mOnDeviceIntelligenceManager.processRequestStreaming(feature,
+                        new Bundle(), 1,
+                        null, null, EXECUTOR,
+                        new StreamingProcessingCallback() {
+                            @Override
+                            public void onPartialResult(@NonNull Bundle partialResult) {
+                                Log.i(TAG, "New Content : " + partialResult);
+                            }
+
+                            @Override
+                            public void onResult(Bundle result) {
+                                Log.i(TAG, "Final Result : " + result);
+                            }
+
+                            @Override
+                            public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                Log.e(TAG, "Final Result : ", error);
+                            }
+                        }));
     }
 
     //===================== Tests for accessing file from isolated process via non-isolated =======
@@ -503,4 +677,28 @@ public class OnDeviceIntelligenceManagerTest {
                 "cmd on_device_intelligence set-temporary-services %s %s %d",
                 serviceNames[0], serviceNames[1], TEMPORARY_SERVICE_DURATION);
     }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface SkipSetupAndTeardown {
+    }
+
+    @Rule
+    public TestRule skipSetupAndTeardownRule = (base, description) -> new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+            if (description.getAnnotation(SkipSetupAndTeardown.class) != null) {
+                // Skip setup and teardown for annotated tests
+                base.evaluate();
+            } else {
+                // Run setup and teardown for other tests
+                setUp();
+                try {
+                    base.evaluate();
+                } finally {
+                    tearDown();
+                }
+            }
+        }
+    };
 }

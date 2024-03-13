@@ -60,10 +60,32 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
             @NonNull StreamingProcessingCallback callback) {
-        callback.onPartialResult(Bundle.EMPTY);
+        if (processingSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            processingSignal.setOnProcessingSignalCallback(getCallbackExecutor(),
+                    actionParams -> {
+                        Log.i(TAG,
+                                "Received processing signal which has action Params : "
+                                        + actionParams);
+                        callback.onPartialResult(new Bundle(actionParams));
+                    });
+        }
+        if (cancellationSignal != null) {
+            cancellationSignal.setOnCancelListener(() -> {
+                Log.i(TAG,
+                        "Received cancellation signal");
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+            });
+            return;
+        }
         callback.onResult(Bundle.EMPTY);
     }
-
 
     @NonNull
     @Override
@@ -78,6 +100,24 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         callback.onResult(Bundle.EMPTY);
+        if (cancellationSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            cancellationSignal.setOnCancelListener(() -> {
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+                Log.i(TAG,
+                        "Received cancellation signal");
+            });
+        } else {
+            Log.i(TAG,
+                    "Received NULL cancellation signal.");
+            callback.onResult(Bundle.EMPTY);
+        }
     }
 
     @Override
