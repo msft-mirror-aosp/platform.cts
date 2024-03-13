@@ -202,3 +202,30 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   return {'gyro': max_gyro_angle, 'cam': max_camera_angle,
           'failure': failure_msg}
+
+
+def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
+                                   zoom_end, step_size, recording_duration_ms):
+  """Captures a preview video from the device.
+
+  Captures camera preview frames from the passed device.
+
+  Args:
+    cam: camera object.
+    preview_size: str; preview resolution. ex. '1920x1080'.
+    zoom_start: (float) is the starting zoom ratio during recording.
+    zoom_end: (float) is the ending zoom ratio during recording.
+    step_size: (float) is the step for zoom ratio during recording.
+    recording_duration_ms: preview recording duration in ms.
+
+  Returns:
+    recording object as described by cam.do_preview_recording_with_dynamic_zoom.
+  """
+  recording_obj = cam.do_preview_recording_with_dynamic_zoom(
+      preview_size,
+      stabilize=False,
+      sweep_zoom=(zoom_start, zoom_end, step_size, recording_duration_ms)
+  )
+  logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
+  logging.debug('Tested quality: %s', recording_obj['quality'])
+  return recording_obj
