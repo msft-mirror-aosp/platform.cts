@@ -1062,18 +1062,19 @@ public class ItsService extends Service implements SensorEventListener {
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
                     boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
-                    JSONArray threeARegionStart = cmdObj.optJSONArray("threeARegionStart");
-                    JSONArray threeARegionChange = cmdObj.optJSONArray("threeARegionChange");
-                    JSONArray threeARegionEnd = cmdObj.optJSONArray("threeARegionEnd");
-                    double threeARegionDuration = cmdObj.optDouble("threeARegionDuration");
+                    JSONArray aeAwbRegionOne = cmdObj.optJSONArray("aeAwbRegionOne");
+                    JSONArray aeAwbRegionTwo = cmdObj.optJSONArray("aeAwbRegionTwo");
+                    JSONArray aeAwbRegionThree = cmdObj.optJSONArray("aeAwbRegionThree");
+                    JSONArray aeAwbRegionFour = cmdObj.optJSONArray("aeAwbRegionFour");
+                    double aeAwbRegionDuration = cmdObj.optDouble("aeAwbRegionDuration");
                     double zoomStart = cmdObj.optDouble("zoomStart");
                     double zoomEnd = cmdObj.optDouble("zoomEnd");
                     double stepSize = cmdObj.optDouble("stepSize");
                     double stepDuration = cmdObj.optDouble("stepDuration");
                     doBasicPreviewRecording(cameraId, videoSize, recordingDuration,
                             stabilize, ois, hlg10Enabled, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                            threeARegionStart, threeARegionChange, threeARegionEnd,
-                            threeARegionDuration, zoomStart, zoomEnd, stepSize, stepDuration);
+                            aeAwbRegionOne, aeAwbRegionTwo, aeAwbRegionThree, aeAwbRegionFour,
+                            aeAwbRegionDuration, zoomStart, zoomEnd, stepSize, stepDuration);
                 } else if ("isHLG10Supported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -3014,9 +3015,10 @@ public class ItsService extends Service implements SensorEventListener {
      */
     private void doBasicPreviewRecording(String cameraId, String videoSizeString,
             int recordingDuration, boolean stabilize, boolean ois, boolean hlg10Enabled,
-            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax, JSONArray threeARegionStart,
-            JSONArray threeARegionChange, JSONArray threeARegionEnd, double threeARegionDuration,
-            double zoomStart, double zoomEnd, double stepSize, double stepDuration)
+            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax, JSONArray aeAwbRegionOne,
+            JSONArray aeAwbRegionTwo, JSONArray aeAwbRegionThree, JSONArray aeAwbRegionFour,
+            double aeAwbRegionDuration, double zoomStart, double zoomEnd, double stepSize,
+            double stepDuration)
             throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         List<RecordingResult> recordingResults = new ArrayList<>();
@@ -3092,31 +3094,32 @@ public class ItsService extends Service implements SensorEventListener {
                     CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
             int aaWidth = activeArray.right - activeArray.left;
             int aaHeight = activeArray.bottom - activeArray.top;
-            JSONArray[] threeARegionRoutine = {
-                    threeARegionStart, threeARegionChange, threeARegionEnd};
-            if (threeARegionStart != null) {
-                for (JSONArray threeARegion : threeARegionRoutine){
+            JSONArray[] aeAwbRegionRoutine = {
+                    aeAwbRegionOne, aeAwbRegionTwo, aeAwbRegionThree, aeAwbRegionFour};
+            if (aeAwbRegionOne != null) {
+                for (JSONArray aeAwbRegion : aeAwbRegionRoutine){
                     MeteringRectangle[] region = ItsUtils.getJsonWeightedRectsFromArray(
-                            threeARegion, /*normalized=*/true, aaWidth, aaHeight);
+                            aeAwbRegion, /*normalized=*/true, aaWidth, aaHeight);
                     Logt.i(TAG, String.format(
                             Locale.getDefault(),
-                            "3A set to %s during preview recording.", Arrays.toString(region)));
+                            "AE/AWB region set to %s during preview recording.",
+                                    Arrays.toString(region)));
                     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, region);
                     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, region);
                     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AWB_REGIONS, region);
                     mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                             recordingResultListener, mCameraHandler);
-                    if (!Double.isNaN(threeARegionDuration)) {
+                    if (!Double.isNaN(aeAwbRegionDuration)) {
                         Logt.i(TAG, String.format(
                                 Locale.getDefault(),
-                                "Sleeping %.2f ms during recording", threeARegionDuration));
-                        mCameraThread.sleep((long) threeARegionDuration);
+                                "Sleeping %.2f ms during recording", aeAwbRegionDuration));
+                        mCameraThread.sleep((long) aeAwbRegionDuration);
                     } else {
-                        throw new ItsException("threeARegionDuration is not specified.");
+                        throw new ItsException("aeAwbRegionDuration is not specified.");
                     }
                 }
             }
-            if (!Double.isNaN(stepDuration) || !Double.isNaN(threeARegionDuration)) {
+            if (!Double.isNaN(stepDuration) || !Double.isNaN(aeAwbRegionDuration)) {
                 mCameraThread.sleep(PREVIEW_RECORDING_FINAL_SLEEP_MS);
             } else {
                 mCameraThread.sleep(recordingDuration * 1000L);  // recordingDuration is in seconds
