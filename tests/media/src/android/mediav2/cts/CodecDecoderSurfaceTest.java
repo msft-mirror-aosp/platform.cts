@@ -30,12 +30,14 @@ import android.media.codec.Flags;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -271,6 +273,8 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(Flags.FLAG_NULL_OUTPUT_SURFACE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     public void testDetachAndReattachSurface() throws IOException, InterruptedException {
         boolean[] boolStates = {true, false};
         final long pts = 0;
