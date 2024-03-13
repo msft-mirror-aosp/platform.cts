@@ -7299,6 +7299,8 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
     <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
     <string name="sharesheet_wrong_shared_items">Wrong set of shared items; test failed.</string>
+    <string name="sharesheet_missing_result_intent_sender_invocation">Result intent sender was not invoked.</string>
+    <string name="sharesheet_wrong_result_intent_sender_invocation">Incorrect result intent sender was invoked.</string>
 
     <string name="sharesheet_album_test">Sharesheet Album Label Test</string>
     <string name="sharesheet_album_test_info">This test verifies that the system sharesheet responds to the \"album\" hint if provided by the app.</string>
