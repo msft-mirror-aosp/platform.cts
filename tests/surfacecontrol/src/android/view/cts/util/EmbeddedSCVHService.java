@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
@@ -39,6 +39,8 @@ import android.view.SurfaceControl.Transaction;
 import android.view.SurfaceControlViewHost;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
+import android.view.cts.util.aidl.IMotionEventReceiver;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.window.InputTransferToken;

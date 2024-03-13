@@ -65,7 +65,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.view.cts.surfacevalidator.CapturedActivityWithResource"
+        <activity android:name="android.view.cts.util.CapturedActivityWithResource"
              android:screenOrientation="locked"
              android:theme="@style/WhiteBackgroundTheme"
              android:exported="true">
@@ -127,9 +127,9 @@
             android:exported="true"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
 
-        <service android:name="android.view.cts.surfacevalidator.EmbeddedSCVHService"
+        <service android:name="android.view.cts.util.EmbeddedSCVHService"
             android:process="android.view.cts.surfacevalidator.embedded_process" />
-        <service android:name="android.view.cts.surfacevalidator.SurfaceControlViewHostHelper$InProcessEmbeddedSCVHService" />
+        <service android:name="android.view.cts.util.SurfaceControlViewHostHelper$InProcessEmbeddedSCVHService" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
