@@ -27,6 +27,7 @@ import opencv_processing_utils
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
@@ -153,20 +154,24 @@ def find_center_circle(
 
   for contour in contours:
     area = cv2.contourArea(contour)
-    logging.debug('area: %d, min_area: %d, num_pts: %d, min_circle_pts: %d',
-                  area, min_area, len(contour), min_circle_pts)
+    if area > min_area * _CONTOUR_AREA_LOGGING_THRESH:  # skip tiny contours
+      logging.debug('area: %d, min_area: %d, num_pts: %d, min_circle_pts: %d',
+                    area, min_area, len(contour), min_circle_pts)
     if area > min_area and len(contour) >= min_circle_pts:
       shape = opencv_processing_utils.component_shape(contour)
       radius = (shape['width'] + shape['height']) / 4
       circle_color = img_bw[shape['cty']][shape['ctx']]
       circlish = round((math.pi * radius**2) / area, 4)
-      logging.debug('circle_color: %s, expected_color: %s, circlish: %.2f',
-                    circle_color, expected_color, circlish)
+      logging.debug('color: %s, circlish: %.2f, WxH: %dx%d',
+                    circle_color, circlish, shape['width'], shape['height'])
       if (circle_color == expected_color and
           math.isclose(1, circlish, rel_tol=circlish_rtol) and
           math.isclose(shape['width'], shape['height'],
                        rel_tol=circle_ar_rtol)):
+        logging.debug('circle found: r: %.2f, area: %.2f\n', radius, area)
         circles.append([shape['ctx'], shape['cty'], radius, circlish, area])
+      else:
+        logging.debug('circle rejected: bad color, circlish or aspect ratio\n')
 
   if not circles:
     zoom_ratio_value = zoom_ratio / min_zoom_ratio
