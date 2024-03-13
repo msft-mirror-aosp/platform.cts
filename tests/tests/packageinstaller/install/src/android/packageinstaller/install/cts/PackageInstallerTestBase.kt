@@ -41,6 +41,7 @@ import android.provider.DeviceConfig
 import android.support.test.uiautomator.By
 import android.support.test.uiautomator.BySelector
 import android.support.test.uiautomator.UiDevice
+import android.support.test.uiautomator.UiObject2
 import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.core.content.FileProvider
@@ -388,15 +389,33 @@ open class PackageInstallerTestBase {
      * @param bySelector The bySelector of the button to click
      */
     fun clickInstallerUIButton(bySelector: BySelector) {
+        var button: UiObject2?
         val startTime = System.currentTimeMillis()
         while (startTime + TIMEOUT > System.currentTimeMillis()) {
             try {
-                uiDevice.wait(Until.findObject(bySelector), 1000).click()
-                return
+                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                if (button != null) {
+                    Log.d(TAG, "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
+                            " text: ${button.getText()}," +
+                            " package: ${button.getApplicationPackage()}")
+                    button.click()
+                    return
+                } else {
+                    // Maybe the screen is small. Swipe down and attempt to click
+                    swipeDown()
+                }
             } catch (ignore: Throwable) {
             }
         }
         Assert.fail("Failed to click the button: $bySelector")
+    }
+
+    private fun swipeDown() {
+        // Perform a swipe from the center of the screen to the top of the screen.
+        // Higher the "steps" value, slower is the swipe
+        val centerX = uiDevice.displayWidth / 2
+        val centerY = uiDevice.displayHeight / 2
+        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
     }
 
     /**
