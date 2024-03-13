@@ -1420,7 +1420,153 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
              getHeadUpDisplayEnabledVerifier(),
              getLowSpeedAutomaticEmergencyBrakingEnabledVerifier(),
              getLowSpeedAutomaticEmergencyBrakingStateVerifier(),
-             // TODO(b/273988725): Put all verifiers here.
+             getAutomaticEmergencyBrakingEnabledVerifier(),
+             getAutomaticEmergencyBrakingStateVerifier(),
+             getBlindSpotWarningEnabledVerifier(),
+             getBlindSpotWarningStateVerifier(),
+             getCabinLightsStateVerifier(),
+             getCabinLightsSwitchVerifier(),
+             getEngineCoolantTempVerifier(),
+             getEngineIdleAutoStopEnabledVerifier(),
+             getEngineOilLevelVerifier(),
+             getEngineOilTempVerifier(),
+             getEngineRpmVerifier(),
+             getEvRegenerativeBrakingStateVerifier(),
+             getEvChargeTimeRemainingVerifier(),
+             getFogLightsStateVerifier(),
+             getFogLightsSwitchVerifier(),
+             getForwardCollisionWarningEnabledVerifier(),
+             getForwardCollisionWarningStateVerifier(),
+             getFrontFogLightsStateVerifier(),
+             getFrontFogLightsSwitchVerifier(),
+             getHazardLightsStateVerifier(),
+             getHazardLightsSwitchVerifier(),
+             getHeadlightsStateVerifier(),
+             getHeadlightsSwitchVerifier(),
+             getHighBeamLightsStateVerifier(),
+             getHighBeamLightsSwitchVerifier(),
+             getHvacActualFanSpeedRpmVerifier(),
+             getHvacAcOnVerifier(),
+             getHvacAutoOnVerifier(),
+             getHvacAutoRecircOnVerifier(),
+             getHvacDefrosterVerifier(),
+             getHvacDualOnVerifier(),
+             getHvacFanDirectionVerifier(),
+             getHvacFanDirectionAvailableVerifier(),
+             getHvacFanSpeedVerifier(),
+             getHvacMaxAcOnVerifier(),
+             getHvacMaxDefrostOnVerifier(),
+             getHvacPowerOnVerifier(),
+             getHvacRecircOnVerifier(),
+             getHvacSeatTemperatureVerifier(),
+             getHvacSeatVentilationVerifier(),
+             getHvacSideMirrorHeatVerifier(),
+             getHvacSteeringWheelHeatVerifier(),
+             getHvacTemperatureCurrentVerifier(),
+             getHvacTemperatureSetVerifier(),
+             getHvacElectricDefrosterOnVerifier(),
+             getHvacTemperatureDisplayUnitsVerifier(),
+             getHvacTemperatureValueSuggestionVerifier(),
+             getLaneCenteringAssistCommandVerifier(),
+             getLaneCenteringAssistEnabledVerifier(),
+             getLaneCenteringAssistStateVerifier(),
+             getLaneDepartureWarningEnabledVerifier(),
+             getLaneDepartureWarningStateVerifier(),
+             getLaneKeepAssistEnabledVerifier(),
+             getLaneKeepAssistStateVerifier(),
+             getPerfOdometerVerifier(),
+             getPerfRearSteeringAngleVerifier(),
+             getPerfSteeringAngleVerifier(),
+             getReadingLightsStateVerifier(),
+             getReadingLightsSwitchVerifier(),
+             getRearFogLightsStateVerifier(),
+             getRearFogLightsSwitchVerifier(),
+             getSeatAirbagEnabledVerifier(),
+             getSeatBackrestAngle1MoveVerifier(),
+             getSeatBackrestAngle1PosVerifier(),
+             getSeatBackrestAngle2MoveVerifier(),
+             getSeatBackrestAngle2PosVerifier(),
+             getSeatBeltBuckledVerifier(),
+             getSeatBeltHeightMoveVerifier(),
+             getSeatBeltHeightPosVerifier(),
+             getSeatCushionSideSupportMoveVerifier(),
+             getSeatCushionSideSupportPosVerifier(),
+             getCriticallyLowTirePressureVerifier(),
+             getDistanceDisplayUnitsVerifier(),
+             getEvBatteryDisplayUnitsVerifier(),
+             getEvBatteryInstantaneousChargeRateVerifier(),
+             getEvBatteryLevelVerifier(),
+             getEvChargeCurrentDrawLimitVerifier(),
+             getEvChargePercentLimitVerifier(),
+             getEvChargePortConnectedVerifier(),
+             getEvChargePortOpenVerifier(),
+             getEvChargeStateVerifier(),
+             getEvChargeSwitchVerifier(),
+             getEvCurrentBatteryCapacityVerifier(),
+             getFuelConsumptionUnitsDistanceOverVolumeVerifier(),
+             getFuelDoorOpenVerifier(),
+             getFuelLevelVerifier(),
+             getFuelLevelLowVerifier(),
+             getFuelVolumeDisplayUnitsVerifier(),
+             getGloveBoxDoorPosVerifier(),
+             getGloveBoxLockedVerifier(),
+             getMirrorAutoFoldEnabledVerifier(),
+             getMirrorAutoTiltEnabledVerifier(),
+             getMirrorFoldVerifier(),
+             getMirrorLockVerifier(),
+             getMirrorYMoveVerifier(),
+             getMirrorYPosVerifier(),
+             getMirrorZMoveVerifier(),
+             getMirrorZPosVerifier(),
+             getRangeRemainingVerifier(),
+             getSeatDepthMoveVerifier(),
+             getSeatDepthPosVerifier(),
+             getSeatEasyAccessEnabledVerifier(),
+             getSeatFootwellLightsStateVerifier(),
+             getSeatFootwellLightsSwitchVerifier(),
+             getSeatForeAftMoveVerifier(),
+             getSeatForeAftPosVerifier(),
+             getSeatHeadrestAngleMoveVerifier(),
+             getSeatHeadrestAnglePosVerifier(),
+             getSeatHeadrestForeAftMoveVerifier(),
+             getSeatHeadrestForeAftPosVerifier(),
+             getSeatHeadrestHeightMoveVerifier(),
+             getSeatHeadrestHeightPosV2Verifier(),
+             getSeatHeightMoveVerifier(),
+             getSeatHeightPosVerifier(),
+             getSeatLumbarForeAftMoveVerifier(),
+             getSeatLumbarForeAftPosVerifier(),
+             getSeatLumbarSideSupportMoveVerifier(),
+             getSeatLumbarSideSupportPosVerifier(),
+             getSeatLumberVerticalMoveVerifier(),
+             getSeatLumberVerticalPosVerifier(),
+             getSeatMemorySelectVerifier(),
+             getSeatMemorySetVerifier(),
+             getSeatOccupancyVerifier(),
+             getSeatTiltMoveVerifier(),
+             getSeatTiltPosVerifier(),
+             getSeatWalkInPosVerifier(),
+             getSteeringWheelDepthMoveVerifier(),
+             getSteeringWheelDepthPosVerifier(),
+             getSteeringWheelEasyAccessEnabledVerifier(),
+             getSteeringWheelHeightMoveVerifier(),
+             getSteeringWheelHeightPosVerifier(),
+             getSteeringWheelLightsStateVerifier(),
+             getSteeringWheelLightsSwitchVerifier(),
+             getSteeringWheelLockedVerifier(),
+             getSteeringWheelTheftLockEnabledVerifier(),
+             getTirePressureVerifier(),
+             getTirePressureDisplayUnitsVerifier(),
+             getTrailerPresentVerifier(),
+             getTurnSignalStateVerifier(),
+             getVehicleCurbWeightVerifier(),
+             getVehicleSpeedDisplayUnitsVerifier(),
+             getWindowLockVerifier(),
+             getWindowMoveVerifier(),
+             getWindowPosVerifier(),
+             getWindshieldWipersPeriodVerifier(),
+             getWindshieldWipersStateVerifier(),
+             getWindshieldWipersSwitchVerifier()
         };
     }
 
@@ -3248,7 +3394,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorZPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorZPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getMirrorZPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_Z_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3258,8 +3408,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3276,7 +3425,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorZMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorZMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getMirrorZMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_Z_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3286,8 +3439,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3304,7 +3456,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorYPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorYPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getMirrorYPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_Y_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3314,8 +3470,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3332,7 +3487,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorYMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorYMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getMirrorYMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_Y_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3342,8 +3501,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3360,7 +3518,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorLockIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorLockVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getMirrorLockVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_LOCK,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3368,8 +3530,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3386,7 +3547,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testMirrorFoldIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorFoldVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getMirrorFoldVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_FOLD,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3394,13 +3559,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testMirrorAutoFoldEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorAutoFoldEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getMirrorAutoFoldEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_AUTO_FOLD_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3408,13 +3576,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testMirrorAutoTiltEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getMirrorAutoTiltEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getMirrorAutoTiltEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_AUTO_TILT_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -3422,8 +3593,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_MIRRORS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3440,7 +3610,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testWindowPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindowPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getWindowPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDOW_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3450,8 +3624,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3468,7 +3641,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testWindowMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindowMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getWindowMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDOW_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3478,8 +3655,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -3496,7 +3672,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testWindowLockIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindowLockVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getWindowLockVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDOW_LOCK,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3504,13 +3684,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_WINDOWS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testWindshieldWipersPeriodIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindshieldWipersPeriodVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getWindshieldWipersPeriodVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDSHIELD_WIPERS_PERIOD,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3519,13 +3702,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .requireMinValuesToBeZero()
                 .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testWindshieldWipersStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindshieldWipersStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getWindshieldWipersStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3533,13 +3719,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
                 .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testWindshieldWipersSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getWindshieldWipersSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getWindshieldWipersSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.WINDSHIELD_WIPERS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -3589,13 +3778,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS)
                 .addReadPermission(Car.PERMISSION_CONTROL_WINDSHIELD_WIPERS)
                 .addWritePermission(Car.PERMISSION_CONTROL_WINDSHIELD_WIPERS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelDepthPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelDepthPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelDepthPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_DEPTH_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3604,13 +3796,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelDepthMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelDepthMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelDepthMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_DEPTH_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3620,13 +3815,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelHeightPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelHeightPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelHeightPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_HEIGHT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3635,13 +3833,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelHeightMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelHeightMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelHeightMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_HEIGHT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3651,13 +3852,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelTheftLockEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelTheftLockEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSteeringWheelTheftLockEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_THEFT_LOCK_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3665,13 +3869,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelLockedIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelLockedVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSteeringWheelLockedVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_LOCKED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3679,13 +3886,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelEasyAccessEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelEasyAccessEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSteeringWheelEasyAccessEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_EASY_ACCESS_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3693,13 +3903,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
                 .addWritePermission(Car.PERMISSION_CONTROL_STEERING_WHEEL)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testGloveBoxDoorPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getGloveBoxDoorPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getGloveBoxDoorPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.GLOVE_BOX_DOOR_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -3709,13 +3922,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinValuesToBeZero()
                 .addReadPermission(Car.PERMISSION_CONTROL_GLOVE_BOX)
                 .addWritePermission(Car.PERMISSION_CONTROL_GLOVE_BOX)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testGloveBoxLockedIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getGloveBoxLockedVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getGloveBoxLockedVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.GLOVE_BOX_LOCKED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -3723,13 +3939,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_GLOVE_BOX)
                 .addWritePermission(Car.PERMISSION_CONTROL_GLOVE_BOX)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testDistanceDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getDistanceDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getDistanceDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.DISTANCE_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3742,13 +3961,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFuelVolumeDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFuelVolumeDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getFuelVolumeDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_VOLUME_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3761,13 +3983,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testTirePressureIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getTirePressureVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getTirePressureVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.TIRE_PRESSURE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
@@ -3784,13 +4009,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .that(tirePressure)
                                         .isAtLeast(0))
                 .addReadPermission(Car.PERMISSION_TIRES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testCriticallyLowTirePressureIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getCriticallyLowTirePressureVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getCriticallyLowTirePressureVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.CRITICALLY_LOW_TIRE_PRESSURE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
@@ -3826,13 +4054,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtMost((Float) tirePressureConfig.getMinValue(areaId));
                         })
                 .addReadPermission(Car.PERMISSION_TIRES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testTirePressureDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getTirePressureDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getTirePressureDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.TIRE_PRESSURE_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3845,13 +4076,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvBatteryDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvBatteryDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getEvBatteryDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_BATTERY_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3864,13 +4098,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testVehicleSpeedDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getVehicleSpeedDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getVehicleSpeedDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.VEHICLE_SPEED_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3883,13 +4120,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
-    public void testFuelConsumptionUnitsDistanceOverTimeIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+    public void testFuelConsumptionUnitsDistanceOverVolumeIfSupported() {
+        getFuelConsumptionUnitsDistanceOverVolumeVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getFuelConsumptionUnitsDistanceOverVolumeVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_CONSUMPTION_UNITS_DISTANCE_OVER_VOLUME,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3898,13 +4138,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION))
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFuelLevelIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFuelLevelVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getFuelLevelVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_LEVEL,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3936,13 +4179,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtMost((Float) infoFuelCapacityValue.getValue());
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvBatteryLevelIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvBatteryLevelVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEvBatteryLevelVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_BATTERY_LEVEL,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -3975,13 +4221,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvCurrentBatteryCapacityIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvCurrentBatteryCapacityVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEvCurrentBatteryCapacityVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CURRENT_BATTERY_CAPACITY,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4015,26 +4264,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvBatteryInstantaneousChargeRateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvBatteryInstantaneousChargeRateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEvBatteryInstantaneousChargeRateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_BATTERY_INSTANTANEOUS_CHARGE_RATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testRangeRemainingIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getRangeRemainingVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getRangeRemainingVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.RANGE_REMAINING,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4050,8 +4305,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY)
                 .addReadPermission(Car.PERMISSION_ADJUST_RANGE_REMAINING)
                 .addWritePermission(Car.PERMISSION_ADJUST_RANGE_REMAINING)
-                .build()
-                .verify();
+                .build();
     }
 
     private VehiclePropertyVerifier<Float> getEvBatteryAverageTemperatureVerifier() {
@@ -4073,20 +4327,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testFuelLevelLowIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFuelLevelLowVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getFuelLevelLowVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_LEVEL_LOW,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFuelDoorOpenIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFuelDoorOpenVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getFuelDoorOpenVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_DOOR_OPEN,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4095,13 +4356,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargePortOpenIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargePortOpenVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getEvChargePortOpenVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4110,26 +4374,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargePortConnectedIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargePortConnectedVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getEvChargePortConnectedVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_PORT_CONNECTED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargeCurrentDrawLimitIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargeCurrentDrawLimitVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEvChargeCurrentDrawLimitVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_CURRENT_DRAW_LIMIT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4173,13 +4443,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargePercentLimitIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargePercentLimitVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEvChargePercentLimitVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_PERCENT_LIMIT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4232,13 +4505,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargeStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargeStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getEvChargeStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4252,13 +4528,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                     EvChargeState.STATE_NOT_CHARGING,
                                                     EvChargeState.STATE_ERROR))
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargeSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvChargeSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getEvChargeSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4267,13 +4546,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvChargeTimeRemainingIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvRegenerativeBrakingStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getEvChargeTimeRemainingVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_CHARGE_TIME_REMAINING,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4288,13 +4570,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                 .that(evChargeTimeRemaining)
                                                 .isAtLeast(0))
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEvRegenerativeBrakingStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEvRegenerativeBrakingStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getEvRegenerativeBrakingStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.EV_REGENERATIVE_BRAKING_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4309,52 +4594,64 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                     EvRegenerativeBrakingState
                                                             .STATE_FULLY_ENABLED))
                 .addReadPermission(Car.PERMISSION_ENERGY)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testPerfSteeringAngleIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getPerfSteeringAngleVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getPerfSteeringAngleVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.PERF_STEERING_ANGLE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_READ_STEERING_STATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testPerfRearSteeringAngleIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getPerfRearSteeringAngleVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getPerfRearSteeringAngleVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.PERF_REAR_STEERING_ANGLE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_READ_STEERING_STATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEngineCoolantTempIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEngineCoolantTempVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEngineCoolantTempVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ENGINE_COOLANT_TEMP,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEngineOilLevelIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEngineOilLevelVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getEngineOilLevelVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ENGINE_OIL_LEVEL,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4362,26 +4659,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_OIL_LEVELS)
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEngineOilTempIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEngineOilTempVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEngineOilTempVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ENGINE_OIL_TEMP,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEngineRpmIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEngineRpmVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getEngineRpmVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ENGINE_RPM,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4395,13 +4698,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .that(engineRpm)
                                         .isAtLeast(0))
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testEngineIdleAutoStopEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getEngineIdleAutoStopEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getEngineIdleAutoStopEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ENGINE_IDLE_AUTO_STOP_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4409,9 +4715,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
                 .addWritePermission(Car.PERMISSION_CAR_ENGINE_DETAILED)
-                .build()
-                .verify();
+                .build();
     }
+
     private VehiclePropertyVerifier<Integer> getImpactDetectedVerifier() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.IMPACT_DETECTED,
@@ -4433,7 +4739,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testPerfOdometerIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getPerfOdometerVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getPerfOdometerVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.PERF_ODOMETER,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4447,13 +4757,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .that(perfOdometer)
                                         .isAtLeast(0))
                 .addReadPermission(Car.PERMISSION_MILEAGE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testTurnSignalStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getTurnSignalStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getTurnSignalStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.TURN_SIGNAL_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4461,13 +4774,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES)
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHeadlightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHeadlightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHeadlightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HEADLIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4475,13 +4791,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHighBeamLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHighBeamLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHighBeamLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HIGH_BEAM_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4489,13 +4808,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFogLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFogLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getFogLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FOG_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4521,13 +4843,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isNull();
                         })
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHazardLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHazardLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHazardLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HAZARD_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4535,13 +4860,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFrontFogLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFrontFogLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getFrontFogLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FRONT_FOG_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4560,13 +4888,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isNull();
                         })
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testRearFogLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getRearFogLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getRearFogLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.REAR_FOG_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4585,8 +4916,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isNull();
                         })
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -4602,7 +4932,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testCabinLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getCabinLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getCabinLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.CABIN_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4610,8 +4944,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_READ_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -4627,7 +4960,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testReadingLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getReadingLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getReadingLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.READING_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -4635,13 +4972,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_READ_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4649,8 +4989,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_READ_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -4666,7 +5005,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testVehicleCurbWeightIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getVehicleCurbWeightVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getVehicleCurbWeightVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4700,13 +5043,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isLessThan(grossWeightKg);
                         })
                 .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHeadlightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHeadlightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHeadlightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HEADLIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4715,13 +5061,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testTrailerPresentIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getTrailerPresentVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getTrailerPresentVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.TRAILER_PRESENT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4729,13 +5078,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(TRAILER_STATES)
                 .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHighBeamLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHighBeamLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHighBeamLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HIGH_BEAM_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4744,13 +5096,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFogLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFogLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getFogLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FOG_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4778,13 +5133,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHazardLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHazardLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHazardLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HAZARD_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4793,13 +5151,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testFrontFogLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getFrontFogLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getFrontFogLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FRONT_FOG_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4819,13 +5180,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testRearFogLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getRearFogLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getRearFogLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.REAR_FOG_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4845,8 +5209,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -4863,7 +5226,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testCabinLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getCabinLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getCabinLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.CABIN_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4872,8 +5239,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -4890,7 +5256,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testReadingLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getReadingLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getReadingLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.READING_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -4899,13 +5269,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSteeringWheelLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSteeringWheelLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSteeringWheelLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.STEERING_WHEEL_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -4914,14 +5287,17 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     @ApiTest(apis = {"android.car.hardware.property.CarPropertyManager#getCarPropertyConfig"})
     public void testSeatMemorySelectIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatMemorySelectVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatMemorySelectVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_MEMORY_SELECT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -4977,14 +5353,17 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             }
                         })
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     @ApiTest(apis = {"android.car.hardware.property.CarPropertyManager#getCarPropertyConfig"})
     public void testSeatMemorySetIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatMemorySetVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatMemorySetVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_MEMORY_SET,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5041,8 +5420,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             }
                         })
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5059,7 +5437,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatBeltBuckledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBeltBuckledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSeatBeltBuckledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BELT_BUCKLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5067,13 +5449,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBeltHeightPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBeltHeightPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBeltHeightPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BELT_HEIGHT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5082,13 +5467,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBeltHeightMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBeltHeightMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBeltHeightMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BELT_HEIGHT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5098,13 +5486,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatForeAftPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatForeAftPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatForeAftPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_FORE_AFT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5113,13 +5504,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatForeAftMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatForeAftMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatForeAftMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_FORE_AFT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5129,13 +5523,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBackrestAngle1PosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBackrestAngle1PosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBackrestAngle1PosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BACKREST_ANGLE_1_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5144,13 +5541,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBackrestAngle1MoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBackrestAngle1MoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBackrestAngle1MoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BACKREST_ANGLE_1_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5160,13 +5560,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBackrestAngle2PosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBackrestAngle2PosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBackrestAngle2PosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BACKREST_ANGLE_2_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5175,13 +5578,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatBackrestAngle2MoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatBackrestAngle2MoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatBackrestAngle2MoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_BACKREST_ANGLE_2_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5191,8 +5597,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5209,7 +5614,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeightPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeightPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeightPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEIGHT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5218,8 +5627,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5236,7 +5644,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeightMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeightMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeightMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEIGHT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5246,8 +5658,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5264,7 +5675,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatDepthPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatDepthPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatDepthPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_DEPTH_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5273,8 +5688,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5291,7 +5705,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatDepthMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatDepthMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatDepthMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_DEPTH_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5301,8 +5719,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5319,7 +5736,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatTiltPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatTiltPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatTiltPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_TILT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5328,8 +5749,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5346,7 +5766,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatTiltMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatTiltMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatTiltMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_TILT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5356,8 +5780,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5374,7 +5797,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatLumbarForeAftPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumbarForeAftPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumbarForeAftPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_FORE_AFT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5383,8 +5810,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5401,7 +5827,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatLumbarForeAftMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumbarForeAftMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumbarForeAftMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_FORE_AFT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5411,8 +5841,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5429,7 +5858,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatLumbarSideSupportPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumbarSideSupportPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumbarSideSupportPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_SIDE_SUPPORT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5438,8 +5871,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5456,7 +5888,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatLumbarSideSupportMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumbarSideSupportMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumbarSideSupportMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_SIDE_SUPPORT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5466,8 +5902,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5487,7 +5922,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testSeatHeadrestHeightPosV2IfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestHeightPosV2Verifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestHeightPosV2Verifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_HEIGHT_POS_V2,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5496,8 +5935,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5514,7 +5952,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeadrestHeightMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestHeightMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestHeightMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_HEIGHT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5524,8 +5966,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5542,7 +5983,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeadrestAnglePosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestAnglePosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestAnglePosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_ANGLE_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5551,8 +5996,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5569,7 +6013,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeadrestAngleMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestAngleMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestAngleMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_ANGLE_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5579,8 +6027,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5597,7 +6044,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeadrestForeAftPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestForeAftPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestForeAftPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_FORE_AFT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5606,8 +6057,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5624,7 +6074,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatHeadrestForeAftMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatHeadrestForeAftMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatHeadrestForeAftMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_HEADREST_FORE_AFT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5634,13 +6088,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatFootwellLightsStateIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatFootwellLightsStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatFootwellLightsStateVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_FOOTWELL_LIGHTS_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5648,13 +6105,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_READ_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatFootwellLightsSwitchIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatFootwellLightsSwitchVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatFootwellLightsSwitchVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_FOOTWELL_LIGHTS_SWITCH,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5663,13 +6123,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES)
                 .addReadPermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_INTERIOR_LIGHTS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatEasyAccessEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatEasyAccessEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSeatEasyAccessEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_EASY_ACCESS_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5677,13 +6140,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatAirbagEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatAirbagEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getSeatAirbagEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_AIRBAG_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5691,13 +6157,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_AIRBAGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_AIRBAGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatCushionSideSupportPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatCushionSideSupportPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatCushionSideSupportPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_CUSHION_SIDE_SUPPORT_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5706,13 +6175,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatCushionSideSupportMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatCushionSideSupportMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatCushionSideSupportMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_CUSHION_SIDE_SUPPORT_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5722,13 +6194,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatLumbarVerticalPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumberVerticalPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumberVerticalPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_VERTICAL_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5737,13 +6212,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinMaxValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatLumberVerticalMoveIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatLumberVerticalMoveVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatLumberVerticalMoveVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_LUMBAR_VERTICAL_MOVE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5753,13 +6231,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testSeatWalkInPosIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatWalkInPosVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatWalkInPosVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_WALK_IN_POS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5769,8 +6250,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinValuesToBeZero()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     private VehiclePropertyVerifier<Integer> getSeatAirbagsDeployedVerifier() {
@@ -5860,7 +6340,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testSeatOccupancyIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getSeatOccupancyVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getSeatOccupancyVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.SEAT_OCCUPANCY,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -5868,8 +6352,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -5886,7 +6369,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacDefrosterIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacDefrosterVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacDefrosterVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_DEFROSTER,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -5894,13 +6381,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHvacElectricDefrosterOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacElectricDefrosterOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacElectricDefrosterOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_ELECTRIC_DEFROSTER_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
@@ -5908,13 +6398,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHvacSideMirrorHeatIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacSideMirrorHeatVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacSideMirrorHeatVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_SIDE_MIRROR_HEAT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -5924,13 +6417,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinValuesToBeZero()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHvacSteeringWheelHeatIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacSteeringWheelHeatVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacSteeringWheelHeatVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_STEERING_WHEEL_HEAT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -5940,13 +6436,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHvacTemperatureDisplayUnitsIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacTemperatureDisplayUnitsVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacTemperatureDisplayUnitsVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -5959,13 +6458,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testHvacTemperatureValueSuggestionIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacTemperatureValueSuggestionVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float[]> getHvacTemperatureValueSuggestionVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6003,8 +6505,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6021,7 +6522,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacPowerOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacPowerOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacPowerOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_POWER_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6069,8 +6574,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6087,7 +6591,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacFanSpeedIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacFanSpeedVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacFanSpeedVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_FAN_SPEED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6097,8 +6605,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6115,7 +6622,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacFanDirectionAvailableIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacFanDirectionAvailableVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer[]> getHvacFanDirectionAvailableVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6174,8 +6685,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             }
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6192,7 +6702,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacFanDirectionIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacFanDirectionVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacFanDirectionVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_FAN_DIRECTION,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6250,8 +6764,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6268,7 +6781,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacTemperatureCurrentIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacTemperatureCurrentVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getHvacTemperatureCurrentVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_TEMPERATURE_CURRENT,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6276,8 +6793,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Float.class, mCarPropertyManager)
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6294,7 +6810,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacTemperatureSetIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacTemperatureSetVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Float> getHvacTemperatureSetVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_TEMPERATURE_SET,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6419,8 +6939,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6437,7 +6956,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacAcOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacAcOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacAcOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_AC_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6446,8 +6969,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6464,7 +6986,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacMaxAcOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacMaxAcOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacMaxAcOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_MAX_AC_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6473,8 +6999,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6491,7 +7016,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacMaxDefrostOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacMaxDefrostOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacMaxDefrostOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_MAX_DEFROST_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6500,8 +7029,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6518,7 +7046,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacRecircOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacRecircOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacRecircOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_RECIRC_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6527,8 +7059,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6545,7 +7076,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacAutoOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacAutoOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacAutoOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_AUTO_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6554,8 +7089,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6572,7 +7106,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacSeatTemperatureIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacSeatTemperatureVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacSeatTemperatureVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_SEAT_TEMPERATURE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6583,8 +7121,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6601,7 +7138,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacActualFanSpeedRpmIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacActualFanSpeedRpmVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacActualFanSpeedRpmVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6609,8 +7150,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6627,7 +7167,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacAutoRecircOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacAutoRecircOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacAutoRecircOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_AUTO_RECIRC_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6636,8 +7180,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setPossiblyDependentOnHvacPowerOn()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6654,7 +7197,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacSeatVentilationIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacSeatVentilationVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getHvacSeatVentilationVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_SEAT_VENTILATION,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6665,8 +7212,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireMinValuesToBeZero()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6683,7 +7229,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         + ".PropertyAsyncError#getVendorErrorCode"
             })
     public void testHvacDualOnIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getHvacDualOnVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHvacDualOnVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_DUAL_ON,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -6735,13 +7285,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testAutomaticEmergencyBrakingEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getAutomaticEmergencyBrakingEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getAutomaticEmergencyBrakingEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.AUTOMATIC_EMERGENCY_BRAKING_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6750,18 +7303,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testAutomaticEmergencyBrakingStateIfSupported() {
+        getAutomaticEmergencyBrakingStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getAutomaticEmergencyBrakingStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(AUTOMATIC_EMERGENCY_BRAKING_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.AUTOMATIC_EMERGENCY_BRAKING_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6773,8 +7329,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6784,7 +7339,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testForwardCollisionWarningEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getForwardCollisionWarningEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getForwardCollisionWarningEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FORWARD_COLLISION_WARNING_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6793,18 +7352,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testForwardCollisionWarningStateIfSupported() {
+        getForwardCollisionWarningStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getForwardCollisionWarningStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(FORWARD_COLLISION_WARNING_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FORWARD_COLLISION_WARNING_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6816,8 +7378,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6827,7 +7388,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testBlindSpotWarningEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getBlindSpotWarningEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getBlindSpotWarningEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.BLIND_SPOT_WARNING_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6836,18 +7401,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testBlindSpotWarningStateIfSupported() {
+        getBlindSpotWarningStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getBlindSpotWarningStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(BLIND_SPOT_WARNING_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.BLIND_SPOT_WARNING_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_MIRROR,
@@ -6859,8 +7427,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6870,7 +7437,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testLaneDepartureWarningEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getLaneDepartureWarningEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getLaneDepartureWarningEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_DEPARTURE_WARNING_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6879,18 +7450,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testLaneDepartureWarningStateIfSupported() {
+        getLaneDepartureWarningStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getLaneDepartureWarningStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(LANE_DEPARTURE_WARNING_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_DEPARTURE_WARNING_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6902,8 +7476,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6913,7 +7486,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testLaneKeepAssistEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getLaneKeepAssistEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getLaneKeepAssistEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_KEEP_ASSIST_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6922,18 +7499,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testLaneKeepAssistStateIfSupported() {
+        getLaneKeepAssistStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getLaneKeepAssistStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(LANE_KEEP_ASSIST_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_KEEP_ASSIST_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6945,8 +7525,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
@@ -6956,7 +7535,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testLaneCenteringAssistEnabledIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getLaneCenteringAssistEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getLaneCenteringAssistEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_CENTERING_ASSIST_ENABLED,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6965,13 +7548,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testLaneCenteringAssistCommandIfSupported() {
-        VehiclePropertyVerifier.newBuilder(
+        getLaneCenteringAssistCommandVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getLaneCenteringAssistCommandVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_CENTERING_ASSIST_COMMAND,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -6982,18 +7568,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         ImmutableSet.of(Car.PERMISSION_READ_ADAS_SETTINGS,
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .addWritePermission(Car.PERMISSION_CONTROL_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
     public void testLaneCenteringAssistStateIfSupported() {
+        getLaneCenteringAssistStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getLaneCenteringAssistStateVerifier() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
                 .addAll(LANE_CENTERING_ASSIST_STATES)
                 .addAll(ERROR_STATES)
                 .build();
 
-        VehiclePropertyVerifier.newBuilder(
+        return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.LANE_CENTERING_ASSIST_STATE,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -7005,8 +7594,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates()
                 .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
-                .build()
-                .verify();
+                .build();
     }
 
     @Test
