@@ -69,6 +69,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.MockImeHelper;
 import android.server.wm.WindowManagerTestBase;
+import android.util.Log;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
@@ -95,6 +96,7 @@ import org.junit.rules.ErrorCollector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -109,11 +111,12 @@ import java.util.function.Supplier;
 @android.server.wm.annotation.Group2
 public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
-    private final static long TIMEOUT = 1000; // milliseconds
-    private final static long TIMEOUT_COLD_START_IME = 10000; // milliseconds
-    private final static long TIMEOUT_UPDATING_INPUT_WINDOW = 500; // milliseconds
-    private final static long TIME_SLICE = 50; // milliseconds
-    private final static AnimationCallback ANIMATION_CALLBACK = new AnimationCallback();
+    private static final String TAG = WindowInsetsControllerTests.class.getSimpleName();
+    private static final long TIMEOUT = 1000; // milliseconds
+    private static final long TIMEOUT_COLD_START_IME = 10000; // milliseconds
+    private static final long TIMEOUT_UPDATING_INPUT_WINDOW = 500; // milliseconds
+    private static final long TIME_SLICE = 50; // milliseconds
+    private static final AnimationCallback ANIMATION_CALLBACK = new AnimationCallback();
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
@@ -258,17 +261,40 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
         final View rootView = activity.getWindow().getDecorView();
         assumeTrue(rootView.getRootWindowInsets().isVisible(navigationBars()));
+
+        Log.i(TAG, "Hide nav bar");
         getInstrumentation().runOnMainSync(
                 () -> rootView.getWindowInsetsController().hide(navigationBars()));
-        PollingCheck.waitFor(TIMEOUT,
+        PollingCheck.check("Nav bar must be invisible.", TIMEOUT,
                 () -> !rootView.getRootWindowInsets().isVisible(navigationBars()));
+
+        final boolean[] loggedVisibilities = new boolean[2];
+        final boolean[] expectedVisibilities = new boolean[2];
+        final Callable<Boolean> visibilityVerifier = () -> {
+            final WindowInsets insets = rootView.getRootWindowInsets();
+            final boolean imeVisible = insets.isVisible(ime());
+            final boolean navVisible = insets.isVisible(navigationBars());
+            if (loggedVisibilities[0] != imeVisible || loggedVisibilities[1] != navVisible) {
+                loggedVisibilities[0] = imeVisible;
+                loggedVisibilities[1] = navVisible;
+                Log.d(TAG, "imeVisible=" + imeVisible + " navVisible=" + navVisible);
+            }
+            return imeVisible == expectedVisibilities[0] && navVisible == expectedVisibilities[1];
+        };
+
+        Log.i(TAG, "Show IME");
         getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController().show(ime()));
-        PollingCheck.waitFor(TIMEOUT_COLD_START_IME,
-                () -> rootView.getRootWindowInsets().isVisible(ime() | navigationBars()));
+        expectedVisibilities[0] = true;
+        expectedVisibilities[1] = true;
+        PollingCheck.check("IME and nav bar must be both visible.",
+                TIMEOUT_COLD_START_IME, visibilityVerifier);
+
+        Log.i(TAG, "Hide IME");
         getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController().hide(ime()));
-        PollingCheck.waitFor(TIMEOUT,
-                () -> !rootView.getRootWindowInsets().isVisible(ime())
-                        && !rootView.getRootWindowInsets().isVisible(navigationBars()));
+        expectedVisibilities[0] = false;
+        expectedVisibilities[1] = false;
+        PollingCheck.check("IME and nav bar must be both invisible.",
+                TIMEOUT, visibilityVerifier);
     }
 
     @Test
