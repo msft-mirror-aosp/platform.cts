@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Representation of a class in the API with constructors and methods. */
-class ApiClass implements Comparable<ApiClass>, HasCoverage {
+public class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     private static final String VOID = "void";
 
@@ -36,7 +36,8 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     private final boolean mAbstract;
 
-    private final List<ApiConstructor> mApiConstructors = Collections.synchronizedList(new ArrayList<>());
+    private final List<ApiConstructor> mApiConstructors = Collections.synchronizedList(
+            new ArrayList<>());
 
     private final List<ApiMethod> mApiMethods = Collections.synchronizedList(new ArrayList<>());
 
@@ -52,7 +53,7 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
      * @param classAbstract true iff the class is abstract
      * @param superClassName The fully qualified name of the super class
      */
-    ApiClass(
+    public ApiClass(
             String name,
             boolean deprecated,
             boolean classAbstract,
@@ -85,7 +86,9 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
         return mAbstract;
     }
 
-    public void setSuperClass(ApiClass superClass) { mSuperClass = superClass; }
+    public void setSuperClass(ApiClass superClass) {
+        mSuperClass = superClass;
+    }
 
     public void addInterface(String interfaceName) {
         mInterfaceMap.put(interfaceName, null);
@@ -230,20 +233,20 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
      * or the apiType is generic and the test type is not void
      */
     private static boolean compareType(String apiType, String testType) {
-        return apiType.equals(testType) ||
-                isGenericType(apiType) && !testType.equals(VOID) ||
-                isGenericArrayType(apiType) && isArrayType(testType) ||
-                isVarArg(apiType) && isArrayType(testType) &&
-                        apiType.startsWith(testType.substring(0, testType.indexOf("[")));
+        return apiType.equals(testType)
+                || (isGenericType(apiType) && !testType.equals(VOID))
+                || (isGenericArrayType(apiType) && isArrayType(testType))
+                || (isVarArg(apiType) && isArrayType(testType)
+                    && apiType.startsWith(testType.substring(0, testType.indexOf("["))));
     }
 
     /**
      * @return true iff the given parameterType is a generic type.
      */
     private static boolean isGenericType(String type) {
-        return type.length() == 1 &&
-                type.charAt(0) >= 'A' &&
-                type.charAt(0) <= 'Z';
+        return type.length() == 1
+                && type.charAt(0) >= 'A'
+                && type.charAt(0) <= 'Z';
     }
 
     /**

@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
-import java.lang.String;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Representation of the entire API containing packages. */
-class ApiCoverage {
+public class ApiCoverage {
 
     private final Map<String, ApiPackage> mPackages = new ConcurrentHashMap<>();
 

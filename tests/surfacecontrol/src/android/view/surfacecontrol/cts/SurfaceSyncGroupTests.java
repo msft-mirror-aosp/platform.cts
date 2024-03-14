@@ -38,7 +38,7 @@ import android.view.SurfaceControlViewHost.SurfacePackage;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
-import android.view.cts.surfacevalidator.IAttachEmbeddedWindow;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 import android.window.SurfaceSyncGroup;
 
 import androidx.test.platform.app.InstrumentationRegistry;

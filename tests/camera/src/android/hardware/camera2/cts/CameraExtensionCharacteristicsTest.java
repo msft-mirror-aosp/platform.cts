@@ -100,7 +100,7 @@ public class CameraExtensionCharacteristicsTest {
                 CameraExtensionCharacteristics.EXTENSION_HDR,
                 CameraExtensionCharacteristics.EXTENSION_NIGHT));
         if (FeatureFlagUtils.isEnabled(mContext,
-                "com.android.internal.camera.flags.concert_mode")) {
+                "com.android.internal.camera.flags.concert_mode_api")) {
             mExtensionList.add(CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY);
         }
     }

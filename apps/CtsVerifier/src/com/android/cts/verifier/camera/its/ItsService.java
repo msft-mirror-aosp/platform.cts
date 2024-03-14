@@ -3702,6 +3702,12 @@ public class ItsService extends Service implements SensorEventListener {
             mCaptureRawIsQuadBayerStats = false;
             mCaptureResults = new CaptureResult[requests.size()];
 
+            JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
+
+            prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                    /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                    /*backgroundRequest*/ false, /*reuseSession*/ false);
+
             configureAndCreateExtensionSession(
                     mOutputImageReaders[0].getSurface(),
                     extension,

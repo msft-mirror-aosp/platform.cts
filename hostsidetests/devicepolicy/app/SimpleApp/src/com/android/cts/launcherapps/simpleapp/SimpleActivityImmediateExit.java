@@ -16,23 +16,27 @@
 
 package com.android.cts.launcherapps.simpleapp;
 
+import static android.content.Intent.EXTRA_REMOTE_CALLBACK;
+import static android.content.Intent.EXTRA_RETURN_RESULT;
+
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
+import android.os.RemoteCallback;
 import android.util.Log;
 
 /**
  * A simple activity which quits itself immediately after starting.
  */
 public class SimpleActivityImmediateExit extends Activity {
-    private final static String ACTIVITY_EXIT_ACTION =
-            "com.android.cts.launchertests.LauncherAppsTests.EXIT_ACTION";
     private static final String TAG = "SimpleActivityImmediateExit";
+    private RemoteCallback mRemoteCallback;
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         Log.i(TAG, "Created SimpleActivityImmediateExit.");
+        mRemoteCallback = getIntent().getParcelableExtra(EXTRA_REMOTE_CALLBACK,
+                RemoteCallback.class);
     }
 
     @Override
@@ -47,8 +51,10 @@ public class SimpleActivityImmediateExit extends Activity {
         super.onStop();
         Log.i(TAG, "Stopping SimpleActivityImmediateExit.");
         // Notify any listener that this activity is about to end now.
-        Intent reply = new Intent();
-        reply.setAction(ACTIVITY_EXIT_ACTION);
-        sendBroadcast(reply);
+        if (mRemoteCallback != null) {
+            final Bundle result = new Bundle();
+            result.putInt(EXTRA_RETURN_RESULT, RESULT_OK);
+            mRemoteCallback.sendResult(result);
+        }
     }
 }

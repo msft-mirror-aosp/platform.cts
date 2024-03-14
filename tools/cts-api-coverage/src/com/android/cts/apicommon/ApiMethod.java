@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
+package com.android.cts.apicommon;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /** Representation of a method in the API with parameters (arguments) and a return value. */
-class ApiMethod implements Comparable<ApiMethod> {
+public class ApiMethod implements Comparable<ApiMethod> {
 
     private final String mName;
 
@@ -47,7 +46,7 @@ class ApiMethod implements Comparable<ApiMethod> {
     // A list of test APKs (aka CTS modules) that use this method.
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
-    ApiMethod(
+    public ApiMethod(
             String name,
             List<String> parameterTypes,
             String returnType,
@@ -91,15 +90,25 @@ class ApiMethod implements Comparable<ApiMethod> {
         return !mCoveredWith.isEmpty();
     }
 
-    public String getVisibility() { return mVisibility; }
+    public String getVisibility() {
+        return mVisibility;
+    }
 
-    public boolean isAbstractMethod() { return mAbstractMethod; }
+    public boolean isAbstractMethod() {
+        return mAbstractMethod;
+    }
 
-    public boolean isStaticMethod() { return mStaticMethod; }
+    public boolean isStaticMethod() {
+        return mStaticMethod;
+    }
 
-    public boolean isFinalMethod() { return mFinalMethod; }
+    public boolean isFinalMethod() {
+        return mFinalMethod;
+    }
 
-    public Set<String> getCoveredWith() { return mCoveredWith.keySet(); }
+    public Set<String> getCoveredWith() {
+        return mCoveredWith.keySet();
+    }
 
     public void setCovered(String coveredWithModule) {
         if (coveredWithModule.endsWith(".apk")) {

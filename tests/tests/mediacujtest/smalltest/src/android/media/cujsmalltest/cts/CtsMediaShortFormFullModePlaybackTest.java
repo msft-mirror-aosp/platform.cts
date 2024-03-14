@@ -92,10 +92,6 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   @Test
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
-    if (mCujTestParam.playerListener().isOrientationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation.",
-          supportOrientationRequest(mActivity));
-    }
     if (mCujTestParam.playerListener().isCallNotificationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
           deviceSupportPhoneCall(mActivity));

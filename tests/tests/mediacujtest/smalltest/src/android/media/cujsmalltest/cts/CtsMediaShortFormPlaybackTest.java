@@ -115,8 +115,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setPlayerListener(new OrientationTestPlayerListener(3000)).build(),
             "Avc_360x640_5sec_OrientationTest"},
         {CujTestParam.builder().setMediaUrls(prepareHevc_480p_15secVideoListForScrollTest())
-            .setTimeoutMilliSeconds(90000)
-            .setPlayerListener(new ScrollTestPlayerListener(2, 5000)).build(),
+            .setTimeoutMilliSeconds(40000)
+            .setPlayerListener(new ScrollTestPlayerListener(2, 2000)).build(),
             "Avc_360x640_15sec_ScrollTest"},
         {CujTestParam.builder().setMediaUrls(prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoList())
             .setTimeoutMilliSeconds(45000)
@@ -264,10 +264,6 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     if (mCujTestParam.playerListener().isOrientationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation.",
           supportOrientationRequest(mActivity));
-    }
-    if (mCujTestParam.playerListener().isCallNotificationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
-          deviceSupportPhoneCall(mActivity));
     }
     if (mCujTestParam.playerListener().isPinchToZoomTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " as watch doesn't support zoom behaviour yet",

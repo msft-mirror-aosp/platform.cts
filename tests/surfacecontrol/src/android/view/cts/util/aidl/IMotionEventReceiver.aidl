@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.view.cts.surfacevalidator;
+package android.view.cts.util.aidl;
 
 import android.view.MotionEvent;
 

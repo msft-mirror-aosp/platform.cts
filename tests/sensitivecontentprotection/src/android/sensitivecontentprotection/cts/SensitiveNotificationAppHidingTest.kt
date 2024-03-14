@@ -26,6 +26,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.permission.flags.Flags
+import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.service.notification.StatusBarNotification
@@ -45,6 +46,7 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@AppModeFull(reason = "Notification Listeners are not supported for instant apps")
 class SensitiveNotificationAppHidingTest {
     private val TAG = SensitiveNotificationAppHidingTest::class.java.simpleName
     private val mediaProjectionHelper = SensitiveContentMediaProjectionHelper()

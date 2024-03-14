@@ -45,6 +45,8 @@
         <option name="run-command" value="wm dismiss-keyguard" />
         <option name="run-command" value="settings put secure immersive_mode_confirmations confirmed" />
         <option name="run-command" value="input keyevent KEYCODE_HOME" />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.launcherapps.simpleapp" />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.launcherapps.simpleapp" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">

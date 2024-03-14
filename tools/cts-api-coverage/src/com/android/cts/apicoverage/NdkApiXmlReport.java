@@ -17,6 +17,7 @@
 package com.android.cts.apicoverage;
 
 import com.android.compatibility.common.util.ReadElf;
+import com.android.cts.apicommon.ApiCoverage;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;

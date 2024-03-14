@@ -290,4 +290,41 @@ public class CodecInfoTest {
                     + widths + " height range " + heights, widths, heights);
         }
     }
+
+    /**
+     * Components advertising support for compression technologies that were introduced after 2002
+     * must support a smallest width/height alignment allowed by the video standard.
+     */
+    @VsrTest(requirements = {"VSR-4.2-004.001"})
+    @Test
+    public void testAlignmentSupport() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
+                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+        Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
+                BOARD_SDK_IS_AT_LEAST_202404);
+        MediaCodecInfo.VideoCapabilities vCaps =
+                mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
+        int widthAlignment = vCaps.getWidthAlignment();
+        int heightAlignment = vCaps.getHeightAlignment();
+        switch (mMediaType) {
+            case MediaFormat.MIMETYPE_VIDEO_AVC:
+            case MediaFormat.MIMETYPE_VIDEO_HEVC:
+                assertTrue(mCodecName + ", width alignment = " + widthAlignment
+                        + " should be <= 2 ", widthAlignment <= 2);
+                assertTrue(mCodecName + ", height alignment = " + heightAlignment
+                        + " should be <= 2 ", heightAlignment <= 2);
+                break;
+            case MediaFormat.MIMETYPE_VIDEO_VP8:
+            case MediaFormat.MIMETYPE_VIDEO_VP9:
+            case MediaFormat.MIMETYPE_VIDEO_AV1:
+                assertEquals(mCodecName + ", width alignment = " + widthAlignment
+                        + "  should be equal to 1 ", 1, widthAlignment);
+                assertEquals(mCodecName + ", height alignment = " + heightAlignment
+                        + "  should be equal to 1 ", 1, heightAlignment);
+                break;
+        }
+    }
 }
