@@ -30,6 +30,8 @@
         <option name="runtime-hint" value="14s" />
         <!-- test-timeout unit is ms, value = 10 min -->
         <option name="test-timeout" value="600000" />
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- TODO(b/285554134): Remove once underlying issue is fixed-->
@@ -44,12 +46,9 @@
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
-    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
-        <!-- Take screenshot upon test failure -->
-        <option name="screenshot-on-failure" value="true" />
-    </object>
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="pull-pattern-keys" value=".*_actual\.png" />
+        <option name="pull-pattern-keys" value="input_.*" />
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
         <option name="directory-keys" value="/data/user/0/android.input.cts/files" />
         <option name="collect-on-run-ended-only" value="false" />
         <option name="clean-up" value="false" />
