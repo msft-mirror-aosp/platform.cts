@@ -169,6 +169,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         beforeAllTestsBase();
+        if (!shouldTestSatellite()) {
+            // FEATURE_TELEPHONY_SATELLITE is missing, so let's set up mock SatelliteManager.
+            sSatelliteManager = new SatelliteManager(getContext());
+        }
         enforceMockModemDeveloperSetting();
 
         grantSatellitePermission();
