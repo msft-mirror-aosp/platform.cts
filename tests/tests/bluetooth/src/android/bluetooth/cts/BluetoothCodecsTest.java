@@ -16,14 +16,10 @@
 
 package android.bluetooth.cts;
 
-import android.app.UiAutomation;
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
 import android.test.AndroidTestCase;
 
-import androidx.test.InstrumentationRegistry;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -225,7 +221,7 @@ public class BluetoothCodecsTest extends AndroidTestCase {
     }
 
     public void test_BluetoothCodecConfigBuilder() {
-        BluetoothCodecConfig builderConfig = new BluetoothCodecConfig.Builder()
+        BluetoothCodecConfig builderA = new BluetoothCodecConfig.Builder()
                 .setCodecType(config_A.getCodecType())
                 .setCodecPriority(config_A.getCodecPriority())
                 .setSampleRate(config_A.getSampleRate())
@@ -237,8 +233,25 @@ public class BluetoothCodecsTest extends AndroidTestCase {
                 .setCodecSpecific4(config_A.getCodecSpecific4())
                 .build();
 
-        assertTrue(Objects.equals(builderConfig, config_A));
-        assertTrue(builderConfig.isMandatoryCodec());
+        assertTrue(Objects.equals(builderA, config_A));
+        assertTrue(builderA.isMandatoryCodec());
+
+        // Test that setExtendedCodecType has the same effect
+        // as setCodecType.
+        BluetoothCodecConfig builderB = new BluetoothCodecConfig.Builder()
+                .setExtendedCodecType(config_A.getExtendedCodecType())
+                .setCodecPriority(config_A.getCodecPriority())
+                .setSampleRate(config_A.getSampleRate())
+                .setBitsPerSample(config_A.getBitsPerSample())
+                .setChannelMode(config_A.getChannelMode())
+                .setCodecSpecific1(config_A.getCodecSpecific1())
+                .setCodecSpecific2(config_A.getCodecSpecific2())
+                .setCodecSpecific3(config_A.getCodecSpecific3())
+                .setCodecSpecific4(config_A.getCodecSpecific4())
+                .build();
+
+        assertTrue(Objects.equals(builderB, config_A));
+        assertTrue(builderB.isMandatoryCodec());
     }
 
     public void test_GetCodecConfig() {
