@@ -881,12 +881,9 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     return self._execute_preview_recording(cmd)
 
-  def do_preview_recording_with_dynamic_three_a_region(self, video_size,
-                                                       stabilize,
-                                                       three_a_regions,
-                                                       three_a_region_duration,
-                                                       ae_target_fps_min=None,
-                                                       ae_target_fps_max=None):
+  def do_preview_recording_with_dynamic_ae_awb_region(
+      self, video_size, stabilize, ae_awb_regions, ae_awb_region_duration,
+      ae_target_fps_min=None, ae_target_fps_max=None):
     """Issue a preview request with dynamic 3A region and read back output object.
 
     The resolution of the preview and its recording will be determined by
@@ -896,12 +893,13 @@ class ItsSession(object):
     Args:
       video_size: str; Preview resolution at which to record. ex. "1920x1080"
       stabilize: boolean; Whether the preview should be stabilized.
-      three_a_regions: dictionary of (threeARegionStart/Change/End).
+      ae_awb_regions: dictionary of (aeAwbRegionOne/Two/Three/Four).
         Used to control 3A region during recording.
-        threeARegionStart (metering rectangle) starting 3A region of recording.
-        threeARegionChange (metering rectangle) changed 3A region from start.
-        threeARegionEnd (metering rectangle) ending 3A region of recording.
-      three_a_region_duration: float; sleep in ms between 3A regions.
+        aeAwbRegionOne (metering rectangle) first ae/awb region of recording.
+        aeAwbRegionTwo (metering rectangle) second ae/awb region of recording.
+        aeAwbRegionThree (metering rectangle) third ae/awb region of recording.
+        aeAwbRegionFour (metering rectangle) fourth ae/awb region of recording.
+      ae_awb_region_duration: float; sleep in ms between 3A regions.
       ae_target_fps_min: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE min.
       ae_target_fps_max: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE max.
     Returns:
@@ -914,12 +912,13 @@ class ItsSession(object):
         'recordingDuration': 0,  # set to 0 to avoid JSONException
         'stabilize': stabilize,
         'ois': False,
-        'threeARegionDuration': three_a_region_duration
+        'aeAwbRegionDuration': ae_awb_region_duration
     }
 
-    cmd['threeARegionStart'] = three_a_regions['threeARegionStart']
-    cmd['threeARegionChange'] = three_a_regions['threeARegionChange']
-    cmd['threeARegionEnd'] = three_a_regions['threeARegionEnd']
+    cmd['aeAwbRegionOne'] = ae_awb_regions['aeAwbRegionOne']
+    cmd['aeAwbRegionTwo'] = ae_awb_regions['aeAwbRegionTwo']
+    cmd['aeAwbRegionThree'] = ae_awb_regions['aeAwbRegionThree']
+    cmd['aeAwbRegionFour'] = ae_awb_regions['aeAwbRegionFour']
     cmd['hlg10Enabled'] = False
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
