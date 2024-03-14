@@ -330,3 +330,28 @@ def verify_zoom_results(test_data, size, z_max, z_min):
 
   return not test_failed
 
+
+def get_zoom_params(zoom_range, steps):
+  """Returns zoom min, max, step_size based on zoom range and steps.
+
+  Determine zoom min, max, step_size based on zoom range, steps.
+  Zoom max is capped due to current ITS box size limitation.
+
+  Args:
+    zoom_range: [float,float]; Camera's zoom range
+    steps: int; number of steps
+
+  Returns:
+    zoom_min: minimum zoom
+    zoom_max: maximum zoom
+    zoom_step_size: size of zoom steps
+  """
+  # Determine test zoom range
+  logging.debug('z_range = %s', str(zoom_range))
+  zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
+  zoom_max = min(zoom_max, ZOOM_MAX_THRESH * zoom_min)
+  zoom_step_size = (zoom_max-zoom_min) / (steps-1)
+  logging.debug('zoomRatioRange = %s z_min = %f z_max = %f z_stepSize = %f',
+                str(zoom_range), zoom_min, zoom_max, zoom_step_size)
+
+  return zoom_min, zoom_max, zoom_step_size
