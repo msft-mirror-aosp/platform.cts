@@ -407,11 +407,22 @@ open class PackageInstallerTestBase {
                             " package: ${button.getApplicationPackage()}")
                     button.click()
                     return
+                } else {
+                    // Maybe the screen is small. Swipe down and attempt to click
+                    swipeDown()
                 }
             } catch (ignore: Throwable) {
             }
         }
         Assert.fail("Failed to click the button: $bySelector")
+    }
+
+    private fun swipeDown() {
+        // Perform a swipe from the center of the screen to the top of the screen.
+        // Higher the "steps" value, slower is the swipe
+        val centerX = uiDevice.displayWidth / 2
+        val centerY = uiDevice.displayHeight / 2
+        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
     }
 
     /**
