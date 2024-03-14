@@ -26,6 +26,8 @@ import static android.graphics.pdf.cts.module.Utils.renderPreV;
 import static android.graphics.pdf.cts.module.Utils.renderPreVAndCompare;
 import static android.graphics.pdf.cts.module.Utils.renderWithTransform;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
@@ -205,6 +207,29 @@ public class CommonRendererTest {
         }
     }
 
+    @Test
+    public void testRenderParams() {
+        assertRenderParams(RenderParams.RENDER_MODE_FOR_DISPLAY,
+                RenderParams.FLAG_RENDER_HIGHLIGHT_ANNOTATIONS, new RenderParams.Builder(
+                        RenderParams.RENDER_MODE_FOR_DISPLAY).setRenderFlags(
+                        RenderParams.FLAG_RENDER_HIGHLIGHT_ANNOTATIONS).build());
+
+        assertRenderParams(RenderParams.RENDER_MODE_FOR_DISPLAY,
+                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, new RenderParams.Builder(
+                        RenderParams.RENDER_MODE_FOR_DISPLAY).setRenderFlags(
+                        RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS).build());
+
+        assertRenderParams(RenderParams.RENDER_MODE_FOR_PRINT,
+                RenderParams.FLAG_RENDER_HIGHLIGHT_ANNOTATIONS, new RenderParams.Builder(
+                        RenderParams.RENDER_MODE_FOR_PRINT).setRenderFlags(
+                        RenderParams.FLAG_RENDER_HIGHLIGHT_ANNOTATIONS).build());
+
+        assertRenderParams(RenderParams.RENDER_MODE_FOR_PRINT,
+                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, new RenderParams.Builder(
+                        RenderParams.RENDER_MODE_FOR_PRINT).setRenderFlags(
+                        RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS).build());
+    }
+
     private void assertException(Rect destClip, Matrix transformation, int renderMode) {
         assertThrows(IllegalArgumentException.class,
                 () -> renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, destClip,
@@ -253,6 +278,11 @@ public class CommonRendererTest {
         return renderWithTransform(A4_WIDTH_PTS, A4_HEIGHT_PTS, A4_PORTRAIT, null, null,
                 renderMode,
                 RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, useNewConstructor, mContext);
+    }
+
+    private void assertRenderParams(int renderMode, int renderFlag, RenderParams renderParams) {
+        assertThat(renderParams.getRenderFlags()).isEqualTo(renderFlag);
+        assertThat(renderParams.getRenderMode()).isEqualTo(renderMode);
     }
 
 }
