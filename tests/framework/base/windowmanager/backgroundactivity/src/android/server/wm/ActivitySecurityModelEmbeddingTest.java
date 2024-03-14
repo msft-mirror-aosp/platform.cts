@@ -16,11 +16,15 @@
 
 package android.server.wm;
 
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
+
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.ComponentName;
 
 import androidx.test.filters.FlakyTest;
+import androidx.window.extensions.WindowExtensions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +35,7 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        assumeActivityEmbeddingSupportedDevice();
+        checkEmbeddingSupport();
 
         // Set up app a with A and B running embedded
         new ActivityStartVerifier()
@@ -42,6 +46,13 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
                 .thenAssertEmbeddingTaskStack(new ComponentName[]{
                         APP_B.FOREGROUND_ACTIVITY
                 }, APP_A.FOREGROUND_EMBEDDING_ACTIVITY);
+    }
+
+    void checkEmbeddingSupport() {
+        assumeExtensionSupportedDevice();
+        WindowExtensions windowExtensions = getWindowExtensions();
+        assumeNotNull(windowExtensions);
+        assumeNotNull(windowExtensions.getActivityEmbeddingComponent());
     }
 
     @Test
