@@ -36,8 +36,7 @@ _ZOOM_MIN_THRESH = 2.0
 
 
 class ZoomTest(its_base_test.ItsBaseTest):
-  """Test the camera zoom behavior.
-  """
+  """Test the camera zoom behavior."""
 
   def test_zoom(self):
     with its_session_utils.ItsSession(
@@ -61,6 +60,8 @@ class ZoomTest(its_base_test.ItsBaseTest):
       z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
+      if z_min != 1:
+        z_list = np.insert(z_list, 0, 1)  # make first (reference) zoom 1x
       logging.debug('Testing zoom range: %s', str(z_list))
 
       # Check media performance class

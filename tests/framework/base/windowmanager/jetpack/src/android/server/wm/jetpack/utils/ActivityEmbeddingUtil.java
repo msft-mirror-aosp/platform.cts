@@ -362,17 +362,16 @@ public class ActivityEmbeddingUtil {
                 .getActivityEmbeddingComponent();
 
         // Verify that both activities are embedded and that the bounds are correct
-        assertEquals(!shouldExpandContainers,
-                activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
-        // If the split pair is stacked, ignore to check the bounds because the primary activity
-        // may have been occluded and the latest configuration may not be received.
         if (!shouldExpandContainers) {
+            // If the split pair is stacked, ignore to check the bounds because the primary activity
+            // may have been occluded and the latest configuration may not be received.
             waitForActivityBoundsEquals(primaryActivity, expectedBoundsPair.first);
+            assertTrue(activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
         }
         if (secondaryActivity != null) {
+            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
             assertEquals(!shouldExpandContainers,
                     activityEmbeddingComponent.isActivityEmbedded(secondaryActivity));
-            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
         }
     }
 

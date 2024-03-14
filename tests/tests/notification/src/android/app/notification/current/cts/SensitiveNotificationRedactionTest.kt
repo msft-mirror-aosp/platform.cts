@@ -316,7 +316,8 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testListenerWithCdmAssociationGetsUnredacted() {
-        assumeFalse(mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE))
+        assumeFalse(mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK))
         val cdmManager = mContext.getSystemService(CompanionDeviceManager::class.java)!!
         val macAddress = MacAddress.fromString("00:00:00:00:00:AA")
         try {

@@ -1221,18 +1221,8 @@ public final class DeviceState extends HarrierRule {
                         requireQuickSettingsSupport.failureMode());
                 continue;
             }
-            if (annotation instanceof RequireHasDefaultBrowser requireHasDefaultBrowser) {
-                UserReference user =
-                        resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
-                checkFailOrSkip("User: " + user + " does not have a default browser",
-                        !TestApis.roles().getRoleHoldersAsUser(ROLE_BROWSER, user).isEmpty(),
-                        requireHasDefaultBrowser.failureMode());
-                continue;
-            }
 
-            if (annotation instanceof RequireHasDefaultBrowser) {
-                RequireHasDefaultBrowser requireHasDefaultBrowser =
-                        (RequireHasDefaultBrowser) annotation;
+            if (annotation instanceof RequireHasDefaultBrowser requireHasDefaultBrowser) {
                 UserReference user =
                         resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 

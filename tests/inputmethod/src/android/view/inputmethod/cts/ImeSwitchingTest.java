@@ -31,7 +31,6 @@ import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -105,7 +104,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      *
      * <p>Regression test for Bug 152876819.</p>
      */
-    @FlakyTest(bugId = 328694633)
     @Test
     public void testImeRemainsVisibleAfterSwitchingIme() throws Exception {
         final var instrumentation = InstrumentationRegistry.getInstrumentation();

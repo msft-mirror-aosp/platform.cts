@@ -20,7 +20,7 @@ import static android.app.appsearch.AppSearchResult.RESULT_INVALID_ARGUMENT;
 import static android.app.appsearch.AppSearchResult.RESULT_NOT_FOUND;
 import static android.app.appsearch.AppSearchResult.RESULT_TIMED_OUT;
 import static android.app.appsearch.AppSearchResult.RESULT_UNKNOWN_ERROR;
-import static android.app.appsearch.functions.ExecuteAppFunctionResponse.KEY_RESULT;
+import static android.app.appsearch.functions.ExecuteAppFunctionResponse.PROPERTY_RESULT;
 import static android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate;
 import static android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy;
 
@@ -89,7 +89,8 @@ public class AppFunctionManagerCtsTest {
         AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
 
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getResultValue().getResult().getPropertyLong(KEY_RESULT)).isEqualTo(3);
+        assertThat(response.getResultValue().getResult().getPropertyLong(PROPERTY_RESULT))
+                .isEqualTo(3);
         assertServiceDestroyed();
     }
 
@@ -126,7 +127,8 @@ public class AppFunctionManagerCtsTest {
         AppSearchResult<ExecuteAppFunctionResponse> response =
                 blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS);
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getResultValue().getResult().getPropertyLong(KEY_RESULT)).isEqualTo(3);
+        assertThat(response.getResultValue().getResult().getPropertyLong(PROPERTY_RESULT))
+                .isEqualTo(3);
 
         // Each callback can only be invoked once.
         assertThat(blockingQueue.poll(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isNull();
@@ -217,7 +219,8 @@ public class AppFunctionManagerCtsTest {
         AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
 
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getResultValue().getResult().getPropertyLong(KEY_RESULT)).isEqualTo(3);
+        assertThat(response.getResultValue().getResult().getPropertyLong(PROPERTY_RESULT))
+                .isEqualTo(3);
         assertServiceDestroyed();
     }
 

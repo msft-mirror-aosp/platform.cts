@@ -46,7 +46,7 @@ public class ExecuteAppFunctionResponseCtsTest {
         Bundle extras = new Bundle();
         extras.putString("extra", "value");
         GenericDocument functionResult = new GenericDocument.Builder<>("", "", "")
-                .setPropertyLong(ExecuteAppFunctionResponse.KEY_RESULT, 42)
+                .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RESULT, 42)
                 .build();
         ExecuteAppFunctionResponse response =
                 new ExecuteAppFunctionResponse.Builder()

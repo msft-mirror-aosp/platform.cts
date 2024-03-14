@@ -27,6 +27,7 @@ import opencv_processing_utils
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
@@ -153,20 +154,24 @@ def find_center_circle(
 
   for contour in contours:
     area = cv2.contourArea(contour)
-    logging.debug('area: %d, min_area: %d, num_pts: %d, min_circle_pts: %d',
-                  area, min_area, len(contour), min_circle_pts)
+    if area > min_area * _CONTOUR_AREA_LOGGING_THRESH:  # skip tiny contours
+      logging.debug('area: %d, min_area: %d, num_pts: %d, min_circle_pts: %d',
+                    area, min_area, len(contour), min_circle_pts)
     if area > min_area and len(contour) >= min_circle_pts:
       shape = opencv_processing_utils.component_shape(contour)
       radius = (shape['width'] + shape['height']) / 4
       circle_color = img_bw[shape['cty']][shape['ctx']]
       circlish = round((math.pi * radius**2) / area, 4)
-      logging.debug('circle_color: %s, expected_color: %s, circlish: %.2f',
-                    circle_color, expected_color, circlish)
+      logging.debug('color: %s, circlish: %.2f, WxH: %dx%d',
+                    circle_color, circlish, shape['width'], shape['height'])
       if (circle_color == expected_color and
           math.isclose(1, circlish, rel_tol=circlish_rtol) and
           math.isclose(shape['width'], shape['height'],
                        rel_tol=circle_ar_rtol)):
+        logging.debug('circle found: r: %.2f, area: %.2f\n', radius, area)
         circles.append([shape['ctx'], shape['cty'], radius, circlish, area])
+      else:
+        logging.debug('circle rejected: bad color, circlish or aspect ratio\n')
 
   if not circles:
     zoom_ratio_value = zoom_ratio / min_zoom_ratio
@@ -256,8 +261,10 @@ def verify_zoom_results(test_data, size, z_max, z_min):
   z_max_ratio = z_max / z_min
   if z_max_ratio < ZOOM_MAX_THRESH:
     zoom_max_thresh = z_max_ratio
-  test_data_max_z = (test_data[max(test_data.keys())]['z'] /
-                     test_data[min(test_data.keys())]['z'])
+
+  # handle capture orders like [1, 0.5, 1.5, 2...]
+  test_data_zoom_values = [v['z'] for v in test_data.values()]
+  test_data_max_z = max(test_data_zoom_values) / min(test_data_zoom_values)
   logging.debug('test zoom ratio max: %.2f vs threshold %.2f',
                 test_data_max_z, zoom_max_thresh)
 
@@ -286,21 +293,13 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     radius_ratio = data['circle'][2] / radius_0
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
+    msg = (f"{i} Circle radius ratio req({data['z']:.2f}/{z_0:.2f}): "
+           f"{z_ratio:.2f}, cap: {radius_ratio:.2f}, RTOL: {data['r_tol']}")
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data['r_tol']):
       test_failed = True
-      e_msg = (f"{i} Circle radius in capture taken at {z_0:.2f} "
-               "was expected to increase in capture taken at "
-               f"{data['z']:.2f} by {data['z']:.2f}/{z_0:.2f}="
-               f"{z_ratio:.2f}, but it increased by "
-               f"{radius_ratio:.2f}. RTOL: {data['r_tol']}")
-      logging.error(e_msg)
+      logging.error(msg)
     else:
-      d_msg = (f"{i} Circle radius in capture taken at {z_0:.2f} "
-               "was expected to increase in capture taken at "
-               f"{data['z']:.2f} by {data['z']:.2f}/{z_0:.2f}="
-               f"{z_ratio:.2f}. It is increased by "
-               f"{radius_ratio:.2f}. RTOL: {data['r_tol']}")
-      logging.debug(d_msg)
+      logging.debug(msg)
 
     # check relative offset against init vals w/ no focal length change
     if i == 0 or test_data[i-1]['fl'] != data['fl']:  # set init values
