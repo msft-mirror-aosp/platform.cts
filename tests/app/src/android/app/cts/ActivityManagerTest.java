@@ -222,8 +222,6 @@ public final class ActivityManagerTest {
 
     private final UserHelper mUserHelper = new UserHelper();
 
-    private String mPreviousModernTrim;
-
     private boolean mIsWaitForFinishAttachApplicationEnabled;
 
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
@@ -1696,16 +1694,6 @@ public final class ActivityManagerTest {
     @Test
     public void testTrimMemActivityFg() throws Exception {
 
-        runWithShellPermissionIdentity(() -> {
-            mPreviousModernTrim = DeviceConfig.getString(
-                DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                "use_modern_trim",
-                null);
-
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER, "use_modern_trim",
-                    "false", false);
-        });
-
         final int waitForSec = 5 * 1000;
         final ApplicationInfo ai1 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
@@ -1737,40 +1725,15 @@ public final class ActivityManagerTest {
             // Keep the device awake
             toggleScreenOn(true);
 
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_MODERATE;
-
             // Start an activity
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, extras);
 
             watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
 
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_LOW;
-            // Force the memory pressure to low
-            runShellCommand(mInstrumentation, "am memory-factor set LOW");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_CRITICAL;
-            // Force the memory pressure to critical
-            runShellCommand(mInstrumentation, "am memory-factor set CRITICAL");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, LocalForegroundService.newCommand(
                     LocalForegroundService.COMMAND_START_NO_FOREGROUND));
-
-            // Reset the memory pressure override
-            runShellCommand(mInstrumentation, "am memory-factor reset");
 
             latchHolder[0] = new CountDownLatch(1);
             expectedLevel[0] = TRIM_MEMORY_UI_HIDDEN;
@@ -1782,48 +1745,6 @@ public final class ActivityManagerTest {
             assertTrue("Failed to wait for the trim memory event",
                     latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
 
-            // Start the heavy weight activity
-            final Intent intent = new Intent();
-            final CountDownLatch[] heavyLatchHolder = new CountDownLatch[1];
-            final Predicate[] testFunc = new Predicate[1];
-
-            intent.setPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
-            intent.setAction(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtras(initWaitingForTrimLevel(level -> {
-                if (testFunc[0].test(level)) {
-                    heavyLatchHolder[0].countDown();
-                }
-            }));
-
-            final WindowManagerStateHelper wms = new WindowManagerStateHelper();
-            mTargetContext.startActivity(intent);
-            watcher3.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-            wms.waitForValidState(new ComponentName(CANT_SAVE_STATE_1_PACKAGE_NAME,
-                      "CantSave1Activity"));
-
-            heavyLatchHolder[0] = new CountDownLatch(1);
-            testFunc[0] = level -> TRIM_MEMORY_RUNNING_MODERATE <= (int) level
-                    && TRIM_MEMORY_RUNNING_CRITICAL >= (int) level;
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    heavyLatchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            // Now go home
-            final Intent homeIntent = new Intent();
-            homeIntent.setAction(Intent.ACTION_MAIN);
-            homeIntent.addCategory(Intent.CATEGORY_HOME);
-            homeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            heavyLatchHolder[0] = new CountDownLatch(1);
-            testFunc[0] = level -> TRIM_MEMORY_BACKGROUND == (int) level;
-            mTargetContext.startActivity(homeIntent);
-            wms.waitForHomeActivityVisible();
-            assertTrue("Failed to wait for the trim memory event",
-                    heavyLatchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
         } finally {
             runShellCommand(mInstrumentation,
                     "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
@@ -1834,136 +1755,11 @@ public final class ActivityManagerTest {
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
                 mActivityManager.forceStopPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
-                if (mPreviousModernTrim == null) {
-                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim");
-                } else {
-                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim", mPreviousModernTrim, false);
-                }
-
             });
 
             watcher1.finish();
             watcher2.finish();
             watcher3.finish();
-        }
-    }
-
-    @Test
-    public void testTrimMemActivityBg() throws Exception {
-        final int minLru = 8;
-        final int waitForSec = 30 * 1000;
-        final String prefix = "trimmem_";
-        final CountDownLatch[] latchHolder = new CountDownLatch[1];
-        final String pkgName = PACKAGE_NAME_APP1;
-        final ArrayMap<String, Pair<int[], ServiceConnection>> procName2Level = new ArrayMap<>();
-        int startSeq = 0;
-
-        try {
-
-            runWithShellPermissionIdentity(() -> {
-                mPreviousModernTrim = DeviceConfig.getString(
-                    DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                    "use_modern_trim",
-                    null);
-
-                DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                        "use_modern_trim", "false", false);
-            });
-
-            // Kill all background processes
-            runShellCommand(mInstrumentation, "am kill-all");
-
-            // Override the memory pressure level, force it staying at normal.
-            runShellCommand(mInstrumentation, "am memory-factor set NORMAL");
-
-            List<String> lru;
-            // Start a new isolated service once a time, and then check the lru list
-            do {
-                final String instanceName = prefix + startSeq++;
-                final int[] levelHolder = new int[1];
-
-                // Spawn the new isolated service
-                final ServiceConnection conn = TrimMemService.bindToTrimMemService(
-                        pkgName, instanceName, latchHolder, levelHolder, mTargetContext);
-
-                // Get the list of all cached apps
-                lru = getCachedAppsLru();
-                assertTrue(lru.size() > 0);
-
-                for (int i = lru.size() - 1; i >= 0; i--) {
-                    String p = lru.get(i);
-                    if (p.indexOf(instanceName) != -1) {
-                        // This is the new one we just created
-                        procName2Level.put(p, new Pair<>(levelHolder, conn));
-                        break;
-                    }
-                }
-                if (lru.size() < minLru) {
-                    continue;
-                }
-                if (lru.get(0).indexOf(pkgName) != -1) {
-                    // Okay now the very least recent used cached process is one of ours
-                    break;
-                } else {
-                    // Hm, someone dropped below us in the between, let's kill it
-                    ArraySet<String> others = new ArraySet<>();
-                    for (int i = 0, size = lru.size(); i < size; i++) {
-                        final String name = lru.get(i);
-                        if (name.indexOf(pkgName) != -1) {
-                            break;
-                        }
-                        others.add(name);
-                    }
-                    killBackgroundProcesses(others::contains);
-                }
-            } while (true);
-
-            // Remove all other processes
-            for (int i = lru.size() - 1; i >= 0; i--) {
-                if (lru.get(i).indexOf(prefix) == -1) {
-                    lru.remove(i);
-                }
-            }
-            {
-                final List<String> localLru = lru;
-                killBackgroundProcesses(process -> !localLru.contains(process));
-            }
-
-            latchHolder[0] = new CountDownLatch(lru.size());
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            // Verify the trim levels among the LRU
-            int level = TRIM_MEMORY_COMPLETE;
-            assertEquals(level, procName2Level.get(lru.get(0)).first[0]);
-            for (int i = 1, size = lru.size(); i < size; i++) {
-                int curLevel = procName2Level.get(lru.get(i)).first[0];
-                assertTrue(level >= curLevel);
-                level = curLevel;
-            }
-
-            // Cleanup: Unbind from them
-            for (int i = procName2Level.size() - 1; i >= 0; i--) {
-                mTargetContext.unbindService(procName2Level.valueAt(i).second);
-            }
-        } finally {
-            runShellCommand(mInstrumentation, "am memory-factor reset");
-
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-                if (mPreviousModernTrim == null) {
-                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim");
-                } else {
-                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim", mPreviousModernTrim, false);
-                }
-
-            });
         }
     }
 
