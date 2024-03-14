@@ -36,6 +36,10 @@ public class SonyDualshock4UsbTest extends InputHidTestCase {
     // Simulates the behavior of PlayStation DualShock4 gamepad (model CUH-ZCT1U)
     public SonyDualshock4UsbTest() {
         super(R.raw.sony_dualshock4_usb_register);
+        // The sony driver intermittently crash at sony_led_get_brightness to uninitialized memory
+        // access. This is likely due to test triggering before driver is fully initialized.
+        // Adding a delay here to allow for initialization to complete see b/317902298
+        addDelayAfterSetup();
     }
 
     @Test
