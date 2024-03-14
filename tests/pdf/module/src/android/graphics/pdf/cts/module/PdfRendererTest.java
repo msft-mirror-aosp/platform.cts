@@ -52,15 +52,11 @@ import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.models.PageMatchBounds;
 import android.graphics.pdf.models.selection.PageSelection;
 import android.graphics.pdf.models.selection.SelectionBoundary;
-import android.os.Build;
 import android.os.ParcelFileDescriptor;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -90,8 +86,6 @@ public class PdfRendererTest {
         mContext = InstrumentationRegistry.getTargetContext();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getDocumentType_withNonLinearizedPdf() throws Exception {
         PdfRenderer renderer = createRenderer(SAMPLE_PDF, mContext);
@@ -100,8 +94,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getDocumentType_withLinearizedPdf() throws Exception {
         PdfRenderer renderer = createRendererUsingNewConstructor(PROTECTED_PDF, mContext,
@@ -115,14 +107,10 @@ public class PdfRendererTest {
     public void constructRendererNull() throws Exception {
         assertThrows(NullPointerException.class, () -> new PdfRenderer(null));
 
-        if (SdkLevel.isAtLeastV()) {
-            assertThrows(NullPointerException.class, () -> new PdfRenderer(null, null));
-        }
+        assertThrows(NullPointerException.class, () -> new PdfRenderer(null, null));
 
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void constructRendererWithNullLoadParams() throws Exception {
         assertThrows(NullPointerException.class,
@@ -135,24 +123,20 @@ public class PdfRendererTest {
         // Open jpg as if it was a PDF
         assertThrows(IOException.class, () -> createRenderer(R.raw.testimage, mContext));
 
-        if (SdkLevel.isAtLeastV()) {
-            // assert using new constructor
-            assertThrows(IOException.class,
-                    () -> createRendererUsingNewConstructor(R.raw.testimage, mContext,
-                            SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
-        }
+        // assert using new constructor
+        assertThrows(IOException.class,
+                () -> createRendererUsingNewConstructor(R.raw.testimage, mContext,
+                        SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
     }
 
     @Test
     public void constructRendererFromProtectedPDF() throws Exception {
         assertThrows(SecurityException.class, () -> createRenderer(PROTECTED_PDF, mContext));
 
-        if (SdkLevel.isAtLeastV()) {
-            // assert using new constructor
-            assertThrows(SecurityException.class,
-                    () -> createRendererUsingNewConstructor(PROTECTED_PDF, mContext,
-                            INCORRECT_LOAD_PARAMS));
-        }
+        // assert using new constructor
+        assertThrows(SecurityException.class,
+                () -> createRendererUsingNewConstructor(PROTECTED_PDF, mContext,
+                        INCORRECT_LOAD_PARAMS));
     }
 
     @Test
@@ -166,12 +150,10 @@ public class PdfRendererTest {
         PdfRenderer renderer = createRenderer(TWO_PAGES, mContext);
         renderer.close();
 
-        if (SdkLevel.isAtLeastV()) {
-            // assert using new constructor
-            PdfRenderer newRenderer = createRendererUsingNewConstructor(TWO_PAGES, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
-            newRenderer.close();
-        }
+        // assert using new constructor
+        PdfRenderer newRenderer = createRendererUsingNewConstructor(TWO_PAGES, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
+        newRenderer.close();
 
         firstRenderer.close();
     }
@@ -183,23 +165,19 @@ public class PdfRendererTest {
 
         assertRendererAfterClose(renderer);
 
-        if (SdkLevel.isAtLeastV()) {
-            PdfRenderer newRenderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
-            newRenderer.close();
+        PdfRenderer newRenderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
+        newRenderer.close();
 
-            assertRendererAfterClose(newRenderer);
-        }
+        assertRendererAfterClose(newRenderer);
     }
 
     @Test
     public void usePageAfterClose() throws Exception {
         assertPageAfterClose(createRenderer(A4_PORTRAIT, mContext), false);
 
-        if (SdkLevel.isAtLeastV()) {
-            assertPageAfterClose(createRendererUsingNewConstructor(SAMPLE_PDF, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR), true);
-        }
+        assertPageAfterClose(createRendererUsingNewConstructor(SAMPLE_PDF, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR), true);
 
     }
 
@@ -218,19 +196,16 @@ public class PdfRendererTest {
         page.getIndex();
 
         assertThrows(IllegalStateException.class, page::close);
+        assertThrows(IllegalStateException.class, page::getLinkContents);
+        assertThrows(IllegalStateException.class, page::getGotoLinks);
+        assertThrows(IllegalStateException.class, page::getTextContents);
+        assertThrows(IllegalStateException.class, page::getImageContents);
+        assertThrows(IllegalStateException.class, () -> page.searchText("more"));
+        assertThrows(IllegalStateException.class,
+                () -> page.selectContent(new SelectionBoundary(leftPoint),
+                        new SelectionBoundary(rightPoint), false));
 
-        if (SdkLevel.isAtLeastV()) {
-            assertThrows(IllegalStateException.class, page::getLinkContents);
-            assertThrows(IllegalStateException.class, page::getGotoLinks);
-            assertThrows(IllegalStateException.class, page::getTextContents);
-            assertThrows(IllegalStateException.class, page::getImageContents);
-            assertThrows(IllegalStateException.class, () -> page.searchText("more"));
-            assertThrows(IllegalStateException.class,
-                    () -> page.selectContent(new SelectionBoundary(leftPoint),
-                            new SelectionBoundary(rightPoint), false));
-        }
-
-        if (usesNewConstructor && SdkLevel.isAtLeastV()) {
+        if (usesNewConstructor) {
             assertThrows(IllegalStateException.class, () -> page.render(
                     Bitmap.createBitmap(A4_WIDTH_PTS, A4_HEIGHT_PTS, Bitmap.Config.ARGB_8888), null,
                     null, new RenderParams.Builder(1).build()));
@@ -254,9 +229,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void closeNewRendererWithOpenPage() throws Exception {
         PdfRenderer renderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
@@ -286,12 +258,10 @@ public class PdfRendererTest {
             assertEquals(2, renderer.getPageCount());
         }
 
-        if (SdkLevel.isAtLeastV()) {
-            // assert using new constructor
-            try (PdfRenderer renderer = createRendererUsingNewConstructor(TWO_PAGES, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                assertEquals(2, renderer.getPageCount());
-            }
+        // assert using new constructor
+        try (PdfRenderer renderer = createRendererUsingNewConstructor(TWO_PAGES, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+            assertEquals(2, renderer.getPageCount());
         }
     }
 
@@ -299,20 +269,16 @@ public class PdfRendererTest {
     public void testOpenPage() throws Exception {
         assertOpenPage(createRenderer(TWO_PAGES, mContext));
 
-        if (SdkLevel.isAtLeastV()) {
-            assertOpenPage(createRendererUsingNewConstructor(TWO_PAGES, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
-        }
+        assertOpenPage(createRendererUsingNewConstructor(TWO_PAGES, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
     }
 
     @Test
     public void testPageSize() throws Exception {
         assertPageSize(createRenderer(A4_PORTRAIT, mContext));
 
-        if (SdkLevel.isAtLeastV()) {
-            assertPageSize(createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
-        }
+        assertPageSize(createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR));
     }
 
     @Test
@@ -321,11 +287,9 @@ public class PdfRendererTest {
             assertTrue(renderer.shouldScaleForPrinting());
         }
 
-        if (SdkLevel.isAtLeastV()) {
-            try (PdfRenderer renderer = createRendererUsingNewConstructor(A5_PORTRAIT, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                assertTrue(renderer.shouldScaleForPrinting());
-            }
+        try (PdfRenderer renderer = createRendererUsingNewConstructor(A5_PORTRAIT, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+            assertTrue(renderer.shouldScaleForPrinting());
         }
     }
 
@@ -335,12 +299,10 @@ public class PdfRendererTest {
             assertTrue(renderer.shouldScaleForPrinting());
         }
 
-        if (SdkLevel.isAtLeastV()) {
-            try (PdfRenderer renderer = createRendererUsingNewConstructor(
-                    A5_PORTRAIT_PRINTSCALING_DEFAULT, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                assertTrue(renderer.shouldScaleForPrinting());
-            }
+        try (PdfRenderer renderer = createRendererUsingNewConstructor(
+                A5_PORTRAIT_PRINTSCALING_DEFAULT, mContext,
+                SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+            assertTrue(renderer.shouldScaleForPrinting());
         }
     }
 
@@ -350,17 +312,12 @@ public class PdfRendererTest {
             assertFalse(renderer.shouldScaleForPrinting());
         }
 
-        if (SdkLevel.isAtLeastV()) {
-            try (PdfRenderer renderer = createRendererUsingNewConstructor(
-                    A5_PORTRAIT_PRINTSCALING_NONE, mContext,
-                    SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
-                assertFalse(renderer.shouldScaleForPrinting());
-            }
+        try (PdfRenderer renderer = createRendererUsingNewConstructor(A5_PORTRAIT_PRINTSCALING_NONE,
+                mContext, SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR)) {
+            assertFalse(renderer.shouldScaleForPrinting());
         }
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getTextPdfContents_pdfWithText() throws Exception {
         assertTextPdfContents_pdfWithText(createRenderer(R.raw.sample_test, mContext));
@@ -381,8 +338,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getTextPdfContents_pdfWithTextAndImages() throws Exception {
         assertTextPdfContents_pdfWithTextAndImages(createRenderer(R.raw.alt_text, mContext));
@@ -407,8 +362,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getImagePdfContents_pdfWithText() throws Exception {
         assertImagePdfContents_pdfWithText(createRenderer(SAMPLE_PDF, mContext));
@@ -426,8 +379,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getImagePdfContents_pdfWithAltText() throws Exception {
         assertImagePdfContents_pdfWithAltText(createRenderer(R.raw.alt_text, mContext));
@@ -448,8 +399,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getPageLinks_pdfWithoutLink() throws Exception {
         assertPageLinks_pdfWithoutLink(createRenderer(R.raw.sample_links, mContext));
@@ -468,8 +417,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getPageLinks_pdfWithLink() throws Exception {
         assertPageLinks_pdfWithLink(createRenderer(R.raw.sample_links, mContext));
@@ -491,8 +438,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void searchPageText() throws Exception {
         assertSearchPageText(createRenderer(SAMPLE_PDF, mContext));
@@ -550,8 +495,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void searchPageText_queryTextInMultipleLines() throws Exception {
         assertSearchPageText_queryTextInMultipleLines(createRenderer(SAMPLE_PDF, mContext));
@@ -585,8 +528,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void searchPageText_returnsEmptySearchResult() throws Exception {
         assertSearchPageText_returnsEmptySearchResult(createRenderer(SAMPLE_PDF, mContext));
@@ -605,8 +546,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void searchPageText_withNullQuery_throwsException() throws Exception {
         assertSearchPageText_withNullQuery_throwsException(createRenderer(SAMPLE_PDF, mContext));
@@ -622,8 +561,6 @@ public class PdfRendererTest {
         assertThrows(NullPointerException.class, () -> openPage.searchText(null));
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void write_withNullDest_throwsException() throws Exception {
         assertWrite_withNullDest(createRenderer(SAMPLE_PDF, mContext));
@@ -637,8 +574,6 @@ public class PdfRendererTest {
     }
 
     //TODO: Update the test to assert pdfs.
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void write_protectedPdf_withSecurity() throws Exception {
         PdfRenderer expectedRenderer = createRendererUsingNewConstructor(PROTECTED_PDF, mContext,
@@ -664,8 +599,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void write_withUnprotected() throws Exception {
         assertWriteWithUnprotectedPdf(createRenderer(SAMPLE_PDF, mContext), "Unprotected.pdf");
@@ -696,8 +629,6 @@ public class PdfRendererTest {
         assertSamplePdf(renderer, expectedRenderer);
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText() throws Exception {
         assertSelectPageText(createRenderer(SAMPLE_PDF, mContext));
@@ -739,8 +670,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_textSpreadAcrossMultipleLines() throws Exception {
         assertSelectPageText_textSpreadAcrossMultipleLines(createRenderer(SAMPLE_PDF, mContext));
@@ -776,8 +705,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_leftToRight() throws Exception {
         assertSelectPageText_leftToRight(createRenderer(SAMPLE_PDF, mContext));
@@ -814,8 +741,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_withCharIndex() throws Exception {
         assertSelectPageText_withCharIndex(createRenderer(SAMPLE_PDF, mContext));
@@ -842,8 +767,6 @@ public class PdfRendererTest {
                 "Simple PDF File, which will be ");
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void renderPage_withNullParams_throwsException() throws Exception {
         try (PdfRenderer renderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
@@ -855,8 +778,6 @@ public class PdfRendererTest {
         }
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_emptySpace() throws Exception {
         assertSelectPageText_emptySpace(createRenderer(SAMPLE_PDF, mContext));
@@ -880,8 +801,6 @@ public class PdfRendererTest {
     }
 
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_withOutRightBoundary_throwsException() throws Exception {
         assertSelectPageText_withoutRighttBoundary(createRenderer(SAMPLE_PDF, mContext));
@@ -899,8 +818,6 @@ public class PdfRendererTest {
                         true));
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void selectPageText_withOutStopBoundary_throwsException() throws Exception {
         assertSelectPageText_withoutLeftBoundary(createRenderer(SAMPLE_PDF, mContext));
@@ -918,8 +835,6 @@ public class PdfRendererTest {
                 () -> firstPage.selectContent(null, new SelectionBoundary(rightPoint), true));
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getPageGotoLinks_pageWithoutGotoLink() throws Exception {
         assertPageGotoLinks_pageWithoutGotoLink(createRenderer(SAMPLE_PDF, mContext));
@@ -938,8 +853,6 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void getPageGotoLinks_pageWithGotoLink() throws Exception {
         assertPageGotoLinks_pageWithGotoLink(createRenderer(R.raw.sample_links, mContext));
@@ -1006,8 +919,6 @@ public class PdfRendererTest {
         expectedThirdPage.close();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
     @Test
     public void renderOnNullBitmapWithNewConstructor_throwsException() throws Exception {
         try (PdfRenderer renderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
@@ -1046,13 +957,8 @@ public class PdfRendererTest {
         assertThrows(IllegalStateException.class, renderer::close);
         assertThrows(IllegalStateException.class, renderer::getPageCount);
         assertThrows(IllegalStateException.class, renderer::shouldScaleForPrinting);
+        assertThrows(IllegalStateException.class, () -> renderer.write(null, true));
         assertThrows(IllegalStateException.class, () -> renderer.openPage(0));
-
-        if (SdkLevel.isAtLeastV()) {
-            assertThrows(IllegalStateException.class, () -> renderer.write(null, true));
-            assertThrows(IllegalStateException.class,
-                    () -> renderer.getDocumentLinearizationType());
-        }
     }
 
     private void assertOpenPage(PdfRenderer renderer) {

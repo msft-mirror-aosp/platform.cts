@@ -35,8 +35,6 @@ import androidx.annotation.RawRes;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 
-import com.android.modules.utils.build.SdkLevel;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -129,13 +127,11 @@ public class PdfRendererTransformTest {
         renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
                 RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, false, mContext);
 
+        renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
+                RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, true, mContext);
+
         // Test's PreV API.
         renderPreVAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
                 RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, mContext);
-
-        if (SdkLevel.isAtLeastV()) {
-            renderAndCompare(mWidth, mHeight, mDocRes, mClipping, mTransformation, mRenderMode,
-                    RenderParams.FLAG_RENDER_TEXT_ANNOTATIONS, true, mContext);
-        }
     }
 }
