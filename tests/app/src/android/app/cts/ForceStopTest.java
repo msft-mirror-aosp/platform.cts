@@ -19,6 +19,7 @@ import static android.app.Flags.FLAG_APP_START_INFO;
 import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.server.am.Flags.FLAG_AVOID_RESOLVING_TYPE;
 
 import static junit.framework.Assert.fail;
 
@@ -79,6 +80,7 @@ public final class ForceStopTest {
     // A simple test activity from another package.
     private static final String APP_PACKAGE = "com.android.app1";
     private static final String APP_ACTIVITY = "android.app.stubs.SimpleActivity";
+    private static final String APP_PROVIDER_PACKAGE = "com.android.app.cts.provider";
 
     private static final long DELAY_MILLIS = 10_000;
 
@@ -446,6 +448,28 @@ public final class ForceStopTest {
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
     }
 
+    @RequiresFlagsEnabled(FLAG_AVOID_RESOLVING_TYPE)
+    @Test
+    public void testStickyBroadcastDispatch() throws Exception {
+        final String pkg = APP_PROVIDER_PACKAGE;
+        final IntentFilter intentFilter = triggerStickyBroadcastDispatch(pkg);
+        assertNotNull(intentFilter);
+
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(pkg));
+        assertTrue("Package " + pkg + " should be in the stopped state",
+                mPackageManager.isPackageStopped(pkg));
+
+        // Register a receiver which involves intent-filter resolution and then verify
+        // that this intent-filter resolution does not bring the broadcast sender out of
+        // force-stop state.
+        final Intent stickyIntent = mTargetContext.registerReceiver(null, intentFilter);
+        assertNotNull(stickyIntent);
+
+        assertTrue("Package " + pkg + " should still be in the stopped state",
+                mPackageManager.isPackageStopped(pkg));
+    }
+
     private PendingIntent triggerPendingIntentCreation(final String packageName) throws Exception {
         final BlockingQueue<PendingIntent> blockingQueue = new LinkedBlockingQueue<>();
         CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
@@ -458,6 +482,24 @@ public final class ForceStopTest {
                                 CommandReceiver.KEY_PENDING_INTENT, PendingIntent.class);
                         if (pi != null) {
                             blockingQueue.offer(pi);
+                        }
+                    }
+                });
+        return blockingQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    private IntentFilter triggerStickyBroadcastDispatch(String packageName) throws Exception {
+        final BlockingQueue<IntentFilter> blockingQueue = new LinkedBlockingQueue<>();
+        CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
+                CommandReceiver.COMMAND_SEND_STICKY_BROADCAST,
+                packageName, packageName, Intent.FLAG_RECEIVER_FOREGROUND, null,
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        final IntentFilter intentFilter = getResultExtras(true).getParcelable(
+                                CommandReceiver.KEY_STICKY_BROADCAST_FILTER, IntentFilter.class);
+                        if (intentFilter != null) {
+                            blockingQueue.offer(intentFilter);
                         }
                     }
                 });
