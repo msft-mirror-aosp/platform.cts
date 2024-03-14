@@ -261,8 +261,10 @@ def verify_zoom_results(test_data, size, z_max, z_min):
   z_max_ratio = z_max / z_min
   if z_max_ratio < ZOOM_MAX_THRESH:
     zoom_max_thresh = z_max_ratio
-  test_data_max_z = (test_data[max(test_data.keys())]['z'] /
-                     test_data[min(test_data.keys())]['z'])
+
+  # handle capture orders like [1, 0.5, 1.5, 2...]
+  test_data_zoom_values = [v['z'] for v in test_data.values()]
+  test_data_max_z = max(test_data_zoom_values) / min(test_data_zoom_values)
   logging.debug('test zoom ratio max: %.2f vs threshold %.2f',
                 test_data_max_z, zoom_max_thresh)
 
