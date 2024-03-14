@@ -162,8 +162,6 @@ public class CtsSharesheetDeviceTest {
         assumeTrue(
                 "Skip test: Device doesn't meet minimum resolution",
                 meetsResolutionRequirements(mDevice));
-        assumeFalse("Skip test: does not apply to automotive",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
         mPkg = mContext.getPackageName();
         mActivityLabelTesterPkg = mPkg + ".packages.activitylabeltester";
