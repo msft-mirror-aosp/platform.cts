@@ -17,26 +17,31 @@
 package android.devicepolicy.cts;
 
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.content.ComponentName;
 import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
+import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.harrier.policies.DisallowAddPrivateProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -89,6 +94,24 @@ public final class PrivateProfileTest {
     //TODO(b/297160795): Exclude scenarios where private space will not be available.
     public void hasOrganizationOwnedWorkProfile_disallowAddPrivateProfileIsNotSet() {
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isFalse();
+    }
+
+
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_PRIVATE_PROFILE")
+    @Test
+    @PolicyAppliesTest(policy = DisallowAddPrivateProfile.class)
+    public void addUserRestriction_restrictionApplies() {
+        ComponentName admin = sDeviceState.dpc().componentName();
+        try {
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(admin,
+                    DISALLOW_ADD_PRIVATE_PROFILE);
+
+            assertThat(TestApis.devicePolicy().userRestrictions()
+                    .isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isTrue();
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(admin,
+                    DISALLOW_ADD_PRIVATE_PROFILE);
+        }
     }
 
     /**
