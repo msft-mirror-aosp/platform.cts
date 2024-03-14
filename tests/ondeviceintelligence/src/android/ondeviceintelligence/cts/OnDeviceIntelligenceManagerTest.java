@@ -49,6 +49,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
+import com.android.internal.infra.AndroidFuture;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +67,11 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "PM will not recognize OnDeviceIntelligenceManagerService in instantMode.")
 public class OnDeviceIntelligenceManagerTest {
+    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED = 1001;
+    public static final String TEST_FILE_NAME = "test_file.txt";
+    public static final String TEST_CONTENT = "test_content";
+
+
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
     private static final String CTS_PACKAGE_NAME =
             android.ondeviceintelligence.cts.CtsIntelligenceService.class.getPackageName();
@@ -424,6 +430,39 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
     }
 
+    //===================== Tests for accessing file from isolated process via non-isolated =======
+    @Test
+    public void testGetFileDescriptorFromNonIsolatedService() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        AndroidFuture<String> fileContents = new AndroidFuture<>();
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                new Bundle(), REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED, null,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        fileContents.complete(result.getPairValue());
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(fileContents.get()).isEqualTo(TEST_CONTENT);
+    }
+    
     private void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
