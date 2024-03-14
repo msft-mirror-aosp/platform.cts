@@ -19,7 +19,7 @@ package android.app.appsearch.testutil.functions;
 import static android.app.appsearch.AppSearchResult.RESULT_NOT_FOUND;
 import static android.app.appsearch.AppSearchResult.newFailedResult;
 import static android.app.appsearch.AppSearchResult.newSuccessfulResult;
-import static android.app.appsearch.functions.ExecuteAppFunctionResponse.KEY_RESULT;
+import static android.app.appsearch.functions.ExecuteAppFunctionResponse.PROPERTY_RESULT;
 
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.GenericDocument;
@@ -94,7 +94,7 @@ public class TestAppFunctionService extends AppFunctionService {
         long a = request.getParameters().getPropertyLong("a");
         long b = request.getParameters().getPropertyLong("b");
         GenericDocument result = new GenericDocument.Builder<>("", "", "")
-                .setPropertyLong(KEY_RESULT, a + b)
+                .setPropertyLong(PROPERTY_RESULT, a + b)
                 .build();
         return new ExecuteAppFunctionResponse.Builder().setResult(result).build();
     }

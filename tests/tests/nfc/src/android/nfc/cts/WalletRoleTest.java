@@ -24,6 +24,7 @@ import static android.nfc.cts.WalletRoleTestUtils.getDefaultWalletRoleHolder;
 import static android.nfc.cts.WalletRoleTestUtils.getOverLayDefaultHolder;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -51,6 +52,12 @@ public class WalletRoleTest {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getContext();
+        Assume.assumeTrue(supportsHardware());
+    }
+
+    private boolean supportsHardware() {
+        final PackageManager pm = mContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_NFC);
     }
 
     @Test

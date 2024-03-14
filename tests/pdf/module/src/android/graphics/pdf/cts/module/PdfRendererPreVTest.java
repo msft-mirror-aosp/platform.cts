@@ -457,12 +457,12 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(firstTextSelection.getLeft(), -1, new Point(72, 103));
         assertSelectionBoundary(firstTextSelection.getRight(), -1, new Point(91, 103));
         assertPageSelection(firstTextSelection, 1, 1);
-        assertThat(firstTextSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText()).isEqualTo("This");
+        assertThat(firstTextSelection.getSelectedTextContents().get(
+                0).getText()).isEqualTo("This");
         // assert second selected content
         assertPageSelection(secondTextSelection, 1, 1);
-        assertThat(secondTextSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText()).isEqualTo("And more te");
+        assertThat(secondTextSelection.getSelectedTextContents().get(0).getText()).isEqualTo(
+                "And more te");
 
         firstPage.close();
         renderer.close();
@@ -482,13 +482,15 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(textSelection.getLeft(), -1, new Point(93, 139));
         assertSelectionBoundary(textSelection.getRight(), -1, new Point(135, 163));
         assertPageSelection(textSelection, 2, 1);
-        assertThat(textSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().size()).isEqualTo(2);
-        assertThat(textSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().get(0)).isEqualTo(
+        assertThat(textSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().size()).isEqualTo(2);
+        assertThat(textSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().get(
+                0)).isEqualTo(
                 "And more text. And more text. And more text. ");
-        assertThat(textSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().get(1)).isEqualTo(
+        assertThat(textSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().get(
+                1)).isEqualTo(
                 " And more text");
 
         firstPage.close();
@@ -511,14 +513,14 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(fourthTextSelection.getLeft(), -1, new Point(71, 127));
         assertSelectionBoundary(fourthTextSelection.getRight(), -1, new Point(275, 163));
         assertPageSelection(fourthTextSelection, 3, 1);
-        assertThat(fourthTextSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().get(0)).isEqualTo(
+        assertThat(fourthTextSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().get(0)).isEqualTo(
                 "just for use in the Virtual Mechanics tutorials. More text. And more ");
-        assertThat(fourthTextSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().get(1)).isEqualTo(
+        assertThat(fourthTextSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().get(1)).isEqualTo(
                 " text. And more text. And more text. And more text. ");
-        assertThat(fourthTextSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText().lines().toList().get(2)).isEqualTo(
+        assertThat(fourthTextSelection.getSelectedTextContents().get(
+                0).getText().lines().toList().get(2)).isEqualTo(
                 " And more text. And more text. And more text. ");
 
         firstPage.close();
@@ -539,8 +541,8 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(pageSelection.getLeft(), -1, new Point(71, 52));
         assertSelectionBoundary(pageSelection.getRight(), -1, new Point(225, 52));
 
-        assertThat(pageSelection.getTextSelections().get(
-                0).getSelectedTextContents().getText()).isEqualTo(
+        assertThat(pageSelection.getSelectedTextContents().get(
+                0).getText()).isEqualTo(
                 "Simple PDF File, which will be ");
 
         firstPage.close();
@@ -685,8 +687,9 @@ public class PdfRendererPreVTest {
     private void assertPageSelection(PageSelection pageSelection, int expectedRectsSize,
             int expectedPageNumber) {
         assertThat(pageSelection.getPage()).isEqualTo(expectedPageNumber);
-        assertThat(pageSelection.getTextSelections()).isNotEmpty();
-        assertThat(pageSelection.getTextSelections().get(0).getSelectionBounds().size()).isEqualTo(
+        assertThat(pageSelection.getSelectedTextContents()).isNotEmpty();
+        assertThat(pageSelection.getSelectedTextContents().get(
+                0).getBounds().size()).isEqualTo(
                 expectedRectsSize);
     }
 

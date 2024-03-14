@@ -43,6 +43,8 @@
 #include "media/NdkImage.h"
 #include "media/NdkImageReader.h"
 
+#include "NdkNameToTag.h"
+
 #define LOG_ERROR(buf, ...) sprintf(buf, __VA_ARGS__); \
                             ALOGE("%s", buf);
 
@@ -2177,6 +2179,22 @@ testCameraManagerCharacteristicsNative(
                 goto cleanup;
             }
         }
+
+        for (const auto keyAndTag : ndk_metadata_name_to_tag) {
+            uint32_t returnedTag = 0;
+            ret = ACameraMetadata_getTagFromName(chars, /*name*/keyAndTag.first, &returnedTag);
+            if (ret != ACAMERA_OK) {
+                LOG_ERROR(errorString, "ACameraMetadata_getTagFromName() failed: ret %d", ret);
+                goto cleanup;
+            }
+            if (keyAndTag.second != returnedTag) {
+                LOG_ERROR(errorString, "ACameraMetadata_getTagFromName returned incorrect tag"
+                        "value %u for tag %s, expected value %u", returnedTag, keyAndTag.first,
+                        keyAndTag.second);
+                goto cleanup;
+            }
+        }
+
 
         ACameraMetadata_const_entry entry;
         ret = ACameraMetadata_getConstEntry(chars, ACAMERA_REQUEST_AVAILABLE_CAPABILITIES, &entry);

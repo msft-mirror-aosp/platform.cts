@@ -22,6 +22,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
+import preview_stabilization_utils
 import video_processing_utils
 import zoom_capture_utils
 
@@ -34,33 +35,6 @@ _NUM_STEPS = 10
 _SKIP_INITIAL_FRAMES = 15
 _VIDEO_DURATION = 400  # milliseconds
 _ZOOM_MIN_THRESH = 2.0
-
-
-def _collect_data(cam, preview_size, zoom_start, zoom_end, step_size):
-  """Capture a preview video from the device.
-
-  Captures camera preview frames from the passed device.
-
-  Args:
-    cam: camera object
-    preview_size: str; preview resolution. ex. '1920x1080'
-    zoom_start: (float) is the starting zoom ratio during recording
-    zoom_end: (float) is the ending zoom ratio during recording
-    step_size: (float) is the step for zoom ratio during recording
-
-  Returns:
-    recording object as described by cam.do_preview_recording_with_dynamic_zoom
-  """
-
-  recording_obj = cam.do_preview_recording_with_dynamic_zoom(
-      preview_size,
-      stabilize=False,
-      sweep_zoom=(zoom_start, zoom_end, step_size, _VIDEO_DURATION)
-  )
-  logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
-  logging.debug('Tested quality: %s', recording_obj['quality'])
-
-  return recording_obj
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -128,8 +102,10 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       logging.debug('size = %s', str(size))
 
       # recording preview
-      preview_rec_obj = _collect_data(cam, preview_size,
-                                      z_min, z_max + _MAX_ZOOM_TOL, z_step_size)
+      # pylint: disable=line-too-long
+      preview_rec_obj = preview_stabilization_utils.collect_preview_data_with_zoom(
+          cam, preview_size, z_min, z_max + _MAX_ZOOM_TOL,
+          z_step_size, _VIDEO_DURATION)
 
       # Grab the recording from DUT
       self.dut.adb.pull([preview_rec_obj['recordedOutputPath'], log_path])
