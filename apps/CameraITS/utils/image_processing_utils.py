@@ -1056,7 +1056,8 @@ def compute_image_rms_difference_3d(rgb_x, rgb_y):
   for i in range(shape_rgb_x[0]):
     for j in range(shape_rgb_x[1]):
       for k in range(shape_rgb_x[2]):
-        mean_square_sum += pow(rgb_x[i][j][k] - rgb_y[i][j][k], 2.0)
+        mean_square_sum += pow(float(rgb_x[i][j][k]) - float(rgb_y[i][j][k]),
+                               2.0)
   return (math.sqrt(mean_square_sum /
                     (shape_rgb_x[0] * shape_rgb_x[1] * shape_rgb_x[2])))
 
