@@ -70,6 +70,7 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -1164,6 +1165,7 @@ public class WindowUntrustedTouchTest {
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
             view = new View(this);
             view.setBackgroundColor(ACTIVITY_COLOR);
             setContentView(view);
