@@ -763,7 +763,7 @@ public class VehiclePropertyVerifier<T> {
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) getPossibleIntegerValues(areaId);
         } else if (Float.class.equals(carPropertyConfig.getPropertyType())) {
-            return getPossibleFloatValues();
+            return getPossibleFloatValues(areaId);
         }
         return null;
     }
@@ -816,27 +816,34 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
-     * Gets the possible values for an float property.
+     * Gets the possible values for a float property.
      */
-    private Collection<T> getPossibleFloatValues() {
+    private Collection<T> getPossibleFloatValues(int areaId) {
         if (mPropertyId != VehiclePropertyIds.HVAC_TEMPERATURE_SET) {
             return new ArrayList<>();
         }
         List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
-        if (hvacTempSetConfigArray.isEmpty()) {
-            return new ArrayList<>();
-        }
         ImmutableSet.Builder<Float> possibleHvacTempSetValuesBuilder = ImmutableSet.builder();
-        // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature values
-        // for the property. configArray[0] is the lower bound of the supported temperatures in
-        // Celsius. configArray[1] is the upper bound of the supported temperatures in Celsius.
-        // configArray[2] is the supported temperature increment between the two bounds. All
-        // configArray values are Celsius*10 since the configArray is List<Integer> but
-        // HVAC_TEMPERATURE_SET is a Float type property.
-        for (int possibleHvacTempSetValue = hvacTempSetConfigArray.get(0);
-                possibleHvacTempSetValue <= hvacTempSetConfigArray.get(1);
-                possibleHvacTempSetValue += hvacTempSetConfigArray.get(2)) {
-            possibleHvacTempSetValuesBuilder.add((float) possibleHvacTempSetValue / 10.0f);
+        if (!hvacTempSetConfigArray.isEmpty()) {
+            // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature values
+            // for the property. configArray[0] is the lower bound of the supported temperatures in
+            // Celsius. configArray[1] is the upper bound of the supported temperatures in Celsius.
+            // configArray[2] is the supported temperature increment between the two bounds. All
+            // configArray values are Celsius*10 since the configArray is List<Integer> but
+            // HVAC_TEMPERATURE_SET is a Float type property.
+            for (int possibleHvacTempSetValue = hvacTempSetConfigArray.get(0);
+                    possibleHvacTempSetValue <= hvacTempSetConfigArray.get(1);
+                    possibleHvacTempSetValue += hvacTempSetConfigArray.get(2)) {
+                possibleHvacTempSetValuesBuilder.add((float) possibleHvacTempSetValue / 10.0f);
+            }
+        }  else {
+            // If the configArray is not specified, then use min/max values.
+            Float minValueFloat =
+                    (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMinValue();
+            Float maxValueFloat =
+                    (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMaxValue();
+            possibleHvacTempSetValuesBuilder.add(minValueFloat);
+            possibleHvacTempSetValuesBuilder.add(maxValueFloat);
         }
         return (Collection<T>) possibleHvacTempSetValuesBuilder.build();
     }
@@ -906,12 +913,9 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void verifyFloatPropertySetter() {
-        Collection<T> possibleValues = getPossibleFloatValues();
-        if (!possibleValues.isEmpty()) {
-            for (T valueToSet : possibleValues) {
-                for (int areaId : getCarPropertyConfig().getAreaIds()) {
-                    verifySetProperty(areaId, valueToSet);
-                }
+        for (int areaId : getCarPropertyConfig().getAreaIds()) {
+            for (T valueToSet : getPossibleFloatValues(areaId)) {
+                verifySetProperty(areaId, valueToSet);
             }
         }
     }
