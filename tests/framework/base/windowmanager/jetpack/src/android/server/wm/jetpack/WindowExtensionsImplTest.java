@@ -16,16 +16,24 @@
 
 package android.server.wm.jetpack;
 
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionLatest;
 
-import static org.junit.Assert.assertTrue;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
+
+import android.app.ActivityTaskManager;
 import android.platform.test.annotations.Presubmit;
+import android.view.WindowManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.window.extensions.WindowExtensions;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,9 +51,20 @@ public class WindowExtensionsImplTest {
 
     /** Verifies that the extensions API level is aligned or higher than the current level. */
     @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getVendorApiLevel"})
+    @CddTest(requirements = {"3.8.14/C-5-1"})
     @Test
     public void testVerifiesExtensionVendorApiLevel() {
-        assumeExtensionSupportedDevice();
-        assertTrue(isExtensionVersionLatest());
+        final WindowExtensions windowExtensions = getWindowExtensions();
+        assumeNotNull(windowExtensions);
+
+        if (WindowManager.hasWindowExtensionsEnabled()) {
+            // Up to the device on whether or not to provide WM Extensions if it doesn't support
+            // multi window.
+            if (ActivityTaskManager.supportsMultiWindow(getInstrumentation().getContext())) {
+                assertTrue(isExtensionVersionLatest());
+            }
+        } else {
+            assertEquals(0, windowExtensions.getVendorApiLevel());
+        }
     }
 }
