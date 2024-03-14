@@ -823,6 +823,9 @@ public class VehiclePropertyVerifier<T> {
             return new ArrayList<>();
         }
         List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
+        if (hvacTempSetConfigArray.isEmpty()) {
+            return new ArrayList<>();
+        }
         ImmutableSet.Builder<Float> possibleHvacTempSetValuesBuilder = ImmutableSet.builder();
         // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature values
         // for the property. configArray[0] is the lower bound of the supported temperatures in

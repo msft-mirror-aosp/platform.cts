@@ -5442,6 +5442,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, tempInCelsius) -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (configArray.isEmpty()) {
+                                return;
+                            }
                             Integer minTempInCelsius = configArray.get(0);
                             Integer maxTempInCelsius = configArray.get(1);
                             Integer incrementInCelsius = configArray.get(2);
