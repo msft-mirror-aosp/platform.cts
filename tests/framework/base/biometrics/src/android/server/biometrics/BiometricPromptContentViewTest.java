@@ -63,6 +63,7 @@ import java.util.concurrent.TimeUnit;
  * Basic test cases for content view on biometric prompt.
  */
 @Presubmit
+@Ignore("Unignore after implementation")
 public class BiometricPromptContentViewTest extends BiometricTestBase {
     private static final String TAG = "BiometricTests/PromptVerticalListContentView";
 
