@@ -355,14 +355,15 @@ public class BaseAppVerifierImpl {
 
     public void setUserDefaultPhoneAccountOverride(PhoneAccountHandle handle) throws Exception {
         mPreviousDefaultPhoneAccount = mTelecomManager.getUserSelectedOutgoingPhoneAccount();
-        ShellCommandExecutor.setUserDefaultPhoneAccount(mInstrumentation, handle);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelecomManager,
+                (tm) -> tm.setUserSelectedOutgoingPhoneAccount(handle));
         assertEquals("Could not set " + handle + "as the user default" , handle,
                 mTelecomManager.getUserSelectedOutgoingPhoneAccount());
     }
 
     private void clearUserDefaultPhoneAccountOverride() throws Exception {
-        ShellCommandExecutor.setUserDefaultPhoneAccount(mInstrumentation,
-                mPreviousDefaultPhoneAccount);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelecomManager,
+                (tm) -> tm.setUserSelectedOutgoingPhoneAccount(mPreviousDefaultPhoneAccount));
     }
 
     public void unregisterPhoneAccountWithHandle(AppControlWrapper appControl,
