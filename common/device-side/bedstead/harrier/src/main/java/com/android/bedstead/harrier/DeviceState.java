@@ -105,7 +105,6 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbOverWifi;
 import com.android.bedstead.harrier.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
@@ -1176,7 +1175,7 @@ public final class DeviceState extends HarrierRule {
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
                 AnnotationExecutor executor =
-                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value());
+                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value(), usesAnnotationExecutorAnnotation.weakValue());
                 executor.applyAnnotation(annotation);
                 continue;
             }
@@ -1302,12 +1301,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireAdbRoot requireAdbRootAnnotation) {
                 requireAdbRoot(requireAdbRootAnnotation.failureMode());
-
-                continue;
-            }
-
-            if (annotation instanceof RequireAdbOverWifi requireAdbOverWifiAnnotation) {
-                requireAdbOverWifi(requireAdbOverWifiAnnotation.failureMode());
 
                 continue;
             }
@@ -4229,20 +4222,46 @@ public final class DeviceState extends HarrierRule {
         return TestApis.users().isHeadlessSystemUserMode();
     }
 
-    private final Map<Class<? extends AnnotationExecutor>, AnnotationExecutor>
+    private final Map<String, AnnotationExecutor>
             mAnnotationExecutors = new HashMap<>();
 
     private AnnotationExecutor getAnnotationExecutor(
-            Class<? extends AnnotationExecutor> annotationExecutorClass) {
-        if (!mAnnotationExecutors.containsKey(annotationExecutorClass)) {
+            Class<? extends AnnotationExecutor> annotationExecutorClass,
+            String weakAnnotationExecutorClass) {
+
+        Class<? extends AnnotationExecutor> executorClass;
+
+        if (annotationExecutorClass == AnnotationExecutor.class) {
+            if (weakAnnotationExecutorClass == "") {
+                throw new IllegalStateException(
+                        "@UsesAnnotationExecutor must declare either a value or weakValue");
+            } else {
+                try {
+                    executorClass = (Class<? extends AnnotationExecutor>) Class.forName(weakAnnotationExecutorClass);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Could not find annotation executor " + weakAnnotationExecutorClass + ". Probably a dependency issue.");
+                }
+            }
+        } else {
+            if (weakAnnotationExecutorClass == "") {
+                executorClass = annotationExecutorClass;
+            } else {
+                throw new IllegalStateException(
+                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has declared both.");
+            }
+        }
+
+        String executorClassName = executorClass.getCanonicalName();
+
+        if (!mAnnotationExecutors.containsKey(executorClassName)) {
             try {
                 mAnnotationExecutors.put(
-                        annotationExecutorClass, annotationExecutorClass.newInstance());
+                        executorClassName, executorClass.newInstance());
             } catch (Exception e) {
                 throw new RuntimeException("Error creating annotation executor", e);
             }
         }
-        return mAnnotationExecutors.get(annotationExecutorClass);
+        return mAnnotationExecutors.get(executorClassName);
     }
 
     private void ensureHasUserRestriction(String restriction, UserType onUser) {
@@ -4486,16 +4505,6 @@ public final class DeviceState extends HarrierRule {
                 TestApis.devicePolicy().getStorageEncryptionStatus() != ENCRYPTION_STATUS_UNSUPPORTED,
                 FailureMode.SKIP);
     }
-
-    private void requireAdbOverWifi(FailureMode failureMode) {
-        String message = "The test requires adb to be connected over wifi.\n "
-                + "Use the below commands to do this: \n"
-                + "adb tcpip 5555 \n"
-                + "adb connect ip-address-of-device:5555\n";
-
-        checkFailOrSkip(message, TestApis.adb().isEnabledOverWifi(), failureMode);
-    }
-
     private void requireStorageEncryptionUnsupported() {
         checkFailOrSkip("Requires storage encryption to not be supported.",
                 TestApis.devicePolicy().getStorageEncryptionStatus()

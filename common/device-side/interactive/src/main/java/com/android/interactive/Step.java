@@ -181,7 +181,10 @@ public abstract class Step<E> {
         }
 
         if (TestApis.instrumentation().arguments().getBoolean("ENABLE_MANUAL", false)) {
-            step.interact();
+            if (!step.getValue().isPresent() && !step.hasFailed()) {
+                // If the step already has an answer - no need to show it to the user
+                step.interact();
+            }
 
             // Wait until we've reached a valid ending point
             try {

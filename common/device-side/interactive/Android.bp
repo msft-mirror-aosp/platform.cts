@@ -8,6 +8,9 @@ java_library_host {
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
     ],
+    static_libs: [
+        "HarrierCommon",
+    ],
 }
 
 android_library {
@@ -19,6 +22,9 @@ android_library {
     manifest: "common/src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     platform_apis: true,
+    static_libs: [
+        "HarrierCommonAndroid",
+    ],
 }
 
 android_library {
@@ -35,6 +41,7 @@ android_library {
         "Nene",
         "Harrier",
         "InteractiveCommonAndroid",
+        "bedstead-usb",
     ],
     resource_dirs: ["src/main/res"],
 }
