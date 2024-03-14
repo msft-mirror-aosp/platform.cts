@@ -29,6 +29,7 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
+import preview_stabilization_utils
 import video_processing_utils
 
 _ARUCO_MARKERS_COUNT = 4
@@ -61,34 +62,6 @@ def _get_preview_test_size(cam, camera_id):
   supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
   logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
   return supported_preview_sizes[-1]
-
-
-# TODO(ruchamk): Move _collect_data in a util.
-def _collect_data(cam, preview_size, zoom_start, zoom_end, step_size):
-  """Capture a preview video from the device.
-
-  Captures camera preview frames from the passed device.
-
-  Args:
-    cam: camera object.
-    preview_size: str; preview resolution. ex. '1920x1080'.
-    zoom_start: (float) is the starting zoom ratio during recording.
-    zoom_end: (float) is the ending zoom ratio during recording.
-    step_size: (float) is the step for zoom ratio during recording.
-
-  Returns:
-    recording object as described by cam.do_preview_recording_with_dynamic_zoom.
-  """
-  # TODO(ruchamk): Check for physical camera id change in ItsService
-  recording_obj = cam.do_preview_recording_with_dynamic_zoom(
-      preview_size,
-      stabilize=False,
-      sweep_zoom=(zoom_start, zoom_end, step_size, _RECORDING_DURATION)
-  )
-  logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
-  logging.debug('Tested quality: %s', recording_obj['quality'])
-
-  return recording_obj
 
 
 def _remove_frame_files(dir_name, save_files_list):
@@ -332,10 +305,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       cam.do_3a()
 
       # dynamic preview recording
-      recording_obj = _collect_data(cam, preview_test_size,
-                                    _ZOOM_RANGE_UW_W[0],
-                                    _ZOOM_RANGE_UW_W[1],
-                                    _ZOOM_STEP)
+      # pylint: disable=line-too-long
+      recording_obj = preview_stabilization_utils.collect_preview_data_with_zoom(
+          cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
+          _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
 
       # Grab the recording from DUT
       self.dut.adb.pull([recording_obj['recordedOutputPath'], self.log_path])
