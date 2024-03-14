@@ -22,8 +22,12 @@ java_test_host {
     srcs: ["src/**/*.java"],
     libs: [
         "cts-tradefed",
+        "cts-host-utils",
         "tradefed",
         "compatibility-host-util",
+    ],
+    static_libs: [
+        "platform-test-annotations",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
