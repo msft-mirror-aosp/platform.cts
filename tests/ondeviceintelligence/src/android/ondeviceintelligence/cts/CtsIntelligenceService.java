@@ -16,6 +16,10 @@
 
 package android.ondeviceintelligence.cts;
 
+
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_CONTENT;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_FILE_NAME;
+
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.FeatureDetails;
@@ -25,11 +29,16 @@ import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
+import android.util.ArrayMap;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +61,19 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
+        try {
+            File testFile = getTestFile();
+            try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
+                    ParcelFileDescriptor.MODE_READ_ONLY)) {
+                Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
+                fileDescriptorMap.put(testFile.getName(), pfd);
+                fileDescriptorMapConsumer.accept(fileDescriptorMap);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "File Not Found", e);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -85,5 +107,21 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetVersion(@NonNull LongConsumer versionConsumer) {
         versionConsumer.accept(1);
+
     }
+
+    private File getTestFile() throws IOException {
+        File path = this.getFilesDir();
+        File file = new File(path, TEST_FILE_NAME);
+        if (file.exists()) {
+            return file;
+        }
+
+        try (FileOutputStream stream = new FileOutputStream(file)) {
+            stream.write(TEST_CONTENT.getBytes());
+        }
+
+        return file;
+    }
+
 }

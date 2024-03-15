@@ -25,9 +25,16 @@ import android.app.ondeviceintelligence.TokenInfo;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
 import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -62,6 +69,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
             @NonNull ProcessingCallback callback) {
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED) {
+            populateFileContentInCallback(feature, callback);
+            return;
+        }
+
         callback.onResult(Bundle.EMPTY);
     }
 
@@ -71,4 +84,37 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         Log.i(TAG, "onUpdateProcessingState invoked.");
     }
 
+    private void populateFileContentInCallback(@NonNull Feature feature,
+            @NonNull ProcessingCallback callback) {
+        fetchFeatureFileDescriptorMap(feature, getMainExecutor(),
+                fileMap -> {
+                    Log.w(TAG, "Got Map of Length : " + fileMap.size() + " and has keys "
+                            + fileMap.keySet());
+
+                    try (ParcelFileDescriptor pfd = fileMap.get(
+                            OnDeviceIntelligenceManagerTest.TEST_FILE_NAME);
+                         InputStreamReader isr = new InputStreamReader(
+                                 new FileInputStream(pfd.getFileDescriptor()));
+                         BufferedReader br = new BufferedReader(isr)) {
+                        String line;
+                        String result = "";
+                        while ((line = br.readLine()) != null) {
+                            Log.w(TAG, line);
+                            result = result.concat(line);
+                        }
+
+                        callback.onResult(Bundle.forPair("result_key", result));
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    try (FileInputStream ignored = openFileInput(
+                            OnDeviceIntelligenceManagerTest.TEST_FILE_NAME)) {
+                    } catch (IOException e) {
+                        Log.e(TAG, "Couldn't open file from openFileInput:", e);
+                    }
+                });
+    }
 }
