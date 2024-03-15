@@ -96,7 +96,7 @@ public class FakeAssociationRule extends ExternalResource {
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
-        SystemUtil.runShellCommand(String.format("cmd companiondevice associate %d %s %s %s",
+        SystemUtil.runShellCommandOrThrow(String.format("cmd companiondevice associate %d %s %s %s",
                 getInstrumentation().getContext().getUserId(),
                 mContext.getPackageName(),
                 deviceAddress,
