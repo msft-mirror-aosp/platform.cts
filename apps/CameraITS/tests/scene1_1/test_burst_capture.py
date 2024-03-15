@@ -24,9 +24,8 @@ import capture_request_utils
 import image_processing_utils
 import its_session_utils
 
-_FRAME_TIME_DELTA_ATOL = 60  # ideal frame delta: 33ms
+_FRAME_TIME_DELTA_RTOL = 0.1  # allow 10% variation from reported value
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NS_TO_MS = 1.0E-6
 _NUM_TEST_FRAMES = 15
 _PATCH_H = 0.1  # center 10% patch params
 _PATCH_W = 0.1
@@ -73,12 +72,15 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       frame_times = [cap['metadata']['android.sensor.timestamp']
                      for cap in caps]
       for i, time in enumerate(frame_times):
-        if i > 1:
-          frame_time_delta = (time - frame_times[i-1]) * _NS_TO_MS
-          if frame_time_delta > _FRAME_TIME_DELTA_ATOL:
+        if i >= 1:
+          frame_time_delta = time - frame_times[i-1]
+          frame_duration = caps[i]['metadata']['android.sensor.frameDuration']
+          logging.debug('cap %d frameDuration: %d ns', i, frame_duration)
+          frame_time_delta_atol = frame_duration * (1 + _FRAME_TIME_DELTA_RTOL)
+          if frame_time_delta > frame_time_delta_atol:
             raise AssertionError(
-                f'Frame drop! Frame time delta: {frame_time_delta}ms, '
-                f'ATOL: {_FRAME_TIME_DELTA_ATOL}')
+                f'Frame drop! Frame time delta: {frame_time_delta} ns, '
+                f'ATOL: {frame_time_delta_atol} ns')
 
 
 if __name__ == '__main__':
