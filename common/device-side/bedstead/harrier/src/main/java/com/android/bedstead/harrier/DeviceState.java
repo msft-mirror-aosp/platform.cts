@@ -105,7 +105,6 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -1296,12 +1295,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireStorageEncryptionUnsupported) {
                 requireStorageEncryptionUnsupported();
-                continue;
-            }
-
-            if (annotation instanceof RequireAdbRoot requireAdbRootAnnotation) {
-                requireAdbRoot(requireAdbRootAnnotation.failureMode());
-
                 continue;
             }
 
@@ -4273,7 +4266,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4458,7 +4452,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {
@@ -4510,18 +4505,6 @@ public final class DeviceState extends HarrierRule {
                 TestApis.devicePolicy().getStorageEncryptionStatus()
                         == ENCRYPTION_STATUS_UNSUPPORTED,
                 FailureMode.SKIP);
-    }
-
-    private void requireAdbRoot(FailureMode failureMode) {
-        if (TestApis.adb().isRootAvailable()) {
-            Tags.addTag(Tags.ADB_ROOT);
-        } else {
-            failOrSkip("Device does not have root available.", failureMode);
-        }
-    }
-
-    private static boolean shouldRunAsRoot() {
-        return Tags.hasTag(Tags.ADB_ROOT);
     }
 
     private void ensurePolicyOperationUnsafe(

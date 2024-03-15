@@ -355,7 +355,8 @@ public final class Package {
         checkCanGrantOrRevokePermission(user, permission);
 
         try {
-            boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
+            // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+            boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
             ShellCommand.builderForUser(user, "pm grant")
                     .asRoot(shouldRunAsRoot)
@@ -410,7 +411,8 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
+        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
         sUiAutomation.revokeRuntimePermission(packageName(), permission);
 
@@ -430,7 +432,9 @@ public final class Package {
                     + " on user " + user + ". But it is not installed");
         }
 
-        if (Tags.hasTag(Tags.ADB_ROOT)) {
+        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        if (shouldRunAsRoot) {
             // If the test is being run as root, every permission can be granted or revoked.
             Log.i(LOG_TAG,
                     "checkCanGrantOrRevokePermission skipped as test is being run as root");
