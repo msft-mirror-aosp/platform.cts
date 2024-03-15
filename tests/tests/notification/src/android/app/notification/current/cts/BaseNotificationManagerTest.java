@@ -108,6 +108,7 @@ public abstract class BaseNotificationManagerTest {
     protected TestNotificationListener mListener;
     protected Instrumentation mInstrumentation;
     protected NotificationHelper mNotificationHelper;
+    protected String mPreviousEnabledAssistant;
 
     @Before
     public void baseSetUp() throws Exception {
@@ -126,6 +127,7 @@ public abstract class BaseNotificationManagerTest {
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
 
+        mPreviousEnabledAssistant = mNotificationHelper.getEnabledAssistant();
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
         mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
@@ -161,6 +163,7 @@ public abstract class BaseNotificationManagerTest {
 
         mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME);
+        mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant);
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
 
         List<NotificationChannelGroup> groups = mNotificationManager.getNotificationChannelGroups();
