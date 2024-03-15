@@ -37,6 +37,7 @@ import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -129,7 +130,7 @@ public class RestrictActivityTest {
         final Intent intent = new Intent(mContext, clazz)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         Activity activity = mRule.startActivityOnDisplaySync(displayId, clazz);
-        assertActivityOnDisplay(activity.getComponentName(), displayId);
+        assertActivityOnDisplay(activity.getComponentName(), displayId, mContext.getUserId());
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(mContext, displayId, intent))
                 .isTrue();
     }
@@ -140,7 +141,8 @@ public class RestrictActivityTest {
         final Intent intent = new Intent(mContext, clazz)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intent, displayId);
-        assertActivityOnDisplay(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT, displayId);
+        assertActivityOnDisplay(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT, displayId,
+                UserHandle.SYSTEM.getIdentifier());
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(mContext, displayId, intent))
                 .isFalse();
     }
@@ -161,9 +163,9 @@ public class RestrictActivityTest {
         return virtualDisplay.getDisplay().getDisplayId();
     }
 
-    protected void assertActivityOnDisplay(ComponentName componentName, int displayId) {
+    protected void assertActivityOnDisplay(ComponentName componentName, int displayId, int userId) {
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onTopActivityChanged(
-                eq(displayId), eq(componentName), eq(mContext.getUserId()));
+                eq(displayId), eq(componentName), eq(userId));
     }
 
     /** An empty activity with a display category. */

@@ -137,7 +137,7 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
      * to expand split type.
      */
     @ApiTest(apis = "androidx.window.extensions.embedding.SplitAttributes"
-            + ".ExpandContainersSplitType")
+            + ".ExpandContainersSplitType#ExpandContainersSplitType")
     @Test
     public void testCalculatorSplitAttributesCustomization_expand() {
         testSplitAttributesCustomizationByCalculator(EXPAND_SPLIT_ATTRS);
@@ -147,7 +147,8 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
      * Verifies the behavior to use splitAttributes calculator function to customize a split pair
      * to hinge split type.
      */
-    @ApiTest(apis = "androidx.window.extensions.embedding.SplitAttributes.HingeSplitType")
+    @ApiTest(apis =
+            "androidx.window.extensions.embedding.SplitAttributes.HingeSplitType#HingeSplitType")
     @Test
     public void testCalculatorSplitAttributesCustomization_hinge() {
         testSplitAttributesCustomizationByCalculator(HINGE_SPLIT_ATTRS);
@@ -248,7 +249,7 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     public void testSplitAttributesCalculatorInvocation_pip() throws InterruptedException {
         assumeTrue(supportsPip());
 
-        final String tag = "testSplitAttributesCalculatorInvocation_screenRotation";
+        final String tag = "testSplitAttributesCalculatorInvocation_pip";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 
         // Set the calculator function before the split pair launch.

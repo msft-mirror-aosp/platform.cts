@@ -245,6 +245,13 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
+     * Gets the ID of the property.
+     */
+    public int getPropertyId() {
+        return mPropertyId;
+    }
+
+    /**
      * Gets the name for the property.
      */
     public String getPropertyName() {
