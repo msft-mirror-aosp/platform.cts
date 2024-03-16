@@ -201,6 +201,55 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
+    public void testEquals_failure_differentDescription() {
+        AppSearchSchema.Builder schemaBuilder =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build());
+        AppSearchSchema schema1 = schemaBuilder.build();
+        AppSearchSchema schema2 =
+                schemaBuilder.setDescription("Mail, but like with an 'e'").build();
+        assertThat(schema1).isNotEqualTo(schema2);
+        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
+    }
+
+    @Test
+    public void testEquals_failure_differentPropertyDescription() {
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the contents of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                .build();
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("The beginning of a message.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                .build();
+        assertThat(schema1).isNotEqualTo(schema2);
+        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
+    }
+
+    @Test
     public void testInvalidStringPropertyConfigsTokenizerNone() {
         // Everything should work fine with the defaults.
         final StringPropertyConfig.Builder builder = new StringPropertyConfig.Builder("property");
@@ -288,14 +337,17 @@ public class AppSearchSchemaCtsTest {
     public void testAppSearchSchema_toString() {
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("testSchema")
+                        .setDescription("a test schema")
                         .addProperty(
                                 new StringPropertyConfig.Builder("string1")
+                                        .setDescription("first string")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setIndexingType(StringPropertyConfig.INDEXING_TYPE_NONE)
                                         .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_NONE)
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("string2")
+                                        .setDescription("second string")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
@@ -303,6 +355,7 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("string3")
+                                        .setDescription("third string")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_PREFIXES)
@@ -310,6 +363,7 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("string4")
+                                        .setDescription("fourth string")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_PREFIXES)
@@ -318,6 +372,7 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("string5")
+                                        .setDescription("fifth string")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_PREFIXES)
@@ -326,6 +381,7 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("qualifiedId1")
+                                        .setDescription("first qualifiedId")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .setJoinableValueType(
                                                 StringPropertyConfig
@@ -333,6 +389,7 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new StringPropertyConfig.Builder("qualifiedId2")
+                                        .setDescription("second qualifiedId")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setJoinableValueType(
                                                 StringPropertyConfig
@@ -340,29 +397,35 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.LongPropertyConfig.Builder("long")
+                                        .setDescription("a long")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(LongPropertyConfig.INDEXING_TYPE_NONE)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.LongPropertyConfig.Builder("indexableLong")
+                                        .setDescription("an indexed long")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(LongPropertyConfig.INDEXING_TYPE_RANGE)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.DoublePropertyConfig.Builder("double")
+                                        .setDescription("a double")
                                         .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.BooleanPropertyConfig.Builder("boolean")
+                                        .setDescription("a boolean")
                                         .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.BytesPropertyConfig.Builder("bytes")
+                                        .setDescription("some bytes")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.DocumentPropertyConfig.Builder(
                                                 "document", AppSearchEmail.SCHEMA_TYPE)
+                                        .setDescription("a document")
                                         .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
                                         .setShouldIndexNestedProperties(true)
                                         .build())
@@ -373,19 +436,23 @@ public class AppSearchSchemaCtsTest {
         String expectedString =
                 "{\n"
                         + "  schemaType: \"testSchema\",\n"
+                        + "  description: \"a test schema\",\n"
                         + "  properties: [\n"
                         + "    {\n"
                         + "      name: \"boolean\",\n"
+                        + "      description: \"a boolean\",\n"
                         + "      cardinality: CARDINALITY_REQUIRED,\n"
                         + "      dataType: DATA_TYPE_BOOLEAN,\n"
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"bytes\",\n"
+                        + "      description: \"some bytes\",\n"
                         + "      cardinality: CARDINALITY_OPTIONAL,\n"
                         + "      dataType: DATA_TYPE_BYTES,\n"
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"document\",\n"
+                        + "      description: \"a document\",\n"
                         + "      shouldIndexNestedProperties: true,\n"
                         + "      schemaType: \"builtin:Email\",\n"
                         + "      cardinality: CARDINALITY_REPEATED,\n"
@@ -393,23 +460,27 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"double\",\n"
+                        + "      description: \"a double\",\n"
                         + "      cardinality: CARDINALITY_REPEATED,\n"
                         + "      dataType: DATA_TYPE_DOUBLE,\n"
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"indexableLong\",\n"
+                        + "      description: \"an indexed long\",\n"
                         + "      indexingType: INDEXING_TYPE_RANGE,\n"
                         + "      cardinality: CARDINALITY_OPTIONAL,\n"
                         + "      dataType: DATA_TYPE_LONG,\n"
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"long\",\n"
+                        + "      description: \"a long\",\n"
                         + "      indexingType: INDEXING_TYPE_NONE,\n"
                         + "      cardinality: CARDINALITY_OPTIONAL,\n"
                         + "      dataType: DATA_TYPE_LONG,\n"
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"qualifiedId1\",\n"
+                        + "      description: \"first qualifiedId\",\n"
                         + "      indexingType: INDEXING_TYPE_NONE,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_NONE,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_QUALIFIED_ID,\n"
@@ -418,6 +489,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"qualifiedId2\",\n"
+                        + "      description: \"second qualifiedId\",\n"
                         + "      indexingType: INDEXING_TYPE_NONE,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_NONE,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_QUALIFIED_ID,\n"
@@ -426,6 +498,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"string1\",\n"
+                        + "      description: \"first string\",\n"
                         + "      indexingType: INDEXING_TYPE_NONE,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_NONE,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
@@ -434,6 +507,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"string2\",\n"
+                        + "      description: \"second string\",\n"
                         + "      indexingType: INDEXING_TYPE_EXACT_TERMS,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_PLAIN,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
@@ -442,6 +516,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"string3\",\n"
+                        + "      description: \"third string\",\n"
                         + "      indexingType: INDEXING_TYPE_PREFIXES,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_PLAIN,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
@@ -450,6 +525,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"string4\",\n"
+                        + "      description: \"fourth string\",\n"
                         + "      indexingType: INDEXING_TYPE_PREFIXES,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_VERBATIM,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
@@ -458,6 +534,7 @@ public class AppSearchSchemaCtsTest {
                         + "    },\n"
                         + "    {\n"
                         + "      name: \"string5\",\n"
+                        + "      description: \"fifth string\",\n"
                         + "      indexingType: INDEXING_TYPE_PREFIXES,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_RFC822,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"

@@ -16,6 +16,8 @@
 
 package android.app.stubs;
 
+import static android.content.ContentResolver.SCHEME_CONTENT;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ForegroundServiceStartNotAllowedException;
@@ -25,10 +27,12 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcel;
@@ -74,8 +78,11 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE = 26;
     public static final int COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE = 27;
     public static final int COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE = 28;
+    public static final int COMMAND_SEND_STICKY_BROADCAST = 29;
 
     public static final String KEY_PENDING_INTENT = "android.app.stubs.key.PENDING_INTENT";
+    public static final String KEY_STICKY_BROADCAST_FILTER =
+            "android.app.stubs.key.STICKY_BROADCAST_FILTER";
 
     public static final int RESULT_CHILD_PROCESS_STARTED = IBinder.FIRST_CALL_TRANSACTION;
     public static final int RESULT_CHILD_PROCESS_STOPPED = IBinder.FIRST_CALL_TRANSACTION + 1;
@@ -217,6 +224,13 @@ public class CommandReceiver extends BroadcastReceiver {
                 doReleaseMediaPlaybackFgsDelegate(
                         intent.getParcelableExtra(
                                 Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                break;
+            case COMMAND_SEND_STICKY_BROADCAST:
+                final IntentFilter intentFilter = doSendStickyBroadcast(context);
+                resultExtras = new Bundle();
+                if (intentFilter != null) {
+                    resultExtras.putParcelable(KEY_STICKY_BROADCAST_FILTER, intentFilter);
+                }
                 break;
         }
         if (resultExtras != null) {
@@ -553,6 +567,25 @@ public class CommandReceiver extends BroadcastReceiver {
             mMediaSession.release();
         }
         callback.sendResult(null);
+    }
+
+    private IntentFilter doSendStickyBroadcast(Context context) {
+        final String action = "android.app.stubs.action.TEST";
+        final Intent stickyIntent = new Intent(action);
+        final Uri uri = new Uri.Builder()
+                .scheme(SCHEME_CONTENT)
+                .authority(TestProvider.AUTHORITY)
+                .build();
+        stickyIntent.setData(uri);
+        context.sendStickyBroadcast(stickyIntent);
+        final IntentFilter intentFilter = new IntentFilter(action);
+        try {
+            intentFilter.addDataType(TestProvider.TYPE);
+        } catch (IntentFilter.MalformedMimeTypeException e) {
+            Log.e(TAG, "Error setting the data type: " + TestProvider.TYPE);
+            return null;
+        }
+        return intentFilter;
     }
 
     private void setPlaybackState(int state, MediaSession mediaSession) {
