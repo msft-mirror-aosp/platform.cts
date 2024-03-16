@@ -18,6 +18,10 @@ package android.server.wm.jetpack;
 
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.android.window.flags.Flags.FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -26,6 +30,10 @@ import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.extensions.util.SidecarUtil;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
@@ -42,6 +50,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,14 +69,19 @@ import java.util.Arrays;
  */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
-@CddTest(requirements = {"7.1.1.1/C-2-1,C-4-1"})
+@CddTest(requirements = {"3.8.14/C-5-1"})
 public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
     public void setUp() {
         super.setUp();
-        assumeMultiWindowSupported();
+        assumeTrue("Device's default display doesn't support multi window",
+                ActivityTaskManager.supportsMultiWindow(mContext));
     }
 
     /**
@@ -75,6 +89,7 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * to be used by Window Manager Jetpack library, and declares the window extension
      * is enabled.
      */
+    @RequiresFlagsDisabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
     @ApiTest(apis = {
             "androidx.window.extensions.WindowExtensionsProvider#getWindowExtensions",
             "androidx.window.extensions.WindowExtensions#getVendorApiLevel",
@@ -90,9 +105,29 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
     }
 
     /**
+     * MUST implement the latest available stable version of the extensions API
+     * to be used by Window Manager Jetpack library, and declares the window extension
+     * is enabled.
+     */
+    @RequiresFlagsEnabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
+    @ApiTest(apis = {
+            "androidx.window.extensions.WindowExtensionsProvider#getWindowExtensions",
+            "androidx.window.extensions.WindowExtensions#getVendorApiLevel",
+            "android.view.WindowManager#hasWindowExtensionsEnabled"
+    })
+    @Test
+    public void testWindowExtensionsOnAllDevices() {
+        assertTrue("WindowExtension version is not latest",
+                ExtensionsUtil.isExtensionVersionLatest());
+        assertTrue("Device must declared that the WindowExtension is enabled",
+                WindowManager.hasWindowExtensionsEnabled());
+    }
+
+    /**
      * MUST support Activity Embedding APIs and make ActivityEmbeddingComponent available via
      * WindowExtensions interface.
      */
+    @RequiresFlagsDisabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
     @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getActivityEmbeddingComponent"})
     @Test
     public void testActivityEmbeddingAvailability() {
@@ -104,6 +139,20 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
         assertNotNull("ActivityEmbeddingComponent is not available", activityEmbeddingComponent);
     }
 
+    /**
+     * MUST support Activity Embedding APIs and make ActivityEmbeddingComponent available via
+     * WindowExtensions interface.
+     */
+    @RequiresFlagsEnabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
+    @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getActivityEmbeddingComponent"})
+    @Test
+    public void testActivityEmbeddingOnAllDevices() {
+        final WindowExtensions windowExtensions = ExtensionsUtil.getWindowExtensions();
+        assertNotNull("WindowExtensions is not available", windowExtensions);
+        final ActivityEmbeddingComponent activityEmbeddingComponent =
+                windowExtensions.getActivityEmbeddingComponent();
+        assertNotNull("ActivityEmbeddingComponent is not available", activityEmbeddingComponent);
+    }
 
     /**
      * MUST also implement the stable version of sidecar API for compatibility with older
@@ -130,15 +179,13 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
     }
 
     private void assumeHasLargeScreenDisplayOrExtensionEnabled() {
+        assumeTrue("Device does not support multi window, so window extensions features are"
+                + " not enabled",
+                ActivityTaskManager.supportsMultiWindow(getInstrumentation().getContext()));
         assumeTrue("Device does not has a minimum screen dimension greater than or equal to "
                         + WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP + "dp and window "
                         + "extensions are not enabled.",
                 hasLargeScreenDisplay() || WindowManager.hasWindowExtensionsEnabled());
-    }
-
-    private void assumeMultiWindowSupported() {
-        assumeTrue("Device's default display doesn't support multi window",
-                ActivityTaskManager.supportsMultiWindow(mContext));
     }
 
     private boolean isLargeScreenDisplay(@NonNull Display display) {
