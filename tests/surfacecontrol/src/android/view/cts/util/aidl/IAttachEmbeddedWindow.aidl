@@ -27,9 +27,14 @@ interface IAttachEmbeddedWindow {
     SurfacePackage attachEmbedded(IBinder hostToken, int width, int height, int displayId, long delayMs);
     void relayout(in LayoutParams lp);
     void sendCrash();
-    String attachEmbeddedSurfaceControl(in SurfaceControl sc, int displayId,
-            in InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+    String attachEmbeddedSurfaceControl(in SurfaceControl sc, in InputTransferToken hostToken,
+            int width, int height, boolean transferTouchToHost,
             in @nullable IMotionEventReceiver motionEventReceiver);
     InputTransferToken getEmbeddedInputTransferToken();
     void tearDownEmbeddedSurfaceControl();
+
+    boolean attachEmbeddedASurfaceControl(in SurfaceControl parentSc,
+            in InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+            in @nullable IMotionEventReceiver receiver);
+    void tearDownEmbeddedASurfaceControl();
 }

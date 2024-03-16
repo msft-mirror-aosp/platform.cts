@@ -24,6 +24,7 @@ import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.assertNotEquals;
 
+import android.platform.test.annotations.Presubmit;
 import android.window.InputTransferToken;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -32,6 +33,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Presubmit
 public class AInputTransferTokenTest {
     @Rule
     public ActivityScenarioRule<TestActivity> mActivityRule =
