@@ -36,6 +36,7 @@ android_test {
         "sts-device-util",
         "com.android.window.flags.window-aconfig-java",
         "androidx.test.rules",
+        "com_android_systemui_flags_lib",
     ],
     libs: [
         "android.test.runner",

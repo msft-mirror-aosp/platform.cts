@@ -16,7 +16,12 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.assertNull;
+
+import static junit.framework.Assert.fail;
+
 import android.graphics.ImageFormat;
+import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
@@ -242,7 +247,80 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 //       zoom_ratio_range have valid values.
                 sessionMetadata.getAvailableMaxDigitalZoomChecked();
                 sessionMetadata.getZoomRatioRangeChecked();
+
+                checkSessionCharacteristicsForNoCallbackConfig(outputs, builder,
+                        cameraDeviceSetup, sessionCharacteristics);
             }
         }
+    }
+
+    /**
+     * Check the session characteristics consistency when queried via a SessionConfiguration
+     * without callbacks.
+     */
+    private void checkSessionCharacteristicsForNoCallbackConfig(List<OutputConfiguration> outputs,
+            CaptureRequest.Builder requestBuilder,
+            CameraDevice.CameraDeviceSetup unusedDeviceSetup,
+            CameraCharacteristics unusedSessionCharacteristics) throws Exception {
+        // Session configuration with no callbacks
+        SessionConfiguration sessionConfigNoCallback = new SessionConfiguration(
+                SessionConfiguration.SESSION_REGULAR, outputs);
+        sessionConfigNoCallback.setSessionParameters(requestBuilder.build());
+
+        // TODO: b/303645857: Currently getKeys() throws an exception because
+        // get(REQUEST_AVAILABLE_CHARACTERISTICS_KEYS) returns null.
+        //
+        //CameraCharacteristics sessionCharacteristicsForNoCallbackConfig =
+        //        deviceSetup.getSessionCharacteristics(sessionConfigNoCallback);
+        //List<CameraCharacteristics.Key<?>> keysForNoCallbackConfig =
+        //        sessionCharacteristicsForNoCallbackConfig.getKeys();
+        //
+        //List<CameraCharacteristics.Key<?>> keysForConfiguration =
+        //        sessionCharacteristics.getKeys();
+        //mCollector.expectTrue("sessionCharacteristics must match between from "
+        //       + "SessionConfigurations created from different constructors ",
+        //        keysForNoCallbackConfig.containsAll(keysForConfiguration)
+        //        && keysForConfiguration.containsAll(keysForNoCallbackConfig));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
+    public void testOutputConfigurationForCameraSetup() throws Exception {
+        Size size = new Size(640, 480);
+        int fmt = ImageFormat.YUV_420_888;
+        int jpegFmt = ImageFormat.JPEG;
+        int maxImages = 2;
+        int surfaceGroupId = 1;
+        ImageReader reader = ImageReader.newInstance(
+                size.getWidth(), size.getHeight(), fmt, maxImages);
+
+        // Test new constructors for OutputConfiguration and add Surface later.
+        OutputConfiguration config = new OutputConfiguration(fmt, size);
+        config.addSurface(reader.getSurface());
+
+        // Adding a mismatched format surface throws an IllegalArgumentException.
+        OutputConfiguration configWithGroupId = new OutputConfiguration(
+                surfaceGroupId, jpegFmt, size);
+        try {
+            configWithGroupId.addSurface(reader.getSurface());
+            fail("Adding surface with mismatching format must throw an exception!");
+        } catch (IllegalArgumentException e) {
+        }
+
+        // Adding a format with different dataspace throws an IllegalArgumentException.
+        final long usageFlag = HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
+                | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
+        OutputConfiguration configWithUsageFlag = new OutputConfiguration(
+                ImageFormat.JPEG_R, size, usageFlag);
+        try {
+            configWithUsageFlag.addSurface(reader.getSurface());
+            fail("Adding surface with mismatching dataspace must throw an exception!");
+        } catch (IllegalArgumentException e) {
+        }
+
+        // Create OutputConfiguration with groupdId, format, size, and usage flag
+        OutputConfiguration configWithGroupIdAndUsage = new OutputConfiguration(
+                surfaceGroupId, fmt, size, usageFlag);
+        assertNull(configWithGroupIdAndUsage.getSurface());
     }
 }
