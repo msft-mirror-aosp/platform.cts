@@ -3176,12 +3176,23 @@ public class AudioTrackTest {
 
         AudioTrack audioTrack = null;
         try {
+            final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+            final int TEST_RATE = 48000;
+            final int TEST_CHANNELS = AudioFormat.CHANNEL_OUT_MONO;
+
+            // 1 second buffer
+            final int buffSizeInBytes = TEST_RATE *
+                    AudioFormat.channelCountFromOutChannelMask(TEST_CHANNELS) *
+                    AudioFormat.getBytesPerSample(TEST_ENCODING);
+
             // Build our audiotrack
             audioTrack = new AudioTrack.Builder()
                     .setAudioFormat(new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .setEncoding(TEST_ENCODING)
+                            .setChannelMask(TEST_CHANNELS)
+                            .setSampleRate(TEST_RATE)
                             .build())
+                    .setBufferSizeInBytes(buffSizeInBytes)
                     .build();
 
             int bufferSize = audioTrack.getBufferSizeInFrames();

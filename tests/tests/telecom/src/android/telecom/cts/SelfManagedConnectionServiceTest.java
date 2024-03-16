@@ -1653,6 +1653,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      */
     @CddTest(requirements = "7.4.1.2/C-12-1,C-12-2")
     @ApiTest(apis = {"android.telecom.TelecomManager#isInSelfManagedCall"})
+    @RequiresFlagsEnabled(Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
     public void testIsInSelfManagedCall() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;

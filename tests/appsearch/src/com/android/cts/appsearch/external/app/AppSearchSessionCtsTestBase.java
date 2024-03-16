@@ -176,6 +176,122 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    public void testSetSchema_updateSchemaDescription() throws Exception {
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build())
+                .get();
+
+        Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
+        assertThat(actualSchemaTypes).containsExactly(schema1);
+
+        // Change the type description.
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("Like mail but with an 'a'.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build())
+                .get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
+    }
+
+    @Test
+    public void testSetSchema_updatePropertyDescription() throws Exception {
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build())
+                .get();
+
+        Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
+        assertThat(actualSchemaTypes).containsExactly(schema1);
+
+        // Change the type description.
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("The most important part of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All the other stuff.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build())
+                .get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
+    }
+
+    @Test
     public void testSetSchema_updateVersion() throws Exception {
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("Email")

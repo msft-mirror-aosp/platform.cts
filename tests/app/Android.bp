@@ -162,6 +162,7 @@ android_test {
         ":StorageDelegator",
         ":CtsActivityManagerApi29",
         ":WallpaperTest",
+        ":CtsAppTestProviderApp",
     ],
     per_testcase_directory: true,
 }

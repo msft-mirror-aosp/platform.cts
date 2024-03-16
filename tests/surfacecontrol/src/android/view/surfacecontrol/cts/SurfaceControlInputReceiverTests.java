@@ -127,7 +127,6 @@ public class SurfaceControlInputReceiverTests {
         try {
             final LinkedBlockingQueue<MotionEvent> motionEvents = new LinkedBlockingQueue<>();
             mWm.registerBatchedSurfaceControlInputReceiver(
-                    mActivity.getDisplayId(),
                     mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(), sc,
                     choreographer[0], event -> {
                         if (event instanceof MotionEvent) {
@@ -196,7 +195,6 @@ public class SurfaceControlInputReceiverTests {
         final LinkedBlockingQueue<MotionEvent> motionEvents = new LinkedBlockingQueue<>();
         try {
             String embeddedName = attachEmbeddedWindow[0].attachEmbeddedSurfaceControl(sc,
-                    mActivity.getDisplayId(),
                     mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
                     sBounds.width(),
                     sBounds.height(), false, new IMotionEventReceiver.Stub() {
@@ -258,7 +256,6 @@ public class SurfaceControlInputReceiverTests {
         try {
             final LinkedBlockingQueue<MotionEvent> motionEvents = new LinkedBlockingQueue<>();
             mWm.registerUnbatchedSurfaceControlInputReceiver(
-                    mActivity.getDisplayId(),
                     mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(), sc,
                     mActivity.getMainLooper(), event -> {
                         if (event instanceof MotionEvent) {
@@ -624,7 +621,6 @@ public class SurfaceControlInputReceiverTests {
                     choreographerLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
             mEmbeddedTransferToken = mWm.registerBatchedSurfaceControlInputReceiver(
-                    mActivity.getDisplayId(),
                     surfaceView.getRootSurfaceControl().getInputTransferToken(), mEmbeddedSc,
                     choreographer[0], embeddedInputReceiver);
             surfaceView.setOnTouchListener(hostTouchListener);
@@ -707,7 +703,7 @@ public class SurfaceControlInputReceiverTests {
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
             mEmbeddedName = mIAttachEmbeddedWindow.attachEmbeddedSurfaceControl(
-                    surfaceView.getSurfaceControl(), mActivity.getDisplayId(),
+                    surfaceView.getSurfaceControl(),
                     surfaceView.getRootSurfaceControl().getInputTransferToken(), sBounds.width(),
                     sBounds.height(), transferTouchToHost,
                     motionEventReceiver);

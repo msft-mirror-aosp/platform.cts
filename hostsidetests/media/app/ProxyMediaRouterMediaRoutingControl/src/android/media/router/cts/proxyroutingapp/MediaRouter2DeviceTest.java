@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -204,5 +205,164 @@ public class MediaRouter2DeviceTest {
             localInstance.unregisterRouteCallback(placeholderCallback);
             instance.unregisterRouteCallback(onRoutesUpdated);
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
+    @Test
+    public void revokingMediaRoutingControl_onAppOpsManager_revokesProxyRouterAccess()
+            throws InterruptedException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_CONTENT_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_ALLOWED);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        MediaRouter2.getInstance(
+                mContext, mContext.getPackageName(), mExecutor, () -> latch.countDown());
+
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_DEFAULT);
+
+        assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
+
+        assertThrows(
+                SecurityException.class,
+                () -> MediaRouter2.getInstance(mContext, mContext.getPackageName()));
+    }
+
+    @SuppressLint("MissingPermission")
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
+    @Test
+    public void revokeMediaRoutingControl_callsAllOnInstanceInvalidatedListeners()
+            throws InterruptedException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_CONTENT_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_ALLOWED);
+
+        CountDownLatch latch = new CountDownLatch(5);
+
+        for (int i = 0; i < 5; i++) {
+            MediaRouter2.getInstance(
+                    mContext, mContext.getPackageName(), mExecutor, () -> latch.countDown());
+        }
+
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_DEFAULT);
+
+        assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
+
+        assertThrows(
+                SecurityException.class,
+                () -> MediaRouter2.getInstance(mContext, mContext.getPackageName()));
+    }
+
+    @SuppressLint("MissingPermission")
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
+    @Test
+    public void getInstance_withRevocableMediaRoutingControl_throwsWithNoCallback()
+            throws InterruptedException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_CONTENT_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_ALLOWED);
+        try {
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> MediaRouter2.getInstance(mContext, mContext.getPackageName()));
+        } finally {
+            appOpsManager.setMode(
+                    AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                    mContext.getApplicationInfo().uid,
+                    mContext.getPackageName(),
+                    AppOpsManager.MODE_DEFAULT);
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
+    @Test
+    public void revokeMediaRoutingControl_invalidatesAllInstancesAcrossTargetPackageNames()
+            throws InterruptedException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_CONTENT_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_ALLOWED);
+
+        CountDownLatch latch = new CountDownLatch(2);
+
+        MediaRouter2.getInstance(
+                mContext, mContext.getPackageName(), mExecutor, () -> latch.countDown());
+
+        MediaRouter2.getInstance(
+                mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE, mExecutor, () -> latch.countDown());
+
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                mContext.getApplicationInfo().uid,
+                mContext.getPackageName(),
+                AppOpsManager.MODE_DEFAULT);
+
+        assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
+
+        assertThrows(
+                SecurityException.class,
+                () -> MediaRouter2.getInstance(mContext, mContext.getPackageName()));
+
+        assertThrows(
+                SecurityException.class,
+                () -> MediaRouter2.getInstance(mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE));
     }
 }
