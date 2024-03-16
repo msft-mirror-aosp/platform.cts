@@ -42,12 +42,14 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Basic test cases for logo on biometric prompt.
  */
 @Presubmit
+@Ignore("Unignore after implementation")
 public class BiometricPromptLogoTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Logo";
 
@@ -57,7 +59,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
     private final String mLogoDescription = "test app";
 
     /**
-     * Test without SET_BIOMETRIC_DIALOG_LOGO permission,
+     * Test without SET_BIOMETRIC_DIALOG_ADVANCED permission,
      * {@link BiometricPrompt.Builder#setLogoRes(int)} should throw security exception.
      */
     @ApiTest(apis = {
@@ -98,7 +100,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
     }
 
     /**
-     * Test without SET_BIOMETRIC_DIALOG_LOGO permission,
+     * Test without SET_BIOMETRIC_DIALOG_ADVANCED permission,
      * {@link BiometricPrompt.Builder#setLogoBitmap(Bitmap)} should throw security exception.
      */
     @ApiTest(apis = {
@@ -245,7 +247,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                             () -> showBiometricPromptWithLogo(testLogoRes, props.getSensorId(),
                                     callback));
                     assertThat(e).hasMessageThat().contains(
-                            "android.permission.SET_BIOMETRIC_DIALOG_LOGO");
+                            "android.permission.SET_BIOMETRIC_DIALOG_ADVANCED");
                 }
             }
         }

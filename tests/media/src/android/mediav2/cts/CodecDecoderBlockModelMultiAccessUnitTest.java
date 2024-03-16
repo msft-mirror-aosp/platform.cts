@@ -48,7 +48,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Tests audio decoders support for feature MultipleFrames in block model mode.
@@ -72,6 +74,7 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
     private static final String LOG_TAG =
             CodecDecoderBlockModelMultiAccessUnitTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private static final Map<String, String> RECONFIG_FILE_MEDIA_TYPE_MAP = new HashMap<>();
     private static final int[][] OUT_SIZE_IN_MS = {
             {1000, 250},  // max out size, threshold batch out size
             {1000, 100},
@@ -79,6 +82,28 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
             {100, 100},
             {40, 100}
     };
+
+    static {
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_16kHz.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MPEG,
+                "bbb_1ch_8kHz_lame_cbr.mp3");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_WB,
+                "bbb_1ch_16kHz_16kbps_amrwb.3gp");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_NB,
+                "bbb_1ch_8kHz_10kbps_amrnb.3gp");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_1ch_16kHz_flac.mka");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_ALAW,
+                "bbb_1ch_8kHz_alaw.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_MLAW,
+                "bbb_1ch_8kHz_mulaw.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_VORBIS,
+                "bbb_1ch_16kHz_vorbis.mka");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_1ch_16kHz_aac.mp4");
+    }
+
+    private final String mReconfigFile;
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
@@ -312,6 +337,7 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
     public CodecDecoderBlockModelMultiAccessUnitTest(String decoder, String mediaType,
             String testFile, String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
+        mReconfigFile = MEDIA_DIR + RECONFIG_FILE_MEDIA_TYPE_MAP.get(mediaType);
     }
 
     @Before
@@ -383,4 +409,135 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
         mCodec.release();
         mExtractor.release();
     }
+
+    /**
+     * Verifies component and framework behaviour for format change in multiple frame block model
+     * mode. The format change is not seamless (AdaptivePlayback) but done via reconfigure.
+     * <p>
+     * The reconfiguring of media codec component happens at various points :-
+     * <ul>
+     *     <li>After initial configuration (stopped state).</li>
+     *     <li>In running state, before queueing any input.</li>
+     *     <li>In running state, after queuing n frames.</li>
+     *     <li>In eos state.</li>
+     * </ul>
+     * In eos state,
+     * <ul>
+     *     <li>reconfigure with same clip.</li>
+     *     <li>reconfigure with different clip (different resolution).</li>
+     * </ul>
+     * <p>
+     * In all situations (pre-reconfigure or post-reconfigure), the test expects the output
+     * timestamps to be strictly increasing. The reconfigure call makes the output received
+     * non-deterministic even for a given input. Hence, besides timestamp checks, no additional
+     * validation is done for outputs received before reconfigure. Post reconfigure, the decode
+     * begins from a sync frame. So the test expects consistent output and this needs to be
+     * identical to the reference (single access unit mode).
+     * <p>
+     */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE",
+            "android.media.MediaFormat#KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE",
+            "android.media.MediaCodec.Callback#onOutputBuffersAvailable",
+            "android.media.MediaCodec#configure"})
+    @LargeTest
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testReconfigure() throws IOException,
+            InterruptedException {
+        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
+                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
+
+        MediaFormat format = setUpSource(mTestFile);
+        mExtractor.release();
+        MediaFormat newFormat = setUpSource(mReconfigFile);
+        mExtractor.release();
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(newFormat);
+        checkFormatSupport(mCodecName, mMediaType, false, formatList, null, CODEC_OPTIONAL);
+
+        CodecDecoderTestBase cdtbA = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                mAllTestParams);
+        cdtbA.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                Integer.MAX_VALUE);
+        OutputManager ref = cdtbA.getOutputManager();
+        OutputManager test = new OutputManager(ref.getSharedErrorLogs());
+
+        CodecDecoderTestBase cdtbB = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                mAllTestParams);
+        cdtbB.decodeToMemory(mReconfigFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                Integer.MAX_VALUE);
+        OutputManager configRef = cdtbB.getOutputManager();
+        OutputManager configTest = new OutputManager(configRef.getSharedErrorLogs());
+
+        int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
+        configureKeysForLargeAudioBlockModelFrameMode(format, maxSampleSize, OUT_SIZE_IN_MS[0][0],
+                OUT_SIZE_IN_MS[0][1]);
+        mMaxInputLimitMs = OUT_SIZE_IN_MS[0][0];
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        mOutputBuff = test;
+        setUpSource(mTestFile);
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        configureCodec(format, true, true, false);
+
+        /* test reconfigure in stopped state */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+
+        /* test reconfigure in running state before queuing input */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+        doWork(23);
+
+        /* test reconfigure codec in running state */
+        reConfigureCodec(format, true, true, false);
+        mCodec.start();
+        mSaveToMem = true;
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test reconfigure codec at eos state */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+        mExtractor.release();
+
+        /* test reconfigure codec for new file */
+        maxSampleSize = getMaxSampleSizeForMediaType(mReconfigFile, mMediaType);
+        configureKeysForLargeAudioBlockModelFrameMode(newFormat, maxSampleSize,
+                OUT_SIZE_IN_MS[0][0], OUT_SIZE_IN_MS[0][1]);
+        mOutputBuff = configTest;
+        setUpSource(mReconfigFile);
+        reConfigureCodec(newFormat, true, false, false);
+        mCodec.start();
+        configTest.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!configRef.equalsByteOutput(configTest)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + configTest.getErrMsg());
+        }
+        mSaveToMem = false;
+        mExtractor.release();
+        mCodec.release();
+    }
+
 }

@@ -1989,7 +1989,18 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
                         OisSample[] oisSamples = result.get(CaptureResult.STATISTICS_OIS_SAMPLES);
 
-                        if (oisMode == CameraCharacteristics.STATISTICS_OIS_DATA_MODE_OFF) {
+                        boolean physicalDeviceSupportsOIS = true;
+                        if (staticInfo.isLogicalMultiCamera() &&
+                                staticInfo.isActivePhysicalCameraIdSupported()) {
+                            String physicalId = result.get(
+                                    CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
+                            assertNotNull(physicalId);
+                            StaticMetadata physicalStaticInfo = mAllStaticInfo.get(physicalId);
+                            physicalDeviceSupportsOIS = physicalStaticInfo.isOisDataModeSupported();
+                        }
+
+                        if (oisMode == CameraCharacteristics.STATISTICS_OIS_DATA_MODE_OFF ||
+                                !physicalDeviceSupportsOIS) {
                             mCollector.expectKeyValueEquals(result,
                                     CaptureResult.STATISTICS_OIS_DATA_MODE,
                                     CaptureResult.STATISTICS_OIS_DATA_MODE_OFF);

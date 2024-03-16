@@ -106,11 +106,23 @@ public class NotificationChannelTest {
         channel.setConversationId("parent_channel", "conversation 1");
         channel.setImportantConversation(true);
         channel.setDemoted(true);
-        Parcel parcel = Parcel.obtain();
-        channel.writeToParcel(parcel, 0);
-        parcel.setDataPosition(0);
-        NotificationChannel channel1 = NotificationChannel.CREATOR.createFromParcel(parcel);
-        assertEquals(channel, channel1);
+
+        testWriteReadParcel(channel);
+
+        if (Flags.notificationChannelVibrationEffectApi()) {
+            // Note that we have a separate test/assertion above, and a separate one for the
+            // VibrationEffect API below. The reason we need two assertions (instead of just
+            // the last one) is because we need the first assertion to test the behavior of
+            // the `setVibrationPattern` API. Otherwise, `setVibrationEffect` will override
+            // `setVibrationPattern`, meaning that we will never be testing latter API.
+            channel.setVibrationEffect(
+                    VibrationEffect
+                            .startComposition()
+                            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
+                            .compose());
+
+            testWriteReadParcel(channel);
+        }
     }
 
     @Test
@@ -319,5 +331,15 @@ public class NotificationChannelTest {
         channel.setDemoted(true);
 
         assertTrue(channel.isDemoted());
+    }
+
+    private void testWriteReadParcel(NotificationChannel channel) {
+        Parcel parcel = Parcel.obtain();
+
+        channel.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        NotificationChannel fromParcel = NotificationChannel.CREATOR.createFromParcel(parcel);
+        assertEquals(channel, fromParcel);
     }
 }

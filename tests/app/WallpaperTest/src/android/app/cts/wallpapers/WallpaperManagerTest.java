@@ -1739,6 +1739,9 @@ public class WallpaperManagerTest {
      */
     private void ensureCleanState(int flags) {
         Bitmap bmp = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+        canvas.drawColor(Color.BLUE);
+
         try {
             runAndAwaitColorChanges(5, TimeUnit.SECONDS, flags, mWallpaperManager, mHandler, () -> {
                 if (flags == (FLAG_SYSTEM | FLAG_LOCK)) {

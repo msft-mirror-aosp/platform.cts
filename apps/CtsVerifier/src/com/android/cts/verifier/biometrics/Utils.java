@@ -19,6 +19,7 @@ package com.android.cts.verifier.biometrics;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.hardware.biometrics.BiometricPrompt;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
@@ -134,6 +135,11 @@ public class Utils {
         KeyAgreement keyAgreement = KeyAgreement.getInstance(keyAgreementAlgorithm);
         keyAgreement.init(keyStore.getKey(keyName, null));
         return keyAgreement;
+    }
+
+    static BiometricPrompt.CryptoObject initCryptoObjectWithOperationHandle(long operationHandle)
+            throws Exception {
+        return new BiometricPrompt.CryptoObject(operationHandle);
     }
 
     static byte[] doEncrypt(Cipher cipher, byte[] data) throws Exception {

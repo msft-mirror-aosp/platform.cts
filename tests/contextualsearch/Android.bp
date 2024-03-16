@@ -1,4 +1,4 @@
-// Copyright (C) 2024 The Android Open Source Project
+// Copyright (C) 2019 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,32 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 android_test {
-    name: "CtsPdfModuleTestCases",
-    manifest: "AndroidManifest.xml",
-    test_config: "AndroidTest.xml",
-    srcs: [
-        "src/**/*.java",
-    ],
-    compile_multilib: "both",
-    test_suites: [
-        "general-tests",
-        "cts",
-    ],
-    sdk_version: "module_current",
-    min_sdk_version: "30",
-    target_sdk_version: "35",
-    libs: [
-        "android.test.runner",
-        "framework-pdf.impl",
-        "framework-pdf-v.impl",
-    ],
+    name: "CtsContextualSearchServiceTestCases",
+    defaults: ["cts_defaults"],
     static_libs: [
-        "androidx.test.rules",
-        "mockito-target-minus-junit4",
-        "cts-install-lib",
+        "androidx.annotation_annotation",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "junit",
+        "truth",
+        "android.app.contextualsearch.flags-aconfig-java",
     ],
+    manifest: "AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
 }

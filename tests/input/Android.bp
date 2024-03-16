@@ -49,6 +49,8 @@ android_test {
         "cts-wm-util",
         "flag-junit",
         "kotlin-test",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     sdk_version: "test_current",
     data: [

@@ -110,6 +110,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     private final ResourceOveruseStatsPollingCheckCondition
             mResourceOveruseStatsPollingCheckCondition =
             new ResourceOveruseStatsPollingCheckCondition();
+    private final ResourceOveruseStatsForUserPackagePollingCheckCondition
+            mResourceOveruseStatsForUserPackagePollingCheckCondition =
+            new ResourceOveruseStatsForUserPackagePollingCheckCondition();
     private final UiAutomation mUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
@@ -232,7 +235,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
                 writtenBytes).isGreaterThan(0L);
 
-        mResourceOveruseStatsPollingCheckCondition.setWrittenBytes(writtenBytes);
+        mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(writtenBytes);
 
         PollingCheck.waitFor(STATS_SYNC_WAIT_MS, mResourceOveruseStatsPollingCheckCondition);
 
@@ -314,20 +317,21 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
-        AtomicReference<ResourceOveruseStats> stats = new AtomicReference<>();
-        PollingCheck.check(
-                "IoOveruseStats for " + mUserHandle + " : " + mPackageName + " not found.",
-                STATS_SYNC_WAIT_MS, () -> {
-                    stats.set(mCarWatchdogManager.getResourceOveruseStatsForUserPackage(
-                            mPackageName, mUserHandle,
-                            CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO,
-                            CarWatchdogManager.STATS_PERIOD_CURRENT_DAY));
-                    return stats.get().getIoOveruseStats() != null;
-                });
+        long writtenBytes = writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
+
+        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
+                writtenBytes).isGreaterThan(0L);
+
+        mResourceOveruseStatsForUserPackagePollingCheckCondition.setRequest(mPackageName,
+                mUserHandle, writtenBytes);
+
+        PollingCheck.waitFor(STATS_SYNC_WAIT_MS,
+                mResourceOveruseStatsForUserPackagePollingCheckCondition);
+
         runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
 
-        ResourceOveruseStats actualStats = stats.get();
+        ResourceOveruseStats actualStats =
+                mResourceOveruseStatsForUserPackagePollingCheckCondition.getResourceOveruseStats();
         IoOveruseStats ioOveruseStats = actualStats.getIoOveruseStats();
         assertWithMessage("Package name").that(
                 actualStats.getPackageName()).isEqualTo(mPackageName);
@@ -874,7 +878,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     private final class ResourceOveruseStatsPollingCheckCondition
             implements PollingCheck.PollingCheckCondition {
         private ResourceOveruseStats mResourceOveruseStats;
-        private long mWrittenBytes;
+        private long mMinWrittenBytes;
 
         @Override
         public boolean canProceed() {
@@ -886,15 +890,46 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
             // so wait until the reported stats cover the entire write size.
             IoOveruseStats ioOveruseStats = mResourceOveruseStats.getIoOveruseStats();
             return ioOveruseStats != null
-                    && ioOveruseStats.getTotalBytesWritten() >= mWrittenBytes;
+                    && ioOveruseStats.getTotalBytesWritten() >= mMinWrittenBytes;
         }
 
         public ResourceOveruseStats getResourceOveruseStats() {
             return mResourceOveruseStats;
         }
 
-        public void setWrittenBytes(long writtenBytes) {
-            mWrittenBytes = writtenBytes;
+        public void setMinWrittenBytes(long minWrittenBytes) {
+            mMinWrittenBytes = minWrittenBytes;
+        }
+    };
+
+    private final class ResourceOveruseStatsForUserPackagePollingCheckCondition
+            implements PollingCheck.PollingCheckCondition {
+        private ResourceOveruseStats mResourceOveruseStats;
+        private String mPackageName;
+        private UserHandle mUserHandle;
+        private long mMinWrittenBytes;
+
+        @Override
+        public boolean canProceed() {
+            mResourceOveruseStats = mCarWatchdogManager.getResourceOveruseStatsForUserPackage(
+                    mPackageName, mUserHandle, CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO,
+                    CarWatchdogManager.STATS_PERIOD_CURRENT_DAY);
+            // Flash memory usage stats are polled once every one second. The syncing of stats
+            // from proc fs -> watchdog daemon -> CarService can happen across multiple polling,
+            // so wait until the reported stats cover the entire write size.
+            IoOveruseStats ioOveruseStats = mResourceOveruseStats.getIoOveruseStats();
+            return ioOveruseStats != null
+                    && ioOveruseStats.getTotalBytesWritten() >= mMinWrittenBytes;
+        }
+
+        public ResourceOveruseStats getResourceOveruseStats() {
+            return mResourceOveruseStats;
+        }
+
+        public void setRequest(String packageName, UserHandle userHandle, long minWrittenBytes) {
+            mPackageName = packageName;
+            mUserHandle = userHandle;
+            mMinWrittenBytes = minWrittenBytes;
         }
     };
 

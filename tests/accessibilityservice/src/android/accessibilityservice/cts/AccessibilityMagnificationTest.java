@@ -57,6 +57,8 @@ import android.graphics.Region;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.DisplayMetrics;
@@ -178,16 +180,18 @@ public class AccessibilityMagnificationTest {
     public void tearDown() {
         // Test cases should reset magnification themselves. Since window magnification
         // may need times to remove the magnification window, we would like to wait and
-        // ensure the magnification overlay is removed here.
-        if (isMagnificationOverlayExisting()) {
+        // ensure the overlays for magnification are removed here.
+        if (isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()) {
             // Do nothing, we just want to wait for the event and check the
-            // magnification overlay is removed
+            // overlays for magnification are removed
             try {
                 sUiAutomation.executeAndWaitForEvent(() -> {},
-                        event -> !isMagnificationOverlayExisting(), 5000);
+                        event -> !(isMagnificationOverlayExisting()
+                                || isAccessibilityOverlayExisting()),
+                        5000);
             } catch (TimeoutException timeoutException) {
                 // Double check the overlay is not exists in case there is no event sent
-                assertTrue(!isMagnificationOverlayExisting());
+                assertTrue(!(isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()));
             }
         }
     }
@@ -549,6 +553,7 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testSetWindowModeConfig_hasMagnificationOverlay() throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
 
@@ -568,6 +573,27 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
+    public void testSetWindowModeConfig_hasAccessibilityOverlay() throws TimeoutException {
+        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
+
+        final MagnificationController controller = mService.getMagnificationController();
+        final MagnificationConfig config = new MagnificationConfig.Builder()
+                .setMode(MAGNIFICATION_MODE_WINDOW)
+                .setScale(2.0f)
+                .build();
+
+        try {
+            sUiAutomation.executeAndWaitForEvent(
+                    () -> controller.setMagnificationConfig(config, false),
+                    event -> isAccessibilityOverlayExisting(), 5000);
+        } finally {
+            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testServiceConnectionDisconnected_hasNoMagnificationOverlay()
             throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
@@ -586,6 +612,31 @@ public class AccessibilityMagnificationTest {
             sUiAutomation.executeAndWaitForEvent(
                     () -> mService.runOnServiceSync(() -> mService.disableSelfAndRemove()),
                     event -> !isMagnificationOverlayExisting(), 5000);
+        } finally {
+            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
+    public void testServiceConnectionDisconnected_hasNoAccessibilityOverlay()
+            throws TimeoutException {
+        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
+
+        final MagnificationController controller = mService.getMagnificationController();
+        final MagnificationConfig config = new MagnificationConfig.Builder()
+                .setMode(MAGNIFICATION_MODE_WINDOW)
+                .setScale(2.0f)
+                .build();
+
+        try {
+            sUiAutomation.executeAndWaitForEvent(
+                    () -> controller.setMagnificationConfig(config, false),
+                    event -> isAccessibilityOverlayExisting(), 5000);
+
+            sUiAutomation.executeAndWaitForEvent(
+                    () -> mService.runOnServiceSync(() -> mService.disableSelfAndRemove()),
+                    event -> !isAccessibilityOverlayExisting(), 5000);
         } finally {
             mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
         }
@@ -1242,6 +1293,12 @@ public class AccessibilityMagnificationTest {
         return sUiAutomation.getWindows().stream().anyMatch(
                 accessibilityWindowInfo -> accessibilityWindowInfo.getType()
                         == AccessibilityWindowInfo.TYPE_MAGNIFICATION_OVERLAY);
+    }
+
+    private boolean isAccessibilityOverlayExisting() {
+        return sUiAutomation.getWindows().stream().anyMatch(
+                accessibilityWindowInfo -> accessibilityWindowInfo.getType()
+                        == AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY);
     }
 
     private Rect getMagnifiedArea(MagnificationController magnificationController) {

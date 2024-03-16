@@ -26,6 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.pdf.LoadParams;
 import android.graphics.pdf.PdfRenderer;
 import android.graphics.pdf.PdfRendererPreV;
@@ -429,8 +430,8 @@ class Utils {
     static int calculateArea(List<PageMatchBounds> matchRectList) {
         int area = 0;
         for (PageMatchBounds matchRect : matchRectList) {
-            for (Rect rect : matchRect.getBounds()) {
-                int rectArea = rect.height() * rect.width();
+            for (RectF rect : matchRect.getBounds()) {
+                int rectArea = Math.round(rect.height() * rect.width());
                 // as rect can return negative height and width as well
                 if (rectArea < 0) {
                     rectArea *= -1;

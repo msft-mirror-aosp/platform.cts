@@ -99,21 +99,6 @@ public class ShellCommandExecutor {
                 + handle.getId() + " " + userSerial);
     }
 
-    public static void setUserDefaultPhoneAccount(Instrumentation instrumentation,
-            PhoneAccountHandle handle) throws Exception {
-        String result;
-        if (handle != null) {
-            final ComponentName component = handle.getComponentName();
-            final long userSerial = getUserSerialNumber(instrumentation, handle.getUserHandle());
-            result = executeShellCommand(instrumentation, COMMAND_SET_DEFAULT_PHONE_ACCOUNT
-                    + component.getPackageName() + "/" + component.getClassName() + " "
-                    + handle.getId() + " " + userSerial);
-        } else {
-            result = executeShellCommand(instrumentation, COMMAND_SET_DEFAULT_PHONE_ACCOUNT);
-        }
-        Log.d(sTAG, "setUserDefaultPhoneAccount to " + handle + ", result=" + result);
-    }
-
     private static long getUserSerialNumber(Instrumentation instrumentation, UserHandle handle) {
         UserManager userManager =
                 instrumentation.getContext().getSystemService(UserManager.class);

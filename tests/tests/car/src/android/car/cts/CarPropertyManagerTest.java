@@ -2570,6 +2570,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         getInfoModelYearVerifier().verify();
     }
 
+    private void assertFuelPropertyNotImplementedOnEv(int propertyId) {
+        runWithShellPermissionIdentity(
+                () -> {
+                    if (mCarPropertyManager.getCarPropertyConfig(
+                            VehiclePropertyIds.INFO_FUEL_TYPE) == null) {
+                        return;
+                    }
+                    CarPropertyValue<?> infoFuelTypeValue = mCarPropertyManager.getProperty(
+                            VehiclePropertyIds.INFO_FUEL_TYPE, /* areaId */ 0);
+                    if (infoFuelTypeValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                        return;
+                    }
+                    Integer[] fuelTypes = (Integer[]) infoFuelTypeValue.getValue();
+                    assertWithMessage("If fuelTypes only contains FuelType.ELECTRIC, "
+                                    + VehiclePropertyIds.toString(propertyId)
+                                    + " property must not be implemented")
+                            .that(fuelTypes).isNotEqualTo(new Integer[]{FuelType.ELECTRIC});
+                },
+                Car.PERMISSION_CAR_INFO);
+    }
+
     private VehiclePropertyVerifier<Float> getInfoFuelCapacityVerifier() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.INFO_FUEL_CAPACITY,
@@ -2577,6 +2598,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Float.class, mCarPropertyManager)
+                .setCarPropertyConfigVerifier(
+                        carPropertyConfig -> {
+                            assertFuelPropertyNotImplementedOnEv(
+                                    VehiclePropertyIds.INFO_FUEL_CAPACITY);
+                        })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, fuelCapacity) ->
                                 assertWithMessage(
@@ -2720,29 +2746,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC,"
-                                                                + " INFO_FUEL_DOOR_LOCATION"
-                                                                + " property must not be"
-                                                                + " implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(
+                                    VehiclePropertyIds.INFO_FUEL_DOOR_LOCATION);
                         })
                 .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
@@ -4231,28 +4236,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Float.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC, FUEL_LEVEL"
-                                                                + " property must not be"
-                                                                + " implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(VehiclePropertyIds.FUEL_LEVEL);
                         })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, fuelLevel) -> {
@@ -4456,28 +4440,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC,"
-                                                                + " FUEL_DOOR_OPEN property must"
-                                                                + " not be implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(VehiclePropertyIds.FUEL_DOOR_OPEN);
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)

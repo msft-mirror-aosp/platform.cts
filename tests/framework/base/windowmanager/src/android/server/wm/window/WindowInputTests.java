@@ -190,6 +190,8 @@ public class WindowInputTests {
 
     @Test
     public void testMoveWindowAndTap() throws Throwable {
+        final int windowSize = 20;
+
         // Set up window.
         mView = addActivityWindow((view, lp) -> {
             view.setBackgroundColor(Color.RED);
@@ -199,7 +201,8 @@ public class WindowInputTests {
             lp.flags =
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                             | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-            lp.width = lp.height = 20;
+            lp.width = windowSize;
+            lp.height = windowSize;
             lp.gravity = Gravity.LEFT | Gravity.TOP;
         });
 
@@ -232,7 +235,15 @@ public class WindowInputTests {
                 wm.updateViewLayout(mView, lp);
             });
             mInstrumentation.waitForIdleSync();
-            mInstrumentation.getUiAutomation().syncInputTransactions(true /*waitForAnimations*/);
+
+            // Wait for window bounds to update.
+            final var expectedBounds = new Rect(locationInWindow.x, locationInWindow.y,
+                    locationInWindow.x + windowSize, locationInWindow.y + windowSize);
+            Predicate<WindowInfo> hasUpdatedBounds =
+                    windowInfo -> !windowInfo.bounds.equals(expectedBounds);
+            assertTrue(waitForWindowInfo(hasUpdatedBounds, WINDOW_WAIT_TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS, mView::getWindowToken, mView.getDisplay().getDisplayId()));
+
             final int previousCount = mClickCount;
 
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);

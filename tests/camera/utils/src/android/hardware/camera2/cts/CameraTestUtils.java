@@ -4042,6 +4042,11 @@ public class CameraTestUtils extends Assert {
                 true/*callSupported*/, ret/*configSupported*/);
     }
 
+    /**
+     * Check if a session configuration with parameters is supported.
+     *
+     * All OutputConfigurations contains valid output surfaces.
+     */
     public static boolean isSessionConfigWithParamsSupported(
             CameraDevice.CameraDeviceSetup cameraDeviceSetup,
             Handler handler, List<OutputConfiguration> outputConfigs,
@@ -4054,6 +4059,43 @@ public class CameraTestUtils extends Assert {
         return cameraDeviceSetup.isSessionConfigurationSupported(sessionConfig);
     }
 
+    /**
+     * Check if a session configuration with parameters is supported.
+     *
+     * <p>OutputConfigurations do not contain the output surface. Additionally this function
+     * checks the consistency of isSessionConfigurationSupported return value between the
+     * incompleted SessionConfiguration and the completed SessionConfiguration after addSurface
+     * is called.</p>
+     */
+    public static boolean isSessionConfigWithParamsSupportedChecked(
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup,
+            List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
+            int operatingMode, CaptureRequest request) throws CameraAccessException {
+        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+        for (Pair<OutputConfiguration, Surface> c : outputConfigs2Steps) {
+            outputConfigs.add(c.first);
+        }
+        SessionConfiguration sessionConfig = new SessionConfiguration(operatingMode, outputConfigs);
+        sessionConfig.setSessionParameters(request);
+        boolean sessionConfigNoSurfaceSupported = cameraDeviceSetup.isSessionConfigurationSupported(
+                sessionConfig);
+
+        // Add surfaces for the OutputConfigurations
+        for (Pair<OutputConfiguration, Surface> c : outputConfigs2Steps) {
+            OutputConfiguration config = c.first;
+            Surface surface = c.second;
+            if (config.getSurface() == null) {
+                config.addSurface(surface);
+            }
+        }
+        boolean sessionConfigWithSurfaceSupported =
+                cameraDeviceSetup.isSessionConfigurationSupported(sessionConfig);
+        assertEquals("isSessionConfigurationSupported return value shouldn't change before and "
+                + "after surfaces are added to SessionConfiguration",
+                sessionConfigNoSurfaceSupported, sessionConfigWithSurfaceSupported);
+
+        return sessionConfigWithSurfaceSupported;
+    }
 
     /**
      * Wait for numResultWait frames
