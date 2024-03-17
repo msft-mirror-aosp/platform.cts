@@ -16,6 +16,8 @@
 
 package android.ondeviceintelligence.cts;
 
+import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
@@ -39,6 +41,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -49,7 +52,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
-import com.android.internal.infra.AndroidFuture;
 
 import org.junit.After;
 import org.junit.Before;
@@ -57,6 +59,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 
@@ -69,6 +72,8 @@ import java.util.concurrent.Executor;
 public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED = 1001;
     public static final String TEST_FILE_NAME = "test_file.txt";
+    public static final String TEST_KEY = "test_key";
+
     public static final String TEST_CONTENT = "test_content";
 
 
@@ -121,6 +126,7 @@ public class OnDeviceIntelligenceManagerTest {
 //=====================Tests for Access Denied without Permission on all Manager Methods=========
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetFeature() {
         assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE));
@@ -135,6 +141,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetFeatureDetails() {
         assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE));
@@ -149,6 +156,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetVersion() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -167,6 +175,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingRequestFeatureDownload() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -198,6 +207,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenRequestTokenInfo() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -220,6 +230,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingProcessRequest() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -247,6 +258,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingProcessRequestStreaming() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -282,6 +294,7 @@ public class OnDeviceIntelligenceManagerTest {
 //===================== Tests for Result callback invoked on all Manager Methods ==================
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetFeature() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -298,6 +311,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetFeatureDetails() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -314,6 +328,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetVersion() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -329,6 +344,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingRequestFeatureDownload() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -356,6 +372,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenRequestTokenInfo() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -374,6 +391,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingProcessRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -399,6 +417,7 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingProcessRequestStreaming() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -432,15 +451,16 @@ public class OnDeviceIntelligenceManagerTest {
 
     //===================== Tests for accessing file from isolated process via non-isolated =======
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void testGetFileDescriptorFromNonIsolatedService() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         Feature feature = new Feature.Builder(1).build();
         CountDownLatch statusLatch = new CountDownLatch(1);
-        AndroidFuture<String> fileContents = new AndroidFuture<>();
+        CompletableFuture<String> fileContents = new CompletableFuture<>();
         mOnDeviceIntelligenceManager.processRequest(feature,
-                new Bundle(), REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED, null,
+                Bundle.EMPTY, REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED, null,
                 null, EXECUTOR, new StreamingProcessingCallback() {
                     @Override
                     public void onPartialResult(@NonNull Bundle partialResult) {
@@ -450,7 +470,7 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onResult(Bundle result) {
                         Log.i(TAG, "Final Result : " + result);
-                        fileContents.complete(result.getPairValue());
+                        fileContents.complete(result.getString(TEST_KEY));
                         statusLatch.countDown();
                     }
 
