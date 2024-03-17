@@ -16,8 +16,7 @@
 
 package android.car.cts;
 
-import static com.google.common.truth.Truth.assertThat;
-
+import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Test;
@@ -31,6 +30,7 @@ import java.util.regex.Pattern;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class UiModeHostTest extends CarHostJUnit4TestCase {
 
+    private static final int DEFAULT_TIMEOUT_SEC = 20;
     private static final Pattern NIGHT_MODE_REGEX = Pattern.compile("Night mode: (yes|no)");
 
     /**
@@ -46,46 +46,58 @@ public final class UiModeHostTest extends CarHostJUnit4TestCase {
 
         // start current user in day mode
         setDayMode();
-        assertThat(isNightMode()).isFalse();
+        waitUntilDayMode();
 
         // set to night mode
         setNightMode();
-        assertThat(isNightMode()).isTrue();
+        waitUntilNightMode();
 
         // switch to new user and verify night mode
         switchUser(newUserId);
-        assertThat(isNightMode()).isTrue();
+        waitForUserSwitchCompleted(newUserId);
+        waitUntilNightMode();
 
         // set to day mode
         setDayMode();
-        assertThat(isNightMode()).isFalse();
+        waitUntilDayMode();
 
-        // switch bach to initial user and verify day mode
+        // switch back to initial user and verify day mode
         switchUser(originalUserId);
-        assertThat(isNightMode()).isFalse();
+        waitForUserSwitchCompleted(originalUserId);
+        waitUntilDayMode();
     }
 
     /**
      * Sets the UI mode to day mode.
      */
-    protected void setDayMode() throws Exception {
+    private void setDayMode() throws Exception {
         executeCommand("cmd car_service day-night-mode day");
     }
 
     /**
      * Sets the UI mode to night mode.
      */
-    protected void setNightMode() throws Exception {
+    private void setNightMode() throws Exception {
         executeCommand("cmd car_service day-night-mode night");
     }
 
     /**
      * Returns true if the current UI mode is night mode, false otherwise.
      */
-    protected boolean isNightMode() throws Exception {
+    private boolean isNightMode() throws Exception {
         return executeAndParseCommand(NIGHT_MODE_REGEX,
                 "get night mode status failed",
                 matcher -> matcher.group(1).equals("yes"),
                 "cmd uimode night");
+    }
+
+    private void waitUntilNightMode() throws Exception {
+        CommonTestUtils.waitUntil("timed out waiting for the night mode",
+                DEFAULT_TIMEOUT_SEC, () -> isNightMode());
+    }
+
+    private void waitUntilDayMode() throws Exception {
+        CommonTestUtils.waitUntil("timed out waiting for the day mode",
+                DEFAULT_TIMEOUT_SEC, () -> !isNightMode());
     }
 }
