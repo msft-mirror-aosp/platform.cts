@@ -2136,6 +2136,7 @@ public class ServiceTest extends ActivityTestsBase {
      * Test per process's max outgoing bindService() service connections.
      * @throws Exception
      */
+    @FlakyTest(bugId = 329918252)
     public void testMaxServiceConnections() throws Exception {
         final ArrayList<LatchedConnection> connections = new ArrayList<>();
         final int max = 1000;
