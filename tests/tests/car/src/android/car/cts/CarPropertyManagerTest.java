@@ -2502,6 +2502,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, make) ->
+                                assertWithMessage("INFO_MAKE must not be empty")
+                                        .that(make)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -2529,6 +2534,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, model) ->
+                                assertWithMessage("INFO_MODEL must not be empty")
+                                        .that(model)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
