@@ -130,6 +130,12 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     private static final String TEST_MARKER_PREFIX =
             "android.view.inputmethod.cts.FocusHandlingTest";
 
+    /** Identifying tag for the first EditText. */
+    private static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
+
+    /** Identifying tag for the second EditText. */
+    private static final String SECOND_EDIT_TEXT_TAG = "second-EditText";
+
     public EditText launchTestActivity(String marker) {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();
         TestActivity.startSync(activity-> {
@@ -160,8 +166,9 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         return editText;
     }
 
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
+    @NonNull
+    private static String getTestMarker(@NonNull String editTextTag) {
+        return TEST_MARKER_PREFIX + "/" + editTextTag + "/" + SystemClock.elapsedRealtimeNanos();
     }
 
     @FlakyTest(bugId = 149246840)
@@ -170,7 +177,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             // Wait until the MockIme gets bound to the TestActivity.
@@ -284,7 +291,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final TestActivity testActivity = TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
@@ -325,7 +332,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
@@ -366,7 +373,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             // Activity adds EditText at a later point.
             TestUtils.waitOnMainUntil(() -> layoutRef.get().hasWindowFocus(), TIMEOUT);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             testActivity.runOnUiThread(() -> {
                 final EditText editText = new EditText(testActivity);
                 editText.setText("Editable");
@@ -385,7 +392,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
@@ -485,14 +492,14 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final EditText editText = launchTestActivity(marker);
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker1);
             instrumentation.runOnMainSync(editText::requestFocus);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
 
             // Make sure that InputConnection#commitText() works.
             final ImeCommand commit1 = imeSession.callCommitText("test commit", 1);
@@ -529,7 +536,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
                 stream.skipAll();
 
-                final String marker2 = getTestMarker();
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 // Call InputMethodManager#restartInput()
                 instrumentation.runOnMainSync(() -> {
                     editText.setPrivateImeOptions(marker2);
@@ -584,7 +591,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             // Wait until the MockIme is connected to the edit text.
@@ -642,7 +649,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             instrumentation.runOnMainSync(editText::requestFocus);
 
@@ -691,7 +698,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             runOnMainSync(() -> editText.setShowSoftInputOnFocus(false));
 
@@ -720,8 +727,8 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             final AtomicBoolean editTextHasWindowFocus = new AtomicBoolean(false);
 
             // Start a TestActivity and verify the edit text will receive focus and keyboard shown.
-            final String marker = getTestMarker();
-            final EditText editText = launchTestActivity(marker, editTextHasWindowFocus);
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker1, editTextHasWindowFocus);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -730,7 +737,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             TestUtils.waitOnMainUntil(editTextHasWindowFocus::get, TIMEOUT);
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
             expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
 
             // Create a popupTextView which from Service with different UI thread.
@@ -742,9 +749,9 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Verify popupTextView will also receive window focus change and soft keyboard shown
             // after tapping the view.
-            final String marker1 = getTestMarker();
+            final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
             popupTextView.post(() -> {
-                popupTextView.setPrivateImeOptions(marker1);
+                popupTextView.setPrivateImeOptions(marker2);
                 popupTextHasViewFocus.set(popupTextView.requestFocus());
             });
             TestUtils.waitOnMainUntil(popupTextHasViewFocus::get, TIMEOUT);
@@ -752,7 +759,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, popupTextView);
             TestUtils.waitOnMainUntil(() -> popupTextHasWindowFocus.get()
                             && !editTextHasWindowFocus.get(), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker2), TIMEOUT);
             expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
 
             // Emulate tap event for editText again, verify soft keyboard and window focus will
@@ -760,7 +767,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             TestUtils.waitOnMainUntil(() -> editTextHasWindowFocus.get()
                     && !popupTextHasWindowFocus.get(), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
             expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
 
             // Remove the popTextView window and back to test activity, and then verify if
@@ -780,7 +787,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final TestActivity testActivity = TestActivity.startSync(activity-> {
                 // Initially set activity window to not IME focusable.
                 activity.getWindow().addFlags(FLAG_ALT_FOCUSABLE_IM);
@@ -867,7 +874,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                 instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final AtomicReference<LinearLayout> layoutRef = new AtomicReference<>();
 
             // Launch test activity
@@ -875,7 +882,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
                 final EditText editText = new EditText(activity);
-                editText.setPrivateImeOptions(marker);
+                editText.setPrivateImeOptions(marker1);
                 editText.setHint("editText");
                 layoutRef.set(layout);
                 layout.addView(editText);
@@ -885,14 +892,14 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             });
 
             // "onStartInput" gets called for the EditText.
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
 
             final HandlerThread backgroundThread = new HandlerThread("testthread");
             backgroundThread.start();
 
             final AtomicBoolean nonUiThreadCallMade = new AtomicBoolean(false);
             final CountDownLatch latch = new CountDownLatch(1);
-            final String marker2 = getTestMarker();
+            final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
             runOnMainSync(() -> {
                 final LinearLayout layout = layoutRef.get();
                 final EditText editText2 = new EditText(layout.getContext()) {
@@ -931,7 +938,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
 
             // Launch test activity
@@ -982,7 +989,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             int softInputMode)
             throws Exception {
         try (MockImeSession imeSession = createTestImeSession()) {
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
 
             // Launch an activity with a text edit and request focus
             TestActivity.startSync(activity -> {
@@ -1212,14 +1219,15 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     public void testInputConnectionWhenAddAndRemoveAltFocusableImFlagInFocus() throws Exception {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker1 = getTestMarker();
-            final String marker2 = getTestMarker();
-
-            final AtomicReference<EditText> firstEditorRef = new AtomicReference<>();
-            final AtomicReference<EditText> secondEditorRef = new AtomicReference<>();
             final int iterations = 10;
 
             for (int i = 0; i < iterations; i++) {
+                final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG + "-iteration-" + i);
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG + "-iteration-" + i);
+
+                final AtomicReference<EditText> firstEditorRef = new AtomicReference<>();
+                final AtomicReference<EditText> secondEditorRef = new AtomicReference<>();
+
                 final TestActivity testActivity = TestActivity.startSync(activity -> {
                     final LinearLayout layout = new LinearLayout(activity);
                     layout.setOrientation(LinearLayout.VERTICAL);
