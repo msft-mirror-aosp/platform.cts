@@ -25,15 +25,6 @@
 
 #include <string>
 
-extern "C" JNIEXPORT jboolean Java_android_cts_tagging_Utils_kernelSupportsTaggedPointers() {
-#ifdef __aarch64__
-  int res = prctl(PR_GET_TAGGED_ADDR_CTRL, 0, 0, 0, 0);
-  return res >= 0 && res & PR_TAGGED_ADDR_ENABLE;
-#else
-  return false;
-#endif
-}
-
 static const int TAGGING_MODE_OFF = 100;
 #ifdef __aarch64__
 static const int TAGGING_MODE_ASYNC = 101;

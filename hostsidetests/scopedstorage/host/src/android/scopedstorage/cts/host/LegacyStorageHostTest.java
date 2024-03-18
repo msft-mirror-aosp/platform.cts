@@ -40,7 +40,7 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
     private ContentProviderHandler mContentProviderHandler;
 
     /**
-     * Runs the given phase of LegacyFileAccessTest by calling into the device.
+     * Runs the given phase of LegacyStorageTest by calling into the device.
      * Throws an exception if the test phase fails.
      */
     void runDeviceTest(String phase) throws Exception {
@@ -260,7 +260,7 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
     }
 
     /**
-     * (b/205673506): Test that legacy System Gallery can update() media file's releative_path to a
+     * (b/205673506): Test that legacy System Gallery can update() media file's relative_path to a
      * non default top level directory.
      */
     @Test
