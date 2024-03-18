@@ -7138,7 +7138,6 @@
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
-        <!-- TODO: b/324916074
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActivity"
             android:exported="true"
@@ -7164,7 +7163,7 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
-        </activity>-->
+        </activity>
 
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActionActivity"
