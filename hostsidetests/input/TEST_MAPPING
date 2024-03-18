@@ -1,7 +1,12 @@
 {
   "presubmit": [
     {
-      "name": "CtsInputHostTestCases"
+      "name": "CtsInputHostTestCases",
+      "options": [
+        {
+          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+        }
+      ]
     }
   ]
 }
