@@ -1807,7 +1807,7 @@ public abstract class ActivityManagerTestBase {
                 removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
             }
 
-            // TODO (b/112015010) If keyguard is occluded, credential cannot be removed as expected.
+            // If keyguard is occluded, credential cannot be removed as expected.
             // LockScreenSession#close is always called before stopping all test activities,
             // which could cause the keyguard to stay occluded after wakeup.
             // If Keyguard is occluded, pressing the back key can hide the ShowWhenLocked activity.
@@ -1826,10 +1826,14 @@ public abstract class ActivityManagerTestBase {
             }
             setLockDisabled(mIsLockDisabled);
 
-            mWmState.computeState();
-            if (!isKeyguardLocked() || mWmState.getKeyguardControllerState().mKeyguardGoingAway) {
-                // we can return early if keyguard is going away or not locked
-                log("Returning early since keyguard is going away or not locked");
+            if (isWatch()) {
+                // Keyguard will be dismissed when the credential is removed.
+                mWmState.waitForKeyguardGone();
+            }
+
+            if (!isKeyguardLocked()) {
+                // we can return early if keyguard is not locked
+                log("Returning early since keyguard is not locked");
                 return;
             }
 
