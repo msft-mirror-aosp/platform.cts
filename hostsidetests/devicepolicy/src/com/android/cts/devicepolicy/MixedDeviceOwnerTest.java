@@ -30,8 +30,6 @@ import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -397,6 +395,24 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
             throws Exception {
         super.testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted();
     }
+
+    @Ignore("b/330134976")
+    @LargeTest
+    @Test
+    public void testLockTaskCantBeInterrupted() throws Exception {
+        try {
+            // Just start kiosk mode
+            executeDeviceTestMethod(
+                    ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
+
+            // Check that kiosk mode is working and can't be interrupted
+            executeDeviceTestMethod(".LockTaskHostDrivenTest",
+                    "testLockTaskIsActiveAndCantBeInterrupted");
+        } finally {
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
+        }
+    }
+
 
     @Override
     protected void installDelegateApp() throws Exception {

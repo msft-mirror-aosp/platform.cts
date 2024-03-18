@@ -76,6 +76,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
 
+    /** Time to wait for statsd to setup. */
+    private static final long WAIT_TIME_LONG = 1000;
+
+    /** Time to wait for atoms to be reported. */
+    private static final long WAIT_TIME_SHORT = 500;
+
     private Instrumentation mInstrumentation;
 
     /** The test app package name from which atoms will be logged. */
@@ -83,11 +89,13 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
 
     @Before
     public void setUp() throws Exception {
-        MetricsRecorder.removeConfig();
-        MetricsRecorder.clearReports();
-
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mPkgName = mInstrumentation.getContext().getPackageName();
+
+        MetricsRecorder.removeConfig();
+        MetricsRecorder.clearReports();
+        // TODO(b/330143218): Add a proper fence for statsd
+        Thread.sleep(WAIT_TIME_LONG);
     }
 
     @After
@@ -431,12 +439,6 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                     "Test Setup Failed: There should be no pending IME requests present when the "
                             + "test starts.");
 
-            // Expect atoms pushed from either from the IME process, or from the test app process.
-            MetricsRecorder.uploadConfigForPushedAtomWithUid(
-                    fromImeProcess ? imeSession.getMockImePackageName() : mPkgName,
-                    AtomsProto.Atom.IME_REQUEST_FINISHED_FIELD_NUMBER,
-                    false /* useUidAttributionChain */);
-
             final TestActivity activity;
             if (show) {
                 // Use STATE_UNCHANGED to not trigger any other IME requests.
@@ -449,10 +451,17 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                 // Wait for any outstanding IME requests to finish, to capture all atoms.
                 PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
                         "Test Error: Pending IME requests took too long, likely timing out.");
-
-                // Remove logs for the show requests.
-                MetricsRecorder.clearReports();
             }
+
+            // Wait for any atoms from activity start to be sent.
+            // TODO(b/330143218): Add a proper fence for statsd
+            Thread.sleep(WAIT_TIME_SHORT);
+
+            // Expect atoms pushed from either from the IME process, or from the test app process.
+            MetricsRecorder.uploadConfigForPushedAtomWithUid(
+                    fromImeProcess ? imeSession.getMockImePackageName() : mPkgName,
+                    AtomsProto.Atom.IME_REQUEST_FINISHED_FIELD_NUMBER,
+                    false /* useUidAttributionChain */);
 
             // Run the given test.
             runnable.run(imeSession, activity);
@@ -460,6 +469,10 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
             // Wait for any outstanding IME requests to finish, to capture all atoms.
             PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
                     "Test Error: Pending IME requests took too long, likely timing out.");
+
+            // Wait for any atoms from the test runnable to be sent.
+            // TODO(b/330143218): Add a proper fence for statsd
+            Thread.sleep(WAIT_TIME_SHORT);
 
             // Must have at least one atom received.
             final var data = MetricsRecorder.getEventMetricDataList();
