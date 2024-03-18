@@ -161,6 +161,7 @@ import android.util.Log;
 
 import androidx.core.content.FileProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 import androidx.test.uiautomator.UiDevice;
@@ -195,6 +196,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -244,7 +246,7 @@ public class PackageManagerTest {
     private static final String PERMISSION_TREE_ROOT =
             "android.content.cts.permission.TEST_DYNAMIC";
     // Number of activities/activity-alias in AndroidManifest
-    private static final int NUM_OF_ACTIVITIES_IN_MANIFEST = 22;
+    private static final int NUM_OF_ACTIVITIES_IN_MANIFEST = 23;
     public static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 
     private static final String SHIM_APEX_PACKAGE_NAME = "com.android.apex.cts.shim";
@@ -340,6 +342,7 @@ public class PackageManagerTest {
     private static final String FILE_PROVIDER_AUTHORITY = "android.content.cts.fileprovider";
 
     private static final String TAG_MANIFEST = "manifest";
+    private static final String MIME_GROUP = "mime_group";
 
     private static final ComponentName ACTIVITY_COMPONENT = new ComponentName(
             PACKAGE_NAME, ACTIVITY_NAME);
@@ -4205,4 +4208,52 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertThat(installPackage(CTS_TARGET_SDK_24)).isTrue();
     }
 
+    private void setUpdateMimeGroupAndAssertBroadcasts(Set<String> mimeTypes,
+            boolean isBroadcastReceived) throws Exception {
+        final String expectedPackageName = mContext.getPackageName();
+        final IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        filter.addDataScheme("package");
+        final PackageBroadcastReceiver packageChangedBroadcastReceiver =
+                new PackageBroadcastReceiver(expectedPackageName,
+                        ActivityManager.getCurrentUser(), Intent.ACTION_PACKAGE_CHANGED);
+        mContext.registerReceiver(packageChangedBroadcastReceiver, filter, RECEIVER_EXPORTED);
+        try {
+            mPackageManager.setMimeGroup(MIME_GROUP, mimeTypes);
+            if (isBroadcastReceived) {
+                packageChangedBroadcastReceiver.assertBroadcastReceived();
+                final Intent resultIntent = packageChangedBroadcastReceiver.getBroadcastResult();
+                final String[] receivedComponents = resultIntent.getStringArrayExtra(
+                        Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST);
+                assertThat(receivedComponents).isNotNull();
+                assertThat(receivedComponents[0]).isEqualTo(expectedPackageName);
+                assertThat(mPackageManager.getMimeGroup(MIME_GROUP)).isEqualTo(mimeTypes);
+            } else {
+                packageChangedBroadcastReceiver.assertBroadcastNotReceived();
+            }
+        } finally {
+            mContext.unregisterReceiver(packageChangedBroadcastReceiver);
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testUpdateMimeGroup_changed() throws Exception {
+        Set<String> mimeTypes = Collections.singleton("text/*");
+
+        setUpdateMimeGroupAndAssertBroadcasts(mimeTypes, /* isBroadcastReceived= */ true);
+        assertThat(mPackageManager.getMimeGroup(MIME_GROUP)).isEqualTo(mimeTypes);
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testUpdateMimeGroup_noChanged_noBroadcastReceived() throws Exception {
+        final Set<String> mimeTypes = Collections.singleton("image/*");
+
+        setUpdateMimeGroupAndAssertBroadcasts(mimeTypes, /* isBroadcastReceived= */ true);
+        assertThat(mPackageManager.getMimeGroup(MIME_GROUP)).isEqualTo(mimeTypes);
+        setUpdateMimeGroupAndAssertBroadcasts(mimeTypes, /* isBroadcastReceived= */ false);
+    }
 }
