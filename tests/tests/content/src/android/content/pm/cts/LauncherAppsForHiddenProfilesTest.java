@@ -34,8 +34,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.fail;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -45,6 +46,7 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -99,9 +101,13 @@ public class LauncherAppsForHiddenProfilesTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        // Private profile is not supported on wear devices
-        // TODO(b/290333800): filter out with PS specific annotation once ready
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(Manifest.permission.CREATE_USERS)) {
+            assumeTrue(
+                    "Private profile not enabled on the device",
+                    Objects.requireNonNull(mContext.getSystemService(UserManager.class))
+                            .canAddPrivateProfile());
+        }
 
         mLauncherApps = mContext.getSystemService(LauncherApps.class);
         mDefaultHome = getDefaultLauncher(InstrumentationRegistry.getInstrumentation());
@@ -115,12 +121,10 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES
     })
-    public void testGeneralApis_notDefaultLauncherWithPerms_hiddenProfileInfoStripped() {
+    public void testGeneralApis_notDefaultLauncherWithNormalPerm_hiddenProfileInfoStripped() {
         try (UserReference privateProfile = createProfileAndSetupTestState();
                 PermissionContext p =
-                        TestApis.permissions()
-                                .withPermission(
-                                        ACCESS_HIDDEN_PROFILES, ACCESS_HIDDEN_PROFILES_FULL)) {
+                        TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES)) {
             assertHiddenProfileInfoStripped(privateProfile.userHandle());
         }
     }
@@ -152,13 +156,10 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES
     })
-    public void testGeneralApis_defaultLauncherWithSystemPerm_hiddenProfileInfoAvailable() {
+    public void testGeneralApis_withSystemPerm_hiddenProfileInfoAvailable() {
         try (UserReference privateProfile = createProfileAndSetupTestState();
                 PermissionContext p =
-                        TestApis.permissions().withoutPermission(ACCESS_HIDDEN_PROFILES);
-                PermissionContext p2 =
                         TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES_FULL)) {
-            setSelfAsDefaultLauncher();
             assertHiddenProfileInfoAvailable(privateProfile.userHandle());
         }
     }
@@ -222,6 +223,7 @@ public class LauncherAppsForHiddenProfilesTest {
     }
 
     @Test
+    @FlakyTest(bugId = 325954148)
     @RequiresFlagsEnabled({
         FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS,
@@ -229,14 +231,11 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES
     })
-    public void testAppChangesCallbacks_defaultLauncherWithSystemPerm_callbacksReceived() {
+    public void testAppChangesCallbacks_withSystemPerm_callbacksReceived() {
         try (UserReference privateProfile = createProfile();
                 PermissionContext p =
-                        TestApis.permissions().withoutPermission(ACCESS_HIDDEN_PROFILES);
-                PermissionContext p2 =
                         TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES_FULL)) {
             privateProfile.start();
-            setSelfAsDefaultLauncher();
             assertCallbacksPropagation(privateProfile, /* received= */ true);
         }
     }
@@ -249,12 +248,10 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES
     })
-    public void testAppChangesCallbacks_notDefaultLauncherWithPerms_callbacksNotReceived() {
+    public void testAppChangesCallbacks_notDefaultLauncherWithNormalPerm_callbacksNotReceived() {
         try (UserReference privateProfile = createProfile();
                 PermissionContext p =
-                        TestApis.permissions()
-                                .withPermission(
-                                        ACCESS_HIDDEN_PROFILES, ACCESS_HIDDEN_PROFILES_FULL)) {
+                        TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES)) {
             privateProfile.start();
             assertCallbacksPropagation(privateProfile, /* received= */ false);
         }
