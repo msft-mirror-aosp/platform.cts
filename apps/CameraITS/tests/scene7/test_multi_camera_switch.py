@@ -45,25 +45,6 @@ _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
 
 
-def _get_preview_test_size(cam, camera_id):
-  """Finds the max preview size to be tested.
-
-  Returns the max supported preview size.
-
-  Args:
-    cam: camera object.
-    camera_id: str; camera device id under test.
-
-  Returns:
-    preview_test_size: str; wxh resolution of the size to be tested
-  """
-  # TODO(ruchamk): Check for 4K supported video quality and preview
-  # resolution size
-  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
-  logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
-  return supported_preview_sizes[-1]
-
-
 def _remove_frame_files(dir_name, save_files_list):
   """Removes the generated frame files from test dir.
 
@@ -301,7 +282,8 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, chart_distance)
 
-      preview_test_size = _get_preview_test_size(cam, self.camera_id)
+      preview_test_size = preview_stabilization_utils.get_max_preview_test_size(
+          cam, self.camera_id)
       cam.do_3a()
 
       # dynamic preview recording
