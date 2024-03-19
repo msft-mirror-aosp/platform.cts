@@ -27,11 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import android.content.ComponentName;
-import android.cts.tagging.TestingService;
 import android.cts.tagging.ServiceRunnerActivity;
 import static android.cts.tagging.Constants.*;
-
-import com.android.compatibility.common.util.DropBoxReceiver;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest

@@ -17,20 +17,14 @@
 package com.android.cts.tagging;
 
 import android.compat.cts.CompatChangeGatingTestCase;
+
 import com.android.tradefed.device.ITestDevice;
+
 import com.google.common.collect.ImmutableSet;
-import java.util.Scanner;
 
 public class TaggingBaseTest extends CompatChangeGatingTestCase {
-    private static final String DEVICE_KERNEL_HELPER_CLASS_NAME = "DeviceKernelHelpers";
-    private static final String DEVICE_KERNEL_HELPER_APK_NAME = "DeviceKernelHelpers.apk";
-    private static final String DEVICE_KERNEL_HELPER_PKG_NAME = "android.cts.tagging.support";
-    private static final String KERNEL_HELPER_START_COMMAND = String.format(
-        "am instrument -w -e package %1$s %1$s/androidx.test.runner.AndroidJUnitRunner",
-        DEVICE_KERNEL_HELPER_PKG_NAME);
-
     protected static final long NATIVE_HEAP_POINTER_TAGGING_CHANGE_ID = 135754954;
-    protected static final String DEVICE_TEST_CLASS_NAME = ".TaggingTest";
+    protected static final String DEVICE_TEST_CLASS_NAME = "android.cts.tagging.TaggingTest";
     protected static final String DEVICE_TAGGING_DISABLED_TEST_NAME = "testHeapTaggingDisabled";
     protected static final String DEVICE_TAGGING_ENABLED_TEST_NAME = "testHeapTaggingEnabled";
 
@@ -51,7 +45,6 @@ public class TaggingBaseTest extends CompatChangeGatingTestCase {
 
     @Override
     protected void setUp() throws Exception {
-        installPackage(DEVICE_KERNEL_HELPER_APK_NAME, true);
         ITestDevice device = getDevice();
 
         // Compat features have a very complicated truth table as to whether they can be
@@ -69,36 +62,15 @@ public class TaggingBaseTest extends CompatChangeGatingTestCase {
         device.executeShellCommand(
                 "settings put global force_non_debuggable_final_build_for_compat 1");
 
-        // Kernel support for tagged pointers can only be determined on device.
-        // Deploy a helper package and observe what the kernel tells us about
-        // tagged pointers support.
-        device.executeAdbCommand("logcat", "-c");
-        device.executeShellCommand(KERNEL_HELPER_START_COMMAND);
-        String logs = device.executeAdbCommand(
-                "logcat", "-v", "brief", "-d", DEVICE_KERNEL_HELPER_CLASS_NAME + ":I", "*:S");
+        // Any ARM64 device shipping Android 14 has to support tagged pointers, which were
+        // introduced in android-4.14, which also is the oldest version supported, as per
+        // https://source.android.com/docs/core/architecture/kernel/android-common#compatibility-matrix
+        // TBI patches were submitted to android-4.14 here: https://r.android.com/1132335
+        boolean deviceIsArm64 = device.getProperty("ro.product.cpu.abi").contains("arm64");
+        deviceSupportsMemoryTagging =
+                deviceIsArm64 && !runCommand("grep 'Features.* mte' /proc/cpuinfo").isEmpty();
 
-        // Holds whether the device that this test is running on was determined to have both
-        // requirements for ARM TBI: the correct architecture (aarch64) and the full set of kernel
-        // patches (as indicated by a successful prctl(PR_GET_TAGGED_ADDR_CTRL)).
-        boolean deviceHasTBI = false;
-        boolean foundKernelHelperResult = false;
-        Scanner in = new Scanner(logs);
-        while (in.hasNextLine()) {
-            String line = in.nextLine();
-            if (line.contains("Kernel supports tagged pointers")) {
-                foundKernelHelperResult = true;
-                deviceHasTBI = line.contains("true");
-                break;
-            }
-        }
-        in.close();
-        if (!foundKernelHelperResult) {
-            throw new Exception("Failed to get a result from the kernel helper.");
-        }
-
-        deviceSupportsMemoryTagging = !runCommand("grep 'Features.* mte' /proc/cpuinfo").isEmpty();
-
-        if (deviceHasTBI && !deviceSupportsMemoryTagging) {
+        if (deviceIsArm64 && !deviceSupportsMemoryTagging) {
             reportedChangeSet = ImmutableSet.of(NATIVE_HEAP_POINTER_TAGGING_CHANGE_ID);
             testForWhenSoftwareWantsTagging = DEVICE_TAGGING_ENABLED_TEST_NAME;
         }
@@ -106,7 +78,6 @@ public class TaggingBaseTest extends CompatChangeGatingTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        uninstallPackage(DEVICE_KERNEL_HELPER_PKG_NAME, true);
         ITestDevice device = getDevice();
         device.executeShellCommand(
                 "settings put global force_non_debuggable_final_build_for_compat 0");
