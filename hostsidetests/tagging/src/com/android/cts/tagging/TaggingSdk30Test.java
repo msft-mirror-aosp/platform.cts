@@ -43,7 +43,7 @@ public class TaggingSdk30Test extends TaggingBaseTest {
     }
 
     public void testHeapTaggingCompatFeatureDefault() throws Exception {
-        runDeviceCompatTestReported(TEST_PKG, DEVICE_TEST_CLASS_NAME,
+        runDeviceCompatTestReported(TEST_PKG, ".TaggingTest",
                 testForWhenSoftwareWantsTagging,
                 /*enabledChanges*/ ImmutableSet.of(),
                 /*disabledChanges*/ ImmutableSet.of(),
@@ -52,7 +52,7 @@ public class TaggingSdk30Test extends TaggingBaseTest {
     }
 
     public void testHeapTaggingCompatFeatureEnabled() throws Exception {
-        runDeviceCompatTestReported(TEST_PKG, DEVICE_TEST_CLASS_NAME,
+        runDeviceCompatTestReported(TEST_PKG, ".TaggingTest",
                 testForWhenSoftwareWantsTagging,
                 /*enabledChanges*/ ImmutableSet.of(NATIVE_HEAP_POINTER_TAGGING_CHANGE_ID),
                 /*disabledChanges*/ ImmutableSet.of(),
@@ -64,7 +64,7 @@ public class TaggingSdk30Test extends TaggingBaseTest {
         // We're not allowed to disable compat features (see
         // force_non_debuggable_final_build_for_compat in TaggingBaseTest for more info). Check to
         // ensure that even if we try that we still get pointer tagging.
-        runDeviceCompatTestReported(TEST_PKG, DEVICE_TEST_CLASS_NAME,
+        runDeviceCompatTestReported(TEST_PKG, ".TaggingTest",
                 testForWhenSoftwareWantsTagging,
                 /*enabledChanges*/ ImmutableSet.of(),
                 /*disabledChanges*/ ImmutableSet.of(NATIVE_HEAP_POINTER_TAGGING_CHANGE_ID),
