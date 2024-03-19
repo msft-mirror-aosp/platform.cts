@@ -416,7 +416,9 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             }
             mCodec.release();
             mExtractor.release();
-            if (IS_AT_LEAST_R && mSaveToMem && mIsAudio) {
+            // The following part of the test was added after Android U and is not guaranteed
+            // to work on versions before that, hence limit it to Android V and above.
+            if (IS_AT_LEAST_V && mSaveToMem && mIsAudio) {
                 test.reset();
                 CodecDecoderBlockModelTestBase cdbmtb = new CodecDecoderBlockModelTestBase(
                         mCodecName, mMediaType, null, mAllTestParams);

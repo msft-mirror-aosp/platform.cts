@@ -43,7 +43,7 @@ class ComparisonReport {
     private static void printUsage() {
         System.out.println("Usage: ReportChecker [OPTION]...");
         System.out.println();
-        System.out.println("Generates a comparsion report about Test Suite Content and Report.");
+        System.out.println("Generates a comparison report about Test Suite Content and Report.");
         System.out.println();
         System.out.println("Options:");
         System.out.println("  -o FILE                output file of missing test case list");
@@ -64,7 +64,7 @@ class ComparisonReport {
         return false;
     }
 
-    private static void writeComparsionReport(
+    private static void writeComparisonReport(
             TestSuite ts,
             CtsReport tsReport,
             String outputFileName,
@@ -202,7 +202,7 @@ class ComparisonReport {
         TestSuite ts = TestSuite.parseFrom(new FileInputStream(testSuiteFileName));
         CtsReport tsReport = CtsReport.parseFrom(new FileInputStream(testReportFileName));
 
-        writeComparsionReport(
+        writeComparisonReport(
                 ts,
                 tsReport,
                 outputFileName,

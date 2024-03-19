@@ -75,53 +75,100 @@ public final class TelephonyFeatureFlagsTest {
                 PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS);
         boolean hasFeatureSubscription = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION);
-
-        if (hasFeatureCalling) {
-            assertTrue(hasFeatureTelecom && hasFeatureRadio && hasFeatureSubscription);
-        }
-
-        if (hasFeatureCarrierLock) {
-            assertTrue(hasFeatureSubscription);
-        }
-
-        if (hasFeatureCdma) {
-            assertTrue(hasFeatureRadio);
-        }
-
-        if (hasFeatureData) {
-            assertTrue(hasFeatureRadio && hasFeatureSubscription);
-        }
-
-        if (hasFeatureEuicc) {
-            assertTrue(hasFeatureSubscription);
-        }
-
-        if (hasFeatureEuiccMep) {
-            assertTrue(hasFeatureEuicc);
-        }
-
-        if (hasFeatureGsm) {
-            assertTrue(hasFeatureRadio);
-        }
-
-        if (hasFeatureSingleReg) {
-            assertTrue(hasFeatureIms);
-        }
-
-        if (hasFeatureMbms) {
-            assertTrue(hasFeatureRadio && hasFeatureSubscription);
-        }
-
-        if (hasFeatureMessaging) {
-            assertTrue(hasFeatureRadio && hasFeatureSubscription);
-        }
+        boolean hasFeatureSatellite = mPackageManager.hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE);
 
         if (hasFeatureRadio) {
-            assertTrue(hasFeatureTelephony);
+            assertTrue("FEATURE_TELEPHONY_RADIO_ACCESS requires "
+                    + "FEATURE_TELEPHONY",
+                    hasFeatureTelephony);
         }
 
         if (hasFeatureSubscription) {
-            assertTrue(hasFeatureTelephony);
+            assertTrue("FEATURE_TELEPHONY_SUBSCRIPTION requires "
+                    + "FEATURE_TELEPHONY",
+                    hasFeatureTelephony);
+        }
+
+        if (hasFeatureCalling) {
+            assertTrue("FEATURE_TELEPHONY_CALLING requires "
+                    + "FEATURE_TELECOM, "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS and "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureTelecom && hasFeatureRadio && hasFeatureSubscription);
+        }
+
+        if (hasFeatureMessaging) {
+            assertTrue("FEATURE_TELEPHONY_MESSAGING requires "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS and "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureRadio && hasFeatureSubscription);
+        }
+
+        if (hasFeatureData) {
+            assertTrue("FEATURE_TELEPHONY_DATA requires "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS and "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureRadio && hasFeatureSubscription);
+        }
+
+        if (hasFeatureCarrierLock) {
+            assertTrue("FEATURE_TELEPHONY_CARRIERLOCK requires "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureSubscription);
+        }
+
+        if (hasFeatureEuicc) {
+            assertTrue("FEATURE_TELEPHONY_EUICC requires "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureSubscription);
+        }
+
+        if (hasFeatureEuiccMep) {
+            assertTrue("FEATURE_TELEPHONY_EUICC_MEP requires "
+                    + "FEATURE_TELEPHONY_EUICC",
+                    hasFeatureEuicc);
+        }
+
+        if (hasFeatureIms) {
+            assertTrue("FEATURE_TELEPHONY_IMS requires "
+                    + "FEATURE_TELEPHONY_DATA",
+                    hasFeatureData);
+        }
+
+        if (hasFeatureSingleReg) {
+            assertTrue("FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION requires "
+                    + "FEATURE_TELEPHONY_IMS",
+                    hasFeatureIms);
+        }
+
+        if (hasFeatureGsm) {
+            assertTrue("FEATURE_TELEPHONY_GSM requires "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS",
+                    hasFeatureRadio);
+        }
+
+        if (hasFeatureCdma) {
+            assertTrue("FEATURE_TELEPHONY_CDMA requires "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS",
+                    hasFeatureRadio);
+        }
+
+        if (hasFeatureMbms) {
+            assertTrue("FEATURE_TELEPHONY_MBMS requires "
+                    + "FEATURE_TELEPHONY_RADIO_ACCESS and "
+                    + "FEATURE_TELEPHONY_SUBSCRIPTION",
+                    hasFeatureRadio && hasFeatureSubscription);
+        }
+
+        if (hasFeatureSatellite) {
+            assertTrue("FEATURE_TELEPHONY_SATELLITE requires "
+                            + "FEATURE_TELEPHONY_DATA and "
+                            + "FEATURE_TELEPHONY_GSM and "
+                            + "one of (FEATURE_TELEPHONY_MESSAGE, "
+                            + "FEATURE_TELEPHONY_CALLING, FEATURE_TELEPHONY_IMS)",
+                    hasFeatureData && hasFeatureGsm
+                            && (hasFeatureCalling || hasFeatureMessaging || hasFeatureIms));
         }
     }
 }

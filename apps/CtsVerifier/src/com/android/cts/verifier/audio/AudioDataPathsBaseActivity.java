@@ -75,16 +75,16 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mIsLessThanV;
 
     // UI
-    private View mStartBtn;
-    private View mCancelButton;
-    private View mClearResultsBtn;
+    protected View mStartBtn;
+    protected View mCancelButton;
+    protected View mClearResultsBtn;
 
     private TextView mRoutesTx;
     private WebView mResultsView;
 
     private WaveScopeView mWaveView = null;
 
-    private  HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
 
     // Test Manager
     protected TestManager mTestManager = new TestManager();
@@ -96,7 +96,6 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mSupportsMMAP;
     private boolean mSupportsMMAPExclusive;
 
-    protected boolean mHasUsb;
     protected boolean mIsHandheld;
 
     // Analysis
@@ -124,8 +123,6 @@ public abstract class AudioDataPathsBaseActivity
         mHasMic = AudioSystemFlags.claimsInput(this);
         mHasSpeaker = AudioSystemFlags.claimsOutput(this);
 
-        // Use as a proxy for "has a USB port"
-        mHasUsb = AudioSystemFlags.claimsProAudio(this);
         mIsHandheld = AudioSystemFlags.isHandheld(this);
 
         String yesString = getResources().getString(R.string.audio_general_yes);
@@ -186,6 +183,11 @@ public abstract class AudioDataPathsBaseActivity
     //
     // UI Helpers
     //
+    protected void enableTestButtons(boolean enabled) {
+        mStartBtn.setEnabled(enabled);
+        mClearResultsBtn.setEnabled(enabled);
+    }
+
     private void showDeviceView() {
         mRoutesTx.setVisibility(View.VISIBLE);
         mWaveView.setVisibility(View.VISIBLE);
@@ -1353,8 +1355,12 @@ public abstract class AudioDataPathsBaseActivity
         enableTestButtons(true, false);
     }
 
+    protected boolean calculatePass() {
+        return mTestManager.calculatePass();
+    }
+
     boolean passBtnEnabled() {
-        return mIsLessThanV || !mIsHandheld || mTestManager.calculatePass();
+        return mIsLessThanV || !mIsHandheld || calculatePass();
     }
 
     void displayNonHandheldMessage() {

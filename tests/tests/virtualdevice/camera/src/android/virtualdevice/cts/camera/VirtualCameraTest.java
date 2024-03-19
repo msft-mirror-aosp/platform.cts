@@ -63,7 +63,6 @@ import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -89,8 +88,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Size;
 import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
-
-import com.android.compatibility.common.util.FeatureUtil;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -175,8 +172,6 @@ public class VirtualCameraTest {
 
     @Before
     public void setUp() {
-        // Virtual Camera Service is not available in Auto build.
-        assumeFalse(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         // Virtual Camera currently requires GL_EXT_YUV_target extension to process input YUV
         // buffers and perform RGB -> YUV conversion.
         // TODO(b/316108033) Remove once there's workaround for systems without GL_EXT_YUV_target
