@@ -882,7 +882,7 @@ class ItsSession(object):
     return self._execute_preview_recording(cmd)
 
   def do_preview_recording_with_dynamic_ae_awb_region(
-      self, video_size, stabilize, ae_awb_regions, ae_awb_region_duration,
+      self, video_size, ae_awb_regions, ae_awb_region_duration, stabilize=False,
       ae_target_fps_min=None, ae_target_fps_max=None):
     """Issue a preview request with dynamic 3A region and read back output object.
 
@@ -892,13 +892,13 @@ class ItsSession(object):
 
     Args:
       video_size: str; Preview resolution at which to record. ex. "1920x1080"
-      stabilize: boolean; Whether the preview should be stabilized.
       ae_awb_regions: dictionary of (aeAwbRegionOne/Two/Three/Four).
         Used to control 3A region during recording.
         aeAwbRegionOne (metering rectangle) first ae/awb region of recording.
         aeAwbRegionTwo (metering rectangle) second ae/awb region of recording.
         aeAwbRegionThree (metering rectangle) third ae/awb region of recording.
         aeAwbRegionFour (metering rectangle) fourth ae/awb region of recording.
+      stabilize: boolean; Whether the preview should be stabilized.
       ae_awb_region_duration: float; sleep in ms between 3A regions.
       ae_target_fps_min: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE min.
       ae_target_fps_max: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE max.
