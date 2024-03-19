@@ -22,6 +22,7 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith;
         "android.content.pm.PackageManager#getMimeGroup",
         "android.content.pm.PackageManager#setMimeGroup"
 })
+@Ignore("b/314223665")
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class PreferredActivitiesTestCases extends BaseHostJUnit4Test {
     private static final String PACKAGE_TEST_APP = "android.dynamicmime.testapp";

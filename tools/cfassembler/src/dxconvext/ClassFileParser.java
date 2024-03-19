@@ -89,16 +89,15 @@ public class ClassFileParser {
         }
         // Writer w = new OutputStreamWriter(System.out);
         ClassFileParser.this.processFileBytes(w, cfName, bytes);
-
     }
 
     /**
-     * 
+     *
      * @param w the writer to write the generated .cfh file to
      * @param name the relative name of the java src file, e.g.
      *        dxc/util/Util.java
      * @param allbytes the bytes of this java src file
-     * @return true if everthing went alright
+     * @return true if everything went alright
      */
     void processFileBytes(Writer w, String name, final byte[] allbytes) throws IOException {
         String fixedPathName = fixPath(name);
@@ -198,8 +197,6 @@ public class ClassFileParser {
                 checkpos += len;
             }
 
-
-
             private String dumpBytes(ByteArray ba) {
                 String s = "";
                 for (int i = 0; i < ba.size(); i++) {
@@ -226,18 +223,15 @@ public class ClassFileParser {
                 }
                 return s;
             }
-
-
         });
         cf.setAttributeFactory(StdAttributeFactory.THE_ONE);
         // what is needed to force parsing to the end?
         cf.getMagic();
         // cf.getFields();
         // cf.getAttributes();
-        // cf.getMethods();        
+        // cf.getMethods();
         bw.close();
     }
-
 
     private String getIndent(int indent) {
         StringBuilder sb = new StringBuilder();
@@ -277,7 +271,4 @@ public class ClassFileParser {
 
         return path;
     }
-
-
-
 }

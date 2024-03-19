@@ -24,18 +24,13 @@ import android.media.AudioManager;
 import android.media.AudioPlaybackConfiguration;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager.RemoteUserInfo;
-import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-import androidx.test.platform.app.InstrumentationRegistry;
-
 import junit.framework.Assert;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,21 +58,6 @@ public class Utils {
         try (Scanner scanner = new Scanner(is).useDelimiter("\\A")) {
             return scanner.hasNext() ? scanner.next() : "";
         }
-    }
-
-    public static String getMediaPath() {
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        String mediaPath = bundle.getString(MEDIA_PATH_INSTR_ARG_KEY);
-        Log.i(TAG, "Media Path value is: " + mediaPath);
-
-        if (mediaPath != null && !mediaPath.isEmpty()) {
-            if (mediaPath.startsWith("http") || mediaPath.startsWith("file")) {
-                return mediaPath;
-            }
-            // Otherwise, assume a file path that is not already Uri formatted
-            return Uri.fromFile(new File(mediaPath)).toString();
-        }
-        return "https://storage.googleapis.com/wvmedia";
     }
 
     private static void setAppOps(String packageName, String operation,

@@ -53,6 +53,7 @@ android_test {
         ":CtsEmptyTestAppV2",
         ":CtsEmptyInstallerApp",
         ":CtsEmptyTestApp_FullScreenIntent",
+        ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
     ],
     java_resources: [

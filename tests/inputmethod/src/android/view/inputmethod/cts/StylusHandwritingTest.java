@@ -31,6 +31,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -60,6 +61,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Pair;
@@ -906,12 +908,67 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
-
-    @Test
     /**
-     * Inject Stylus events on top of an unfocused editor which disabled the autoHandwriting and
-     * verify Handwriting is not started and InkWindow is not displayed.
+     * Inject stylus events on top of an unfocused password EditText and verify keyboard is shown
+     * and handwriting is not started
      */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
+    public void testHandwriting_unfocusedEditText_password() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String focusedMarker = getTestMarker();
+            final String unfocusedMarker = getTestMarker();
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText unfocusedEditText = editTextPair.second;
+            unfocusedEditText.post(() -> unfocusedEditText.setInputType(
+                    InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD));
+
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", focusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+            final int touchSlop = getTouchSlop();
+            final int startX = unfocusedEditText.getWidth() / 2;
+            final int startY = 2 * touchSlop;
+            // (endX, endY) is out of bound to avoid that unfocusedEditText is focused due to the
+            // stylus touch.
+            final int endX = startX;
+            final int endY = unfocusedEditText.getHeight() + 2 * touchSlop;
+            final int number = 5;
+
+            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
+            TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
+                    endX, endY, number);
+
+            // Handwriting is not started since it is not supported for password fields, but it is
+            // focused and the soft keyboard is shown.
+            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+
+            TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+        }
+    }
+
+    /**
+     * Inject stylus events on top of an unfocused editor which disabled the autoHandwriting and
+     * verify keyboard is shown and handwriting is not started.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
     public void testHandwriting_unfocusedEditText_autoHandwritingDisabled() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -946,14 +1003,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     endX, endY, number);
             TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
 
-            // unfocusedEditor opts out autoHandwriting, so it won't trigger onStartInput.
-            notExpectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
-            // keyboard shouldn't show up.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", unfocusedMarker),
-                    NOT_EXPECT_TIMEOUT);
-            // Handwriting should not start
+            // Handwriting is not started since it is disabled for the EditText, but it is focused
+            // and the soft keyboard is shown.
+            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
                     editorMatcher("onStartStylusHandwriting", unfocusedMarker),

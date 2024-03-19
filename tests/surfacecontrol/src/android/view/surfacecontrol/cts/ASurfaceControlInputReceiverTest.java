@@ -35,8 +35,13 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setVisibility;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -128,7 +133,9 @@ public class ASurfaceControlInputReceiverTest {
 
         MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
+
     }
 
     @Test
@@ -170,7 +177,8 @@ public class ASurfaceControlInputReceiverTest {
 
         MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -215,7 +223,8 @@ public class ASurfaceControlInputReceiverTest {
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = embeddedMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -258,7 +267,8 @@ public class ASurfaceControlInputReceiverTest {
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = embeddedMotionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -301,7 +311,8 @@ public class ASurfaceControlInputReceiverTest {
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch in host", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -339,15 +350,8 @@ public class ASurfaceControlInputReceiverTest {
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
-    }
-
-    private static void assertMotionEvent(MotionEvent event, Point coords) {
-        assertEquals(
-                "Expected ACTION_DOWN. Received " + MotionEvent.actionToString(event.getAction()),
-                MotionEvent.ACTION_DOWN, event.getAction());
-        Point receivedCoords = new Point((int) event.getX(), (int) event.getY());
-        assertEquals("Expected " + coords + ". Received " + receivedCoords, coords, receivedCoords);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     private static void assertWindowAndGetBounds(int displayId, Rect outBounds)

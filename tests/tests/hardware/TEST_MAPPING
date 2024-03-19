@@ -143,7 +143,6 @@
           "exclude-filter": "android.hardware.input.cts.tests.AsusGamepadTest#testAllMotions"
         },
         {
-          // TODO(b/190487022):
           "exclude-filter": "android.hardware.input.cts.tests.SonyDualshock4ProBluetoothTest#testVibrator"
         },
         {

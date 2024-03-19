@@ -184,6 +184,15 @@ public class PackageInstallerArchiveTest {
         launchTestActivity();
         PackageInfo packageInfo = getPackageInfo();
 
+        long cacheBytesBefore =
+                runWithShellPermissionIdentity(() ->
+                                mStorageStatsManager.queryStatsForPackage(
+                                        packageInfo.applicationInfo.storageUuid,
+                                        packageInfo.packageName,
+                                        UserHandle.of(UserHandle.myUserId())),
+                        Manifest.permission.PACKAGE_USAGE_STATS).getCacheBytes();
+
+
         runWithShellPermissionIdentity(
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
@@ -204,7 +213,8 @@ public class PackageInstallerArchiveTest {
                         Manifest.permission.PACKAGE_USAGE_STATS);
         // This number is bound to fluctuate as the data created during app startup will change
         // over time. We only need to verify that the data directory is kept.
-        assertTrue(stats.getDataBytes() > 0L);
+        assertThat(stats.getDataBytes()).isGreaterThan(0L);
+        assertThat(stats.getCacheBytes()).isLessThan(cacheBytesBefore);
     }
 
     @Test

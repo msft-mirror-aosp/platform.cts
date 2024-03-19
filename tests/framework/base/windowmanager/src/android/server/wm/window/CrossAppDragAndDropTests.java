@@ -20,6 +20,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.UiDeviceUtils.dragPointer;
 import static android.server.wm.dndsourceapp.Components.DRAG_SOURCE;
+import static android.server.wm.dndsourceapp.Components.DRAG_SOURCE_DROP_TARGET;
 import static android.server.wm.dndtargetapp.Components.DROP_TARGET;
 import static android.server.wm.dndtargetappsdk23.Components.DROP_TARGET_SDK23;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -36,12 +37,15 @@ import android.graphics.Rect;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeprecatedTargetSdkUtils;
 import android.server.wm.TestLogService;
 import android.server.wm.WindowManagerState.Task;
 import android.util.Log;
 import android.view.Display;
+
+import com.android.window.flags.Flags;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -69,6 +73,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     private static final String FILE_GLOBAL = "file_global";
     private static final String FILE_LOCAL = "file_local";
     private static final String DISALLOW_GLOBAL = "disallow_global";
+    private static final String GLOBAL_SAME_APP = "global_same_app";
     private static final String CANCEL_SOON = "cancel_soon";
     private static final String GRANT_NONE = "grant_none";
     private static final String GRANT_READ = "grant_read";
@@ -109,6 +114,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     private static final String RESULT_KEY_CLIP_DESCR_ERROR = "CLIP_DESCR_ERROR";
     private static final String RESULT_KEY_LOCAL_STATE_ERROR = "LOCAL_STATE_ERROR";
 
+    private static final String RESULT_IGNORE = "Ignore";
     private static final String RESULT_MISSING = "Missing";
     private static final String RESULT_OK = "OK";
     private static final String RESULT_EXCEPTION = "Exception";
@@ -320,7 +326,8 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
         // Skip the following assertions when testing OnReceiveContentListener, since it only
         // handles drop events.
-        if (!ON_RECEIVE_CONTENT_LISTENER_MODES.contains(targetMode)) {
+        if (!RESULT_IGNORE.equals(expectedListenerResults)
+                && !ON_RECEIVE_CONTENT_LISTENER_MODES.contains(targetMode)) {
             if (!RESULT_MISSING.equals(expectedDropResult)) {
                 assertTargetResult(RESULT_KEY_ACCESS_BEFORE, RESULT_EXCEPTION);
                 assertTargetResult(RESULT_KEY_ACCESS_AFTER, RESULT_EXCEPTION);
@@ -366,12 +373,30 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
     @Test
     public void testDisallowGlobal() throws Exception {
+        // Verify that dragging to another window doesn't work without FLAG_DRAG_GLOBAL
         assertNoGlobalDragEvents(DRAG_SOURCE, DISALLOW_GLOBAL, DROP_TARGET, RESULT_OK);
     }
 
     @Test
     public void testDisallowGlobalBelowSdk24() throws Exception {
         assertNoGlobalDragEvents(DRAG_SOURCE, GRANT_NONE, DROP_TARGET_SDK23, RESULT_OK);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
+    public void testDisallowGlobalSameAppWithDifferentUids() throws Exception {
+        // Verify that dragging to another window from a different app doesn't work with
+        // FLAG_DRAG_GLOBAL_SAME_APP
+        assertNoGlobalDragEvents(DRAG_SOURCE, GLOBAL_SAME_APP, DROP_TARGET, RESULT_OK);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
+    public void testGlobalSameAppWithSameUids() throws Exception {
+        // Verify that dragging to another window from the same app works with
+        // FLAG_DRAG_GLOBAL_SAME_APP
+        assertDragAndDropResults(DRAG_SOURCE, GLOBAL_SAME_APP, DRAG_SOURCE_DROP_TARGET,
+                REQUEST_NONE, RESULT_OK, RESULT_OK, RESULT_IGNORE);
     }
 
     @Test

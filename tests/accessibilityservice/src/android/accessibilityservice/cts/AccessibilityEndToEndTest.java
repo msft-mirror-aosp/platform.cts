@@ -1998,109 +1998,70 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_interceptsEventFromRequestedSource_SetAndUnset() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicInteger eventCount = new AtomicInteger(0);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    eventCount.incrementAndGet();
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource1 = InputDevice.SOURCE_JOYSTICK;
+        final int canarySource2 = InputDevice.SOURCE_SENSOR;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
 
-        // Inject 2 events to the input filter.
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // We should find 2 events.
-        TestUtils.waitOn(waitObject, () -> eventCount.get() == 2,
-                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                "Service did not receive MotionEvent");
+        // Set our interestedSource, inject an event, and assert it arrives.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource1, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        // Stop listening to events for this source, then inject 1 more event to the input filter.
-        service.setMotionEventSources(0 /* no sources */);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(0);
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // Assert we only received the original 2.
-        try {
-            TestUtils.waitOn(waitObject, () -> eventCount.get() == 3,
-                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(eventCount.get()).isEqualTo(2);
+        // Then unset our interested MotionEvent source (by updating it to 0), inject an
+        // event of the interested source type, and assert it does not arrive back to us.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation,
+                // Use a different canary to ensure we're waiting for this new update.
+                canarySource2,
+                /*interestedSource=*/0,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresEventFromDifferentSource() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
-        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicBoolean foundEvent = new AtomicBoolean(false);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    foundEvent.set(true);
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
+        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
 
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(actualSource));
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        try {
-            TestUtils.waitOn(waitObject, foundEvent::get, TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(foundEvent.get()).isFalse();
+        assertThrows("Expected no event from source " + actualSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, actualSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_TOUCHSCREEN;
         final StubMotionInterceptingAccessibilityService motionInterceptingService =
                 mMotionInterceptingServiceRule.enableService();
         TouchExplorationStubAccessibilityService touchExplorationService =
                 enableService(TouchExplorationStubAccessibilityService.class);
         try {
-            motionInterceptingService.setMotionEventSources(requestedSource);
-            final Object waitObject = new Object();
-            final AtomicBoolean foundEvent = new AtomicBoolean(false);
-            motionInterceptingService.setOnMotionEventListener(motionEvent -> {
-                synchronized (waitObject) {
-                    if (motionEvent.getSource() == requestedSource) {
-                        foundEvent.set(true);
-                    }
-                    waitObject.notifyAll();
-                }
-            });
+            motionInterceptingService.setAndAwaitMotionEventSources(
+                    sUiAutomation, canarySource, interestedSource,
+                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-            sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-
-            try {
-                TestUtils.waitOn(waitObject, foundEvent::get,
-                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                        "(expected)");
-            } catch (AssertionError e) {
-                // expected
-            }
-            assertThat(foundEvent.get()).isFalse();
+            assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                    () -> motionInterceptingService.injectAndAwaitMotionEvent(
+                            sUiAutomation, interestedSource,
+                            TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }
@@ -2258,27 +2219,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }
-    }
-
-    private MotionEvent createMotionEvent(int source) {
-        // Only source is used by these tests, so set other properties to valid defaults.
-        final long eventTime = SystemClock.uptimeMillis();
-        final MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
-        props.id = 0;
-        return MotionEvent.obtain(eventTime,
-                eventTime,
-                MotionEvent.ACTION_MOVE,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{props},
-                new MotionEvent.PointerCoords[]{new MotionEvent.PointerCoords()},
-                0 /* metaState */,
-                0 /* buttonState */,
-                0 /* xPrecision */,
-                0 /* yPrecision */,
-                1 /* deviceId */,
-                0 /* edgeFlags */,
-                source,
-                0 /* flags */);
     }
 
     private List<AccessibilityServiceInfo> getEnabledServices() {

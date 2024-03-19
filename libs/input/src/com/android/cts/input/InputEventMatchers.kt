@@ -39,6 +39,8 @@ fun withCoords(pt: PointF): Matcher<MotionEvent> = object : TypeSafeMatcher<Moti
     }
 }
 
+fun withCoords(pt: Point): Matcher<MotionEvent> = withCoords(PointF(pt))
+
 fun withCoordsForPointerIndex(index: Int, pt: PointF): Matcher<MotionEvent> =
         object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {

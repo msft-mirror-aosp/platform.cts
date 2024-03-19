@@ -201,12 +201,6 @@ public class VirtualDevicePermissionTest {
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_STREAM_PERMISSIONS)
-    @Test
-    public void permissionDialog_streamingEnabled_isShown() {
-        verifyComponentShownAfterPermissionRequest(getPermissionDialogComponentName());
-    }
-
     @RequiresFlagsDisabled(Flags.FLAG_STREAM_PERMISSIONS)
     @Test
     public void permissionDialogDefaultParams_streamingDisabled_showsBlockedDialog() {

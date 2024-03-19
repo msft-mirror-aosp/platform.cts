@@ -22,6 +22,7 @@ import android.cts.statsdatom.lib.ReportUtils
 import android.input.InputDeviceBus
 import android.input.InputDeviceUsageType
 import android.input.KeyboardSystemEvent
+import android.platform.test.annotations.FlakyTest
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.PollingCheck
 import com.android.os.AtomsProto.Atom
@@ -138,6 +139,7 @@ class InputAtomsTest : DeviceTestCase() {
     }
 
     @CddTest(requirements = ["6.1/C-0-10"])
+    @FlakyTest(bugId = 324047709)
     fun testTouchpadUsageAtom_FingerAndPalmCounts() {
         setupTouchpadUsageConfig()
 

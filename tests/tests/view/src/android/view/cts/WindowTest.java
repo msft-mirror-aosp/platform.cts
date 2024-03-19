@@ -76,4 +76,13 @@ public class WindowTest {
         });
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRatePowerSavingsBalanced() throws Throwable {
+        mActivityRule.runOnUiThread(() -> {
+            assertTrue(mWindow.isFrameRatePowerSavingsBalanced());
+            mWindow.setFrameRatePowerSavingsBalanced(false);
+            assertFalse(mWindow.isFrameRatePowerSavingsBalanced());
+        });
+    }
 }

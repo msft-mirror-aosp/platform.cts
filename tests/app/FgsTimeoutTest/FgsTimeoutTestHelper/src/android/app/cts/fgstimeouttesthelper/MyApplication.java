@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.app.cts.fgstimeouttesthelper;
 
-package android.media.cts;
+import android.app.Application;
+import android.util.Log;
 
-import android.net.Uri;
-
-/**
- * An interface to report and test connection status.
- */
-public interface IConnectionStatus {
-
-    public String getNotConnectedReason();
-
-    public boolean isAvailable();
-
-    public boolean isConnected();
-
-    public void testConnection(Uri uri);
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        Log.d(FgsTimeoutHelper.TAG, "MyApplication.onCreate: " + this);
+        FgsTimeoutHelper.sContext = this;
+    }
 }
-

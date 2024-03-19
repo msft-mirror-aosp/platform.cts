@@ -74,7 +74,7 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
     private static final int EDIT_TEXT_ID = 1;
     private static final int TEXT_VIEW_ID = 2;
 
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     /** Time to wait for statsd to setup. */
     private static final long WAIT_TIME_LONG = 1000;

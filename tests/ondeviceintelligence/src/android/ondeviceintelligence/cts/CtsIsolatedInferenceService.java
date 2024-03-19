@@ -16,6 +16,8 @@
 
 package android.ondeviceintelligence.cts;
 
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_KEY;
+
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.ProcessingCallback;
@@ -30,14 +32,14 @@ import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
     static final String TAG = "SampleIsolatedService";
@@ -103,7 +105,9 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                             result = result.concat(line);
                         }
 
-                        callback.onResult(Bundle.forPair("result_key", result));
+                        Bundle bundle = new Bundle();
+                        bundle.putString(TEST_KEY, result);
+                        callback.onResult(bundle);
                     } catch (FileNotFoundException e) {
                         throw new RuntimeException(e);
                     } catch (IOException e) {

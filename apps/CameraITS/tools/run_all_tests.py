@@ -74,6 +74,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
+    'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_night'),
     os.path.join('scene_extensions', 'scene_low_light_boost'),
@@ -129,6 +130,8 @@ _SCENE_REQ = types.MappingProxyType({
               'See tests/scene6/scene6.png',
     'scene7': 'The picture with 4 different colors, slanted edge and'
               '4 ArUco markers. See tests/scene7/scene7.png',
+    'scene9': 'A scene with high entropy consisting of random size and colored '
+              'circles. See tests/scene9/scene9.png',
     # Use os.path to avoid confusion on other platforms
     os.path.join('scene_extensions', 'scene_hdr'): (
         'A tablet displayed scene with a face on the left '
