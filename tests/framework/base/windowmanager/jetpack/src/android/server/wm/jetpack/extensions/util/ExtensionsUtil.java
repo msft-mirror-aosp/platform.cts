@@ -63,7 +63,7 @@ public class ExtensionsUtil {
      * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
      * Extensions versions</a>.
      */
-    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 5;
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 6;
 
     /**
      * Returns the current version of {@link WindowExtensions} if present on the device.
