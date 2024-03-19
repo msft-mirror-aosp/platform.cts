@@ -533,7 +533,24 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             VehiclePropertyIds.OBD2_LIVE_FRAME,
             VehiclePropertyIds.OBD2_FREEZE_FRAME,
             VehiclePropertyIds.OBD2_FREEZE_FRAME_INFO,
-            VehiclePropertyIds.OBD2_FREEZE_FRAME_CLEAR
+            VehiclePropertyIds.OBD2_FREEZE_FRAME_CLEAR,
+            /*VehiclePropertyIds.CLUSTER_DISPLAY_STATE=*/289476405,
+            /*VehiclePropertyIds.CLUSTER_HEARTBEAT=*/299896651,
+            /*VehiclePropertyIds.CLUSTER_NAVIGATION_STATE=*/292556600,
+            /*VehiclePropertyIds.CLUSTER_REPORT_STATE=*/299896630,
+            /*VehiclePropertyIds.CLUSTER_REQUEST_DISPLAY=*/289410871,
+            /*VehiclePropertyIds.CLUSTER_SWITCH_UI=*/289410868,
+            /*VehiclePropertyIds.CREATE_USER=*/299896585,
+            /*VehiclePropertyIds.CURRENT_POWER_POLICY=*/286265123,
+            /*VehiclePropertyIds.INITIAL_USER_INFO=*/299896583,
+            /*VehiclePropertyIds.POWER_POLICY_GROUP_REQ=*/286265122,
+            /*VehiclePropertyIds.POWER_POLICY_REQ=*/286265121,
+            /*VehiclePropertyIds.REMOVE_USER=*/299896586,
+            /*VehiclePropertyIds.SWITCH_USER=*/299896584,
+            /*VehiclePropertyIds.USER_IDENTIFICATION_ASSOCIATION=*/299896587,
+            /*VehiclePropertyIds.VHAL_HEARTBEAT=*/290459443,
+            /*VehiclePropertyIds.WATCHDOG_ALIVE=*/290459441,
+            /*VehiclePropertyIds.WATCHDOG_TERMINATED_PROCESS=*/299896626
     );
 
     private static final ImmutableList<Integer>
