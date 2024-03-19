@@ -16,9 +16,13 @@
 
 package android.server.wm.dndsourceapp;
 
+import static android.app.PendingIntent.FLAG_IMMUTABLE;
+
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -58,6 +62,7 @@ public class DragSource extends Activity {
         final Uri plainUri = Uri.parse(URI_PREFIX + "/" + MAGIC_VALUE);
 
         setUpDragSource("disallow_global", plainUri, 0);
+        setUpDragSource("global_same_app", plainUri, View.DRAG_FLAG_GLOBAL_SAME_APPLICATION);
         setUpDragSource("cancel_soon", plainUri, View.DRAG_FLAG_GLOBAL);
 
         setUpDragSource("grant_none", plainUri, View.DRAG_FLAG_GLOBAL);
@@ -81,9 +86,28 @@ public class DragSource extends Activity {
 
         setUpDragSource("file_local", fileUri, 0);
         setUpDragSource("file_global", fileUri, View.DRAG_FLAG_GLOBAL);
+
+        final ClipData.Item intentSenderItem = new ClipData.Item.Builder()
+                .setIntentSender(PendingIntent.getActivity(this, 0, new Intent(),
+                        FLAG_IMMUTABLE).getIntentSender())
+                .build();
+        final ClipDescription clipDescription = new ClipDescription("", new String[] {
+                ClipDescription.MIMETYPE_TEXT_INTENT });
+        setUpDragSource("intent_sender", clipDescription,
+                intentSenderItem, View.DRAG_FLAG_GLOBAL_SAME_APPLICATION);
     }
 
     private void setUpDragSource(String mode, final Uri uri, final int flags) {
+        final ClipDescription clipDescription = new ClipDescription("", new String[] {
+                ClipDescription.MIMETYPE_TEXT_URILIST });
+        PersistableBundle extras = new PersistableBundle(1);
+        extras.putString("extraKey", "extraValue");
+        clipDescription.setExtras(extras);
+        setUpDragSource(mode, clipDescription, new ClipData.Item(uri), flags);
+    }
+
+    private void setUpDragSource(String mode, final ClipDescription clipDescription,
+            final ClipData.Item item, final int flags) {
         if (!mode.equals(getIntent().getStringExtra("mode"))) {
             return;
         }
@@ -97,12 +121,7 @@ public class DragSource extends Activity {
                 }
 
                 try {
-                    final ClipDescription clipDescription = new ClipDescription("", new String[] {
-                            ClipDescription.MIMETYPE_TEXT_URILIST });
-                    PersistableBundle extras = new PersistableBundle(1);
-                    extras.putString("extraKey", "extraValue");
-                    clipDescription.setExtras(extras);
-                    final ClipData clipData = new ClipData(clipDescription, new ClipData.Item(uri));
+                    final ClipData clipData = new ClipData(clipDescription, item);
                     v.startDragAndDrop(
                             clipData,
                             new View.DragShadowBuilder(v),
