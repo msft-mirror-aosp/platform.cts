@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package android.cts.tagging.sdk29;
+package android.cts.tagging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
-import android.cts.tagging.Utils;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
