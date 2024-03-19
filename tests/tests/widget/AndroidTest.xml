@@ -55,6 +55,13 @@
         <option name="run-command" value="ime enable --user %TEST_USER% com.android.cts.testime/.TestIme" />
         <option name="run-command" value="ime set --user %TEST_USER% com.android.cts.testime/.TestIme" />
         <option name="teardown-command" value="ime reset --user %TEST_USER%" />
+        <!--
+            A broadcast with the intent android.intent.action.CLOSE_SYSTEM_DIALOGS is sent by tests
+            as part of setup. Temporarily allow this for the SDK sandbox to allow tests to be run in
+            the sandbox mode as well.
+        -->
+        <option name="run-command" value="cmd sdk_sandbox append-test-allowlist send-broadcast android.intent.action.CLOSE_SYSTEM_DIALOGS" />
+        <option name="teardown-command" value="cmd sdk_sandbox sdk_sandbox clear-test-allowlists" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
