@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
+#include <memory>
+#include <utility>
 #define LOG_TAG "ASurfaceControlInputReceiverTest"
 
-#include <jni.h>
+#include <android/choreographer.h>
+#include <android/input.h>
+#include <android/input_transfer_token_jni.h>
+#include <android/log.h>
+#include <android/looper.h>
+#include <android/surface_control.h>
 #include <android/surface_control_input_receiver.h>
 #include <android/surface_control_jni.h>
-#include "nativehelper/scoped_utf_chars.h"
+#include <jni.h>
 #include <nativehelper/JNIHelp.h>
-#include <nativehelper/ScopedLocalRef.h>
-#include <android/choreographer.h>
-#include <android/surface_control.h>
-#include <android/input.h>
-#include <android/log.h>
+#include <nativehelper/scoped_local_ref.h>
 
 #define ALOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
@@ -92,19 +95,14 @@ private:
 
 class InputReceiverWrapper {
 public:
-    InputReceiverWrapper(AInputReceiver *aInputReceiver,
-                                InputReceiverCallbackWrapper *callback)
-            : mInputReceiver(aInputReceiver),
-              mInputReceiverCallbackWrapper(callback) {
-    }
+    InputReceiverWrapper(AInputReceiver* aInputReceiver,
+                         std::unique_ptr<InputReceiverCallbackWrapper> callback)
+          : mInputReceiver(aInputReceiver), mInputReceiverCallbackWrapper(std::move(callback)) {}
 
-    ~InputReceiverWrapper() {
-        AInputReceiver_release(mInputReceiver);
-        delete mInputReceiverCallbackWrapper;
-    }
+    ~InputReceiverWrapper() { AInputReceiver_release(mInputReceiver); }
     AInputReceiver *mInputReceiver;
 private:
-    InputReceiverCallbackWrapper *mInputReceiverCallbackWrapper;
+    std::unique_ptr<InputReceiverCallbackWrapper> mInputReceiverCallbackWrapper;
 };
 
 static jlong nativeCreateInputReceiver(JNIEnv *env, jclass, jboolean batched,
@@ -115,7 +113,8 @@ static jlong nativeCreateInputReceiver(JNIEnv *env, jclass, jboolean batched,
                                                                           hostInputTransferTokenObj);
     ASurfaceControl *aSurfaceControl = reinterpret_cast<ASurfaceControl *>(surfaceControlObj);
 
-    InputReceiverCallbackWrapper* callbackWrapper = new InputReceiverCallbackWrapper(env, inputReceiverObj);
+    std::unique_ptr<InputReceiverCallbackWrapper> callbackWrapper =
+            std::make_unique<InputReceiverCallbackWrapper>(env, inputReceiverObj);
 
     AInputReceiver *receiver;
     ALooper* looper = ALooper_prepare(0);
@@ -131,7 +130,8 @@ static jlong nativeCreateInputReceiver(JNIEnv *env, jclass, jboolean batched,
                                                                callbackWrapper->getAInputReceiverCallbacks());
     }
 
-    InputReceiverWrapper* inputReceiverWrapper = new InputReceiverWrapper(receiver, callbackWrapper);
+    InputReceiverWrapper* inputReceiverWrapper =
+            new InputReceiverWrapper(receiver, std::move(callbackWrapper));
     return reinterpret_cast<jlong>(inputReceiverWrapper);
 }
 
