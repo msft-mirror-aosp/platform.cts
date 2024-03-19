@@ -18,6 +18,7 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.assertNull;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
 
 import android.graphics.ImageFormat;
@@ -53,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -281,6 +283,13 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         //       + "SessionConfigurations created from different constructors ",
         //        keysForNoCallbackConfig.containsAll(keysForConfiguration)
         //        && keysForConfiguration.containsAll(keysForNoCallbackConfig));
+
+        // setStateCallback works as expected
+        CameraCaptureSession.StateCallback sessionListener = new BlockingSessionCallback();
+        Executor executor = new CameraTestUtils.HandlerExecutor(mHandler);
+        sessionConfigNoCallback.setStateCallback(executor, sessionListener);
+        assertEquals(executor, sessionConfigNoCallback.getExecutor());
+        assertEquals(sessionListener, sessionConfigNoCallback.getStateCallback());
     }
 
     @Test
