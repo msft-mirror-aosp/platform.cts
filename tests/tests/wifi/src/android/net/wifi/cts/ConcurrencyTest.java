@@ -350,7 +350,10 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             return;
         }
         removeAllPersistentGroups();
+        resetResponse(MY_RESPONSE);
         sWifiP2pManager.cancelConnect(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        resetResponse(MY_RESPONSE);
         sWifiP2pManager.removeGroup(sWifiP2pChannel, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
     }
