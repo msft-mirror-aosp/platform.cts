@@ -470,23 +470,36 @@ public final class DeviceUtils {
 
     /**
      * Runs a (background) service to perform the given action.
+     * @param testPackage the test package that contains the background service.
+     * @param service the service name
+     * @param actionValue the action code constants indicating the desired action to perform.
+     */
+    public static void executeBackgroundService(ITestDevice device, String testPackage,
+            String service, String actionValue) throws Exception {
+        executeServiceAction(device, testPackage, service, actionValue);
+    }
+
+
+    /**
+     * Runs a (background) service to perform the given action.
      * @param actionValue the action code constants indicating the desired action to perform.
      */
     public static void executeBackgroundService(ITestDevice device, String actionValue)
             throws Exception {
-        executeServiceAction(device, "StatsdCtsBackgroundService", actionValue);
+        executeServiceAction(device, STATSD_ATOM_TEST_PKG,
+                "StatsdCtsBackgroundService", actionValue);
     }
 
     /**
      * Runs the specified statsd package service to perform the given action.
      * @param actionValue the action code constants indicating the desired action to perform.
      */
-    public static void executeServiceAction(ITestDevice device, String service, String actionValue)
-            throws Exception {
+    public static void executeServiceAction(ITestDevice device, String testPackage,
+            String service, String actionValue) throws Exception {
         allowBackgroundServices(device);
         device.executeShellCommand(String.format(
                 "am startservice -n '%s/.%s' -e %s %s",
-                STATSD_ATOM_TEST_PKG, service,
+                testPackage, service,
                 KEY_ACTION, actionValue));
     }
 
@@ -543,6 +556,16 @@ public final class DeviceUtils {
         return kernelVersion.first > version.first
                 || (Objects.equals(kernelVersion.first, version.first)
                 && kernelVersion.second >= version.second);
+    }
+
+    // Gets whether "Always on Display" setting is enabled.
+    // In rare cases, this is different from whether the device can enter SCREEN_STATE_DOZE.
+    public static String getAodState(ITestDevice device) throws Exception {
+        return device.executeShellCommand("settings get secure doze_always_on");
+    }
+
+    public static void setAodState(ITestDevice device, String state) throws Exception {
+        device.executeShellCommand("settings put secure doze_always_on " + state);
     }
 
     private DeviceUtils() {}
