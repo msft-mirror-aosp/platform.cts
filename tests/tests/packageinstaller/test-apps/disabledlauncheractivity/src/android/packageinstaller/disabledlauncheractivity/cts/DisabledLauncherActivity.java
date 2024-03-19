@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package android.media.cts;
+package android.packageinstaller.disabledlauncheractivity.cts;
 
-import android.net.Uri;
+import android.app.Activity;
+import android.os.Bundle;
+import androidx.annotation.Nullable;
 
-/**
- * An interface to report and test connection status.
- */
-public interface IConnectionStatus {
+public class DisabledLauncherActivity extends Activity {
 
-    public String getNotConnectedReason();
-
-    public boolean isAvailable();
-
-    public boolean isConnected();
-
-    public void testConnection(Uri uri);
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
 }
-

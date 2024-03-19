@@ -24,6 +24,8 @@ import static android.net.wifi.WifiConfiguration.METERED_OVERRIDE_NOT_METERED;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -37,17 +39,25 @@ import android.net.wifi.SoftApConfiguration;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiEnterpriseConfig;
 import android.net.wifi.WifiManager;
+import android.net.wifi.cts.WifiManagerTest.Mutable;
+import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerExecutor;
+import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.wifi.flags.Flags;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -64,6 +74,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -81,6 +93,25 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
     private static final String V1_0_FILE = "assets/BackupV1.0Format.xml";
     private static final String V1_1_FILE = "assets/BackupV1.1Format.xml";
     private static final String V1_2_FILE = "assets/BackupV1.2Format.xml";
+
+    // Testing files for WifiManager#restoreWifiBackupData
+    private static final String WIFI_SETTING_BACKUP_DATA =
+            "assets/BackupWifiSettingsFormat.xml";
+    // It can cover the new setting for old device since any new setting
+    // is an unextected setting for old device.
+    private static final String WIFI_SETTING_WITH_UNEXPECTED_SETTINGS =
+            "assets/BackupWifiSettingsWithUnexpectedSettings.xml";
+    // It can cover the new section for old device since any new section
+    // is an unextected section for old device.
+    private static final String WIFI_SETTINGS_BACKUP_WITH_EXTRA_UNEXPECTED_SECTION =
+            "assets/BackupWifiSettingWithMoreExtraUnexpectedSectionTag.xml";
+    // Corrupted cases
+    private static final String WIFI_BACKUP_DATA_CURRUPTED =
+            "assets/BackupCorruptedWifiFormat.xml";
+    private static final String WIFI_BACKUP_UNEXPECTED_SECTION =
+            "assets/BackupWifiWithUnexpectedSectionTagOnly.xml";
+    // Wifi Setting values in testing file.
+    private static final boolean EXPECTED_WEP_ALLOWED_SETTING = false;
 
     public static final String EXPECTED_LEGACY_STATIC_IP_LINK_ADDRESS = "192.168.48.2";
     public static final int EXPECTED_LEGACY_STATIC_IP_LINK_PREFIX_LENGTH = 8;
@@ -100,6 +131,15 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
 
     private static final int DURATION = 10_000;
     private static final int DURATION_SCREEN_TOGGLE = 2000;
+
+    private static final int TEST_WAIT_DURATION_MS = 10_000;
+    private final Object mLock = new Object();
+    private final HandlerThread mHandlerThread = new HandlerThread("WifiBackupRestoreTest");
+    protected final Executor mExecutor;
+    {
+        mHandlerThread.start();
+        mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -587,4 +627,68 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
         testRestoreFromBackupData(createExpectedV1_2Configurations(),
                 () -> sWifiManager.restoreBackupData(loadResourceFile(V1_2_FILE)));
     }
+
+    private boolean getCurrentWepAllowed() throws Exception {
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        Mutable<Boolean> isWepAllowed = new Mutable<Boolean>(false);
+        long now, deadline;
+        sWifiManager.queryWepAllowed(mExecutor,
+                new Consumer<Boolean>() {
+                @Override
+                public void accept(Boolean value) {
+                    synchronized (mLock) {
+                        isWepAllowed.value = value;
+                        isQuerySucceeded.value = true;
+                        mLock.notify();
+                    }
+                }
+            });
+        synchronized (mLock) {
+            now = System.currentTimeMillis();
+            deadline = now + TEST_WAIT_DURATION_MS;
+            while (!isQuerySucceeded.value && now < deadline) {
+                mLock.wait(deadline - now);
+                now = System.currentTimeMillis();
+            }
+        }
+        assertTrue(isQuerySucceeded.value);
+        return isWepAllowed.value;
+    }
+
+    private void restoreWifiSettingsAndRecoverIfNeeded(String testBackupFile,
+            boolean isExpectedRestoredSetting) throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        boolean currentWepAllowed = false;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            currentWepAllowed = getCurrentWepAllowed();
+            // Always set to non expected value to test restoration result.
+            sWifiManager.setWepAllowed(!EXPECTED_WEP_ALLOWED_SETTING);
+            sWifiManager.restoreWifiBackupData(loadResourceFile(testBackupFile));
+            assertEquals("Wep Settings is mismatch!!",
+                    getCurrentWepAllowed(), isExpectedRestoredSetting
+                            ? EXPECTED_WEP_ALLOWED_SETTING : !EXPECTED_WEP_ALLOWED_SETTING);
+        } finally {
+            sWifiManager.setWepAllowed(currentWepAllowed);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+    /**
+     * Verify corrupted/invalid/unexpected backup data won't break data restoration.
+     * Note: The normal data should alos be stored successfully.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                 codeName = "VanillaIceCream")
+    @Test
+    public void testRestoreWifiSettings() throws Exception {
+        restoreWifiSettingsAndRecoverIfNeeded(WIFI_SETTING_BACKUP_DATA, true);
+        restoreWifiSettingsAndRecoverIfNeeded(WIFI_SETTING_WITH_UNEXPECTED_SETTINGS, true);
+        restoreWifiSettingsAndRecoverIfNeeded(WIFI_SETTINGS_BACKUP_WITH_EXTRA_UNEXPECTED_SECTION,
+                true);
+        restoreWifiSettingsAndRecoverIfNeeded(WIFI_BACKUP_DATA_CURRUPTED, false);
+        restoreWifiSettingsAndRecoverIfNeeded(WIFI_BACKUP_UNEXPECTED_SECTION, false);
+    }
+
+
 }
