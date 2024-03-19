@@ -16,6 +16,8 @@
 
 package com.android.cts.tagging;
 
+import com.android.tradefed.device.ITestDevice;
+
 import com.google.common.collect.ImmutableSet;
 
 public class TaggingSdk30Test extends TaggingBaseTest {
@@ -88,6 +90,24 @@ public class TaggingSdk30Test extends TaggingBaseTest {
         runDeviceCompatTest(TEST_PKG, ".TaggingTest", "testMemoryTagAsyncChecksEnabled",
                 /*enabledChanges*/ ImmutableSet.of(NATIVE_MEMTAG_ASYNC_CHANGE_ID),
                 /*disabledChanges*/ ImmutableSet.of());
+    }
+
+    public void testPermissive() throws Exception {
+        if (!deviceSupportsMemoryTagging) {
+            return;
+        }
+        ITestDevice device = getDevice();
+        String previousState = device.getProperty("persist.sys.mte.permissive");
+        try {
+            device.setProperty("persist.sys.mte.permissive", "1");
+
+            runDeviceCompatTest(TEST_PKG, ".TaggingTest", "testPermissive",
+                    /*enabledChanges*/ ImmutableSet.of(NATIVE_MEMTAG_SYNC_CHANGE_ID),
+                    /*disabledChanges*/ ImmutableSet.of());
+        } finally {
+            device.setProperty("persist.sys.mte.permissive",
+                    previousState != null ? previousState : "0");
+        }
     }
 
     public void testMemoryTagChecksCompatFeatureDisabled() throws Exception {
