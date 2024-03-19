@@ -98,8 +98,8 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
-        if (!shouldTestSatelliteWithMockService()) return;
 
+        assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
