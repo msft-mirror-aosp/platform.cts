@@ -21,4 +21,8 @@
     <style name="OptOutEdgeToEdgeEnforcement">
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
+    <style name="OptOutEdgeToEdgeEnforcement.NoActionBar"
+           parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
 </resources>
