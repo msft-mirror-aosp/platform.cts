@@ -155,6 +155,11 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     public void testOpenSuccessful() throws Exception {
         ExecutorService callbackExecutor = Executors.newCachedThreadPool();
         for (String cameraId : getCameraIdsUnderTest()) {
+            if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
+                Log.i(TAG, "CameraDeviceSetup not supported for camera id " + cameraId);
+                continue;
+            }
+
             // mock listener to capture the CameraDevice from callbacks
             MockStateCallback mockListener = MockStateCallback.mock();
             BlockingStateCallback callback = new BlockingStateCallback(mockListener);
@@ -193,11 +198,8 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 continue;
             }
 
-            Integer queryVersion = metadata.getValueFromKeyNonNull(
-                    CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION);
-            if (queryVersion == null || queryVersion <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                Log.i(TAG,
-                        "Camera " + cameraId + " doesn't support session characteristics query.");
+            if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
+                Log.i(TAG, "CameraDeviceSetup not supported for camera id " + cameraId);
                 continue;
             }
 
