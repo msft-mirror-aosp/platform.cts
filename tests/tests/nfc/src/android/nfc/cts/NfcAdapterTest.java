@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
 
@@ -107,7 +108,7 @@ public class NfcAdapterTest {
     @Test
     public void testDisableWithNoParams() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
-        when(mService.disable(anyBoolean())).thenReturn(true);
+        when(mService.disable(anyBoolean(), anyString())).thenReturn(true);
         boolean result = adapter.disable();
         Assert.assertTrue(result);
     }
@@ -115,7 +116,7 @@ public class NfcAdapterTest {
     @Test
     public void testDisableWithParam() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
-        when(mService.disable(anyBoolean())).thenReturn(true);
+        when(mService.disable(anyBoolean(), anyString())).thenReturn(true);
         boolean result = adapter.disable(true);
         Assert.assertTrue(result);
     }
@@ -145,7 +146,7 @@ public class NfcAdapterTest {
     @Test
     public void testEnable() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
-        when(mService.enable()).thenReturn(true);
+        when(mService.enable(anyString())).thenReturn(true);
         boolean result = adapter.enable();
         Assert.assertTrue(result);
     }
