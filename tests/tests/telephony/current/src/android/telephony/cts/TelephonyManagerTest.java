@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -7269,7 +7270,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_shouldBeSupported() {
-        PackageManager packageManager = getContext().getPackageManager();
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         Intent intent = new Intent(TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS);
 
         List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent,
@@ -7285,6 +7291,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_requiresNoPermission() {
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         // Try to startActivity with the action and make sure no exceptions are thrown.
         // Exceptions may include:
         // 1. SecurityException if additional permission are required for the action
