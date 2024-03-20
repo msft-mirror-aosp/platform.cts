@@ -20,6 +20,7 @@ import static android.view.flags.Flags.FLAG_SENSITIVE_CONTENT_APP_PROTECTION;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.Activity;
 import android.app.UiAutomation;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
@@ -31,6 +32,7 @@ import android.view.cts.surfacevalidator.BitmapPixelChecker;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -45,11 +47,51 @@ public class ViewSensitiveContentTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-        DeviceFlagsValueProvider.createCheckFlagsRule();
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setup() {
+        startMediaProjection();
+    }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlocked() {
+        // SensitiveContentActivity has a sensitive view, so screen capture should be blocked.
+        try (ActivityScenario<SensitiveContentActivity> activityScenario =
+                     ActivityScenario.launch(SensitiveContentActivity.class)) {
+            verifyScreenCapture(activityScenario);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
+    public void testScreenCaptureIsBlockedForUsername() {
+        try (ActivityScenario<UserNameAutofillHintActivity> activityScenario =
+                     ActivityScenario.launch(UserNameAutofillHintActivity.class)) {
+            verifyScreenCapture(activityScenario);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
+    public void testScreenCaptureIsBlockedForPassword() {
+        try (ActivityScenario<PasswordAutofillHintActivity> activityScenario =
+                     ActivityScenario.launch(PasswordAutofillHintActivity.class)) {
+            verifyScreenCapture(activityScenario);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
+    public void testScreenCaptureIsBlockedForPasswordInputType() {
+        try (ActivityScenario<InputTypePasswordActivity> activityScenario =
+                     ActivityScenario.launch(InputTypePasswordActivity.class)) {
+            verifyScreenCapture(activityScenario);
+        }
+    }
+
+    private void startMediaProjection() {
         UiAutomation uiAutomation = androidx.test.platform.app.InstrumentationRegistry
                 .getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
@@ -57,16 +99,14 @@ public class ViewSensitiveContentTest {
         mMediaProjectionHelper.authorizeMediaProjection();
         MediaProjection mediaProjection = mMediaProjectionHelper.startMediaProjection();
         assertThat(mediaProjection).isNotNull();
+    }
 
-        // SensitiveContentActivity has a sensitive view, so screen capture should be blocked.
-        try (ActivityScenario<SensitiveContentActivity> activityScenario =
-                ActivityScenario.launch(SensitiveContentActivity.class)) {
-            activityScenario.onActivity(activity -> {
-                BitmapPixelChecker pixelChecker = new BitmapPixelChecker(Color.BLACK);
-                BitmapPixelChecker.validateScreenshot(mName, activity, pixelChecker,
-                        -1 /* expectedMatchingPixels */,
-                        BitmapPixelChecker.getInsets(activity));
-            });
-        }
+    private void verifyScreenCapture(ActivityScenario<? extends Activity> activityScenario) {
+        activityScenario.onActivity(activity -> {
+            BitmapPixelChecker pixelChecker = new BitmapPixelChecker(Color.BLACK);
+            BitmapPixelChecker.validateScreenshot(mName, activity, pixelChecker,
+                    -1 /* expectedMatchingPixels */,
+                    BitmapPixelChecker.getInsets(activity));
+        });
     }
 }
