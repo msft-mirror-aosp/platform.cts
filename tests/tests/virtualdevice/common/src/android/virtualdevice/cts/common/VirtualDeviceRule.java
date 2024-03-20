@@ -139,6 +139,13 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Returns the VirtualDevice object for the given deviceId
+     */
+    public android.companion.virtual.VirtualDevice getVirtualDevice(int deviceId) {
+        return mVirtualDeviceManager.getVirtualDevice(deviceId);
+    }
+
+    /**
      * Creates a virtual device with default params that will be automatically closed when the
      * test is torn down.
      */
