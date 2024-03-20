@@ -255,6 +255,9 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
       stabilization_result = verify_lens_intrinsics(
           recording_obj, gyro_events, _NAME, log_path)
 
+      # Don't change print to logging. Used for KPI.
+      print(f'{_NAME}_max_principal_point_diff: ',
+            stabilization_result['max_pp_diff'])
       # Assert PASS/FAIL criteria
       if stabilization_result['failure'] is not None:
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
@@ -262,8 +265,6 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
           raise AssertionError(failure_msg)
         else:
-          print(f'{_NAME}_max_principal_point_diff: ',
-                stabilization_result['max_pp_diff'])
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
                                f'\n\n{failure_msg}')
 

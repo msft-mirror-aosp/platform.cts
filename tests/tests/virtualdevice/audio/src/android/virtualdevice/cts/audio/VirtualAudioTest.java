@@ -36,10 +36,12 @@ import static org.mockito.Mockito.verify;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
+import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.audio.AudioCapture;
 import android.companion.virtual.audio.AudioInjection;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.companion.virtual.audio.VirtualAudioDevice.AudioConfigurationChangeCallback;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.AudioFormat;
@@ -48,6 +50,8 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -110,11 +114,113 @@ public class VirtualAudioTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
+        VirtualDeviceParams params = new VirtualDeviceParams.Builder().setDevicePolicy(
+                VirtualDeviceParams.POLICY_TYPE_AUDIO,
+                VirtualDeviceParams.DEVICE_POLICY_CUSTOM).build();
+
+        mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
         mVirtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(
                 mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
         mVirtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
+    }
+
+
+    @Test
+    @RequiresFlagsDisabled(android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS)
+    public void virtualDevice_hasAudioInput_withoutFlag_isFalse() {
+        android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+
+        assertThat(virtualDevice.hasCustomAudioInputSupport()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
+    public void virtualDevice_hasAudioInput_withoutMicrophone_isFalse() {
+        android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+
+        assertThat(virtualDevice.hasCustomAudioInputSupport()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
+    public void virtualDevice_hasAudioInput_withMicrophone_isTrue() {
+        mVirtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
+
+        // Start an Activity on the display to trigger the VirtualAudioDevice to register policies.
+        startAudioActivity();
+
+        android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+
+        assertThat(virtualDevice.hasCustomAudioInputSupport()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
+    public void virtualDevice_hasAudioInput_withAudioOutput_isFalse() {
+        mVirtualAudioDevice.startAudioCapture(CAPTURE_FORMAT);
+
+        // Start an Activity on the display to trigger the VirtualAudioDevice to register policies.
+        startAudioActivity();
+
+        android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+
+        assertThat(virtualDevice.hasCustomAudioInputSupport()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
+    public void multipleVirtualDevices_hasAudioInput_takesIntoAccountMicrophoneCapabilities() {
+        VirtualDeviceParams params = new VirtualDeviceParams.Builder().setDevicePolicy(
+                VirtualDeviceParams.POLICY_TYPE_AUDIO,
+                VirtualDeviceParams.DEVICE_POLICY_CUSTOM).build();
+
+        VirtualDevice secondDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
+        VirtualDisplay secondDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(secondDevice,
+                VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+        VirtualAudioDevice virtualAudioDevice = secondDevice.createVirtualAudioDevice(secondDisplay,
+                Runnable::run, mAudioConfigurationChangeCallback);
+        virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
+
+        // First device does not have a microphone policy registered but CUSTOM audio device policy.
+        mVirtualDeviceRule.startActivityOnDisplaySync(mVirtualDisplay, AudioActivity.class);
+        android.companion.virtual.VirtualDevice deviceOne = mVirtualDeviceRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+        assertThat(deviceOne.hasCustomAudioInputSupport()).isFalse();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(secondDisplay, AudioActivity.class);
+        android.companion.virtual.VirtualDevice deviceTwo = mVirtualDeviceRule.getVirtualDevice(
+                secondDevice.getDeviceId());
+        assertThat(deviceTwo.hasCustomAudioInputSupport()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
+    public void virtualDevice_hasAudioInput_withDefaultAudioPolicy_isFalse() {
+        VirtualDeviceParams params = new VirtualDeviceParams.Builder().setDevicePolicy(
+                VirtualDeviceParams.POLICY_TYPE_AUDIO,
+                VirtualDeviceParams.DEVICE_POLICY_DEFAULT).build();
+
+        VirtualDevice secondDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
+        VirtualDisplay secondDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(secondDevice,
+                VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+        VirtualAudioDevice virtualAudioDevice = secondDevice.createVirtualAudioDevice(secondDisplay,
+                Runnable::run, mAudioConfigurationChangeCallback);
+        virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(secondDisplay, AudioActivity.class);
+        android.companion.virtual.VirtualDevice deviceTwo = mVirtualDeviceRule.getVirtualDevice(
+                secondDevice.getDeviceId());
+        assertThat(deviceTwo.hasCustomAudioInputSupport()).isFalse();
     }
 
     @Test

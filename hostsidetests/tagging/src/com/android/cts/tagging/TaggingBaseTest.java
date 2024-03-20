@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 
 public class TaggingBaseTest extends CompatChangeGatingTestCase {
     protected static final long NATIVE_HEAP_POINTER_TAGGING_CHANGE_ID = 135754954;
-    protected static final String DEVICE_TEST_CLASS_NAME = ".TaggingTest";
+    protected static final String DEVICE_TEST_CLASS_NAME = "android.cts.tagging.TaggingTest";
     protected static final String DEVICE_TAGGING_DISABLED_TEST_NAME = "testHeapTaggingDisabled";
     protected static final String DEVICE_TAGGING_ENABLED_TEST_NAME = "testHeapTaggingEnabled";
 

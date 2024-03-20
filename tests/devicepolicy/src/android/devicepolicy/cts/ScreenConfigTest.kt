@@ -158,6 +158,7 @@ class ScreenConfigTest {
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setSystemSettings"])
     @CannotSetPolicyTest(policy = [SetSystemSetting::class], includeNonDeviceAdminStates = false)
     @Postsubmit(reason = "new test")
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SCREEN_BRIGHTNESS_CONTROL_ON_COPE)
     fun setSystemSetting_notAllowed_throwsException() {
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager().setSystemSetting(
@@ -194,6 +195,7 @@ class ScreenConfigTest {
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#DISALLOW_CONFIG_BRIGHTNESS"])
     @CannotSetPolicyTest(policy = [DisallowScreenConfigRestrictions::class])
     @Postsubmit(reason = "new test")
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SCREEN_BRIGHTNESS_CONTROL_ON_COPE)
     fun setDisallowConfigBrightness_notAllowed_throwsException() {
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
@@ -228,6 +230,7 @@ class ScreenConfigTest {
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#DISALLOW_CONFIG_SCREEN_TIMEOUT"])
     @CannotSetPolicyTest(policy = [DisallowScreenConfigRestrictions::class])
     @Postsubmit(reason = "new test")
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SCREEN_BRIGHTNESS_CONTROL_ON_COPE)
     fun setDisallowConfigScreenTimeout_notAllowed_throwsException() {
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager().addUserRestriction(

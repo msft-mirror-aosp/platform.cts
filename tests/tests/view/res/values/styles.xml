@@ -200,4 +200,5 @@
         TODO(b/309578419): Make activities handle insets properly and then remove this.
     -->
     <style name="OptOutEdgeToEdgeEnforcement" />
+    <style name="OptOutEdgeToEdgeEnforcement.NoActionBar" />
 </resources>

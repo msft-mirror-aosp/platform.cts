@@ -20,18 +20,27 @@ import os
 import threading
 import time
 
+import camera_properties_utils
+import its_session_utils
 import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
+import zoom_capture_utils
 
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
+_HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
+_MAX_ZOOM_TOL = 0.1   # add Zoom tolerance to enable capture at max zoom
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NUM_ROTATIONS = 24
+_NUM_STEPS = 10
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
+_SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
+_PREVIEW_DURATION = 400  # milliseconds
+_ZOOM_MIN_THRESH = 2.0
 
 
 def collect_data(cam, tablet_device, preview_size, stabilize,
@@ -229,3 +238,94 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
   return recording_obj
+
+
+def get_max_preview_test_size(cam, camera_id):
+  """Finds the max preview size to be tested.
+
+  If the device supports the _HIGH_RES_SIZE preview size then
+  it uses that for testing, otherwise uses the max supported
+  preview size.
+
+  Args:
+    cam: camera object
+    camera_id: str; camera device id under test
+
+  Returns:
+    preview_test_size: str; wxh resolution of the size to be tested
+  """
+  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
+  logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
+
+  if _HIGH_RES_SIZE in supported_preview_sizes:
+    preview_test_size = _HIGH_RES_SIZE
+  else:
+    preview_test_size = supported_preview_sizes[-1]
+
+  logging.debug('Selected preview resolution: %s', preview_test_size)
+
+  return preview_test_size
+
+
+def preview_over_zoom_range(dut, cam, preview_size, z_range, log_path):
+  """Captures a preview video from the device over zoom range.
+
+  Captures camera preview frames at various zoom level in zoom range.
+  Step size 10.
+
+  Args:
+    dut: device under test
+    cam: camera object
+    preview_size: str; preview resolution. ex. '1920x1080'
+    z_range: [float,float]; is the starting and ending zoom ratio
+    log_path: str; path for video file directory
+
+  Returns:
+    capture_results: total capture results of each frame
+    file_list: file name for each frame
+    z_min: minimum zoom for preview capture
+    z_max: maximum zoom for preview capture
+
+  """
+
+  # Determine test zoom range
+  logging.debug('z_range = %s', str(z_range))
+  z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
+      z_range, _NUM_STEPS)
+
+  if z_max < z_min * _ZOOM_MIN_THRESH:
+    raise ValueError('Zoom range too small')
+
+  # Converge 3A
+  cam.do_3a()
+
+  # recording preview
+  preview_rec_obj = collect_preview_data_with_zoom(
+      cam, preview_size, z_min, z_max + _MAX_ZOOM_TOL, z_step_size,
+      _PREVIEW_DURATION)
+
+  preview_file_name = its_session_utils.pull_file_from_dut(
+      dut, preview_rec_obj['recordedOutputPath'], log_path)
+
+  logging.debug('recorded video size : %s',
+                str(preview_rec_obj['videoSize']))
+
+  # Extract frames as png from mp4 preview recording
+  file_list = video_processing_utils.extract_all_frames_from_video(
+      log_path, preview_file_name, _IMG_FORMAT
+  )
+
+  # Raise error if capture result and frame count doesn't match
+  capture_results = preview_rec_obj['captureMetadata']
+  extra_capture_result_count = len(capture_results) - len(file_list)
+  logging.debug('Number of frames %d', len(file_list))
+  if extra_capture_result_count != 0:
+    e_msg = (f'Number of CaptureResult ({len(capture_results)}) '
+             f'vs number of Frames ({len(file_list)}) count mismatch.'
+             ' Retry Test.')
+    raise AssertionError(e_msg)
+
+  # skip frames which might not have 3A converged
+  capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
+  file_list = file_list[_SKIP_INITIAL_FRAMES:]
+  return capture_results, file_list, z_min, z_max

@@ -31,6 +31,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -608,6 +609,40 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             injectStylusEventToEditorAndVerify(editText, stream, imeSession, marker,
                     true /* verifyHandwritingStart */, true /* verifyHandwritingWindowShown */,
                     false /* verifyHandwritingWindowNotShown */);
+        }
+    }
+
+    /**
+     * Inject stylus tap on a focused non-empty EditText and verify that handwriting is started.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_END_OF_LINE_TAP)
+    public void testHandwriting_endOfLineTap() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker();
+            final EditText editText = launchTestActivity(marker);
+            editText.setText("a");
+            editText.setSelection(1);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+
+            // Stylus tap must be after the end of the line.
+            final int x = editText.getWidth() / 2;
+            final int y = editText.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(editText, x, y);
+            TestUtils.injectStylusUpEvent(editText, x, y);
+
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartStylusHandwriting", marker), TIMEOUT);
+            verifyStylusHandwritingWindowIsShown(stream, imeSession);
         }
     }
 

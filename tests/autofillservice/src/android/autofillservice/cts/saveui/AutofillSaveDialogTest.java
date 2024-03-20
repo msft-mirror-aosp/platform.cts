@@ -53,8 +53,8 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE = "ignore_view_state_reset_to_empty";
-
+    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE =
+            "ignore_view_state_reset_to_empty";
 
     // This does not assert that icon is actually hidden, this has to be done manually.
     @Test
@@ -274,13 +274,12 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
     @Test
     public void testShowSaveUiAfterLoginViewReset() throws Exception {
-        // Set service.
-        enableService();
-
         // Enable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
 
+        // Set service.
+        enableService();
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
@@ -323,17 +322,20 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Verify save ui dialog.
         mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+
+        // Disable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
     }
 
     @Test
     public void testDontShowSaveUiIfViewIsResetToEmptyProgressively() throws Exception {
-        // Set service.
-        enableService();
-
         // Enable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
 
+        // Set service.
+        enableService();
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
@@ -378,17 +380,20 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Verify save ui dialog.
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_USERNAME);
-    }
-
-    @Test
-    public void testDontShowSaveUiAfterLoginViewResetIfFlagNotSet() throws Exception {
-        // Set service.
-        enableService();
 
         // Disable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+    }
 
+    @Test
+    public void testDontShowSaveUiAfterLoginViewResetIfFlagNotSet() throws Exception {
+        // Disable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+
+        // Set service.
+        enableService();
 
         // Start SimpleBeforeLoginActivity before login activity.
         startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,

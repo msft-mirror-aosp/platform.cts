@@ -26,9 +26,10 @@ import capture_request_utils
 import error_util
 import image_processing_utils
 
+AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
 ANGLE_CHECK_TOL = 1  # degrees
 ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
-
+ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
@@ -73,6 +74,8 @@ FOV_THRESH_UW = 90
 IMAGE_ROTATION_THRESHOLD = 20  # rotation by 20 pixels
 
 LOW_RES_IMG_THRESH = 320 * 240
+
+NUM_AE_AWB_REGIONS = 4
 
 RGB_GRAY_WEIGHTS = (0.299, 0.587, 0.114)  # RGB to Gray conversion matrix
 
@@ -1057,3 +1060,66 @@ def get_slanted_edge_from_patch(input_img):
   slanted_edge = input_img[top_left[1]:bottom_right[1],
                            top_left[0]:bottom_right[0]]
   return slanted_edge
+
+
+def get_chart_boundary_from_aruco_markers(
+    aruco_marker_corners, aruco_marker_ids, input_img, output_img_path):
+  """Returns top left and bottom right coordinates from the aruco markers.
+
+  Note: Refer to image used in scene8 for ArUco markers location.
+
+  Args:
+    aruco_marker_corners: array of aruco marker corner coordinates detected by
+      opencv_processing_utils.find_aruco_markers.
+    aruco_marker_ids: array of ids of aruco markers detected by
+      opencv_processing_utils.find_aruco_markers.
+  Returns:
+    top_left: tuple; aruco marker corner coordinates in pixel.
+    bottom_right: tuple; aruco marker corner coordinates in pixel.
+  """
+  outer_rect_coordinates = {}
+  for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
+    corner = corner.reshape(4, 2)  # reshape opencv 3D array to 4x2
+    index = marker_id[0]
+    corner = numpy.roll(corner, ARUCO_CORNER_COUNT)
+    outer_rect_coordinates[index] = tuple(corner[index])
+    logging.debug('Corners: %s', corner)
+    logging.debug('Index: %s', index)
+    logging.debug('Outer rect coordinates: %s', outer_rect_coordinates[index])
+  top_left = tuple(map(int, outer_rect_coordinates[0]))
+  bottom_right = tuple(map(int, outer_rect_coordinates[2]))
+  cv2.rectangle(input_img, top_left, bottom_right,
+                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
+  image_processing_utils.write_image(input_img/255, output_img_path)
+  logging.debug('ArUco marker top_left: %s', top_left)
+  logging.debug('ArUco marker bottom_right: %s', bottom_right)
+  return top_left, bottom_right
+
+
+def define_metering_rectangle_values(
+    tl_coordinates, br_coordinates, w, h):
+  """Find normalized values of coordinates and return 4 metering rects.
+
+  Args:
+    tl_coordinates: defined by aruco markers for targeted image.
+    br_coordinates: defined by aruco markers for targeted image.
+    w: int; preview width in pixels.
+    h: int; preview height in pixels.
+  Returns:
+    meter_rects: 4 metering rectangles made of (x, y, width, height, weight).
+      x & y is the top left coordinate of the metering rectangle.
+  """
+  tl_normalized_x = round((tl_coordinates[0] / w), 2)
+  tl_normalized_y = round((tl_coordinates[1] / h), 2)
+  br_normalized_x = round((br_coordinates[0] / w), 2)
+  br_normalized_y = round((br_coordinates[1] / h), 2)
+  meter_rects = []
+  rect_width = (br_normalized_x - tl_normalized_x) / NUM_AE_AWB_REGIONS
+  rect_height = br_normalized_y - tl_normalized_y
+  for i in range(NUM_AE_AWB_REGIONS):
+    x = tl_normalized_x + (rect_width * i)
+    y = tl_normalized_y
+    meter_rect = [x, y, rect_width, rect_height, AE_AWB_METER_WEIGHT]
+    meter_rects.append(meter_rect)
+  logging.debug('metering rects: %s', meter_rects)
+  return meter_rects

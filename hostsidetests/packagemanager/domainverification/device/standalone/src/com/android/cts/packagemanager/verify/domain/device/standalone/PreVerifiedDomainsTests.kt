@@ -32,8 +32,8 @@ import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DECLARING_P
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_1
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_2
 import com.google.common.truth.Truth.assertThat
-import org.junit.AfterClass
-import org.junit.BeforeClass
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,15 +41,37 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
+    var deviceDomainVerificationAgent: ComponentName? = null
+        private set
 
     @JvmField
     @Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    @Before
+    fun disableDomainVerificationAgent() {
+        deviceDomainVerificationAgent = getDomainVerificationAgent()
+        // Disable the domain verification agent on device to prevent the pre-verified states
+        // from being overwritten by accident
+        setDomainVerificationAgentEnabledState(false)
+        assertThat(getDomainVerificationAgent()).isNull()
+    }
+
+    @After
+    fun enableDomainVerificationAgent() {
+        setDomainVerificationAgentEnabledState(true)
+        if (deviceDomainVerificationAgent != null) {
+            assertThat(getDomainVerificationAgent()).isEqualTo(deviceDomainVerificationAgent)
+        }
+    }
+
     @RequiresFlagsEnabled(Flags.FLAG_SET_PRE_VERIFIED_DOMAINS)
     @Test
     fun launchPreVerified() {
+        // Always disable the verification agent first if it's not already disabled
+        disableDomainVerificationAgent()
         uninstallTestApp(DECLARING_PKG_NAME_1)
+
         installAppWithPreVerifiedDomains()
         val hostToStateMap = manager.getDomainVerificationUserState(DECLARING_PKG_NAME_1)
                 ?.hostToStateMap
@@ -93,63 +115,39 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
                 .isEqualTo("Success")
     }
 
-    companion object {
-        private var domainVerificationAgent: ComponentName? = null
-        private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val packageManager = context.packageManager
-
-        @JvmStatic
-        @BeforeClass
-        fun disableDomainVerificationAgent() {
-            domainVerificationAgent = getDomainVerificationAgent()
-            // Disable the domain verification agent on device to prevent the pre-verified states from
-            // being overwritten by accident
-            setDomainVerificationAgentEnabledState(false)
-            assertThat(getDomainVerificationAgent()).isNull()
+    private fun getDomainVerificationAgent(): ComponentName? {
+        val agentComponentName: String = SystemUtil.runShellCommand(
+            "pm get-domain-verification-agent"
+        ).trim()
+        if (agentComponentName.startsWith("Failure") ||
+            agentComponentName.startsWith("No Domain Verifier")) {
+            return null
         }
+        // Check that it's a valid component name to prevent other types of errors
+        assertThat(agentComponentName.contains("/")).isTrue()
+        return ComponentName.unflattenFromString(agentComponentName)
+    }
 
-        @JvmStatic
-        @AfterClass
-        fun enableDomainVerificationAgent() {
-            setDomainVerificationAgentEnabledState(true)
-            if (domainVerificationAgent != null) {
-                assertThat(getDomainVerificationAgent()).isEqualTo(domainVerificationAgent)
-            }
+    private fun setDomainVerificationAgentEnabledState(enabled: Boolean) {
+        val enabledState = if (enabled) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         }
-        private fun getDomainVerificationAgent(): ComponentName? {
-            val agentComponentName: String = SystemUtil.runShellCommand(
-                    "pm get-domain-verification-agent"
-            ).trim()
-            if (agentComponentName.startsWith("Failure") ||
-                    agentComponentName.startsWith("No Domain Verifier")) {
-                return null
-            }
-            // Check that it's a valid component name to prevent other types of errors
-            assertThat(agentComponentName.contains("/")).isTrue()
-            return ComponentName.unflattenFromString(agentComponentName)
-        }
-
-        private fun setDomainVerificationAgentEnabledState(enabled: Boolean) {
-            val enabledState = if (enabled) {
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            } else {
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            }
-            if (domainVerificationAgent != null) {
-                InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                        .adoptShellPermissionIdentity(
-                                Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
-                        )
-                try {
-                    packageManager.setComponentEnabledSetting(
-                        domainVerificationAgent!!,
-                            enabledState,
-                            PackageManager.DONT_KILL_APP
+        if (deviceDomainVerificationAgent != null) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                        Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
                     )
-                } finally {
-                    InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                            .dropShellPermissionIdentity()
-                }
+            try {
+                packageManager.setComponentEnabledSetting(
+                    deviceDomainVerificationAgent!!,
+                    enabledState,
+                    PackageManager.DONT_KILL_APP
+                )
+            } finally {
+                InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                        .dropShellPermissionIdentity()
             }
         }
     }

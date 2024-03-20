@@ -21,12 +21,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Instrumentation.ActivityResult;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.cts.tagging.Utils;
-import android.os.Build;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.InstrumentationRegistry;
@@ -100,6 +98,22 @@ public class TaggingTest {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
 
+        assertTrue(receiver.await());
+    }
+
+    @Test
+    public void testPermissive() throws Exception {
+        final DropBoxReceiver receiver =
+                new DropBoxReceiver(
+                        mContext,
+                        "data_app_native_recoverable_crash",
+                        mContext.getPackageName() + ":CrashProcess",
+                        Pattern.compile("SEGV_MTE[AS]ERR"),
+                        "backtrace:");
+
+        TestActivity activity = mTestActivityRule.launchActivity(null);
+        activity.callActivity(CrashActivity.class);
+        assertFalse(activity.failed());
         assertTrue(receiver.await());
     }
 

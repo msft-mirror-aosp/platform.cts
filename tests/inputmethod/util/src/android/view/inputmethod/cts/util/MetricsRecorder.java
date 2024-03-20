@@ -92,7 +92,7 @@ public final class MetricsRecorder {
     /**
      * Adds an event metric for the specified pushed atom, and uploads the config to statsd.
      *
-     * @param pkgName test app package name from which atoms will be logged.
+     * @param pkgNames name of packages from which atoms will be logged.
      * @param atomId index of atom within atoms.proto.
      * @param useUidAttributionChain if true, the uid is part of the attribution chain;
      *                               if false, uid is a standalone field.
@@ -103,10 +103,10 @@ public final class MetricsRecorder {
      * @throws RuntimeException if closing the FileDescriptors,
      * or writing the config to the command fails.
      */
-    public static void uploadConfigForPushedAtomWithUid(@NonNull String pkgName, int atomId,
+    public static void uploadConfigForPushedAtomWithUid(@NonNull String[] pkgNames, int atomId,
             boolean useUidAttributionChain) throws AssertionError, IOException, RuntimeException {
-        final var config = createConfig(pkgName);
-        addEventMetricForUidAtom(config, atomId, useUidAttributionChain, pkgName);
+        final var config = createConfig(pkgNames);
+        addEventMetricForUidAtom(config, atomId, useUidAttributionChain, pkgNames);
         uploadConfig(config);
     }
 
@@ -114,27 +114,13 @@ public final class MetricsRecorder {
      * Create a new config with common fields filled out, such as allowed log sources and
      * default pull packages.
      *
-     * @param pkgName test app package name from which atoms will be logged.
+     * @param pkgNames name of packages from which atoms will be logged.
      */
-    private static StatsdConfig createConfig(String pkgName) {
+    @NonNull
+    private static StatsdConfig createConfig(@NonNull String[] pkgNames) {
         final var config = new StatsdConfig();
         config.id = CONFIG_ID;
-        config.allowedLogSource = new String[]{
-                "AID_SYSTEM",
-                "AID_BLUETOOTH",
-                "com.android.bluetooth",
-                "AID_LMKD",
-                "AID_MEDIA",
-                "AID_RADIO",
-                "AID_ROOT",
-                "AID_STATSD",
-                "com.android.systemui",
-                pkgName,
-        };
-        config.defaultPullPackages = new String[]{
-                "AID_RADIO",
-                "AID_SYSTEM",
-        };
+        config.allowedLogSource = pkgNames;
         config.whitelistedAtomIds = new int[]{
                 AtomsProto.Atom.APP_BREADCRUMB_REPORTED_FIELD_NUMBER,
         };
@@ -153,7 +139,7 @@ public final class MetricsRecorder {
      * @throws RuntimeException if closing the FileDescriptors,
      * or writing the config to the command fails.
      */
-    private static void uploadConfig(StatsdConfig config)
+    private static void uploadConfig(@NonNull StatsdConfig config)
             throws AssertionError, IllegalStateException, IOException, RuntimeException {
         final var bytes = new byte[config.getSerializedSize()];
         final var buffer = CodedOutputByteBufferNano.newInstance(bytes);
@@ -184,8 +170,9 @@ public final class MetricsRecorder {
      * or writing the input argument to the command fails.
      */
     @NonNull
-    private static String runShellCommandWithStdIn(UiAutomation automation, @NonNull String cmd,
-            @NonNull byte[] stdInBytes) throws AssertionError, RuntimeException {
+    private static String runShellCommandWithStdIn(@NonNull UiAutomation automation,
+            @NonNull String cmd, @NonNull byte[] stdInBytes)
+            throws AssertionError, RuntimeException {
         try {
             Log.v(TAG, "Running command: " + cmd);
             final var fds = automation.executeShellCommandRwe(cmd);
@@ -234,12 +221,12 @@ public final class MetricsRecorder {
      * @param atomId index of atom within atoms.proto.
      * @param uidInAttributionChain if true, the uid is part of the attribution chain;
      *                              if false, uid is a standalone field.
-     * @param pkgName test app package name from which atoms will be logged.
+     * @param pkgNames name of packages from which atoms will be logged.
      */
-    private static void addEventMetricForUidAtom(StatsdConfig config, int atomId,
-            boolean uidInAttributionChain, @NonNull String pkgName) {
-        final var fvm = createUidFvm(uidInAttributionChain, pkgName);
-        addEventMetric(config, atomId, Collections.singletonList(fvm));
+    private static void addEventMetricForUidAtom(@NonNull StatsdConfig config, int atomId,
+            boolean uidInAttributionChain, @NonNull String[] pkgNames) {
+        final var fvm = createUidFvm(uidInAttributionChain, pkgNames);
+        addEventMetric(config, atomId, new FieldValueMatcher[]{fvm});
     }
 
     /**
@@ -250,15 +237,15 @@ public final class MetricsRecorder {
      * @param atomId index of atom within atoms.proto.
      * @param fvms list of constraints that atoms are filtered on.
      */
-    private static void addEventMetric(StatsdConfig config, int atomId,
-            @NonNull List<FieldValueMatcher> fvms) {
+    private static void addEventMetric(@NonNull StatsdConfig config, int atomId,
+            @NonNull FieldValueMatcher[] fvms) {
         final long nanoTime = System.nanoTime();
         final var matcherName = "Atom matcher" + nanoTime;
         final var eventName = "Event " + nanoTime;
 
         final var sam = new SimpleAtomMatcher();
         sam.atomId = atomId;
-        sam.fieldValueMatcher = fvms.toArray(new FieldValueMatcher[]{});
+        sam.fieldValueMatcher = fvms;
 
         final var atomMatcher = new AtomMatcher();
         atomMatcher.id = matcherName.hashCode();
@@ -283,12 +270,16 @@ public final class MetricsRecorder {
      *
      * @param uidInAttributionChain if true, the uid is part of the attribution chain;
      *                              if false, uid is a standalone field.
-     * @param pkgName test app package name from which atoms will be logged.
+     * @param pkgNames name of packages from which atoms will be logged.
      */
+    @NonNull
     private static FieldValueMatcher createUidFvm(boolean uidInAttributionChain,
-            @NonNull String pkgName) {
+            @NonNull String[] pkgNames) {
+        final var pkgNameMatcher = new StatsdConfigProto.StringListMatcher();
+        pkgNameMatcher.strValue = pkgNames;
         if (uidInAttributionChain) {
-            final var nodeFvm = createFvm(ATTRIBUTION_NODE_UID_FIELD_NUMBER).setEqString(pkgName);
+            final var nodeFvm = createFvm(ATTRIBUTION_NODE_UID_FIELD_NUMBER)
+                    .setEqAnyString(pkgNameMatcher);
             final var chainFvm = createFvm(ATTRIBUTION_CHAIN_FIELD_NUMBER);
             chainFvm.position = StatsdConfigProto.ANY;
 
@@ -299,7 +290,7 @@ public final class MetricsRecorder {
 
             return chainFvm.setMatchesTuple(messageMatcher);
         } else {
-            return createFvm(UID_FIELD_NUMBER).setEqString(pkgName);
+            return createFvm(UID_FIELD_NUMBER).setEqAnyString(pkgNameMatcher);
         }
     }
 
@@ -310,6 +301,7 @@ public final class MetricsRecorder {
      *
      * @param fieldNumber index of field within the atom.
      */
+    @NonNull
     private static FieldValueMatcher createFvm(int fieldNumber) {
         final var fvm = new FieldValueMatcher();
         fvm.field = fieldNumber;
@@ -341,6 +333,7 @@ public final class MetricsRecorder {
      *
      * @throws Exception if fetching and parsing the statsd report fails.
      */
+    @NonNull
     private static ConfigMetricsReportList getReportList() throws Exception {
         try {
             final var cmd = String.join(" ", DUMP_REPORT_CMD, CONFIG_ID_STRING,
@@ -362,6 +355,7 @@ public final class MetricsRecorder {
      *
      * @throws Exception if fetching and parsing the statsd report fails.
      */
+    @NonNull
     public static List<EventMetricData> getEventMetricDataList() throws Exception {
         final var reportList = getReportList();
         return getEventMetricDataList(reportList);
@@ -371,8 +365,9 @@ public final class MetricsRecorder {
      * Extracts and sorts the EventMetricData from the given ConfigMetricsReportList (which must
      * contain a single report) and sorts the atoms by timestamp within the report.
      */
+    @NonNull
     private static List<EventMetricData> getEventMetricDataList(
-            ConfigMetricsReportList reportList) {
+            @NonNull ConfigMetricsReportList reportList) {
         assertThat(reportList.reports.length).isEqualTo(1);
         final var report = reportList.reports[0];
 
@@ -395,6 +390,7 @@ public final class MetricsRecorder {
         return data;
     }
 
+    @NonNull
     private static List<EventMetricData> backfillAggregatedAtomsInEventMetric(
             EventMetricData metricData) {
         if (metricData.aggregatedAtomInfo == null) {

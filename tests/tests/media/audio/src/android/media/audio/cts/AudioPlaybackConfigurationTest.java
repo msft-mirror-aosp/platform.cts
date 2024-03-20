@@ -16,6 +16,7 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_PLAY_AUDIO;
@@ -32,6 +33,8 @@ import static android.media.AudioPlaybackConfiguration.MUTED_BY_VOLUME_SHAPER;
 import static android.media.AudioTrack.WRITE_NON_BLOCKING;
 import static android.media.cts.AudioHelper.createSoundDataInShortByteBuffer;
 import static android.media.cts.AudioHelper.hasAudioSilentProperty;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.AppOpsUtils.getOpMode;
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
@@ -56,8 +59,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcel;
 import android.util.Log;
-
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
@@ -463,7 +464,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 .build();
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
 
             mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa,
@@ -480,7 +481,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
             if (h != null) {
                 h.getLooper().quit();
@@ -584,11 +585,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
 
         verifyMuteUnmuteNotifications(/*start=*/player.mPlay,
-                /*mute=*/
-                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, /* flags= */0),
-                /*unmute=*/
-                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, /* flags= */0),
-                /*muteChangesActiveState=*/false, MUTED_BY_STREAM_VOLUME);
+                /*mute=*/ () -> adjustMuteStreamVolume(am),
+                /*unmute=*/ () -> adjustUnMuteStreamVolume(am),
+                /*muteChangesActiveState=*/ false, MUTED_BY_STREAM_VOLUME);
     }
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",
@@ -684,7 +683,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
         boolean isMuted = am.isStreamMute(TEST_STREAM_FOR_USAGE);
         if (isMuted) {
-            am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, 0);
+            adjustUnMuteStreamVolume(am);
         }
         Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
 
@@ -734,13 +733,27 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             unmute.run();
 
             if (isMuted) {
-                am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, 0);
+                adjustMuteStreamVolume(am);
             }
         }
     }
 
+    private void adjustUnMuteStreamVolume(AudioManager am) {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, /* flags= */ 0);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    private void adjustMuteStreamVolume(AudioManager am) {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, /* flags= */ 0);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+    }
+
     private void checkMutedApi(int checkFlag) {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MODIFY_AUDIO_ROUTING);
 
         AudioPlaybackConfiguration currentConfiguration = findConfiguration(checkFlag);
@@ -748,7 +761,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         assertTrue("APC muted by wrong source",
                 (currentConfiguration.getMutedBy() & checkFlag) != 0);
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 

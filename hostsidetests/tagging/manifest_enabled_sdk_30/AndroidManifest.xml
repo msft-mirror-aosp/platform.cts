@@ -15,7 +15,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.cts.tagging.sdk30.manifest_enabled">
+    package="android.cts.tagging">
 
     <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
 
@@ -26,6 +26,6 @@
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.cts.tagging.sdk30.manifest_enabled" />
+        android:targetPackage="android.cts.tagging" />
 </manifest>
 
