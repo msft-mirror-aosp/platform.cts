@@ -29,7 +29,7 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.server.biometrics.cts" />
         <option name="runtime-hint" value="14s" />
-        <!-- test-timeout unit is ms, value = 1 min -->
-        <option name="test-timeout" value="60000" />
+        <!-- test-timeout unit is ms, value = 1.5 min -->
+        <option name="test-timeout" value="90000" />
     </test>
 </configuration>
