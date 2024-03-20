@@ -19,6 +19,7 @@ package android.ondeviceintelligence.cts;
 
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_CONTENT;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_FILE_NAME;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_KEY;
 
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
@@ -46,6 +47,21 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public class CtsIntelligenceService extends OnDeviceIntelligenceService {
+    public static Feature getSampleFeature(int id) {
+        return new Feature.Builder(id).setFeatureParams(PersistableBundle.EMPTY).setModelName(
+                "test-model").setName("test-feature").setType(1).setVariant(2).build();
+    }
+
+    public static FeatureDetails getSampleFeatureDetails(int featureId) {
+        if (featureId == 0) {
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putInt(TEST_KEY, 1);
+            return new FeatureDetails(/* status */ featureId, bundle);
+        } else {
+            return new FeatureDetails(/* status */ featureId);
+        }
+    }
+
     static final String TAG = "SampleIntelligenceService";
 
     @Override
@@ -87,20 +103,20 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetFeatureDetails(int callerUid, @NonNull Feature feature,
             @NonNull OutcomeReceiver<FeatureDetails, OnDeviceIntelligenceException> featureDetailsCallback) {
-        featureDetailsCallback.onResult(new FeatureDetails(1));
+        featureDetailsCallback.onResult(getSampleFeatureDetails(feature.getId()));
     }
 
     @Override
     public void onGetFeature(int callerUid, int featureId,
             @NonNull OutcomeReceiver<Feature, OnDeviceIntelligenceException> featureCallback) {
-        featureCallback.onResult(new Feature.Builder(0).build());
+        featureCallback.onResult(getSampleFeature(1));
     }
 
     @Override
     public void onListFeatures(int callerUid,
             @NonNull OutcomeReceiver<List<Feature>, OnDeviceIntelligenceException> listFeaturesCallback) {
         List<Feature> featureList = new ArrayList<>();
-        featureList.add(new Feature.Builder(0).build());
+        featureList.add(getSampleFeature(0));
         listFeaturesCallback.onResult(featureList);
     }
 
