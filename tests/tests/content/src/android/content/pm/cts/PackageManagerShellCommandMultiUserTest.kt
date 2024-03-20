@@ -1060,7 +1060,8 @@ class PackageManagerShellCommandMultiUserTest {
             user: UserReference
     ) {
         installPackageAsUser(baseName, user)
-        val archivedPackage = context.packageManager.getArchivedPackage(packageName)
+        val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
+                .packageManager.getArchivedPackage(packageName)
         assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
         installArchivedAsUser(
                 archivedPackage,
