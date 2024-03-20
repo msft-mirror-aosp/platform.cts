@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -78,7 +79,6 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "PM will not recognize OnDeviceIntelligenceManagerService in instantMode.")
 public class OnDeviceIntelligenceManagerTest {
-    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED = 1001;
     public static final String TEST_FILE_NAME = "test_file.txt";
     public static final String TEST_KEY = "test_key";
 
@@ -99,6 +99,10 @@ public class OnDeviceIntelligenceManagerTest {
     private static final String KEY_SERVICE_ENABLED = "service_enabled";
 
     public static final int REQUEST_TYPE_GET_PACKAGE_NAME = 1000;
+
+    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED = 1001;
+    public static final int REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES = 1002;
+
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
 
     private Context mContext;
@@ -456,6 +460,46 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void canSendAndReceiveCustomParcelables() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+
+        CompletableFuture<String> resultFuture = new CompletableFuture<>();
+        Feature feature = new Feature.Builder(1).build();
+        Bundle request = new Bundle();
+        SimpleParcelable simpleParcelable = new SimpleParcelable("abc");
+        Parcel parcel = Parcel.obtain();
+        simpleParcelable.writeToParcel(parcel, 0);
+        byte[] bytes = parcel.marshall();
+        request.putByteArray("request", bytes);
+        parcel.recycle();
+
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                request, REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES,
+                null, null, EXECUTOR,
+                new ProcessingCallback() {
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        resultFuture.complete(result.getString(TEST_KEY));
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(resultFuture.get()).isEqualTo("abc");
+    }
+
+
 //===================== Tests for Processing and Cancellation signals  ==========================
 
     @Test
@@ -629,7 +673,8 @@ public class OnDeviceIntelligenceManagerTest {
                         }));
     }
 
-// ========= Test package manager returns parent process package name for isolated_compute_app ====
+    // ========= Test package manager returns parent process package name for
+    // isolated_compute_app ====
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void inferenceServiceShouldReturnParentPackageName() throws Exception {
