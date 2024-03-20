@@ -35,6 +35,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -45,6 +48,7 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -60,6 +64,9 @@ public class StorageOtherAndOwnedFilesTest {
             InstrumentationRegistry.getInstrumentation();
     private static final ContentResolver sContentResolver = getContentResolver();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
     @ClassRule
     public static final OwnedAndOtherFilesRule sFilesRule =
             new OwnedAndOtherFilesRule(sContentResolver);
@@ -96,6 +103,7 @@ public class StorageOtherAndOwnedFilesTest {
                 && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
+    @RequiresFlagsEnabled("com.android.providers.media.flags.picker_recent_selection")
     @Test
     public void test_latestSelectionOnly_noGrantsPresent() {
         // Enable recent selection only in the queryArgs.
@@ -111,7 +119,7 @@ public class StorageOtherAndOwnedFilesTest {
         }
     }
 
-
+    @RequiresFlagsEnabled("com.android.providers.media.flags.picker_recent_selection")
     @Test
     public void test_latestSelectionOnly_withOwnedAndGrantedItems() throws Exception {
         // Only owned items should be returned since no other file item as been granted;
