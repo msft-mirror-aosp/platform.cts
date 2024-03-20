@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.os.Parcel;
+import android.os.Process;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
@@ -60,10 +63,32 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
             @NonNull StreamingProcessingCallback callback) {
-        callback.onPartialResult(Bundle.EMPTY);
+        if (processingSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            processingSignal.setOnProcessingSignalCallback(getCallbackExecutor(),
+                    actionParams -> {
+                        Log.i(TAG,
+                                "Received processing signal which has action Params : "
+                                        + actionParams);
+                        callback.onPartialResult(new Bundle(actionParams));
+                    });
+        }
+        if (cancellationSignal != null) {
+            cancellationSignal.setOnCancelListener(() -> {
+                Log.i(TAG,
+                        "Received cancellation signal");
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+            });
+            return;
+        }
         callback.onResult(Bundle.EMPTY);
     }
-
 
     @NonNull
     @Override
@@ -77,7 +102,49 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
-        callback.onResult(Bundle.EMPTY);
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_PACKAGE_NAME) {
+            PackageManager mPm = getPackageManager();
+            Bundle bundle = new Bundle();
+            bundle.putString(TEST_KEY, mPm.getNameForUid(Process.myUid()));
+            callback.onResult(bundle);
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES) {
+            byte[] bytes = request.getByteArray("request");
+            Parcel parcel = Parcel.obtain();
+            parcel.unmarshall(bytes, 0, bytes.length);
+            parcel.setDataPosition(0);
+            Log.i(TAG, "Bytes : "
+                    + bytes.length);
+            SimpleParcelable simpleParcelable = SimpleParcelable.CREATOR.createFromParcel(parcel);
+            Bundle bundle = new Bundle();
+            bundle.putString(TEST_KEY, simpleParcelable.getMyString());
+            callback.onResult(bundle);
+            Log.i(TAG, "My Simple Parcelable : " + simpleParcelable.getMyString());
+            parcel.recycle();
+            return;
+        }
+
+        if (cancellationSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            cancellationSignal.setOnCancelListener(() -> {
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+                Log.i(TAG,
+                        "Received cancellation signal");
+            });
+        } else {
+            Log.i(TAG,
+                    "Received NULL cancellation signal.");
+            callback.onResult(Bundle.EMPTY);
+        }
     }
 
     @Override

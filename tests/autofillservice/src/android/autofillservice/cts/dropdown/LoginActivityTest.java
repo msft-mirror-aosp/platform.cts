@@ -2263,12 +2263,12 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     @Test
     @AppModeFull(reason = "Unit test")
     public void testNoContainers() throws Exception {
-        // Set service.
-        enableService();
-
         // Enable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
+
+        // Set service.
+        enableService();
 
         // Set expectations.
         sReplier.addResponse(NO_RESPONSE);
@@ -2307,6 +2307,10 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 ID_USERNAME_CONTAINER);
         assertThat(usernameContainer).isNotNull();
         assertThat(usernameContainer.getChildCount()).isEqualTo(2);
+
+        // Disable flag
+        Helper.setDeviceConfig(
+                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
     }
 
     @Presubmit

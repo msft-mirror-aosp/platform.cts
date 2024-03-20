@@ -381,7 +381,8 @@ public class LauncherAppsTest {
     @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetPreInstalledSystemPackages() {
-        List<String> packages = mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(0));
+        List<String> packages =
+                mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(UserHandle.myUserId()));
         assertThat(packages).isNotNull();
     }
 

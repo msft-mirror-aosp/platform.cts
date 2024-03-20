@@ -22,6 +22,7 @@
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.NFC_PREFERRED_PAYMENT_INFO" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
 
     <queries>
         <package android:name="com.android.test.foregroundnfc" />

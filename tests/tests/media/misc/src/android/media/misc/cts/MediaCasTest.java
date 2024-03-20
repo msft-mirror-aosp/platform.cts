@@ -71,9 +71,8 @@ public class MediaCasTest {
     private static final int API_LEVEL_BEFORE_CAS_SESSION = 28;
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     private boolean mIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
-    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
-    private boolean mIsAtLeastU = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+    private boolean mIsAtLeastU =
+            ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
     // ClearKey CAS/Descrambler test vectors
     private static final String sProvisionStr =
