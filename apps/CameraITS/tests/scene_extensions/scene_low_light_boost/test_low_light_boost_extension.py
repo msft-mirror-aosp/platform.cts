@@ -60,6 +60,11 @@ _RED_HSV_RANGE_UPPER_1 = np.array([20, 255, 255])
 _RED_HSV_RANGE_LOWER_2 = np.array([170, 100, 100])
 _RED_HSV_RANGE_UPPER_2 = np.array([179, 255, 255])
 
+_KEY_TOP_LEFT = 'top_left'
+_KEY_BOTTOM_LEFT = 'bottom_left'
+_KEY_TOP_RIGHT = 'top_right'
+_KEY_BOTTOM_RIGHT = 'bottom_right'
+
 _CAPTURE_REQUEST = {
     'android.control.mode': 1,
     'android.control.aeMode': _AE_LOW_LIGHT_BOOST_MODE,
@@ -150,6 +155,84 @@ def _find_boxes(image):
         _MIN_ASPECT_RATIO < aspect_ratio < _MAX_ASPECT_RATIO):
       boxes.append((x, y, w, h))
   return boxes
+
+
+def _correct_image_rotation(img, regions):
+  """Corrects the captured image orientation.
+
+  The darkest square must appear in the bottom right and the brightest square
+  must appear in the bottom left. This is necessary in order to traverse the
+  hilbert ordered squares to return a darkest to brightest ordering.
+
+  Args:
+    img: numpy array; the original image captured
+    regions: the tuple of (box, luminance) computed for each square in the image
+  Returns:
+    numpy array; image in the corrected orientation
+  """
+  corner_brightness = {
+      _KEY_TOP_LEFT: regions[2][1],
+      _KEY_BOTTOM_LEFT: regions[5][1],
+      _KEY_TOP_RIGHT: regions[14][1],
+      _KEY_BOTTOM_RIGHT: regions[17][1],
+  }
+
+  darkest_corner = ('', float('inf'))
+  brightest_corner = ('', float('-inf'))
+
+  for corner, luminance in corner_brightness.items():
+    if luminance < darkest_corner[1]:
+      darkest_corner = (corner, luminance)
+    if luminance > brightest_corner[1]:
+      brightest_corner = (corner, luminance)
+
+  if darkest_corner == brightest_corner:
+    raise AssertionError('The captured image failed to detect the location '
+                         'of the darkest and brightest squares.')
+
+  if darkest_corner[0] == _KEY_TOP_LEFT:
+    if brightest_corner[0] == _KEY_BOTTOM_LEFT:
+      # rotate 90 CW and then flip vertically
+      img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+      img = cv2.flip(img, 0)
+    elif brightest_corner[0] == _KEY_TOP_RIGHT:
+      # flip both vertically and horizontally
+      img = cv2.flip(img, -1)
+    else:
+      raise AssertionError('The captured image failed to detect the location '
+                           'of the brightest square.')
+  elif darkest_corner[0] == _KEY_BOTTOM_LEFT:
+    if brightest_corner[0] == _KEY_TOP_LEFT:
+      # rotate 90 CCW
+      img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    elif brightest_corner[0] == _KEY_BOTTOM_RIGHT:
+      # flip horizontally
+      img = cv2.flip(img, 1)
+    else:
+      raise AssertionError('The captured image failed to detect the location '
+                           'of the brightest square.')
+  elif darkest_corner[0] == _KEY_TOP_RIGHT:
+    if brightest_corner[0] == _KEY_TOP_LEFT:
+      # flip vertically
+      img = cv2.flip(img, 0)
+    elif brightest_corner[0] == _KEY_BOTTOM_RIGHT:
+      # rotate 90 CW
+      img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+    else:
+      raise AssertionError('The captured image failed to detect the location '
+                           'of the brightest square.')
+  elif darkest_corner[0] == _KEY_BOTTOM_RIGHT:
+    if brightest_corner[0] == _KEY_BOTTOM_LEFT:
+      # correct orientation
+      pass
+    elif brightest_corner[0] == _KEY_TOP_RIGHT:
+      # rotate 90 and flip horizontally
+      img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+      img = cv2.flip(img, 1)
+    else:
+      raise AssertionError('The captured image failed to detect the location '
+                           'of the brightest square.')
+  return img
 
 
 def _compute_luminance_regions(image, boxes):
@@ -270,6 +353,37 @@ def _plot_successive_difference(results, file_stem):
   plt.close()
 
 
+def _sort_by_columns(regions):
+  """Sort the regions by columns and then by row within each column.
+
+  Args:
+    regions: The tuple of (box, luminance) of each square
+  Returns:
+    array; an array of tuples of (box, luminance) sorted by columns then by row
+    within each column
+  """
+  # The input is 20 elements. The first two and last two elements represent the
+  # 4 boxes on the outside used for diagnostics. Boxes in indices 2 through 17
+  # represent the elements in the 4x4 grid.
+
+  # Sort all elements by column
+  col_sorted = sorted(regions, key=lambda r: r[0][0])
+
+  # Sort elements within each column by row
+  result = []
+  result.extend(sorted(col_sorted[:2], key=lambda r: r[0][1]))
+
+  for i in range(4):
+    # take 4 rows per column and then sort the rows
+    # skip the first two elements
+    offset = i*4+2
+    col = col_sorted[offset:(offset+4)]
+    result.extend(sorted(col, key=lambda r: r[0][1]))
+
+  result.extend(sorted(col_sorted[-2:], key=lambda r: r[0][1]))
+  return result
+
+
 def _analyze_capture(file_stem, img):
   """Analyze a captured frame to check if it meets low light boost criteria.
 
@@ -295,11 +409,19 @@ def _analyze_capture(file_stem, img):
 
   regions = _compute_luminance_regions(img, boxes)
 
+  # Sorted so each column is read left to right
+  sorted_regions = _sort_by_columns(regions)
+  img = _correct_image_rotation(img, sorted_regions)
+  cv2.imwrite(f'{file_stem}_low_light_boost_rotated.jpg', img)
+
+  # If the orientation of the image has changed then the coordinates of the
+  # squares have changed too. Therefore, recompute the regions and sort again
+  regions = _compute_luminance_regions(img, boxes)
+  sorted_regions = _sort_by_columns(regions)
+
   _draw_luminance(img, regions)
   cv2.imwrite(f'{file_stem}_low_light_boost_result.jpg', img)
 
-  # Sorted so each column is read left to right
-  sorted_regions = sorted(regions, key=lambda r: (r[0][0], r[0][1]))
   # Reorder this so the regions are increasing in luminance according to the
   # Hilbert curve arrangement pattern of the grid
   # See scene_low_light_boost_reference.png which indicates the order of each
