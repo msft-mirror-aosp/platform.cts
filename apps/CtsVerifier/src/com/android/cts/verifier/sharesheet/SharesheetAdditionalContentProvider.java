@@ -118,9 +118,16 @@ public class SharesheetAdditionalContentProvider extends ContentProvider {
             Log.w(TAG, "extras' Intent#EXTRA_INTENT is not a Chooser intent");
             return null;
         }
-        if (!chooserIntent.hasExtra(Intent.EXTRA_CHOOSER_CUSTOM_ACTIONS)) {
-            return null;
+        if (chooserIntent.hasExtra(Intent.EXTRA_CHOOSER_CUSTOM_ACTIONS)) {
+            return updateChooseAction(context, chooserIntent);
         }
+        if (chooserIntent.hasExtra(Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER)) {
+            return updateChooserResultIntentSender(context, chooserIntent);
+        }
+        return null;
+    }
+
+    private Bundle updateChooseAction(Context context, Intent chooserIntent) {
         Intent targetIntent = chooserIntent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         if (targetIntent == null) {
             Log.w(TAG, "target intent is missing");
@@ -172,6 +179,29 @@ public class SharesheetAdditionalContentProvider extends ContentProvider {
                         .build()
         };
         result.putParcelableArray(Intent.EXTRA_CHOOSER_CUSTOM_ACTIONS, customActions);
+        return result;
+    }
+
+    private Bundle updateChooserResultIntentSender(Context context, Intent chooserIntent) {
+        Intent targetIntent = chooserIntent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+        if (targetIntent == null) {
+            Log.w(TAG, "Target intent is missing");
+            return null;
+        }
+        if (!targetIntent.hasExtra(Keys.LaunchId)) {
+            Log.e(TAG, "Test key " + Keys.LaunchId + " is missing");
+            return null;
+        }
+        int launchId = targetIntent.getIntExtra(Keys.LaunchId, -1);
+        if (launchId < 0) {
+            Log.e(TAG, "Wrong " + Keys.LaunchId + " value");
+            return null;
+        }
+
+        Bundle result = new Bundle();
+        result.putParcelable(
+                Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER,
+                SharesheetPayloadToggleActivity.createResultIntentSender(context, launchId, true));
         return result;
     }
 
