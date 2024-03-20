@@ -17,6 +17,8 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
+import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
+import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -37,6 +39,7 @@ import android.app.ondeviceintelligence.OnDeviceIntelligenceManager;
 import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
+import android.app.ondeviceintelligence.TokenInfo;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -81,8 +84,12 @@ import java.util.concurrent.Executor;
 public class OnDeviceIntelligenceManagerTest {
     public static final String TEST_FILE_NAME = "test_file.txt";
     public static final String TEST_KEY = "test_key";
-
     public static final String TEST_CONTENT = "test_content";
+    public static final String EXCEPTION_MESSAGE_KEY = "message_key";
+    public static final String EXCEPTION_STATUS_CODE_KEY = "code_key";
+    public static final String EXCEPTION_PARAMS_KEY = "params_key";
+    public static final String TOKEN_INFO_COUNT_KEY = "tokenInfo_count_key";
+    public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
@@ -313,11 +320,18 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
-
+        Feature expectedFeature = CtsIntelligenceService.getSampleFeature(1);
         mOnDeviceIntelligenceManager.getFeature(1,
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Feature : =" + result);
+                    assertEquals(result.getFeatureParams(), expectedFeature.getFeatureParams());
+                    assertEquals(result.getId(), expectedFeature.getId());
+                    assertEquals(result.getName(), expectedFeature.getName());
+                    assertEquals(result.getModelName(), expectedFeature.getModelName());
+                    assertEquals(result.getType(), expectedFeature.getType());
+                    assertEquals(result.getVariant(), expectedFeature.getVariant());
+                    assertEquals(result, expectedFeature);
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
@@ -331,10 +345,24 @@ public class OnDeviceIntelligenceManagerTest {
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
 
-        mOnDeviceIntelligenceManager.getFeatureDetails(new Feature.Builder(1).build(),
+        // Test coverage for response with params
+        mOnDeviceIntelligenceManager.getFeatureDetails(CtsIntelligenceService.getSampleFeature(0),
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Feature details : =" + result);
+                    assertEquals(result.getFeatureStatus(), 0);
+                    assertEquals(result.getFeatureDetailParams().getInt(TEST_KEY), 1);
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+        // Test coverage for response withOut params
+        mOnDeviceIntelligenceManager.getFeatureDetails(CtsIntelligenceService.getSampleFeature(1),
+                EXECUTOR,
+                result -> {
+                    Log.i(TAG, "Feature details : =" + result);
+                    assertEquals(result.getFeatureStatus(), 1);
+                    assertEquals(result.getFeatureDetailParams().size(), 0);
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
@@ -393,11 +421,32 @@ public class OnDeviceIntelligenceManagerTest {
         CountDownLatch statusLatch = new CountDownLatch(1);
 
         Feature feature = new Feature.Builder(1).build();
-        mOnDeviceIntelligenceManager.requestTokenInfo(feature,
-                new Bundle(), null,
+        Bundle request = new Bundle();
+        request.putInt(TOKEN_INFO_COUNT_KEY, 0);
+        TokenInfo expectedTokenInfo = constructTokenInfo(0, null);
+        mOnDeviceIntelligenceManager.requestTokenInfo(feature, request
+                , null,
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Response : =" + result.getCount());
+                    assertEquals(expectedTokenInfo.getCount(), result.getCount());
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+
+        PersistableBundle params = new PersistableBundle();
+        params.putInt("abc", 1);
+        request.putParcelable(TOKEN_INFO_PARAMS_KEY, params);
+        TokenInfo expectedTokenInfo2 = constructTokenInfo(0, params);
+        mOnDeviceIntelligenceManager.requestTokenInfo(feature, request
+                , null,
+                EXECUTOR,
+                result -> {
+                    Log.i(TAG, "Response : =" + result.getCount());
+                    assertEquals(expectedTokenInfo2.getCount(), result.getCount());
+                    assertEquals(expectedTokenInfo2.getInfoParams().containsKey("abc"),
+                            result.getInfoParams().containsKey("abc"));
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
@@ -499,6 +548,77 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(resultFuture.get()).isEqualTo("abc");
     }
 
+
+//===================== Tests Exception populated ==================
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void exceptionPopulatedWhenAttemptingProcessRequest() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        Bundle bundle = new Bundle();
+        bundle.putInt(EXCEPTION_STATUS_CODE_KEY, 1);
+        OnDeviceIntelligenceException expectedException = constructException(bundle);
+        mOnDeviceIntelligenceManager.processRequest(feature, bundle, 1, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                        assertEquals(error.getErrorCode(), expectedException.getErrorCode());
+                        statusLatch.countDown();
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+
+        bundle.putString(EXCEPTION_MESSAGE_KEY, "test message");
+        OnDeviceIntelligenceException expectedException2 = constructException(bundle);
+        mOnDeviceIntelligenceManager.processRequest(feature, bundle, 1, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                        assertEquals(error.getErrorCode(), expectedException2.getErrorCode());
+                        assertEquals(error.getMessage(), expectedException2.getMessage());
+                        statusLatch.countDown();
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+
+        PersistableBundle params = new PersistableBundle();
+        params.putInt("abc", 1);
+        bundle.putParcelable(EXCEPTION_PARAMS_KEY, params);
+        OnDeviceIntelligenceException expectedException3 = constructException(bundle);
+        mOnDeviceIntelligenceManager.processRequest(feature, bundle, 1, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                        assertEquals(error.getErrorCode(), expectedException3.getErrorCode());
+                        assertEquals(error.getMessage(), expectedException3.getMessage());
+                        assertEquals(error.getErrorParams().containsKey("abc"),
+                                expectedException3.getErrorParams().containsKey("abc"));
+                        statusLatch.countDown();
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
 
 //===================== Tests for Processing and Cancellation signals  ==========================
 
@@ -615,7 +735,7 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(2, SECONDS)).isTrue();
     }
 
-    //===================== Tests for Manager Methods When No Service is Configured ==================
+    //===================== Tests for Manager Methods When No Service is Configured =============
 
     @Test
     @SkipSetupAndTeardown
@@ -673,8 +793,7 @@ public class OnDeviceIntelligenceManagerTest {
                         }));
     }
 
-    // ========= Test package manager returns parent process package name for
-    // isolated_compute_app ====
+    // ========= Test package manager returns parent process package name for isolated_compute_app
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void inferenceServiceShouldReturnParentPackageName() throws Exception {
