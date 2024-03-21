@@ -52,6 +52,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
+import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ScanRequest;
 import android.media.MediaRouter2.ScanToken;
@@ -585,6 +586,33 @@ public class MediaRouter2DeviceTest {
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
                 .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
+    }
+
+    @Test
+    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
+        RouteDiscoveryPreference activeScanRouteDiscoveryPreference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of("placeholder_feature"), /* activeScan= */ true)
+                        .build();
+        MediaRouter2.RouteCallback routeCallback = new MediaRouter2.RouteCallback() {};
+        ConditionVariable conditionVariable = new ConditionVariable();
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        conditionVariable.open();
+                    }
+                });
+        try {
+            router.registerRouteCallback(
+                    Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
+            assertThat(conditionVariable.block(TIMEOUT_MS)).isTrue();
+        } finally {
+            PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(action -> {});
+            router.unregisterRouteCallback(routeCallback);
+        }
     }
 
     @ApiTest(apis = {"android.media.MediaRouter2"})
