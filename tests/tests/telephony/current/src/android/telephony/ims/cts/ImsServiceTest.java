@@ -3955,6 +3955,11 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnFeatureChangedQueue.clear();
+
             // test get/setProvisioningStatusForCapability for VoLTE
             assertTrue(provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
@@ -4257,6 +4262,11 @@ public class ImsServiceTest {
             TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
 
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
