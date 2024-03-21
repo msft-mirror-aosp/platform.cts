@@ -898,8 +898,8 @@ class ItsSession(object):
         aeAwbRegionTwo (metering rectangle) second ae/awb region of recording.
         aeAwbRegionThree (metering rectangle) third ae/awb region of recording.
         aeAwbRegionFour (metering rectangle) fourth ae/awb region of recording.
-      stabilize: boolean; Whether the preview should be stabilized.
       ae_awb_region_duration: float; sleep in ms between 3A regions.
+      stabilize: boolean; Whether the preview should be stabilized.
       ae_target_fps_min: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE min.
       ae_target_fps_max: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE max.
     Returns:

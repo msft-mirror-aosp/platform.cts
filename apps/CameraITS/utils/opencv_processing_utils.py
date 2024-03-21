@@ -1073,6 +1073,8 @@ def get_chart_boundary_from_aruco_markers(
       opencv_processing_utils.find_aruco_markers.
     aruco_marker_ids: array of ids of aruco markers detected by
       opencv_processing_utils.find_aruco_markers.
+    input_img: 3D RGB numpy [0, 255] uint8; input image.
+    output_img_path: string; output image path.
   Returns:
     top_left: tuple; aruco marker corner coordinates in pixel.
     bottom_right: tuple; aruco marker corner coordinates in pixel.
