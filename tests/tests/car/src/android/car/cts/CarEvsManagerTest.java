@@ -38,6 +38,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 import android.util.Log;
+import android.util.SparseIntArray;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.runner.AndroidJUnit4;
@@ -66,8 +67,8 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
     // We'd expect that underlying stream runs @10fps at least.
     private static final int NUMBER_OF_FRAMES_TO_WAIT = 10;
     private static final int FRAME_TIMEOUT_MS = 1000;
-    private static final int SMALL_NAP_MS = 500;
     private static final int STREAM_EVENT_TIMEOUT_SEC = 2;
+    private static final int KEY_NOT_EXIST = Integer.MIN_VALUE;
 
     // Will return frame buffers in the order they arrived.
     private static final int INDEX_TO_FIRST_ELEM = 0;
@@ -87,9 +88,10 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
     private final Semaphore mStreamEventOccurred = new Semaphore(0);
     private final EvsStreamCallbackImpl mStreamCallback = new EvsStreamCallbackImpl();
     private final EvsStatusListenerImpl mStatusListener = new EvsStatusListenerImpl();
+    private final SparseIntArray mLastStreamEvent = new SparseIntArray();
+    private final Object mLock = new Object();
 
     private CarEvsManager mCarEvsManager;
-    private int mLastStreamEvent;
 
     @Before
     public void setUp() throws Exception {
@@ -168,9 +170,8 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
         // Stop a video stream and wait for a confirmation.
         mCarEvsManager.stopVideoStream();
 
-        SystemClock.sleep(SMALL_NAP_MS);
-        assertThat(mStreamCallback.waitForStreamEvent(CarEvsManager.STREAM_EVENT_STREAM_STOPPED))
-                .isTrue();
+        assertThat(mStreamCallback.waitForStreamEvent(CarEvsManager.SERVICE_TYPE_REARVIEW,
+                CarEvsManager.STREAM_EVENT_STREAM_STOPPED)).isTrue();
 
         // Unregister a listener.
         mCarEvsManager.clearStatusListener();
@@ -194,21 +195,16 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
             int stream0 = mSupportedTypes.valueAt(i);
             int stream1 = mSupportedTypes.valueAt(i + 1);
 
-            assertThat(
-                    mCarEvsManager.startVideoStream(stream0, /* token= */ null,
-                            mCallbackExecutor, mStreamCallback)
-            ).isEqualTo(CarEvsManager.ERROR_NONE);
+            assertThat(mCarEvsManager.startVideoStream(stream0, /* token= */ null,
+                    mCallbackExecutor, mStreamCallback)).isEqualTo(CarEvsManager.ERROR_NONE);
 
-            assertThat(
-                    mCarEvsManager.startVideoStream(stream1, /* token= */ null,
-                            mCallbackExecutor, mStreamCallback)
-            ).isEqualTo(CarEvsManager.ERROR_NONE);
+            assertThat(mCarEvsManager.startVideoStream(stream1, /* token= */ null,
+                    mCallbackExecutor, mStreamCallback)).isEqualTo(CarEvsManager.ERROR_NONE);
 
             // Wait for a few frame buffers.
             for (int j = 0; j < NUMBER_OF_FRAMES_TO_WAIT; ++j) {
-                assertThat(
-                        mFrameReceivedSignal.tryAcquire(FRAME_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                ).isTrue();
+                assertThat(mFrameReceivedSignal.tryAcquire(FRAME_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isTrue();
 
                 // Return a buffer immediately after confirming its origin.
                 CarEvsBufferDescriptor b = mReceivedBuffers.get(INDEX_TO_FIRST_ELEM);
@@ -223,8 +219,7 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
 
             // Stop a video stream and wait for a confirmation.
             mCarEvsManager.stopVideoStream(stream0);
-            SystemClock.sleep(SMALL_NAP_MS);
-            assertThat(mStreamCallback.waitForStreamEvent(
+            assertThat(mStreamCallback.waitForStreamEvent(stream0,
                     CarEvsManager.STREAM_EVENT_STREAM_STOPPED)).isTrue();
 
             // Check a current status of two active service types, again.
@@ -233,8 +228,7 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
 
             // Stop another video stream and wait for a confirmation.
             mCarEvsManager.stopVideoStream(stream1);
-            SystemClock.sleep(SMALL_NAP_MS);
-            assertThat(mStreamCallback.waitForStreamEvent(
+            assertThat(mStreamCallback.waitForStreamEvent(stream1,
                     CarEvsManager.STREAM_EVENT_STREAM_STOPPED)).isTrue();
 
             // Check a current status of two active service types one last time. Both service types
@@ -264,35 +258,54 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
      */
     private final class EvsStreamCallbackImpl implements CarEvsManager.CarEvsStreamCallback {
         @Override
-        public void onStreamEvent(int event) {
-            mLastStreamEvent = event;
-            mStreamEventOccurred.release();
+        public void onStreamEvent(int origin, int event) {
+            Log.d(TAG, "Received an event " + event + " from " + origin);
+            synchronized (mLock) {
+                mLastStreamEvent.append(origin, event);
+                mStreamEventOccurred.release();
+            }
         }
 
         @Override
         public void onNewFrame(CarEvsBufferDescriptor buffer) {
-            // Enqueues a new frame
-            mReceivedBuffers.add(buffer);
+            synchronized (mLock) {
+                // Enqueues a new frame
+                mReceivedBuffers.add(buffer);
 
-            // Notifies a new frame's arrival
-            mFrameReceivedSignal.release();
+                // Notifies a new frame's arrival
+                mFrameReceivedSignal.release();
+            }
         }
 
-        public boolean waitForStreamEvent(int expected) {
-            while (mLastStreamEvent != expected) {
+        public boolean waitForStreamEvent(int from, int expected) {
+            Log.d(TAG, "Start waiting for an event " + expected + " from " + from);
+
+            while (true) {
                 try {
                     if (!mStreamEventOccurred.tryAcquire(STREAM_EVENT_TIMEOUT_SEC,
                             TimeUnit.SECONDS)) {
                         Log.e(TAG, "No stream event is received before the timer expired.");
                         return false;
                     }
+
+                    int lastEvent;
+                    synchronized (mLock) {
+                        lastEvent = mLastStreamEvent.get(from, KEY_NOT_EXIST);
+                    }
+
+                    if (lastEvent == KEY_NOT_EXIST) {
+                        // We have not received any event from a target service type yet.
+                        continue;
+                    }
+
+                    if (lastEvent == expected) {
+                        return true;
+                    }
                 } catch (InterruptedException e) {
                     Log.e(TAG, "Current waiting thread is interrupted. ", e);
                     return false;
                 }
             }
-
-            return true;
         }
     }
 
