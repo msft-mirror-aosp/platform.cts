@@ -137,6 +137,7 @@ public class VirtualAudioTest {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
     public void virtualDevice_hasAudioInput_withoutMicrophone_isFalse() {
         android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
@@ -147,6 +148,7 @@ public class VirtualAudioTest {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
     public void virtualDevice_hasAudioInput_withMicrophone_isTrue() {
         mVirtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
@@ -162,6 +164,7 @@ public class VirtualAudioTest {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
     public void virtualDevice_hasAudioInput_withAudioOutput_isFalse() {
         mVirtualAudioDevice.startAudioCapture(CAPTURE_FORMAT);
@@ -177,6 +180,7 @@ public class VirtualAudioTest {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
     public void multipleVirtualDevices_hasAudioInput_takesIntoAccountMicrophoneCapabilities() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder().setDevicePolicy(
@@ -204,6 +208,7 @@ public class VirtualAudioTest {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API})
     public void virtualDevice_hasAudioInput_withDefaultAudioPolicy_isFalse() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder().setDevicePolicy(

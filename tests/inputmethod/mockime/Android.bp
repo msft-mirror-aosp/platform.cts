@@ -37,6 +37,8 @@ android_test_helper_app {
     additional_manifests: [
         "AndroidManifest_template.xml",
     ],
+    // Disable use_resource_processor so that an aapt.srcjar is generated for CtsMockInputMethodLib.
+    use_resource_processor: false,
 }
 
 java_test_helper_library {

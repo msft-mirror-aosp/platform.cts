@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -406,9 +407,26 @@ public class TelephonyManagerTest {
     private Map<Integer, Long> mAllowedNetworkTypesList = new HashMap<>();
 
     private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss"
-            + ".myverizon\":{\"carrierId\":1839,"
-    + "\"callerSHA1Id\":[\"C58EE7871896786F8BF70EBDB137DE10074043E9\","
-    + "\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]}}";
+            + ".myverizon\":{\"carrierIds\":[1839],"
+            + "\"callerSHA1Id\":[\"C58EE7871896786F8BF70EBDB137DE10074043E9\","
+            + "\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},"
+            + "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],"
+            + "\"callerSHA1Id"
+            + "\":[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\", "
+            + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},"
+            + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032, 2532, 2556],"
+            + "\"callerSHA1Id\":[\"CB16D6A0BEA2F4ED808107408104B2DB3258DF52\", "
+            + "\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},"
+            + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032],"
+            + "\"callerSHA1Id\":[\"be268ab5b6126ce1abd6c3131b33b6d02e44d717\", "
+            + "\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},"
+            + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032],"
+            + "\"callerSHA1Id\":[\"611f61225138a566428f34e927ad5f2a02fd151e\", "
+            + "\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
+            + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032],"
+            + "\"callerSHA1Id\":[\"611f61225138a566428f34e927ad5f2a02fd151e\", "
+            + "\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]}"
+            + "}";
 
     private class CarrierPrivilegeChangeMonitor implements AutoCloseable {
         // CarrierPrivilegesCallback will be triggered upon registration. Filter the first callback
@@ -6835,16 +6853,16 @@ public class TelephonyManagerTest {
     }
 
     private static class CarrierInfo {
-        final private int mCallerCarrierId;
+        final private Set<Integer> mCallerCarrierIdList;
         final private List<String> mSHAIdList;
 
-        public CarrierInfo(int carrierId, List<String> SHAIds) {
-            mCallerCarrierId = carrierId;
+        public CarrierInfo(Set<Integer> carrierIds, List<String> SHAIds) {
+            mCallerCarrierIdList = carrierIds;
             mSHAIdList = SHAIds;
         }
 
-        public int getCallerCarrierId() {
-            return mCallerCarrierId;
+        public Set<Integer> getCallerCarrierIds() {
+            return mCallerCarrierIdList;
         }
 
         public List<String> getSHAIdList() {
@@ -6853,18 +6871,24 @@ public class TelephonyManagerTest {
     }
 
     private static final String CALLER_SHA_1_ID = "callerSHA1Id";
-    private static final String CALLER_CARRIER_ID = "carrierId";
+    private static final String CALLER_CARRIER_ID = "carrierIds";
     private CarrierInfo parseJsonForCallerInfo(String callerPackage, JSONObject dataJson) {
         try {
             if (dataJson != null && callerPackage != null) {
                 JSONObject callerJSON = dataJson.getJSONObject(callerPackage.trim());
                 JSONArray callerJSONArray = callerJSON.getJSONArray(CALLER_SHA_1_ID);
-                int carrierId = callerJSON.getInt(CALLER_CARRIER_ID);
+                JSONArray carrierIdArray = callerJSON.getJSONArray(CALLER_CARRIER_ID);
+
+                Set<Integer> carrierIds = new HashSet<>();
+                for (int index = 0; index < carrierIdArray.length(); index++) {
+                    carrierIds.add(carrierIdArray.getInt(index));
+                }
+
                 List<String> appSignatures = new ArrayList<>();
                 for (int index = 0; index < callerJSONArray.length(); index++) {
                     appSignatures.add((String) callerJSONArray.get(index));
                 }
-                return new CarrierInfo(carrierId, appSignatures);
+                return new CarrierInfo(carrierIds, appSignatures);
             }
         } catch (JSONException ex) {
             Log.e(TAG, "getCallerSignatureInfo: JSONException = " + ex);
@@ -6879,15 +6903,16 @@ public class TelephonyManagerTest {
         testPkgSet.remove("_comment");
         for (String srcPkg : testPkgSet) {
             final CarrierInfo testCarrierInfo = parseJsonForCallerInfo(srcPkg, testJson);
-            List<String> shaIdList = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getShaIdFromAllowList(srcPkg,
-                            testCarrierInfo.mCallerCarrierId));
+            for (int cid : testCarrierInfo.getCallerCarrierIds()) {
+                List<String> shaIdList = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getShaIdFromAllowList(srcPkg, cid));
 
-            if (shaIdList == null || shaIdList.isEmpty()) {
-                Log.d(TAG, "shaIdList is empty");
-                fail();
+                if (shaIdList == null || shaIdList.isEmpty()) {
+                    Log.d(TAG, "shaIdList is empty");
+                    fail();
+                }
+                assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
             }
-            assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
         }
     }
 
@@ -7269,7 +7294,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_shouldBeSupported() {
-        PackageManager packageManager = getContext().getPackageManager();
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         Intent intent = new Intent(TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS);
 
         List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent,
@@ -7285,6 +7315,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_requiresNoPermission() {
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         // Try to startActivity with the action and make sure no exceptions are thrown.
         // Exceptions may include:
         // 1. SecurityException if additional permission are required for the action

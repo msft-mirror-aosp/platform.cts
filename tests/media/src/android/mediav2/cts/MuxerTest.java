@@ -970,6 +970,7 @@ public class MuxerTest {
      */
     @ApiTest(apis = {"AMediaMuxer_append", "AMEDIAMUXER_APPEND_IGNORE_LAST_VIDEO_GOP",
             "AMEDIAMUXER_APPEND_TO_EXISTING_DATA"})
+    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestSimpleAppend {

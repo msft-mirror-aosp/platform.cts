@@ -502,6 +502,43 @@ public class CardEmulationTest {
 
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testCustomPollingLoopToCustomDynamicAndRemove() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        Activity activity = createAndResumeActivity();
+        ComponentName ctsServiceName = new ComponentName(mContext,
+                CtsMyHostApduService.class);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsServiceName));
+            ComponentName customServiceName =
+                    new ComponentName(mContext, CustomHostApduService.class);
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+            Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(customServiceName,
+                    annotationStringHex, false));
+
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex)));
+            notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            adapter.notifyHceDeactivated();
+
+            Assert.assertTrue(cardEmulation.removePollingLoopFilterForService(customServiceName,
+                    annotationStringHex));
+
+            notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomWithPrefixDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
