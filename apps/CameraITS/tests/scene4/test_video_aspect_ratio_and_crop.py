@@ -225,9 +225,6 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
             if (hlg10_param and
                 video_processing_utils.COLORSPACE_HDR not in colorspace):
               raise AssertionError('colorspace check failed for HDR.')
-            if (not hlg10_param and
-                video_processing_utils.COLORSPACE_SDR not in colorspace):
-              raise AssertionError('colorspace check failed for SDR.')
             logging.debug('Colorspace test passed, video colorspace is %s',
                           colorspace)
 

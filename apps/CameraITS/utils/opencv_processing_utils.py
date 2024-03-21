@@ -52,7 +52,9 @@ CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-CV2_GREEN = (0, 1, 0)
+CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255
+CV2_GREEN = (0, 255, 0)
+CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255
 CV2_THRESHOLD_BLOCK_SIZE = 11
 CV2_THRESHOLD_CONSTANT = 2
 
@@ -931,7 +933,7 @@ def match_face_locations(faces_cropped, faces_opencv, img, img_name):
   image_processing_utils.write_image(img, img_name)
   if num_centers_aligned < FACES_ALIGNED_MIN_NUM:
     for (x, y, w, h) in faces_opencv:
-      cv2.rectangle(img, (x, y), (x+w, y+h), tuple(numpy.array(CV2_RED)/255), 2)
+      cv2.rectangle(img, (x, y), (x+w, y+h), CV2_RED_NORM, 2)
       image_processing_utils.write_image(img, img_name)
       logging.debug('centered: %s', str(num_centers_aligned))
     raise AssertionError(f'Face rectangles in wrong location(s)!. '
@@ -951,7 +953,7 @@ def draw_green_boxes_around_faces(img, faces_cropped, img_name):
   """
   # draw boxes around faces in green and save image
   for (l, r, t, b) in faces_cropped:
-    cv2.rectangle(img, (l, t), (r, b), CV2_GREEN, 2)
+    cv2.rectangle(img, (l, t), (r, b), CV2_GREEN_NORM, 2)
   image_processing_utils.write_image(img, img_name)
 
 
@@ -1022,7 +1024,7 @@ def get_patch_from_aruco_markers(
   top_left = tuple(map(int, outer_rect_coordinates[0]))
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
   cv2.rectangle(input_img, top_left, bottom_right,
-                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
+                CV2_RED_NORM, CV2_LINE_THICKNESS)
   return input_img[top_left[1]:bottom_right[1],
                    top_left[0]:bottom_right[0]].copy()
 
@@ -1056,7 +1058,7 @@ def get_slanted_edge_from_patch(input_img):
   top_left = tuple(map(int, slanted_edge_coordinates[0]))
   bottom_right = tuple(map(int, slanted_edge_coordinates[2]))
   cv2.rectangle(input_img, top_left, bottom_right,
-                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
+                CV2_RED_NORM, CV2_LINE_THICKNESS)
   slanted_edge = input_img[top_left[1]:bottom_right[1],
                            top_left[0]:bottom_right[0]]
   return slanted_edge
@@ -1089,7 +1091,7 @@ def get_chart_boundary_from_aruco_markers(
   top_left = tuple(map(int, outer_rect_coordinates[0]))
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
   cv2.rectangle(input_img, top_left, bottom_right,
-                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
+                CV2_RED_NORM, CV2_LINE_THICKNESS)
   image_processing_utils.write_image(input_img/255, output_img_path)
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)

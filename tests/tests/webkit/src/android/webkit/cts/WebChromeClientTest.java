@@ -24,10 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import android.graphics.Bitmap;
 import android.os.Message;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Base64;
-import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.webkit.ConsoleMessage;
@@ -423,16 +421,7 @@ public class WebChromeClientTest extends SharedWebViewTest{
         int[] location = mOnUiThread.getLocationOnScreen();
         int middleX = location[0] + mOnUiThread.getWebView().getWidth() / 2;
         int middleY = location[1] + mOnUiThread.getWebView().getHeight() / 2;
-
-        long timeDown = SystemClock.uptimeMillis();
-        getTestEnvironment().sendPointerSync(
-                MotionEvent.obtain(timeDown, timeDown, MotionEvent.ACTION_DOWN,
-                        middleX, middleY, 0));
-
-        long timeUp = SystemClock.uptimeMillis();
-        getTestEnvironment().sendPointerSync(
-                MotionEvent.obtain(timeUp, timeUp, MotionEvent.ACTION_UP,
-                        middleX, middleY, 0));
+        getTestEnvironment().sendTapSync(middleX, middleY);
 
         // Wait for the system to process all events in the queue
         getTestEnvironment().waitForIdleSync();
