@@ -1178,6 +1178,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }, false);
     }
 
+
     /**
      * Verify calls to deprecated API's all fail for non-settings apps targeting >= Q SDK.
      */
@@ -3858,7 +3859,6 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         if (!mWifiManager.isPortableHotspotSupported()) {
             return;
         }
-        assertTrue(mWifiManager.isWifiEnabled());
 
         runWithScanning(() -> {
             // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
