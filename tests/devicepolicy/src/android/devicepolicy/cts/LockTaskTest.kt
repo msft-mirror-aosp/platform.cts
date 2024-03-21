@@ -1064,6 +1064,9 @@ class LockTaskTest {
     @RequireFeature(FEATURE_TELEPHONY_CALLING)
     @Postsubmit(reason = "b/181993922 automatically marked flaky") // Tests that the default dialer doesn't crash or otherwise misbehave in lock task mode
     fun launchDefaultDialerInLockTaskMode_launches() {
+
+        assumeTrue("Test requires showing activities", TestApis.users().instrumented().canShowActivities())
+
         val telecomManager =
             TestApis.context().instrumentedContext().getSystemService(TelecomManager::class.java)!!
         val dialerPackage = telecomManager.systemDialerPackage
