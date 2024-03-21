@@ -15,6 +15,7 @@
  */
 package android.packageinstaller.install.cts
 
+import android.Manifest
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -30,10 +31,12 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.annotations.RequireAdbRoot
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
+import com.android.compatibility.common.util.SystemUtil
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -54,6 +57,9 @@ class IntentTest : PackageInstallerTestBase() {
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
         const val TIMEOUT = 60000L
+        const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
+                "android.packageinstaller.disabledlauncheractivity.cts"
+        const val INSTALL_SUCCESS_TEXT = "App installed."
     }
 
     @After
@@ -72,6 +78,13 @@ class IntentTest : PackageInstallerTestBase() {
         // Install should have succeeded
         assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
+        var originatingPackageName: String? = null
+        SystemUtil.runWithShellPermissionIdentity(
+            { originatingPackageName = getInstallSourceInfo().originatingPackageName },
+            Manifest.permission.INSTALL_PACKAGES
+        )
+        assertNotNull(originatingPackageName)
+        assertEquals(context.packageName, originatingPackageName)
     }
 
     /**
@@ -208,6 +221,29 @@ class IntentTest : PackageInstallerTestBase() {
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
         }
+    }
+
+    @Test
+    fun launcherActivityDisabled_cannotLaunchApp() {
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+        intent.data = Uri.fromParts("package", DISABLED_LAUNCHER_ACTIVITY_PKG_NAME, null)
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+
+        installDialogStarter.activity.startActivityForResult(intent)
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // Wait for success dialog
+        assertNotNull(
+            "Success dialog not shown",
+            uiDevice.wait(Until.findObject(By.text(INSTALL_SUCCESS_TEXT)), TIMEOUT)
+        )
+
+        // Since the dialog is already visible, no need to wait for long for the "Open" button.
+        assertNull(
+            "Open button should not be shown",
+            uiDevice.wait(Until.findObject(getBySelector(INSTALL_BUTTON_ID)), 5000)
+        )
     }
 
     private fun getInstallSourceInfo(): InstallSourceInfo {

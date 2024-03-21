@@ -171,6 +171,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         beforeAllTestsBase();
+        if (!shouldTestSatellite()) {
+            // FEATURE_TELEPHONY_SATELLITE is missing, so let's set up mock SatelliteManager.
+            sSatelliteManager = new SatelliteManager(getContext());
+        }
         enforceMockModemDeveloperSetting();
 
         grantSatellitePermission();
@@ -3350,13 +3354,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSatelliteAccessControl() {
         if (!shouldTestSatelliteWithMockService()) return;
-
-        // Satellite is not allowed by modem
-        sMockSatelliteServiceManager.setSatelliteCommunicationAllowed(false);
-        verifyIsSatelliteAllowed(false);
-
-        // Satellite is allowed by modem
-        sMockSatelliteServiceManager.setSatelliteCommunicationAllowed(true);
 
         // Test access controller using cached country codes
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(

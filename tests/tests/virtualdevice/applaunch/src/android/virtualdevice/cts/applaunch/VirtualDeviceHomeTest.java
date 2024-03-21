@@ -329,7 +329,7 @@ public class VirtualDeviceHomeTest {
      */
     private class HomeActivitySession implements AutoCloseable {
         private final PackageManager mPackageManager;
-        private final ComponentName mOrigHome;
+        private final String mOrigHome;
         private final ComponentName mSessionHome;
 
         HomeActivitySession(ComponentName sessionHome) {
@@ -352,9 +352,13 @@ public class VirtualDeviceHomeTest {
         }
 
         private void setDefaultHome(ComponentName componentName) {
+            setDefaultHome(componentName.flattenToString());
+        }
+
+        private void setDefaultHome(String component) {
             SystemUtil.runShellCommand("cmd package set-home-activity --user "
                     + android.os.Process.myUserHandle().getIdentifier() + " "
-                    + componentName.flattenToString());
+                    + component);
         }
 
         ComponentName getCurrentSecondaryHomeComponent() {
@@ -365,11 +369,17 @@ public class VirtualDeviceHomeTest {
             return useSystemProvidedLauncher ? getDefaultSecondaryHomeComponent() : mSessionHome;
         }
 
-        private ComponentName getDefaultHomeComponent() {
-            final Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            return resolveHomeIntent(intent);
+        /** Fetches the component name of the default launcher. */
+        private String getDefaultHomeComponent() {
+            final String prefix = "Launcher: ComponentInfo{";
+            final String postfix = "}";
+            for (String s : SystemUtil.runShellCommand(
+                    "cmd shortcut get-default-launcher").split("\n")) {
+                if (s.startsWith(prefix) && s.endsWith(postfix)) {
+                    return s.substring(prefix.length(), s.length() - postfix.length());
+                }
+            }
+            throw new AssertionError("No default launcher found");
         }
 
         private ComponentName getDefaultSecondaryHomeComponent() {

@@ -533,7 +533,24 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             VehiclePropertyIds.OBD2_LIVE_FRAME,
             VehiclePropertyIds.OBD2_FREEZE_FRAME,
             VehiclePropertyIds.OBD2_FREEZE_FRAME_INFO,
-            VehiclePropertyIds.OBD2_FREEZE_FRAME_CLEAR
+            VehiclePropertyIds.OBD2_FREEZE_FRAME_CLEAR,
+            /*VehiclePropertyIds.CLUSTER_DISPLAY_STATE=*/289476405,
+            /*VehiclePropertyIds.CLUSTER_HEARTBEAT=*/299896651,
+            /*VehiclePropertyIds.CLUSTER_NAVIGATION_STATE=*/292556600,
+            /*VehiclePropertyIds.CLUSTER_REPORT_STATE=*/299896630,
+            /*VehiclePropertyIds.CLUSTER_REQUEST_DISPLAY=*/289410871,
+            /*VehiclePropertyIds.CLUSTER_SWITCH_UI=*/289410868,
+            /*VehiclePropertyIds.CREATE_USER=*/299896585,
+            /*VehiclePropertyIds.CURRENT_POWER_POLICY=*/286265123,
+            /*VehiclePropertyIds.INITIAL_USER_INFO=*/299896583,
+            /*VehiclePropertyIds.POWER_POLICY_GROUP_REQ=*/286265122,
+            /*VehiclePropertyIds.POWER_POLICY_REQ=*/286265121,
+            /*VehiclePropertyIds.REMOVE_USER=*/299896586,
+            /*VehiclePropertyIds.SWITCH_USER=*/299896584,
+            /*VehiclePropertyIds.USER_IDENTIFICATION_ASSOCIATION=*/299896587,
+            /*VehiclePropertyIds.VHAL_HEARTBEAT=*/290459443,
+            /*VehiclePropertyIds.WATCHDOG_ALIVE=*/290459441,
+            /*VehiclePropertyIds.WATCHDOG_TERMINATED_PROCESS=*/299896626
     );
 
     private static final ImmutableList<Integer>
@@ -2502,6 +2519,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, make) ->
+                                assertWithMessage("INFO_MAKE must not be empty")
+                                        .that(make)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -2529,6 +2551,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, model) ->
+                                assertWithMessage("INFO_MODEL must not be empty")
+                                        .that(model)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -2570,6 +2597,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         getInfoModelYearVerifier().verify();
     }
 
+    private void assertFuelPropertyNotImplementedOnEv(int propertyId) {
+        runWithShellPermissionIdentity(
+                () -> {
+                    if (mCarPropertyManager.getCarPropertyConfig(
+                            VehiclePropertyIds.INFO_FUEL_TYPE) == null) {
+                        return;
+                    }
+                    CarPropertyValue<?> infoFuelTypeValue = mCarPropertyManager.getProperty(
+                            VehiclePropertyIds.INFO_FUEL_TYPE, /* areaId */ 0);
+                    if (infoFuelTypeValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                        return;
+                    }
+                    Integer[] fuelTypes = (Integer[]) infoFuelTypeValue.getValue();
+                    assertWithMessage("If fuelTypes only contains FuelType.ELECTRIC, "
+                                    + VehiclePropertyIds.toString(propertyId)
+                                    + " property must not be implemented")
+                            .that(fuelTypes).isNotEqualTo(new Integer[]{FuelType.ELECTRIC});
+                },
+                Car.PERMISSION_CAR_INFO);
+    }
+
     private VehiclePropertyVerifier<Float> getInfoFuelCapacityVerifier() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.INFO_FUEL_CAPACITY,
@@ -2577,6 +2625,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Float.class, mCarPropertyManager)
+                .setCarPropertyConfigVerifier(
+                        carPropertyConfig -> {
+                            assertFuelPropertyNotImplementedOnEv(
+                                    VehiclePropertyIds.INFO_FUEL_CAPACITY);
+                        })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, fuelCapacity) ->
                                 assertWithMessage(
@@ -2720,29 +2773,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC,"
-                                                                + " INFO_FUEL_DOOR_LOCATION"
-                                                                + " property must not be"
-                                                                + " implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(
+                                    VehiclePropertyIds.INFO_FUEL_DOOR_LOCATION);
                         })
                 .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
@@ -4231,28 +4263,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Float.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC, FUEL_LEVEL"
-                                                                + " property must not be"
-                                                                + " implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(VehiclePropertyIds.FUEL_LEVEL);
                         })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, fuelLevel) -> {
@@ -4456,28 +4467,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class, mCarPropertyManager)
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
-                            runWithShellPermissionIdentity(
-                                    () -> {
-                                        if (mCarPropertyManager.getCarPropertyConfig(
-                                                VehiclePropertyIds.INFO_FUEL_TYPE) != null) {
-                                            CarPropertyValue<?> infoFuelTypeValue =
-                                                    mCarPropertyManager.getProperty(
-                                                            VehiclePropertyIds.INFO_FUEL_TYPE,
-                                                            /* areaId */ 0);
-                                            if (infoFuelTypeValue.getStatus()
-                                                    == CarPropertyValue.STATUS_AVAILABLE) {
-                                                Integer[] fuelTypes =
-                                                        (Integer[]) infoFuelTypeValue.getValue();
-                                                assertWithMessage("If fuelTypes only contains"
-                                                                + " FuelType.ELECTRIC,"
-                                                                + " FUEL_DOOR_OPEN property must"
-                                                                + " not be implemented")
-                                                        .that(fuelTypes).isNotEqualTo(
-                                                                new Integer[]{FuelType.ELECTRIC});
-                                            }
-                                        }
-                                    },
-                                    Car.PERMISSION_CAR_INFO);
+                            assertFuelPropertyNotImplementedOnEv(VehiclePropertyIds.FUEL_DOOR_OPEN);
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
@@ -6947,6 +6937,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
                         Float.class, mCarPropertyManager)
                 .setPossiblyDependentOnHvacPowerOn()
+                .requireMinMaxValues()
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
@@ -7023,40 +7014,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             for (int i = 0; i < supportedAreaIds.length; i++) {
                                 int areaId = supportedAreaIds[i];
                                 Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
-                                if (minValueFloat != null) {
-                                    Integer minValueInt = (int) (minValueFloat * 10);
-                                    assertWithMessage(
-                                                    "HVAC_TEMPERATURE_SET minimum value: "
-                                                            + minValueInt
-                                                            + " at areaId: "
-                                                            + areaId
-                                                            + " should be equal to minimum"
-                                                            + " value specified in config"
-                                                            + " array: "
-                                                            + configMinValue)
-                                            .that(minValueInt)
-                                            .isEqualTo(configMinValue);
-                                }
+                                Integer minValueInt = (int) (minValueFloat * 10);
+                                assertWithMessage(
+                                        "HVAC_TEMPERATURE_SET minimum value: " + minValueInt
+                                        + " at areaId: " + areaId + " should be equal to minimum"
+                                        + " value specified in config"
+                                        + " array: " + configMinValue)
+                                        .that(minValueInt)
+                                        .isEqualTo(configMinValue);
+
                                 Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
-                                if (maxValueFloat != null) {
-                                    Integer maxValueInt = (int) (maxValueFloat * 10);
-                                    assertWithMessage(
-                                                    "HVAC_TEMPERATURE_SET maximum value: "
-                                                            + maxValueInt
-                                                            + " at areaId: "
-                                                            + areaId
-                                                            + " should be equal to maximum"
-                                                            + " value specified in config"
-                                                            + " array: "
-                                                            + configMaxValue)
-                                            .that(maxValueInt)
-                                            .isEqualTo(configMaxValue);
-                                }
+                                Integer maxValueInt = (int) (maxValueFloat * 10);
+                                assertWithMessage(
+                                        "HVAC_TEMPERATURE_SET maximum value: " + maxValueInt
+                                        + " at areaId: " + areaId + " should be equal to maximum"
+                                        + " value specified in config"
+                                        + " array: " + configMaxValue)
+                                        .that(maxValueInt)
+                                        .isEqualTo(configMaxValue);
                             }
                         })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, tempInCelsius) -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (configArray.isEmpty()) {
+                                return;
+                            }
                             Integer minTempInCelsius = configArray.get(0);
                             Integer maxTempInCelsius = configArray.get(1);
                             Integer incrementInCelsius = configArray.get(2);

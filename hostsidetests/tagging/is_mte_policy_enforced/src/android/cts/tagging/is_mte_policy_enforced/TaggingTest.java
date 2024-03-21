@@ -44,7 +44,7 @@ public final class TaggingTest {
     @Test
     public void testMtePolicyEnforcedFalse() {
         if (Flags.isMtePolicyEnforced()) {
-            assertThat(DevicePolicyManager.isMtePolicyEnforced()).isTrue();
+            assertThat(DevicePolicyManager.isMtePolicyEnforced()).isFalse();
         }
     }
 }

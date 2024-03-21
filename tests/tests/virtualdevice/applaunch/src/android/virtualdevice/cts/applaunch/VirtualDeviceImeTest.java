@@ -479,7 +479,9 @@ public class VirtualDeviceImeTest {
         SystemUtil.runShellCommandOrThrow("ime enable " + imeId);
         if (makeDefault) {
             SystemUtil.runShellCommandOrThrow("ime set " + imeId);
-            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId()).isEqualTo(imeId);
+            assertThat(Condition.waitFor("current InputMethodInfo",
+                    () -> mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)))
+                    .isTrue();
         }
         return imeId;
     }

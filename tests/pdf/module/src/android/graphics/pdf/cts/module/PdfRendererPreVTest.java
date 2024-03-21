@@ -38,7 +38,7 @@ import static org.junit.Assert.assertThrows;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
-import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
@@ -634,7 +634,7 @@ public class PdfRendererPreVTest {
 
         //assert coordinates
         assertThat(page.getGotoLinks().get(0).getBounds()).hasSize(1);
-        Rect rect = page.getGotoLinks().get(0).getBounds().get(0);
+        RectF rect = page.getGotoLinks().get(0).getBounds().get(0);
         assertThat(rect.left).isEqualTo(91);
         assertThat(rect.top).isEqualTo(246);
         assertThat(rect.right).isEqualTo(235);

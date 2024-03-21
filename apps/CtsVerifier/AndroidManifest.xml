@@ -51,6 +51,9 @@
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.NFC_TRANSACTION_EVENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
@@ -7138,7 +7141,6 @@
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
-        <!-- TODO: b/324916074
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActivity"
             android:exported="true"
@@ -7164,7 +7166,7 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
-        </activity>-->
+        </activity>
 
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActionActivity"

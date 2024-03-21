@@ -112,10 +112,12 @@ public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
         mUiDevice.waitForIdle();
     }
 
-    private void checkLockedActivityIsRunning() {
-        String activityName =
-                mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity.getClassName();
-        assertEquals(LOCK_TASK_ACTIVITY, activityName);
+    private void checkLockedActivityIsRunning() throws Exception {
+        waitAndCheckLockedActivityIsResumed();
+
+        ComponentName topActivity = mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity;
+        assertNotNull(topActivity);
+        assertEquals(LOCK_TASK_ACTIVITY, topActivity.getClassName());
 
         PollingCheck.waitFor(
                 () -> (mActivityManager.getLockTaskModeState()

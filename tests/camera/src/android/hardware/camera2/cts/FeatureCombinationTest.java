@@ -28,6 +28,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupported;
+import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
 import static org.junit.Assert.fail;
 
@@ -51,6 +52,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
@@ -83,7 +85,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     /**
      * Test for making sure that all expected stream combinations are consistent in that
-     * if isSessionConfigurationWithParametersSupported returns true, session creation and
+     * if isSessionConfigWithParamsSupported returns true, session creation and
      * streaming works.
      *
      * Max JPEG size is 1080p due to the Media Performance Class would filter all JPEG
@@ -98,7 +100,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             // Simple preview, GPU video processing, or no-preview video recording
             {PRIV, MAXIMUM},
             {PRIV, PREVIEW},
-            {PRIV, S1440P},   // 1920 * 1440, 4:3; 2560 : 1440, 16:9
+            {PRIV, S1440P},   // 1920 * 1440, 4:3; 2560 * 1440, 16:9
             {PRIV, S1080P},   // 1440 * 1080, 4:3; 1920 * 1080, 16:9
             {PRIV, S720P},    // 960 * 720, 4:3; 1280 * 720, 16:9
             // In-application video/image processing
@@ -194,6 +196,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         for (Long dynamicProfile : dynamicRangeProfiles) {
             // Setup outputs
             List<OutputConfiguration> outputConfigs = new ArrayList<>();
+            List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps = new ArrayList<>();
             List<SurfaceTexture> privTargets = new ArrayList<SurfaceTexture>();
             List<ImageReader> jpegTargets = new ArrayList<ImageReader>();
             List<ImageReader> yuvTargets = new ArrayList<ImageReader>();
@@ -205,7 +208,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             }
 
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
-                    privTargets, jpegTargets, yuvTargets, outputConfigs,
+                    privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
                     kNumBuffers, dynamicProfile, /*hasUseCase*/ false);
             if (minFrameDuration == -1) {
                 // Stream combination isn't valid.
@@ -242,11 +245,19 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
                         CaptureRequest request = builder.build();
 
-                        boolean sessionConfigSupport =
-                                isSessionConfigWithParamsSupported(cameraDeviceSetup, mHandler,
-                                        outputConfigs, SessionConfiguration.SESSION_REGULAR,
+                        boolean isSessionConfigSupported = isSessionConfigWithParamsSupported(
+                                cameraDeviceSetup, mHandler, outputConfigs,
+                                SessionConfiguration.SESSION_REGULAR, request);
+                        boolean isIncompleteSessionConfigSupported =
+                                isSessionConfigWithParamsSupportedChecked(cameraDeviceSetup,
+                                        outputConfigs2Steps, SessionConfiguration.SESSION_REGULAR,
                                         request);
-                        if (!sessionConfigSupport) {
+                        mCollector.expectEquals("isSessionConfigurationSupported return value "
+                                + "isn't consistent between completed and incompleted "
+                                + "SessionConfiguration!", isSessionConfigSupported,
+                                isIncompleteSessionConfigSupported);
+
+                        if (!isSessionConfigSupported) {
                             Log.i(TAG, String.format("Session configuration from combination [%s],"
                                     + " not supported", combinationStr));
                             continue;
@@ -394,8 +405,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     private long setupConfigurationTargets(int[] configs, MaxStreamSizes maxSizes,
             List<SurfaceTexture> privTargets, List<ImageReader> jpegTargets,
-            List<ImageReader> yuvTargets, List<OutputConfiguration> outputConfigs, int numBuffers,
-            Long dynamicProfile, boolean hasUseCase) {
+            List<ImageReader> yuvTargets, List<OutputConfiguration> outputConfigs,
+            List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
+            int numBuffers, Long dynamicProfile, boolean hasUseCase) {
         ImageDropperListener imageDropperListener = new ImageDropperListener();
 
         long frameDuration = -1;
@@ -409,12 +421,18 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     targetSize = maxSizes.getOutputSizeForFormat(PRIV, sizeLimit);
                     SurfaceTexture target = new SurfaceTexture(/*random int*/1);
                     target.setDefaultBufferSize(targetSize.getWidth(), targetSize.getHeight());
-                    OutputConfiguration config = new OutputConfiguration(new Surface(target));
+                    Surface textureSurface = new Surface(target);
+                    OutputConfiguration config = new OutputConfiguration(textureSurface);
+                    OutputConfiguration configNoSurface = new OutputConfiguration(targetSize,
+                            SurfaceTexture.class);
                     config.setDynamicRangeProfile(dynamicProfile);
+                    configNoSurface.setDynamicRangeProfile(dynamicProfile);
                     if (hasUseCase) {
                         config.setStreamUseCase(configs[i + 2]);
+                        configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
+                    outputConfigs2Steps.add(new Pair<>(configNoSurface, textureSurface));
                     privTargets.add(target);
                     break;
                 }
@@ -424,10 +442,14 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                             targetSize.getWidth(), targetSize.getHeight(), JPEG, numBuffers);
                     target.setOnImageAvailableListener(imageDropperListener, mHandler);
                     OutputConfiguration config = new OutputConfiguration(target.getSurface());
+                    OutputConfiguration configNoSurface = new OutputConfiguration(
+                            format, targetSize);
                     if (hasUseCase) {
                         config.setStreamUseCase(configs[i + 2]);
+                        configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
+                    outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
                     jpegTargets.add(target);
                     break;
                 }
@@ -440,11 +462,16 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                             targetSize.getWidth(), targetSize.getHeight(), format, numBuffers);
                     target.setOnImageAvailableListener(imageDropperListener, mHandler);
                     OutputConfiguration config = new OutputConfiguration(target.getSurface());
+                    OutputConfiguration configNoSurface = new OutputConfiguration(
+                            format, targetSize);
                     config.setDynamicRangeProfile(dynamicProfile);
+                    configNoSurface.setDynamicRangeProfile(dynamicProfile);
                     if (hasUseCase) {
                         config.setStreamUseCase(configs[i + 2]);
+                        configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
+                    outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
                     yuvTargets.add(target);
                     break;
                 }

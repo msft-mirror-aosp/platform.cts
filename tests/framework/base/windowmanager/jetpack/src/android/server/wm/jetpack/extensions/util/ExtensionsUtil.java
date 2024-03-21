@@ -28,6 +28,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.Log;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -62,7 +63,7 @@ public class ExtensionsUtil {
      * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
      * Extensions versions</a>.
      */
-    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 5;
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 6;
 
     /**
      * Returns the current version of {@link WindowExtensions} if present on the device.
@@ -145,6 +146,8 @@ public class ExtensionsUtil {
      */
     public static void assumeExtensionSupportedDevice() {
         assumeNotNull("Device does not contain extensions library", getWindowExtensions());
+        assumeTrue("Device doesn't config to support extensions",
+                WindowManager.hasWindowExtensionsEnabled());
 
         // If extensions are supported on the device, make sure that the version is valid.
         assertTrue("Extension version is invalid, must be at least " + EXTENSION_VERSION_1,

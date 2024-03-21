@@ -18,14 +18,12 @@ package android.input.cts.hostside.app
 import android.app.Activity
 import android.content.Context
 import android.graphics.Point
-import android.hardware.input.InputManager
 import android.util.DisplayMetrics
 import android.util.Size
 import android.view.InputDevice
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
 import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputTouchDevice
 import org.junit.After
@@ -238,7 +236,10 @@ class EmulateInputDevice {
             R.raw.test_keyboard_register,
             InputDevice.SOURCE_KEYBOARD
         ).use {
-            // do nothing: Adding a device should trigger the logging logic.
+            // Do nothing: Adding a device should trigger the logging logic.
+            // Wait until the Input device created is sent to KeyboardLayoutManager to trigger
+            // logging logic
+            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
         }
     }
 

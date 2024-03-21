@@ -29,8 +29,10 @@ import android.graphics.pdf.PdfRenderer;
 import android.graphics.pdf.models.FormEditRecord;
 import android.graphics.pdf.models.FormWidgetInfo;
 import android.graphics.pdf.models.ListItem;
+import android.os.Build;
 
 import androidx.annotation.RawRes;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -41,6 +43,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.List;
 
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @RunWith(AndroidJUnit4.class)
 public class PdfFormFillingTest {
     private static final int CLICK_FORM = R.raw.click_form;
@@ -276,8 +279,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ false),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -302,8 +304,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ false),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -386,7 +387,7 @@ public class PdfFormFillingTest {
     }
 
     @Test
-    public void getFormWidgetInfo_filtering() throws Exception {
+    public void getFormWidgetInfo_noFiltering() throws Exception {
         // Notably, choice options are not populated for read-only Comboboxes
         FormWidgetInfo readOnly = makeCombobox(
                 /* widgetIndex= */ 2,
@@ -447,8 +448,27 @@ public class PdfFormFillingTest {
                 /* fontSize= */ 12.0f,
                 /* listItems= */ editableChoices);
 
-        verifyFormWidgetInfos(COMBOBOX_FORM, 0, new int[]{FormWidgetInfo.WIDGET_TYPE_COMBOBOX},
+        verifyFormWidgetInfos(COMBOBOX_FORM, 0, new int[0],
                 Arrays.asList(editable, combo1, readOnly));
+    }
+
+    @Test
+    public void getFormWidgetInfo_filtering() throws Exception {
+        FormWidgetInfo checkbox = makeCheckbox(
+                /* widgetIndex= */ 1,
+                /* widgetRect= */ new Rect(135, 70, 155, 90),
+                /* readOnly= */ false,
+                /* textValue= */ "false",
+                /* accessibilityLabel= */ "checkbox");
+        FormWidgetInfo readOnlyCheckbox = makeCheckbox(
+                /* widgetIndex= */ 0,
+                /* widgetRect= */ new Rect(135, 30, 155, 50),
+                /* readOnly= */ true,
+                /* textValue= */ "true",
+                /* accessibilityLabel= */ "readOnlyCheckbox");
+
+        verifyFormWidgetInfos(CLICK_FORM, 0, new int[] { FormWidgetInfo.WIDGET_TYPE_CHECKBOX },
+                Arrays.asList(readOnlyCheckbox, checkbox));
     }
 
     @Test
@@ -599,8 +619,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ false),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -623,8 +642,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ true),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -733,8 +751,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ false),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -757,8 +774,7 @@ public class PdfFormFillingTest {
                 new ListItem(/* label= */ "Alberta", /* selected= */ false),
                 new ListItem(/* label= */ "British Columbia", /* selected= */ false),
                 new ListItem(/* label= */ "Manitoba", /* selected= */ false),
-                new ListItem(/* label= */ "New Brunswick", /* selected= */ false),
-                new ListItem(
+                new ListItem(/* label= */ "New Brunswick", /* selected= */ false), new ListItem(
                         /* label= */ "Newfoundland and Labrador", /* selected= */ false),
                 new ListItem(/* label= */ "Nova Scotia", /* selected= */ false),
                 new ListItem(/* label= */ "Ontario", /* selected= */ false), new ListItem(
@@ -1034,7 +1050,12 @@ public class PdfFormFillingTest {
             List<FormWidgetInfo> expectedInfos) throws Exception {
         try (PdfRenderer renderer = createRenderer(docRes, mContext)) {
             try (PdfRenderer.Page page = renderer.openPage(pageNum)) {
-                List<FormWidgetInfo> foundInfos = page.getFormWidgetInfos(widgetTypes);
+                List<FormWidgetInfo> foundInfos;
+                if (widgetTypes.length > 0) {
+                    foundInfos = page.getFormWidgetInfos(widgetTypes);
+                } else {
+                    foundInfos = page.getFormWidgetInfos();
+                }
 
                 assertEquals(expectedInfos.size(), foundInfos.size());
                 for (int i = 0; i < foundInfos.size(); i++) {

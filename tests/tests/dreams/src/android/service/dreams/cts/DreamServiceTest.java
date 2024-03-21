@@ -127,6 +127,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         assertThat(metadata.settingsActivity).isEqualTo(
                 ComponentName.unflattenFromString(testSettingsActivity));
         assertThat(metadata.showComplications).isFalse();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_HOME_PANEL);
     }
 
     @Test
@@ -137,6 +138,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final DreamService.DreamMetadata metadata = getDreamMetadata(dreamComponent);
 
         assertThat(metadata.settingsActivity).isNull();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_DEFAULT);
     }
 
     private DreamService.DreamMetadata getDreamMetadata(String dreamComponent)

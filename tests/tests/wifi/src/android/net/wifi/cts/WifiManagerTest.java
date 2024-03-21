@@ -7405,7 +7405,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      * {@link WifiManager#restoreWifiBackupData()}.
      */
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     @Test
     public void testWifiBackupRestore() throws Exception {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
