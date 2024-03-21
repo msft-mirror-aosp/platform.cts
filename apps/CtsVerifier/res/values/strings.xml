@@ -4299,7 +4299,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2. Go to OEM unlocking settings, if this device has this Settings option. It is often located under \"Developer options\".\n
         Confirm that:\n
            - Oem Unlocking is disabled.\n
-           - Enabling Oem unlocking is not possible and triggers a support message.\n\n
+           - Enabling Oem unlocking is not possible, and pressing the button or menu option to enable it triggers a support message (if pressing is possible).\n\n
         Return back to this page.
     </string>
     <string name="device_owner_user_restriction_set">Set restriction</string>
@@ -6748,15 +6748,6 @@ Follow the instructions on the screen to measure the frequency response for the 
     step-by-step instructions.
     </string>
     <string name="ia_notification_instruction_label">\n
-    1. Click Start Test. \n\n
-    2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
-    3. Drag down the notification bar when the sample Instant App is at foreground. \n\n
-    4. Check if Instant App is shown in notifciation area with the following (Please expand the notification if it is collapsed): \n
-    \u0020\u0020\u0020a. It provides information about Instant Apps not requiring installation and an action that provides more information about the Instant App. \n
-    \u0020\u0020\u0020b. It provides an action allowing the user to launch the associated link with web browser. \n\n
-    5. Click Pass button if all checks in step 4 passed, otherwise click Fail button.
-    </string>
-    <string name="ia_notification_instruction_label_no_app_market_version">\n
     1. Click Start Test. \n\n
     2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
     3. Drag down the notification bar when the sample Instant App is at foreground. \n\n

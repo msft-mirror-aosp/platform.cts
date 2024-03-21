@@ -483,7 +483,8 @@ public class DecodeOnlyTest extends MediaTestBase {
         // Frames at 2s of each file are not key frame
         AtomicLong seekTime = new AtomicLong(2000 * 1000);
         videoExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-        audioExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+        long audioSeekTime = videoExtractor.getSampleTime();
+        audioExtractor.seekTo(audioSeekTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 
         List<Long> expectedPresentationTimes = new ArrayList<>();
         // Setting it to true so that buffers are not queued in the beginning.
@@ -649,7 +650,8 @@ public class DecodeOnlyTest extends MediaTestBase {
         // Frames at 7s of each file are not key frame, and there is non-zero key frame before it
         seekTime.set(7000 * 1000);
         videoExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-        audioExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+        audioSeekTime = videoExtractor.getSampleTime();
+        audioExtractor.seekTo(audioSeekTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         expectedPresentationTimes.clear();
         renderedPresentationTimes.clear();
 
