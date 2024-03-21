@@ -1294,9 +1294,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireHasDefaultBrowser) {
-                RequireHasDefaultBrowser requireHasDefaultBrowser =
-                        (RequireHasDefaultBrowser) annotation;
+            if (annotation instanceof RequireHasDefaultBrowser requireHasDefaultBrowser) {
                 UserReference user =
                             resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 
