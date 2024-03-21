@@ -57,6 +57,9 @@ android_test {
         ":CtsAccessibilityWidgetProvider",
         ":CtsAccessibilityProxyApp",
         ":CtsAccessibilityLargeServiceVolumeApp",
+        ":CtsAccessibilityUpdateServiceAppV1",
+        ":CtsAccessibilityUpdateServiceAppV2",
+        ":CtsAccessibilityUpdateServiceAppV3",
     ],
 }
 

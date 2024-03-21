@@ -5776,9 +5776,14 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Completion:
         \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
     </string>
-    <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test. If the DUT does not support
-        an Analog Headset Jack, the test may PASS. If the DUT does support an Analog Headset Jack, please insert an Analog Loopback Plug
-        into the Analog Headset Jack and run the test.</string>
+
+    <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test.
+        Please insert an Analog Loopback Plug into the Analog Headset Jack and run the test.</string>
+
+    <string name="audio_datapaths_analog_noanalogjack">This device does not have an Analog Headset Jack. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_analog_headsetundetermined">Support for an Analog Headset Jack could not be determined.
+        If an Analog Headset Jack is available, please insert an Analog Loopback Plug and run the test.</string>
+    <string name="audio_datapaths_analog_autopass">Non-Handheld device. A PASS is automatically granted.</string>
 
     <string name="audio_datapaths_USB_test">Audio Data Paths USB Test</string>
     <string name="audio_datapaths_USB_info">This test verifies basic functionality over a set of audio routes
@@ -5794,11 +5799,15 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Completion:
         \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
     </string>
-    <string name="audio_datapaths_usb_nodevices">There are no peripherals currently available for this test. If the DUT does not support
-        USB audio, the test may PASS. If the DUT does support USB audio, please connect each type of USB audio peripheral and
-        run the test for each type.</string>
+    <string name="audio_datapaths_usb_nodevices">There are no peripherals currently available for this test.
+        Please connect each type of USB Audio Peripheral and run the test for each type.</string>
     <string name="audio_datapaths_usb_nextperipheral">Please connect the next USB peripheral to be tested and
         run the test again.</string>
+
+    <string name="audio_datapaths_usb_nosupport">This device does not have a host-mode USB port. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_usb_undetermined">Support for host-mode USB could not be determined.
+        If available, connect each type of USB Audio Peripheral and run the test for each type.</string>
+
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
@@ -7299,6 +7308,8 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
     <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
     <string name="sharesheet_wrong_shared_items">Wrong set of shared items; test failed.</string>
+    <string name="sharesheet_missing_result_intent_sender_invocation">Result intent sender was not invoked.</string>
+    <string name="sharesheet_wrong_result_intent_sender_invocation">Incorrect result intent sender was invoked.</string>
 
     <string name="sharesheet_album_test">Sharesheet Album Label Test</string>
     <string name="sharesheet_album_test_info">This test verifies that the system sharesheet responds to the \"album\" hint if provided by the app.</string>

@@ -30,7 +30,11 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Gainmap;
 import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
@@ -75,6 +79,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
+import android.provider.MediaStore;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -654,6 +659,8 @@ public class ItsService extends Service implements SensorEventListener {
                         mMemoryQuota = quota;
                     }
                 }
+                doGetNativeCameraPkgName();
+
             }
         } catch (CameraAccessException e) {
             throw new ItsException("Failed to get device ID list", e);
@@ -1104,6 +1111,10 @@ public class ItsService extends Service implements SensorEventListener {
                     doCheckLowLightBoostAvailable(cameraId, extension);
                 } else if ("doCapturePreviewFrame".equals(cmdObj.getString("cmdName"))) {
                     doCapturePreviewFrame(cmdObj);
+                } else if ("doGetNativeCameraPkgName".equals(cmdObj.getString("cmdName"))) {
+                    doGetNativeCameraPkgName();
+                } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
+                    doGainMapCheck(cmdObj);
                 } else {
                     throw new ItsException("Unknown command: " + cmd);
                 }
@@ -2561,6 +2572,29 @@ public class ItsService extends Service implements SensorEventListener {
             appendSupportProfile(profiles, entry.getValue(), entry.getKey(), cameraId);
         }
         mSocketRunnableObj.sendResponse("supportedVideoQualities", profiles.toString());
+    }
+
+    private void doGetNativeCameraPkgName() throws ItsException {
+        PackageManager pkgMgr = getPackageManager();
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        String pkgName = intent.resolveActivity(pkgMgr).getPackageName();
+        Log.i(TAG, "Native camera pkg name: " + pkgName);
+        mSocketRunnableObj.sendResponse("nativeCameraPkg", pkgName);
+    }
+
+    private void doGainMapCheck(JSONObject params) throws ItsException {
+        String filePath;
+        try {
+            filePath = params.getString("filePath");
+        } catch(org.json.JSONException e) {
+            throw new ItsException("JSON error: ", e);
+        }
+        Bitmap bitmapImage = BitmapFactory.decodeFile(filePath);
+        assert(bitmapImage != null);
+        boolean gainmapPresent = bitmapImage.hasGainmap();
+        Log.i(TAG, "Gainmap present? " + gainmapPresent);
+        mSocketRunnableObj.sendResponse("gainmapPresent",
+                gainmapPresent ? "true" : "false");
     }
 
     private void doGetSupportedVideoSizesCapped(String id) throws ItsException {

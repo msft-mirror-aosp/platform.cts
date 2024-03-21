@@ -35,8 +35,12 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setVisibility;
 
-import static org.junit.Assert.assertEquals;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
+
 import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -50,7 +54,6 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -68,12 +71,14 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.FailOnTestThreadRule;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -93,6 +98,9 @@ public class ASurfaceControlInputReceiverTest {
     public ActivityScenarioRule<TestActivity> mActivityRule =
             new ActivityScenarioRule<>(TestActivity.class);
 
+    @Rule
+    public FailOnTestThreadRule mFailOnTestThreadRule = new FailOnTestThreadRule();
+
     @Before
     public void setUp() throws InterruptedException {
         mActivityRule.getScenario().onActivity(a -> mActivity = a);
@@ -108,7 +116,11 @@ public class ASurfaceControlInputReceiverTest {
         helper.setup(null, new InputReceiver() {
             @Override
             public boolean onMotionEvent(MotionEvent motionEvent) {
-                motionEvents.offer(MotionEvent.obtain(motionEvent));
+                try {
+                    motionEvents.put(MotionEvent.obtain(motionEvent));
+                } catch (InterruptedException e) {
+                    mFailOnTestThreadRule.addFailure(e);
+                }
                 return false;
             }
 
@@ -128,7 +140,9 @@ public class ASurfaceControlInputReceiverTest {
 
         MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
+
     }
 
     @Test
@@ -155,7 +169,7 @@ public class ASurfaceControlInputReceiverTest {
                 try {
                     motionEvents.put(MotionEvent.obtain(motionEvent));
                 } catch (InterruptedException e) {
-                    Log.e(TAG, "Failed to add input event to queue", e);
+                    mFailOnTestThreadRule.addFailure(e);
                 }
             }
         });
@@ -170,7 +184,8 @@ public class ASurfaceControlInputReceiverTest {
 
         MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -194,6 +209,7 @@ public class ASurfaceControlInputReceiverTest {
                 try {
                     embeddedMotionEvent.put(MotionEvent.obtain((MotionEvent) motionEvent));
                 } catch (InterruptedException e) {
+                    mFailOnTestThreadRule.addFailure(e);
                 }
 
                 return false;
@@ -215,7 +231,8 @@ public class ASurfaceControlInputReceiverTest {
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = embeddedMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -243,7 +260,7 @@ public class ASurfaceControlInputReceiverTest {
                 try {
                     embeddedMotionEvents.put(MotionEvent.obtain(motionEvent));
                 } catch (InterruptedException e) {
-                    Log.e(TAG, "Failed to add input event to queue", e);
+                    mFailOnTestThreadRule.addFailure(e);
                 }
             }
         });
@@ -258,7 +275,8 @@ public class ASurfaceControlInputReceiverTest {
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = embeddedMotionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -272,6 +290,7 @@ public class ASurfaceControlInputReceiverTest {
             try {
                 hostMotionEvent.put(MotionEvent.obtain(event));
             } catch (InterruptedException e) {
+                mFailOnTestThreadRule.addFailure(e);
             }
             return false;
         }, new InputReceiver() {
@@ -301,7 +320,8 @@ public class ASurfaceControlInputReceiverTest {
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch in host", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -312,14 +332,13 @@ public class ASurfaceControlInputReceiverTest {
                 new RemoteSurfaceControlInputReceiverHelper(mActivity, true /* zOrderOnTop */,
                         true /* transferTouchToHost */);
 
-        final LinkedBlockingQueue<MotionEvent> hostMotionEvent =
-                new LinkedBlockingQueue<>();
+        final BlockingQueue<MotionEvent> hostMotionEvent = new LinkedBlockingQueue<>();
         CountDownLatch embeddedReceivedTouch = new CountDownLatch(1);
         helper.setup((v, event) -> {
             try {
                 hostMotionEvent.put(MotionEvent.obtain(event));
             } catch (InterruptedException e) {
-                Log.e(TAG, "Failed to add input event to queue", e);
+                mFailOnTestThreadRule.addFailure(e);
             }
             return false;
         }, new IMotionEventReceiver.Stub() {
@@ -339,15 +358,8 @@ public class ASurfaceControlInputReceiverTest {
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
         MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertMotionEvent(motionEvent, coord);
-    }
-
-    private static void assertMotionEvent(MotionEvent event, Point coords) {
-        assertEquals(
-                "Expected ACTION_DOWN. Received " + MotionEvent.actionToString(event.getAction()),
-                MotionEvent.ACTION_DOWN, event.getAction());
-        Point receivedCoords = new Point((int) event.getX(), (int) event.getY());
-        assertEquals("Expected " + coords + ". Received " + receivedCoords, coords, receivedCoords);
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                                      withCoords(coord)));
     }
 
     private static void assertWindowAndGetBounds(int displayId, Rect outBounds)
@@ -453,7 +465,7 @@ public class ASurfaceControlInputReceiverTest {
         }
     }
 
-    private static class RemoteSurfaceControlInputReceiverHelper {
+    private class RemoteSurfaceControlInputReceiverHelper {
         private final Activity mActivity;
         private final boolean mZOrderOnTop;
         private final boolean mTransferTouchToHost;
@@ -495,7 +507,7 @@ public class ASurfaceControlInputReceiverTest {
             assertTrue("Failed to wait for embedded service to bind",
                     embeddedServiceReady.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
-            LinkedBlockingQueue<Boolean> surfaceViewCreatedLatch = new LinkedBlockingQueue<>();
+            final CountDownLatch surfaceViewCreatedLatch = new CountDownLatch(1);
             surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(@NonNull SurfaceHolder holder) {
@@ -503,14 +515,17 @@ public class ASurfaceControlInputReceiverTest {
                         boolean success = mIAttachEmbeddedWindow.attachEmbeddedASurfaceControl(
                                 surfaceView.getSurfaceControl(),
                                 surfaceView.getRootSurfaceControl().getInputTransferToken(),
-                                sBounds.width(),
-                                sBounds.height(), mTransferTouchToHost,
-                                motionEventReceiver);
+                                sBounds.width(), sBounds.height(),
+                                mTransferTouchToHost, motionEventReceiver);
                         mEmbeddedTransferToken =
                                 mIAttachEmbeddedWindow.getEmbeddedInputTransferToken();
-                        surfaceViewCreatedLatch.offer(success);
+                        if (!success) {
+                            mFailOnTestThreadRule.addFailure(
+                                    new Exception("attachEmbeddedASurfaceControl failed"));
+                        }
+                        surfaceViewCreatedLatch.countDown();
                     } catch (RemoteException e) {
-                        surfaceViewCreatedLatch.offer(false);
+                        mFailOnTestThreadRule.addFailure(e);
                     }
                 }
 
@@ -524,14 +539,15 @@ public class ASurfaceControlInputReceiverTest {
                     try {
                         mIAttachEmbeddedWindow.tearDownEmbeddedASurfaceControl();
                     } catch (RemoteException e) {
+                        mFailOnTestThreadRule.addFailure(e);
                     }
                 }
             });
 
             mActivity.runOnUiThread(() -> mActivity.setContentView(surfaceView));
 
-            assertEquals("Failed to attach ASurfaceControl", Boolean.TRUE,
-                    surfaceViewCreatedLatch.poll(WAIT_TIME_S, TimeUnit.SECONDS));
+            assertTrue("Failed to attach ASurfaceControl",
+                    surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             surfaceView.setOnTouchListener(hostTouchListener);
             waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
         }

@@ -15,6 +15,7 @@
  */
 package android.packageinstaller.install.cts
 
+import android.Manifest
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -30,6 +31,7 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.annotations.RequireAdbRoot
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
+import com.android.compatibility.common.util.SystemUtil
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -76,6 +78,13 @@ class IntentTest : PackageInstallerTestBase() {
         // Install should have succeeded
         assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
+        var originatingPackageName: String? = null
+        SystemUtil.runWithShellPermissionIdentity(
+            { originatingPackageName = getInstallSourceInfo().originatingPackageName },
+            Manifest.permission.INSTALL_PACKAGES
+        )
+        assertNotNull(originatingPackageName)
+        assertEquals(context.packageName, originatingPackageName)
     }
 
     /**

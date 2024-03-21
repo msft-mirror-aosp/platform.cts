@@ -53,6 +53,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.settingslib.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -83,6 +84,13 @@ public class LightBarTests extends LightBarTestBase {
      * that matches the default visibility flags used when color sampling is not enabled.
      */
     private static final int LIGHT_BG_COLOR = Color.rgb(255, 128, 128);
+
+    /**
+     * Flags.newStatusBarIcons() changes the default light mode tint (i.e., dark icons) to 100%
+     * black. If the flag is on we need to change the foreground color we're looking for.
+     */
+    private static final int DARK_ICON_TINT_LEGACY = 0x99000000;
+    private static final int DARK_ICON_TINT = 0xff000000;
 
     private final String NOTIFICATION_TAG = "TEST_TAG";
     private final String NOTIFICATION_CHANNEL_ID = "test_channel";
@@ -371,7 +379,23 @@ public class LightBarTests extends LightBarTestBase {
     }
 
     private Stats evaluateLightBarBitmap(Bitmap bitmap, int background, int shiftY) {
-        return evaluateBarBitmap(bitmap, background, shiftY, 0x99000000, 0x3d000000);
+        if (Flags.newStatusBarIcons()) {
+            return evaluateBarBitmap(
+                bitmap,
+                background,
+                shiftY,
+                DARK_ICON_TINT,
+                0x3d000000
+            );
+        } else {
+            return evaluateBarBitmap(
+                bitmap,
+                background,
+                shiftY,
+                DARK_ICON_TINT_LEGACY,
+                0x3d000000
+            );
+        }
     }
 
     private Stats evaluateDarkBarBitmap(Bitmap bitmap, int background, int shiftY) {

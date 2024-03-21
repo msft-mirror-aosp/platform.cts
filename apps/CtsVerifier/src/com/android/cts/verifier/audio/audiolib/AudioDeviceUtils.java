@@ -16,15 +16,22 @@
 
 package com.android.cts.verifier.audio.audiolib;
 
+import android.content.Context;
 import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
+import android.media.audio.Flags;
+import android.util.Log;
 
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * Utility methods for AudioDevices
  */
 public class AudioDeviceUtils {
-    public static final String TAG = "AudioDeviceUtils";
+    private static final String TAG = "AudioDeviceUtils";
+    private static final boolean LOG = false;
+
     /*
      * Channel Mask Utilities
      */
@@ -69,6 +76,14 @@ public class AudioDeviceUtils {
     static {
         initDeviceTypeStrings();
     }
+
+    // return codes for various supports device methods()
+    // Does not
+    public static final int SUPPORTSDEVICE_NO = 0;
+    // Does
+    public static final int SUPPORTSDEVICE_YES = 1;
+    // AudioManager.getSupportedDeviceTypes() is not implemented
+    public static final int SUPPORTSDEVICE_UNDETERMINED = 2;
 
     /**
      * @param deviceType The AudioDeviceInfo type ID of the desired device.
@@ -122,5 +137,113 @@ public class AudioDeviceUtils {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Determine device support for an analog headset.
+     *
+     * @param context The application context.
+     * @return the SUPPORTSDEVICE_ constant indicating support.
+     */
+    public static int supportsAnalogHeadset(Context context) {
+        if (LOG) {
+            Log.d(TAG, "supportsAnalogHeadset()");
+        }
+        if (!Flags.supportedDeviceTypesApi()) {
+            return SUPPORTSDEVICE_UNDETERMINED;
+        }
+
+        // TYPE_LINE_ANALOG?
+        AudioManager audioManager = context.getSystemService(AudioManager.class);
+
+        Set<Integer> deviceTypeIds =
+                audioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
+        if (LOG) {
+            for (Integer type : deviceTypeIds) {
+                Log.d(TAG, "  " + getDeviceTypeName(type));
+            }
+        }
+        return deviceTypeIds.contains(AudioDeviceInfo.TYPE_WIRED_HEADSET)
+                ? SUPPORTSDEVICE_YES : SUPPORTSDEVICE_NO;
+    }
+
+    /**
+     * Determine device support for a USB audio interface.
+     *
+     * @param context The application context.
+     * @return the SUPPORTSDEVICE_ constant indicating support.
+     */
+    public static int supportsUsbAudioInterface(Context context) {
+        if (LOG) {
+            Log.d(TAG, "supportsUsbAudioInterface()");
+        }
+        if (!Flags.supportedDeviceTypesApi()) {
+            return SUPPORTSDEVICE_UNDETERMINED;
+        }
+
+        AudioManager audioManager = context.getSystemService(AudioManager.class);
+        Set<Integer> deviceTypeIds =
+                audioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
+        if (LOG) {
+            for (Integer type : deviceTypeIds) {
+                Log.d(TAG, "  " + getDeviceTypeName(type));
+            }
+        }
+        return deviceTypeIds.contains(AudioDeviceInfo.TYPE_USB_DEVICE)
+                ? SUPPORTSDEVICE_YES : SUPPORTSDEVICE_NO;
+    }
+
+    /**
+     * Determine device support for a USB headset peripheral.
+     *
+     * @param context The application context.
+     * @return the SUPPORTSDEVICE_ constant indicating support.
+     */
+    public static int supportsUsbHeadset(Context context) {
+        if (LOG) {
+            Log.d(TAG, "supportsUsbHeadset()");
+        }
+        if (!Flags.supportedDeviceTypesApi()) {
+            return SUPPORTSDEVICE_UNDETERMINED;
+        }
+
+        AudioManager audioManager = context.getSystemService(AudioManager.class);
+        Set<Integer> deviceTypeIds =
+                audioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
+        if (LOG) {
+            for (Integer type : deviceTypeIds) {
+                Log.d(TAG, "  " + getDeviceTypeName(type));
+            }
+        }
+        return deviceTypeIds.contains(AudioDeviceInfo.TYPE_USB_HEADSET)
+                ? SUPPORTSDEVICE_YES : SUPPORTSDEVICE_NO;
+    }
+
+    /**
+     * Determine device support for a USB interface or headset peripheral.
+     *
+     * @param context The application context.
+     * @return the SUPPORTSDEVICE_ constant indicating support.
+     */
+    public static int supportsUsbAudio(Context context) {
+        if (LOG) {
+            Log.d(TAG, "supportsUsbHeadset()");
+        }
+        int hasInterface = supportsUsbAudioInterface(context);
+        int hasHeadset = supportsUsbHeadset(context);
+        if (LOG) {
+            Log.d(TAG, "  hasInterface:" + hasInterface + " hasHeadset:" + hasHeadset);
+        }
+        if (hasInterface == SUPPORTSDEVICE_UNDETERMINED
+                || hasHeadset == SUPPORTSDEVICE_UNDETERMINED) {
+            return SUPPORTSDEVICE_UNDETERMINED;
+        }
+
+        if (hasInterface != hasHeadset) {
+            return SUPPORTSDEVICE_UNDETERMINED;
+        }
+
+        // they are both the same if we get here
+        return hasInterface;
     }
 }

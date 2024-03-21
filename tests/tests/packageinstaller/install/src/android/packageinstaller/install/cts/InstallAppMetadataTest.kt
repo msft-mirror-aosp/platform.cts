@@ -160,8 +160,10 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
         uiAutomation.adoptShellPermissionIdentity()
         try {
             assertAppMetadata(data.getString(TEST_FIELD), pm.getAppMetadata(TEST_APK_PACKAGE_NAME))
-            assertThat(pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME))
-                .isEqualTo(APP_METADATA_SOURCE_INSTALLER)
+            if (Flags.aslInApkAppMetadataSource()) {
+                assertThat(pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME))
+                    .isEqualTo(APP_METADATA_SOURCE_INSTALLER)
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity()
         }

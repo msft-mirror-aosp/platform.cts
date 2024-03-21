@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,12 @@
 
 package android.ondeviceintelligence.cts;
 
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_MESSAGE_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_PARAMS_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_STATUS_CODE_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_COUNT_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_PARAMS_KEY;
 
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
@@ -24,9 +29,12 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.os.Parcel;
+import android.os.Process;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
@@ -44,13 +52,21 @@ import java.io.InputStreamReader;
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
     static final String TAG = "SampleIsolatedService";
 
+    public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
+        if (persistableBundle == null) {
+            return new TokenInfo(status);
+        } else {
+            return new TokenInfo(status, persistableBundle);
+        }
+    }
 
     @NonNull
     @Override
     public void onTokenInfoRequest(int callerUid, @NonNull Feature feature, @NonNull Bundle request,
             @Nullable CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<TokenInfo, OnDeviceIntelligenceException> callback) {
-        callback.onResult(new TokenInfo(1));
+        callback.onResult(constructTokenInfo(request.getInt(TOKEN_INFO_COUNT_KEY),
+                request.getParcelable(TOKEN_INFO_PARAMS_KEY, PersistableBundle.class)));
     }
 
     @NonNull
@@ -60,10 +76,32 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
             @NonNull StreamingProcessingCallback callback) {
-        callback.onPartialResult(Bundle.EMPTY);
+        if (processingSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            processingSignal.setOnProcessingSignalCallback(getCallbackExecutor(),
+                    actionParams -> {
+                        Log.i(TAG,
+                                "Received processing signal which has action Params : "
+                                        + actionParams);
+                        callback.onPartialResult(new Bundle(actionParams));
+                    });
+        }
+        if (cancellationSignal != null) {
+            cancellationSignal.setOnCancelListener(() -> {
+                Log.i(TAG,
+                        "Received cancellation signal");
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+            });
+            return;
+        }
         callback.onResult(Bundle.EMPTY);
     }
-
 
     @NonNull
     @Override
@@ -77,7 +115,58 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
-        callback.onResult(Bundle.EMPTY);
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_PACKAGE_NAME) {
+            PackageManager mPm = getPackageManager();
+            Bundle bundle = new Bundle();
+            bundle.putString(TEST_KEY, mPm.getNameForUid(Process.myUid()));
+            callback.onResult(bundle);
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES) {
+            byte[] bytes = request.getByteArray("request");
+            Parcel parcel = Parcel.obtain();
+            parcel.unmarshall(bytes, 0, bytes.length);
+            parcel.setDataPosition(0);
+            Log.i(TAG, "Bytes : "
+                    + bytes.length);
+            SimpleParcelable simpleParcelable = SimpleParcelable.CREATOR.createFromParcel(parcel);
+            Bundle bundle = new Bundle();
+            bundle.putString(TEST_KEY, simpleParcelable.getMyString());
+            callback.onResult(bundle);
+            Log.i(TAG, "My Simple Parcelable : " + simpleParcelable.getMyString());
+            parcel.recycle();
+            return;
+        }
+
+        if (request.containsKey(EXCEPTION_STATUS_CODE_KEY)) {
+            populateExceptionInCallback(request, callback);
+            return;
+        }
+
+        if (cancellationSignal != null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            cancellationSignal.setOnCancelListener(() -> {
+                Bundle bundle = new Bundle();
+                bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
+                callback.onResult(bundle);
+                Log.i(TAG,
+                        "Received cancellation signal");
+            });
+        } else {
+            Log.i(TAG,
+                    "Received NULL cancellation signal.");
+            callback.onResult(Bundle.EMPTY);
+        }
+    }
+
+    private void populateExceptionInCallback(Bundle request, ProcessingCallback callback) {
+        callback.onError(constructException(request));
     }
 
     @Override
@@ -120,5 +209,29 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                         Log.e(TAG, "Couldn't open file from openFileInput:", e);
                     }
                 });
+    }
+
+    public static OnDeviceIntelligenceException constructException(Bundle bundle) {
+        boolean hasStatusCode = bundle.containsKey(EXCEPTION_STATUS_CODE_KEY);
+        boolean hasMessage = bundle.containsKey(EXCEPTION_MESSAGE_KEY);
+        boolean hasParams = bundle.containsKey(EXCEPTION_PARAMS_KEY);
+
+        if (hasStatusCode && bundle.size() == 1) {
+            return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY));
+        }
+
+        if (bundle.size() == 2) {
+            if (hasStatusCode && hasMessage) {
+                return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY),
+                        bundle.getString(EXCEPTION_MESSAGE_KEY));
+            } else {
+                return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY),
+                        bundle.getParcelable(EXCEPTION_PARAMS_KEY, PersistableBundle.class));
+            }
+        }
+
+        return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY),
+                bundle.getString(EXCEPTION_MESSAGE_KEY),
+                bundle.getParcelable(EXCEPTION_PARAMS_KEY, PersistableBundle.class));
     }
 }

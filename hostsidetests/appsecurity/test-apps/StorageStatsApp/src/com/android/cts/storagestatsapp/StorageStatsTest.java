@@ -194,18 +194,16 @@ public class StorageStatsTest extends InstrumentationTestCase {
         assertEquals(libSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_LIB));
 
         // Check the profile sizes if they are fetched by ArtManagedFileStats.
-        if (SystemProperties.getBoolean("dalvik.vm.features.art_managed_file_stats", false)) {
-            long curProfileBytes =
-                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE);
-            File curProfile = new File(new File(CUR_PROFILES_BASE_DIR + appInfo.uid + "/", PKG_A),
-                PROFILE_FILE_NAME);
-            assertEquals(curProfile.length(), curProfileBytes);
+        long curProfileBytes =
+            as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE);
+        File curProfile = new File(new File(CUR_PROFILES_BASE_DIR + appInfo.uid + "/", PKG_A),
+            PROFILE_FILE_NAME);
+        assertEquals(curProfile.length(), curProfileBytes);
 
-            long refProfileBytes =
-                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE);
-            File refProfile = new File(new File(REF_PROFILES_BASE_DIR, PKG_A), PROFILE_FILE_NAME);
-            assertEquals(refProfile.length(), refProfileBytes);
-        }
+        long refProfileBytes =
+            as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE);
+        File refProfile = new File(new File(REF_PROFILES_BASE_DIR, PKG_A), PROFILE_FILE_NAME);
+        assertEquals(refProfile.length(), refProfileBytes);
     }
 
     public void testVerifyStatsMultiple() throws Exception {
