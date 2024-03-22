@@ -18,6 +18,7 @@ package android.media.cts;
 
 import static org.junit.Assert.assertTrue;
 
+import android.annotation.NonNull;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -159,7 +160,8 @@ public class MediaProjectionActivity extends Activity {
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         if (!isWatch) {
             // if not testing on a watch device, then we need to select the entire screen option
-            // before pressing "Start recording" button.
+            // before pressing "Start recording" button. This is because single app capture is
+            // not supported on watches.
             if (!selectEntireScreenOption(entireScreenString)) {
                 Log.e(TAG, "Couldn't select entire screen option");
             }
@@ -168,6 +170,8 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static boolean selectEntireScreenOption(String entireScreenString) {
+        // If the display is very small, we may need to scroll to the spinner.
+        scrollToGivenResource(SPINNER_RESOURCE_ID);
         UiObject2 spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
         if (spinner == null) {
             Log.e(TAG, "Couldn't find spinner to select projection mode");
@@ -202,9 +206,8 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static void pressStartRecording(boolean isWatch) {
-        if (isWatch) {
-            scrollToStartRecordingButton();
-        }
+        // May need to scroll down to the start button on small screen devices.
+        scrollToGivenResource(ACCEPT_RESOURCE_ID);
         UiObject2 startRecordingButton = waitForObject(By.res(ACCEPT_RESOURCE_ID));
         if (startRecordingButton == null) {
             Log.e(TAG, "Couldn't find start recording button");
@@ -214,18 +217,18 @@ public class MediaProjectionActivity extends Activity {
         }
     }
 
-    /** When testing on a small screen device, scrolls to a Start Recording button. */
-    private static void scrollToStartRecordingButton() {
+    /** When testing on a small screen device, scrolls to a given UI element. */
+    private static void scrollToGivenResource(@NonNull String resourceId) {
         // Scroll down the dialog; on a device with a small screen the elements may not be visible.
         final UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
         try {
-            if (!scrollable.scrollIntoView(new UiSelector().resourceId(ACCEPT_RESOURCE_ID))) {
-                Log.e(TAG, "Didn't find " + ACCEPT_RESOURCE_ID + " when scrolling");
+            if (!scrollable.scrollIntoView(new UiSelector().resourceId(resourceId))) {
+                Log.e(TAG, "Didn't find " + resourceId + " when scrolling");
                 return;
             }
-            Log.d(TAG, "This is a watch; we finished scrolling down to the ui elements");
+            Log.d(TAG, "We finished scrolling down to the ui element " + resourceId);
         } catch (UiObjectNotFoundException e) {
-            Log.d(TAG, "This is a watch, but there was no scrolling (UI may not be scrollable");
+            Log.d(TAG, "There was no scrolling (UI may not be scrollable");
         }
     }
 
