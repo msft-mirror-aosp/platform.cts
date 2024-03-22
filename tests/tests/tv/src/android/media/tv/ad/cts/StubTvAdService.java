@@ -23,6 +23,7 @@ import android.media.tv.TvTrackInfo;
 import android.media.tv.ad.TvAdService;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -65,6 +66,20 @@ public class StubTvAdService extends TvAdService {
         public List<TvTrackInfo> mTvTrackInfo;
         public String mErrMessage;
         public Bundle mErrBundle;
+        public int mKeyDownCount;
+        public int mKeyLongPressCount;
+        public int mKeyMultipleCount;
+        public int mKeyUpCount;
+        public int mKeyDownCode;
+        public int mKeyLongPressCode;
+        public int mKeyMultipleCode;
+        public int mKeyUpCode;
+        private int mKeyMultipleRepeatCount;
+
+        public KeyEvent mKeyDownEvent;
+        public KeyEvent mKeyLongPressEvent;
+        public KeyEvent mKeyMultipleEvent;
+        public KeyEvent mKeyUpEvent;
 
         /**
          * Creates a new Session.
@@ -100,6 +115,20 @@ public class StubTvAdService extends TvAdService {
             mTvTrackInfo = null;
             mErrMessage = null;
             mErrBundle = null;
+            mKeyDownCount = 0;
+            mKeyLongPressCount = 0;
+            mKeyMultipleCount = 0;
+            mKeyUpCount = 0;
+            mKeyDownCode = 0;
+            mKeyLongPressCode = 0;
+            mKeyMultipleCode = 0;
+            mKeyUpCode = 0;
+            mKeyMultipleRepeatCount = 0;
+
+            mKeyDownEvent = null;
+            mKeyLongPressEvent = null;
+            mKeyMultipleEvent = null;
+            mKeyUpEvent = null;
         }
 
         @Override
@@ -179,5 +208,41 @@ public class StubTvAdService extends TvAdService {
             mErrBundle = params;
         }
 
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent event) {
+            super.onKeyDown(keyCode, event);
+            mKeyDownCount++;
+            mKeyDownCode = keyCode;
+            mKeyDownEvent = event;
+            return false;
+        }
+
+        @Override
+        public boolean onKeyUp(int keyCode, KeyEvent event) {
+            super.onKeyUp(keyCode, event);
+            mKeyUpCount++;
+            mKeyUpCode = keyCode;
+            mKeyUpEvent = event;
+            return false;
+        }
+
+        @Override
+        public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+            super.onKeyLongPress(keyCode, event);
+            mKeyLongPressCount++;
+            mKeyLongPressCode = keyCode;
+            mKeyLongPressEvent = event;
+            return false;
+        }
+
+        @Override
+        public boolean onKeyMultiple(int keyCode, int repeatCnt, KeyEvent event) {
+            super.onKeyDown(keyCode, event);
+            mKeyMultipleCount++;
+            mKeyMultipleCode = keyCode;
+            mKeyMultipleRepeatCount = repeatCnt;
+            mKeyMultipleEvent = event;
+            return false;
+        }
     }
 }

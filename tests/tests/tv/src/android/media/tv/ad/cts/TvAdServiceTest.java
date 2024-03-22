@@ -316,6 +316,54 @@ public class TvAdServiceTest {
         assertThat(mSession.mStopAdServiceCount).isEqualTo(1);
     }
 
+    @Test
+    public void testDispatchKeyDown() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_Q;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyDownCount > 0);
+
+        assertThat(mSession.mKeyDownCount).isEqualTo(1);
+        assertThat(mSession.mKeyDownCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyDownEvent, event);
+    }
+
+    @Test
+    public void testDispatchKeyUp() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_I;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_UP, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyUpCount > 0);
+
+        assertThat(mSession.mKeyUpCount).isEqualTo(1);
+        assertThat(mSession.mKeyUpCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyUpEvent, event);
+    }
+
+    @Test
+    public void testDispatchKeyMultiple() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_L;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_MULTIPLE, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyMultipleCount > 0);
+
+        assertThat(mSession.mKeyMultipleCount).isEqualTo(1);
+        assertThat(mSession.mKeyMultipleCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyMultipleEvent, event);
+    }
+
     private TvAdView findTvAdViewById(int id) {
         return (TvAdView) mActivity.findViewById(id);
     }
@@ -364,6 +412,22 @@ public class TvAdServiceTest {
             for (String key : expected.keySet()) {
                 assertThat(actual.get(key)).isEqualTo(expected.get(key));
             }
+        }
+    }
+
+    private static void assertKeyEventEquals(KeyEvent actual, KeyEvent expected) {
+        if (expected != null && actual != null) {
+            assertThat(actual.getDownTime()).isEqualTo(expected.getDownTime());
+            assertThat(actual.getEventTime()).isEqualTo(expected.getEventTime());
+            assertThat(actual.getAction()).isEqualTo(expected.getAction());
+            assertThat(actual.getKeyCode()).isEqualTo(expected.getKeyCode());
+            assertThat(actual.getRepeatCount()).isEqualTo(expected.getRepeatCount());
+            assertThat(actual.getMetaState()).isEqualTo(expected.getMetaState());
+            assertThat(actual.getDeviceId()).isEqualTo(expected.getDeviceId());
+            assertThat(actual.getScanCode()).isEqualTo(expected.getScanCode());
+            assertThat(actual.getFlags()).isEqualTo(expected.getFlags());
+            assertThat(actual.getSource()).isEqualTo(expected.getSource());
+            assertThat(actual.getCharacters()).isEqualTo(expected.getCharacters());
         } else {
             assertThat(actual).isEqualTo(expected);
         }
