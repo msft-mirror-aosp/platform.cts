@@ -219,10 +219,30 @@ public class TestUtils {
     }
 
     /**
-     * Returns ro.vendor.api_level.
+     * Returns VSR API level.
      */
     public static int getVendorApiLevel() {
-        return SystemProperties.getInt("ro.vendor.api_level", 0);
+        int vendorApiLevel = SystemProperties.getInt("ro.vendor.api_level", -1);
+        if (vendorApiLevel != -1) {
+            return vendorApiLevel;
+        }
+
+        // Android S and older devices do not define ro.vendor.api_level
+        vendorApiLevel = SystemProperties.getInt("ro.board.api_level", -1);
+        if (vendorApiLevel == -1) {
+            vendorApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
+        }
+
+        int productApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+        if (productApiLevel == -1) {
+            productApiLevel = Build.VERSION.SDK_INT;
+        }
+
+        // VSR API level is the minimum of vendorApiLevel and productApiLevel.
+        if (vendorApiLevel == -1 || vendorApiLevel > productApiLevel) {
+            return productApiLevel;
+        }
+        return vendorApiLevel;
     }
 
     /**

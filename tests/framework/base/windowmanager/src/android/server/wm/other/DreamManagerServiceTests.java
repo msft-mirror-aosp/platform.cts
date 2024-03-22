@@ -19,6 +19,7 @@ package android.server.wm.other;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
+import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
@@ -62,12 +63,15 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     @Before
     public void setup() {
         mDreamCoordinator.setup();
+        pressWakeupButton();
+        mWmState.waitForDreamGone();
     }
 
     @After
     public void reset() {
         mDreamCoordinator.restoreDefaults();
         mDreamCoordinator.stopDream();
+        mWmState.waitForDreamGone();
     }
 
     private void waitAndAssertDreamActivityGone(int maxTimeOutInSeconds) {

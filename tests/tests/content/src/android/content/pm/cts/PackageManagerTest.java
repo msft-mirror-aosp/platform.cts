@@ -31,6 +31,7 @@ import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
 import static android.content.pm.Flags.FLAG_IMPROVE_HOME_APP_BEHAVIOR;
+import static android.content.pm.Flags.FLAG_MIN_TARGET_SDK_24;
 import static android.content.pm.Flags.FLAG_PROVIDE_INFO_OF_APK_IN_APEX;
 import static android.content.pm.Flags.FLAG_RESTRICT_NONPRELOADS_SYSTEM_SHAREDUIDS;
 import static android.content.pm.Flags.FLAG_QUARANTINED_ENABLED;
@@ -269,6 +270,8 @@ public class PackageManagerTest {
             + "CtsContentLongUsesPermissionNameTestApp.apk";
     private static final String SHELL_NAME_APK = SAMPLE_APK_BASE
             + "CtsContentShellTestApp.apk";
+    private static final String CTS_TARGET_SDK_23 = SAMPLE_APK_BASE + "CtsTargetSdk23TestApp.apk";
+    private static final String CTS_TARGET_SDK_24 = SAMPLE_APK_BASE + "CtsTargetSdk24TestApp.apk";
 
     private static final String TEST_ICON = SAMPLE_APK_BASE + "icon.png";
     private static final String TEST_ICON_MONO = SAMPLE_APK_BASE + "icon_mono.png";
@@ -285,6 +288,10 @@ public class PackageManagerTest {
             EMPTY_APP_PACKAGE_NAME + ".longusespermission";
     private static final String SETTINGS_PROVIDER_PACKAGE_NAME = "com.android.providers.settings";
     private static final String SHELL_PACKAGE_NAME = "com.android.shell";
+    private static final String CTS_TARGET_SDK_23_PACKAGE_NAME =
+            "android.content.cts.emptytestapp.sdk23";
+    private static final String CTS_TARGET_SDK_24_PACKAGE_NAME =
+            "android.content.cts.emptytestapp.sdk24";
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
     private static final String HELLO_WORLD_APK = SAMPLE_APK_BASE + "HelloWorld5.apk";
     private static final String HELLO_WORLD_DIFF_SIGNER_APK =
@@ -379,6 +386,8 @@ public class PackageManagerTest {
         uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
         uninstallPackage(MOCK_LAUNCHER_PACKAGE_NAME);
         uninstallPackage(EMPTY_APP_LONG_USES_PERMISSION_PACKAGE_NAME);
+        uninstallPackage(CTS_TARGET_SDK_23_PACKAGE_NAME);
+        uninstallPackage(CTS_TARGET_SDK_24_PACKAGE_NAME);
         SystemUtil.runWithShellPermissionIdentity(() ->
                         CompatChanges.removePackageOverrides(mContext.getPackageName(),
                                 Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID)),
@@ -4171,4 +4180,29 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertNotNull(testResult);
         assertThat(testResult.getString("package")).isEqualTo(PACKAGE_NAME);
     }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MIN_TARGET_SDK_24)
+    public void testInstallTargetSdk23Fail() {
+        assertThat(installPackageWithResult(CTS_TARGET_SDK_23)).contains(
+                "INSTALL_FAILED_DEPRECATED_SDK_VERSION");
+        assertThat(installPackage(CTS_TARGET_SDK_24)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MIN_TARGET_SDK_24)
+    public void testInstallTargetSdk23Bypass() {
+        String result = SystemUtil.runShellCommand(
+                "pm install -t -g --bypass-low-target-sdk-block " + CTS_TARGET_SDK_23);
+        assertThat(result).isEqualTo("Success\n");
+        assertThat(installPackage(CTS_TARGET_SDK_24)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_MIN_TARGET_SDK_24)
+    public void testInstallTargetSdk23Success() {
+        assertThat(installPackage(CTS_TARGET_SDK_23)).isTrue();
+        assertThat(installPackage(CTS_TARGET_SDK_24)).isTrue();
+    }
+
 }

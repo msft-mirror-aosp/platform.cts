@@ -190,6 +190,8 @@ android_test {
         ":CtsContentNoApplicationTestApp",
         ":CtsContentShellTestApp",
         ":CtsApkVerityTestPrebuiltFiles",
+        ":CtsTargetSdk23TestApp",
+        ":CtsTargetSdk24TestApp",
         // v1/v2/v3/v4 signed version of android.appsecurity.cts.tinyapp to keep checksums stable
         "data/CtsPkgInstallTinyAppV1.apk",
         "data/CtsPkgInstallTinyAppV2V3V4.apk",
