@@ -659,8 +659,6 @@ public class ItsService extends Service implements SensorEventListener {
                         mMemoryQuota = quota;
                     }
                 }
-                doGetNativeCameraPkgName();
-
             }
         } catch (CameraAccessException e) {
             throw new ItsException("Failed to get device ID list", e);
