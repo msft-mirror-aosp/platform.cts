@@ -30,6 +30,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
+import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.companion.virtual.flags.Flags;
 import android.content.Context;
@@ -46,6 +47,7 @@ import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,8 +86,13 @@ public class VirtualAudioPermissionTest {
         assumeNotNull(mContext.getSystemService(AudioManager.class));
         assumeTrue(
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE));
+    }
 
-        VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
+    private void setupVirtualDevice(int audioPolicy) {
+        VirtualDeviceParams params = new VirtualDeviceParams.Builder()
+                .setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_AUDIO, audioPolicy)
+                .build();
+        VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
         mVirtualDeviceId = virtualDevice.getDeviceId();
         VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(
                 virtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
@@ -115,6 +122,7 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
     public void audioInjection_virtualDevice_permissionNotGranted() {
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
         assertThat(getPermissionState(mVirtualDisplayId))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
         assertThrows(UnsupportedOperationException.class, () -> recordAudio(mVirtualDisplayId));
@@ -127,7 +135,8 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
-    public void audioInjection_virtualDevice_permissionGranted() {
+    public void audioInjection_virtualDeviceWithMicrophone_permissionGranted() {
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
         assertThat(getPermissionState(mVirtualDisplayId))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
         assertThrows(UnsupportedOperationException.class, () -> recordAudio(mVirtualDisplayId));
@@ -136,6 +145,26 @@ public class VirtualAudioPermissionTest {
         assertThat(getPermissionState(mVirtualDisplayId))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
 
+        recordAudio(mVirtualDisplayId);
+    }
+
+    @RequiresFlagsEnabled({
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            Flags.FLAG_VDM_PUBLIC_APIS,
+            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
+    @FlakyTest
+    @Test
+    public void audioInjection_virtualDeviceWithoutMicrophone_permissionGrantedOnlyOnDefaultDevice() {
+        // The POLICY_TYPE_AUDIO for the VirtualDevice is set to DEVICE_POLICY_DEFAULT.
+        // Thus device-awareness for the RECORD_AUDIO permission is disabled and falls back to the
+        // default device.
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_DEFAULT);
+        assertThat(getPermissionState(Display.DEFAULT_DISPLAY))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        assertThat(getPermissionState(mVirtualDisplayId))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
         recordAudio(mVirtualDisplayId);
     }
 
