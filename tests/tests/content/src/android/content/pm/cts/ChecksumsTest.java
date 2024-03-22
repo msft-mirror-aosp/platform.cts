@@ -16,6 +16,9 @@
 
 package android.content.pm.cts;
 
+import static android.Manifest.permission.INSTALL_PACKAGES;
+import static android.Manifest.permission.USE_INSTALLER_V2;
+import static android.Manifest.permission.USE_SYSTEM_DATA_LOADERS;
 import static android.content.pm.Checksum.TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256;
 import static android.content.pm.Checksum.TYPE_PARTIAL_MERKLE_ROOT_1M_SHA512;
 import static android.content.pm.Checksum.TYPE_WHOLE_MD5;
@@ -571,7 +574,7 @@ public class ChecksumsTest {
 
     @Test
     public void testInstallerSignedChecksumsInvalidSignature() throws Exception {
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -588,7 +591,7 @@ public class ChecksumsTest {
                 // expected
             }
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
 
@@ -722,7 +725,7 @@ public class ChecksumsTest {
 
         final Certificate installerCertificate = getInstallerCertificate();
 
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         PackageInstaller installer = null;
         int sessionId = -1;
         try {
@@ -799,7 +802,7 @@ public class ChecksumsTest {
             }
         } finally {
             installer.abandonSession(sessionId);
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
 
@@ -850,7 +853,7 @@ public class ChecksumsTest {
         final Certificate installerCertificate = getInstallerCertificate();
 
         // Original package checksums: base + split0.
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -868,7 +871,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
 
         {
@@ -915,7 +918,7 @@ public class ChecksumsTest {
         }
 
         // Update the package with one split+checksums and another split without checksums.
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_INHERIT_EXISTING);
@@ -934,7 +937,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
 
         {
@@ -1033,7 +1036,7 @@ public class ChecksumsTest {
         final Certificate certificate = readCertificate();
 
         // Original package checksums: base + split0.
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -1051,7 +1054,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
 
         {
@@ -1098,7 +1101,7 @@ public class ChecksumsTest {
         }
 
         // Update the package with one split+checksums and another split without checksums.
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_INHERIT_EXISTING);
@@ -1117,7 +1120,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
 
         {
@@ -1294,7 +1297,7 @@ public class ChecksumsTest {
 
     @Test
     public void testInstallerChecksumsDuplicate() throws Exception {
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -1310,7 +1313,7 @@ public class ChecksumsTest {
                 // expected
             }
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
 
@@ -1346,7 +1349,7 @@ public class ChecksumsTest {
 
     private Intent installApkWithChecksums(String apk, String apkName,
             String checksumsName, Checksum[] checksums, byte[] signature) throws Exception {
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -1360,12 +1363,12 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             return receiver.getResult();
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
 
     private void installApkWithFSVerity(String apk, String fsv) throws Exception {
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -1379,7 +1382,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
     private void installApkWithChecksumsIncrementally(final String inPath) throws Exception {
@@ -1389,7 +1392,7 @@ public class ChecksumsTest {
 
     private void installApkWithChecksumsIncrementally(final String inPath, final String apk,
             final Checksum[] checksums, final byte[] signature) throws Exception {
-        getUiAutomation().adoptShellPermissionIdentity();
+        adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
             final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
@@ -1412,7 +1415,7 @@ public class ChecksumsTest {
             session.commit(receiver.getIntentSender());
             CommitIntentReceiver.checkSuccess(receiver.getResult());
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            dropShellPermissionIdentity();
         }
     }
 
@@ -1580,6 +1583,17 @@ public class ChecksumsTest {
             Assert.assertArrayEquals(message, storedChecksums[i].getValue(),
                     checksums[i].getValue());
         }
+    }
+
+    private void adoptShellPermissionIdentity() {
+        // For non-shell/non-root/non-system uids, USE_SYSTEM_DATA_LOADERS means
+        // "install-related test adapted shell identity".
+        getUiAutomation().adoptShellPermissionIdentity(INSTALL_PACKAGES, USE_SYSTEM_DATA_LOADERS,
+                USE_INSTALLER_V2);
+    }
+
+    private void dropShellPermissionIdentity() {
+        getUiAutomation().dropShellPermissionIdentity();
     }
 
     private static class LocalListener implements PackageManager.OnChecksumsReadyListener {
