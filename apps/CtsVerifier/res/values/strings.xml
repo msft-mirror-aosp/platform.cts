@@ -5704,6 +5704,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_not_tested">Not Tested</string>
     <string name="audio_general_not_required">Please Test If Supported</string>
     <string name="audio_general_required">Required</string>
+    <string name="audio_general_nohardware">No supporting hardware.</string>
+    <string name="audio_general_unknownhardware">Unknown hardware support. Please test if supported.</string>
     <string name="audio_general_run">Run</string>
     <string name="audio_general_cancel">Cancel</string>
     <string name="audio_general_left">Left</string>
@@ -5812,6 +5814,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_running">Running&#8230;</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
@@ -5840,8 +5843,8 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
     <string name="audio_loopback_instructions2">
-          Set the audio level to a suitable value, then press Test button.
-          It might require multiple tries until a sufficient confidence is achieved.
+          Use the \"Calibrate Audio\" panel to set the audio level to a suitable value for each supported route.
+          Then press the \"Start\" button for each supported route.
     </string>
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
@@ -5851,13 +5854,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
     <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
-    in a quiet room. Press the Start button and allow the test to proceed.</string>
+        in a quiet room. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_headsetpath_instructions">If supported, insert the loopback plug
-        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_headsetpath_instructions">Insert the loopback plug
+        into the headset jack. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_usbpath_instructions">If USB Audio supported, Connect the USB
-        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+    <string name="audio_loopback_usbpath_instructions">Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the \"Start\"
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
@@ -5887,6 +5890,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
     <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
+
+    <!-- Status Strings -->
+    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownanalog">Support for an Analog Headset Jack could not be determined. If supported, insert the loopback plug
+        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+        button and allow the test to proceed.</string>
 
     <!-- Multichannel Mixdown Test -->
     <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
