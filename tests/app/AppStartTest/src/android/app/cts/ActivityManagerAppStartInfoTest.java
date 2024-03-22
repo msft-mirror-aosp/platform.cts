@@ -19,11 +19,14 @@ package android.app.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
@@ -41,6 +44,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 public final class ActivityManagerAppStartInfoTest {
@@ -50,17 +54,24 @@ public final class ActivityManagerAppStartInfoTest {
             "com.android.cts.launcherapps.simpleapp";
     private static final String SIMPLE_ACTIVITY = ".SimpleActivity";
 
+    private static final int MAX_WAITS_FOR_START = 20;
+    private static final int WAIT_FOR_START_MS = 400;
+
     private Context mContext;
     private Instrumentation mInstrumentation;
-    private int mStubPackageUid;
     private ActivityManager mActivityManager;
+    private PackageManager mPackageManager;
+
+    private int mStubPackageUid;
 
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
-        mStubPackageUid = mContext.getPackageManager().getPackageUid(STUB_PACKAGE_NAME, 0);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
+        mPackageManager = mContext.getPackageManager();
+
+        mStubPackageUid = mPackageManager.getPackageUid(STUB_PACKAGE_NAME, 0);
 
         // Disable doze mode for test app
         executeShellCmd("cmd deviceidle whitelist +" + STUB_PACKAGE_NAME);
@@ -87,17 +98,19 @@ public final class ActivityManagerAppStartInfoTest {
     public void testLauncherStart() throws Exception {
         clearHistoricalStartInfo();
 
-        executeShellCmd("monkey -p " + STUB_PACKAGE_NAME
-                + " -c android.intent.category.LAUNCHER 1");
+        Intent intent =
+                mPackageManager.getLaunchIntentForPackage(STUB_PACKAGE_NAME);
+        mContext.startActivity(intent);
 
-        List<ApplicationStartInfo> list =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    STUB_PACKAGE_NAME, 1,
-                    mActivityManager::getExternalHistoricalProcessStartReasons,
-                    android.Manifest.permission.DUMP);
+        ApplicationStartInfo info = waitForAppStart();
 
-        assertTrue(list != null && list.size() == 1);
-        verify(list.get(0), mStubPackageUid, STUB_PACKAGE_NAME);
+        verify(info, STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, intent,
+                ApplicationStartInfo.START_REASON_LAUNCHER,
+                ApplicationStartInfo.START_TYPE_COLD,
+                ApplicationStartInfo.LAUNCH_MODE_STANDARD,
+                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN);
+
+        verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
 
     @Test
@@ -107,20 +120,28 @@ public final class ActivityManagerAppStartInfoTest {
         executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
                 + SIMPLE_ACTIVITY);
 
-        List<ApplicationStartInfo> list =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    STUB_PACKAGE_NAME, 1,
-                    mActivityManager::getExternalHistoricalProcessStartReasons,
-                    android.Manifest.permission.DUMP);
+        ApplicationStartInfo info = waitForAppStart();
 
-        assertTrue(list != null && list.size() == 1);
-        verify(list.get(0), mStubPackageUid, STUB_PACKAGE_NAME);
+        Intent intent = new Intent();
+        intent.setComponent(ComponentName.createRelative(STUB_PACKAGE_NAME,
+                SIMPLE_ACTIVITY));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        verify(info, STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, intent,
+                ApplicationStartInfo.START_REASON_START_ACTIVITY,
+                ApplicationStartInfo.START_TYPE_COLD,
+                ApplicationStartInfo.LAUNCH_MODE_STANDARD,
+                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN);
+
+        verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
 
+    /**
+     * Start an app and make sure its record exists, then verify
+     * the record is removed when the app is uninstalled.
+     */
     @Test
     public void testAppRemoved() throws Exception {
-        // Start an app and make sure its record exists, then verify
-        // the record is removed when the app is uninstalled.
         testActivityStart();
 
         executeShellCmd("pm uninstall " + STUB_PACKAGE_NAME);
@@ -138,6 +159,35 @@ public final class ActivityManagerAppStartInfoTest {
         executeShellCmd("am clear-start-info --user all " + STUB_PACKAGE_NAME);
     }
 
+    /** Query the app start info object until it indicates the startup is complete. */
+    private ApplicationStartInfo waitForAppStart() {
+        List<ApplicationStartInfo> list;
+
+        for (int i = 0; i < MAX_WAITS_FOR_START; i++) {
+            list = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    STUB_PACKAGE_NAME, 1,
+                    mActivityManager::getExternalHistoricalProcessStartReasons,
+                    android.Manifest.permission.DUMP);
+
+            if (list != null && list.size() == 1
+                    && list.get(0).getStartupState()
+                        == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN) {
+                return list.get(0);
+            }
+            sleep(WAIT_FOR_START_MS);
+        }
+
+        fail("The app didn't finish starting in time.");
+        return null;
+    }
+
+    private void sleep(long timeout) {
+        try {
+            Thread.sleep(timeout);
+        } catch (InterruptedException e) {
+        }
+    }
+
     @FormatMethod
     private String executeShellCmd(String cmdFormat, Object... args) throws Exception {
         String cmd = String.format(cmdFormat, args);
@@ -146,11 +196,65 @@ public final class ActivityManagerAppStartInfoTest {
         return result;
     }
 
-    private void verify(ApplicationStartInfo info, int uid, String processName) {
+    private void verifyIds(ApplicationStartInfo info,
+            int pid, int realUid, int packageUid, int definingUid) {
         assertNotNull(info);
-        assertEquals(uid, info.getRealUid());
+
+        assertEquals(pid, info.getPid());
+        assertEquals(realUid, info.getRealUid());
+        assertEquals(definingUid, info.getDefiningUid());
+        assertEquals(packageUid, info.getPackageUid());
+    }
+
+    /**
+     * Verify that the info matches the passed state.
+     * Null arguments are skipped in verification.
+     */
+    private void verify(ApplicationStartInfo info,
+            String packageName, String processName, Intent intent,
+            int reason, int startType, int launchMode, int startupState) {
+        assertNotNull(info);
+
+        if (packageName != null) {
+            assertTrue(packageName.equals(info.getPackageName()));
+        }
+
         if (processName != null) {
-            assertEquals(processName, info.getProcessName());
+            assertTrue(processName.equals(info.getProcessName()));
+        }
+
+        if (intent != null) {
+            assertTrue(intent.filterEquals(info.getIntent()));
+        }
+
+        assertEquals(reason, info.getReason());
+        assertEquals(startType, info.getStartType());
+        assertEquals(launchMode, info.getLaunchMode());
+        assertEquals(startupState, info.getStartupState());
+
+        // Check that the appropriate timestamps exist based on the startup state
+        // and that they're in the right order.
+        Map<Integer, Long> timestamps = info.getStartupTimestamps();
+        if (startupState == ApplicationStartInfo.STARTUP_STATE_STARTED) {
+            Long launchTimestamp = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
+            assertTrue(launchTimestamp != null);
+            assertTrue(launchTimestamp > 0);
+        }
+
+        if (startupState == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN) {
+            Long launchTimestamp = timestamps.get(ApplicationStartInfo.START_TIMESTAMP_LAUNCH);
+            assertTrue(launchTimestamp != null);
+            assertTrue(launchTimestamp > 0);
+
+            Long bindApplicationTimestamp = timestamps.get(
+                    ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION);
+            assertTrue(bindApplicationTimestamp != null);
+            assertTrue(bindApplicationTimestamp > 0);
+
+            assertTrue(launchTimestamp < bindApplicationTimestamp);
+
+            // TODO: Debug why START_TIMESTAMP_APPLICATION_ONCREATE and
+            // START_TIMESTAMP_FIRST_FRAME do not appear in this case as well.
         }
     }
 }
