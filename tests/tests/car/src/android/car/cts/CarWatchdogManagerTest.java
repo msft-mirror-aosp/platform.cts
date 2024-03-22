@@ -72,6 +72,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -152,13 +154,19 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         fail("Unexpected call to onPrepareProcessTermination");
                     }
                 };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.registerClient(mContext.getMainExecutor(), client,
-                CarWatchdogManager.TIMEOUT_CRITICAL);
-        boolean called = callSignal.await(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
-        mCarWatchdogManager.unregisterClient(client);
+        try {
+            mCarWatchdogManager.registerClient(callbackExecutor, client,
+                    CarWatchdogManager.TIMEOUT_CRITICAL);
+            boolean called = callSignal.await(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
+            mCarWatchdogManager.unregisterClient(client);
 
-        assertWithMessage("onCheckHealthStatus called").that(called).isTrue();
+            assertWithMessage("onCheckHealthStatus called").that(called).isTrue();
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -203,16 +211,22 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         fail("Unexpected call to onPrepareProcessTermination");
                     }
                 };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.registerClient(mContext.getMainExecutor(), client,
-                CarWatchdogManager.TIMEOUT_CRITICAL);
-        synchronized (actualSessionId) {
-            actualSessionId.wait(ANR_WAIT_MS);
-            mCarWatchdogManager.tellClientAlive(client, actualSessionId.get());
-            // Check if onPrepareProcessTermination is called.
-            actualSessionId.wait(HEALTH_CHECK_CRITICAL_TIMEOUT_MS);
+        try {
+            mCarWatchdogManager.registerClient(callbackExecutor, client,
+                    CarWatchdogManager.TIMEOUT_CRITICAL);
+            synchronized (actualSessionId) {
+                actualSessionId.wait(ANR_WAIT_MS);
+                mCarWatchdogManager.tellClientAlive(client, actualSessionId.get());
+                // Check if onPrepareProcessTermination is called.
+                actualSessionId.wait(HEALTH_CHECK_CRITICAL_TIMEOUT_MS);
+            }
+            mCarWatchdogManager.unregisterClient(client);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
         }
-        mCarWatchdogManager.unregisterClient(client);
     }
 
     @Test
@@ -378,10 +392,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         CarWatchdogManager.ResourceOveruseListener listener = resourceOveruseStats -> {
             // Do nothing
         };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.addResourceOveruseListenerForSystem(mContext.getMainExecutor(),
-                CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
-        mCarWatchdogManager.removeResourceOveruseListenerForSystem(listener);
+        try {
+            mCarWatchdogManager.addResourceOveruseListenerForSystem(callbackExecutor,
+                    CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
+            mCarWatchdogManager.removeResourceOveruseListenerForSystem(listener);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -779,10 +799,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         CarWatchdogManager.ResourceOveruseListener listener = resourceOveruseStats -> {
             // Do nothing
         };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.addResourceOveruseListener(
-                mContext.getMainExecutor(), CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
-        mCarWatchdogManager.removeResourceOveruseListener(listener);
+        try {
+            mCarWatchdogManager.addResourceOveruseListener(
+                    callbackExecutor, CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
+            mCarWatchdogManager.removeResourceOveruseListener(listener);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -869,6 +895,17 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         return statsList.stream().anyMatch(
                 (stats) -> !stats.getPackageName().equals(packageName)
                         && stats.getIoOveruseStats() != null);
+    }
+
+    private static boolean shutdownNowAndAwaitTermination(ExecutorService callbackExecutor) {
+        try {
+            callbackExecutor.shutdownNow();
+            return callbackExecutor.awaitTermination(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Interrupted waiting for callbackExecutor to terminate");
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     private final class ResourceOveruseStatsPollingCheckCondition
