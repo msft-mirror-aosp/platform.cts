@@ -407,6 +407,16 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         }
     }
 
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "activeScanRouteDiscoveryPreference_scansOnSelfScanProvider");
+    }
+
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
