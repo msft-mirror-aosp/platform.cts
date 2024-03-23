@@ -381,6 +381,7 @@ public class PerformanceClassEvaluator {
                         .addRequiredValue(Build.VERSION_CODES.S, 50L)
                         .addRequiredValue(Build.VERSION_CODES.TIRAMISU, latency)
                         .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, latency)
+                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, latency)
                         .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_7,
@@ -402,6 +403,7 @@ public class PerformanceClassEvaluator {
                         .addRequiredValue(Build.VERSION_CODES.S, 40L)
                         .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
                         .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
+                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
                         .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_8,
@@ -420,6 +422,7 @@ public class PerformanceClassEvaluator {
                         .setPredicate(RequirementConstants.LONG_LTE)
                         .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40L)
                         .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 40L)
+                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 40L)
                         .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_12,
@@ -438,6 +441,7 @@ public class PerformanceClassEvaluator {
                         .setPredicate(RequirementConstants.LONG_LTE)
                         .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
                         .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
+                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
                         .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_13,
@@ -564,6 +568,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.TEST_RESOLUTION)
                     .setPredicate(RequirementConstants.INTEGER_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 2160)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 2160)
                     .build();
 
             ConcurrentCodecRequirement req = new ConcurrentCodecRequirement(requirementId, measure,
@@ -621,6 +626,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 6)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 6)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_1, maxInstances);
@@ -672,6 +678,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 6 * FPS_30_TOLERANCE)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 6 * FPS_30_TOLERANCE)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_2, reqConcurrentFps);
@@ -726,6 +733,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 6)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 6)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_3, maxInstances);
@@ -775,6 +783,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     // Requirement not asserted since encoder test runs in byte buffer mode
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 0.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 0.0)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_4, reqConcurrentFps);
@@ -829,6 +838,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 6)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 6)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_5, maxInstances);
@@ -886,6 +896,8 @@ public class PerformanceClassEvaluator {
                     // Test transcoding, fps calculated for encoder and decoder combined so req / 2
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                             6 * FPS_30_TOLERANCE / 2)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                            6 * FPS_30_TOLERANCE / 2)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_6, reqConcurrentFps);
@@ -916,6 +928,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 2 * FPS_30_TOLERANCE)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 2 * FPS_30_TOLERANCE)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_9, reqConcurrentFps);
@@ -949,6 +962,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 4 * FPS_30_TOLERANCE)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 4 * FPS_30_TOLERANCE)
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_10, reqConcurrentFps);
@@ -965,6 +979,8 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     // Test transcoding, fps calculated for encoder and decoder combined so req / 2
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            3 * FPS_30_TOLERANCE / 2)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM,
                             3 * FPS_30_TOLERANCE / 2)
                     .build();
 
@@ -1038,6 +1054,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 400)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 400)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 400)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 400)
                     .build();
 
             return new DensityRequirement(RequirementConstants.R7_1_1_3__H_2_1, display_density);
@@ -1107,6 +1124,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.EXT_YUV_EXTENSION)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new ExtYuvTargetRequirement(RequirementConstants.R5_12__H_1_3, requirement);
@@ -1417,6 +1435,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.INTEGER_LTE)
                     // MUST NOT drop more than 1 frame in 10 seconds so 3 frames for 30 seconds
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 3)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 3)
                     .build();
 
             RequiredMeasurement<Double> frameRate = RequiredMeasurement
@@ -1424,12 +1443,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.FRAME_RATE)
                     .setPredicate(RequirementConstants.DOUBLE_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 60.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 60.0)
                     .build();
 
             RequiredMeasurement<Integer> testResolution = RequiredMeasurement.<Integer>builder()
                     .setId(RequirementConstants.TEST_RESOLUTION)
                     .setPredicate(RequirementConstants.INTEGER_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 2160)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 2160)
                     .build();
 
             return new FrameDropRequirement(
@@ -1483,6 +1504,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.INTEGER_LTE)
                     // MUST NOT drop more than 1 frame in 10 seconds so 3 frames for 30 seconds
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 3)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 3)
                     .build();
 
             RequiredMeasurement<Double> frameRate = RequiredMeasurement
@@ -1490,12 +1512,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.FRAME_RATE)
                     .setPredicate(RequirementConstants.DOUBLE_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 60.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 60.0)
                     .build();
 
             RequiredMeasurement<Integer> testResolution = RequiredMeasurement.<Integer>builder()
                     .setId(RequirementConstants.TEST_RESOLUTION)
                     .setPredicate(RequirementConstants.INTEGER_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 2160)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 2160)
                     .build();
 
             return new FrameDropRequirement(
@@ -1577,6 +1601,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 5L * 1024L)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 7L * 1024L)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 7L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 7L * 1024L)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_2_1, physical_memory);
@@ -1800,6 +1825,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1920)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1920)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1920)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1920)
                     .build();
             RequiredMeasurement<Integer> short_resolution = RequiredMeasurement
                     .<Integer>builder()
@@ -1808,6 +1834,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1080)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1080)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1080)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1080)
                     .build();
 
             return new ResolutionRequirement(RequirementConstants.R7_1_1_1__H_2_1, long_resolution,
@@ -1842,6 +1869,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1)
                     .build();
 
             return new SecureCodecRequirement(RequirementConstants.R5_7__H_1_2, hw_secure_all);
@@ -1858,6 +1886,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new SecureCodecRequirement(RequirementConstants.R5_1__H_1_11, requirement);
@@ -1957,6 +1986,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_15, requirement);
@@ -1972,6 +2002,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_16, requirement);
@@ -1987,6 +2018,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_14, requirement);
@@ -2001,6 +2033,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.AVIF_DEC_REQ)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_17, requirement);
@@ -2016,6 +2049,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.AV1_ENC_RESOLUTION)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 480)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 480)
                     .build();
 
             RequiredMeasurement<Double> fps = RequiredMeasurement
@@ -2023,6 +2057,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.AV1_ENC_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30.0)
                     .build();
 
             RequiredMeasurement<Integer> bitrate = RequiredMeasurement
@@ -2030,6 +2065,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.AV1_ENC_BITRATE)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_18, resolution, fps,
@@ -2046,6 +2082,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.RGBA_1010102_COLOR_FORMAT_REQ)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_12__H_1_2, requirement);

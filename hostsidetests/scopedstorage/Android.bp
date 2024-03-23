@@ -545,6 +545,8 @@ android_test {
         "cts-scopedstorage-lib",
         "androidx.test.uiautomator_uiautomator",
         "modules-utils-build_system",
+        "mediaprovider_flags_java_lib",
+        "flag-junit",
     ],
     compile_multilib: "both",
     test_suites: [

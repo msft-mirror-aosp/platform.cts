@@ -57,9 +57,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
             withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceAppeared(associationId)
-        }
+        cdm.notifyDeviceAppeared(associationId)
 
         // Assert only the valid CompanionDeviceServices (primary + secondary) are bound
         assertValidCompanionDeviceServicesBind()
@@ -77,9 +75,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
             )
         }
 
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceDisappeared(associationId)
-        }
+        cdm.notifyDeviceDisappeared(associationId)
 
         // Assert only the primary CompanionDeviceService is notified of device disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = false)
@@ -98,9 +94,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
         val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceAppeared(idA)
-        }
+        cdm.notifyDeviceAppeared(idA)
 
         // Assert only the valid CompanionDeviceServices (primary + secondary) are bound
         assertValidCompanionDeviceServicesBind()
@@ -113,9 +107,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
                 expected = setOf(idA)
         )
 
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceAppeared(idB)
-        }
+        cdm.notifyDeviceAppeared(idB)
 
         // Assert only the primary CompanionDeviceService is notified of device B's appearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idB, appeared = true)
@@ -128,9 +120,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
         assertValidCompanionDeviceServicesRemainBound()
 
         // "Disconnect" first device (A).
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceDisappeared(idA)
-        }
+        cdm.notifyDeviceDisappeared(idA)
 
         // Assert only the primary CompanionDeviceService is notified of device A's disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idA, appeared = false)
@@ -140,9 +130,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
         assertValidCompanionDeviceServicesRemainBound()
 
         // "Disconnect" second (and last remaining) device (B).
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceDisappeared(idB)
-        }
+        cdm.notifyDeviceDisappeared(idB)
 
         // Assert only the primary CompanionDeviceService is notified of device B's disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idB, appeared = false)
@@ -153,37 +141,13 @@ class SelfPresenceReportingTest : CoreTestBase() {
 
     @Test
     fun test_notifyAppearAndDisappear_invalidId() {
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(-1)
-            }
-        }
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(0)
-            }
-        }
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(1)
-            }
-        }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceAppeared(-1) }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceAppeared(0) }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceAppeared(1) }
 
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceDisappeared(-1)
-            }
-        }
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceDisappeared(0)
-            }
-        }
-        assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceDisappeared(1)
-            }
-        }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceDisappeared(-1) }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceDisappeared(0) }
+        assertFailsWith(IllegalArgumentException::class) { cdm.notifyDeviceDisappeared(1) }
     }
 
     @Test
@@ -195,9 +159,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
 
         // notifyDeviceAppeared can only be called for self-managed associations.
         assertFailsWith(IllegalArgumentException::class) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(id)
-            }
+            cdm.notifyDeviceAppeared(id)
         }
     }
 
@@ -206,9 +168,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
         // Create a self-managed association and call notifyDeviceAppeared() right from the
         // Callback.onAssociationCreated()
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+            cdm.notifyDeviceAppeared(it.id)
         }
 
         // Avoid race condition where onDeviceDisappeared() is sometimes processed first
@@ -218,9 +178,7 @@ class SelfPresenceReportingTest : CoreTestBase() {
         assertValidCompanionDeviceServicesBind()
 
         // Notify CDM that devices has disconnected.
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceDisappeared(associationId)
-        }
+        cdm.notifyDeviceDisappeared(associationId)
 
         // Make sure CDM unbinds both CompanionDeviceServices.
         assertValidCompanionDeviceServicesUnbind()

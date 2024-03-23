@@ -388,6 +388,11 @@ public final class AutoFillServiceTestCase {
                             Integer.toString(3)))
 
                 //
+                // Fill fields from current session only should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "fill_fields_from_current_session_only", Boolean.toString(true)))
+
+                //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
 

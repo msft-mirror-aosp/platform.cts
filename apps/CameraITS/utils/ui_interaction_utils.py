@@ -13,26 +13,34 @@
 # limitations under the License.
 """Utility functions for interacting with a device via the UI."""
 
-
 import datetime
 import logging
+import time
 import types
 
 import camera_properties_utils
 import its_device_utils
 
+_PERMISSIONS_LIST = ['CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
+                     'ACCESS_COARSE_LOCATION', 'WRITE_EXTERNAL_STORAGE',
+                     'READ_EXTERNAL_STORAGE']
+
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
 )
+ACTIVITY_WAIT_TIME_SECONDS = 5
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 FLASH_MODE_TO_CLICKS = types.MappingProxyType({
     'OFF': 3,
     'AUTO': 2
 })
+IMG_CAPTURE_CMD = 'am start -a android.media.action.STILL_IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
+TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingDropDown'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSetFlash'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSetFlipCamera'
+REMOVE_CAMERA_FILES_CMD = 'rm sdcard/DCIM/Camera/*'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
 UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
@@ -123,3 +131,88 @@ def switch_jca_camera(dut, log_path, facing):
       log_path, prefix=f"switched_to_{ui_facing_description.replace(' ', '_')}"
   )
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+
+
+def native_camera_app_setup(device_id, pkg_name):
+  """Function to setup Camera app by providing required permissions.
+
+  Args:
+    device_id: serial id of device.
+    pkg_name: pkg name of the app to setup.
+  Returns:
+    Runtime exception from called function or None.
+  """
+  logging.debug('Setting up the app with permission.')
+  for permission in _PERMISSIONS_LIST:
+    cmd = f'pm grant {pkg_name} android.permission.{permission}'
+    output = its_device_utils.run_adb_shell_command(device_id, cmd)
+    if output is not None:
+      return output
+
+
+def pull_img_files(device_id, input_path, output_path):
+  """Pulls files from the input_path on the device to output_path.
+
+  Args:
+    device_id: serial id of device.
+    input_path: File location on device.
+    output_path: Location to save the file on the host.
+  """
+  logging.debug('Pulling files from the device')
+  pull_cmd = f'adb -s {device_id} pull {input_path} {output_path}'
+  its_device_utils.run(pull_cmd)
+
+
+def launch_and_take_capture(dut, pkg_name):
+  """Launches the camera app and takes still capture.
+
+  Args:
+    dut: An Android controller device object.
+    pkg_name: pkg_name of the native camera app to
+    be used for captures.
+
+  Returns:
+    img_path_on_dut: Path of the captured image on the device
+  """
+  device_id = dut.serial
+  try:
+    logging.debug('Launching app: %s', pkg_name)
+    launch_cmd = f'monkey -p {pkg_name} 1'
+    its_device_utils.run_adb_shell_command(device_id, launch_cmd)
+    its_device_utils.run_adb_shell_command(device_id, IMG_CAPTURE_CMD)
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    logging.debug('Taking photo')
+    its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    img_path_on_dut = dut.adb.shell(
+        'find {} ! -empty -a ! -name \'.pending*\' -a -type f'.format(
+            '/sdcard/DCIM/Camera')).decode('utf-8').strip()
+    logging.debug('Image path on DUT: %s', img_path_on_dut)
+  finally:
+    force_stop_app(dut, pkg_name)
+  return img_path_on_dut
+
+
+def force_stop_app(dut, pkg_name):
+  """Force stop an app with given pkg_name.
+
+  Args:
+    dut: An Android controller device object.
+    pkg_name: pkg_name of the app to be stopped.
+  """
+  logging.debug('Closing app: %s', pkg_name)
+  force_stop_cmd = f'am force-stop {pkg_name}'
+  dut.adb.shell(force_stop_cmd)
+
+
+def native_camera_app_dut_setup(device_id, pkg_name):
+  """Setup the device for testing native camera app.
+
+  Args:
+    device_id: serial id of device.
+    pkg_name: pkg_name of the app.
+  Returns:
+    Runtime exception from called function or None.
+  """
+  native_camera_app_setup(device_id, pkg_name)
+  its_device_utils.run_adb_shell_command(device_id, REMOVE_CAMERA_FILES_CMD)

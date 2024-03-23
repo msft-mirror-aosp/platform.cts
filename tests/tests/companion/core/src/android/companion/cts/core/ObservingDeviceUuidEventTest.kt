@@ -16,8 +16,7 @@
 
 package android.companion.cts.core
 
-import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
+import android.Manifest
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
@@ -63,8 +62,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     override fun tearDown() {
         PrimaryCompanionService.clearDeviceUuidPresence()
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.stopObservingDevicePresence(request_A)
             cdm.stopObservingDevicePresence(request_B)
@@ -77,7 +76,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     fun test_startObservingDeviceUuidPresence_requiresPermission() {
         assertFailsWith(SecurityException::class) {
             withShellPermissionIdentity(
-                REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+                Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
             ) {
                 cdm.startObservingDevicePresence(request_A)
             }
@@ -85,22 +84,22 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         assertFailsWith(SecurityException::class) {
             withShellPermissionIdentity(
-                REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+                Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
             ) {
                 cdm.stopObservingDevicePresence(request_A)
             }
         }
 
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
                 cdm.startObservingDevicePresence(request_A)
         }
 
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
                 cdm.stopObservingDevicePresence(request_A)
         }
@@ -121,8 +120,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     @Test
     fun test_startObservingDeviceUuidPresence_singleDevice() {
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
         ) {
             cdm.startObservingDevicePresence(request_A)
         }
@@ -146,8 +145,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         )
 
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.stopObservingDevicePresence(request_A)
         }
@@ -158,8 +157,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     @Test
     fun test_startObservingDeviceUuidPresence_multiDevices() {
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.startObservingDevicePresence(request_A)
             cdm.startObservingDevicePresence(request_B)
@@ -214,8 +213,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         )
 
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.stopObservingDevicePresence(request_B)
             cdm.stopObservingDevicePresence(request_A)
@@ -233,7 +232,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
                 associationId
         ).build()
         // Start observing by MAC_ADDRESS.
-        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(requestMacAddress)
         }
 
@@ -245,8 +244,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         )
         // Start observing by UUID.
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.startObservingDevicePresence(request_A)
         }
@@ -260,7 +259,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         // Now, stop observing by MAC_ADDRESS.
-        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(requestMacAddress)
         }
 
@@ -271,8 +270,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         // Lastly, stop observing by UUID.
         withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
         ) {
             cdm.stopObservingDevicePresence(request_A)
         }

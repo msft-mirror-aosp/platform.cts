@@ -175,7 +175,8 @@ public abstract class InputTestCase {
         if (event.getHistorySize() > 0) {
             failWithMessage("expected each MotionEvent to only have a single entry");
         }
-        assertEquals(mCurrentTestCase + " (action)",
+        assertEquals(mCurrentTestCase + " (action) expected: "
+                + MotionEvent.actionToString(expectedEvent.getAction()) + " received: " + event,
                 expectedEvent.getAction(), event.getAction());
         assertSource(mCurrentTestCase, expectedEvent, event);
         assertEquals(mCurrentTestCase + " (button state)",

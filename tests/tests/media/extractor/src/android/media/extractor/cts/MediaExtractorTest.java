@@ -80,9 +80,8 @@ public class MediaExtractorTest {
     private static final boolean IS_AT_LEAST_S = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
     private static final boolean IS_AT_LEAST_T =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU);
-    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
-    public static final boolean IS_AT_LEAST_U = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+    public static final boolean IS_AT_LEAST_U =
+            ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
     static final String mInpPrefix = WorkDir.getMediaDirString();
     protected MediaExtractor mExtractor;
 

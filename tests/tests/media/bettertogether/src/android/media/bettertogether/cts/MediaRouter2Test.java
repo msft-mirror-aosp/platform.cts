@@ -50,7 +50,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
-import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ControllerCallback;
 import android.media.MediaRouter2.OnGetControllerHintsListener;
@@ -65,7 +64,6 @@ import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Bundle;
-import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserManager;
@@ -252,30 +250,6 @@ public class MediaRouter2Test {
         // Tests null callback
         assertThrows(NullPointerException.class,
                 () -> mRouter2.unregisterTransferCallback(null));
-    }
-
-    @Test
-    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() {
-        RouteDiscoveryPreference activeScanRouteDiscoveryPreference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of("placeholder_feature"), /* activeScan= */ true)
-                        .build();
-        RouteCallback routeCallback = new RouteCallback() {};
-        ConditionVariable conditionVariable = new ConditionVariable();
-        PlaceholderService.setOnBindCallback(
-                action -> {
-                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
-                        conditionVariable.open();
-                    }
-                });
-        try {
-            mRouter2.registerRouteCallback(
-                    Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
-            assertThat(conditionVariable.block(WAIT_MS)).isTrue();
-        } finally {
-            PlaceholderService.setOnBindCallback(action -> {});
-            mRouter2.unregisterRouteCallback(routeCallback);
-        }
     }
 
     @Test
@@ -1643,7 +1617,7 @@ public class MediaRouter2Test {
                 IllegalArgumentException.class,
                 () ->
                         setRouteListingPreferenceWithComponentName(
-                                new ComponentName(mContext, PlaceholderService.class)));
+                                new ComponentName(mContext, SimpleMediaBrowserService.class)));
     }
 
     @Test

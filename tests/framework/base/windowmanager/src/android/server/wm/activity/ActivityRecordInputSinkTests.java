@@ -62,7 +62,8 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     private int mTouchCount;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         ActivityRecordInputSinkTestsActivity.sButtonClickCount.set(0);
     }
 

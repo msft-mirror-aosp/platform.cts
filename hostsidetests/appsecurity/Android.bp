@@ -483,8 +483,29 @@ java_test_host {
         ":CtsStorageStatsApp",
         ":CtsStorageAppA",
         ":CtsStorageAppB",
+        ":CtsStorageAppC",
+        ":CtsStorageAppC_dm",
     ],
     test_config: "StorageTests.xml",
+}
+
+genrule {
+    name: "CtsStorageAppC_profile",
+    defaults: ["profile_defaults"],
+    srcs: [
+        "assets/storage.prof.txt",
+        ":CtsStorageAppC",
+    ],
+    out: ["CtsStorageAppC.prof"],
+}
+
+genrule {
+    name: "CtsStorageAppC_dm",
+    defaults: ["dm_defaults"],
+    srcs: [
+        ":CtsStorageAppC_profile",
+    ],
+    out: ["CtsStorageAppC.dm"],
 }
 
 java_test_host {

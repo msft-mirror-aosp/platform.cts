@@ -17,6 +17,22 @@
 package com.android.cts.storageapp;
 
 import android.app.Activity;
+import android.util.Log;
 
 public class UtilsActivity extends Activity {
+    private static final String TAG = "StorageApp";
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        method1();
+    }
+
+    private void method1() {
+        Log.i(TAG, "method1");
+    }
+
+    private void method2() {
+        Log.i(TAG, "method2");
+    }
 }

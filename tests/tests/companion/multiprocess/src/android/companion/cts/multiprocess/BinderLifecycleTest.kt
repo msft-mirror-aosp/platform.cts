@@ -16,7 +16,6 @@
 
 package android.companion.cts.multiprocess
 
-import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.PRIMARY_PROCESS_NAME
 import android.companion.cts.common.SECONDARY_PROCESS_NAME
@@ -45,9 +44,7 @@ class BinderLifecycleTest : TestBase() {
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
         // Publish device's presence and wait for callback.
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceAppeared(associationId)
-        }
+        cdm.notifyDeviceAppeared(associationId)
         assertApplicationBinds(cdm)
         // Give 2 seconds to start the process
         SystemClock.sleep(2000)
@@ -64,9 +61,7 @@ class BinderLifecycleTest : TestBase() {
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
         // Publish device's presence and wait for callback.
-        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyDeviceAppeared(associationId)
-        }
+        cdm.notifyDeviceAppeared(associationId)
         assertApplicationBinds(cdm)
 
         // Wait for secondary service to start

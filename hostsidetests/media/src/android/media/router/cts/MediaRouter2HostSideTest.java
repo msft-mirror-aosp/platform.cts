@@ -318,6 +318,17 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
     public void providerService_doesNotAutoBindAfterCrashing() throws Throwable {
+        // We should make sure that the route provider isn't running to avoid race conditions with
+        // the provider process's lifecycle.
+        getDevice().executeShellCommand("am force-stop " + MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        boolean providerStoppedForSetup =
+                waitForPackageRunningStatus(
+                        MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ false);
+
+        assertWithMessage("Setup failed. Provider must not be running before test is run.")
+                .that(providerStoppedForSetup)
+                .isTrue();
+
         String startActivityCommand =
                 "am start %s/.ScanningActivity".formatted(MEDIA_ROUTER_TEST_PACKAGE);
         getDevice().executeShellCommand(startActivityCommand);
@@ -351,7 +362,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
-    public void packageManagerSpammingProviderService_doesnNotAutoBindAfterCrashing()
+    public void packageManagerSpammingProviderService_doesNotAutoBindAfterCrashing()
             throws Throwable {
         // Note that this apk is not installed with the other apks in this test, and this should not
         // change. This apk messes up with the proxy watcher by spamming PACKAGE_CHANGED events, so
@@ -394,6 +405,16 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         } finally {
             uninstallPackage(MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_PACKAGE);
         }
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "activeScanRouteDiscoveryPreference_scansOnSelfScanProvider");
     }
 
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)

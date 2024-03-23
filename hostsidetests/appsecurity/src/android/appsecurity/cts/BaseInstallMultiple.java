@@ -85,6 +85,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
     private final List<String> mSplitsToRemove = new ArrayList<>();
     private boolean mUseNaturalAbi = false;
     private boolean mUseIncremental = false;
+    private boolean mAddFileNamePrefix = true;
 
     public BaseInstallMultiple(ITestDevice device, IBuildInfo buildInfo, IAbi abi) {
         this(device, buildInfo, abi, true);
@@ -110,6 +111,11 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
     T addFile(String file) throws FileNotFoundException {
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
         mFilesToAdd.add(DeviceFile.addToSession(buildHelper.getTestFile(file, mAbi)));
+        return (T) this;
+    }
+
+    T disableFileNamePrefix() {
+        mAddFileNamePrefix = false;
         return (T) this;
     }
 
@@ -206,7 +212,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
 
 
     protected String deriveRemoteName(String originalName, int index) {
-        return index + "_" + originalName;
+        return (mAddFileNamePrefix ? index + "_" + originalName : originalName);
     }
 
     void run() throws DeviceNotAvailableException {

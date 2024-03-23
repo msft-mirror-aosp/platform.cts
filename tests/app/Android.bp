@@ -254,6 +254,45 @@ android_test {
 }
 
 android_test {
+    name: "CtsAppStartTestCases",
+    defaults: ["cts_defaults"],
+    libs: [
+        "android.test.runner",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "androidx.test.uiautomator_uiautomator",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "CtsExternalServiceCommon",
+        "cts-wm-util",
+        "libprotobuf-java-lite",
+    ],
+    aidl: {
+        local_include_dirs: ["app/src"],
+    },
+    srcs: [
+        "AppStartTest/src/**/*.java",
+        "app/src/**/*.aidl",
+    ],
+    jarjar_rules: "AppStartTest/jarjar-rules.txt",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    manifest: "AppStartTest/AndroidManifest.xml",
+    test_config: "AppStartTest/AndroidTest.xml",
+    platform_apis: true,
+    data: [
+        ":CtsSimpleApp",
+        ":CtsExternalServiceService",
+        ":CtsAppTestStubs",
+    ],
+    per_testcase_directory: true,
+}
+
+android_test {
     name: "CtsAppExitTestCases",
     defaults: ["cts_defaults"],
     libs: [

@@ -278,7 +278,7 @@ public class MediaRouter2DeviceTest {
                 AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
                 mContext.getApplicationInfo().uid,
                 mContext.getPackageName(),
-                AppOpsManager.MODE_DEFAULT);
+                AppOpsManager.MODE_ERRORED);
 
         assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
 
@@ -353,7 +353,7 @@ public class MediaRouter2DeviceTest {
                 AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
                 mContext.getApplicationInfo().uid,
                 mContext.getPackageName(),
-                AppOpsManager.MODE_DEFAULT);
+                AppOpsManager.MODE_ERRORED);
 
         assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
 
