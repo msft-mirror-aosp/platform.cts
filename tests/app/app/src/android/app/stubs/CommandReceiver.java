@@ -29,6 +29,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.IContentProvider;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -86,6 +87,8 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_SET_MEDIA_SESSION_TO_PAUSED = 31;
     public static final int COMMAND_SET_MEDIA_SESSION_TO_STOPPED = 32;
     public static final int COMMAND_CREATE_MEDIA_NOTIFICATION = 33;
+    public static final int COMMAND_ACQUIRE_CONTENT_PROVIDER = 34;
+    public static final int COMMAND_RELEASE_CONTENT_PROVIDER = 35;
 
     public static final String KEY_PENDING_INTENT = "android.app.stubs.key.PENDING_INTENT";
     public static final String KEY_STICKY_BROADCAST_FILTER =
@@ -102,6 +105,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String EXTRA_CHILD_CMDLINE = "android.app.stubs.extra.child_cmdline";
     public static final String EXTRA_TIMEOUT = "android.app.stubs.extra.child_cmdline";
     public static final String EXTRA_MESSENGER = "android.app.stubs.extra.EXTRA_MESSENGER";
+    public static final String EXTRA_URI = "android.app.stubs.extra.EXTRA_URI";
 
     public static final String SERVICE_NAME = "android.app.stubs.LocalService";
     public static final String FG_SERVICE_NAME = "android.app.stubs.LocalForegroundService";
@@ -129,6 +133,8 @@ public class CommandReceiver extends BroadcastReceiver {
     private static final String NOTIFICATION_CHANNEL_ID = "com.example.android.media.channel";
 
     private int mNotificationId = 6003;
+
+    private static ArrayMap<Uri, IContentProvider> sContentProviders = new ArrayMap<>();
 
     /**
      * Handle the different types of binding/unbinding requests.
@@ -269,6 +275,12 @@ public class CommandReceiver extends BroadcastReceiver {
                 if (intentFilter != null) {
                     resultExtras.putParcelable(KEY_STICKY_BROADCAST_FILTER, intentFilter);
                 }
+                break;
+            case COMMAND_ACQUIRE_CONTENT_PROVIDER:
+                doAcquireProvider(context, intent);
+                break;
+            case COMMAND_RELEASE_CONTENT_PROVIDER:
+                doReleaseProvider(context, intent);
                 break;
         }
         if (resultExtras != null) {
@@ -659,6 +671,21 @@ public class CommandReceiver extends BroadcastReceiver {
         // Register the channel with the system; you can't change the importance
         // or other notification behaviors after this
         notificationManager.createNotificationChannel(channel);
+    }
+
+    private void doAcquireProvider(Context context, Intent intent) {
+        final Bundle extras = intent.getExtras();
+        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);
+        final IContentProvider provider = context.getContentResolver().acquireProvider(uri);
+        sContentProviders.put(uri, provider);
+    }
+
+    private void doReleaseProvider(Context context, Intent intent) {
+        final Bundle extras = intent.getExtras();
+        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);
+        final IContentProvider provider = sContentProviders.remove(uri);
+        if (provider == null) return;
+        context.getContentResolver().releaseProvider(provider);
     }
 
     private void setPlaybackState(int state, MediaSession mediaSession) {
