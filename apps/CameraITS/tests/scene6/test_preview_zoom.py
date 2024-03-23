@@ -77,15 +77,18 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       logging.debug('preview_size = %s', preview_size)
       logging.debug('size = %s', size)
 
-      # recording preview
+      # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
-      try:
-        capture_results, file_list, z_min, z_max = (
-            preview_stabilization_utils.preview_over_zoom_range(
-                self.dut, cam, preview_size, z_range, log_path)
-        )
-      except ValueError as e:
-        camera_properties_utils.skip_unless(False, e)
+      logging.debug('z_range = %s', str(z_range))
+      z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
+          z_range, _NUM_STEPS)
+      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+
+      # recording preview
+      capture_results, file_list = (
+          preview_stabilization_utils.preview_over_zoom_range(
+              self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
+      )
 
       test_data = {}
       test_data_index = 0
