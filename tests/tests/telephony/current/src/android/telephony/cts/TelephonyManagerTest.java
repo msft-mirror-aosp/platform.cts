@@ -51,6 +51,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
+import android.app.role.RoleManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -7335,11 +7336,20 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_GET_EMERGENCY_ROLE_HOLDER_API_ENABLED)
     @ApiTest(apis = {"android.telephony.TelephonyManager#getEmergencyAssistancePackageName"})
     public void testGetEmergencyAssistancePackageName() {
+        List<String> emergencyRoleHolders = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                getContext().getSystemService(RoleManager.class),
+                (rm) -> rm.getRoleHolders(RoleManager.ROLE_EMERGENCY));
         if (mTelephonyManager.isVoiceCapable()
             && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
-            assertNotNull(ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                            (tm) -> tm.getEmergencyAssistancePackageName()));
+            String emergencyAssistancePackageName =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                            (tm) -> tm.getEmergencyAssistancePackageName());
+            if (emergencyRoleHolders.isEmpty()) {
+                assertNull(emergencyAssistancePackageName);
+            } else {
+                assertEquals(emergencyRoleHolders.get(0), emergencyAssistancePackageName);
+            }
         } else {
             assertThrows(IllegalStateException.class, () ->
                     ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,

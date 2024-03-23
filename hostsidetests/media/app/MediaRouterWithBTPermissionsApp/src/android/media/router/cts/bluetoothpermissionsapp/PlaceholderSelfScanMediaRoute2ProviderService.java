@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.media.bettertogether.cts;
+package android.media.router.cts.bluetoothpermissionsapp;
 
 import android.app.Service;
 import android.content.Intent;
@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Placeholder service to support {@link MediaRouter2Test}.
+ * Placeholder service to support {@link MediaRouter2DeviceTest}.
  *
  * <p>Provides support for testing checks in {@link MediaRouter2#setRouteListingPreference} when it
  * comes to {@link RouteListingPreference#getLinkedItemComponentName()}, and {@link
  * android.media.MediaRoute2ProviderService#CATEGORY_SELF_SCAN_ONLY}.
  */
-public class PlaceholderService extends Service {
+public class PlaceholderSelfScanMediaRoute2ProviderService extends Service {
 
     /**
      * Invoked whenever there's a bind request to this service, passing the intent action as

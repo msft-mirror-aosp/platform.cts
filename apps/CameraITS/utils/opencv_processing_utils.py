@@ -52,9 +52,9 @@ CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255
+CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255)
 CV2_GREEN = (0, 255, 0)
-CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255
+CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255)
 CV2_THRESHOLD_BLOCK_SIZE = 11
 CV2_THRESHOLD_CONSTANT = 2
 
@@ -1075,6 +1075,8 @@ def get_chart_boundary_from_aruco_markers(
       opencv_processing_utils.find_aruco_markers.
     aruco_marker_ids: array of ids of aruco markers detected by
       opencv_processing_utils.find_aruco_markers.
+    input_img: 3D RGB numpy [0, 255] uint8; input image.
+    output_img_path: string; output image path.
   Returns:
     top_left: tuple; aruco marker corner coordinates in pixel.
     bottom_right: tuple; aruco marker corner coordinates in pixel.

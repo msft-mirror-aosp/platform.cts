@@ -935,13 +935,14 @@ public class SurfaceViewTests extends ActivityTestBase {
                 float newRatio = 1.f + (ratio - 1.f) / 2;
                 getInstrumentation().runOnMainSync(() -> {
                     surfaceView.setDesiredHdrHeadroom(newRatio);
-                    assertTrue("Headroom restriction is not respected",
-                            getStableHdrSdrRatio(display) <= (newRatio + 0.01));
-
-                    surfaceView.setDesiredHdrHeadroom(0.f);
-                    assertTrue("Removed headroom restriction is not respected",
-                            getStableHdrSdrRatio(display) > newRatio);
                 });
+                assertTrue("Headroom restriction is not respected",
+                        getStableHdrSdrRatio(display) <= (newRatio + 0.01));
+                getInstrumentation().runOnMainSync(() -> {
+                    surfaceView.setDesiredHdrHeadroom(0.f);
+                });
+                assertTrue("Removed headroom restriction is not respected",
+                        getStableHdrSdrRatio(display) > newRatio);
             }
 
         } finally {
