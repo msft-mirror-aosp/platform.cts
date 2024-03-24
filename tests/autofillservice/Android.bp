@@ -51,4 +51,9 @@ android_test {
         ":CtsMockInputMethod",
     ],
     per_testcase_directory: true,
+    errorprone: {
+        javacflags: [
+            "-Xep:BareDotMetacharacter:WARN",
+        ],
+    },
 }

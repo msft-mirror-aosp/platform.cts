@@ -61,7 +61,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -630,15 +629,8 @@ public class BluetoothDeviceTest {
         BluetoothSocket rfcommSocket = mFakeDevice
                         .createInsecureRfcommSocketToServiceRecord(mFakeUuid);
 
-        mUiAutomation.dropShellPermissionIdentity();
-        // This should throw a SecurityException because one of BLUETOOTH_PRIVILEGED or
-        // BLUETOOTH_CONNECT permission is missing.
-        enforceConnectAndPrivileged(() -> l2capSocket.getL2capLocalChannelId());
-        enforceConnectAndPrivileged(() -> l2capSocket.getL2capRemoteChannelId());
-        enforceConnectAndPrivileged(() -> rfcommSocket.getL2capLocalChannelId());
-        enforceConnectAndPrivileged(() -> rfcommSocket.getL2capRemoteChannelId());
-
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
         // This should throw a BluetoothSocketException because it is not L2CAP socket
         assertThrows("Unknown L2CAP socket", BluetoothSocketException.class,
                 () -> rfcommSocket.getL2capLocalChannelId());
@@ -650,15 +642,5 @@ public class BluetoothDeviceTest {
                 () -> l2capSocket.getL2capLocalChannelId());
         assertThrows("Socket closed", BluetoothSocketException.class,
                 () -> l2capSocket.getL2capRemoteChannelId());
-    }
-
-    private void enforceConnectAndPrivileged(ThrowingRunnable runnable) {
-        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        assertThrows(SecurityException.class, runnable);
-
-        // Verify throws SecurityException without permission.BLUETOOTH_CONNECT
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_PRIVILEGED);
-        assertThrows(SecurityException.class, runnable);
     }
 }

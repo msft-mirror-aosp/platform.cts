@@ -1644,6 +1644,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1681,6 +1683,8 @@ public class ActivityManagerProcessStateTest {
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP3, 0, null);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
             uid1Watcher.finish();
             uid3Watcher.finish();
         }
@@ -1709,6 +1713,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1766,6 +1772,8 @@ public class ActivityManagerProcessStateTest {
             // Stop the foreground service
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             uid1Watcher.finish();
             uid2Watcher.finish();
@@ -1796,6 +1804,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1847,6 +1857,9 @@ public class ActivityManagerProcessStateTest {
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP2, 0, null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP1, 0, null);
+
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             uid1Watcher.finish();
             uid2Watcher.finish();
@@ -2070,6 +2083,9 @@ public class ActivityManagerProcessStateTest {
             // Start an activity
             activity = startSubActivity(ScreenOnActivity.class);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP2);
+
             // Start a FGS in app2
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE, PACKAGE_NAME_APP2,
@@ -2143,6 +2159,8 @@ public class ActivityManagerProcessStateTest {
                     PACKAGE_NAME_APP2, PACKAGE_NAME_APP3, 0, null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP1, 0, null);
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP2);
 
             uid1Listener.unregister();
             uid1ServiceListener.unregister();
@@ -2213,6 +2231,9 @@ public class ActivityManagerProcessStateTest {
                     CommandReceiver.COMMAND_START_ALERT_SERVICE, STUB_PACKAGE_NAME,
                     STUB_PACKAGE_NAME, 0, null);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP2);
+
             // Start a FGS in app2
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE, PACKAGE_NAME_APP2,
@@ -2268,6 +2289,8 @@ public class ActivityManagerProcessStateTest {
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
             uid3Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP2);
             stubListener.unregister();
             uid1Listener.unregister();
             uid2Listener.unregister();

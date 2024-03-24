@@ -22,7 +22,7 @@ import android.app.AppOpsManager.MODE_ALLOWED
 import android.app.AppOpsManager.MODE_DEFAULT
 import android.app.AppOpsManager.MODE_ERRORED
 import android.app.AppOpsManager.MODE_IGNORED
-import android.app.AppOpsManager.OPSTR_RESERVED_FOR_TESTING
+import android.app.AppOpsManager.OPSTR_ACCESS_NOTIFICATIONS
 import android.app.AppOpsManager.OPSTR_ACCESS_RESTRICTED_SETTINGS
 import android.app.AppOpsManager.OPSTR_PHONE_CALL_CAMERA
 import android.app.AppOpsManager.OPSTR_PHONE_CALL_MICROPHONE
@@ -63,7 +63,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -162,48 +161,48 @@ class AppOpsTest {
 
     @Test
     fun testNoteOpAndCheckOp() {
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ALLOWED)
-        assertEquals(MODE_ALLOWED, mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_ALLOWED)
+        assertEquals(MODE_ALLOWED, mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_ALLOWED, mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_ALLOWED, mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_ALLOWED, mAppOps.unsafeCheckOp(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_ALLOWED, mAppOps.unsafeCheckOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_ALLOWED, mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_IGNORED)
-        assertEquals(MODE_IGNORED, mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-        assertEquals(MODE_IGNORED, mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-        assertEquals(MODE_IGNORED, mAppOps.unsafeCheckOp(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-        assertEquals(MODE_IGNORED, mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_ALLOWED, mAppOps.unsafeCheckOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
 
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_DEFAULT)
-        assertEquals(MODE_DEFAULT, mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_IGNORED)
+        assertEquals(MODE_IGNORED, mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_DEFAULT, mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_IGNORED, mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_DEFAULT, mAppOps.unsafeCheckOp(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_IGNORED, mAppOps.unsafeCheckOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_DEFAULT, mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_IGNORED, mAppOps.unsafeCheckOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
 
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ERRORED)
-        assertEquals(MODE_ERRORED, mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_DEFAULT)
+        assertEquals(MODE_DEFAULT, mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_ERRORED, mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_DEFAULT, mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+        assertEquals(MODE_DEFAULT, mAppOps.unsafeCheckOp(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+        assertEquals(MODE_DEFAULT, mAppOps.unsafeCheckOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_ERRORED)
+        assertEquals(MODE_ERRORED, mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+        assertEquals(MODE_ERRORED, mAppOps.unsafeCheckOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
         try {
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName)
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName)
             fail("SecurityException expected")
         } catch (expected: SecurityException) {
         }
         try {
-            mAppOps.unsafeCheckOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName)
+            mAppOps.unsafeCheckOp(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName)
             fail("SecurityException expected")
         } catch (expected: SecurityException) {
         }
@@ -211,32 +210,32 @@ class AppOpsTest {
 
     @Test
     fun testStartOpAndFinishOp() {
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ALLOWED)
-        assertEquals(MODE_ALLOWED, mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_ALLOWED)
+        assertEquals(MODE_ALLOWED, mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName)
-        assertEquals(MODE_ALLOWED, mAppOps.startOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName)
+        assertEquals(MODE_ALLOWED, mAppOps.startOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING,
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName)
 
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_IGNORED)
-        assertEquals(MODE_IGNORED, mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_IGNORED)
+        assertEquals(MODE_IGNORED, mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
-        assertEquals(MODE_IGNORED, mAppOps.startOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_DEFAULT)
-        assertEquals(MODE_DEFAULT, mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING,
-                Process.myUid(), mOpPackageName))
-        assertEquals(MODE_DEFAULT, mAppOps.startOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        assertEquals(MODE_IGNORED, mAppOps.startOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
 
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ERRORED)
-        assertEquals(MODE_ERRORED, mAppOps.startOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_DEFAULT)
+        assertEquals(MODE_DEFAULT, mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+        assertEquals(MODE_DEFAULT, mAppOps.startOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
+                Process.myUid(), mOpPackageName))
+
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_ERRORED)
+        assertEquals(MODE_ERRORED, mAppOps.startOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                 Process.myUid(), mOpPackageName))
         try {
-            mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName)
+            mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName)
             fail("SecurityException expected")
         } catch (expected: SecurityException) {
         }
@@ -259,23 +258,23 @@ class AppOpsTest {
                     }
                 }
 
-            mAppOps.startWatchingActive(arrayOf(OPSTR_RESERVED_FOR_TESTING), { it.run() },
+            mAppOps.startWatchingActive(arrayOf(OPSTR_ACCESS_NOTIFICATIONS), { it.run() },
                 activeWatcher)
             try {
-                mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, "firstAttribution",
+                mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, "firstAttribution",
                         null)
 
-                assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID,
+                assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID,
                         SHELL_PACKAGE_NAME))
                 var activeState = activeChangedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 assertNotNull("Did not receive onOpChanged callback within $TIMEOUT_MS ms",
                     activeState)
                 assertTrue(activeState!!)
 
-                mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName,
+                mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName,
                     "secondAttribution", null)
 
-                assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID,
+                assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID,
                         SHELL_PACKAGE_NAME))
                 var exception = try {
                     assertNotNull("Unexpected onOpChanged callback received",
@@ -286,10 +285,10 @@ class AppOpsTest {
                 }
                 assertNotNull(exception)
 
-                mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID, SHELL_PACKAGE_NAME,
+                mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID, SHELL_PACKAGE_NAME,
                     "firstAttribution")
 
-                assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID,
+                assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID,
                         SHELL_PACKAGE_NAME))
                 exception = try {
                     assertNotNull("Unexpected onOpChanged callback received",
@@ -300,10 +299,10 @@ class AppOpsTest {
                 }
                 assertNotNull(exception)
 
-                mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID, SHELL_PACKAGE_NAME,
+                mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID, SHELL_PACKAGE_NAME,
                     "secondAttribution")
 
-                assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, USER_SHELL_UID,
+                assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, USER_SHELL_UID,
                         SHELL_PACKAGE_NAME))
                 activeState = activeChangedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 assertNotNull("Did not receive onOpChanged callback within $TIMEOUT_MS ms",
@@ -430,52 +429,52 @@ class AppOpsTest {
 
     @Test
     fun finishOpWithoutStartOp() {
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
     }
 
     @Test
     fun doubleFinishOpStartOp() {
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
     }
 
     @Test
     fun doubleFinishOpAfterDoubleStartOp() {
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
-        mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
+        mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
     }
 
     @Test
     fun noteOpWhileOpIsActive() {
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.startOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null, null)
-        assertTrue(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null, null)
+        assertTrue(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
 
-        mAppOps.finishOp(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName, null)
-        assertFalse(mAppOps.isOpActive(OPSTR_RESERVED_FOR_TESTING, mMyUid, mOpPackageName))
+        mAppOps.finishOp(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName, null)
+        assertFalse(mAppOps.isOpActive(OPSTR_ACCESS_NOTIFICATIONS, mMyUid, mOpPackageName))
     }
 
     @Test
@@ -514,7 +513,7 @@ class AppOpsTest {
         val onOpChangeWatcher = object: OnOpChangedListener {
             private var onOpChangedCount = 0
             override fun onOpChanged(op: String?, packageName: String?) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && Objects.equal(packageName, mOpPackageName)) {
                     changedQueue.put(onOpChangedCount++)
                     return
@@ -526,26 +525,26 @@ class AppOpsTest {
 
         try {
             runWithShellPermissionIdentity {
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
-                mAppOps.startWatchingMode(OPSTR_RESERVED_FOR_TESTING, mOpPackageName, onOpChangeWatcher)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.startWatchingMode(OPSTR_ACCESS_NOTIFICATIONS, mOpPackageName, onOpChangeWatcher)
 
                 // After start watching, change op mode should trigger callback
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ERRORED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ERRORED)
                 assertEquals("onOpChanged callback count unexpected",
                     changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS), 0)
 
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
                 assertEquals("onOpChanged callback count unexpected",
                     changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS), 1)
 
                 // If mode doesn't change, no callback expected
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
                 assertNull(changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
 
                 mAppOps.stopWatchingMode(onOpChangeWatcher)
 
                 // After stop watching no callback expected when mode changes
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ERRORED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ERRORED)
                 assertNull(changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
             }
         } finally {
@@ -565,7 +564,7 @@ class AppOpsTest {
                 packageName: String,
                 userId: Int,
                 persistentDeviceId: String) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && Objects.equal(packageName, mOpPackageName)
                     && Objects.equal(persistentDeviceId,
                         VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT)) {
@@ -578,27 +577,27 @@ class AppOpsTest {
         }
         try {
             runWithShellPermissionIdentity {
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
-                mAppOps.startWatchingMode(OPSTR_RESERVED_FOR_TESTING, mOpPackageName, onOpChangeWatcher)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.startWatchingMode(OPSTR_ACCESS_NOTIFICATIONS, mOpPackageName, onOpChangeWatcher)
 
                 // After start watching, change op mode should trigger callback
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ERRORED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ERRORED)
                 assertEquals("onOpChanged callback count unexpected",
                     changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
                     0)
 
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
                 assertEquals("onOpChanged callback count unexpected",
                     changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS), 1)
 
                 // If mode doesn't change, no callback expected
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ALLOWED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ALLOWED)
                 assertNull(changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
 
                 mAppOps.stopWatchingMode(onOpChangeWatcher)
 
                 // After stop watching no callback expected when mode changes
-                mAppOps.setMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, MODE_ERRORED)
+                mAppOps.setMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName, MODE_ERRORED)
                 assertNull(changedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
             }
         } finally {
@@ -617,7 +616,7 @@ class AppOpsTest {
                 attributionTag: String?,
                 flags: Int,
                 result: Int) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && uid == mMyUid && Objects.equal(packageName, mOpPackageName)
                     && attributionTag == null
                     && flags == OP_FLAG_SELF && result == MODE_ALLOWED) {
@@ -626,9 +625,9 @@ class AppOpsTest {
             }
         }
         try {
-            mAppOps.startWatchingNoted(arrayOf(OPSTR_RESERVED_FOR_TESTING), notedWatcher)
+            mAppOps.startWatchingNoted(arrayOf(OPSTR_ACCESS_NOTIFICATIONS), notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid, mOpPackageName,
                     /* attributionTag = */ null,
                 /* message = */ null)
@@ -637,7 +636,7 @@ class AppOpsTest {
                 notedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 0)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                     /* attributionTag = */ null,
@@ -649,7 +648,7 @@ class AppOpsTest {
 
             mAppOps.stopWatchingNoted(notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                     /* attributionTag = */ null,
@@ -678,7 +677,7 @@ class AppOpsTest {
                 attributionTag: String?,
                 flags: Int,
                 result: Int) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && uid == mMyUid && Objects.equal(packageName, mOpPackageName)
                     && Objects.equal(attributionTag, TEST_ATTRIBUTION)
                     && flags == OP_FLAG_SELF && result == MODE_ALLOWED) {
@@ -687,9 +686,9 @@ class AppOpsTest {
             }
         }
         try {
-            mAppOps.startWatchingNoted(arrayOf(OPSTR_RESERVED_FOR_TESTING), { it.run() }, notedWatcher)
+            mAppOps.startWatchingNoted(arrayOf(OPSTR_ACCESS_NOTIFICATIONS), { it.run() }, notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid, mOpPackageName,
                 TEST_ATTRIBUTION,
                 /* message = */ null)
@@ -698,7 +697,7 @@ class AppOpsTest {
                 notedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 0)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 TEST_ATTRIBUTION,
@@ -710,7 +709,7 @@ class AppOpsTest {
 
             mAppOps.stopWatchingNoted(notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 TEST_ATTRIBUTION,
@@ -748,7 +747,7 @@ class AppOpsTest {
                 virtualDeviceId: Int,
                 flags: Int,
                 result: Int) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && uid == mMyUid && Objects.equal(packageName, mOpPackageName)
                     && Objects.equal(attributionTag, TEST_ATTRIBUTION)
                     && virtualDeviceId == Context.DEVICE_ID_DEFAULT
@@ -759,9 +758,9 @@ class AppOpsTest {
         }
 
         try {
-            mAppOps.startWatchingNoted(arrayOf(OPSTR_RESERVED_FOR_TESTING), notedWatcher)
+            mAppOps.startWatchingNoted(arrayOf(OPSTR_ACCESS_NOTIFICATIONS), notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid, mOpPackageName,
                 TEST_ATTRIBUTION,
                 /* message = */ null)
@@ -770,7 +769,7 @@ class AppOpsTest {
                 notedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 0)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 TEST_ATTRIBUTION,
@@ -782,7 +781,7 @@ class AppOpsTest {
 
             mAppOps.stopWatchingNoted(notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 TEST_ATTRIBUTION,
@@ -820,7 +819,7 @@ class AppOpsTest {
                 virtualDeviceId: Int,
                 flags: Int,
                 result: Int) {
-                if (Objects.equal(op, OPSTR_RESERVED_FOR_TESTING)
+                if (Objects.equal(op, OPSTR_ACCESS_NOTIFICATIONS)
                     && uid == mMyUid && Objects.equal(packageName, mOpPackageName)
                     && attributionTag == null
                     && virtualDeviceId == Context.DEVICE_ID_DEFAULT
@@ -830,9 +829,9 @@ class AppOpsTest {
             }
         }
         try {
-            mAppOps.startWatchingNoted(arrayOf(OPSTR_RESERVED_FOR_TESTING), { it.run() }, notedWatcher)
+            mAppOps.startWatchingNoted(arrayOf(OPSTR_ACCESS_NOTIFICATIONS), { it.run() }, notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid, mOpPackageName,
                 /* attributionTag = */ null,
                 /* message = */ null)
@@ -841,7 +840,7 @@ class AppOpsTest {
                 notedQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 0)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 /* attributionTag = */ null,
@@ -853,7 +852,7 @@ class AppOpsTest {
 
             mAppOps.stopWatchingNoted(notedWatcher)
 
-            mAppOps.noteOp(OPSTR_RESERVED_FOR_TESTING,
+            mAppOps.noteOp(OPSTR_ACCESS_NOTIFICATIONS,
                 mMyUid,
                 mOpPackageName,
                 /* attributionTag = */ null,
@@ -937,10 +936,10 @@ class AppOpsTest {
         val mustNotBeLogged = "Operation mustn't be logged before the test runs"
         assumeTrue(mustNotBeLogged, !allowedOperationLogged(mOpPackageName, OPSTR_VIBRATE))
         assumeTrue(mustNotBeLogged,
-            !allowedOperationLogged(mOpPackageName, OPSTR_RESERVED_FOR_TESTING))
+            !allowedOperationLogged(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS))
 
         setOpMode(mOpPackageName, OPSTR_VIBRATE, MODE_ALLOWED)
-        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ERRORED)
+        setOpMode(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS, MODE_ERRORED)
 
         // Note an op that's allowed.
         mAppOps.noteOp(OPSTR_VIBRATE, Process.myUid(), mOpPackageName)
@@ -948,10 +947,10 @@ class AppOpsTest {
         assertTrue(mustBeLogged, allowedOperationLogged(mOpPackageName, OPSTR_VIBRATE))
 
         // Note another op that's not allowed.
-        mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName)
+        mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), mOpPackageName)
         assertTrue(mustBeLogged, allowedOperationLogged(mOpPackageName, OPSTR_VIBRATE))
         assertTrue(mustBeLogged,
-            rejectedOperationLogged(mOpPackageName, OPSTR_RESERVED_FOR_TESTING))
+            rejectedOperationLogged(mOpPackageName, OPSTR_ACCESS_NOTIFICATIONS))
     }
 
     @Test
@@ -992,7 +991,7 @@ class AppOpsTest {
     @Test
     fun noteOpForBadUid() {
         runWithShellPermissionIdentity {
-            val mode = mAppOps.noteOpNoThrow(OPSTR_RESERVED_FOR_TESTING, Process.myUid() + 1,
+            val mode = mAppOps.noteOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid() + 1,
                     mOpPackageName)
             assertEquals(mode, MODE_ERRORED)
         }
@@ -1001,7 +1000,7 @@ class AppOpsTest {
     @Test
     fun startOpForBadUid() {
         runWithShellPermissionIdentity {
-            val mode = mAppOps.startOpNoThrow(OPSTR_RESERVED_FOR_TESTING, Process.myUid() + 1,
+            val mode = mAppOps.startOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid() + 1,
                     mOpPackageName)
             assertEquals(mode, MODE_ERRORED)
         }
@@ -1009,19 +1008,19 @@ class AppOpsTest {
 
     @Test
     fun checkOpForBadUid() {
-        val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_RESERVED_FOR_TESTING)
+        val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_ACCESS_NOTIFICATIONS)
 
         runWithShellPermissionIdentity {
-            mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), MODE_ERRORED)
+            mAppOps.setUidMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), MODE_ERRORED)
             try {
-                val mode = mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+                val mode = mAppOps.unsafeCheckOpNoThrow(OPSTR_ACCESS_NOTIFICATIONS,
                     Process.myUid() + 1, mOpPackageName)
 
                 // For invalid uids checkOp return the default mode
                 assertEquals(mode, defaultMode)
             } finally {
                 // Clear the uid state
-                mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), defaultMode)
+                mAppOps.setUidMode(OPSTR_ACCESS_NOTIFICATIONS, Process.myUid(), defaultMode)
             }
         }
     }

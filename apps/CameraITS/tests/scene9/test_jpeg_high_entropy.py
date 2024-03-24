@@ -27,11 +27,39 @@ import image_processing_utils
 import its_session_utils
 
 
+_JPG_EXTENSION = '.jpg'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
 _ZOOM_RATIO_MAX = 8  # too high zoom ratios will eventualy reduce entropy
 _ZOOM_RATIO_MIN = 1  # low zoom ratios don't fill up FoV
 _ZOOM_RATIO_THRESH = 2  # some zoom ratio needed to fill up FoV
+
+
+def _read_files_back_from_disk(log_path):
+  """Read the JPEG files written as part of test back from disk.
+
+  Args:
+    log_path: string; location to read files.
+
+  Returns:
+    list of uint8 images read with Image.read().
+  """
+  jpeg_files = []
+  imgs_uint8 = []
+  for file in sorted(os.listdir(log_path)):
+    if _JPG_EXTENSION in file:
+      jpeg_files.append(file)
+  logging.debug('JPEG files from directory: %s', jpeg_files)
+  for jpeg_file in jpeg_files:
+    jpeg_file_with_log_path = os.path.join(log_path, jpeg_file)
+    logging.debug('Opening file %s', jpeg_file)
+    try:
+      imgs_uint8.append(image_processing_utils.convert_image_to_numpy_array(
+          jpeg_file_with_log_path))
+      logging.debug('%s read successfully.', jpeg_file)
+    except Exception as e:
+      raise AssertionError(f'Cannot read {jpeg_file_with_log_path}') from e
+  return imgs_uint8
 
 
 class JpegHighEntropyTest(its_base_test.ItsBaseTest):
@@ -47,6 +75,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      log_path = self.log_path
+      test_name_with_log_path = os.path.join(log_path, _NAME)
 
       # Load chart for scene
       its_session_utils.load_scene(
@@ -77,14 +107,17 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         cam.do_3a(zoom_ratio=zoom_ratio)
         cap = cam.do_capture(req, cam.CAP_JPEG)
 
-        # save JPEG image
+        # Save JPEG image
         img = image_processing_utils.convert_capture_to_rgb_image(
             cap, props=props)
-        img_name = os.path.join(self.log_path, _NAME)
         image_processing_utils.write_image(
-            img, f'{img_name}_{round(zoom_ratio, 2)}.jpg')
-        img = image_processing_utils.convert_image_to_uint8(img)
-        # TODO: b/310805430 - add spoofing checks
+            img,
+            f'{test_name_with_log_path}_{round(zoom_ratio, 2)}{_JPG_EXTENSION}')
+
+      # Read JPEG files back to ensure readable encoding
+      _read_files_back_from_disk(log_path)
+
+      # TODO: b/310805430 - add spoofing checks
 
 if __name__ == '__main__':
   test_runner.main()

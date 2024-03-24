@@ -63,6 +63,7 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsEmptyTestApp_AppMetadataInApk",
     defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_AslInApk.xml",
     assets: ["app.metadata"],
     sdk_version: "current",
     // tag this module as a cts test artifact

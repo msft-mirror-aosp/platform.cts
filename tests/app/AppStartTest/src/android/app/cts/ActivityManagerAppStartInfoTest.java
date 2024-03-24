@@ -23,11 +23,13 @@ import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
+import android.app.Flags;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -95,6 +97,7 @@ public final class ActivityManagerAppStartInfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testLauncherStart() throws Exception {
         clearHistoricalStartInfo();
 
@@ -114,6 +117,7 @@ public final class ActivityManagerAppStartInfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testActivityStart() throws Exception {
         clearHistoricalStartInfo();
 
@@ -141,6 +145,7 @@ public final class ActivityManagerAppStartInfoTest {
      * the record is removed when the app is uninstalled.
      */
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testAppRemoved() throws Exception {
         testActivityStart();
 

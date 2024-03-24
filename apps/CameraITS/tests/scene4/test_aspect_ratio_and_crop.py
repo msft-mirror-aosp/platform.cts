@@ -368,9 +368,9 @@ class AspectRatioAndCropTest(its_base_test.ItsBaseTest):
           else:
             continue
 
-      # Print any failed test results.
-      _print_failed_test_results(failed_ar, failed_fov, failed_crop,
-                                 first_api_level, level3)
+        # Print any failed test results.
+        _print_failed_test_results(failed_ar, failed_fov, failed_crop,
+                                   first_api_level, level3)
 
 if __name__ == '__main__':
   test_runner.main()

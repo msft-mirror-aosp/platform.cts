@@ -109,13 +109,15 @@ public class ActivityManagerFgsDelegateTest {
         cleanupResiduals();
     }
 
-    private void cleanupResiduals() {
+    private void cleanupResiduals() throws Exception {
         // Stop all the packages to avoid residual impact
         for (int i = 0; i < PACKAGE_NAMES.length; i++) {
             final String pkgName = PACKAGE_NAMES[i];
             SystemUtil.runWithShellPermissionIdentity(() -> {
                 mActivityManager.forceStopPackage(pkgName);
             });
+            PermissionUtils.grantPermission(
+                    pkgName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
         }
         // Make sure we are in Home screen
         mInstrumentation.getUiAutomation().performGlobalAction(
@@ -144,6 +146,7 @@ public class ActivityManagerFgsDelegateTest {
         try {
             prepareProcess(uidWatcher);
 
+            allowBgFgsStart(PACKAGE_NAME_APP1, true);
             setForegroundServiceDelegate(PACKAGE_NAME_APP1, true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             dumpLines = CtsAppTestUtils.executeShellCmd(
@@ -180,6 +183,7 @@ public class ActivityManagerFgsDelegateTest {
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
             uidWatcher.finish();
+            allowBgFgsStart(PACKAGE_NAME_APP1, false);
         }
     }
 
@@ -533,6 +537,7 @@ public class ActivityManagerFgsDelegateTest {
         String[] dumpLines;
         try {
             prepareProcess(uidWatcher);
+            allowBgFgsStart(PACKAGE_NAME_APP1, true);
 
             setForegroundServiceDelegate(PACKAGE_NAME_APP1, true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -551,6 +556,7 @@ public class ActivityManagerFgsDelegateTest {
             assertNull(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true"));
         } finally {
             uidWatcher.finish();
+            allowBgFgsStart(PACKAGE_NAME_APP1, false);
         }
     }
 
@@ -574,9 +580,13 @@ public class ActivityManagerFgsDelegateTest {
         if (allow) {
             PermissionUtils.grantPermission(
                     packageName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "cmd deviceidle whitelist +" + packageName);
         } else {
             PermissionUtils.revokePermission(
                     packageName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "cmd deviceidle whitelist -" + packageName);
         }
     }
 }

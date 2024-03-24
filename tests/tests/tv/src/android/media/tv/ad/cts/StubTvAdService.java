@@ -18,11 +18,17 @@ package android.media.tv.ad.cts;
 
 
 import android.content.Context;
+import android.graphics.Rect;
+import android.media.tv.TvTrackInfo;
 import android.media.tv.ad.TvAdService;
+import android.net.Uri;
+import android.os.Bundle;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import java.util.List;
 
 /**
  * Stub implementation of {@link android.media.tv.ad.TvAdService}.
@@ -40,6 +46,25 @@ public class StubTvAdService extends TvAdService {
     public static class StubSessionImpl extends TvAdService.Session {
         public int mStartAdServiceCount;
         public int mStopAdServiceCount;
+        public int mCurrentVideoBoundsCount;
+        public int mCurrentTvInputIdCount;
+        public int mSigningResultCount;
+        public int mCurrentChannelUriCount;
+        public int mTrackInfoListCount;
+        public int mTvMessageCount;
+        public int mErrorCount;
+        public int mResetAdServiceCount;
+        public byte[] mSigningResultByte;
+
+        public String mCurrentTvInputId;
+        public Rect mCurrentVideoBounds;
+        public Uri mCurrentChannelUri;
+        public Integer mTvMessageType;
+        public Bundle mTvMessageData;
+        public String mSigningResultId;
+        public List<TvTrackInfo> mTvTrackInfo;
+        public String mErrMessage;
+        public Bundle mErrBundle;
 
         /**
          * Creates a new Session.
@@ -56,6 +81,25 @@ public class StubTvAdService extends TvAdService {
         public void resetValues() {
             mStartAdServiceCount = 0;
             mStopAdServiceCount = 0;
+            mCurrentVideoBoundsCount = 0;
+            mCurrentTvInputIdCount = 0;
+            mSigningResultCount = 0;
+            mCurrentChannelUriCount = 0;
+            mTrackInfoListCount = 0;
+            mTvMessageCount = 0;
+            mErrorCount = 0;
+            mResetAdServiceCount = 0;
+
+            mCurrentTvInputId = null;
+            mCurrentVideoBounds = null;
+            mCurrentChannelUri = null;
+            mTvMessageType = null;
+            mTvMessageData = null;
+            mSigningResultByte = null;
+            mSigningResultId = null;
+            mTvTrackInfo = null;
+            mErrMessage = null;
+            mErrBundle = null;
         }
 
         @Override
@@ -76,5 +120,64 @@ public class StubTvAdService extends TvAdService {
         public void onStopAdService() {
             mStopAdServiceCount++;
         }
+
+        @Override
+        public void onCurrentVideoBounds(Rect rect) {
+            super.onCurrentVideoBounds(rect);
+            mCurrentVideoBoundsCount++;
+            mCurrentVideoBounds = rect;
+        }
+
+        @Override
+        public void onCurrentTvInputId(String inputId) {
+            super.onCurrentTvInputId(inputId);
+            mCurrentTvInputIdCount++;
+            mCurrentTvInputId = inputId;
+        }
+
+        @Override
+        public void onCurrentChannelUri(Uri channelUri) {
+            super.onCurrentChannelUri(channelUri);
+            mCurrentChannelUriCount++;
+            mCurrentChannelUri = channelUri;
+        }
+
+        @Override
+        public void onSigningResult(String signingId, byte[] result) {
+            super.onSigningResult(signingId, result);
+            mSigningResultCount++;
+            mSigningResultId = signingId;
+            mSigningResultByte = result;
+        }
+
+        @Override
+        public void onTrackInfoList(List<TvTrackInfo> info) {
+            super.onTrackInfoList(info);
+            mTrackInfoListCount++;
+            mTvTrackInfo = info;
+        }
+
+        @Override
+        public void onTvMessage(int type, Bundle data) {
+            super.onTvMessage(type, data);
+            mTvMessageCount++;
+            mTvMessageType = type;
+            mTvMessageData = data;
+        }
+
+        @Override
+        public void onResetAdService() {
+            super.onResetAdService();
+            mResetAdServiceCount++;
+        }
+
+        @Override
+        public void onError(String errMsg, Bundle params) {
+            super.onError(errMsg, params);
+            mErrorCount++;
+            mErrMessage = errMsg;
+            mErrBundle = params;
+        }
+
     }
 }
