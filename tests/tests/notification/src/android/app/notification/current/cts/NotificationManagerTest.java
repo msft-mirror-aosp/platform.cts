@@ -252,6 +252,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         PermissionUtils.grantPermission(PRESSURE_APP_05, POST_NOTIFICATIONS);
         PermissionUtils.grantPermission(PRESSURE_APP_06, POST_NOTIFICATIONS);
         PermissionUtils.grantPermission(PRESSURE_APP_07, POST_NOTIFICATIONS);
+        PermissionUtils.setAppOp(mContext.getPackageName(),
+                android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ALLOWED);
 
         // This will leave a set of channels on the device with each test run.
         mId = UUID.randomUUID().toString();
@@ -299,6 +301,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         PermissionUtils.revokePermission(PRESSURE_APP_05, POST_NOTIFICATIONS);
         PermissionUtils.revokePermission(PRESSURE_APP_06, POST_NOTIFICATIONS);
         PermissionUtils.revokePermission(PRESSURE_APP_07, POST_NOTIFICATIONS);
+        PermissionUtils.setAppOp(mContext.getPackageName(),
+                android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_DEFAULT);
     }
 
     private PendingIntent getPendingIntent() {
@@ -3250,12 +3254,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
-    public void testCallNotificationListener_registerCallback_noPermission() throws Exception {
+    public void testCallNotificationListener_registerCallback_noInteractAcrossUsersPermission()
+            throws Exception {
         try {
             PermissionUtils.revokePermission(mContext.getPackageName(),
                     android.Manifest.permission.INTERACT_ACROSS_USERS);
-            PermissionUtils.revokePermission(mContext.getPackageName(),
-                    android.Manifest.permission.ACCESS_NOTIFICATIONS);
 
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
                     UserHandle.SYSTEM, mContext.getMainExecutor(),
@@ -3273,11 +3276,35 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         } finally {
             PermissionUtils.grantPermission(mContext.getPackageName(),
                     android.Manifest.permission.INTERACT_ACROSS_USERS);
-            PermissionUtils.setAppOp(mContext.getPackageName(),
-                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ALLOWED);
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_registerCallback_noAccessNotificationsPermission()
+            throws Exception {
+        try {
+            PermissionUtils.setAppOp(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ERRORED);
+
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.SYSTEM, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                    @Override
+                    public void onCallNotificationPosted(String packageName, UserHandle user) {
+                    }
+                    @Override
+                    public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                    }
+                });
+            fail("registerCallNotificationListener should not succeed - privileged call");
+        } catch (SecurityException e) {
+            // Expected SecurityException
+        } finally {
+            PermissionUtils.setAppOp(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_DEFAULT);
+        }
+    }
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
     public void testCallNotificationListener_registerCallback_withPermission()
