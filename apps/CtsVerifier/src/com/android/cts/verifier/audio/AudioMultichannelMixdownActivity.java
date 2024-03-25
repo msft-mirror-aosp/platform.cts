@@ -108,8 +108,8 @@ public class AudioMultichannelMixdownActivity
     private int mTestPhase = TestManager.TESTPHASE_NONE;
     private boolean mIsDuplexRunning;
 
-    private static final int MS_PER_SEC = 1000;
-    private static final int TEST_TIME_IN_SECONDS = 1;
+    private static final float MS_PER_SEC = 1000;
+    private static final float TEST_TIME_IN_SECONDS = 0.5f;
 
     private Timer mTimer;
 
@@ -621,15 +621,7 @@ public class AudioMultichannelMixdownActivity
         // This will force the duplex manager to restart
         mCurrentPlayerMask = 0;
 
-        (mTimer = new Timer()).schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (mTestPhase != TestManager.TESTPHASE_NONE) {
-                    completeTestPhase();
-                }
-                advanceTestPhase();
-            }
-        }, 0, TEST_TIME_IN_SECONDS * MS_PER_SEC);
+        advanceTestPhase();
 
         return true;
     }
@@ -659,13 +651,26 @@ public class AudioMultichannelMixdownActivity
             mTestPhase++;
 
             TestPhase testPhase = mTestManager.getTestPhase(mTestPhase);
+            float stateChangeDelay = 0.0f;
             if (mCurrentPlayerMask != testPhase.mOutputMask) {
                 stopDuplex();
                 startDuplex(testPhase);
+                // add a delay to account for "settling"
+                stateChangeDelay = 0.5f;
             }
             mTestManager.displayTestPhases();
 
             mAudioSource.setMask(1 << testPhase.mOutputChannel);
+
+            (mTimer = new Timer()).schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if (mTestPhase != TestManager.TESTPHASE_NONE) {
+                        completeTestPhase();
+                    }
+                    advanceTestPhase();
+                }
+            }, (int) ((TEST_TIME_IN_SECONDS  + stateChangeDelay) * MS_PER_SEC));
         }
     }
 
