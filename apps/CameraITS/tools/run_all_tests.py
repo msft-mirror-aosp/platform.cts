@@ -629,13 +629,13 @@ def main():
   logging.info('Saving %s output files to: %s', config_file_test_key, topdir)
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
-    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.build.product'
+    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.product.device'
     raw_output = subprocess.check_output(
         tablet_name_cmd, stderr=subprocess.STDOUT, shell=True)
     tablet_name = str(raw_output.decode('utf-8')).strip()
     logging.debug('Tablet name: %s', tablet_name)
     brightness = test_params_content['brightness']
-    its_session_utils.validate_tablet_brightness(tablet_name, brightness)
+    its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
 
