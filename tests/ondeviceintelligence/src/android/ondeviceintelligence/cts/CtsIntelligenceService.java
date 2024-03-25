@@ -43,10 +43,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public class CtsIntelligenceService extends OnDeviceIntelligenceService {
+    public static CountDownLatch sConnectLatch;
+
+    // The timeout to wait for async result
+    public static final long WAIT_TIMEOUT_IN_MS = 5000;
+
+    private static OnDeviceIntelligenceService sService;
+
+    @Override
+    public void onReady() {
+        Log.d(TAG, "onReady()");
+        sService = this;
+        if (sConnectLatch != null) {
+            sConnectLatch.countDown();
+        }
+    }
+
+    public static OnDeviceIntelligenceService getServiceInstance() {
+        return sService;
+    }
     public static Feature getSampleFeature(int id) {
         return new Feature.Builder(id).setFeatureParams(PersistableBundle.EMPTY).setModelName(
                 "test-model").setName("test-feature").setType(1).setVariant(2).build();
@@ -66,6 +87,11 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
     @Override
     public void onInferenceServiceConnected() {
+        try {
+            getOrCreateTestFile();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create test file", e);
+        }
         Log.i(TAG, "Received onInferenceServiceStarted");
     }
 
@@ -78,7 +104,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
         try {
-            File testFile = getTestFile();
+            File testFile = getOrCreateTestFile();
             try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
                     ParcelFileDescriptor.MODE_READ_ONLY)) {
                 Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
@@ -97,6 +123,11 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             @Nullable CancellationSignal cancellationSignal,
             @NonNull DownloadCallback downloadCallback) {
         Log.w(TAG, "Received onDownloadFeature call from: " + callerUid);
+        if (feature.getId() == 2) {
+            downloadCallback.onDownloadFailed(1, "error message", PersistableBundle.EMPTY);
+        }
+        downloadCallback.onDownloadStarted(100);
+        downloadCallback.onDownloadProgress(100);
         downloadCallback.onDownloadCompleted(PersistableBundle.EMPTY);
     }
 
@@ -126,7 +157,27 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
     }
 
-    private File getTestFile() throws IOException {
+    /**
+     * Init the CountDownLatch that is used to wait for service onReady() and onShutdown().
+     */
+    public static void initServiceConnectionLatch() {
+        sConnectLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * Wait for service onCreate().
+     */
+    public static void waitServiceConnect() throws InterruptedException {
+        if (sConnectLatch == null) {
+            throw new AssertionError("Should init connect CountDownLatch");
+        }
+        if (!sConnectLatch.await(WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS)) {
+            throw new AssertionError("OnDeviceIntelligenceService doesn't start.");
+        }
+        sConnectLatch = null;
+    }
+
+    private File getOrCreateTestFile() throws IOException {
         File path = this.getFilesDir();
         File file = new File(path, TEST_FILE_NAME);
         if (file.exists()) {
@@ -139,5 +190,4 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
         return file;
     }
-
 }
