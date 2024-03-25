@@ -86,8 +86,10 @@ public class TvAdServiceTest {
     private TvAdServiceInfo mStubInfo;
     private TvInputInfo mTvInputInfo;
     private StubTvAdService.StubSessionImpl mSession;
+    private TvAdView.OnUnhandledInputEventListener mOnUnhandledInputEventListener;
 
     private final MockCallback mCallback = new MockCallback();
+    private final MockTvAdServiceCallBack mMockTvAdServiceCallBack = new MockTvAdServiceCallBack();
 
     public static class MockCallback extends TvAdView.TvAdCallback {
 
@@ -96,7 +98,12 @@ public class TvAdServiceTest {
 
     }
 
+    public static class MockTvAdServiceCallBack extends TvAdManager.TvAdServiceCallback {
 
+        private void resetValues() {
+        }
+
+    }
 
     @Before
     public void setUp() throws Throwable {
@@ -130,6 +137,7 @@ public class TvAdServiceTest {
         }
         assertNotNull(mStubInfo);
         mTvAdView.setCallback(getExecutor(), mCallback);
+        mManager.registerCallback(getExecutor(), mMockTvAdServiceCallBack);
         mTvAdView.setOnUnhandledInputEventListener(
                 new TvAdView.OnUnhandledInputEventListener() {
                     @Override
@@ -158,6 +166,8 @@ public class TvAdServiceTest {
         runTestOnUiThread(new Runnable() {
             public void run() {
                 mTvAdView.reset();
+                mTvAdView.clearCallback();
+                mTvAdView.clearOnUnhandledInputEventListener();
                 mTvView.reset();
             }
         });
@@ -166,6 +176,26 @@ public class TvAdServiceTest {
         if (mActivityScenario != null) {
             mActivityScenario.close();
         }
+        mManager.unregisterCallback(mMockTvAdServiceCallBack);
+    }
+
+    @Test
+    public void testGetOnUnhandledInputEventListener() {
+        mOnUnhandledInputEventListener = new TvAdView.OnUnhandledInputEventListener() {
+            @Override
+            public boolean onUnhandledInputEvent(InputEvent event) {
+                return true;
+            }
+        };
+        mTvAdView.setOnUnhandledInputEventListener(
+                mOnUnhandledInputEventListener);
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mTvAdView.getOnUnhandledInputEventListener()
+                        == mOnUnhandledInputEventListener;
+            }
+        }.run();
     }
 
     @Test
