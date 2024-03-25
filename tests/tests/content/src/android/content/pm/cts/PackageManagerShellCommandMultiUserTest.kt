@@ -103,6 +103,8 @@ class PackageManagerShellCommandMultiUserTest {
         private const val SYSTEM_USER_ONLY_PROVIDER = "SystemUserOnlyProvider"
         private const val SYSTEM_USER_ONLY_SERVICE = "SystemUserOnlyService"
 
+        private const val MIME_GROUP = "mime_group"
+
         @JvmField
         @ClassRule(order = 0)
         @Rule
@@ -1017,6 +1019,206 @@ class PackageManagerShellCommandMultiUserTest {
         } finally {
             newUser.removeWhenPossible()
         }
+    }
+
+    @Test
+    fun testUpdateMimeGroup_changed() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                packageName,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                packageName,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        val mimeTypes1 = setOf("text/*")
+                        // update mimeGroup on the primary user
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes1)
+
+                        // both primary and secondary users receive the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes1)
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForSecondaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextSecondaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes1)
+
+                        changedBroadcastReceiverForPrimaryUser.reset()
+                        changedBroadcastReceiverForSecondaryUser.reset()
+
+                        val mimeTypes2 = setOf("text/plain")
+                        // update mimeGroup on the second user
+                        contextSecondaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes2)
+
+                        // both primary and secondary users receive the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes2)
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForSecondaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextSecondaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes2)
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    @Test
+    fun testUpdateMimeGroup_noChanged_noBroadcastReceived() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                packageName,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                packageName,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+
+                        val mimeTypes = setOf("video/*")
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
+
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+
+                        changedBroadcastReceiverForPrimaryUser.reset()
+                        changedBroadcastReceiverForSecondaryUser.reset()
+
+                        // mimeGroup is not changed on the primary user and no broadcasts are
+                        // received
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
+
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+
+                        changedBroadcastReceiverForPrimaryUser.reset()
+                        changedBroadcastReceiverForSecondaryUser.reset()
+
+                        // mimeGroup is not changed on the secondary user and no broadcasts are
+                        // received
+                        contextSecondaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
+
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    private fun assertReceivedComponents(intent: Intent, componentName: String) {
+        var receivedComponents = intent.getStringArrayExtra(
+                Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST
+        )
+        assertThat(receivedComponents).isNotNull()
+        assertThat(receivedComponents!![0]).isEqualTo(componentName)
     }
 
     private fun getUserManager(): UserManager {
