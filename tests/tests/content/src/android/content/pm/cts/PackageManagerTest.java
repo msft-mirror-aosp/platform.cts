@@ -21,7 +21,7 @@ import static android.Manifest.permission.GET_INTENT_SENDER_INTENT;
 import static android.Manifest.permission.INSTALL_PACKAGES;
 import static android.Manifest.permission.INSTALL_TEST_ONLY_PACKAGE;
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
-import static android.Manifest.permission.SUSPEND_APPS;
+import static android.Manifest.permission.QUARANTINE_APPS;
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Intent.FLAG_EXCLUDE_STOPPED_PACKAGES;
@@ -3999,7 +3999,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                     new String[]{HELLO_WORLD_PACKAGE_NAME}, true,
                     null, null, dialogInfo, FLAG_SUSPEND_QUARANTINED);
             assertEquals("", String.join(",", notset));
-        }, SUSPEND_APPS);
+        }, QUARANTINE_APPS);
         assertTrue("package is quarantined by both shell and cts",
                 isPackageQuarantined(HELLO_WORLD_PACKAGE_NAME));
         assertEquals(ctsPackageName,
@@ -4034,7 +4034,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                     mPackageManager.setPackagesSuspended(new String[]{HELLO_WORLD_PACKAGE_NAME},
                             false, null, null, null, FLAG_SUSPEND_QUARANTINED);
             assertEquals("", String.join(",", notset));
-        }, SUSPEND_APPS);
+        }, QUARANTINE_APPS);
         assertEquals("com.android.shell",
                 mPackageManager.getSuspendingPackage(HELLO_WORLD_PACKAGE_NAME));
 
