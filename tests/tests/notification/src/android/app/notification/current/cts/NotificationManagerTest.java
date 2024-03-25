@@ -2244,13 +2244,17 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 assertAccessible(background7Uri);
                 assertTrue(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
 
-                // Remove the listener to ensure permissions get revoked
-                mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
+                // Remove the external listener to ensure permissions get revoked
+                toggleExternalListenerAccess(
+                        new ComponentName("com.android.test.notificationlistener",
+                                "com.android.test.notificationlistener.TestNotificationListener"),
+                        false);
                 Thread.sleep(500); // wait for listener to be disabled
 
-                // Ensure that revoking listener access to this one app does not effect the other.
-                assertInaccessible(background7Uri);
-                assertTrue(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
+                // Ensure that revoking listener access to this one app does not affect the other:
+                // external app no longer has access, this one still does
+                assertFalse(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
+                assertAccessible(background7Uri);
 
             } finally {
                 // Clean Up -- Cancel #7
@@ -2258,13 +2262,16 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 Thread.sleep(500);
             }
 
-            // Finally, cancelling the permission must still revoke those other permissions.
-            assertFalse(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
-
+            // Finally, cancelling the notification must still revoke those other permissions.
+            // Double-check first that the notification is actually gone, and then wait for a bit
+            // longer, as it may take some time for the uri permissions to clear up even after the
+            // notification is gone.
+            assertTrue(mNotificationHelper.isNotificationGone(7, SEARCH_TYPE.LISTENER));
+            Thread.sleep(500);
+            assertInaccessible(background7Uri);
         } finally {
-            // Clean Up -- Make sure the external listener is has access revoked
-            toggleExternalListenerAccess(new ComponentName("com.android.test.notificationlistener",
-                    "com.android.test.notificationlistener.TestNotificationListener"), false);
+            // Clean Up -- Make sure this app has access revoked
+            mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
         }
     }
 
@@ -2318,7 +2325,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void assertAccessible(Uri uri)
             throws IOException {
         ContentResolver contentResolver = mContext.getContentResolver();
-        for (int tries = 3; tries-- > 0; ) {
+        for (int tries = 5; tries-- > 0; ) {
             try (AssetFileDescriptor fd = contentResolver.openAssetFile(uri, "r", null)) {
                 if (fd != null) {
                     return;
@@ -2326,7 +2333,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             } catch (SecurityException e) {
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(200);
             } catch (InterruptedException ex) {
             }
         }
@@ -2336,13 +2343,13 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void assertInaccessible(Uri uri)
             throws IOException {
         ContentResolver contentResolver = mContext.getContentResolver();
-        for (int tries = 3; tries-- > 0; ) {
+        for (int tries = 5; tries-- > 0; ) {
             try (AssetFileDescriptor fd = contentResolver.openAssetFile(uri, "r", null)) {
             } catch (SecurityException e) {
                 return;
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(200);
             } catch (InterruptedException ex) {
             }
         }

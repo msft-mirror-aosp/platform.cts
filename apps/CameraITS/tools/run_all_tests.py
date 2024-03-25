@@ -77,7 +77,7 @@ _TABLET_SCENES = (
     'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_night'),
-    os.path.join('scene_extensions', 'scene_low_light_boost'),
+    os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
 )
 
@@ -96,7 +96,7 @@ _MANUAL_SCENES = ('scene5',)
 # Scene extensions
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_night'),
-                      os.path.join('scene_extensions', 'scene_low_light_boost'),
+                      os.path.join('scene_extensions', 'scene_low_light'),
                       )
 
 # All possible scenes
@@ -145,10 +145,10 @@ _SCENE_REQ = types.MappingProxyType({
         'and four smaller circles inside of it. '
         'See tests/scene_extensions/scene_night/scene_night.png'
     ),
-    os.path.join('scene_extensions', 'scene_low_light_boost'): (
+    os.path.join('scene_extensions', 'scene_low_light'): (
         'A tablet displayed scene with a grid of squares of varying '
         'brightness. See '
-        'tests/scene_extensions/scene_low_light_boost/scene_low_light_boost.png'
+        'tests/scene_extensions/scene_low_light/scene_low_light.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'

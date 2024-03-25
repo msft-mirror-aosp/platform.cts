@@ -84,7 +84,7 @@ public class AppSearchMigratorTest {
                         .build();
 
         GenericDocument output =
-                migrator.onUpgrade(/*currentVersion=*/ 3, /*finalVersion=*/ 5, input);
+                migrator.onUpgrade(/* currentVersion= */ 3, /* finalVersion= */ 5, input);
         assertThat(output).isEqualTo(expected);
     }
 
@@ -146,7 +146,7 @@ public class AppSearchMigratorTest {
                         .build();
 
         GenericDocument output =
-                migrator.onDowngrade(/*currentVersion=*/ 6, /*finalVersion=*/ 4, input);
+                migrator.onDowngrade(/* currentVersion= */ 6, /* finalVersion= */ 4, input);
         assertThat(output).isEqualTo(expected);
     }
 }

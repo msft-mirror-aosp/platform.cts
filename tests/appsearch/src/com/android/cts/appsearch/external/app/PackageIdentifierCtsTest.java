@@ -26,7 +26,7 @@ public class PackageIdentifierCtsTest {
     @Test
     public void testGetters() {
         PackageIdentifier packageIdentifier =
-                new PackageIdentifier("com.packageName", /*sha256Certificate=*/ new byte[] {100});
+                new PackageIdentifier("com.packageName", /* sha256Certificate= */ new byte[] {100});
         assertThat(packageIdentifier.getPackageName()).isEqualTo("com.packageName");
         assertThat(packageIdentifier.getSha256Certificate()).isEqualTo(new byte[] {100});
     }

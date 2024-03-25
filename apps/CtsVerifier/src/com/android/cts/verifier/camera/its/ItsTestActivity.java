@@ -181,7 +181,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene9",
             "scene_extensions/scene_hdr",
             "scene_extensions/scene_night",
-            "scene_extensions/scene_low_light_boost",
+            "scene_extensions/scene_low_light",
             "scene_video",
             "sensor_fusion",
             "scene_flash");

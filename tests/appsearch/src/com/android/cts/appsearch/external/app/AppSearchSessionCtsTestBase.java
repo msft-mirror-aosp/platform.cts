@@ -198,8 +198,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .build())
                         .build();
 
-        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build())
-                .get();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build()).get();
 
         Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
         assertThat(actualSchemaTypes).containsExactly(schema1);
@@ -226,8 +225,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .build())
                         .build();
 
-        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build())
-                .get();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build()).get();
 
         GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
         assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
@@ -256,8 +254,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .build())
                         .build();
 
-        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build())
-                .get();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build()).get();
 
         Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
         assertThat(actualSchemaTypes).containsExactly(schema1);
@@ -284,8 +281,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .build())
                         .build();
 
-        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build())
-                .get();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build()).get();
 
         GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
         assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
@@ -941,11 +937,11 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier1)
+                                "Email1", /* visible= */ true, packageIdentifier1)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier2)
+                                "Email1", /* visible= */ true, packageIdentifier2)
                         .addRequiredPermissionsForSchemaTypeVisibility(
                                 "Email1",
                                 ImmutableSet.of(
@@ -1060,11 +1056,11 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier1)
+                                "Email1", /* visible= */ true, packageIdentifier1)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier2)
+                                "Email1", /* visible= */ true, packageIdentifier2)
                         .build();
 
         mDb1.setSchemaAsync(request).get();
@@ -1093,7 +1089,7 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .addRequiredPermissionsForSchemaTypeVisibility(
                                 "Email1", ImmutableSet.of(SetSchemaRequest.READ_SMS))
                         .build();
@@ -1389,7 +1385,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(e.getMessage())
                 .isEqualTo(
                         "StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID is not supported on"
-                            + " this AppSearch implementation.");
+                                + " this AppSearch implementation.");
     }
 
     @Test
@@ -4402,10 +4398,10 @@ public abstract class AppSearchSessionCtsTestBase {
                         "A commonly used fake word is foo. "
                                 + "Another nonsense word that’s used a lot is bar");
         assertThat(matchInfo.getExactMatchRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 29, /*upper=*/ 32));
+                .isEqualTo(new SearchResult.MatchRange(/* lower= */ 29, /* upper= */ 32));
         assertThat(matchInfo.getExactMatch()).isEqualTo("foo");
         assertThat(matchInfo.getSnippetRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 26, /*upper=*/ 33));
+                .isEqualTo(new SearchResult.MatchRange(/* lower= */ 26, /* upper= */ 33));
         assertThat(matchInfo.getSnippet()).isEqualTo("is foo.");
 
         if (!mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
@@ -4413,7 +4409,7 @@ public abstract class AppSearchSessionCtsTestBase {
             assertThrows(UnsupportedOperationException.class, matchInfo::getSubmatch);
         } else {
             assertThat(matchInfo.getSubmatchRange())
-                    .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 29, /*upper=*/ 31));
+                    .isEqualTo(new SearchResult.MatchRange(/* lower= */ 29, /* upper= */ 31));
             assertThat(matchInfo.getSubmatch()).isEqualTo("fo");
         }
     }
@@ -4553,7 +4549,7 @@ public abstract class AppSearchSessionCtsTestBase {
         SearchResult.MatchInfo matchInfo = matchInfos.get(0);
         assertThat(matchInfo.getFullText()).isEqualTo(japanese);
         assertThat(matchInfo.getExactMatchRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 44, /*upper=*/ 45));
+                .isEqualTo(new SearchResult.MatchRange(/* lower= */ 44, /* upper= */ 45));
         assertThat(matchInfo.getExactMatch()).isEqualTo("は");
 
         if (!mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
@@ -4561,7 +4557,7 @@ public abstract class AppSearchSessionCtsTestBase {
             assertThrows(UnsupportedOperationException.class, matchInfo::getSubmatch);
         } else {
             assertThat(matchInfo.getSubmatchRange())
-                    .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 44, /*upper=*/ 45));
+                    .isEqualTo(new SearchResult.MatchRange(/* lower= */ 44, /* upper= */ 45));
             assertThat(matchInfo.getSubmatch()).isEqualTo("は");
         }
     }
@@ -5077,8 +5073,8 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .build()));
 
         // Check the presence of the documents
-        assertThat(doGet(mDb1, /*namespace=*/ "email", "id1", "id2")).hasSize(2);
-        assertThat(doGet(mDb1, /*namespace=*/ "document", "id3")).hasSize(1);
+        assertThat(doGet(mDb1, /* namespace= */ "email", "id1", "id2")).hasSize(2);
+        assertThat(doGet(mDb1, /* namespace= */ "document", "id3")).hasSize(1);
 
         // Delete the email namespace
         mDb1.removeAsync(
@@ -5144,8 +5140,8 @@ public abstract class AppSearchSessionCtsTestBase {
                         new PutDocumentsRequest.Builder().addGenericDocuments(email2).build()));
 
         // Check the presence of the documents
-        assertThat(doGet(mDb1, /*namespace=*/ "email", "id1")).hasSize(1);
-        assertThat(doGet(mDb2, /*namespace=*/ "email", "id2")).hasSize(1);
+        assertThat(doGet(mDb1, /* namespace= */ "email", "id1")).hasSize(1);
+        assertThat(doGet(mDb2, /* namespace= */ "email", "id2")).hasSize(1);
 
         // Delete the email namespace in instance 1
         mDb1.removeAsync(
@@ -5709,7 +5705,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /*resultLimit=*/ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /* resultLimit= */ 1)
                                 .build());
         List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4);
@@ -5722,7 +5718,8 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /*resultLimit=*/ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE,
+                                        /* resultLimit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4, inEmail2);
@@ -5737,7 +5734,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /*resultLimit=*/ 1)
+                                        /* resultLimit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4, inEmail2);
@@ -7703,8 +7700,8 @@ public abstract class AppSearchSessionCtsTestBase {
                 UnsupportedOperationException.class,
                 () ->
                         mDb1.searchSuggestionAsync(
-                                        /*suggestionQueryExpression=*/ "t",
-                                        new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 2)
+                                        /* suggestionQueryExpression= */ "t",
+                                        new SearchSuggestionSpec.Builder(/* totalResultCount= */ 2)
                                                 .build())
                                 .get());
     }
@@ -7760,8 +7757,9 @@ public abstract class AppSearchSessionCtsTestBase {
 
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions)
                 .containsExactly(resultOne, resultTwo, resultThree, resultFour)
@@ -7770,8 +7768,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Query first 2 suggestions, and they will be ranked.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 2).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 2).build())
                         .get();
         assertThat(suggestions).containsExactly(resultOne, resultTwo).inOrder();
     }
@@ -7822,8 +7820,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace1 has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .build())
                         .get();
@@ -7832,8 +7830,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace2 has 1 result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace2")
                                         .build())
                         .get();
@@ -7842,8 +7840,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace2 and 3 has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace2", "namespace3")
                                         .build())
                         .get();
@@ -7852,8 +7850,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // non exist namespace has empty result
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("nonExistNamespace")
                                         .build())
                         .get();
@@ -7912,8 +7910,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .build())
@@ -7923,8 +7921,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and namespace1/doc2
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .addFilterDocumentIds(
                                                 "namespace1", ImmutableList.of("id1", "id2"))
@@ -7935,8 +7933,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and namespace2/doc3
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterNamespaces("namespace1", "namespace2")
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .addFilterDocumentIds("namespace2", ImmutableList.of("id3"))
@@ -7947,8 +7945,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and everything in namespace2
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .build())
                         .get();
@@ -8025,8 +8023,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type1 has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterSchemas("Type1")
                                         .build())
                         .get();
@@ -8035,8 +8033,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type2 has 1 result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterSchemas("Type2")
                                         .build())
                         .get();
@@ -8045,8 +8043,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type2 and 3 has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterSchemas("Type2", "Type3")
                                         .build())
                         .get();
@@ -8055,8 +8053,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // non exist type has empty result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .addFilterSchemas("nonExistType")
                                         .build())
                         .get();
@@ -8115,16 +8113,18 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix f has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultFoo, resultFool);
 
         // prefix b has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "b",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "b",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultBar, resultBaz);
     }
@@ -8178,8 +8178,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by NONE, the order should be arbitrary but all terms appear.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_NONE)
@@ -8190,8 +8190,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by document count, the order should be term1:3 > term2:2 > term3:1
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_DOCUMENT_COUNT)
@@ -8202,8 +8202,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by term frequency, the order should be term3:5 > term2:4 > term1:3
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_TERM_FREQUENCY)
@@ -8258,8 +8258,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 3 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultTwo, resultThree, resultTart);
 
@@ -8273,8 +8274,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // now prefix t has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultThree, resultTart);
     }
@@ -8316,8 +8318,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 3 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultTwo, resultThree, resultTart);
 
@@ -8333,8 +8336,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 2 results for now.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultThree, resultTwist);
     }
@@ -8377,16 +8381,18 @@ public abstract class AppSearchSessionCtsTestBase {
         // database 1 could get suggestion results
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultOne, resultTwo).inOrder();
 
         // database 2 couldn't get suggestion results
         suggestions =
                 mDb2.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).isEmpty();
     }
@@ -8429,8 +8435,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search "bar AND f" only document 1 should match the search.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar fo").build();
@@ -8440,8 +8447,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar OR cat f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar OR cat f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barCatFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar OR cat fo").build();
@@ -8452,8 +8460,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "(bar AND cat) OR f", all documents could match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "(bar cat) OR f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "(bar cat) OR f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barCatOrFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("(bar cat) OR fo").build();
@@ -8468,8 +8477,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "-bar f", document2 "cat foo" could and document3 "fool" could match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "-bar f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "-bar f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult noBarFoo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("-bar foo").build();
@@ -8689,8 +8699,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "bar AND subject:f"
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar subject:f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar subject:f",
+                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barSubjectFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar subject:fo").build();

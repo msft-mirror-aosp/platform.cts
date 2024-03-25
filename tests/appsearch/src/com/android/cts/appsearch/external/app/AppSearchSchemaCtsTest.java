@@ -235,7 +235,7 @@ public class AppSearchSchemaCtsTest {
                                                 StringPropertyConfig.INDEXING_TYPE_PREFIXES)
                                         .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
                                         .build())
-                .build();
+                        .build();
         AppSearchSchema schema2 =
                 new AppSearchSchema.Builder("Email")
                         .setDescription("A type of electronic message")
@@ -247,27 +247,29 @@ public class AppSearchSchemaCtsTest {
                                                 StringPropertyConfig.INDEXING_TYPE_PREFIXES)
                                         .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
                                         .build())
-                .build();
+                        .build();
         assertThat(schema1).isNotEqualTo(schema2);
         assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
     }
 
     @Test
     public void testParentTypes() {
-        AppSearchSchema schema = new AppSearchSchema.Builder("EmailMessage")
-                .addParentType("Email")
-                .addParentType("Message")
-                .build();
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("EmailMessage")
+                        .addParentType("Email")
+                        .addParentType("Message")
+                        .build();
         assertThat(schema.getParentTypes()).containsExactly("Email", "Message");
     }
 
     @Test
     public void testDuplicateParentTypes() {
-        AppSearchSchema schema = new AppSearchSchema.Builder("EmailMessage")
-                .addParentType("Email")
-                .addParentType("Message")
-                .addParentType("Email")
-                .build();
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("EmailMessage")
+                        .addParentType("Email")
+                        .addParentType("Message")
+                        .addParentType("Email")
+                        .build();
         assertThat(schema.getParentTypes()).containsExactly("Email", "Message");
     }
 
@@ -285,8 +287,8 @@ public class AppSearchSchemaCtsTest {
     public void testDocumentPropertyConfig_indexableNestedPropertyPropertyPaths() {
         DocumentPropertyConfig documentPropertyConfig =
                 new DocumentPropertyConfig.Builder("property", "Schema")
-                        .addIndexableNestedPropertyPaths(new PropertyPath("prop1"),
-                                new PropertyPath("prop1.prop2"))
+                        .addIndexableNestedPropertyPaths(
+                                new PropertyPath("prop1"), new PropertyPath("prop1.prop2"))
                         .build();
         assertThat(documentPropertyConfig.getIndexableNestedProperties())
                 .containsExactly("prop1", "prop1.prop2");
@@ -296,8 +298,8 @@ public class AppSearchSchemaCtsTest {
     public void testDocumentPropertyConfig_indexableNestedPropertyProperty_duplicatePaths() {
         DocumentPropertyConfig documentPropertyConfig =
                 new DocumentPropertyConfig.Builder("property", "Schema")
-                        .addIndexableNestedPropertyPaths(new PropertyPath("prop1"),
-                                new PropertyPath("prop1.prop2"))
+                        .addIndexableNestedPropertyPaths(
+                                new PropertyPath("prop1"), new PropertyPath("prop1.prop2"))
                         .addIndexableNestedProperties("prop1")
                         .build();
         assertThat(documentPropertyConfig.getIndexableNestedProperties())
@@ -319,8 +321,8 @@ public class AppSearchSchemaCtsTest {
 
         builder.addIndexableNestedPropertyPaths(new PropertyPath("prop3"));
         DocumentPropertyConfig config3 = builder.build();
-        assertThat(config3.getIndexableNestedProperties()).containsExactly("prop1", "prop2",
-                "prop3");
+        assertThat(config3.getIndexableNestedProperties())
+                .containsExactly("prop1", "prop2", "prop3");
         assertThat(config2.getIndexableNestedProperties()).containsExactly("prop1", "prop2");
         assertThat(config1.getIndexableNestedProperties()).containsExactly("prop1");
     }
@@ -373,14 +375,14 @@ public class AppSearchSchemaCtsTest {
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.DocumentPropertyConfig.Builder(
-                                        "document1", AppSearchEmail.SCHEMA_TYPE)
+                                                "document1", AppSearchEmail.SCHEMA_TYPE)
                                         .setCardinality(
                                                 AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED)
                                         .setShouldIndexNestedProperties(true)
                                         .build())
                         .addProperty(
                                 new AppSearchSchema.DocumentPropertyConfig.Builder(
-                                        "document2", AppSearchEmail.SCHEMA_TYPE)
+                                                "document2", AppSearchEmail.SCHEMA_TYPE)
                                         .setCardinality(
                                                 AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED)
                                         .setShouldIndexNestedProperties(false)
@@ -449,8 +451,8 @@ public class AppSearchSchemaCtsTest {
         assertThat(((AppSearchSchema.DocumentPropertyConfig) properties.get(6)).getSchemaType())
                 .isEqualTo(AppSearchEmail.SCHEMA_TYPE);
         assertThat(
-                ((AppSearchSchema.DocumentPropertyConfig) properties.get(6))
-                        .shouldIndexNestedProperties())
+                        ((AppSearchSchema.DocumentPropertyConfig) properties.get(6))
+                                .shouldIndexNestedProperties())
                 .isEqualTo(true);
 
         assertThat(properties.get(7).getName()).isEqualTo("document2");
@@ -459,28 +461,28 @@ public class AppSearchSchemaCtsTest {
         assertThat(((AppSearchSchema.DocumentPropertyConfig) properties.get(7)).getSchemaType())
                 .isEqualTo(AppSearchEmail.SCHEMA_TYPE);
         assertThat(
-                ((AppSearchSchema.DocumentPropertyConfig) properties.get(7))
-                        .shouldIndexNestedProperties())
+                        ((AppSearchSchema.DocumentPropertyConfig) properties.get(7))
+                                .shouldIndexNestedProperties())
                 .isEqualTo(false);
         assertThat(
-                ((AppSearchSchema.DocumentPropertyConfig) properties.get(7))
-                        .getIndexableNestedProperties())
+                        ((AppSearchSchema.DocumentPropertyConfig) properties.get(7))
+                                .getIndexableNestedProperties())
                 .containsExactly("path1", "path2", "path3");
 
         assertThat(properties.get(8).getName()).isEqualTo("qualifiedId1");
         assertThat(properties.get(8).getCardinality())
                 .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL);
         assertThat(
-                ((AppSearchSchema.StringPropertyConfig) properties.get(8))
-                        .getJoinableValueType())
+                        ((AppSearchSchema.StringPropertyConfig) properties.get(8))
+                                .getJoinableValueType())
                 .isEqualTo(AppSearchSchema.StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID);
 
         assertThat(properties.get(9).getName()).isEqualTo("qualifiedId2");
         assertThat(properties.get(9).getCardinality())
                 .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_REQUIRED);
         assertThat(
-                ((AppSearchSchema.StringPropertyConfig) properties.get(9))
-                        .getJoinableValueType())
+                        ((AppSearchSchema.StringPropertyConfig) properties.get(9))
+                                .getJoinableValueType())
                 .isEqualTo(AppSearchSchema.StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID);
     }
 
