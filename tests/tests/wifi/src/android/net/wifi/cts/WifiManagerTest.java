@@ -3142,7 +3142,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 TetheringManager.TetheringRequest request =
                         new TetheringManager.TetheringRequest.Builder(
                                 TetheringManager.TETHERING_WIFI).build();
-                sWifiManager.startTetheredHotspotRequest(request);
+                sWifiManager.startTetheredHotspotRequest(request, executor, callback);
                 PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
                         () -> {
                             executor.runAll();
@@ -3173,7 +3173,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
                 }
             } finally {
-                sWifiManager.unregisterSoftApCallback(callback);
                 uiAutomation.dropShellPermissionIdentity();
             }
         }, false /* run with disabled */);
