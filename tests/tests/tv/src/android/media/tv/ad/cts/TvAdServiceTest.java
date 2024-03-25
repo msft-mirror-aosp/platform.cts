@@ -59,6 +59,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -392,6 +393,41 @@ public class TvAdServiceTest {
         assertThat(mSession.mKeyMultipleCount).isEqualTo(1);
         assertThat(mSession.mKeyMultipleCode).isEqualTo(keyCode);
         assertKeyEventEquals(mSession.mKeyMultipleEvent, event);
+    }
+
+
+    @Test
+    public void testViewOnAttachedToWindow() {
+        mActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvAdView.onAttachedToWindow();
+            }
+        });
+    }
+
+    @Test
+    public void testAppLinkCommand() throws Exception {
+        List<TvAdServiceInfo> list = mManager.getTvAdServiceList();
+
+        TvAdServiceInfo stubInfo = null;
+        for (TvAdServiceInfo info : list) {
+            if (info.getServiceInfo().name.equals(StubTvAdService.class.getName())) {
+                stubInfo = info;
+                break;
+            }
+        }
+        assertNotNull(stubInfo);
+
+        Bundle bundle = new Bundle();
+        bundle.putString(TvAdManager.APP_LINK_KEY_PACKAGE_NAME, "pkg_name");
+        bundle.putString(TvAdManager.APP_LINK_KEY_CLASS_NAME, "clazz_name");
+
+        mManager.sendAppLinkCommand(stubInfo.getId(), bundle);
+        PollingCheck.waitFor(
+                TIME_OUT_MS, () -> StubTvAdService.sAppLinkCommand != null);
+
+        assertBundlesAreEqual(StubTvAdService.sAppLinkCommand, bundle);
     }
 
     private TvAdView findTvAdViewById(int id) {
