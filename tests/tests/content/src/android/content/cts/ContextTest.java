@@ -27,6 +27,8 @@ import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.server.am.Flags.FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -795,11 +797,7 @@ public class ContextTest {
         final ResultReceiver receiver = new HighPriorityBroadcastReceiver();
         final ResultReceiver finalReceiver = new ResultReceiver();
 
-        AppOpsManager aom =
-                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
-                (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS,
-                Process.myUid(), AppOpsManager.MODE_ALLOWED));
+        setAppOpMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS, AppOpsManager.MODE_ALLOWED);
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
 
@@ -838,12 +836,8 @@ public class ContextTest {
     @Test
     public void testSendOrderedBroadcastWithAppOp_NotGranted() {
         final ResultReceiver receiver = new ResultReceiver();
+        setAppOpMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS, AppOpsManager.MODE_ERRORED);
 
-        AppOpsManager aom =
-                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
-                (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS,
-                        Process.myUid(), AppOpsManager.MODE_ERRORED));
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
 
@@ -2147,6 +2141,73 @@ public class ContextTest {
         }.run();
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK)
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_DEFAULT);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        // The test APK has this AppOp permission.
+        options.setRequireAllOfPermissions(
+                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        new PollingCheck(BROADCAST_TIMEOUT) {
+            @Override
+            protected boolean check() {
+                return receiver.hasReceivedBroadCast();
+            }
+        }.run();
+    }
+
+    @Test
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndAllowedAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_ALLOWED);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setRequireAllOfPermissions(
+                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        new PollingCheck(BROADCAST_TIMEOUT) {
+            @Override
+            protected boolean check() {
+                return receiver.hasReceivedBroadCast();
+            }
+        }.run();
+    }
+
+    @Test
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndErroredAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_ERRORED);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setRequireAllOfPermissions(
+                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        Thread.sleep(BROADCAST_TIMEOUT);
+        assertFalse(receiver.hasReceivedBroadCast());
+    }
+
     /** The receiver should not get the broadcast if it does not have all the permissions. */
     @Test
     public void testSendBroadcastRequireAllOfPermissions_receiverHasSomePermissions()
@@ -2671,5 +2732,17 @@ public class ContextTest {
 
     private boolean isWallpaperSupported() {
         return WallpaperManager.getInstance(mContext).isWallpaperSupported();
+    }
+
+    private void setAppOpMode(int appOpCode, @AppOpsManager.Mode int appOpMode) {
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE),
+                (appOpsMan) -> appOpsMan.setUidMode(appOpCode, Process.myUid(), appOpMode));
+    }
+
+    private void setAppOpMode(String appOp, @AppOpsManager.Mode int appOpMode) {
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE),
+                (appOpsMan) -> appOpsMan.setUidMode(appOp, Process.myUid(), appOpMode));
     }
 }

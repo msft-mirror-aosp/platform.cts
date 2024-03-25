@@ -16,7 +16,6 @@
 
 package android.app.appsearch.cts.app;
 
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -68,7 +67,7 @@ public class SearchSpecCtsTest {
                         .setResultGrouping(
                                 SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                         | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                /*limit=*/ 37)
+                                /* limit= */ 37)
                         .addProjection("schemaTypes1", expectedPropertyPaths1)
                         .addProjection("schemaTypes2", expectedPropertyPaths2)
                         .setPropertyWeights("schemaTypes1", expectedPropertyWeights)

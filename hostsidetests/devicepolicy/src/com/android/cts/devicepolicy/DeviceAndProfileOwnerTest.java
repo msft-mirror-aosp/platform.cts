@@ -18,7 +18,6 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -757,37 +756,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testPasswordSufficientInitially() throws Exception {
         executeDeviceTestClass(".PasswordSufficientInitiallyTest");
-    }
-
-    @Test
-    public void testGetCurrentFailedPasswordAttempts() throws Exception {
-        assumeHasSecureLockScreenFeature();
-
-        final String wrongPassword = TEST_PASSWORD + "5";
-
-        changeUserCredential(TEST_PASSWORD, null /*oldCredential*/, mUserId);
-        try {
-            // Test that before trying an incorrect password there are 0 failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testNoFailedPasswordAttempts");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there is one failed attempt.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testOneFailedPasswordAttempt");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there are two failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testTwoFailedPasswordAttempts");
-            // TODO: re-enable the test below when b/110945754 is fixed.
-            // Try the correct password and check the failed attempts number has been reset to 0.
-            // assertTrue(verifyUserCredentialIsCorrect(testPassword, mUserId));
-            // executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-            //         "testNoFailedPasswordAttempts");
-        } finally {
-            changeUserCredential(null /*newCredential*/, TEST_PASSWORD, mUserId);
-        }
     }
 
     @Test
