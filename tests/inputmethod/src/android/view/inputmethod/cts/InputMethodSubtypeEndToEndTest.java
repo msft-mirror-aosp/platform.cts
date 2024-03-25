@@ -25,7 +25,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Instrumentation;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodInfo;
@@ -85,13 +84,6 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             new InputMethodSubtype.InputMethodSubtypeBuilder()
                     .setSubtypeId(0x456789ab)
                     .build();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputMethodSubtypeTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     private void launchTestActivity(@NonNull String marker) {
         TestActivity.startSync(activity -> {

@@ -32,7 +32,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.Color;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,13 +74,6 @@ public class EditTextImeSupportTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.EditTextImeSupportTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     public EditText launchTestActivity(String marker, String initialText,
             int initialSelectionStart, int initialSelectionEnd) {
