@@ -536,14 +536,14 @@ class ItsSession(object):
     return data['strValue']
 
   def check_gain_map_present(self, file_path):
-    """Checks if the image has gainmap present or not.
+    """Check if the image has gainmap present or not.
 
     The image stored at file_path is decoded and analyzed
     to check whether the gainmap is present or not. If the image
     captured is UltraHDR, it should have gainmap present.
 
     Args:
-      file_path: path of the image to be analyzed on DUT .
+      file_path: path of the image to be analyzed on DUT.
     Returns:
       Boolean: True if the image has gainmap present.
     """
@@ -553,8 +553,8 @@ class ItsSession(object):
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
-      raise error_util.CameraItsError('Invalid response for command: %s' %
-                                      cmd[_CMD_NAME_STR])
+      raise error_util.CameraItsError(
+        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
