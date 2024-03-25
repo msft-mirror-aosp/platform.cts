@@ -453,7 +453,10 @@ public class DeviceOwnerKeyManagementTest {
                     .isNotNull();
             imei = telephonyService.getImei(0);
             secondImei = telephonyService.getImei(1);
-            meid = telephonyService.getMeid(0);
+            if (sContext.getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
+                meid = telephonyService.getMeid(0);
+            }
             // If the device has a valid IMEI it must support attestation for it.
             if (imei != null) {
                 modesToTest.add(ID_TYPE_IMEI);
