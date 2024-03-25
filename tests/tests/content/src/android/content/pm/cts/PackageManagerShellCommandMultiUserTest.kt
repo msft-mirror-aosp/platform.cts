@@ -41,6 +41,7 @@ import android.content.pm.cts.PackageManagerTest.CTS_SHIM_PACKAGE_NAME
 import android.content.pm.cts.PackageManagerTest.getInstalledState
 import android.content.pm.cts.PackageManagerTest.installArchivedAsUser
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.UserManager
@@ -49,6 +50,7 @@ import android.platform.test.annotations.AppModeNonSdkSandbox
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -1021,6 +1023,10 @@ class PackageManagerShellCommandMultiUserTest {
         }
     }
 
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
     @Test
     fun testUpdateMimeGroup_changed() {
         if (!backgroundThread.isAlive) {
@@ -1028,6 +1034,9 @@ class PackageManagerShellCommandMultiUserTest {
         }
         val backgroundHandler = Handler(backgroundThread.looper)
         val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
         val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
                 packageName,
                 primaryUser.id(),
@@ -1126,6 +1135,10 @@ class PackageManagerShellCommandMultiUserTest {
         )
     }
 
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
     @Test
     fun testUpdateMimeGroup_noChanged_noBroadcastReceived() {
         if (!backgroundThread.isAlive) {
@@ -1133,6 +1146,9 @@ class PackageManagerShellCommandMultiUserTest {
         }
         val backgroundHandler = Handler(backgroundThread.looper)
         val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
         val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
                 packageName,
                 primaryUser.id(),
