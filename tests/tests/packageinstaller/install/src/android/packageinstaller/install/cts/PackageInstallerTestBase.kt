@@ -38,6 +38,7 @@ import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
 import android.provider.DeviceConfig
+import android.provider.Settings
 import android.support.test.uiautomator.By
 import android.support.test.uiautomator.BySelector
 import android.support.test.uiautomator.UiDevice
@@ -158,6 +159,11 @@ open class PackageInstallerTestBase {
     @Before
     fun waitForUIIdle() {
         uiDevice.waitForIdle()
+    }
+
+    @After
+    fun pressBack() {
+        uiDevice.pressBack()
     }
 
     /**
@@ -428,6 +434,10 @@ open class PackageInstallerTestBase {
     fun setSecureFrp(secureFrp: Boolean) {
         uiDevice.executeShellCommand("settings " +
                 "put global secure_frp_mode ${if (secureFrp) 1 else 0}")
+        Assert.assertEquals(
+            if (secureFrp) 1 else 0,
+            Settings.Global.getInt(context.contentResolver, Settings.Global.SECURE_FRP_MODE)
+        )
     }
 
     @After
