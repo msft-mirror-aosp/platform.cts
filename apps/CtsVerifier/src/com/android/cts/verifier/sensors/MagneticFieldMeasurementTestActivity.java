@@ -16,6 +16,7 @@
 
 package com.android.cts.verifier.sensors;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
@@ -38,6 +39,9 @@ import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
 import com.android.cts.verifier.sensors.helpers.SensorFeaturesDeactivator;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Semi-automated test that focuses characteristics associated with Accelerometer measurements.
@@ -49,6 +53,7 @@ public class MagneticFieldMeasurementTestActivity extends SensorCtsVerifierTestA
     private static final float THRESHOLD_CALIBRATED_UNCALIBRATED_UT = 3f;
     private static final float NANOTESLA_TO_MICROTESLA = 1.0f / 1000;
     private static final int LOCATION_TRIES = 2;
+    private static final long LOCATION_REQUEST_TIMEOUT = 5000L;
 
     public MagneticFieldMeasurementTestActivity() {
         super(MagneticFieldMeasurementTestActivity.class);
@@ -81,6 +86,9 @@ public class MagneticFieldMeasurementTestActivity extends SensorCtsVerifierTestA
      * - the values representing the expectation of the test
      * - the values sampled from the sensor
      */
+    // Permissions ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION are declared in top-level
+    // AndroidManifest.xml.
+    @SuppressLint("MissingPermission")
     @SuppressWarnings("unused")
     public String testNorm() throws Throwable {
         getTestLogger().logMessage(R.string.snsr_mag_verify_norm);
@@ -96,34 +104,46 @@ public class MagneticFieldMeasurementTestActivity extends SensorCtsVerifierTestA
         float magneticFieldEarthThreshold = (SensorManager.MAGNETIC_FIELD_EARTH_MAX
                 - SensorManager.MAGNETIC_FIELD_EARTH_MIN) / 2;
 
-        Location location = null;
+        AtomicReference<Location> location = new AtomicReference<>();
         LocationManager lm = (LocationManager) getApplicationContext().getSystemService(
                 Context.LOCATION_SERVICE);
 
         int tries = LOCATION_TRIES;
-        while (lm != null && location == null && tries > 0)  {
+        while (lm != null && location.get() == null && tries > 0)  {
+            CountDownLatch getLocationLatch = new CountDownLatch(1);
             tries--;
             List<String> providers = lm.getProviders(true /* enabledOnly */);
             int providerIndex = providers.size();
-            while (providerIndex > 0 && location == null) {
+            while (providerIndex > 0 && location.get() == null) {
                 providerIndex--;
-                location = lm.getLastKnownLocation(providers.get(providerIndex));
+                String provider = providers.get(providerIndex);
+                lm.getCurrentLocation(
+                        provider,
+                        null /* cancellationSignal */,
+                        getApplicationContext().getMainExecutor(),
+                        newLocation -> {
+                            if (getLocationLatch.getCount() > 0) {
+                                getLocationLatch.countDown();
+                                location.set(newLocation);
+                            }
+                        });
             }
-            if (location == null) {
+            getLocationLatch.await(LOCATION_REQUEST_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (location.get() == null) {
                 getTestLogger().logMessage(R.string.snsr_mag_move_outside);
                 waitForUserToContinue();
             }
         }
 
-        if (location == null) {
+        if (location.get() == null) {
             expectedMagneticFieldEarth = (SensorManager.MAGNETIC_FIELD_EARTH_MAX
                     + SensorManager.MAGNETIC_FIELD_EARTH_MIN) / 2;
             getTestLogger().logMessage(R.string.snsr_mag_no_location, expectedMagneticFieldEarth);
             waitForUserToContinue();
         } else {
-            GeomagneticField geomagneticField = new GeomagneticField((float) location.getLatitude(),
-                    (float) location.getLongitude(), (float) location.getAltitude(),
-                    location.getTime());
+            GeomagneticField geomagneticField = new GeomagneticField(
+                    (float) location.get().getLatitude(), (float) location.get().getLongitude(),
+                    (float) location.get().getAltitude(), location.get().getTime());
             expectedMagneticFieldEarth =
                     geomagneticField.getFieldStrength() * NANOTESLA_TO_MICROTESLA;
         }

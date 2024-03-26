@@ -51,7 +51,6 @@ import android.print.PrintDocumentAdapter.WriteResultCallback;
 import android.print.PrintDocumentInfo;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.textclassifier.TextClassification;
@@ -1828,18 +1827,7 @@ public class WebViewTest extends SharedWebViewTest {
         int[] location = mOnUiThread.getLocationOnScreen();
         int middleX = location[0] + mOnUiThread.getWebView().getWidth() / 2;
         int middleY = location[1] + mOnUiThread.getWebView().getHeight() / 2;
-
-        long time = SystemClock.uptimeMillis();
-        getTestEnvironment()
-                .sendPointerSync(
-                        MotionEvent.obtain(
-                                time, time, MotionEvent.ACTION_DOWN, middleX, middleY, 0));
-
-        time = SystemClock.uptimeMillis();
-        getTestEnvironment()
-                .sendPointerSync(
-                        MotionEvent.obtain(
-                                time, time, MotionEvent.ACTION_UP, middleX, middleY, 0));
+        getTestEnvironment().sendTapSync(middleX, middleY);
 
         getTestEnvironment().waitForIdleSync();
         mOnUiThread.requestImageRef(msg);

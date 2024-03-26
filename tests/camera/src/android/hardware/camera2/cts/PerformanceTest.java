@@ -74,6 +74,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -1148,7 +1149,7 @@ public class PerformanceTest {
             mTestRule.openDevice(cameraId);
 
             for (Range<Integer> fpsRange : aeFpsRanges) {
-                if (fpsRange.getLower() == fpsRange.getUpper()) {
+                if (Objects.equals(fpsRange.getLower(), fpsRange.getUpper())) {
                     testPreviewJitterForFpsRange(cameraId,
                             HardwareBuffer.USAGE_COMPOSER_OVERLAY,
                             /*reduceJitter*/false, fpsRange);
@@ -1189,7 +1190,7 @@ public class PerformanceTest {
             mTestRule.openDevice(cameraId);
 
             for (Range<Integer> fpsRange : aeFpsRanges) {
-                if (fpsRange.getLower() == fpsRange.getUpper()) {
+                if (Objects.equals(fpsRange.getLower(), fpsRange.getUpper())) {
                     testPreviewJitterForFpsRange(cameraId,
                             HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE,
                             /*reduceJitter*/false, fpsRange);

@@ -25,6 +25,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "cts-media-common",
+        "ctsmediav2common",
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
