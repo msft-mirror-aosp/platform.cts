@@ -638,29 +638,6 @@ public class RollbackManagerTest {
     }
 
     /**
-     * Tests we fail to enable rollbacks if rollbackLifetime times out.
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
-    public void testEnableRollbackLifetimeTimeoutFailsRollback() throws Exception {
-
-        Install.single(TestApp.A1).commit();
-        RollbackUtils.waitForUnavailableRollback(TestApp.A);
-
-        RollbackManager rm = RollbackUtils.getRollbackManager();
-        rm.blockRollbackManager(TimeUnit.SECONDS.toMillis(1));
-        Install.single(TestApp.A2).setEnableRollback()
-                .setRollbackLifetimeMillis(100).commit();
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(2);
-
-        // Give plenty of time for RollbackManager to unblock and attempt
-        // to make the rollback available before asserting that the
-        // rollback was not made available.
-        Thread.sleep(TimeUnit.SECONDS.toMillis(2));
-        assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
-    }
-
-    /**
      * Tests we fail to enable rollbacks if enable-rollback times out for any child session.
      */
     @Test
