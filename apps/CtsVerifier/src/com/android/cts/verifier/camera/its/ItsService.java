@@ -1109,8 +1109,8 @@ public class ItsService extends Service implements SensorEventListener {
                     doCheckLowLightBoostAvailable(cameraId, extension);
                 } else if ("doCapturePreviewFrame".equals(cmdObj.getString("cmdName"))) {
                     doCapturePreviewFrame(cmdObj);
-                } else if ("doGetNativeCameraPkgName".equals(cmdObj.getString("cmdName"))) {
-                    doGetNativeCameraPkgName();
+                } else if ("doGetDefaultCameraPkgName".equals(cmdObj.getString("cmdName"))) {
+                    doGetDefaultCameraPkgName();
                 } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
                     doGainMapCheck(cmdObj);
                 } else {
@@ -2572,12 +2572,12 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("supportedVideoQualities", profiles.toString());
     }
 
-    private void doGetNativeCameraPkgName() throws ItsException {
+    private void doGetDefaultCameraPkgName() throws ItsException {
         PackageManager pkgMgr = getPackageManager();
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         String pkgName = intent.resolveActivity(pkgMgr).getPackageName();
-        Log.i(TAG, "Native camera pkg name: " + pkgName);
-        mSocketRunnableObj.sendResponse("nativeCameraPkg", pkgName);
+        Log.i(TAG, "Default camera pkg name: " + pkgName);
+        mSocketRunnableObj.sendResponse("defaultCameraPkg", pkgName);
     }
 
     private void doGainMapCheck(JSONObject params) throws ItsException {

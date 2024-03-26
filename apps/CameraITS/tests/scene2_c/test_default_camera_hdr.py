@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Check if the default native camera capture is Ultra HDR or not.
+"""Check if the default camera app capture is Ultra HDR or not.
 """
 import logging
 import os
@@ -25,10 +25,10 @@ import its_session_utils
 import ui_interaction_utils
 
 
-class NativeCapturePerfClassTest(its_base_test.ItsBaseTest):
-  """Checks if the default native camera capture is Ultra HDR."""
+class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
+  """Checks if the default camera capture is Ultra HDR."""
 
-  def test_native_camera_launch(self):
+  def test_default_camera_launch(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
@@ -46,11 +46,11 @@ class NativeCapturePerfClassTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      # Get native camera app pkg name
-      pkg_name = cam.get_native_camera_pkg()
-      logging.debug('Native camera pkg name: %s', pkg_name)
+      # Get default camera app pkg name
+      pkg_name = cam.get_default_camera_pkg()
+      logging.debug('Default camera pkg name: %s', pkg_name)
 
-      ui_interaction_utils.native_camera_app_dut_setup(device_id, pkg_name)
+      ui_interaction_utils.default_camera_app_dut_setup(device_id, pkg_name)
 
       # Launch ItsTestActivity
       its_device_utils.start_its_test_activity(device_id)
