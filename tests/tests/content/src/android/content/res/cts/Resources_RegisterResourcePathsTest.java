@@ -145,6 +145,48 @@ public class Resources_RegisterResourcePathsTest {
         ResourcesManager.setInstance(oriResourcesManager);
     }
 
+    @Test
+    @SmallTest
+    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
+    public void testNewResourcesWithOutdatedImplAfterResourcePathsRegistration()
+            throws PackageManager.NameNotFoundException {
+        ResourcesManager oriResourcesManager = ResourcesManager.getInstance();
+        ResourcesManager.setInstance(mResourcesManager);
+
+        Resources old_resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        Assert.assertNotNull(old_resources);
+        ResourcesImpl oldImpl = old_resources.getImpl();
+
+        ApplicationInfo appInfo = mPackageManager.getApplicationInfo(TEST_LIB, 0);
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        // Create another resources with identical parameters.
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        Assert.assertNotNull(resources);
+        // For a normal ResourcesImpl redirect, new Resources may find an old ResourcesImpl cache
+        // and reuse it based on the ResourcesKey. But for shared library ResourcesImpl redirect,
+        // new created Resources should never reuse any old impl, it has to recreate a new impl
+        // which has proper asset paths appended.
+        Assert.assertNotSame(oldImpl, resources.getImpl());
+
+        String[] resourcePaths = appInfo.getAllApkPaths();
+        resourcePaths = removeDuplicates(resourcePaths);
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        Assert.assertTrue(allResourcePathsLoaded(resourcePaths, loadedAssets));
+
+        // Package resources' paths should be cached in ResourcesManager.
+        Assert.assertEquals(Arrays.toString(resourcePaths),
+                Arrays.toString(ResourcesManager.getInstance()
+                .getSharedLibAssetsMap().get(TEST_LIB).getAllAssetPaths()));
+
+        // Revert the ResourcesManager instance back.
+        ResourcesManager.setInstance(oriResourcesManager);
+    }
+
     private static boolean allResourcePathsLoaded(String[] resourcePaths,
             ApkAssets[] loadedAssets) {
         for (int i = 0; i < resourcePaths.length; i++) {
