@@ -175,6 +175,42 @@ class PointerIconTest {
     }
 
     @Test
+    fun testLoadVectorIconNoShadow() {
+        // Skip test if Vector support not enabled.
+        assumeTrue(android.view.flags.Flags.enableVectorCursors())
+
+        val view = activity.window.decorView.rootView
+        val pointer =
+            PointerIcon.load(
+                InstrumentationRegistry.getInstrumentation().targetContext.resources,
+                R.drawable.pointer_arrow_vector_icon
+            )
+        // Turn off vector drop shadow for this test to confirm position of the pointer, ignoring
+        // any differences in the shadow, which can change based on the hardware running the test.
+        pointer.setDrawNativeDropShadow(false)
+        view.pointerIcon = pointer
+
+        moveMouse(1f, 1f)
+        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
+        waitForPointerIconUpdate()
+
+        val actualScreenshot = getActualScreenshot()
+        val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
+        assertEquals(
+            "Actual and expected screenshots should be the same width.",
+            expectedScreenshot.width,
+            actualScreenshot.width
+        )
+        assertEquals(
+            "Actual and expected screenshots should be the same height.",
+            expectedScreenshot.height,
+            actualScreenshot.height
+        )
+
+        assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
+    }
+
+    @Test
     fun testLoadVectorIcon() {
         // Skip test if Vector support not enabled.
         assumeTrue(android.view.flags.Flags.enableVectorCursors())
@@ -201,7 +237,52 @@ class PointerIconTest {
             actualScreenshot.height
         )
 
-        assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
+        // Drop shadows drawn in the hardware can be device dependent. Test that screenshots are
+        // similar enough within a threshold to account for these differences.
+        assertScreenshotsSimilar(actualScreenshot, expectedScreenshot)
+    }
+
+    private fun assertScreenshotsSimilar(actualScreenshot: Bitmap, expectedScreenshot: Bitmap) {
+        if (isPixelDiffCountAboveThreshold(actualScreenshot, expectedScreenshot)) {
+            saveBitmapToLosslessFile(actualScreenshot)
+            fail("Screenshot mismatch.")
+        }
+    }
+
+    // Use a count of pixel differences as opposed to a percentage difference per-pixel. A percent
+    // threshold can make a test less flaky, but also provide a  less reliable signal: large parts
+    // of the image can change or disappear and the test could still pass. Percentage thresholds can
+    // also hide intentional changes not reflected in the golden.
+    private fun isPixelDiffCountAboveThreshold(
+        actualScreenshot: Bitmap,
+        expectedScreenshot: Bitmap
+    ): Boolean {
+        var totalPixelsDiffCount = 0
+        for (x in 0 until actualScreenshot.width) {
+            for (y in 0 until actualScreenshot.height) {
+                val actualPixel = actualScreenshot.getPixel(x, y)
+                val expectedPixel = expectedScreenshot.getPixel(x, y)
+                if ((Math.abs(Color.red(actualPixel) - Color.red(expectedPixel))
+                            > MAX_PER_CHANNEL_DIFF) ||
+                    (Math.abs(Color.green(actualPixel) - Color.green(expectedPixel))
+                            > MAX_PER_CHANNEL_DIFF) ||
+                    (Math.abs(Color.blue(actualPixel) - Color.blue(expectedPixel))
+                            > MAX_PER_CHANNEL_DIFF) ||
+                    (Math.abs(Color.alpha(actualPixel) - Color.alpha(expectedPixel))
+                            > MAX_PER_CHANNEL_DIFF)) {
+                    totalPixelsDiffCount++
+                }
+            }
+        }
+        val allowedDiffCount =
+            actualScreenshot.width * actualScreenshot.height * SCREENSHOT_DIFF_PERCENT
+        return totalPixelsDiffCount.toFloat() > allowedDiffCount
+    }
+
+    private fun getActualScreenshot(): Bitmap {
+        val actualBitmap: Bitmap? = virtualDisplayRule.getScreenshot()
+        assertNotNull(actualBitmap, "Screenshot is null.")
+        return actualBitmap
     }
 
     private fun assertScreenshotPixelsEqual(actualScreenshot: Bitmap, expectedScreenshot: Bitmap) {
@@ -211,12 +292,6 @@ class PointerIconTest {
             saveBitmapToLosslessFile(actualScreenshot)
             fail("Screenshot mismatch.")
         }
-    }
-
-    private fun getActualScreenshot(): Bitmap {
-        val actualBitmap: Bitmap? = virtualDisplayRule.getScreenshot()
-        assertNotNull(actualBitmap, "Screenshot is null.")
-        return actualBitmap
     }
 
     private fun getBitmapPixels(bitmap: Bitmap): IntArray {
@@ -273,5 +348,7 @@ class PointerIconTest {
         const val PRODUCT_ID = 11
         const val NAME = "Pointer Icon Test Mouse"
         const val TAG = "PointerIconTest"
+        const val SCREENSHOT_DIFF_PERCENT = 0.01f // 1% total difference threshold
+        const val MAX_PER_CHANNEL_DIFF = 0 // Default allow no difference per channel
     }
 }
