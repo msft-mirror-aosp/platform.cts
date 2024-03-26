@@ -20,17 +20,21 @@ import android.app.Activity
 import android.app.Instrumentation.ActivityResult
 import android.content.AttributionSource
 import android.content.Context
+import android.content.ContextParams
 import android.content.Intent
 import android.os.Process
+import android.permission.PermissionManager
 import android.permission.flags.Flags
-import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.ApiTest
 import kotlin.test.assertFailsWith
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -52,8 +56,11 @@ class AttributionSourceTest {
         thread.start()
         thread.join()
 
-        assertEquals("Test activity did not return RESULT_SECURITY_EXCEPTION",
-                AttributionSourceActivity.RESULT_SECURITY_EXCEPTION, thread.getResultCode())
+        assertEquals(
+            "Test activity did not return RESULT_SECURITY_EXCEPTION",
+                AttributionSourceActivity.RESULT_SECURITY_EXCEPTION,
+            thread.getResultCode()
+        )
     }
 
     @Test
@@ -97,6 +104,26 @@ class AttributionSourceTest {
             .setDeviceId(deviceId)
             .build()
         assertEquals(deviceId, attributionSource.deviceId)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SHOULD_REGISTER_ATTRIBUTION_SOURCE)
+    fun attributionSourceRegisteredWhenContextFlagSet() {
+        val baseContext = InstrumentationRegistry.getInstrumentation().context
+        val permManager = baseContext.getSystemService(PermissionManager::class.java)!!
+        val registerContext = baseContext.createContext(
+            ContextParams.Builder().setShouldRegisterAttributionSource(true).build()
+        )
+        assertTrue(permManager.isRegisteredAttributionSource(registerContext.attributionSource))
+        var noRegisterContext = baseContext.createContext(
+            ContextParams.Builder().build()
+        )
+        assertFalse(permManager.isRegisteredAttributionSource(noRegisterContext.attributionSource))
+
+        noRegisterContext = baseContext.createContext(
+                    ContextParams.Builder().setShouldRegisterAttributionSource(false).build()
+        )
+        assertFalse(permManager.isRegisteredAttributionSource(noRegisterContext.attributionSource))
     }
 
     companion object {
