@@ -24,6 +24,7 @@ import android.media.tv.ad.TvAdService;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -36,12 +37,20 @@ import java.util.List;
  */
 public class StubTvAdService extends TvAdService {
 
+    public static Bundle sAppLinkCommand = null;
+
     public static StubSessionImpl sSession;
     @Nullable
     @Override
     public Session onCreateSession(@NonNull String serviceId, @NonNull String type) {
         sSession = new StubSessionImpl(this);
         return sSession;
+    }
+
+    @Override
+    public void onAppLinkCommand(Bundle command) {
+        super.onAppLinkCommand(command);
+        sAppLinkCommand = command;
     }
 
     public static class StubSessionImpl extends TvAdService.Session {
@@ -242,6 +251,24 @@ public class StubTvAdService extends TvAdService {
             mKeyMultipleCode = keyCode;
             mKeyMultipleRepeatCount = repeatCnt;
             mKeyMultipleEvent = event;
+            return false;
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            super.onTouchEvent(event);
+            return false;
+        }
+
+        @Override
+        public boolean onTrackballEvent(MotionEvent event) {
+            super.onTrackballEvent(event);
+            return false;
+        }
+
+        @Override
+        public boolean onGenericMotionEvent(MotionEvent event) {
+            super.onGenericMotionEvent(event);
             return false;
         }
     }
