@@ -520,17 +520,17 @@ class ItsSession(object):
                                       cmd[_CMD_NAME_STR])
     return data[_OBJ_VALUE_STR]
 
-  def get_native_camera_pkg(self):
-    """Get native camera package name.
+  def get_default_camera_pkg(self):
+    """Get default camera app package name.
 
     Returns:
-       Native camera app pkg name.
+       Default camera app pkg name.
     """
     cmd = {}
-    cmd[_CMD_NAME_STR] = 'doGetNativeCameraPkgName'
+    cmd[_CMD_NAME_STR] = 'doGetDefaultCameraPkgName'
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
-    if data[_TAG_STR] != 'nativeCameraPkg':
+    if data[_TAG_STR] != 'defaultCameraPkg':
       raise error_util.CameraItsError('Invalid response for command: %s' %
                                       cmd[_CMD_NAME_STR])
     return data['strValue']
