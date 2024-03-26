@@ -24,6 +24,7 @@ import android.app.Activity;
 import android.app.UiAutomation;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -39,6 +40,7 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeFull
 public class ViewSensitiveContentTest {
     private final SensitiveContentMediaProjectionHelper mMediaProjectionHelper =
             new SensitiveContentMediaProjectionHelper();
