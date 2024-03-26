@@ -140,6 +140,22 @@ public final class ActivityManagerAppStartInfoTest {
         verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
 
+    /** Test that the wasForceStopped state is accurate. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testWasForceStopped() throws Exception {
+        clearHistoricalStartInfo();
+
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+
+        waitForAppStart();
+        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+
+        ApplicationStartInfo info = waitForAppStart();
+        assertTrue(info.wasForceStopped());
+    }
+
     /**
      * Start an app and make sure its record exists, then verify
      * the record is removed when the app is uninstalled.
