@@ -83,6 +83,8 @@ public class RequirementConstants {
     public static final String R7_5__H_1_15 = "r7_5__h_1_15"; // 7.5/H-1-15
     public static final String R7_5__H_1_16 = "r7_5__h_1_16"; // 7.5/H-1-16
     public static final String R7_5__H_1_17 = "r7_5__h_1_17"; // 7.5/H-1-17
+    public static final String R7_5__H_1_18 = "r7_5__h_1_18"; // 7.5/H-1-18
+    public static final String R7_5__H_1_19 = "r7_5__h_1_19"; // 7.5/H-1-19
     public static final String R7_5__H_1_20 = "r7_5__h_1_20"; // 7.5/H-1-20
 
     public static final String R7_1_1_1__H_1_1 = "r7_1_1_1__h_1_1"; // 7.1.1.1/H-1-1
@@ -162,11 +164,24 @@ public class RequirementConstants {
     public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
-    public static final String PRIMARY_CAMERA_VIDEO_FPS =
-            "primary_camera_video_fps";
+    public static final String PRIMARY_CAMERA_VIDEO_FPS = "primary_camera_video_fps";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_FPS =
+            "primary_camera_720p_video_fps";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_FPS =
+            "primary_camera_1080p_video_fps";
     public static final String PRIMARY_CAMERA_RESOLUTION = "primary_camera_resolution";
     public static final String PRIMARY_CAMERA_VIDEO_SIZE_REQ_SATISFIED =
             "primary_camera_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_720p_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_1080p_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_HLG_COMBINATION_SUPPORTED =
+            "primary_camera_hlg_combination_supported";
+    public static final String PRIMARY_REAR_CAMERA_JPEG_R_SUPPORTED =
+            "primary_rear_camera_jpeg_r_supported";
+    public static final String PRIMARY_FRONT_CAMERA_JPEG_R_SUPPORTED =
+            "primary_front_camera_jpeg_r_supported";
 
     public static final String REAR_CAMERA_240FPS_SUPPORTED = "rear_camera_240fps_supported";
     public static final String REAR_CAMERA_DYNAMIC_TENBITS_SUPPORTED =

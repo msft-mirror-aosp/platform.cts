@@ -3567,7 +3567,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 boolean supportUHD = videoSizes.contains(UHD);
                 boolean supportDC4K = videoSizes.contains(DC4K);
                 boolean support4K = (supportUHD || supportDC4K);
+                boolean supportFullHD = videoSizes.contains(FULLHD);
+                boolean support720p = videoSizes.contains(HD);
                 primaryRearReq.setVideoSizeReqSatisfied(support4K);
+                primaryRearReq.set720pVideoSizeReqSatisfied(support720p);
+                primaryRearReq.set1080pVideoSizeReqSatisfied(supportFullHD);
                 if (support4K) {
                     long minFrameDuration = config.getOutputMinFrameDuration(
                             android.media.MediaRecorder.class, supportDC4K ? DC4K : UHD);
@@ -3575,7 +3579,20 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 } else {
                     primaryRearReq.setVideoFps(-1);
                 }
-
+                if (supportFullHD) {
+                    long minFrameDuration = config.getOutputMinFrameDuration(
+                            android.media.MediaRecorder.class, FULLHD);
+                    primaryRearReq.set1080pVideoFps(1e9 / minFrameDuration);
+                } else {
+                    primaryRearReq.set1080pVideoFps(-1);
+                }
+                if (support720p) {
+                    long minFrameDuration = config.getOutputMinFrameDuration(
+                            android.media.MediaRecorder.class, HD);
+                    primaryRearReq.set720pVideoFps(1e9 / minFrameDuration);
+                } else {
+                    primaryRearReq.set720pVideoFps(-1);
+                }
                 // H-1-9
                 boolean supportHighSpeed = staticInfo.isCapabilitySupported(CONSTRAINED_HIGH_SPEED);
                 boolean support240Fps = false;
@@ -3825,6 +3842,32 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         pce.submitAndCheck();
     }
 
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {"2.2.7.2/7.5/H-1-18"})
+    public void testCameraVPerfClassCharacteristics() throws Exception {
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator.JpegRRequirement jpegRReq = pce.addR7_5__H_1_18();
+
+        String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
+                getCameraIdsUnderTest());
+        String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
+                getCameraIdsUnderTest());
+
+        // H-1-18
+        verifyJpegRRequirement(primaryRearId,
+                PerformanceClassEvaluator.JpegRRequirement.PRIMARY_REAR_CAMERA,
+                jpegRReq);
+        verifyJpegRRequirement(primaryFrontId,
+                PerformanceClassEvaluator.JpegRRequirement.PRIMARY_FRONT_CAMERA,
+                jpegRReq);
+
+        pce.submitAndCheck();
+    }
+
     /**
      * Check camera extension characteristics for Android 14 Performance class requirements
      * as specified in CDD camera section 7.5
@@ -3885,6 +3928,20 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         req.setCameraXNightExtensionSupported(facing,
                 extensionsManager.isExtensionAvailable(
                         selector, ExtensionMode.NIGHT));
+    }
+
+    /**
+     * Verify JPEG_R requirement for a camera id
+     */
+    private void verifyJpegRRequirement(String cameraId, int facing,
+                                        PerformanceClassEvaluator.JpegRRequirement req)
+            throws Exception {
+        if (cameraId == null) {
+            req.setJpegRSupported(facing, false);
+            return;
+        }
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+        req.setJpegRSupported(facing, staticInfo.isJpegRSupported());
     }
 
     /**
