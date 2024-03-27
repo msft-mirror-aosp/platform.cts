@@ -513,6 +513,7 @@ public class AudioManagerTest {
     @Test
     public void testCheckingZenModeBlockDoesNotRequireNotificationPolicyAccess() throws Exception {
         // set zen mode to priority only, so playSoundEffect will check notification policy
+        assumeFalse("Skipping zen mode test", mSkipRingerTests);
         Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), getInstrumentation(),
                 true);
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);

@@ -4767,14 +4767,11 @@ public class ViewTest {
     }
 
     private boolean startDragAndDrop(View view, View.DragShadowBuilder shadowBuilder) {
-        final int[] viewOnScreenXY = new int[2];
-        mActivity.getWindow().getDecorView().getLocationOnScreen(viewOnScreenXY);
-        int xOnScreen = viewOnScreenXY[0] + view.getWidth() / 2;
-        int yOnScreen = viewOnScreenXY[1] + view.getHeight() / 2;
-
+        final Point size = new Point();
+        mActivity.getWindowManager().getDefaultDisplay().getSize(size);
         final MotionEvent event = MotionEvent.obtain(
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
+                MotionEvent.ACTION_DOWN, size.x / 2, size.y / 2, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         mInstrumentation.sendPointerSync(event);
 

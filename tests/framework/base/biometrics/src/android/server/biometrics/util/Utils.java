@@ -353,12 +353,15 @@ public class Utils {
     }
 
     /**
-     * @param isContentViewNull  Whether the content view is null.
-     * @param isBiometricAllowed Whether there is any biometric authenticator allowed.
+     * @param isVerticalContentView Whether the content view is
+     *                              {@link
+     *                              android.hardware.biometrics.PromptVerticalListContentView}.
+     * @param isBiometricAllowed    Whether there is any biometric authenticator
+     *                              allowed.
      * @return Whether biometric prompt without icon should show prior to credential view.
      */
-    public static boolean shouldShowBpWithoutIconForCredential(boolean isContentViewNull,
-            boolean isBiometricAllowed) {
-        return Flags.customBiometricPrompt() && !isContentViewNull && !isBiometricAllowed;
+    public static boolean shouldShowBpWithoutIconForCredential(
+            boolean isVerticalContentView, boolean isBiometricAllowed) {
+        return Flags.customBiometricPrompt() && !isBiometricAllowed && isVerticalContentView;
     }
 }

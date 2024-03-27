@@ -21,9 +21,9 @@ import types
 import camera_properties_utils
 import its_device_utils
 
-_PERMISSIONS_LIST = ['CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
+_PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
                      'ACCESS_COARSE_LOCATION', 'WRITE_EXTERNAL_STORAGE',
-                     'READ_EXTERNAL_STORAGE']
+                     'READ_EXTERNAL_STORAGE')
 
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
@@ -36,6 +36,7 @@ FLASH_MODE_TO_CLICKS = types.MappingProxyType({
 })
 IMG_CAPTURE_CMD = 'am start -a android.media.action.STILL_IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
+JPG_FORMAT_STR = '.jpg'
 TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingDropDown'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSetFlash'
@@ -134,7 +135,7 @@ def switch_jca_camera(dut, log_path, facing):
 
 
 def native_camera_app_setup(device_id, pkg_name):
-  """Function to setup Camera app by providing required permissions.
+  """Setup Camera app by providing required permissions.
 
   Args:
     device_id: serial id of device.
@@ -145,9 +146,7 @@ def native_camera_app_setup(device_id, pkg_name):
   logging.debug('Setting up the app with permission.')
   for permission in _PERMISSIONS_LIST:
     cmd = f'pm grant {pkg_name} android.permission.{permission}'
-    output = its_device_utils.run_adb_shell_command(device_id, cmd)
-    if output is not None:
-      return output
+    its_device_utils.run_adb_shell_command(device_id, cmd)
 
 
 def pull_img_files(device_id, input_path, output_path):
@@ -169,7 +168,7 @@ def launch_and_take_capture(dut, pkg_name):
   Args:
     dut: An Android controller device object.
     pkg_name: pkg_name of the native camera app to
-    be used for captures.
+      be used for captures.
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
@@ -188,13 +187,15 @@ def launch_and_take_capture(dut, pkg_name):
         'find {} ! -empty -a ! -name \'.pending*\' -a -type f'.format(
             '/sdcard/DCIM/Camera')).decode('utf-8').strip()
     logging.debug('Image path on DUT: %s', img_path_on_dut)
+  if JPG_FORMAT_STR not in img_path_on_dut:
+    raise AssertionError('Failed to find jpg files!')
   finally:
     force_stop_app(dut, pkg_name)
   return img_path_on_dut
 
 
 def force_stop_app(dut, pkg_name):
-  """Force stop an app with given pkg_name.
+  """Force stops an app with given pkg_name.
 
   Args:
     dut: An Android controller device object.

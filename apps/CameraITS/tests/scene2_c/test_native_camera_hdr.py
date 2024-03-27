@@ -26,13 +26,13 @@ import ui_interaction_utils
 
 
 class NativeCapturePerfClassTest(its_base_test.ItsBaseTest):
-  """Checks if the default native camera capture is Ultra HDR.
-  """
+  """Checks if the default native camera capture is Ultra HDR."""
 
   def test_native_camera_launch(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
-        camera_id=self.camera_id) as cam:
+        camera_id=self.camera_id,
+        hidden_physical_id=self.hidden_physical_id) as cam:
 
       device_id = self.dut.serial
       # Check SKIP conditions
@@ -41,7 +41,7 @@ class NativeCapturePerfClassTest(its_base_test.ItsBaseTest):
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           cam.is_primary_camera())
 
-      # Load chart for scene.
+      # Load chart for scene
       props = cam.get_camera_properties()
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)

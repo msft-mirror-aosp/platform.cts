@@ -62,6 +62,8 @@ import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 
+import com.android.window.flags.Flags;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -86,6 +88,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testContentDestroyOnDisplayRemoved() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         try (final VirtualDisplaySession virtualDisplaySession = new VirtualDisplaySession()) {
             // Create new private virtual display.
             final DisplayContent newDisplay = virtualDisplaySession.createDisplay();
@@ -127,6 +135,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testActivityLaunchOnContentDestroyDisplayRemoved() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         try (final VirtualDisplaySession virtualDisplaySession = new VirtualDisplaySession()) {
             // Create new private virtual display.
             final DisplayContent newDisplay = virtualDisplaySession.createDisplay();
@@ -150,6 +164,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testDisplayResize() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         final VirtualDisplaySession virtualDisplaySession = createManagedVirtualDisplaySession();
         // Create new virtual display.
         final DisplayContent newDisplay = virtualDisplaySession.createDisplay();
@@ -201,6 +221,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testRotationNotAffectingSecondaryScreen() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         final VirtualDisplayLauncher virtualLauncher =
                 mObjectTracker.manage(new VirtualDisplayLauncher());
         // Create new virtual display.
@@ -250,6 +276,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testExternalDisplayActivityTurnPrimaryOff() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);
         waitAndAssertTopResumedActivity(RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY,
@@ -290,6 +322,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testExternalDisplayToggleState() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         final ExternalDisplaySession externalDisplaySession = createManagedExternalDisplaySession();
         final DisplayContent newDisplay = externalDisplaySession.createVirtualDisplay();
 
@@ -351,6 +389,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchActivitiesAffectsVisibility() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Start launching activity.
         launchActivity(LAUNCHING_ACTIVITY);
 
@@ -378,6 +422,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testMoveTaskBetweenDisplays() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
         mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);
@@ -515,6 +565,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testStackFocusSwitchOnStackEmptiedInSleeping() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeTrue(supportsLockScreen());
 
         validateStackFocusSwitchOnStackEmptied(createManagedVirtualDisplaySession(),
@@ -527,6 +582,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testStackFocusSwitchOnStackEmptied() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         validateStackFocusSwitchOnStackEmptied(createManagedVirtualDisplaySession(),
                 null /* lockScreenSession */);
     }
@@ -568,6 +629,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testStackFocusSwitchOnTouchEvent() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
         assumeFalse(perDisplayFocusEnabled());
@@ -606,6 +672,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testStackFocusSwitchOnTouchEventAfterKeyguard() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeFalse(perDisplayFocusEnabled());
         assumeTrue(supportsLockScreen());
 

@@ -31,6 +31,7 @@ import static android.view.WindowInsets.Type.systemBars;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -42,6 +43,8 @@ import android.server.wm.WindowManagerState.WindowState;
 import android.util.DisplayMetrics;
 import android.view.DisplayCutout;
 import android.view.WindowMetrics;
+
+import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -74,26 +77,55 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeTopLeft() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_LEFT, false /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeTopRight() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_RIGHT, true /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeBottomLeft() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_LEFT, true /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeBottomRight() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_RIGHT, false /*fraction*/);
     }
 
     @Test
     public void testMinimalSizeFreeform() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeTrue("Skipping test: no freeform support", supportsFreeform());
 
         testMinimalSize(true /* freeform */);

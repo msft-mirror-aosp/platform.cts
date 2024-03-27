@@ -50,6 +50,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -106,6 +107,7 @@ public class CtsSettingsIntentTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_SETTINGS_INTENTS)
+    @CddTest(requirements = {"9.8.14"})
     public void testCredentialManagerSettingsIntent() throws Exception {
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder().permitUnsafeIntentLaunch().penaltyLog().build());
@@ -145,6 +147,7 @@ public class CtsSettingsIntentTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_SETTINGS_INTENTS)
+    @CddTest(requirements = {"9.8.14"})
     public void testCredentialManagerAutofillSettingsIntent() throws Exception {
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder().permitUnsafeIntentLaunch().penaltyLog().build());

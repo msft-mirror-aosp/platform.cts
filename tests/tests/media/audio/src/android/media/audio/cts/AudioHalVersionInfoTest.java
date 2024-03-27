@@ -39,6 +39,7 @@ public class AudioHalVersionInfoTest {
      *
      * @throws Exception
      */
+    @SuppressWarnings("SelfComparison")
     @Test
     public void testComparator() throws Exception {
         int listSize = AudioHalVersionInfo.VERSIONS.size();

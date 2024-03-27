@@ -21,7 +21,6 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
-import static android.app.Flags.FLAG_APP_RESTRICTIONS_API;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
@@ -92,7 +91,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -114,8 +112,6 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.WindowManagerStateHelper;
@@ -141,7 +137,6 @@ import com.android.compatibility.common.util.UserHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -205,8 +200,6 @@ public final class ActivityManagerTest {
             | PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
             | PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 
-    private static final String PACKAGE_SCHEME = "package";
-
     private Context mTargetContext;
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
@@ -232,9 +225,6 @@ public final class ActivityManagerTest {
 
     private static final String MONITOR_DEVICE_CONFIG_ACCESS =
             "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -553,21 +543,6 @@ public final class ActivityManagerTest {
         assertTrue(am.isBackgroundRestricted());
         setForcedAppStandby(targetPackage, false);
         assertFalse(am.isBackgroundRestricted());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_APP_RESTRICTIONS_API)
-    public void testBackgroundRestrictionsIntent() throws IOException {
-        assumeFalse("This intent is not required for leanback devices", mLeanbackOnly);
-        assumeFalse("This intent is not required for watch devices", mWatchDevice);
-
-        // This instrumentation runs in the target package's uid.
-        final String targetPackage = mTargetContext.getPackageName();
-        final Intent intent = new Intent(Settings.ACTION_BACKGROUND_RESTRICTIONS_SETTINGS)
-                .setData(Uri.fromParts(PACKAGE_SCHEME, targetPackage, null));
-        final ResolveInfo resolveInfo = mTargetContext.getPackageManager().resolveActivity(
-                intent, 0);
-        assertNotNull(resolveInfo);
     }
 
     @FlakyTest(detail = "Known fail on cuttleshish b/275888802 and other devices b/255817314.")
