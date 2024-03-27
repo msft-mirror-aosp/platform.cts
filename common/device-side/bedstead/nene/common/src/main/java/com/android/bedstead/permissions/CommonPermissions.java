@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 /** Permissions helper methods common to host and device. */
 public class CommonPermissions {

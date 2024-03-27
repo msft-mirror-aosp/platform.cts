@@ -40,7 +40,7 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTes
 import com.android.bedstead.harrier.policies.SuspendPersonalApps;
 import com.android.bedstead.harrier.policies.SuspendPersonalAppsWithCloneProfileDisabled;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;

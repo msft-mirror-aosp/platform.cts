@@ -27,11 +27,11 @@ import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -63,8 +63,8 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.Permissions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;

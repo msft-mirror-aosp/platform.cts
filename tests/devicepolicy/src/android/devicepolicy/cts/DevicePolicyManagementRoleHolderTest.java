@@ -24,8 +24,8 @@ import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -37,17 +37,16 @@ import android.app.admin.ProvisioningException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.UserHandle;
-import android.util.Log;
 
 import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
@@ -62,7 +61,6 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.eventlib.truth.EventLogsSubject;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

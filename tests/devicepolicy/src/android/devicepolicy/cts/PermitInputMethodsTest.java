@@ -23,9 +23,9 @@ import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiv
 import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest.DPC_2;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ADMIN_POLICY;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -44,7 +44,7 @@ import android.util.Log;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
@@ -54,7 +54,6 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.PermittedInputMethods;
 import com.android.bedstead.harrier.policies.PermittedSystemInputMethods;
-import com.android.bedstead.harrier.policies.ScreenCaptureDisabled;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
 import com.android.bedstead.nene.packages.Package;

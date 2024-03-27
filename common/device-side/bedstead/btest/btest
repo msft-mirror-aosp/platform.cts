@@ -472,6 +472,12 @@ supported_modules = {
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
     },
+    "bedstead-permissions-test": {
+        "package": "com.android.bedstead.permissions.test",
+        "path": "com.android.bedstead.permissions",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
 }
 
 TARGET_NAME = "target"

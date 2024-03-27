@@ -24,7 +24,7 @@ import com.android.bedstead.harrier.annotations.EnsureCanAddUser
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
@@ -39,7 +39,7 @@ import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils

@@ -16,15 +16,15 @@
 
 package com.android.bedstead.harrier;
 
-import android.util.Log;
+import static com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermissionKt.ensureDoesNotHavePermission;
+import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
@@ -110,16 +110,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
-
-    @AutoAnnotation
-    private static EnsureHasPermission ensureHasPermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasPermission(value);
-    }
-
-    @AutoAnnotation
-    private static EnsureDoesNotHavePermission ensureDoesNotHavePermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureDoesNotHavePermission(value);
-    }
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -955,7 +945,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     new DynamicParameterizedAnnotation(
                             permission,
                             new Annotation[]{
-                                    ensureHasPermission(new String[]{permission}),
+                                    ensureHasPermission(permission),
                                     ensureDoesNotHavePermission(allPermissions.toArray(new String[]{}))
                             }));
             allPermissions.add(permission);

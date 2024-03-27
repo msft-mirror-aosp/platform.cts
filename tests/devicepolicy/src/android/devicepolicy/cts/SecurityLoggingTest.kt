@@ -27,10 +27,10 @@ import android.security.keystore.KeyProperties
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
@@ -40,7 +40,7 @@ import com.android.bedstead.harrier.policies.GlobalSecurityLogging
 import com.android.bedstead.harrier.policies.SecurityLogging
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.BlockingCallback

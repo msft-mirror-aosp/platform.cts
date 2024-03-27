@@ -16,13 +16,13 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 
 import android.os.UserManager;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.ShellCommand;
 

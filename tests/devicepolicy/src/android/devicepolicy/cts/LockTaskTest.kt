@@ -1265,7 +1265,7 @@ class LockTaskTest {
         }
 
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setLockTaskPackages", "android.app.admin.DevicePolicyManager#isLockTaskPermitted"])
-    @RequireAdbRoot
+    @RequireAdbRoot(reason = "TODO")
     @MostImportantCoexistenceTest(policy = LockTask::class)
     fun setLockTaskPackages_sameValues_applied() {
         try {

@@ -19,7 +19,7 @@ package com.android.bedstead.nene.telephony;
 import android.telephony.TelephonyManager
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.annotations.Experimental
-import com.android.bedstead.nene.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE
+import com.android.bedstead.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE
 
 /** Test APIs related to telephony. */
 @Experimental

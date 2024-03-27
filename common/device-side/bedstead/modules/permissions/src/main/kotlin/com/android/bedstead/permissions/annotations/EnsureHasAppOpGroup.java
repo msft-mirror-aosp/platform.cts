@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.permissions.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
 import java.lang.annotation.ElementType;

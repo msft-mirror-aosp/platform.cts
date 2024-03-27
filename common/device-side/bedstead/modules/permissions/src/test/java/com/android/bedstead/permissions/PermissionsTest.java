@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.MANAGE_EXTERNAL_STORAGE;
@@ -35,10 +35,10 @@ import android.content.Context;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasAppOp;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;

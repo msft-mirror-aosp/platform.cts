@@ -49,7 +49,7 @@ import com.android.bedstead.harrier.policies.AllowWorkProfileTelephonyForNonDPMR
 import com.android.bedstead.harrier.policies.ManagedSubscriptions;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;

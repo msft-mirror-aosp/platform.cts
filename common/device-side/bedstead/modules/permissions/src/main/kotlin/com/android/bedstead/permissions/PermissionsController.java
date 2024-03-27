@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 /** Methods available to classes which maintain permission contexts. */
 public interface PermissionsController {
