@@ -173,6 +173,22 @@ public final class WalletRoleTestUtils {
         }
     }
 
+    static boolean canAssignRoleToPackage(Context context, String packageName) {
+        String previousHolder = getDefaultWalletRoleHolder(context);
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+            boolean canSet = setDefaultWalletRoleHolder(context, packageName);
+            if (canSet && previousHolder != null) {
+                setDefaultWalletRoleHolder(context, previousHolder);
+            }
+            return canSet;
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
     static void runWithRoleNone(Context context, Runnable runnable) {
         try {
             String currentHolder = getDefaultWalletRoleHolder(context);
