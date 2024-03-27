@@ -16,21 +16,23 @@
 
 package android.devicepolicy.cts;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+
 import static com.android.bedstead.nene.permissions.CommonPermissions.SET_WALLPAPER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SET_WALLPAPER;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assume.assumeFalse;
 
-import static org.testng.Assert.assertThrows;
-
+import android.content.Context;
 import android.graphics.Bitmap;
+
+import androidx.test.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Wallpaper;
@@ -41,6 +43,7 @@ import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BitmapUtils;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,6 +66,14 @@ public final class WallpaperTest {
     private static final Bitmap sReferenceWallpaper = BitmapUtils.generateRandomBitmap(97, 73);
     private static final InputStream sReferenceWallpaperStream =
             BitmapUtils.bitmapToInputStream(sReferenceWallpaper);
+
+    @Before
+    public void setUp() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        // TODO(b/328312997): revisit this test once we have a strategy for live wallpaper on AAOS.
+        assumeFalse("AAOS doesn't support FEATURE_LIVE_WALLPAPER",
+                context.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
+    }
 
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
     @EnsureHasPermission(SET_WALLPAPER)

@@ -44,6 +44,7 @@ android_test {
         "com.android.window.flags.window-aconfig-java",
         "hwui_flags_java_lib",
         "libmonet",
+        "android.view.flags-aconfig-java",
     ],
     jni_libs: ["libctsgraphics_jni"],
     srcs: [

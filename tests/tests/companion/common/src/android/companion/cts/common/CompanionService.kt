@@ -85,7 +85,6 @@ sealed class CompanionService<T : CompanionService<T>>(
     override fun onDevicePresenceEvent(devicePresenceEvent: DevicePresenceEvent) {
         val event = devicePresenceEvent.event
         currentEvent = event
-        Log.i("evanxinchen", "onDevicePresenceEvent: $currentEvent")
 
         if (devicePresenceEvent.uuid == null) {
             Log.i(
@@ -138,6 +137,10 @@ sealed class CompanionService<T : CompanionService<T>>(
 
     fun removeConnectedDevice(associationId: Int) {
         _connectedDevices.remove(associationId)
+    }
+
+    fun clearConnectedDevices() {
+        _connectedDevices.clear()
     }
 }
 
@@ -240,6 +243,10 @@ sealed class InstanceHolder<T : CompanionService<T>> {
 
     fun clearDeviceUuidPresence() {
         instance?.connectedUuidDevices?.clear()
+    }
+
+    fun clearConnectedDevices() {
+        instance?.clearConnectedDevices()
     }
 
     fun getCurrentEvent(): Int? {

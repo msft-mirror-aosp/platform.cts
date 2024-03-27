@@ -33,6 +33,7 @@ import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -42,6 +43,8 @@ import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
 import android.view.Display;
+
+import com.android.window.flags.Flags;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -66,6 +69,12 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     @Test
     public void testFreeformWindowManagementSupport() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         int displayId = Display.DEFAULT_DISPLAY;
         if (supportsMultiDisplay()) {
             displayId = createManagedVirtualDisplaySession()
@@ -128,6 +137,12 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     @Test
     public void testActivityLifeCycleOnResizeFreeformTask() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FREEFORM);
         launchActivity(NO_RELAUNCH_ACTIVITY, WINDOWING_MODE_FREEFORM);
 
@@ -207,6 +222,12 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     @Test
     public void testMultiWindowFullscreenOnNonPcDevice() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         assumeTrue("Only test on non-PC device",
                 !supportsFreeform() || !hasDeviceFeature(FEATURE_PC));
         int displayId = Display.DEFAULT_DISPLAY;

@@ -188,8 +188,19 @@ abstract class TestBase {
     fun simulateDeviceUuidEvent(uuid: ParcelUuid, event: Int) =
             runShellCommand(
                     "cmd companiondevice simulate-device-uuid-event " +
-                    "$uuid $targetPackageName $userId $event"
+                            "$uuid $targetPackageName $userId $event"
             )
+
+    fun simulateDeviceEventDeviceLocked(associationId: Int, userId: Int, event: Int, uuid: String) {
+        runShellCommand(
+            "cmd companiondevice simulate-device-event-device-locked " +
+                "$associationId $userId $event $uuid"
+        )
+    }
+
+    fun simulateDeviceEventDeviceUnlocked(userId: Int) {
+        runShellCommand("cmd companiondevice simulate-device-event-device-unlocked $userId")
+    }
 }
 
 const val TAG = "CtsCompanionDeviceManagerTestCases"

@@ -150,7 +150,7 @@ class SessionTest : PackageInstallerTestBase() {
      */
     @Test
     fun setApplicationEnabledSettingPersistent() {
-        installWithApplicationEnabledSetting()
+        installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
                 pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -163,7 +163,7 @@ class SessionTest : PackageInstallerTestBase() {
         )
 
         // enabled setting should be reset to default after reinstall
-        installWithApplicationEnabledSetting()
+        installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
                 pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -176,7 +176,7 @@ class SessionTest : PackageInstallerTestBase() {
         )
 
         // enabled setting should now be persisted after reinstall
-        installWithApplicationEnabledSetting(true)
+        installPackage(TEST_APK_NAME, "--skip-enable")
         assertEquals(
             COMPONENT_ENABLED_STATE_DISABLED,
             pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -275,22 +275,6 @@ class SessionTest : PackageInstallerTestBase() {
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNull(sessionInfo!!.resolvedBaseApkPath)
         clickInstallerUIButton(CANCEL_BUTTON_ID)
-    }
-
-    private fun installWithApplicationEnabledSetting(setEnabledSettingPersistent: Boolean = false) {
-        val sessionParam = PackageInstaller.SessionParams(MODE_FULL_INSTALL)
-        if (setEnabledSettingPersistent) {
-            sessionParam.setApplicationEnabledSettingPersistent()
-        }
-        val sessionId = pi.createSession(sessionParam)
-        val session = pi.openSession(sessionId)
-        assertEquals(setEnabledSettingPersistent, session.isApplicationEnabledSettingPersistent())
-        writeSession(session, TEST_APK_NAME)
-        commitSession(session)
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-        // Wait for installation to finish
-        getInstallSessionResult()
     }
 
     private fun disablePackage() {

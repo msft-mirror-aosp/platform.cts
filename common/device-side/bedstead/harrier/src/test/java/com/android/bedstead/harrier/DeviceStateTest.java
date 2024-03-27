@@ -116,6 +116,8 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireGmsBuild;
+import com.android.bedstead.harrier.annotations.RequireGuestUserIsEphemeral;
+import com.android.bedstead.harrier.annotations.RequireGuestUserIsNotEphemeral;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
 import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
@@ -129,6 +131,7 @@ import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile;
@@ -1786,5 +1789,45 @@ public class DeviceStateTest {
     @EnsureWillNotTakeQuickBugReports
     public void ensureWillNotTakeQuickBugReportsAnnotation_willNotTakeQuickBugReports() {
         assertThat(TestApis.bugReports().willTakeQuickBugReports()).isFalse();
+    }
+
+    @RequireResourcesBooleanValue(configName = "config_enableMultiUserUI", requiredValue = true)
+    @Test
+    public void requireResourcesBooleanValueIsTrue_resourceValueIsTrue() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_enableMultiUserUI")
+        ).isTrue();
+    }
+
+    @RequireResourcesBooleanValue(configName = "config_enableMultiUserUI", requiredValue = false)
+    @Test
+    public void requireResourcesBooleanValueIsFalse_resourceValueIsFalse() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_enableMultiUserUI")
+        ).isFalse();
+    }
+
+    @RequireGuestUserIsEphemeral
+    @Test
+    public void requireGuestUserIsEphemeral_guestUserIsEphemeral() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_guestUserEphemeral")
+        ).isTrue();
+    }
+
+    @RequireGuestUserIsNotEphemeral
+    @Test
+    public void requireGuestUserIsNotEphemeral_guestUserIsNotEphemeral() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_guestUserEphemeral")
+        ).isFalse();
     }
 }

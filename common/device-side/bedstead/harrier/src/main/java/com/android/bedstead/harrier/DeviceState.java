@@ -18,9 +18,9 @@ package com.android.bedstead.harrier;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.app.admin.DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED;
-import static android.app.role.RoleManager.ROLE_BROWSER;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.os.Build.VERSION.SDK_INT;
+
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.Defaults.DEFAULT_PASSWORD;
@@ -42,8 +42,11 @@ import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequiremen
 import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
+
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -54,10 +57,11 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.quicksettings.TileService;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
+
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
@@ -125,6 +129,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
@@ -199,6 +204,7 @@ import com.android.bedstead.testapp.TestAppQueryBuilder;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
+
 import com.google.common.base.Objects;
 
 import junit.framework.AssertionFailedError;
@@ -1346,6 +1352,11 @@ public final class DeviceState extends HarrierRule {
                 ensureNoPackageRespondsToIntent(
                         ensureNoPackageRespondsToIntentAnnotation.intent(),
                         ensureNoPackageRespondsToIntentAnnotation.user());
+                continue;
+            }
+
+            if (annotation instanceof RequireResourcesBooleanValue requireResourcesBooleanValue) {
+                requireSystemBooleanResource(requireResourcesBooleanValue);
                 continue;
             }
         }
@@ -4577,5 +4588,20 @@ public final class DeviceState extends HarrierRule {
             String packageName = resolveInfoWrapper.activityInfo().packageName;
             ensurePackageNotInstalled(packageName, user);
         }
+    }
+
+    private void requireSystemBooleanResource(
+            RequireResourcesBooleanValue requireResourcesBooleanValue
+    ) {
+        boolean resourceValue = TestApis
+                .resources()
+                .system()
+                .getBoolean(requireResourcesBooleanValue.configName());
+
+        assumeThat(
+                "resource with configName: " + requireResourcesBooleanValue.configName(),
+                resourceValue,
+                is(requireResourcesBooleanValue.requiredValue())
+        );
     }
 }

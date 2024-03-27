@@ -19,6 +19,7 @@ import os.path
 
 from mobly import test_runner
 import numpy as np
+import PIL
 
 import its_base_test
 import camera_properties_utils
@@ -27,7 +28,9 @@ import image_processing_utils
 import its_session_utils
 
 
-_JPG_EXTENSION = '.jpg'
+_JPEG_EXTENSION = '.jpg'
+_JPEG_QUALITY_SETTING = 100  # set value fairly high
+_JPEG_SIZE_THRESH = 1.2E6  # min bytes to ensure busy scene (found empirically)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
 _ZOOM_RATIO_MAX = 8  # too high zoom ratios will eventualy reduce entropy
@@ -43,23 +46,30 @@ def _read_files_back_from_disk(log_path):
 
   Returns:
     list of uint8 images read with Image.read().
+    jpeg_size_max: int; max size of jpeg files.
   """
   jpeg_files = []
-  imgs_uint8 = []
+  jpeg_sizes = []
   for file in sorted(os.listdir(log_path)):
-    if _JPG_EXTENSION in file:
+    if _JPEG_EXTENSION in file:
       jpeg_files.append(file)
-  logging.debug('JPEG files from directory: %s', jpeg_files)
+  if jpeg_files:
+    logging.debug('JPEG files from directory: %s', jpeg_files)
+  else:
+    raise AssertionError(f'No JPEG files in {log_path}')
   for jpeg_file in jpeg_files:
     jpeg_file_with_log_path = os.path.join(log_path, jpeg_file)
+    jpeg_file_size = os.stat(jpeg_file_with_log_path).st_size
+    jpeg_sizes.append(jpeg_file_size)
     logging.debug('Opening file %s', jpeg_file)
+    logging.debug('File size %d (bytes)', jpeg_file_size)
     try:
-      imgs_uint8.append(image_processing_utils.convert_image_to_numpy_array(
-          jpeg_file_with_log_path))
-      logging.debug('%s read successfully.', jpeg_file)
-    except Exception as e:
+      image_processing_utils.convert_image_to_numpy_array(
+          jpeg_file_with_log_path)
+    except PIL.UnidentifiedImageError as e:
       raise AssertionError(f'Cannot read {jpeg_file_with_log_path}') from e
-  return imgs_uint8
+    logging.debug('Successfully read %s.', jpeg_file)
+  return max(jpeg_sizes)
 
 
 class JpegHighEntropyTest(its_base_test.ItsBaseTest):
@@ -101,6 +111,7 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
 
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
+      req['android.jpeg.quality'] = _JPEG_QUALITY_SETTING
       for zoom_ratio in zoom_ratios:
         req['android.control.zoomRatio'] = zoom_ratio
         logging.debug('zoom ratio: %.3f', zoom_ratio)
@@ -108,16 +119,21 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         cap = cam.do_capture(req, cam.CAP_JPEG)
 
         # Save JPEG image
-        img = image_processing_utils.convert_capture_to_rgb_image(
-            cap, props=props)
+        try:
+          img = image_processing_utils.convert_capture_to_rgb_image(
+              cap, props=props)
+        except PIL.UnidentifiedImageError as e:
+          raise AssertionError(
+              f'Cannot convert cap to JPEG for zoom: {zoom_ratio:.2f}') from e
         image_processing_utils.write_image(
-            img,
-            f'{test_name_with_log_path}_{round(zoom_ratio, 2)}{_JPG_EXTENSION}')
+            img, f'{test_name_with_log_path}_{zoom_ratio:.2f}{_JPEG_EXTENSION}')
 
       # Read JPEG files back to ensure readable encoding
-      _read_files_back_from_disk(log_path)
-
-      # TODO: b/310805430 - add spoofing checks
+      jpeg_size_max = _read_files_back_from_disk(log_path)
+      if jpeg_size_max < _JPEG_SIZE_THRESH:
+        raise AssertionError(
+            f'JPEG files are not large enough! max: {jpeg_size_max}, '
+            f'THRESH: {_JPEG_SIZE_THRESH}')
 
 if __name__ == '__main__':
   test_runner.main()
