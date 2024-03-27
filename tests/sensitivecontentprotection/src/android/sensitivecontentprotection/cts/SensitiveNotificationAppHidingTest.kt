@@ -24,6 +24,7 @@ import android.app.Person
 import android.app.stubs.shared.NotificationHelper
 import android.app.stubs.shared.TestNotificationAssistant
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.UserManager
@@ -159,7 +160,8 @@ class SensitiveNotificationAppHidingTest {
     @Before
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
-
+        // TODO: b/331064496 - projection service isn't started on auto
+        assumeFalse(isAutomotive())
         assumeFalse(
             "Device is in headless system user mode. Test requires screenshots" +
                 "which aren't supported in headless",
@@ -253,6 +255,10 @@ class SensitiveNotificationAppHidingTest {
 
             verifyScreenCaptureProtected(activityScenario)
         }
+    }
+
+    private fun isAutomotive(): Boolean {
+        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
     }
 
     companion object {
