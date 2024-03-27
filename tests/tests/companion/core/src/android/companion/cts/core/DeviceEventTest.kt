@@ -32,6 +32,7 @@ import org.junit.runner.RunWith
 class DeviceEventTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     fun test_ble_device_event() {
         targetApp.associate(MAC_ADDRESS_A)

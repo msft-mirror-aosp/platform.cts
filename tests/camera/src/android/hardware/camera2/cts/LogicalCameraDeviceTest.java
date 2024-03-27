@@ -719,6 +719,27 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                                 "length and crop region change cancelling out each other.",
                                 Math.abs(newFov - fov)/fov < FOV_MARGIN);
 
+                        if (j + 1 < results.length) {
+                            TotalCaptureResult nextResult = results[j+1];
+                            float[] lensIntrinsics = result.get(
+                                    CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                            float[] nextLensIntrinsics = nextResult.get(
+                                    CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                            if ((lensIntrinsics != null) && (nextLensIntrinsics != null)) {
+                                mCollector.expectTrue("The lens intrinsics between two " +
+                                                "different focal lengths are not expected to " +
+                                                " match",
+                                        !Arrays.equals(lensIntrinsics, nextLensIntrinsics));
+                            } else {
+                                mCollector.expectNull("If not supported, lens intrinsics " +
+                                                "must always remain invalid regardless of the " +
+                                                "focal length", lensIntrinsics);
+                                mCollector.expectNull("If not supported, lens intrinsics " +
+                                        "must always remain invalid regardless of the " +
+                                        "focal length", nextLensIntrinsics);
+                            }
+                        }
+
                         if (staticInfo.isActivePhysicalCameraIdSupported()) {
                             String activePhysicalId = result.get(
                                     CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);

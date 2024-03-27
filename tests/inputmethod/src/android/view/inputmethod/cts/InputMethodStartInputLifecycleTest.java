@@ -41,7 +41,6 @@ import android.graphics.Color;
 import android.inputmethodservice.InputMethodService;
 import android.os.IBinder;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Editable;
@@ -102,13 +101,6 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.FocusHandlingTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
@@ -306,7 +298,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final boolean instant =
                 instrumentation.getTargetContext().getPackageManager().isInstantApp();
-        final String marker1 = getTestMarker();
+        final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
         try (AutoCloseable closeable = MockTestActivityUtil.launchSync(instant,
                 TIMEOUT, Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
 
@@ -320,7 +312,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
                 expectCommand(stream, imeSession.suspendCreateSession(), TIMEOUT);
 
-                final String marker2 = getTestMarker();
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 final EditText editText = launchTestActivity(marker2);
                 TestUtils.runOnMainSync(() -> editText.getContext().getSystemService(
                         InputMethodManager.class).invalidateInput(editText));

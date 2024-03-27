@@ -32,6 +32,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "androidx.test.core",
         "compatibility-device-util-axt",
         "platform-test-annotations",
         "compatibility-device-util-axt",
