@@ -994,7 +994,7 @@ public class CardEmulationTest {
     }
 
     private PollingFrame createFrameWithData(@PollingFrameType int type, byte[] data) {
-        return new PollingFrame(type, data, 8, 0, false);
+        return new PollingFrame(type, data, 8, Integer.MAX_VALUE + 1, false);
     }
 
     private ComponentName setDefaultPaymentService(Class serviceClass) {
