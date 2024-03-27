@@ -51,6 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +68,9 @@ public final class ActivityManagerAppStartInfoTest {
 
     private static final int REQUEST_VALUE_QUERY_START = 1;
     private static final int REQUEST_VALUE_ADD_TIMESTAMP = 2;
+    private static final int REQUEST_VALUE_LISTENER_ADD_ONE = 3;
+    private static final int REQUEST_VALUE_LISTENER_ADD_MULTIPLE = 4;
+    private static final int REQUEST_VALUE_LISTENER_ADD_REMOVE = 5;
 
     private static final String REPLY_ACTION_COMPLETE =
             "com.android.cts.startinfoapp.ACTION_COMPLETE";
@@ -75,6 +79,8 @@ public final class ActivityManagerAppStartInfoTest {
 
     private static final int REPLY_EXTRA_SUCCESS_VALUE = 1;
     //private static final int REPLY_EXTRA_FAILURE_VALUE = 2;
+
+    private static final int REPLY_STATUS_NONE = -1;
     // End section: keep in sync with {@link ApiTestActivity}
 
     private static final String STUB_APK =
@@ -210,7 +216,7 @@ public final class ActivityManagerAppStartInfoTest {
     public void testQueryThisProcess() throws Exception {
         clearHistoricalStartInfo();
 
-        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE);
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
 
         // Start the app and have it query its own start info record.
         executeShellCmd("am start -n %s/%s%s --ei %s %d",
@@ -222,9 +228,9 @@ public final class ActivityManagerAppStartInfoTest {
         receiver.close();
 
         // Confirm that the app confirmed that it successfully obtained record.
-        assertNotNull(receiver.mIntent);
+        assertEquals(1, receiver.mIntents.size());
 
-        Bundle extras = receiver.mIntent.getExtras();
+        Bundle extras = receiver.mIntents.get(0).getExtras();
         assertNotNull(extras);
 
         int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, -1);
@@ -247,7 +253,7 @@ public final class ActivityManagerAppStartInfoTest {
 
         final long timestampFirst = System.nanoTime();
         final long timestampLast = timestampFirst + 1000L;
-        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE);
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
 
         // Start the app and have it add the provided timestamp to its start record.
         executeShellCmd(
@@ -278,6 +284,99 @@ public final class ActivityManagerAppStartInfoTest {
 
         assertEquals(timestampFirst, timestampFirstFromInfo);
         assertEquals(timestampLast, timestampLastFromInfo);
+    }
+
+    /**
+     * Test that registered listeners are triggered when AppStartInfo is complete.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testTriggerListeners() throws Exception {
+        clearHistoricalStartInfo();
+
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
+
+        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION, REQUEST_VALUE_LISTENER_ADD_ONE); // action to perform
+
+        // Wait for complete callback
+        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        receiver.close();
+
+        // Confirm that the app confirmed that it successfully received a callback.
+        assertEquals(1, receiver.mIntents.size());
+
+        Bundle extras = receiver.mIntents.get(0).getExtras();
+        assertNotNull(extras);
+
+        int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, REPLY_STATUS_NONE);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
+    }
+
+    /**
+     * Test that multiple registered listeners are triggered when AppStartInfo is complete.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testTriggerMultipleListeners() throws Exception {
+        clearHistoricalStartInfo();
+
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 2);
+
+        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION,
+                REQUEST_VALUE_LISTENER_ADD_MULTIPLE); // action to perform
+
+        // Wait for complete callback
+        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        receiver.close();
+
+        // Confirm that the app confirmed that it successfully received a callback.
+        assertEquals(2, receiver.mIntents.size());
+
+        Bundle extras = receiver.mIntents.get(0).getExtras();
+        assertNotNull(extras);
+
+        int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, REPLY_STATUS_NONE);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
+
+        extras = receiver.mIntents.get(1).getExtras();
+        assertNotNull(extras);
+
+        status = extras.getInt(REPLY_EXTRA_STATUS_KEY, REPLY_STATUS_NONE);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
+    }
+
+    /**
+     * Test that a removed listener is not triggered when AppStartInfo is complete.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testRemoveListener() throws Exception {
+        clearHistoricalStartInfo();
+
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 2);
+
+        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION, REQUEST_VALUE_LISTENER_ADD_REMOVE); // action to perform
+
+        // Wait for timeout callback to ensure the broadcast was only sent once for the remaining
+        // listener. If we get a complete result this means that the removed listener was triggered.
+        assertEquals(RESULT_TIMEOUT, receiver.waitForActivity());
+        receiver.close();
+
+        // Confirm that the app confirmed that it successfully received a callback on the not
+        // removed listener, and did not receive one on the removed listener.
+        assertEquals(1, receiver.mIntents.size());
+
+        Bundle extras = receiver.mIntents.get(0).getExtras();
+        assertNotNull(extras);
+
+        int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, REPLY_STATUS_NONE);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
     }
 
     private void clearHistoricalStartInfo() throws Exception {
@@ -386,12 +485,14 @@ public final class ActivityManagerAppStartInfoTest {
     private class ResultReceiverFilter extends BroadcastReceiver {
         private String mActivityToFilter;
         private int mResult = RESULT_TIMEOUT;
+        private int mResultsToWaitFor;
         private static final int TIMEOUT_IN_MS = 5000;
-        Intent mIntent = null;
+        List<Intent> mIntents = new ArrayList<Intent>();
 
         // Create the filter with the intent to look for.
-        ResultReceiverFilter(String activityToFilter) {
+        ResultReceiverFilter(String activityToFilter, int resultsToWaitFor) {
             mActivityToFilter = activityToFilter;
+            mResultsToWaitFor = resultsToWaitFor;
             IntentFilter filter = new IntentFilter();
             filter.addAction(mActivityToFilter);
             mInstrumentation.getTargetContext().registerReceiver(this, filter,
@@ -407,9 +508,11 @@ public final class ActivityManagerAppStartInfoTest {
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(mActivityToFilter)) {
                 synchronized (this) {
-                    mResult = RESULT_PASS;
-                    mIntent = intent;
-                    notifyAll();
+                    mIntents.add(intent);
+                    if (mIntents.size() >= mResultsToWaitFor) {
+                        mResult = RESULT_PASS;
+                        notifyAll();
+                    }
                 }
             }
         }

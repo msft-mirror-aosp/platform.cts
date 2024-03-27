@@ -23,6 +23,9 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 /**
  * An activity to install to test ApplicationStartInfo.
@@ -46,6 +49,16 @@ public class ApiTestActivity extends Activity {
 
     // Request value for app to add the provided timestamp to start info.
     private static final int REQUEST_VALUE_ADD_TIMESTAMP = 2;
+
+    // Request value for app to add a listener and respond when it gets triggered.
+    private static final int REQUEST_VALUE_LISTENER_ADD_ONE = 3;
+
+    // Request value for app to add 2 listeners and respond when each gets triggered.
+    private static final int REQUEST_VALUE_LISTENER_ADD_MULTIPLE = 4;
+
+    // Request value for app to add 2 listeners, remove 1, and respond success when correct one
+    // is triggered and failure if incorrect one is triggered.
+    private static final int REQUEST_VALUE_LISTENER_ADD_REMOVE = 5;
 
     // Broadcast action to return result for request.
     private static final String REPLY_ACTION_COMPLETE =
@@ -83,6 +96,15 @@ public class ApiTestActivity extends Activity {
             case REQUEST_VALUE_ADD_TIMESTAMP:
                 addTimestamp(extras);
                 break;
+            case REQUEST_VALUE_LISTENER_ADD_ONE:
+                addOneListener();
+                break;
+            case REQUEST_VALUE_LISTENER_ADD_MULTIPLE:
+                addMultipleListeners();
+                break;
+            case REQUEST_VALUE_LISTENER_ADD_REMOVE:
+                addAndRemoveListener();
+                break;
         }
     }
 
@@ -118,7 +140,96 @@ public class ApiTestActivity extends Activity {
         ActivityManager am = getSystemService(ActivityManager.class);
         am.addStartInfoTimestamp(keyFirst, valFirst);
         am.addStartInfoTimestamp(keyLast, valLast);
+
         reply(REPLY_STATUS_NONE);
+    }
+
+    /**
+     * Add 1 listener.
+     *
+     * Listener is expected to be triggered upon completion of start, or immediately if the start
+     * is already complete.
+     *
+     * Result will be broadcast when listener is triggered.
+     */
+    private void addOneListener() {
+        ActivityManager am = getSystemService(ActivityManager.class);
+        Consumer<ApplicationStartInfo> listener = new Consumer<ApplicationStartInfo>() {
+            @Override
+            public void accept(ApplicationStartInfo info) {
+                reply(REPLY_EXTRA_SUCCESS_VALUE);
+            }
+        };
+        am.addApplicationStartInfoCompletionListener(Executors.newSingleThreadScheduledExecutor(),
+                listener);
+    }
+
+    /**
+     * Add 2 listeners.
+     *
+     * Listener is expected to be triggered upon completion of start, or immediately if the start
+     * is already complete.
+     *
+     * Result will be broadcast for each listener when triggered.
+     */
+    private void addMultipleListeners() {
+        ActivityManager am = getSystemService(ActivityManager.class);
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        Consumer<ApplicationStartInfo> listenerFirst = new Consumer<ApplicationStartInfo>() {
+            @Override
+            public void accept(ApplicationStartInfo info) {
+                reply(REPLY_EXTRA_SUCCESS_VALUE);
+            }
+        };
+        Consumer<ApplicationStartInfo> listenerSecond = new Consumer<ApplicationStartInfo>() {
+            @Override
+            public void accept(ApplicationStartInfo info) {
+                reply(REPLY_EXTRA_SUCCESS_VALUE);
+            }
+        };
+
+        am.addApplicationStartInfoCompletionListener(executor, listenerFirst);
+        am.addApplicationStartInfoCompletionListener(executor, listenerSecond);
+    }
+
+    /**
+     * Add 2 listeners and then remove 1.
+     *
+     * Listener is expected to be triggered upon completion of start, or immediately if the start
+     * is already complete.
+     *
+     * Result will be broadcast for each listener if triggered. Result status will be
+     * {@link REPLY_EXTRA_SUCCESS_VALUE} when listener that was not removed is triggered, and
+     * {@link REPLY_EXTRA_FAILURE_VALUE} if listener that was removed is triggered. This method is
+     * intended to be called during startup so that the first listener has time to be removed.
+     */
+    private void addAndRemoveListener() {
+        ActivityManager am = getSystemService(ActivityManager.class);
+        final Object mLock = new Object();
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        Consumer<ApplicationStartInfo> listenerToRemove = new Consumer<ApplicationStartInfo>() {
+            @Override
+            public void accept(ApplicationStartInfo info) {
+                synchronized (mLock) {
+                    reply(REPLY_EXTRA_FAILURE_VALUE);
+                }
+            }
+        };
+        Consumer<ApplicationStartInfo> listenerToTrigger = new Consumer<ApplicationStartInfo>() {
+            @Override
+            public void accept(ApplicationStartInfo info) {
+                synchronized (mLock) {
+                    reply(REPLY_EXTRA_SUCCESS_VALUE);
+                }
+            };
+        };
+
+        am.addApplicationStartInfoCompletionListener(executor, listenerToRemove);
+        am.addApplicationStartInfoCompletionListener(executor, listenerToTrigger);
+
+        am.removeApplicationStartInfoCompletionListener(listenerToRemove);
     }
 
     private void reply(int status) {
