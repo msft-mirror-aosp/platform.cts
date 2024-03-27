@@ -52,6 +52,8 @@ import java.util.Map;
 public final class ActivityManagerAppStartInfoTest {
     private static final String TAG = ActivityManagerAppStartInfoTest.class.getSimpleName();
 
+    private static final String STUB_APK =
+            "/data/local/tmp/cts/content/CtsSimpleApp.apk";
     private static final String STUB_PACKAGE_NAME =
             "com.android.cts.launcherapps.simpleapp";
     private static final String SIMPLE_ACTIVITY = ".SimpleActivity";
@@ -73,25 +75,13 @@ public final class ActivityManagerAppStartInfoTest {
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mPackageManager = mContext.getPackageManager();
 
+        executeShellCmd("pm install -r --force-queryable " + STUB_APK);
+
         mStubPackageUid = mPackageManager.getPackageUid(STUB_PACKAGE_NAME, 0);
-
-        // Disable doze mode for test app
-        executeShellCmd("cmd deviceidle whitelist +" + STUB_PACKAGE_NAME);
-
-        // Ensure test app is enabled
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
-        mContext.getPackageManager().setApplicationEnabledSetting(
-                STUB_PACKAGE_NAME,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                0);
     }
 
     @After
     public void tearDown() throws Exception {
-        // Reenable doze mode for test app
-        executeShellCmd("cmd deviceidle whitelist -" + STUB_PACKAGE_NAME);
-
         executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
@@ -169,9 +159,9 @@ public final class ActivityManagerAppStartInfoTest {
 
         List<ApplicationStartInfo> list =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    STUB_PACKAGE_NAME, 1,
-                    mActivityManager::getExternalHistoricalProcessStartReasons,
-                    android.Manifest.permission.DUMP);
+                        STUB_PACKAGE_NAME, 1,
+                        mActivityManager::getExternalHistoricalProcessStartReasons,
+                        android.Manifest.permission.DUMP);
 
         assertTrue(list != null && list.size() == 0);
     }
