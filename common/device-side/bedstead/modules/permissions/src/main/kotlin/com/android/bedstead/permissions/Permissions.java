@@ -34,6 +34,7 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
+import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.UndoableContext;
 import com.android.bedstead.nene.utils.Versions;
 
@@ -81,7 +82,6 @@ public final class Permissions {
             Collections.synchronizedList(new ArrayList<>());
     private final Set<String> mShellPermissions;
     private final Set<String> mInstrumentedRequestedPermissions;
-    private Set<String> mExistingPermissions;
 
     public static UndoableContext ignoringPermissions() {
         boolean original = Permissions.sIgnorePermissions.get();
@@ -129,10 +129,6 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withPermission(String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -152,10 +148,6 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionAtLeast(
             int minSdkVersion, String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -175,10 +167,6 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionAtMost(
             int maxSdkVersion, String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -198,10 +186,6 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -220,10 +204,6 @@ public final class Permissions {
      * <p>If the version does not match, the permission context will not change.
      */
     public PermissionContextImpl withPermissionOnVersion(int sdkVersion, String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -247,10 +227,6 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withAppOp(String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -276,10 +252,6 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersion(int sdkVersion, String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -305,10 +277,6 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersionAtLeast(int sdkVersion, String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -334,10 +302,6 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersionAtMost(int sdkVersion, String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -364,10 +328,6 @@ public final class Permissions {
      */
     public PermissionContextImpl withAppOpOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -391,10 +351,6 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withoutPermission(String... permissions) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -419,10 +375,6 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withoutAppOp(String... appOps) {
-        if (mPermissionContexts.isEmpty()) {
-            recordExistingPermissions();
-        }
-
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
@@ -438,11 +390,6 @@ public final class Permissions {
 
     void applyPermissions() {
         if (sIgnorePermissions.get()) {
-            return;
-        }
-
-        if (mPermissionContexts.isEmpty()) {
-            restoreExistingPermissions();
             return;
         }
 
@@ -579,7 +526,7 @@ public final class Permissions {
                             + "version. You must add it to the com.android.shell manifest. If "
                             + "that is not"
                             + "possible add it to"
-                            + "com.android.bedstead.nene.permissions"
+                            + "com.android.bedstead.permissions"
                             + ".Permissions#EXEMPT_SHELL_PERMISSIONS",
                     permission);
         }
@@ -667,34 +614,6 @@ public final class Permissions {
         } catch (PackageManager.NameNotFoundException e) {
             return false;
         }
-    }
-
-    private void recordExistingPermissions() {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
-            return;
-        }
-
-        mExistingPermissions = ShellCommandUtils.uiAutomation().getAdoptedShellPermissions();
-    }
-
-    @SuppressWarnings("NewApi")
-    private void restoreExistingPermissions() {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
-            return;
-        }
-
-        if (mExistingPermissions == null) {
-            return; // We haven't recorded previous permissions
-        } else if (mExistingPermissions.isEmpty()) {
-            ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
-        } else if (mExistingPermissions == UiAutomation.ALL_PERMISSIONS) {
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity();
-        } else {
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
-                    mExistingPermissions.toArray(new String[0]));
-        }
-
-        mExistingPermissions = null;
     }
 
     /** True if the current process has the given permission. */
