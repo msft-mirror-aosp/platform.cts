@@ -507,9 +507,11 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
             }
             itemList.add(longString.toString());
         }
-        itemList.add(VERTICAL_LIST_LAST_ITEM_TEXT);
         itemList.forEach(
                 text -> contentViewBuilder.addListItem(new PromptContentItemBulletedText(text)));
+        contentViewBuilder.addListItem(
+                new PromptContentItemBulletedText(VERTICAL_LIST_LAST_ITEM_TEXT),
+                itemCountBesidesLastItem);
         return itemList;
     }
 
