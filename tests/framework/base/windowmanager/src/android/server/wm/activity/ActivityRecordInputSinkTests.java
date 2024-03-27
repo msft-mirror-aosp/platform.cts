@@ -40,7 +40,7 @@ import org.junit.Test;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceWindow:ActivityRecordInputSinkTests
+ * atest CtsWindowManagerDeviceActivity:ActivityRecordInputSinkTests
  */
 @Presubmit
 public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
