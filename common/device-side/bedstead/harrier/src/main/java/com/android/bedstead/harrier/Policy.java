@@ -59,6 +59,7 @@ import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATI
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_PERMISSION_GRANT;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_SECURITY_LOGGING;
 import static com.android.bedstead.testapp.TestAppQueryBuilder.queryBuilder;
+import static com.android.xts.root.annotations.RequireAdbRootKt.requireAdbRoot;
 
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
@@ -654,9 +655,9 @@ public final class Policy {
                             new String[]{permission.appliedWith()}, FailureMode.SKIP)
             };
             // TODO(281651179): Re-enable
-//            annotations.add(
-//                    new DynamicParameterizedAnnotation(
-//                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+            annotations.add(
+                    new DynamicParameterizedAnnotation(
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);
@@ -865,11 +866,11 @@ public final class Policy {
                             /* isPrimary= */ true),
                     ensureTestAppHasPermission(
                             DELEGATE_KEY, new String[]{permission.appliedWith()}, FailureMode.SKIP),
+                    requireAdbRoot("Use of device policy permission", FailureMode.SKIP)
             };
-            // TODO(281651179): Re-enable
-//            annotations.add(
-//                    new DynamicParameterizedAnnotation(
-//                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+            annotations.add(
+                    new DynamicParameterizedAnnotation(
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);

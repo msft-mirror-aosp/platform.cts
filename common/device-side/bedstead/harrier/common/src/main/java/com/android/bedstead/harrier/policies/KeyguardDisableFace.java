@@ -33,7 +33,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  * Policy used for {@code DevicePolicyManager#setKeyguardDisabledFeatures} with
  * {@code DevicePolicyManager#KEYGUARD_DISABLE_FACE}
  */
-@EnterprisePolicy(dpc = { // APPLIED_BY_DPM_ROLE_HOLDER
+@EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO | APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE | CANNOT_BE_APPLIED_BY_ROLE_HOLDER | APPLIES_TO_OWN_USER | INHERITABLE,
         APPLIED_BY_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | APPLIES_TO_PARENT | CANNOT_BE_APPLIED_BY_ROLE_HOLDER | INHERITABLE // only if there isn't a separate challenge
 }, permissions = {
