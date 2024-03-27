@@ -780,8 +780,7 @@ public class RemoteViewsTest {
         mRemoteViews = new RemoteViews(drawInstructions);
         verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
             final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
-            assertTrue("Failed validating " + resourceName + " rmse=" + rmse,
-                    rmse < 5.0f);
+            assertTrue("Failed validating " + resourceName + " rmse=" + rmse, rmse < 4.0f);
         });
     }
 
