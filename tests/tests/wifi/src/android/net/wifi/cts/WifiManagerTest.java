@@ -3142,7 +3142,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 TetheringManager.TetheringRequest request =
                         new TetheringManager.TetheringRequest.Builder(
                                 TetheringManager.TETHERING_WIFI).build();
-                sWifiManager.startTetheredHotspotRequest(request, executor, callback);
+                sWifiManager.startTetheredHotspot(request, executor, callback);
                 PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
                         () -> {
                             executor.runAll();
