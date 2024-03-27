@@ -21,7 +21,6 @@ import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.ex
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.Gravity;
 import android.view.WindowManager;
@@ -50,13 +49,6 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class OnScreenPositionTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.OnScreenPositionTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
