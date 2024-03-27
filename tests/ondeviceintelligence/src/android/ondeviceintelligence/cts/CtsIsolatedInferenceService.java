@@ -19,6 +19,7 @@ package android.ondeviceintelligence.cts;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_MESSAGE_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_PARAMS_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.EXCEPTION_STATUS_CODE_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_FILE_NAME;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_COUNT_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_PARAMS_KEY;
@@ -34,20 +35,23 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.os.Parcel;
-import android.os.Process;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.concurrent.futures.CallbackToFutureAdapter;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
     static final String TAG = "SampleIsolatedService";
@@ -58,6 +62,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         } else {
             return new TokenInfo(status, persistableBundle);
         }
+    }
+
+    @NonNull
+    @Override
+    public Executor getCallbackExecutor() {
+        return getMainExecutor();
     }
 
     @NonNull
@@ -110,8 +120,38 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             @Nullable ProcessingSignal processingSignal,
             @NonNull ProcessingCallback callback) {
         if (requestType
-                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED) {
-            populateFileContentInCallback(feature, callback);
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_MAP) {
+            try {
+                Bundle bundle = new Bundle();
+                bundle.putString(TEST_KEY, getFileContentFromFdMap(feature).get());
+                callback.onResult(bundle);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_STREAM) {
+            Bundle bundle = new Bundle();
+            try {
+                bundle.putString(TEST_KEY, fetchFileContent());
+                callback.onResult(bundle);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_PFD) {
+            Bundle bundle = new Bundle();
+            try {
+                bundle.putString(TEST_KEY, fetchFileContentFromPfd().get());
+                callback.onResult(bundle);
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
             return;
         }
 
@@ -137,6 +177,13 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             callback.onResult(bundle);
             Log.i(TAG, "My Simple Parcelable : " + simpleParcelable.getMyString());
             parcel.recycle();
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_AUGMENTED_DATA) {
+            callback.onDataAugmentRequest(Bundle.EMPTY,
+                    callback::onResult);
             return;
         }
 
@@ -173,48 +220,82 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     public void onUpdateProcessingState(@NonNull Bundle processingState,
             @NonNull OutcomeReceiver<PersistableBundle, OnDeviceIntelligenceException> callback) {
         Log.i(TAG, "onUpdateProcessingState invoked.");
+        callback.onResult(PersistableBundle.EMPTY);
     }
 
-    private void populateFileContentInCallback(@NonNull Feature feature,
-            @NonNull ProcessingCallback callback) {
-        fetchFeatureFileDescriptorMap(feature, getMainExecutor(),
-                fileMap -> {
-                    Log.w(TAG, "Got Map of Length : " + fileMap.size() + " and has keys "
-                            + fileMap.keySet());
+    private Future<String> getFileContentFromFdMap(@NonNull Feature feature) {
+        return CallbackToFutureAdapter.getFuture(
+                completer -> {
+                    fetchFeatureFileDescriptorMap(feature, getMainExecutor(),
+                            fileMap -> {
+                                Log.w(TAG,
+                                        "Got Map of Length : " + fileMap.size() + " and has keys "
+                                                + fileMap.keySet());
 
-                    try (ParcelFileDescriptor pfd = fileMap.get(
-                            OnDeviceIntelligenceManagerTest.TEST_FILE_NAME);
-                         InputStreamReader isr = new InputStreamReader(
-                                 new FileInputStream(pfd.getFileDescriptor()));
-                         BufferedReader br = new BufferedReader(isr)) {
-                        String line;
-                        String result = "";
-                        while ((line = br.readLine()) != null) {
-                            Log.w(TAG, line);
-                            result = result.concat(line);
-                        }
+                                try (ParcelFileDescriptor pfd = fileMap.get(
+                                        OnDeviceIntelligenceManagerTest.TEST_FILE_NAME);
+                                     InputStreamReader isr = new InputStreamReader(
+                                             new FileInputStream(pfd.getFileDescriptor()));
+                                     BufferedReader br = new BufferedReader(isr)) {
+                                    String line;
+                                    String result = "";
+                                    while ((line = br.readLine()) != null) {
+                                        Log.w(TAG, line);
+                                        result = result.concat(line);
+                                    }
+                                    completer.set(result);
+                                } catch (IOException e) {
+                                    completer.setException(e);
+                                }
+                            });
+                    // Used only for debugging.
+                    return "Fetch file contents from map";
+                });
+    }
 
-                        Bundle bundle = new Bundle();
-                        bundle.putString(TEST_KEY, result);
-                        callback.onResult(bundle);
-                    } catch (FileNotFoundException e) {
-                        throw new RuntimeException(e);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+    private String fetchFileContent() throws IOException {
+        FileInputStream fileInputStream = openFileInput(TEST_FILE_NAME);
+        String result = "";
+        try (InputStreamReader isr = new InputStreamReader(fileInputStream);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                Log.w(TAG, line);
+                result = result.concat(line);
+            }
+            return result;
+        } catch (IOException e) {
+            throw e;
+        }
+    }
 
-                    try (FileInputStream ignored = openFileInput(
-                            OnDeviceIntelligenceManagerTest.TEST_FILE_NAME)) {
-                    } catch (IOException e) {
-                        Log.e(TAG, "Couldn't open file from openFileInput:", e);
-                    }
+    private Future<String> fetchFileContentFromPfd() throws IOException {
+        return CallbackToFutureAdapter.getFuture(
+                completer -> {
+                    getReadOnlyFileDescriptor(TEST_FILE_NAME, getMainExecutor(),
+                            pfd -> {
+                                try (InputStreamReader isr = new InputStreamReader(
+                                        new FileInputStream(pfd.getFileDescriptor()));
+                                     BufferedReader br = new BufferedReader(isr)) {
+                                    String line;
+                                    String result = "";
+                                    while ((line = br.readLine()) != null) {
+                                        Log.w(TAG, line);
+                                        result = result.concat(line);
+                                    }
+                                    completer.set(result);
+                                } catch (IOException e) {
+                                    completer.setException(e);
+                                }
+                            });
+                    // Used only for debugging.
+                    return "Fetch file contents from map";
                 });
     }
 
     public static OnDeviceIntelligenceException constructException(Bundle bundle) {
         boolean hasStatusCode = bundle.containsKey(EXCEPTION_STATUS_CODE_KEY);
         boolean hasMessage = bundle.containsKey(EXCEPTION_MESSAGE_KEY);
-        boolean hasParams = bundle.containsKey(EXCEPTION_PARAMS_KEY);
 
         if (hasStatusCode && bundle.size() == 1) {
             return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY));
