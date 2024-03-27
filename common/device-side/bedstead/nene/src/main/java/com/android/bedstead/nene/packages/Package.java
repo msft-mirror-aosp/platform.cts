@@ -209,6 +209,9 @@ public final class Package {
         if (user == null) {
             throw new NullPointerException();
         }
+        if (!user.exists()) {
+            return this;
+        }
 
         IntentFilter packageRemovedIntentFilter =
                 new IntentFilter(Intent.ACTION_PACKAGE_REMOVED);
