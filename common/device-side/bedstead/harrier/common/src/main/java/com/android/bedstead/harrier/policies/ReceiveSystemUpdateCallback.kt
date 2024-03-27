@@ -14,10 +14,12 @@ import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_Q
 @EnterprisePolicy(
     dpc = [APPLIED_BY_DEVICE_OWNER or APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO
              or APPLIES_TO_OWN_USER,
-           APPLIED_BY_PROFILE_OWNER_PROFILE or APPLIES_TO_PARENT],
-    permissions = [EnterprisePolicy.Permission(
-        appliedWith = MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES,
-        appliesTo = APPLIES_TO_OWN_USER
-    )])
+           APPLIED_BY_PROFILE_OWNER_PROFILE or APPLIES_TO_PARENT])
+// We need to split the "querying directly" tests from the "received update" tests as the permission
+// only enables the former
+//    permissions = [EnterprisePolicy.Permission(
+//        appliedWith = MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES,
+//        appliesTo = APPLIES_TO_OWN_USER
+//    )])
 class ReceiveSystemUpdateCallback {
 }

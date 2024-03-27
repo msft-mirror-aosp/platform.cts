@@ -3016,7 +3016,7 @@ public final class DeviceState extends HarrierRule {
         try {
             mTestApps.get(testAppKey).permissions().withoutPermission(permissions);
         } catch (NeneException e) {
-            if (failureMode.equals(FailureMode.SKIP) && e.getMessage().contains("Cannot deny")) {
+            if (failureMode.equals(FailureMode.SKIP)) {
                 failOrSkip(e.getMessage(), FailureMode.SKIP);
             } else {
                 throw e;

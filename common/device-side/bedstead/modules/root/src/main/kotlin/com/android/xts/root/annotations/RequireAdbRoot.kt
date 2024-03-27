@@ -31,8 +31,9 @@ import com.google.auto.value.AutoAnnotation
 @Retention(AnnotationRetention.RUNTIME)
 @UsesAnnotationExecutor(weakValue = "com.android.xts.root.RootAnnotationExecutor")
 annotation class RequireAdbRoot(
-    val failureMode: FailureMode = FailureMode.SKIP,
     val reason: String = "",
+
+    val failureMode: FailureMode = FailureMode.SKIP,
 
     /**
      * Priority sets the order that annotations will be resolved.

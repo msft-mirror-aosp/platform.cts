@@ -450,17 +450,6 @@ public final class Policy {
     private static IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser includeRunOnDevicePolicyManagementRoleHolderSecondaryUser() {
         return new AutoAnnotation_Policy_includeRunOnDevicePolicyManagementRoleHolderSecondaryUser();
     }
-
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_Policy_ensureFeatureFlagEnabled(namespace, key);
-    }
-
-    @AutoAnnotation
-    private static RequireFeatureFlagEnabled requireFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_Policy_requireFeatureFlagEnabled(namespace, key);
-    }
-
     private static Function<EnterprisePolicy, Set<Annotation>> singleAnnotation(
             Annotation annotation) {
         return (i) -> ImmutableSet.of(annotation);
@@ -652,9 +641,9 @@ public final class Policy {
                                     .toAnnotation(),
                             INSTRUMENTED_USER, /* isPrimary= */ true),
                     ensureTestAppHasPermission(DELEGATE_KEY,
-                            new String[]{permission.appliedWith()}, FailureMode.SKIP)
+                            new String[]{permission.appliedWith()}, FailureMode.SKIP),
+                    requireAdbRoot("Use of device policy permission", FailureMode.SKIP)
             };
-            // TODO(281651179): Re-enable
             annotations.add(
                     new DynamicParameterizedAnnotation(
                             "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
@@ -795,6 +784,8 @@ public final class Policy {
                         existingAnnotations.length + 2);
                 newAnnotations[newAnnotations.length - 2] = ensureHasDelegate(
                         EnsureHasDelegate.AdminType.PRIMARY, scopes, /* isPrimary= */ true);
+                // TODO: We should add @RequireAdbRoot if the permission is root-only - but we
+                // need to be able to determine that from the host
                 newAnnotations[newAnnotations.length - 1] = ensureTestAppDoesNotHavePermission(
                         DELEGATE_KEY, validPermissions, FailureMode.SKIP);
                 annotations.add(

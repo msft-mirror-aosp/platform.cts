@@ -18,6 +18,8 @@ package android.devicepolicy.cts;
 
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_WIPE_DATA;
+import static com.android.bedstead.permissions.CommonPermissions.MASTER_CLEAR;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -66,6 +68,7 @@ public final class WipeDataTest {
     @Postsubmit(reason = "new test")
     @Test
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
+    @Ignore // TODO(332537530): This test doesn't make sense - doesn't have a dpc()
     public void wipeData_notAuthorized_throwsException() {
         assertThrows("No license - no wiping",
                 IllegalStateException.class,

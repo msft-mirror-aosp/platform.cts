@@ -35,8 +35,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 @EnterprisePolicy(dpc = APPLIED_BY_DEVICE_OWNER
         | APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE
         | APPLIES_GLOBALLY
-        | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = SET_TIME, appliesTo = APPLIES_GLOBALLY))
+        | CANNOT_BE_APPLIED_BY_ROLE_HOLDER)
+// permission not enabled
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = SET_TIME, appliesTo = APPLIES_GLOBALLY))
 public final class Time {
 }

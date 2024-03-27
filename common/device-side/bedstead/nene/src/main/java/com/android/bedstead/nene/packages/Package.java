@@ -146,9 +146,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package install(UserReference user, File apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile);
     }
@@ -158,9 +159,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package install(UserReference user, Supplier<File> apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile.get());
     }
@@ -170,9 +172,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package installBytes(UserReference user, byte[] apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile);
     }
@@ -182,9 +185,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package installBytes(UserReference user, Supplier<byte[]> apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile.get());
     }

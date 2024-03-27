@@ -311,14 +311,14 @@ class PermissionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_USERS)
-    @RequireAdbRoot("Use of MANAGE_USERS")
+    @RequireAdbRoot(reason = "Use of MANAGE_USERS")
     fun ensureHasPermissionAnnotation_unadoptablePermission_withRoot_hasPermission() {
         assertThat(TestApis.permissions().hasPermission(MANAGE_USERS)).isTrue()
     }
 
     @Test
     @EnsureDoesNotHavePermission(INSTALL_PERMISSION)
-    @RequireAdbRoot("Use of INSTALL_PERMISSION")
+    @RequireAdbRoot(reason = "Use of INSTALL_PERMISSION")
     fun ensureDoesNotHavePermissionAnnotation_undroppablePermission_withRoot_doesNotHavePermission() {
         assertThat(TestApis.permissions().hasPermission(INSTALL_PERMISSION)).isFalse()
     }
