@@ -41,6 +41,7 @@ import com.android.bedstead.nene.utils.Versions;
 
 import com.google.common.collect.ImmutableSet;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -453,7 +454,9 @@ public final class Permissions {
 
 
         try (UndoableContext c = ignoringPermissions()){
-            throw new NeneException(message + "\n\nRunning On User: " + sUser
+            throw new NeneException(message + "\n\nIf this is a new test. Consider moving it to a "
+                    + "root-enabled test suite and adding @RequireAdbRoot to the method. This "
+                    + "enables arbitrary use of permissions.\n\nRunning On User: " + sUser
                     + "\nPermission: " + permission
                     + "\nPermission protection level: " + protectionLevel
                     + "\nPermission state: " + sContext.checkSelfPermission(permission)
@@ -490,6 +493,9 @@ public final class Permissions {
     }
 
     private void removePermissionContextsUntilCanApply() {
+        if (mPermissionContexts.size() == 0) {
+            return;
+        }
         try {
             mPermissionContexts.remove(mPermissionContexts.size() - 1);
             applyPermissions();
@@ -549,16 +555,16 @@ public final class Permissions {
      */
     public void setPermissionState(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
         // TODO: replace with dependency on bedstead-root when properly modularised
-//        if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-//            for (String grantedPermission : permissionsToGrant) {
-//                forceRootPermissionState(pkg, user, grantedPermission, true);
-//            }
-//            for (String deniedPermission : permissionsToDeny) {
-//                forceRootPermissionState(pkg, user, deniedPermission, false);
-//            }
-//
-//            return;
-//        }
+        //if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        //    for (String grantedPermission : permissionsToGrant) {
+        //        forceRootPermissionState(pkg, user, grantedPermission, true);
+        //    }
+        //    for (String deniedPermission : permissionsToDeny) {
+        //        forceRootPermissionState(pkg, user, deniedPermission, false);
+        //    }
+        //
+        //    return;
+        //}
 
         setPermissionStateToPackageWithoutRoot(pkg, user, permissionsToGrant, permissionsToDeny);
     }
@@ -677,11 +683,11 @@ public final class Permissions {
     }
 
     private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
-//        ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
+        // ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
     }
 
-    public void resetRootPermissionState(Package pkg, UserReference user, String permission) {
-//        ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
+    public void removeRootPermissionState(Package pkg, UserReference user, String permission) {
+        // ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
     }
 
     private static boolean hasAdoptedShellPermissionIdentity = false;
