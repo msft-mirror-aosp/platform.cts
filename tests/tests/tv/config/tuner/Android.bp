@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,25 +16,11 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library_host {
-    name: "cts-tradefed-harness",
-
-    java_resource_dirs: ["res"],
-    libs: [
-        "tradefed",
-        "compatibility-host-util",
-    ],
-    static_libs: [
-        "compatibility-tradefed",
-    ],
-}
-
-tradefed_binary_host {
-    name: "cts-tradefed",
-    wrapper: "etc/cts-tradefed",
-    short_name: "CTS",
-    full_name: "Compatibility Test Suite",
-    version: "15_r1",
-    static_libs: ["cts-tradefed-harness"],
-    required: ["compatibility-host-util"],
+xsd_config {
+    name: "tuner_cts_configuration_v1",
+    srcs: ["tuner_cts_config.xsd"],
+    package_name: "android.media.tv.tuner.cts.configuration.v1",
+    nullability: true,
+    gen_has: true,
+    api_dir: "tuner-cts-config-api",
 }

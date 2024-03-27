@@ -57,6 +57,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -82,6 +83,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
+import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -158,6 +160,12 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
      */
     @Test
     public void testConsequentLaunchActivityFromVirtualDisplayNoEmbedding() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
 
@@ -477,6 +485,12 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     /** Test that shell is allowed to launch on secondary displays. */
     @Test
     public void testPermissionLaunchFromShell(){
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
         mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);
@@ -572,6 +586,12 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
      */
     @Test
     public void testPermissionLaunchFromDifferentApp() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
         mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);

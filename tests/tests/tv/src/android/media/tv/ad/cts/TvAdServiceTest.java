@@ -59,6 +59,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -86,8 +87,10 @@ public class TvAdServiceTest {
     private TvAdServiceInfo mStubInfo;
     private TvInputInfo mTvInputInfo;
     private StubTvAdService.StubSessionImpl mSession;
+    private TvAdView.OnUnhandledInputEventListener mOnUnhandledInputEventListener;
 
     private final MockCallback mCallback = new MockCallback();
+    private final MockTvAdServiceCallBack mMockTvAdServiceCallBack = new MockTvAdServiceCallBack();
 
     public static class MockCallback extends TvAdView.TvAdCallback {
 
@@ -96,7 +99,12 @@ public class TvAdServiceTest {
 
     }
 
+    public static class MockTvAdServiceCallBack extends TvAdManager.TvAdServiceCallback {
 
+        private void resetValues() {
+        }
+
+    }
 
     @Before
     public void setUp() throws Throwable {
@@ -130,6 +138,7 @@ public class TvAdServiceTest {
         }
         assertNotNull(mStubInfo);
         mTvAdView.setCallback(getExecutor(), mCallback);
+        mManager.registerCallback(getExecutor(), mMockTvAdServiceCallBack);
         mTvAdView.setOnUnhandledInputEventListener(
                 new TvAdView.OnUnhandledInputEventListener() {
                     @Override
@@ -158,6 +167,8 @@ public class TvAdServiceTest {
         runTestOnUiThread(new Runnable() {
             public void run() {
                 mTvAdView.reset();
+                mTvAdView.clearCallback();
+                mTvAdView.clearOnUnhandledInputEventListener();
                 mTvView.reset();
             }
         });
@@ -166,6 +177,26 @@ public class TvAdServiceTest {
         if (mActivityScenario != null) {
             mActivityScenario.close();
         }
+        mManager.unregisterCallback(mMockTvAdServiceCallBack);
+    }
+
+    @Test
+    public void testGetOnUnhandledInputEventListener() {
+        mOnUnhandledInputEventListener = new TvAdView.OnUnhandledInputEventListener() {
+            @Override
+            public boolean onUnhandledInputEvent(InputEvent event) {
+                return true;
+            }
+        };
+        mTvAdView.setOnUnhandledInputEventListener(
+                mOnUnhandledInputEventListener);
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mTvAdView.getOnUnhandledInputEventListener()
+                        == mOnUnhandledInputEventListener;
+            }
+        }.run();
     }
 
     @Test
@@ -316,6 +347,89 @@ public class TvAdServiceTest {
         assertThat(mSession.mStopAdServiceCount).isEqualTo(1);
     }
 
+    @Test
+    public void testDispatchKeyDown() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_Q;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyDownCount > 0);
+
+        assertThat(mSession.mKeyDownCount).isEqualTo(1);
+        assertThat(mSession.mKeyDownCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyDownEvent, event);
+    }
+
+    @Test
+    public void testDispatchKeyUp() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_I;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_UP, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyUpCount > 0);
+
+        assertThat(mSession.mKeyUpCount).isEqualTo(1);
+        assertThat(mSession.mKeyUpCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyUpEvent, event);
+    }
+
+    @Test
+    public void testDispatchKeyMultiple() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        final int keyCode = KeyEvent.KEYCODE_L;
+        final KeyEvent event = new KeyEvent(KeyEvent.ACTION_MULTIPLE, keyCode);
+
+        mTvAdView.dispatchKeyEvent(event);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mKeyMultipleCount > 0);
+
+        assertThat(mSession.mKeyMultipleCount).isEqualTo(1);
+        assertThat(mSession.mKeyMultipleCode).isEqualTo(keyCode);
+        assertKeyEventEquals(mSession.mKeyMultipleEvent, event);
+    }
+
+
+    @Test
+    public void testViewOnAttachedToWindow() {
+        mActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvAdView.onAttachedToWindow();
+            }
+        });
+    }
+
+    @Test
+    public void testAppLinkCommand() throws Exception {
+        List<TvAdServiceInfo> list = mManager.getTvAdServiceList();
+
+        TvAdServiceInfo stubInfo = null;
+        for (TvAdServiceInfo info : list) {
+            if (info.getServiceInfo().name.equals(StubTvAdService.class.getName())) {
+                stubInfo = info;
+                break;
+            }
+        }
+        assertNotNull(stubInfo);
+
+        Bundle bundle = new Bundle();
+        bundle.putString(TvAdManager.APP_LINK_KEY_PACKAGE_NAME, "pkg_name");
+        bundle.putString(TvAdManager.APP_LINK_KEY_CLASS_NAME, "clazz_name");
+
+        mManager.sendAppLinkCommand(stubInfo.getId(), bundle);
+        PollingCheck.waitFor(
+                TIME_OUT_MS, () -> StubTvAdService.sAppLinkCommand != null);
+
+        assertBundlesAreEqual(StubTvAdService.sAppLinkCommand, bundle);
+    }
+
     private TvAdView findTvAdViewById(int id) {
         return (TvAdView) mActivity.findViewById(id);
     }
@@ -364,6 +478,22 @@ public class TvAdServiceTest {
             for (String key : expected.keySet()) {
                 assertThat(actual.get(key)).isEqualTo(expected.get(key));
             }
+        }
+    }
+
+    private static void assertKeyEventEquals(KeyEvent actual, KeyEvent expected) {
+        if (expected != null && actual != null) {
+            assertThat(actual.getDownTime()).isEqualTo(expected.getDownTime());
+            assertThat(actual.getEventTime()).isEqualTo(expected.getEventTime());
+            assertThat(actual.getAction()).isEqualTo(expected.getAction());
+            assertThat(actual.getKeyCode()).isEqualTo(expected.getKeyCode());
+            assertThat(actual.getRepeatCount()).isEqualTo(expected.getRepeatCount());
+            assertThat(actual.getMetaState()).isEqualTo(expected.getMetaState());
+            assertThat(actual.getDeviceId()).isEqualTo(expected.getDeviceId());
+            assertThat(actual.getScanCode()).isEqualTo(expected.getScanCode());
+            assertThat(actual.getFlags()).isEqualTo(expected.getFlags());
+            assertThat(actual.getSource()).isEqualTo(expected.getSource());
+            assertThat(actual.getCharacters()).isEqualTo(expected.getCharacters());
         } else {
             assertThat(actual).isEqualTo(expected);
         }

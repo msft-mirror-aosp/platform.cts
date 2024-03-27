@@ -76,7 +76,6 @@ _TABLET_SCENES = (
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
     'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
-    os.path.join('scene_extensions', 'scene_night'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
 )
@@ -95,7 +94,6 @@ _MANUAL_SCENES = ('scene5',)
 
 # Scene extensions
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
-                      os.path.join('scene_extensions', 'scene_night'),
                       os.path.join('scene_extensions', 'scene_low_light'),
                       )
 
@@ -139,11 +137,6 @@ _SCENE_REQ = types.MappingProxyType({
         'A tablet displayed scene with a face on the left '
         'and a low-contrast QR code on the right. '
         'See tests/scene_extensions/scene_hdr/scene_hdr.png'
-    ),
-    os.path.join('scene_extensions', 'scene_night'): (
-        'A tablet displayed scene with a white circle '
-        'and four smaller circles inside of it. '
-        'See tests/scene_extensions/scene_night/scene_night.png'
     ),
     os.path.join('scene_extensions', 'scene_low_light'): (
         'A tablet displayed scene with a grid of squares of varying '
@@ -212,7 +205,6 @@ _LIGHTING_CONTROL_TESTS = (
 _EXTENSION_NAMES = (
     'hdr',
     'low_light_boost',
-    'night',
 )
 
 _DST_SCENE_DIR = '/sdcard/Download/'
