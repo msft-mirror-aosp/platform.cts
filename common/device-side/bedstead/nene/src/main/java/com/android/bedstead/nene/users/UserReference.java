@@ -1027,4 +1027,18 @@ public final class UserReference implements AutoCloseable {
 
         return null;
     }
+
+    /**
+     * checks if user is ephemeral
+     */
+    public boolean isEphemeral() {
+        return userInfo().isEphemeral();
+    }
+
+    /**
+     * checks if user is a guest
+     */
+    public boolean isGuest() {
+        return userInfo().isGuest();
+    }
 }
