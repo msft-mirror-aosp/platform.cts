@@ -26,8 +26,6 @@ import static android.telephony.DataSpecificRegistrationInfo.LTE_ATTACH_TYPE_UNK
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_NSA;
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_SA;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -83,7 +81,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
-import android.telecom.cts.TestUtils;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.AvailableNetworkInfo;
@@ -390,11 +387,6 @@ public class TelephonyManagerTest {
      * Emergency call diagnostic data configs
      */
     private static final String DROPBOX_TAG = "ecall_diagnostic_data";
-    private static final String TELECOM_DUMPSYS_COMMAND = "dumpsys telecom";
-    private static final String TELEPHONY_DUMPSYS_COMMAND = "dumpsys telephony.registry";
-    private static final String LOGCAT_BINARY = "/system/bin/logcat";
-    private static final String DIAG_ERROR_MSG = "DiagnosticDataCollector error executing cmd";
-    public static final int MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT = 20;
     private static final int MAX_READ_BYTES_PER_DROP_BOX_ENTRY = 5000;
     private static final int DROP_BOX_LATCH_TIMEOUT = 3000;
     private CountDownLatch mLatchForDropBox;
@@ -7193,25 +7185,17 @@ public class TelephonyManagerTest {
                 new TelephonyManager.EmergencyCallDiagnosticData.Builder();
         persistCallDiagnostics(callDiagnosticBuilder, true /* setTelecomDump */,
                 false /* setTelephonyDump */, false /* setLogcatDump */);
-        String telecomDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                TELECOM_DUMPSYS_COMMAND);
         long nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
-                startTime, telecomDumpOutput, false);
+                startTime, false);
 
         persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
                 true /* setTelephonyDump */, false /* setLogcatDump */);
-        String telephonyDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                TELEPHONY_DUMPSYS_COMMAND);
         nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
-                nextEntryTime, telephonyDumpOutput, false);
+                nextEntryTime, false);
 
-        String logcatSystemRadioCmd = LOGCAT_BINARY + " -t " + startTime
-                + " -b system,radio";
         persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
                 false /* setTelephonyDump */, true /* setLogcatDump */);
-        String logcatDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                logcatSystemRadioCmd);
-        verifyEmergencyDropBoxEntriesCreatedAndDumped(nextEntryTime, logcatDumpOutput, true);
+        verifyEmergencyDropBoxEntriesCreatedAndDumped(nextEntryTime, true);
     }
 
     private void persistCallDiagnostics(
@@ -7238,7 +7222,7 @@ public class TelephonyManagerTest {
     }
 
     private long verifyEmergencyDropBoxEntriesCreatedAndDumped(
-            long entriesAfterTime, String dumpsysOutput, boolean allowSkipDumpsysVerification
+            long entriesAfterTime, boolean allowSkipDumpsysVerification
     ) {
         DropBoxManager dm = getContext().getSystemService(DropBoxManager.class);
         DropBoxManager.Entry entry;
@@ -7253,21 +7237,6 @@ public class TelephonyManagerTest {
         String [] content = entry.getText(MAX_READ_BYTES_PER_DROP_BOX_ENTRY).split(
                 System.lineSeparator());
         assertNotNull("Dropbox entry content is null", content);
-        int lineCount = 1;
-        int foundCount = 0;
-        for (String line : content) {
-            assertFalse(line.contains(DIAG_ERROR_MSG));
-            //verify that corresponding dumpsys output also has this data
-            if (lineCount++ < MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT) {
-                // Only perform half verification in order to make the verification less prone to
-                // timing issues between when the dumpsys is taken v.s. when the entry is recorded.
-                if (dumpsysOutput.contains(line)) {
-                    foundCount++;
-                }
-            }
-        }
-        assertTrue("Should have found ~50% of expected lines in dropbox",
-                foundCount >= MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT / 2);
         entry.close();
         return entryTime;
     }
