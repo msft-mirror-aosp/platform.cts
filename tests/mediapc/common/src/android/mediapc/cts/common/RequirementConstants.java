@@ -92,6 +92,8 @@ public class RequirementConstants {
     public static final String R7_1_1_3__H_2_1 = "r7_1_1_3__h_2_1"; // 7.1.1.3/H-2-1
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
 
+    public static final String R7_1_4_1__H_1_2 = "r7_1_4_1__h_1_2"; // 7.1.4.1/H-1-2
+
     public static final String R8_2__H_1_1 = "r8_2__h_1_1"; // 8.2/H-1-1
     public static final String R8_2__H_1_2 = "r8_2__h_1_2"; // 8.2/H-1-2
     public static final String R8_2__H_1_3 = "r8_2__h_1_3"; // 8.2/H-1-3
@@ -121,6 +123,9 @@ public class RequirementConstants {
     public static final String DYNAMIC_COLOR_ASPECTS = "dynamic_color_aspects";
 
     public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
+
+    public static final String EGL_IMG_CONTEXT_PRIORITY = "egl_img_context_priority";
+    public static final String EGL_EXT_PROTECTED_CONTENT = "egl_ext_protected_content";
 
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
