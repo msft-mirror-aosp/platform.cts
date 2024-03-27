@@ -520,6 +520,43 @@ class ItsSession(object):
                                       cmd[_CMD_NAME_STR])
     return data[_OBJ_VALUE_STR]
 
+  def get_native_camera_pkg(self):
+    """Get native camera package name.
+
+    Returns:
+       Native camera app pkg name.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'doGetNativeCameraPkgName'
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'nativeCameraPkg':
+      raise error_util.CameraItsError('Invalid response for command: %s' %
+                                      cmd[_CMD_NAME_STR])
+    return data['strValue']
+
+  def check_gain_map_present(self, file_path):
+    """Checks if the image has gainmap present or not.
+
+    The image stored at file_path is decoded and analyzed
+    to check whether the gainmap is present or not. If the image
+    captured is UltraHDR, it should have gainmap present.
+
+    Args:
+      file_path: path of the image to be analyzed on DUT .
+    Returns:
+      Boolean: True if the image has gainmap present.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'doGainMapCheck'
+    cmd['filePath'] = file_path
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'gainmapPresent':
+      raise error_util.CameraItsError('Invalid response for command: %s' %
+                                      cmd[_CMD_NAME_STR])
+    return data['strValue']
+
   def start_sensor_events(self):
     """Start collecting sensor events on the device.
 
@@ -898,8 +935,8 @@ class ItsSession(object):
         aeAwbRegionTwo (metering rectangle) second ae/awb region of recording.
         aeAwbRegionThree (metering rectangle) third ae/awb region of recording.
         aeAwbRegionFour (metering rectangle) fourth ae/awb region of recording.
-      stabilize: boolean; Whether the preview should be stabilized.
       ae_awb_region_duration: float; sleep in ms between 3A regions.
+      stabilize: boolean; Whether the preview should be stabilized.
       ae_target_fps_min: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE min.
       ae_target_fps_max: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE max.
     Returns:

@@ -40,18 +40,25 @@ import java.util.List;
 public final class SimpleTestLogger implements AppSearchLogger {
     /** Holds {@link CallStats} after logging. */
     @Nullable public CallStats mCallStats;
+
     /** Holds {@link PutDocumentStats} after logging. */
     @Nullable public PutDocumentStats mPutDocumentStats;
+
     /** Holds {@link InitializeStats} after logging. */
     @Nullable public InitializeStats mInitializeStats;
+
     /** Holds {@link SearchStats} after logging. */
     @Nullable public SearchStats mSearchStats;
+
     /** Holds {@link RemoveStats} after logging. */
     @Nullable public RemoveStats mRemoveStats;
+
     /** Holds {@link OptimizeStats} after logging. */
     @Nullable public OptimizeStats mOptimizeStats;
+
     /** Holds {@link SetSchemaStats} after logging. */
     @NonNull public List<SetSchemaStats> mSetSchemaStats = new ArrayList<>();
+
     /** Holds {@link android.app.appsearch.stats.SchemaMigrationStats} after logging. */
     @Nullable public SchemaMigrationStats mSchemaMigrationStats;
 

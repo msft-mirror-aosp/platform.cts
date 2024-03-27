@@ -19,6 +19,8 @@ package android.media.router.cts.proxyroutingapp;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 
+import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -32,6 +34,8 @@ import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
+import android.media.RoutingSessionInfo;
+import android.os.UserHandle;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -49,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -207,6 +212,70 @@ public class MediaRouter2DeviceTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
+    public void transferToSelectedSystemRoute_updatesTransferReason()
+            throws Exception {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        // Generates random package name to avoid collisions with existing routing session info.
+        String randomPackageName = UUID.randomUUID().toString();
+        CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
+
+        MediaRouter2.RouteCallback routeCallback = new MediaRouter2.RouteCallback() {};
+        MediaRouter2.ControllerCallback controllerCallback = new MediaRouter2.ControllerCallback() {
+            @Override
+            public void onControllerUpdated(MediaRouter2.RoutingController controller) {
+                RoutingSessionInfo systemSessionInfo = controller.getRoutingSessionInfo();
+
+                if (systemSessionInfo.getTransferReason()
+                        == RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST) {
+                    onControllerUpdatedLatch.countDown();
+                }
+            }
+        };
+
+        MediaRouter2 router2 = MediaRouter2.getInstance(mContext);
+        // Required to register LocalRouter within the system server.
+        router2.registerRouteCallback(mExecutor, routeCallback, RouteDiscoveryPreference.EMPTY);
+
+        MediaRouter2 proxyRouter2 = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        proxyRouter2.registerControllerCallback(mExecutor, controllerCallback);
+
+        MediaRouter2.RoutingController controller = proxyRouter2.getSystemController();
+        List<MediaRoute2Info> systemRoutes = controller.getSelectedRoutes();
+        assertThat(systemRoutes).isNotEmpty();
+        MediaRoute2Info route = systemRoutes.get(0);
+
+        proxyRouter2.transfer(controller,
+                route,
+                UserHandle.SYSTEM,
+                randomPackageName);
+
+        try {
+            assertThat(onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            router2.unregisterRouteCallback(routeCallback);
+            proxyRouter2.unregisterControllerCallback(controllerCallback);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
+    public void getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        MediaRouter2 proxyRouter2 = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        MediaRouter2.RoutingController controller = proxyRouter2.getSystemController();
+        RoutingSessionInfo systemSessionInfo = controller.getRoutingSessionInfo();
+        assertThat(systemSessionInfo.getTransferReason())
+                .isEqualTo(RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST);
+    }
+
     @SuppressLint("MissingPermission")
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
     @Test
@@ -278,7 +347,7 @@ public class MediaRouter2DeviceTest {
                 AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
                 mContext.getApplicationInfo().uid,
                 mContext.getPackageName(),
-                AppOpsManager.MODE_DEFAULT);
+                AppOpsManager.MODE_ERRORED);
 
         assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
 
@@ -353,7 +422,7 @@ public class MediaRouter2DeviceTest {
                 AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
                 mContext.getApplicationInfo().uid,
                 mContext.getPackageName(),
-                AppOpsManager.MODE_DEFAULT);
+                AppOpsManager.MODE_ERRORED);
 
         assertThat(latch.await(5000, TimeUnit.MILLISECONDS)).isTrue();
 

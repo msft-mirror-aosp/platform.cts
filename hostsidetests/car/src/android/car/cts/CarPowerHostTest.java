@@ -39,6 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -309,9 +310,12 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
 
     // TODO(b/328617252): remove this method once ADB reconnection from suspend is stable
     private void assumeEmulatorBuild() throws Exception {
-        assumeTrue(getDevice().getProperty(PRODUCT_MODEL_PROPERTY).startsWith(
-                CUTTLEFISH_DEVICE_NAME_PREFIX)
-                || getDevice().getProperty(GOLDFISH_PROPERTY).equals("1"));
+        String productModel = Objects.requireNonNullElse(
+                getDevice().getProperty(PRODUCT_MODEL_PROPERTY), "");
+        String goldfishBuildProperty = Objects.requireNonNullElse(
+                getDevice().getProperty(GOLDFISH_PROPERTY), "");
+        assumeTrue(productModel.startsWith(CUTTLEFISH_DEVICE_NAME_PREFIX)
+                || goldfishBuildProperty.equals("1"));
     }
 
     private boolean isSuspendSupported(String suspendType) throws Exception {

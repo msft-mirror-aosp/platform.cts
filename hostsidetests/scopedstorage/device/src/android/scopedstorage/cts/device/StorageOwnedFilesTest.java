@@ -48,6 +48,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.ResolverAccessTestUtils;
 import android.system.Os;
@@ -58,6 +61,7 @@ import androidx.test.filters.SdkSuppress;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -76,6 +80,9 @@ public class StorageOwnedFilesTest {
     @ClassRule
     public static final OwnedFilesRule sFilesRule = new OwnedFilesRule(sContentResolver);
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
     private static final String STR_DATA1 = "Random dest data";
 
     private static final byte[] BYTES_DATA1 = STR_DATA1.getBytes();
@@ -166,6 +173,7 @@ public class StorageOwnedFilesTest {
                 ResolverAccessTestUtils::assertResolver_insertVideo);
     }
 
+    @RequiresFlagsEnabled("com.android.providers.media.flags.picker_recent_selection")
     @Test
     public void owned_grantOwnedItemBySelection() throws IOException {
         // A granted item should be returned when recent_selection is requested even though the item

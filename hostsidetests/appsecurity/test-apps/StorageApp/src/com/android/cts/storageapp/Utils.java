@@ -42,6 +42,7 @@ public class Utils {
 
     public static final String PKG_A = "com.android.cts.storageapp_a";
     public static final String PKG_B = "com.android.cts.storageapp_b";
+    public static final String PKG_C = "com.android.cts.storageapp_c";
 
     public static final String REF_PROFILES_BASE_DIR = "/data/misc/profiles/ref/";
     public static final String CUR_PROFILES_BASE_DIR = "/data/misc/profiles/cur/";
