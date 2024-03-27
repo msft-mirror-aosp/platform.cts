@@ -67,6 +67,7 @@ android_test {
         "aidl/android/security/cts/IBitmapService.aidl",
         "aidl/android/security/cts/IIsolatedService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
+        "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
     ],
     //sdk_version: "current",
     platform_apis: true,
@@ -79,6 +80,7 @@ android_test {
     certificate: ":security_cts_test_certificate",
     per_testcase_directory: true,
     data: [
+        ":DynamicPermissionTestAttackerApp",
         ":CtsDeviceInfo",
         ":RolePermissionOverrideTestApp",
         ":SplitBluetoothPermissionTestApp",
