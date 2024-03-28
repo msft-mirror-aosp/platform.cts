@@ -18,7 +18,6 @@ package android.app.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -26,11 +25,13 @@ import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
 import android.app.Flags;
 import android.app.Instrumentation;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Bundle;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -39,6 +40,7 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -56,11 +58,29 @@ import java.util.Map;
 public final class ActivityManagerAppStartInfoTest {
     private static final String TAG = ActivityManagerAppStartInfoTest.class.getSimpleName();
 
+    // Begin section: keep in sync with {@link ApiTestActivity}
+    private static final String REQUEST_KEY_ACTION = "action";
+    private static final String REQUEST_KEY_TIMESTAMP_KEY_FIRST = "timestamp_key_first";
+    private static final String REQUEST_KEY_TIMESTAMP_VALUE_FIRST = "timestamp_value_first";
+    private static final String REQUEST_KEY_TIMESTAMP_KEY_LAST = "timestamp_key_last";
+    private static final String REQUEST_KEY_TIMESTAMP_VALUE_LAST = "timestamp_value_last";
+
+    private static final int REQUEST_VALUE_QUERY_START = 1;
+    private static final int REQUEST_VALUE_ADD_TIMESTAMP = 2;
+
+    private static final String REPLY_ACTION_COMPLETE =
+            "com.android.cts.startinfoapp.ACTION_COMPLETE";
+
+    private static final String REPLY_EXTRA_STATUS_KEY = "status";
+
+    private static final int REPLY_EXTRA_SUCCESS_VALUE = 1;
+    //private static final int REPLY_EXTRA_FAILURE_VALUE = 2;
+    // End section: keep in sync with {@link ApiTestActivity}
+
     private static final String STUB_APK =
-            "/data/local/tmp/cts/content/CtsSimpleApp.apk";
-    private static final String STUB_PACKAGE_NAME =
-            "com.android.cts.launcherapps.simpleapp";
-    private static final String SIMPLE_ACTIVITY = ".SimpleActivity";
+            "/data/local/tmp/cts/content/CtsAppStartInfoApp.apk";
+    private static final String STUB_PACKAGE_NAME = "com.android.cts.startinfoapp";
+    private static final String SIMPLE_ACTIVITY = ".ApiTestActivity";
 
     private static final int FIRST_TIMESTAMP_KEY =
             ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START;
@@ -69,6 +89,11 @@ public final class ActivityManagerAppStartInfoTest {
 
     private static final int MAX_WAITS_FOR_START = 20;
     private static final int WAIT_FOR_START_MS = 400;
+
+    // Return states of the ResultReceiverFilter.
+    public static final int RESULT_PASS = 1;
+    public static final int RESULT_FAIL = 2;
+    public static final int RESULT_TIMEOUT = 3;
 
     private Context mContext;
     private Instrumentation mInstrumentation;
@@ -179,90 +204,80 @@ public final class ActivityManagerAppStartInfoTest {
 
     /**
      * Test querying the startup of the process we're currently in.
-     *
-     * TODO(b/331678971): Move api call to helper app.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testQueryThisProcess() throws Exception {
         clearHistoricalStartInfo();
 
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE);
 
-        ApplicationStartInfo info = waitForAppStart();
-        assertNotNull(info);
+        // Start the app and have it query its own start info record.
+        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION, REQUEST_VALUE_QUERY_START); // action to perform
 
-        try {
-            List<ApplicationStartInfo> list = getHistoricalProcessStartReasonsAsStubAppAndUser(1,
-                    mCurrentUserId);
+        // Wait for complete callback
+        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        receiver.close();
 
-            assertTrue(list != null);
+        // Confirm that the app confirmed that it successfully obtained record.
+        assertNotNull(receiver.mIntent);
 
-            // Expected, accessing caller app rather than stub.
-            assertEquals(0, list.size());
-            // TODO(b/331678971): Verify return records contents.
-        } catch (SecurityException e) {
-            throw new AssertionError("We still don't expect a security exception here");
-        } catch (NameNotFoundException e) {
-            throw new AssertionError("We still don't expect a name not found exception here");
-        }
+        Bundle extras = receiver.mIntent.getExtras();
+        assertNotNull(extras);
+
+        int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, -1);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
     }
 
     /**
-     * Test adding timestamps.
-     * Verify that the timestamps that were added are still there on a subsequent query.
+     * Test adding timestamps and verify that the timestamps that were added are still there on a
+     * subsequent query.
      *
-     * TODO(b/331678971): Move api call to helper app.
+     * Timestamp is created by test runner process and provided to test app to add to start record
+     * as apps can only add timestamps to their own starts. The subsequent query is performed here
+     * in the test app as querying records can be done from other processes and querying the process
+     * itself is not being tested here.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testAddingTimestamps() throws Exception {
         clearHistoricalStartInfo();
 
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        final long timestampFirst = System.nanoTime();
+        final long timestampLast = timestampFirst + 1000L;
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE);
 
-        // Add the first time stamp
-        long firstTimestamp = System.nanoTime();
-        try {
-            // Adding a timestamp for 'this' process.
-            addStartInfoTimestampAsStubAppAndUser(FIRST_TIMESTAMP_KEY, firstTimestamp,
-                    mCurrentUserId);
-        } catch (SecurityException e) {
-            throw new AssertionError("We still don't expect a security exception here");
-        } catch (NameNotFoundException e) {
-            throw new AssertionError("We still don't expect a name not found exception here");
-        }
+        // Start the app and have it add the provided timestamp to its start record.
+        executeShellCmd(
+                "am start -n %s/%s%s --ei %s %d --ei %s %d --el %s %d --ei %s %d --el %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION, REQUEST_VALUE_ADD_TIMESTAMP, // action to perform
+                REQUEST_KEY_TIMESTAMP_KEY_FIRST, FIRST_TIMESTAMP_KEY, // first timestamp key
+                REQUEST_KEY_TIMESTAMP_VALUE_FIRST, timestampFirst, // first timestamp value
+                REQUEST_KEY_TIMESTAMP_KEY_LAST, LAST_TIMESTAMP_KEY, // last timestamp key
+                REQUEST_KEY_TIMESTAMP_VALUE_LAST, timestampLast); // last timestamp value
 
-        // Wait for the app to successfully start
+        // Wait for complete callback
+        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        receiver.close();
+
+        // Get the most recent app start
         ApplicationStartInfo info = waitForAppStart();
         assertNotNull(info);
-
-        // Add the last time stamp
-        long lastTimestamp = System.nanoTime();
-        try {
-            // Adding a timestamp for 'this' process.
-            addStartInfoTimestampAsStubAppAndUser(LAST_TIMESTAMP_KEY, lastTimestamp,
-                    mCurrentUserId);
-        } catch (SecurityException e) {
-            throw new AssertionError("We still don't expect a security exception here");
-        } catch (NameNotFoundException e) {
-            throw new AssertionError("We still don't expect a name not found exception here");
-        }
-
-        // Get the final start object
-        info = waitForAppStart();
 
         // Verify that the timestamps are retrievable and they're the same
         // when we pull them back out.
         Map<Integer, Long> timestamps = info.getStartupTimestamps();
-        Long firstTimestampFromInfo = timestamps.get(FIRST_TIMESTAMP_KEY);
-        Long lastTimestampFromInfo = timestamps.get(LAST_TIMESTAMP_KEY);
+        long timestampFirstFromInfo = timestamps.get(FIRST_TIMESTAMP_KEY);
+        long timestampLastFromInfo = timestamps.get(LAST_TIMESTAMP_KEY);
 
-        // Expected, accessing caller app rather than stub.
-        assertNull(firstTimestampFromInfo);
-        assertNull(lastTimestampFromInfo);
+        assertNotNull(timestampFirstFromInfo);
+        assertNotNull(timestampLastFromInfo);
+
+        assertEquals(timestampFirst, timestampFirstFromInfo);
+        assertEquals(timestampLast, timestampLastFromInfo);
     }
 
     private void clearHistoricalStartInfo() throws Exception {
@@ -296,22 +311,6 @@ public final class ActivityManagerAppStartInfoTest {
             Thread.sleep(timeout);
         } catch (InterruptedException e) {
         }
-    }
-    private List<ApplicationStartInfo> getHistoricalProcessStartReasonsAsStubAppAndUser(
-            final int max, final int userId) throws NameNotFoundException {
-        return getStubActivityManagerAsUser(userId).getHistoricalProcessStartReasons(max);
-    }
-
-    private void addStartInfoTimestampAsStubAppAndUser(
-            final int key, final long timestamp, final int userId) throws NameNotFoundException {
-        getStubActivityManagerAsUser(userId).addStartInfoTimestamp(key, timestamp);
-    }
-
-    private ActivityManager getStubActivityManagerAsUser(final int userId)
-            throws NameNotFoundException {
-        Context context = mContext.createPackageContextAsUser(STUB_PACKAGE_NAME,
-                Context.CONTEXT_IGNORE_SECURITY, UserHandle.of(userId));
-        return context.getSystemService(ActivityManager.class);
     }
 
     @FormatMethod
@@ -381,6 +380,49 @@ public final class ActivityManagerAppStartInfoTest {
 
             // TODO(287153617): Add support for START_TIMESTAMP_APPLICATION_ONCREATE
             // and START_TIMESTAMP_FIRST_FRAME
+        }
+    }
+
+    private class ResultReceiverFilter extends BroadcastReceiver {
+        private String mActivityToFilter;
+        private int mResult = RESULT_TIMEOUT;
+        private static final int TIMEOUT_IN_MS = 5000;
+        Intent mIntent = null;
+
+        // Create the filter with the intent to look for.
+        ResultReceiverFilter(String activityToFilter) {
+            mActivityToFilter = activityToFilter;
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(mActivityToFilter);
+            mInstrumentation.getTargetContext().registerReceiver(this, filter,
+                    Context.RECEIVER_EXPORTED);
+        }
+
+        // Turn off the filter.
+        public void close() {
+            mInstrumentation.getTargetContext().unregisterReceiver(this);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(mActivityToFilter)) {
+                synchronized (this) {
+                    mResult = RESULT_PASS;
+                    mIntent = intent;
+                    notifyAll();
+                }
+            }
+        }
+
+        public int waitForActivity() throws Exception {
+            AmUtils.waitForBroadcastBarrier();
+            synchronized (this) {
+                try {
+                    wait(TIMEOUT_IN_MS);
+                } catch (InterruptedException e) {
+                }
+            }
+            return mResult;
         }
     }
 }
