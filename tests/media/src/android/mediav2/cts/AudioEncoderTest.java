@@ -81,7 +81,7 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         return foreman.build();
     }
 
-    private static List<Object[]> flattenParams(List<Object[]> params) {
+    protected static List<Object[]> flattenParams(List<Object[]> params) {
         List<Object[]> argsList = new ArrayList<>();
         for (Object[] param : params) {
             String mediaType = (String) param[0];
