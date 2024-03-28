@@ -116,6 +116,20 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     }
 
     @Override
+    public void onCryptoError(@NonNull MediaCodec codec, @NonNull MediaCodec.CryptoException e) {
+        mErrorMsg = "###################  Crypto Error Details  #####################\n";
+        mErrorMsg += e.getMessage() + "\n";
+        mLock.lock();
+        try {
+            mSignalledError = true;
+            mCondition.signalAll();
+        } finally {
+            mLock.unlock();
+        }
+        Log.e(LOG_TAG, "received media codec crypto error : " + e.getMessage());
+    }
+
+    @Override
     public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
         mLock.lock();
         try {
