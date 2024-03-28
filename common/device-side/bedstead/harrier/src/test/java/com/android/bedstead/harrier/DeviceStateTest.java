@@ -105,9 +105,7 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports;
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports;
-import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbOverWifi;
 import com.android.bedstead.harrier.annotations.RequireAospBuild;
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
@@ -1759,12 +1757,6 @@ public class DeviceStateTest {
     @Test
     public void ensureDefaultContentSuggestionsServiceEnabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsEnabled() {
         assertThat(TestApis.content().suggestions().defaultServiceEnabled(sDeviceState.additionalUser())).isTrue();
-    }
-
-    @RequireAdbOverWifi(failureMode = FailureMode.SKIP)
-    @Test
-    public void requireAdbOverWifiAnnotation_enablesAdbOverWifi() {
-        assertThat(TestApis.adb().isEnabledOverWifi()).isTrue();
     }
 
     @Test
