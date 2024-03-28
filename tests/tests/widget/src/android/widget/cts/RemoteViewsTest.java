@@ -778,9 +778,22 @@ public class RemoteViewsTest {
                 getDrawInstructions(mContext, docId);
         final Bitmap expectedBitmap = getBitmapFromFile(mContext, bitmapId);
         mRemoteViews = new RemoteViews(drawInstructions);
+        mResult = mRemoteViews.apply(mContext, null);
         verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
             final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
-            assertTrue("Failed validating " + resourceName + " rmse=" + rmse, rmse < 4.0f);
+            // reject if root-square-mean-error is larger than 4 and saves screenshots for debug
+            if (rmse > 4.0f) {
+                try {
+                    final String actualPath = saveBitmapToFile(
+                            actualBitmap, resourceName + "_actual");
+                    final String expectedPath = saveBitmapToFile(
+                            expectedBitmap, resourceName + "_expected");
+                    Assert.fail("Failed validating " + resourceName + " rmse=" + rmse
+                            + ". Bitmaps saved as " + actualPath + " and " + expectedPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
 
@@ -796,12 +809,29 @@ public class RemoteViewsTest {
     }
 
     private static Bitmap getBitmapFromFile(final Context context, final int resourceId) {
-        return BitmapFactory.decodeResource(context.getResources(), resourceId);
+        final BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        return BitmapFactory.decodeResource(context.getResources(), resourceId, opts);
+    }
+
+    private String saveBitmapToFile(final Bitmap image, final String resourceName)
+            throws IOException {
+        final int quality = 100;
+        final File dir = mContext.getFilesDir();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        final File dest = new File(dir, resourceName + ".png");
+        dest.createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(dest)) {
+            image.compress(Bitmap.CompressFormat.PNG, quality, fos);
+        }
+        return dest.getAbsolutePath();
     }
 
     private void verifyBitmap(final int width, final int height, final Consumer<Bitmap> cb)
             throws Throwable {
-        final Bitmap bitmap = blank(width, height);
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mActivityRule.runOnUiThread(() -> {
             mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                     makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
@@ -810,13 +840,6 @@ public class RemoteViewsTest {
         });
         cb.accept(bitmap);
         bitmap.recycle();
-    }
-
-    // we create a pale blue background to fill
-    private static Bitmap blank(int w, int h) {
-        final Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(0xFFAABBCC);
-        return bitmap;
     }
 
     private static float compareImages(Bitmap bitmap1, Bitmap bitmap2, String testLabel) {
