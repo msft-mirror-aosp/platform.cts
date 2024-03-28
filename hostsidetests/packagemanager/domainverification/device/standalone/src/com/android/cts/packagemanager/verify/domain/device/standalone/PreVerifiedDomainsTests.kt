@@ -120,7 +120,7 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
 
     private fun getDomainVerificationAgent(): ComponentName? {
         val agentComponentName: String = SystemUtil.runShellCommand(
-            "pm get-domain-verification-agent"
+            "pm get-domain-verification-agent --user " + userId
         ).trim()
         if (agentComponentName.startsWith("Failure") ||
             agentComponentName.startsWith("No Domain Verifier")) {

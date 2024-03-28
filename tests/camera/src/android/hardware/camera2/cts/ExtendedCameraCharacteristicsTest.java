@@ -557,7 +557,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             CameraTestUtils.SessionConfigSupport sessionConfigSupport =
                     CameraTestUtils.isSessionConfigSupported(
                             camera, mHandler, outputConfigs, /*inputConfig*/ null,
-                            SessionConfiguration.SESSION_REGULAR, true/*defaultSupport*/);
+                            SessionConfiguration.SESSION_REGULAR,
+                            mCameraManager, true/*defaultSupport*/);
             mCollector.expectTrue("isSessionConfiguration fails with error",
                     !sessionConfigSupport.error);
             mCollector.expectTrue("isSessionConfiguration returns false for JPEG < 1080p",

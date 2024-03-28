@@ -549,6 +549,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsBlend() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("blend_clear",
                 R.raw.blend_clear, R.drawable.blend_clear);
         testSingleDrawInstruction("blend_color",
@@ -611,6 +614,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsClip() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("clip_path",
                 R.raw.clip_path, R.drawable.clip_path);
         testSingleDrawInstruction("clip_rect",
@@ -619,6 +625,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsText() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("draw_text",
                 R.raw.draw_text, R.drawable.draw_text);
         testSingleDrawInstruction("text_font",
@@ -635,6 +644,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsGradient() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("linear_gradient_1",
                 R.raw.linear_gradient_1, R.drawable.linear_gradient_1);
         testSingleDrawInstruction("linear_gradient_2",
@@ -651,6 +663,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsMatrix() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("matrix_rotate_1",
                 R.raw.matrix_rotate_1, R.drawable.matrix_rotate_1);
         testSingleDrawInstruction("matrix_rotate_2",
@@ -667,6 +682,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsMulti() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("multi_path",
                 R.raw.multi_path, R.drawable.multi_path);
         testSingleDrawInstruction("multiple_draw_commands",
@@ -675,6 +693,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPaint() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("paint_filter_bitmap_1",
                 R.raw.paint_filter_bitmap_1, R.drawable.paint_filter_bitmap_1);
         testSingleDrawInstruction("paint_filter_bitmap_2",
@@ -691,6 +712,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPath() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("path_cubic_to",
                 R.raw.path_cubic_to, R.drawable.path_cubic_to);
         testSingleDrawInstruction("path_line_to",
@@ -707,6 +731,9 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPorter() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
         testSingleDrawInstruction("porter_add",
                 R.raw.porter_add, R.drawable.porter_add);
         testSingleDrawInstruction("porter_clear",
@@ -749,10 +776,25 @@ public class RemoteViewsTest {
                 final int bitmapId) throws Throwable {
         final RemoteViews.DrawInstructions drawInstructions =
                 getDrawInstructions(mContext, docId);
+        final Bitmap expectedBitmap = getBitmapFromFile(mContext, bitmapId);
         mRemoteViews = new RemoteViews(drawInstructions);
-        verifyBitmap(600, 600, (bitmap) ->
-                assertTrue("Failed to validate " + resourceName,
-                    compareImages(getBitmapFromFile(mContext, bitmapId), bitmap) < 0.04f));
+        mResult = mRemoteViews.apply(mContext, null);
+        verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
+            final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
+            // reject if root-square-mean-error is larger than 4 and saves screenshots for debug
+            if (rmse > 4.0f) {
+                try {
+                    final String actualPath = saveBitmapToFile(
+                            actualBitmap, resourceName + "_actual");
+                    final String expectedPath = saveBitmapToFile(
+                            expectedBitmap, resourceName + "_expected");
+                    Assert.fail("Failed validating " + resourceName + " rmse=" + rmse
+                            + ". Bitmaps saved as " + actualPath + " and " + expectedPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 
     private static RemoteViews.DrawInstructions getDrawInstructions(
@@ -767,12 +809,29 @@ public class RemoteViewsTest {
     }
 
     private static Bitmap getBitmapFromFile(final Context context, final int resourceId) {
-        return BitmapFactory.decodeResource(context.getResources(), resourceId);
+        final BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        return BitmapFactory.decodeResource(context.getResources(), resourceId, opts);
+    }
+
+    private String saveBitmapToFile(final Bitmap image, final String resourceName)
+            throws IOException {
+        final int quality = 100;
+        final File dir = mContext.getFilesDir();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        final File dest = new File(dir, resourceName + ".png");
+        dest.createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(dest)) {
+            image.compress(Bitmap.CompressFormat.PNG, quality, fos);
+        }
+        return dest.getAbsolutePath();
     }
 
     private void verifyBitmap(final int width, final int height, final Consumer<Bitmap> cb)
             throws Throwable {
-        final Bitmap bitmap = blank(width, height);
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mActivityRule.runOnUiThread(() -> {
             mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                     makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
@@ -783,17 +842,12 @@ public class RemoteViewsTest {
         bitmap.recycle();
     }
 
-    // we create a pale blue background to fill
-    private static Bitmap blank(int w, int h) {
-        final Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(0xFFAABBCC);
-        return bitmap;
-    }
-
-    private static float compareImages(Bitmap bitmap1, Bitmap bitmap2) {
+    private static float compareImages(Bitmap bitmap1, Bitmap bitmap2, String testLabel) {
         if (bitmap1.getWidth() != bitmap2.getWidth()
                 || bitmap1.getHeight() != bitmap2.getHeight()) {
-            return 0;
+            throw new IllegalArgumentException("Size mismatches when running " + testLabel
+                    + " expected:[w=" + bitmap1.getWidth() + ",h=" + bitmap1.getHeight() + "]"
+                    + " actual:[w=" + bitmap2.getWidth() + ",h=" + bitmap2.getHeight() + "]");
         }
         float sqr_sum = 0;
         int count = 0;

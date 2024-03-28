@@ -575,7 +575,7 @@ public class Camera2AndroidTestRule extends ExternalResource {
         outputConfigs.add(new OutputConfiguration(mReaderSurface));
 
         checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                SessionConfiguration.SESSION_REGULAR, /*expectedResult*/ true, msg);
+                SessionConfiguration.SESSION_REGULAR, mCameraManager, /*expectedResult*/ true, msg);
     }
 
     public CaptureRequest prepareCaptureRequest() throws Exception {

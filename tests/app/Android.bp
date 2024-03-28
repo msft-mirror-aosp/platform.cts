@@ -276,7 +276,6 @@ android_test {
         "AppStartTest/src/**/*.java",
         "app/src/**/*.aidl",
     ],
-    jarjar_rules: "AppStartTest/jarjar-rules.txt",
     test_suites: [
         "cts",
         "general-tests",
