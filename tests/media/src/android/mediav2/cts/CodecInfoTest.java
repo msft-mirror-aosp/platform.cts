@@ -25,6 +25,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420P
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
@@ -191,16 +192,18 @@ public class CodecInfoTest {
                         IntStream.of(caps.colorFormats).noneMatch(x -> x == COLOR_FormatYUVP010));
             }
 
-            // Encoders that support FEATURE_HdrEditing, must support ABGR2101010 color format
-            // and at least one HDR profile
+            // Encoders that support FEATURE_HdrEditing / FEATURE_HlgEditing, must support
+            // ABGR2101010 color format and at least one HDR profile
             boolean hdrEditingSupported = caps.isFeatureSupported(FEATURE_HdrEditing);
-            if (hdrEditingSupported) {
+            boolean hlgEditingSupported = android.media.codec.Flags.hlgEditing()
+                    ? caps.isFeatureSupported(FEATURE_HlgEditing) : false;
+            if (hdrEditingSupported || hlgEditingSupported) {
                 boolean abgr2101010Supported = IntStream.of(caps.colorFormats)
                         .anyMatch(x -> x == COLOR_Format32bitABGR2101010);
-                assertTrue(mCodecName + " supports FEATURE_HdrEditing, but does not support"
-                        + " COLOR_FormatABGR2101010 color formats.", abgr2101010Supported);
-                assertTrue(mCodecName + " supports FEATURE_HdrEditing, but does not support"
-                        + " any HDR profiles.", canHandleHdr);
+                assertTrue(mCodecName + " supports feature HdrEditing/HlgEditing, but does not"
+                        + "  support COLOR_FormatABGR2101010 color formats.", abgr2101010Supported);
+                assertTrue(mCodecName + " supports feature HdrEditing/HlgEditing, but does not"
+                        + " support any HDR profiles.", canHandleHdr);
             }
         } else {
             if (FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T && BOARD_SDK_IS_AT_LEAST_T
