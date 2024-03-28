@@ -19,6 +19,7 @@ package android.hardware.camera2.cts;
 import static android.hardware.camera2.cts.CameraTestUtils.assertNull;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.fail;
 
 import android.graphics.ImageFormat;
@@ -333,5 +334,77 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         OutputConfiguration configWithGroupIdAndUsage = new OutputConfiguration(
                 surfaceGroupId, fmt, size, usageFlag);
         assertNull(configWithGroupIdAndUsage.getSurface());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_CAMERA_DEVICE_SETUP, Flags.FLAG_FEATURE_COMBINATION_QUERY})
+    public void testCameraDeviceSetupTemplates() throws Exception {
+        for (String cameraId : getCameraIdsUnderTest()) {
+            if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
+                Log.i(TAG, "CameraDeviceSetup not supported for camera id " + cameraId);
+                continue;
+            }
+
+            testCameraDeviceSetupTemplatesByCamera(cameraId);
+        }
+    }
+
+    private void testCameraDeviceSetupTemplatesByCamera(String cameraId) throws Exception {
+        int[] templates = {
+                CameraDevice.TEMPLATE_PREVIEW,
+                CameraDevice.TEMPLATE_STILL_CAPTURE,
+                CameraDevice.TEMPLATE_RECORD,
+                CameraDevice.TEMPLATE_VIDEO_SNAPSHOT,
+                CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG,
+                CameraDevice.TEMPLATE_MANUAL,
+        };
+
+        try {
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup =
+                    mCameraManager.getCameraDeviceSetup(cameraId);
+            assertNotNull("Failed to create camera device setup for id " + cameraId,
+                    cameraDeviceSetup);
+
+            openDevice(cameraId);
+            mCollector.setCameraId(cameraId);
+
+            for (int template : templates) {
+                try {
+                    CaptureRequest.Builder requestFromSetup =
+                            cameraDeviceSetup.createCaptureRequest(template);
+                    assertNotNull("CameraDeviceSetup failed to create capture request for camera "
+                            + cameraId + " template " + template, requestFromSetup);
+
+                    CaptureRequest.Builder request = mCamera.createCaptureRequest(template);
+                    assertNotNull("CameraDevice failed to create capture request for template "
+                            + template, request);
+
+                    mCollector.expectEquals("The CaptureRequest created by CameraDeviceSetup "
+                            + "and CameraDevice must have the same set of keys",
+                            request.build().getKeys(), requestFromSetup.build().getKeys());
+                } catch (IllegalArgumentException e) {
+                    if (template == CameraDevice.TEMPLATE_MANUAL
+                            && !mStaticInfo.isCapabilitySupported(CameraCharacteristics
+                                    .REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR)) {
+                        // OK
+                    } else if (template == CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG
+                            && !mStaticInfo.isCapabilitySupported(CameraCharacteristics
+                                    .REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING)) {
+                        // OK.
+                    } else if (sLegacySkipTemplates.contains(template)
+                            && mStaticInfo.isHardwareLevelLegacy()) {
+                        // OK
+                    } else if (template != CameraDevice.TEMPLATE_PREVIEW
+                            && mStaticInfo.isDepthOutputSupported()
+                            && !mStaticInfo.isColorOutputSupported()) {
+                        // OK, depth-only devices need only support PREVIEW template
+                    } else {
+                        throw e; // rethrow
+                    }
+                }
+            }
+        } finally {
+            closeDevice(cameraId);
+        }
     }
 }
