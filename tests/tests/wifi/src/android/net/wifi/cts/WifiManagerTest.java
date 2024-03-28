@@ -2761,13 +2761,13 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         if (sWifiManager.isWifiEnabled()) {
             Log.d(TAG, "Turn off WiFi");
             sWifiManager.setWifiEnabled(false);
-            PollingCheck.check("Wifi turn off failed!", 2_000,
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
                     () -> !sWifiManager.isWifiEnabled());
         }
         if (sWifiManager.isWifiApEnabled()) {
             sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
             Log.d(TAG, "Turn off tethered Hotspot");
-            PollingCheck.check("SoftAp turn off failed!", 2_000,
+            PollingCheck.check("SoftAp turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
                     () -> !sWifiManager.isWifiApEnabled());
         }
     }
@@ -2936,7 +2936,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 // Off/On Wifi to make sure that we get the supported channel
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 sWifiManager.setWifiEnabled(true);
-                PollingCheck.check("Wifi turn on failed!", 2_000,
+                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
                         () -> sWifiManager.isWifiEnabled());
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 verifyRegisterSoftApCallback(executor, callback);
@@ -3001,7 +3001,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 // Off/On Wifi to make sure that we get the supported channel
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 sWifiManager.setWifiEnabled(true);
-                PollingCheck.check("Wifi turn on failed!", 2_000,
+                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
                         () -> sWifiManager.isWifiEnabled());
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 verifyRegisterSoftApCallback(executor, callback);
@@ -4074,6 +4074,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
         if (shouldSkipCountryCodeDependentTest()) {
             // skip the test when there is no Country Code available
+            return;
+        }
+        if (!PropertyUtil.isVndkApiLevelAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            // skip the test if vendor version is lower than T
             return;
         }
         TestActiveCountryCodeChangedCallback testCountryCodeChangedCallback =

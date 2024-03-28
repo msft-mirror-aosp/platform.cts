@@ -343,12 +343,25 @@ public class FingerprintBoundKeysTest extends PassFailButtons.Activity {
                                     .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
                 if (mActivity.tryEncrypt() &&
                     mActivity.doValidityDurationTest(false)) {
-                    try {
-                        Thread.sleep((AUTHENTICATION_DURATION_SECONDS+1)*1000);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to sleep", e);
+                    boolean tokenExpired = false;
+                    long startTime = System.currentTimeMillis();
+                    while (((System.currentTimeMillis() - startTime)
+                            < (AUTHENTICATION_DURATION_SECONDS * 1000))
+                            && (!tokenExpired)) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException("Failed to sleep", e);
+                        }
+
+                        tokenExpired = !mActivity.doValidityDurationTest(false);
+                     }
+
+                    if (DEBUG) {
+                        Log.i(TAG,"Token expired = " + tokenExpired);
                     }
-                    if (!mActivity.doValidityDurationTest(false)) {
+
+                    if (tokenExpired) {
                         showToast(String.format("Test passed. useStrongBox: %b",
                                                 mActivity.useStrongBox));
                         if (mActivity.useStrongBox || !hasStrongBox) {
