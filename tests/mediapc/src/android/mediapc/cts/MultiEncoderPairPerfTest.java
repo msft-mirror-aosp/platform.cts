@@ -39,9 +39,6 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class calculates the maximum number of concurrent encode sessions that it can
@@ -161,7 +158,6 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             int firstPairInstances = maxInstances - secondPairInstances;
             int secondPairInstances1080p = 2 * secondPairInstances / 3;
             int firstPairInstances1080p = 2 * firstPairInstances / 3;
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
                 for (int i = 0; i < firstPairInstances1080p; i++) {
@@ -193,11 +189,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
                             width, 30, bitrate));
                 }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            achievedFrameRate = invokeWithThread(maxInstances, testList);
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
