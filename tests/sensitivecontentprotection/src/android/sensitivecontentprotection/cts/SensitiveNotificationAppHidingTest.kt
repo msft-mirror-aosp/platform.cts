@@ -61,6 +61,7 @@ class SensitiveNotificationAppHidingTest {
     private lateinit var notificationManager: NotificationManager
     private lateinit var notificationHelper: NotificationHelper
     private lateinit var notificationAssistant: TestNotificationAssistant
+    private var previousAssistant: String? = null
 
     @JvmField @Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -152,6 +153,7 @@ class SensitiveNotificationAppHidingTest {
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         notificationHelper = NotificationHelper(context)
+        previousAssistant = notificationHelper.getEnabledAssistant()
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
         notificationHelper.disableListener(NLS_PACKAGE_NAME)
@@ -174,6 +176,7 @@ class SensitiveNotificationAppHidingTest {
         notificationManager.cancelAll()
         notificationHelper.disableListener(NLS_PACKAGE_NAME)
         notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
+        notificationHelper.enableOtherPkgAssistantIfNeeded(previousAssistant)
     }
 
     @Test
