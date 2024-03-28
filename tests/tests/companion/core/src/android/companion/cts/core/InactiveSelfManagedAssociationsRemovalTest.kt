@@ -44,15 +44,14 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
 
     @Test
     fun test_inactive_associations_removal() {
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
-        val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+
+        val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idB)
         }
 
         setSystemPropertyDuration(1.seconds, SYS_PROP_DEBUG_REMOVAL_TIME_WINDOW)
@@ -76,11 +75,12 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
     @Test
     fun test_inactive_associations_removal_multiple_types() = with(targetApp) {
         // Create the selfManaged association.
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
+
         // Create the normal association.
         associate(MAC_ADDRESS_A)
 
@@ -109,10 +109,10 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
 
     @Test
     fun test_active_associations_do_not_get_removed() = with(targetApp) {
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
 
         setSystemPropertyDuration(10.seconds, SYS_PROP_DEBUG_REMOVAL_TIME_WINDOW)
@@ -129,6 +129,7 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
         removeInactiveSelfManagedAssociations()
         // Give it 1 seconds for running the removal job.
         sleepFor(1.seconds)
+
         // Active selfManaged associations should not be removed
         assertSelfManagedAssociations(
             actual = cdm.myAssociations,
