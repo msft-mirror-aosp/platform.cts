@@ -5729,6 +5729,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_play_colon"> play:</string>
     <string name="audio_general_record_colon"> record:</string>
 
+    <string name="audio_general_results">Results</string>
+
     <!-- Audio Data Paths Test-->
     <string name="audio_datapaths_clearresults">Clear Results</string>
     <string name="audio_datapaths_legacy">Legacy</string>
@@ -5815,6 +5817,17 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_loopback_calibrate_default">Default</string>
     <string name="audio_loopback_running">Running&#8230;</string>
+
+    <!-- Immersive Audio Test -->
+    <string name="immersive_audio_test">Immersive Audio Test</string>
+    <string name="immersive_audio_test_info">This test verifies that the Immersive Audio Test has
+        been run on the associated test fixture and includes the results in the CTS Verifier report
+        sent to Google.
+        If you are not testing an Immersive audio device on the associated fixture, you are not
+        required to run this test and so can simply press the PASS button.
+    </string>
+    <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
+    If you are not testing an Immersive Audio device, simply press the PASS button.</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
