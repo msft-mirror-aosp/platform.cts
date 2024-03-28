@@ -1833,6 +1833,12 @@ public class WebViewTest extends ActivityInstrumentationTestCase2<WebViewCtsActi
         getInstrumentation().sendPointerSync(
                 MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN,
                         middleX, middleY, 0));
+
+        time = SystemClock.uptimeMillis();
+        getInstrumentation().sendPointerSync(
+                MotionEvent.obtain(time, time, MotionEvent.ACTION_UP,
+                        middleX, middleY, 0));
+
         getInstrumentation().waitForIdleSync();
         mOnUiThread.requestImageRef(msg);
         new PollingCheck() {
