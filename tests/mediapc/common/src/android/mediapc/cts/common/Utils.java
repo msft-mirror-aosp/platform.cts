@@ -65,7 +65,7 @@ public class Utils {
     // as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB device.
     public static final long MIN_MEMORY_PERF_CLASS_CANDIDATE_MB = 5 * 1024;
     // Android T Media performance requires 8 GB min RAM, so setting lower as above
-    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 7 * 1024;
+    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 6800;
 
     private static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
     static {

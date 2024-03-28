@@ -1562,6 +1562,12 @@ public class PerformanceClassEvaluator {
     public static class MemoryRequirement extends Requirement {
         private static final String TAG = MemoryRequirement.class.getSimpleName();
 
+        // Media performance requires 6 GB minimum RAM, but keeping the following to
+        // 5 GB as activityManager.getMemoryInfo() typically returns around 5.4 GB on a 6 GB device,
+        // so these values are a bit lower than the required value stated on the Android CDD.
+        private static final long RS_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
+        private static final long TUV_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_T_MB;
+
         private MemoryRequirement(String id, RequiredMeasurement<?> ... reqs) {
             super(id, reqs);
         }
@@ -1578,10 +1584,7 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6 GB minimum RAM, but keeping the following to
-                    // 5 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.R, 5L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.R, RS_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_1_1, physical_memory);
@@ -1595,13 +1598,10 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6/8 GB minimum RAM, but keeping the following to
-                    // 5/7 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.S, 5L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 7L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.S, RS_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TUV_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_2_1, physical_memory);
