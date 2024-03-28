@@ -39,9 +39,6 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent encode sessions that it can
@@ -137,7 +134,6 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
         double achievedFrameRate = 0.0;
         boolean hasAV1 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
                 int instances4k = maxInstances / 3;
@@ -161,11 +157,7 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                             new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
                 }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            achievedFrameRate = invokeWithThread(maxInstances, testList);
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
