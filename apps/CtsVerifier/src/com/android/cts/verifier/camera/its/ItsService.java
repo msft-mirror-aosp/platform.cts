@@ -34,7 +34,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Gainmap;
 import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
@@ -79,7 +78,6 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
-import android.provider.MediaStore;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -90,6 +88,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -1721,15 +1720,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doGetMaxCamcorderProfileSize(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
+        validateCameraId(cameraId);
 
         int cameraDeviceId = Integer.parseInt(cameraId);
         int maxArea = -1;
@@ -1752,15 +1743,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doCheckPrimaryCamera(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
+        validateCameraId(cameraId);
 
         boolean isPrimaryCamera = false;
         try {
@@ -1840,15 +1823,6 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doCheckP3Support(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
         boolean cameraP3OutputSupported = false;
         try {
             CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
@@ -4906,5 +4880,17 @@ public class ItsService extends Service implements SensorEventListener {
         Float minFocusDistance = c.get(
                 CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
         return (minFocusDistance != null) && (minFocusDistance == 0.0);
+    }
+
+    private void validateCameraId(String cameraId) throws ItsException {
+        if (mItsCameraIdList == null) {
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+        }
+        if (mItsCameraIdList.mCameraIds.size() == 0) {
+            throw new ItsException("No camera devices");
+        }
+        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
+            throw new ItsException("Invalid cameraId " + cameraId);
+        }
     }
 }
