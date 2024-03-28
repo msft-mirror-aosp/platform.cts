@@ -176,10 +176,15 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
 
         HDRDecoderTestBase decoderTest =
                 new HDRDecoderTestBase(decoder, mMediaType, mMuxedOutputFile, mAllTestParams);
-        decoderTest.validateHDRInfo(hdrStaticInfo, hdrStaticInfo, mHdrDynamicInfo,
-                mHdrDynamicInfo);
+        if (FIRST_SDK_IS_AT_LEAST_V && mHdrDynamicInfoReceived != null) {
+            mHdrDynamicInfoReceived.putAll(mHdrDynamicInfo);
+        }
+        decoderTest.validateHDRInfo(hdrStaticInfo, hdrStaticInfo,
+                FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo,
+                FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo);
         if (HDR_INFO_IN_BITSTREAM_CODECS.contains(mMediaType)) {
-            decoderTest.validateHDRInfo(hdrStaticInfo, null, mHdrDynamicInfo, null);
+            decoderTest.validateHDRInfo(hdrStaticInfo, null,
+                    FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo, null);
         }
     }
 }
