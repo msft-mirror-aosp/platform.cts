@@ -55,7 +55,6 @@ import android.graphics.Color;
 import android.hardware.input.InputManager;
 import android.inputmethodservice.InputMethodService;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -130,8 +129,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TimeUnit.SECONDS.toMillis(NOT_EXPECT_TIMEOUT_IN_SECONDS);
     private static final int SETTING_VALUE_ON = 1;
     private static final int SETTING_VALUE_OFF = 0;
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.StylusHandwritingTest";
     private static final int HANDWRITING_BOUNDS_OFFSET_PX = 20;
     // A timeout greater than HandwritingModeController#HANDWRITING_DELEGATION_IDLE_TIMEOUT_MS.
     private static final long DELEGATION_AFTER_IDLE_TIMEOUT_MS = 3100;
@@ -302,7 +299,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             imm.startStylusHandwriting(editText);
             // Handwriting should not start since there are no stylus devices registered.
@@ -323,7 +320,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -354,7 +351,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -414,7 +411,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -503,7 +500,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -595,7 +592,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -624,7 +621,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             editText.setText("a");
             editText.setSelection(1);
@@ -659,7 +656,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -704,7 +701,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -735,7 +732,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -778,7 +775,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -820,7 +817,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             editText.setAutoHandwritingEnabled(false);
 
@@ -856,7 +853,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             editText.setAutoHandwritingEnabled(false);
 
@@ -897,8 +894,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText unfocusedEditText = editTextPair.second;
@@ -956,8 +953,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText unfocusedEditText = editTextPair.second;
@@ -1011,8 +1008,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText unfocusedEditText = editTextPair.second;
@@ -1064,16 +1061,17 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivity(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
-                    editorMatcher("onStartInputView", marker),
+                    editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
 
             final int startX = focusedEditText.getWidth() / 2;
@@ -1093,10 +1091,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
             event = TestUtils.injectStylusUpEvent(unfocusedEditText, startX, startY);
             if (Flags.useHandwritingListenerForTooltype()) {
-                expectEvent(stream, startInputInitialEditorToolMatcher(toolType, marker2),
+                expectEvent(stream, startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
                         TIMEOUT);
             } else {
-                expectEvent(stream, onStartInputMatcher(toolType, marker2), TIMEOUT);
+                expectEvent(stream, onStartInputMatcher(toolType, unfocusedMarker), TIMEOUT);
             }
             expectEvent(
                     stream,
@@ -1136,16 +1134,17 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivity(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
-                    editorMatcher("onStartInputView", marker),
+                    editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
 
             TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_DOWN);
@@ -1166,7 +1165,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
             assertEquals(
                     "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
-            expectEvent(stream, onStartInputMatcher(toolTypeFinger, marker2), TIMEOUT);
+            expectEvent(stream, onStartInputMatcher(toolTypeFinger, unfocusedMarker), TIMEOUT);
             expectEvent(
                     stream,
                     onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_FINGER),
@@ -1189,10 +1188,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             addVirtualStylusIdForTestSession();
 
-            final String focusedMarker = getTestMarker();
-            final String unFocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> pair =
-                    launchTestActivity(focusedMarker, unFocusedMarker);
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
 
@@ -1251,11 +1250,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
                     endX, endY, number);
             try {
-                expectEvent(stream, editorMatcher("onStartInput", unFocusedMarker), TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
 
                 // toolType should be updated on next stylus handwriting start
                 expectEvent(stream, onStartStylusHandwritingMatcher(
-                        MotionEvent.TOOL_TYPE_STYLUS, unFocusedMarker), TIMEOUT);
+                        MotionEvent.TOOL_TYPE_STYLUS, unfocusedMarker), TIMEOUT);
             } finally {
                 TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
             }
@@ -1276,9 +1275,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivityNoEditorFocus(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivityNoEditorFocus(focusedMarker, unfocusedMarker);
             final EditText firstEditText = pair.first;
 
             // Send any KeyEvent when editor isn't focused.
@@ -1357,8 +1357,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView focusedCustomEditor = customEditorPair.first;
@@ -2103,7 +2103,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2153,7 +2153,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2206,7 +2206,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2276,7 +2276,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     hasSupportedStylus());
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2356,7 +2356,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2407,8 +2407,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String primaryMarker = getTestMarker();
-            final String secondaryMarker = getTestMarker();
+            final String primaryMarker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
             final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
@@ -2482,8 +2482,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String primaryMarker = getTestMarker();
-            final String secondaryMarker = getTestMarker();
+            final String primaryMarker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
             final AtomicReference<EditText> editTextPrimaryRef = new AtomicReference<>();
@@ -2575,7 +2575,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2637,7 +2637,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2688,8 +2688,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView unfocusedCustomEditor = customEditorPair.second;
@@ -2749,8 +2749,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView focusedCustomEditor = customEditorPair.first;
@@ -2818,11 +2818,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     private EditText launchTestActivity(@NonNull String marker) {
-        return launchTestActivity(marker, getTestMarker()).first;
-    }
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/" + SystemClock.elapsedRealtimeNanos();
+        return launchTestActivity(marker, getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG)).first;
     }
 
     private static int getTouchSlop() {

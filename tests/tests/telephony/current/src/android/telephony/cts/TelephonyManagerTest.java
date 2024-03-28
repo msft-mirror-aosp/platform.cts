@@ -1760,6 +1760,7 @@ public class TelephonyManagerTest {
     @Test
     public void testSetSystemSelectionChannels() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeFalse(hasFeature(PackageManager.FEATURE_WATCH));
 
         // Get initial list of system selection channels if the API is available
         List<RadioAccessSpecifier> initialSpecifiers = tryGetSystemSelectionChannels();

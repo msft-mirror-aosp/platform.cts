@@ -64,7 +64,6 @@ class VariableFamilyTest {
         val family = requireNotNull(
             FontFamily.Builder(wghtUprightFont)
                 .addFont(wghtItalicFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
                 .buildVariableFamily()
         )
 
@@ -82,7 +81,6 @@ class VariableFamilyTest {
         val family = requireNotNull(
             FontFamily.Builder(wghtUprightFont)
                 .addFont(wghtItalicFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
                 .buildVariableFamily()
         )
 
@@ -97,11 +95,7 @@ class VariableFamilyTest {
 
     @Test
     fun testVariableFamily_singleFonts_wghtOnly_upright() {
-        val family = requireNotNull(
-            FontFamily.Builder(wghtUprightFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
+        val family = requireNotNull(FontFamily.Builder(wghtUprightFont).buildVariableFamily())
 
         val glyphs = shape("a", family, FontStyle(300, FontStyle.FONT_SLANT_UPRIGHT))
         assertEquals(1, glyphs.glyphCount())
@@ -116,11 +110,7 @@ class VariableFamilyTest {
 
     @Test
     fun testVariableFamily_singleFonts_wghtOnly_italic() {
-        val family = requireNotNull(
-            FontFamily.Builder(wghtUprightFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
+        val family = requireNotNull(FontFamily.Builder(wghtUprightFont).buildVariableFamily())
 
         val glyphs = shape("a", family, FontStyle(500, FontStyle.FONT_SLANT_ITALIC))
         assertEquals(1, glyphs.glyphCount())
@@ -133,11 +123,7 @@ class VariableFamilyTest {
 
     @Test
     fun testVariableFamily_singleFonts_wght_ital_upright() {
-        val family = requireNotNull(
-            FontFamily.Builder(wghtItalFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
+        val family = requireNotNull(FontFamily.Builder(wghtItalFont).buildVariableFamily())
 
         val glyphs = shape("a", family, FontStyle(300, FontStyle.FONT_SLANT_UPRIGHT))
         assertEquals(1, glyphs.glyphCount())
@@ -152,11 +138,7 @@ class VariableFamilyTest {
 
     @Test
     fun testVariableFamily_singleFonts_wght_ital_italic() {
-        val family = requireNotNull(
-            FontFamily.Builder(wghtItalFont)
-                .also { assertTrue(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
+        val family = requireNotNull(FontFamily.Builder(wghtItalFont).buildVariableFamily())
 
         val glyphs = shape("a", family, FontStyle(500, FontStyle.FONT_SLANT_ITALIC))
         assertEquals(1, glyphs.glyphCount())
@@ -169,17 +151,8 @@ class VariableFamilyTest {
 
     @Test
     fun testVariableFamily_not_variableFamily_staticFont() {
-        assertNull(
-            FontFamily.Builder(nonVarFont)
-                .also { assertFalse(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
-        assertNull(
-            FontFamily.Builder(nonVarFont)
-                .addFont(wghtUprightFont)
-                .also { assertFalse(it.canBuildVariableFamily()) }
-                .buildVariableFamily()
-        )
+        assertNull(FontFamily.Builder(nonVarFont).buildVariableFamily())
+        assertNull(FontFamily.Builder(nonVarFont).addFont(wghtUprightFont).buildVariableFamily())
     }
 
     @Test
@@ -188,7 +161,6 @@ class VariableFamilyTest {
             FontFamily.Builder(nonVarFont)
                 .addFont(wghtItalFont)
                 .addFont(Font.Builder(nonVarFont).setWeight(550).build())
-                .also { assertFalse(it.canBuildVariableFamily()) }
                 .buildVariableFamily()
         )
     }

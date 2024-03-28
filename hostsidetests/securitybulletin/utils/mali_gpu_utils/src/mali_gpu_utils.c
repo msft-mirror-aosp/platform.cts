@@ -44,8 +44,8 @@ int32_t initialize_mali_gpu(const int32_t mali_fd, mali_gpu_info* gpu_info) {
     }
 
     // Map tracking page
-    gpu_info->tracking_page =
-            mmap(NULL, PAGE_SIZE, PROT_NONE, MAP_SHARED, mali_fd, BASE_MEM_MAP_TRACKING_HANDLE);
+    gpu_info->tracking_page = mmap(NULL, getpagesize(), PROT_NONE, MAP_SHARED,
+                                   mali_fd, BASE_MEM_MAP_TRACKING_HANDLE);
     if (gpu_info->tracking_page == MAP_FAILED) {
         printf("Failed to map tracking page!");
         return EXIT_FAILURE;
@@ -89,7 +89,7 @@ int32_t initialize_mali_gpu(const int32_t mali_fd, mali_gpu_info* gpu_info) {
 
 void teardown(struct mali_gpu_info* gpu_info) {
     if (!(gpu_info->tracking_page)) {
-        munmap(gpu_info->tracking_page, PAGE_SIZE);
+        munmap(gpu_info->tracking_page, getpagesize());
         gpu_info->tracking_page = NULL;
     }
 }

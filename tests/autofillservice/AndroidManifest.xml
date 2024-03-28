@@ -65,7 +65,8 @@
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
-        <activity android:name=".activities.LoginCredentialMixedActivity"/>
+        <activity android:name=".activities.LoginCredentialMixedActivity"
+             android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"

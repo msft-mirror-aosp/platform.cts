@@ -33,6 +33,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraDevice.CameraDeviceSetup;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
@@ -78,6 +79,7 @@ import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenExcepti
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -3988,23 +3990,24 @@ public class CameraTestUtils extends Assert {
      */
     public static void checkSessionConfigurationWithSurfaces(CameraDevice camera,
             Handler handler, List<Surface> outputSurfaces, InputConfiguration inputConfig,
-            int operatingMode, boolean defaultSupport, String msg) {
+            int operatingMode, CameraManager manager, boolean defaultSupport, String msg)
+            throws Exception {
         List<OutputConfiguration> outConfigurations = new ArrayList<>(outputSurfaces.size());
         for (Surface surface : outputSurfaces) {
             outConfigurations.add(new OutputConfiguration(surface));
         }
 
         checkSessionConfigurationSupported(camera, handler, outConfigurations,
-                inputConfig, operatingMode, defaultSupport, msg);
+                inputConfig, operatingMode, manager, defaultSupport, msg);
     }
 
     public static void checkSessionConfigurationSupported(CameraDevice camera,
             Handler handler, List<OutputConfiguration> outputConfigs,
-            InputConfiguration inputConfig, int operatingMode, boolean defaultSupport,
-            String msg) {
+            InputConfiguration inputConfig, int operatingMode, CameraManager manager,
+            boolean defaultSupport, String msg) throws Exception {
         SessionConfigSupport sessionConfigSupported =
                 isSessionConfigSupported(camera, handler, outputConfigs, inputConfig,
-                operatingMode, defaultSupport);
+                operatingMode, manager, defaultSupport);
 
         assertTrue(msg, !sessionConfigSupported.error && sessionConfigSupported.configSupported);
     }
@@ -4014,7 +4017,9 @@ public class CameraTestUtils extends Assert {
      */
     public static SessionConfigSupport isSessionConfigSupported(CameraDevice camera,
             Handler handler, List<OutputConfiguration> outputConfigs,
-            InputConfiguration inputConfig, int operatingMode, boolean defaultSupport) {
+            InputConfiguration inputConfig, int operatingMode,
+            CameraManager manager, boolean defaultSupport)
+            throws android.hardware.camera2.CameraAccessException {
         boolean ret;
         BlockingSessionCallback sessionListener = new BlockingSessionCallback();
 
@@ -4024,10 +4029,28 @@ public class CameraTestUtils extends Assert {
             sessionConfig.setInputConfiguration(inputConfig);
         }
 
+        // Verify that the return value of CameraDevice.isSessionConfigurationSupported is the
+        // same as CameraDeviceSetup.isSessionConfigurationSupported.
+        // Note: This check makes the most sense if targetSdkVersion is less than V.
+        boolean deviceSetupSupported = false;
+        boolean configSupportedBySetup = false;
+        String cameraId = camera.getId();
+        if (Flags.cameraDeviceSetup() && manager.isCameraDeviceSetupSupported(cameraId)) {
+            CameraDeviceSetup deviceSetup = manager.getCameraDeviceSetup(cameraId);
+            assertNotNull("Failed to get camera device setup for " + cameraId, deviceSetup);
+            deviceSetupSupported = true;
+
+            configSupportedBySetup = deviceSetup.isSessionConfigurationSupported(
+                    sessionConfig);
+        }
+
         try {
             ret = camera.isSessionConfigurationSupported(sessionConfig);
         } catch (UnsupportedOperationException e) {
             // Camera doesn't support session configuration query
+            assertFalse("If device setup is supported, "
+                    + "CameraDevice.isSessionConfigurationSupported cannot throw"
+                    + "unsupportedOperationException", deviceSetupSupported);
             return new SessionConfigSupport(false/*error*/,
                     false/*callSupported*/, defaultSupport/*configSupported*/);
         } catch (IllegalArgumentException e) {
@@ -4038,6 +4061,10 @@ public class CameraTestUtils extends Assert {
                     false/*callSupported*/, false/*configSupported*/);
         }
 
+        if (deviceSetupSupported) {
+            assertEquals("CameraDeviceSetup and CameraDevice must return the same value "
+                    + "for isSessionConfigurationSupported!", ret, configSupportedBySetup);
+        }
         return new SessionConfigSupport(false/*error*/,
                 true/*callSupported*/, ret/*configSupported*/);
     }

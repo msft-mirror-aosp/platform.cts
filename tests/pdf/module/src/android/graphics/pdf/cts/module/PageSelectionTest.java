@@ -47,16 +47,15 @@ public class PageSelectionTest {
     @Test
     public void pageSelection_parcelTest() {
         PageSelection pageSelection = new PageSelection(/* page = */ 1, MOCK_START, MOCK_STOP,
-                MOCK_TEXT_CONTENT_LIST, /* isRtl = */ false);
+                MOCK_TEXT_CONTENT_LIST);
         PageSelection unparceled = Utils.writeAndReadFromParcel(pageSelection,
                 PageSelection.CREATOR);
 
         assertThat(unparceled.getPage()).isEqualTo(1);
-        assertThat(unparceled.getLeft().getIndex()).isEqualTo(MOCK_START.getIndex());
-        assertThat(unparceled.getRight().getIndex()).isEqualTo(MOCK_STOP.getIndex());
+        assertThat(unparceled.getStart().getIndex()).isEqualTo(MOCK_START.getIndex());
+        assertThat(unparceled.getStop().getIndex()).isEqualTo(MOCK_STOP.getIndex());
         assertThat(unparceled.getSelectedTextContents().isEmpty()).isFalse();
         assertThat(unparceled.getSelectedTextContents().get(0).getText()).isEqualTo(MOCK_TEXT);
-        assertThat(unparceled.isRtl()).isFalse();
         assertThat(unparceled.describeContents()).isEqualTo(0);
     }
 }

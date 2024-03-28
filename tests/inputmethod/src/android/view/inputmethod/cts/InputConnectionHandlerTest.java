@@ -38,7 +38,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.text.InputType;
@@ -100,13 +99,6 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             TimeUnit.MILLISECONDS.toMillis(2000);
 
     private static final int TEST_VIEW_HEIGHT = 10;
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputConnectionHandlerTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     private static final class InputConnectionHandlingThread extends HandlerThread
             implements AutoCloseable {
@@ -567,8 +559,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                 instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
-            final String fenceMarker = getTestMarker();
+            final String editTextMarker = getTestMarker();
+            final String fenceMarker = getTestMarker("Fence");
             final AtomicReference<Runnable> removeViewRef = new AtomicReference<>();
             final CountDownLatch fenceCommandLatch = new CountDownLatch(1);
             final CountDownLatch closeConnectionLatch = new CountDownLatch(1);
@@ -611,7 +603,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
                         if (imeSession.isActive()) {
                             outAttrs.inputType = InputType.TYPE_CLASS_TEXT;
-                            outAttrs.privateImeOptions = marker;
+                            outAttrs.privateImeOptions = editTextMarker;
                             return new MyInputConnection();
                         }
                         return null;
@@ -626,7 +618,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             });
 
             // "onStartInput" gets called for the EditText.
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", editTextMarker), TIMEOUT);
 
             runOnMainSyncWithRethrowing(() -> {
                 // Trigger layout.removeView(testEditor)

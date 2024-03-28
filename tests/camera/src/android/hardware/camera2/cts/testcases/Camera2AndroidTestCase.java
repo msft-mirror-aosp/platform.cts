@@ -66,7 +66,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 // TODO: Can we de-duplicate this with Camera2AndroidBasicTestCase keeping in mind CtsVerifier ?
 public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
@@ -97,6 +99,15 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     protected String mDebugFileNameBase;
 
     protected WindowManager mWindowManager;
+
+    // Request templates that are unsupported by LEGACY mode.
+    protected static Set<Integer> sLegacySkipTemplates = new HashSet<>();
+    static {
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_MANUAL);
+    }
+
 
     /**
      * Set up the camera2 test case required environments, including CameraManager,
@@ -519,7 +530,7 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
         }
         outputConfigs.add(config);
         checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                SessionConfiguration.SESSION_REGULAR, /*expectedResult*/ true, msg);
+                SessionConfiguration.SESSION_REGULAR, mCameraManager, /*expectedResult*/ true, msg);
     }
 
     protected CaptureRequest prepareCaptureRequest() throws Exception {

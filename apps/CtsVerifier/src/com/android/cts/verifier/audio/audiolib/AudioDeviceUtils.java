@@ -208,15 +208,30 @@ public class AudioDeviceUtils {
         }
 
         AudioManager audioManager = context.getSystemService(AudioManager.class);
-        Set<Integer> deviceTypeIds =
+        Set<Integer> outputDeviceTypeIds =
                 audioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
         if (LOG) {
-            for (Integer type : deviceTypeIds) {
+            Log.d(TAG, "Output Device Types:");
+            for (Integer type : outputDeviceTypeIds) {
                 Log.d(TAG, "  " + getDeviceTypeName(type));
             }
         }
-        return deviceTypeIds.contains(AudioDeviceInfo.TYPE_USB_HEADSET)
-                ? SUPPORTSDEVICE_YES : SUPPORTSDEVICE_NO;
+
+        Set<Integer> inputDeviceTypeIds =
+                audioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_INPUTS);
+        if (LOG) {
+            Log.d(TAG, "Input Device Types:");
+            for (Integer type : inputDeviceTypeIds) {
+                Log.d(TAG, "  " + getDeviceTypeName(type));
+            }
+        }
+
+        if (outputDeviceTypeIds.contains(AudioDeviceInfo.TYPE_USB_HEADSET)
+                && inputDeviceTypeIds.contains(AudioDeviceInfo.TYPE_USB_HEADSET)) {
+            return SUPPORTSDEVICE_YES;
+        } else {
+            return SUPPORTSDEVICE_NO;
+        }
     }
 
     /**
@@ -227,23 +242,25 @@ public class AudioDeviceUtils {
      */
     public static int supportsUsbAudio(Context context) {
         if (LOG) {
-            Log.d(TAG, "supportsUsbHeadset()");
+            Log.d(TAG, "supportsUsbAudio()");
         }
         int hasInterface = supportsUsbAudioInterface(context);
         int hasHeadset = supportsUsbHeadset(context);
         if (LOG) {
             Log.d(TAG, "  hasInterface:" + hasInterface + " hasHeadset:" + hasHeadset);
         }
-        if (hasInterface == SUPPORTSDEVICE_UNDETERMINED
-                || hasHeadset == SUPPORTSDEVICE_UNDETERMINED) {
-            return SUPPORTSDEVICE_UNDETERMINED;
+
+        // At least one is YES, so YES.
+        if (hasInterface == SUPPORTSDEVICE_YES || hasHeadset == SUPPORTSDEVICE_YES) {
+            return SUPPORTSDEVICE_YES;
         }
 
-        if (hasInterface != hasHeadset) {
-            return SUPPORTSDEVICE_UNDETERMINED;
+        // Both are NO, so NO
+        if (hasInterface == SUPPORTSDEVICE_NO && hasHeadset == SUPPORTSDEVICE_NO) {
+            return SUPPORTSDEVICE_NO;
         }
 
-        // they are both the same if we get here
-        return hasInterface;
+        // Some mixture of NO and UNDETERMINED, so UNDETERMINED
+        return SUPPORTSDEVICE_UNDETERMINED;
     }
 }

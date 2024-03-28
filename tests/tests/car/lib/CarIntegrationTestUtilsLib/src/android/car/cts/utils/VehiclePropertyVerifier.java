@@ -2457,13 +2457,13 @@ public class VehiclePropertyVerifier<T> {
         public void onChangeEvent(CarPropertyValue carPropertyValue) {
             if (mUpdatedCarPropertyValue != null || carPropertyValue.getPropertyId() != mPropertyId
                     || carPropertyValue.getAreaId() != mAreaId
-                    || carPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE
                     || carPropertyValue.getTimestamp() <= mCreationTimeNanos
                     || carPropertyValue.getTimestamp() >= SystemClock.elapsedRealtimeNanos()) {
                 return;
             }
             mReceivedValue = (T) carPropertyValue.getValue();
-            if (!valueEquals(mExpectedSetValue, mReceivedValue)) {
+            if (carPropertyValue.getStatus() == CarPropertyValue.STATUS_AVAILABLE
+                    && !valueEquals(mExpectedSetValue, mReceivedValue)) {
                 return;
             }
             mUpdatedCarPropertyValue = carPropertyValue;

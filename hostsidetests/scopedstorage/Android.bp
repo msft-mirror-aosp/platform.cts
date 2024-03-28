@@ -521,7 +521,6 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
-        "mcts-mediaprovider",
     ],
     test_config: "PublicVolumeTest.xml",
     per_testcase_directory: true,

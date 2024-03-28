@@ -97,9 +97,9 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
                 ComponentClass.SOFTWARE);
     }
 
-    private boolean isBlankFrame(Image image) {
+    private boolean isBlankFrame(ImageSurface.ImageAndAttributes image) {
         int threshold = 0;
-        for (Image.Plane plane : image.getPlanes()) {
+        for (Image.Plane plane : image.mImage.getPlanes()) {
             ByteBuffer buffer = plane.getBuffer();
             while (buffer.hasRemaining()) {
                 int pixelValue = buffer.get() & 0xFF;
@@ -125,7 +125,7 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
         assertTrue("Codec: " + mCodecName + " doesn't support format: " + format,
                 areFormatsSupported(mCodecName, mMediaType, formatList));
         mImageSurface = new ImageSurface();
-        setUpSurface(getWidth(format), getHeight(format), PixelFormat.RGBX_8888, 1,
+        setUpSurface(getWidth(format), getHeight(format), PixelFormat.RGBX_8888, 1, 0,
                 this::isBlankFrame);
         mSurface = mImageSurface.getSurface();
         mCodec = MediaCodec.createByCodecName(mCodecName);
@@ -147,7 +147,7 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
                 assertNotNull("Blank buffers are not received by image surface for format: "
                         + format + "\n" + mTestConfig + mTestEnv, img);
                 assertTrue("received image is not a blank buffer \n" + mTestConfig + mTestEnv,
-                        isBlankFrame(img));
+                        isBlankFrame(new ImageSurface.ImageAndAttributes(img, 0)));
             }
         }
         mCodec.release();

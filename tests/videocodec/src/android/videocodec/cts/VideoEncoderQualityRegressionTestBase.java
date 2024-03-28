@@ -25,10 +25,12 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
+import android.graphics.Rect;
 import android.mediav2.common.cts.CompareStreams;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.RawResource;
 import android.util.Log;
+import android.util.Pair;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -40,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -101,16 +104,19 @@ public class VideoEncoderQualityRegressionTestBase {
 
     protected static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int width,
             int height, int bitRate, int bitRateMode, int keyFrameInterval, int frameRate,
-            int maxBFrames) {
-        return new EncoderConfigParams.Builder(mediaType)
+            int maxBFrames, Pair<String, Boolean> feature) {
+        EncoderConfigParams.Builder foreman = new EncoderConfigParams.Builder(mediaType)
                 .setWidth(width)
                 .setHeight(height)
                 .setBitRate(bitRate)
                 .setBitRateMode(bitRateMode)
                 .setKeyFrameInterval(keyFrameInterval)
                 .setFrameRate(frameRate)
-                .setMaxBFrames(maxBFrames)
-                .build();
+                .setMaxBFrames(maxBFrames);
+        if (feature != null) {
+            foreman.setFeature(feature.first, feature.second);
+        }
+        return foreman.build();
     }
 
     private native double nativeGetBDRate(double[] qualitiesA, double[] ratesA, double[] qualitiesB,
@@ -118,7 +124,8 @@ public class VideoEncoderQualityRegressionTestBase {
 
     protected void getQualityRegressionForCfgs(List<EncoderConfigParams[]> cfgsUnion,
             VideoEncoderValidationTestBase[] testInstances, String[] encoderNames, RawResource res,
-            int frameLimit, int frameRate, boolean setLoopBack, Predicate<Double> predicate)
+            int frameLimit, int frameRate, Map<Long, List<Rect>> frameCropRects,
+            boolean setLoopBack, Predicate<Double> predicate)
             throws IOException, InterruptedException {
         assertEquals("Quality comparison is done between two sets", 2, cfgsUnion.size());
         assertTrue("Minimum of 4 points are required for polynomial curve fitting",
@@ -140,7 +147,7 @@ public class VideoEncoderQualityRegressionTestBase {
                 CompareStreams cs = null;
                 try {
                     cs = new CompareStreams(res, mediaType,
-                            testInstances[i].getMuxedOutputFilePath(), true, true);
+                            testInstances[i].getMuxedOutputFilePath(), frameCropRects, true, true);
                     final double[] globalPSNR = cs.getGlobalPSNR();
                     double weightedPSNR = (6 * globalPSNR[0] + globalPSNR[1] + globalPSNR[2]) / 8;
                     psnrs[i][j] = weightedPSNR;

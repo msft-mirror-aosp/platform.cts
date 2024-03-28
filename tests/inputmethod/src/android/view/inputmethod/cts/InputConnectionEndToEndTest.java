@@ -141,13 +141,6 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     private static final long LONG_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
     private static final long IMMEDIATE_TIMEOUT_NANO = TimeUnit.MILLISECONDS.toNanos(200);
 
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputConnectionEndToEndTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
-
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
 

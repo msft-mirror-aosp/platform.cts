@@ -42,7 +42,6 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Pair;
@@ -86,13 +85,6 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     private static final int NEW_KEYBOARD_HEIGHT = 300;
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.ImeInsetsVisibilityTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();

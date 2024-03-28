@@ -32,7 +32,6 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.display.DisplayManager;
-import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -637,6 +636,20 @@ public abstract class CodecTestBase {
                 .getSupportedHdrTypes().length > 0;
     }
 
+    public static boolean isFormatSupported(String name, String mediaType, MediaFormat format) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                boolean isSupported = true;
+                if (format != null) {
+                    isSupported = cap.isFormatSupported(format);
+                }
+                if (isSupported) return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean areFormatsSupported(String name, String mediaType,
             List<MediaFormat> formats) throws IOException {
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
@@ -910,12 +923,19 @@ public abstract class CodecTestBase {
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                mustTestAllCodecs, ComponentClass.ALL);
+                mustTestAllCodecs, ComponentClass.ALL, null /* features */);
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch) {
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                mustTestAllCodecs, selectSwitch, null);
+    }
+
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+            boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
+            ComponentClass selectSwitch, String[] features) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
                 needAudio, needVideo);
         ArrayList<String> cddRequiredMediaTypesList =
@@ -924,7 +944,7 @@ public abstract class CodecTestBase {
         int argLength = exhaustiveArgsList.get(0).length;
         for (String mediaType : mediaTypes) {
             ArrayList<String> totalListOfCodecs =
-                    selectCodecs(mediaType, null, null, isEncoder, selectSwitch);
+                    selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
             if (codecPrefix != null || codecFilter != null) {
                 for (String codec : totalListOfCodecs) {
@@ -1100,8 +1120,9 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected void configureContextOnly(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame) {
+    // reusable portions of configureCodec(...) are handled here
+    protected void configureCodecCommon(MediaFormat format, boolean isAsync,
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
 
@@ -1113,8 +1134,10 @@ public abstract class CodecTestBase {
                 (isAsync ? "asynchronous" : "synchronous")));
         mTestEnv.append(String.format("Component received input eos :- %s \n",
                 (signalEOSWithLastFrame ? "with full buffer" : "with empty buffer")));
+        mTestEnv.append(String.format("Component is :- %s \n",
+                (isEncoder ? "encoder" : "decoder")));
+        mTestEnv.append("Component configure flags :- ").append(flags).append("\n");
     }
-
 
     protected void configureCodec(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
@@ -1131,7 +1154,8 @@ public abstract class CodecTestBase {
             }
         }
 
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame, isEncoder,
+                flags);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
@@ -1150,7 +1174,8 @@ public abstract class CodecTestBase {
 
     protected void configureCodecInDetachedMode(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame) {
-        configureContextOnly(format, isAsync, cryptoCallAndSignalEosWithLastFrame);
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
 
         // signalEOS flag has nothing to do with configure. We are using this flag to try all
         // available configure apis
@@ -1446,8 +1471,8 @@ public abstract class CodecTestBase {
     }
 
     protected void setUpSurface(int width, int height, int format, int maxImages,
-            Function<Image, Boolean> predicate) {
-        mImageSurface.createSurface(width, height, format, maxImages, predicate);
+            int surfaceId, Function<ImageSurface.ImageAndAttributes, Boolean> predicate) {
+        mImageSurface.createSurface(width, height, format, maxImages, surfaceId, predicate);
         mSurface = mImageSurface.getSurface();
         assertNotNull("Surface created is null \n" + mTestConfig + mTestEnv, mSurface);
         assertTrue("Surface created is invalid \n" + mTestConfig + mTestEnv, mSurface.isValid());

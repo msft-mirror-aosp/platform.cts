@@ -160,8 +160,8 @@ def find_opencv_faces(img, scale_factor, min_neighbors):
   # prep opencv
   opencv_haarcascade_file = _load_opencv_haarcascade_file()
   face_cascade = cv2.CascadeClassifier(opencv_haarcascade_file)
-  img_255 = img * 255
-  img_gray = cv2.cvtColor(img_255.astype(numpy.uint8), cv2.COLOR_RGB2GRAY)
+  img_uint8 = image_processing_utils.convert_image_to_uint8(img)
+  img_gray = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2GRAY)
 
   # find face rectangles with opencv
   faces_opencv = face_cascade.detectMultiScale(
@@ -368,10 +368,9 @@ class Chart(object):
                   scale_start, scale_stop, scale_step)
     logging.debug('Used offset of %.3f to include stop value.', offset)
     max_match = []
-    # check for normalized image
-    if numpy.amax(scene) <= 1.0:
-      scene = (scene * 255.0).astype(numpy.uint8)
-    scene_gray = gray_scale_img(scene)
+    # convert [0.0, 1.0] image to [0, 255]
+    scene_uint8 = image_processing_utils.convert_image_to_uint8(scene)
+    scene_gray = gray_scale_img(scene_uint8)
     logging.debug('Finding chart in scene...')
     for scale in numpy.arange(scale_start, scale_stop + offset, scale_step):
       scene_scaled = scale_img(scene_gray, scale)
@@ -420,11 +419,10 @@ class Chart(object):
       self.hnorm = ((bottom_right[1]) - top_left[1]) / scene.shape[0]
       self.xnorm = (top_left[0]) / scene.shape[1]
       self.ynorm = (top_left[1]) / scene.shape[0]
-      patch = image_processing_utils.get_image_patch(scene, self.xnorm,
-                                                     self.ynorm, self.wnorm,
-                                                     self.hnorm)
-      template_scene_name = os.path.join(log_path, 'template_scene.jpg')
-      image_processing_utils.write_image(patch, template_scene_name)
+      patch = image_processing_utils.get_image_patch(
+          scene_uint8, self.xnorm, self.ynorm, self.wnorm, self.hnorm) / 255
+      image_processing_utils.write_image(
+          patch, os.path.join(log_path, 'template_scene.jpg'))
 
 
 def component_shape(contour):
@@ -789,10 +787,9 @@ def get_angle(input_img):
   img = numpy.array(input_img, copy=True)
 
   # Scale pixel values from 0-1 to 0-255
-  img *= 255
-  img = img.astype(numpy.uint8)
+  img_uint8 = image_processing_utils.convert_image_to_uint8(img)
   img_thresh = cv2.adaptiveThreshold(
-      img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 201, 2)
+      img_uint8, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 201, 2)
 
   # Find all contours.
   contours = find_all_contours(img_thresh)

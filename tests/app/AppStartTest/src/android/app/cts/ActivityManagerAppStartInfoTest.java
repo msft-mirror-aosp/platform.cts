@@ -18,6 +18,7 @@ package android.app.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,6 +30,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Process;
+import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
@@ -52,9 +56,16 @@ import java.util.Map;
 public final class ActivityManagerAppStartInfoTest {
     private static final String TAG = ActivityManagerAppStartInfoTest.class.getSimpleName();
 
+    private static final String STUB_APK =
+            "/data/local/tmp/cts/content/CtsSimpleApp.apk";
     private static final String STUB_PACKAGE_NAME =
             "com.android.cts.launcherapps.simpleapp";
     private static final String SIMPLE_ACTIVITY = ".SimpleActivity";
+
+    private static final int FIRST_TIMESTAMP_KEY =
+            ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START;
+    private static final int LAST_TIMESTAMP_KEY =
+            ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER;
 
     private static final int MAX_WAITS_FOR_START = 20;
     private static final int WAIT_FOR_START_MS = 400;
@@ -65,6 +76,7 @@ public final class ActivityManagerAppStartInfoTest {
     private PackageManager mPackageManager;
 
     private int mStubPackageUid;
+    private int mCurrentUserId;
 
     @Before
     public void setUp() throws Exception {
@@ -72,26 +84,15 @@ public final class ActivityManagerAppStartInfoTest {
         mContext = mInstrumentation.getContext();
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mPackageManager = mContext.getPackageManager();
+        mCurrentUserId = UserHandle.getUserId(Process.myUid());
+
+        executeShellCmd("pm install -r --force-queryable " + STUB_APK);
 
         mStubPackageUid = mPackageManager.getPackageUid(STUB_PACKAGE_NAME, 0);
-
-        // Disable doze mode for test app
-        executeShellCmd("cmd deviceidle whitelist +" + STUB_PACKAGE_NAME);
-
-        // Ensure test app is enabled
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
-        mContext.getPackageManager().setApplicationEnabledSetting(
-                STUB_PACKAGE_NAME,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                0);
     }
 
     @After
     public void tearDown() throws Exception {
-        // Reenable doze mode for test app
-        executeShellCmd("cmd deviceidle whitelist -" + STUB_PACKAGE_NAME);
-
         executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
@@ -169,11 +170,99 @@ public final class ActivityManagerAppStartInfoTest {
 
         List<ApplicationStartInfo> list =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    STUB_PACKAGE_NAME, 1,
-                    mActivityManager::getExternalHistoricalProcessStartReasons,
-                    android.Manifest.permission.DUMP);
+                        STUB_PACKAGE_NAME, 1,
+                        mActivityManager::getExternalHistoricalProcessStartReasons,
+                        android.Manifest.permission.DUMP);
 
         assertTrue(list != null && list.size() == 0);
+    }
+
+    /**
+     * Test querying the startup of the process we're currently in.
+     *
+     * TODO(b/331678971): Move api call to helper app.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testQueryThisProcess() throws Exception {
+        clearHistoricalStartInfo();
+
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+
+        ApplicationStartInfo info = waitForAppStart();
+        assertNotNull(info);
+
+        try {
+            List<ApplicationStartInfo> list = getHistoricalProcessStartReasonsAsStubAppAndUser(1,
+                    mCurrentUserId);
+
+            assertTrue(list != null);
+
+            // Expected, accessing caller app rather than stub.
+            assertEquals(0, list.size());
+            // TODO(b/331678971): Verify return records contents.
+        } catch (SecurityException e) {
+            throw new AssertionError("We still don't expect a security exception here");
+        } catch (NameNotFoundException e) {
+            throw new AssertionError("We still don't expect a name not found exception here");
+        }
+    }
+
+    /**
+     * Test adding timestamps.
+     * Verify that the timestamps that were added are still there on a subsequent query.
+     *
+     * TODO(b/331678971): Move api call to helper app.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testAddingTimestamps() throws Exception {
+        clearHistoricalStartInfo();
+
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+
+        // Add the first time stamp
+        long firstTimestamp = System.nanoTime();
+        try {
+            // Adding a timestamp for 'this' process.
+            addStartInfoTimestampAsStubAppAndUser(FIRST_TIMESTAMP_KEY, firstTimestamp,
+                    mCurrentUserId);
+        } catch (SecurityException e) {
+            throw new AssertionError("We still don't expect a security exception here");
+        } catch (NameNotFoundException e) {
+            throw new AssertionError("We still don't expect a name not found exception here");
+        }
+
+        // Wait for the app to successfully start
+        ApplicationStartInfo info = waitForAppStart();
+        assertNotNull(info);
+
+        // Add the last time stamp
+        long lastTimestamp = System.nanoTime();
+        try {
+            // Adding a timestamp for 'this' process.
+            addStartInfoTimestampAsStubAppAndUser(LAST_TIMESTAMP_KEY, lastTimestamp,
+                    mCurrentUserId);
+        } catch (SecurityException e) {
+            throw new AssertionError("We still don't expect a security exception here");
+        } catch (NameNotFoundException e) {
+            throw new AssertionError("We still don't expect a name not found exception here");
+        }
+
+        // Get the final start object
+        info = waitForAppStart();
+
+        // Verify that the timestamps are retrievable and they're the same
+        // when we pull them back out.
+        Map<Integer, Long> timestamps = info.getStartupTimestamps();
+        Long firstTimestampFromInfo = timestamps.get(FIRST_TIMESTAMP_KEY);
+        Long lastTimestampFromInfo = timestamps.get(LAST_TIMESTAMP_KEY);
+
+        // Expected, accessing caller app rather than stub.
+        assertNull(firstTimestampFromInfo);
+        assertNull(lastTimestampFromInfo);
     }
 
     private void clearHistoricalStartInfo() throws Exception {
@@ -207,6 +296,22 @@ public final class ActivityManagerAppStartInfoTest {
             Thread.sleep(timeout);
         } catch (InterruptedException e) {
         }
+    }
+    private List<ApplicationStartInfo> getHistoricalProcessStartReasonsAsStubAppAndUser(
+            final int max, final int userId) throws NameNotFoundException {
+        return getStubActivityManagerAsUser(userId).getHistoricalProcessStartReasons(max);
+    }
+
+    private void addStartInfoTimestampAsStubAppAndUser(
+            final int key, final long timestamp, final int userId) throws NameNotFoundException {
+        getStubActivityManagerAsUser(userId).addStartInfoTimestamp(key, timestamp);
+    }
+
+    private ActivityManager getStubActivityManagerAsUser(final int userId)
+            throws NameNotFoundException {
+        Context context = mContext.createPackageContextAsUser(STUB_PACKAGE_NAME,
+                Context.CONTEXT_IGNORE_SECURITY, UserHandle.of(userId));
+        return context.getSystemService(ActivityManager.class);
     }
 
     @FormatMethod
@@ -274,8 +379,8 @@ public final class ActivityManagerAppStartInfoTest {
 
             assertTrue(launchTimestamp < bindApplicationTimestamp);
 
-            // TODO: Debug why START_TIMESTAMP_APPLICATION_ONCREATE and
-            // START_TIMESTAMP_FIRST_FRAME do not appear in this case as well.
+            // TODO(287153617): Add support for START_TIMESTAMP_APPLICATION_ONCREATE
+            // and START_TIMESTAMP_FIRST_FRAME
         }
     }
 }

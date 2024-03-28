@@ -300,7 +300,7 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
     }
 
     protected boolean isSessionConfigurationSupported(String cameraId,
-            List<OutputConfiguration> configs) {
+            List<OutputConfiguration> configs) throws Exception {
         CameraHolder camera = getCameraHolder(cameraId);
         assertTrue("Camera " + cameraId + " is not opened", camera.isOpened());
         return camera.isSessionConfigurationSupported(configs);
@@ -530,7 +530,7 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
                 CaptureCallback listener)
                 throws Exception {
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
-                    /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
+                    /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR, mCameraManager,
                     /*defaultSupport*/ true, "Session configuration query should not fail");
             createSessionWithConfigs(outputConfigs);
 
@@ -562,10 +562,11 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
             mSession.updateOutputConfiguration(config);
         }
 
-        public boolean isSessionConfigurationSupported(List<OutputConfiguration> configs) {
+        public boolean isSessionConfigurationSupported(List<OutputConfiguration> configs)
+                throws Exception {
             return isSessionConfigSupported(mCamera, mHandler, configs,
                     /*inputConig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    /*expectedResult*/ true).configSupported;
+                    mCameraManager, /*expectedResult*/ true).configSupported;
         }
 
         public void capture(CaptureRequest request, CaptureCallback listener)

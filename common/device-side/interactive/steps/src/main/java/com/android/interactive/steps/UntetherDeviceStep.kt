@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.interactive.annotations;
+package com.android.interactive.steps
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.android.bedstead.nene.TestApis
+import com.android.bedstead.usb.usb
 
-/**
- * Mark that a test requires user interaction.
- *
- * <p>This will exclude the test from non-interactive test suites and allow the use of the
- * Interactive library in the test.
- */
-@Target({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Interactive {
-}
+class UntetherDeviceStep : ActAndWaitStep(
+    "Disconnect the USB between this device and the host", { !TestApis.usb().isConnected() }
+)

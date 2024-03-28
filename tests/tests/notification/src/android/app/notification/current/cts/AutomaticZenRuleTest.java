@@ -190,6 +190,19 @@ public class AutomaticZenRuleTest {
     }
 
     @Test
+    public void testBuilder_overwriteConstructorParameters() {
+        if (!Flags.modesApi()) {
+            return;
+        }
+        AutomaticZenRule rule = new AutomaticZenRule.Builder("oldName", Uri.parse("oldCondition"))
+                .setName(mName)
+                .setConditionId(mConditionId)
+                .build();
+        assertEquals(mName, rule.getName());
+        assertEquals(mConditionId, rule.getConditionId());
+    }
+
+    @Test
     public void testBuilder_fromInstance() {
         if (!Flags.modesApi()) {
             return;

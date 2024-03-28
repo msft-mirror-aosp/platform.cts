@@ -92,6 +92,10 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mPkgName = mInstrumentation.getContext().getPackageName();
 
+        // Finish tracking any pending IME visibility requests from previous tests to avoid issues.
+        mInstrumentation.getContext().getSystemService(InputMethodManager.class)
+                .finishTrackingPendingImeVisibilityRequests();
+
         MetricsRecorder.removeConfig();
         MetricsRecorder.clearReports();
         // TODO(b/330143218): Add a proper fence for statsd

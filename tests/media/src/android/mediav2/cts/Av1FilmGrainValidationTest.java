@@ -165,7 +165,7 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
     public void testAv1FilmGrainRequirement() throws Exception {
         MediaFormat format = setUpSource(mTestFile);
         mImageSurface = new ImageSurface();
-        setUpSurface(getWidth(format), getHeight(format), ImageFormat.YUV_420_888, 1, null);
+        setUpSurface(getWidth(format), getHeight(format), ImageFormat.YUV_420_888, 1, 0, null);
         mOutputBuff = new OutputManager();
         mCodec = MediaCodec.createByCodecName(mCodecName);
         configureCodec(format, true, true, false);

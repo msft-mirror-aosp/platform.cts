@@ -34,9 +34,11 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.hardware.fingerprint.FingerprintManager;
+import android.hardware.fingerprint.FingerprintSensorProperties;
 import android.os.Bundle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
@@ -115,6 +117,7 @@ public class FingerprintManagerTest extends ActivityManagerTestBase
 
     @NonNull private Instrumentation mInstrumentation;
     @Nullable private FingerprintManager mFingerprintManager;
+    @Nullable private BiometricManager mBiometricManager;
     @NonNull private List<SensorProperties> mSensorProperties;
     @NonNull private UiDevice mDevice;
 
@@ -124,13 +127,18 @@ public class FingerprintManagerTest extends ActivityManagerTestBase
         mDevice = UiDevice.getInstance(mInstrumentation);
         mFingerprintManager = mInstrumentation.getContext()
                 .getSystemService(FingerprintManager.class);
+        mBiometricManager = mInstrumentation.getContext()
+                .getSystemService(BiometricManager.class);
 
         // Tests can be skipped on devices without FingerprintManager
         assumeTrue(mFingerprintManager != null);
+        assumeTrue(mBiometricManager != null);
 
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
 
-        mSensorProperties = mFingerprintManager.getSensorProperties();
+        mSensorProperties = mBiometricManager.getSensorProperties().stream()
+                .filter(FingerprintSensorProperties.class::isInstance)
+                .toList();
 
         // Tests can be skipped on devices without fingerprint sensors
         assumeTrue(!mSensorProperties.isEmpty());
@@ -184,7 +192,7 @@ public class FingerprintManagerTest extends ActivityManagerTestBase
     public void testEnroll() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties prop : mSensorProperties) {
-            try (BiometricTestSession session = mFingerprintManager.createTestSession(
+            try (BiometricTestSession session = mBiometricManager.createTestSession(
                     prop.getSensorId())) {
                 testEnrollForSensor(session, prop.getSensorId());
             }

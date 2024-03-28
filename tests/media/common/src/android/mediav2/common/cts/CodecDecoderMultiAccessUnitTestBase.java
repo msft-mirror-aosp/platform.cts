@@ -72,6 +72,12 @@ public class CodecDecoderMultiAccessUnitTestBase extends CodecDecoderTestBase {
     }
 
     @Override
+    protected void flushCodec() {
+        super.flushCodec();
+        mAsyncHandleMultiAccessUnits.clearQueues();
+    }
+
+    @Override
     protected void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
         super.resetContext(isAsync, signalEOSWithLastFrame);
         mMaxOutputSizeBytes = 0;

@@ -82,7 +82,6 @@ import com.android.compatibility.common.util.CddTest;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -130,14 +129,6 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
                 (WindowLayoutComponent) mWindowExtensionTestRule.getExtensionComponent();
         assumeNotNull(mWindowLayoutComponent);
         mDeviceStateManager = mContext.getSystemService(DeviceStateManager.class);
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Throwable {
-        // TODO(b/326498471) See how tear down affects other tests.
-        DeviceStateUtils
-                .runWithControlDeviceStatePermission(mDeviceStateManager::cancelStateRequest);
     }
 
     private Context createContextWithNonActivityWindow() {
@@ -260,21 +251,26 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         TestValueCountConsumer<DeviceStateRequest> deviceStateCallbackConsumer =
                 new TestValueCountConsumer<>();
         deviceStateCallbackConsumer.setCount(1);
-        for (DeviceState deviceState : supportedDeviceStates) {
-            final int deviceStateId = deviceState.getIdentifier();
-            DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceStateId).build();
-            DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                    mDeviceStateManager.requestBaseStateOverride(
-                            request,
-                            getInstrumentation().getTargetContext().getMainExecutor(),
-                            new DeviceStateRequest.Callback() {
-                                @Override
-                                public void onRequestActivated(DeviceStateRequest request) {
-                                    deviceStateCallbackConsumer.accept(request);
-                                }
-                            }));
-            deviceStateCallbackConsumer.waitAndGet();
-            deviceStateCallbackConsumer.clearQueue();
+        try {
+            for (DeviceState deviceState : supportedDeviceStates) {
+                final int deviceStateId = deviceState.getIdentifier();
+                DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceStateId).build();
+                DeviceStateUtils.runWithControlDeviceStatePermission(() ->
+                        mDeviceStateManager.requestBaseStateOverride(
+                                request,
+                                getInstrumentation().getTargetContext().getMainExecutor(),
+                                new DeviceStateRequest.Callback() {
+                                    @Override
+                                    public void onRequestActivated(DeviceStateRequest request) {
+                                        deviceStateCallbackConsumer.accept(request);
+                                    }
+                                }));
+                deviceStateCallbackConsumer.waitAndGet();
+                deviceStateCallbackConsumer.clearQueue();
+            }
+        } finally {
+            DeviceStateUtils.runWithControlDeviceStatePermission(
+                    mDeviceStateManager::cancelBaseStateOverride);
         }
 
         mWindowLayoutComponent.removeWindowLayoutInfoListener(windowLayoutInfoConsumer);

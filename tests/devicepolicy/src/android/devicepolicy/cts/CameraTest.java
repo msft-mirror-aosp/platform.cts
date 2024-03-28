@@ -72,9 +72,7 @@ public final class CameraTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final TestApis sTestApis = new TestApis();
-    private static final Context sContext = sTestApis.context().instrumentedContext();
+    private static final Context sContext = TestApis.context().instrumentedContext();
     private static final CameraManager sCameraManager =
             sContext.getSystemService(CameraManager.class);
     private static final DevicePolicyManager sLocalDevicePolicyManager =
