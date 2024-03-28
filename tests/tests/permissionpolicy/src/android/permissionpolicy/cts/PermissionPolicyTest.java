@@ -90,6 +90,7 @@ public class PermissionPolicyTest {
     private static final String ATTR_PERMISSION_FLAGS = "permissionFlags";
     private static final String ATTR_PROTECTION_LEVEL = "protectionLevel";
     private static final String ATTR_BACKGROUND_PERMISSION = "backgroundPermission";
+    private static final String ATTR_FEATURE_FLAG = "featureFlag";
 
     private static final String OBSERVE_APP_USAGE_PERMISSION =
             "android.permission.OBSERVE_APP_USAGE";
@@ -332,6 +333,11 @@ public class PermissionPolicyTest {
                     continue;
                 }
                 if (TAG_PERMISSION.equals(parser.getName())) {
+                    String featureFlag = parser.getAttributeValue(null, ATTR_FEATURE_FLAG);
+                    if (featureFlag != null) {
+                        // If the permission is flagged it should not be visible on Android 14
+                        continue;
+                    }
                     ExpectedPermissionInfo permissionInfo = new ExpectedPermissionInfo(
                             parser.getAttributeValue(null, ATTR_NAME),
                             parser.getAttributeValue(null, ATTR_PERMISSION_GROUP),
