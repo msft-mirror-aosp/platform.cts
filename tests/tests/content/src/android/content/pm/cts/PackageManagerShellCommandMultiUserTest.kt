@@ -1397,14 +1397,21 @@ class PackageManagerShellCommandMultiUserTest {
             user: UserReference
     ) {
         installPackageAsUser(baseName, user)
-        val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
-                .packageManager.getArchivedPackage(packageName)
-        assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
-        installArchivedAsUser(
-                archivedPackage,
-                PackageInstaller.STATUS_SUCCESS,
-                null,
-                user.userHandle()
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
+                            .packageManager.getArchivedPackage(packageName)
+                    assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
+                    installArchivedAsUser(
+                            archivedPackage,
+                            PackageInstaller.STATUS_SUCCESS,
+                            null,
+                            user.userHandle()
+                    )
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
         )
     }
 
