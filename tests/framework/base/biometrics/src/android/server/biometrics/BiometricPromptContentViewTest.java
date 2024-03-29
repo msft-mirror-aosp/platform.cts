@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 
@@ -284,6 +285,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @Test
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 
@@ -429,6 +432,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @Test
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 
