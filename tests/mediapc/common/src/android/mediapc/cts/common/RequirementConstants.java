@@ -49,6 +49,7 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
+    public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
 
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
@@ -114,6 +115,7 @@ public class RequirementConstants {
     public static final String CONCURRENT_SESSIONS = "concurrent_sessions";
 
     public static final String DISPLAY_DENSITY = "display_density_dpi";
+    public static final String DYNAMIC_COLOR_ASPECTS = "dynamic_color_aspects";
 
     public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
 
