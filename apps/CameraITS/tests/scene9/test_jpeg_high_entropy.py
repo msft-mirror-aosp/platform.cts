@@ -30,10 +30,10 @@ import its_session_utils
 
 _JPEG_EXTENSION = '.jpg'
 _JPEG_QUALITY_SETTING = 100  # set value fairly high
-_JPEG_SIZE_THRESH = 1.2E6  # min bytes to ensure busy scene (found empirically)
+_JPEG_MP_SIZE_SCALING = 0.085  # MP --> bytes to ensure busy scene (empirical)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
-_ZOOM_RATIO_MAX = 8  # too high zoom ratios will eventualy reduce entropy
+_ZOOM_RATIO_MAX = 4  # too high zoom ratios will eventualy reduce entropy
 _ZOOM_RATIO_MIN = 1  # low zoom ratios don't fill up FoV
 _ZOOM_RATIO_THRESH = 2  # some zoom ratio needed to fill up FoV
 
@@ -112,11 +112,17 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
       req['android.jpeg.quality'] = _JPEG_QUALITY_SETTING
+      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      logging.debug('req W: %d, H: %d',
+                    out_surface['width'], out_surface['height'])
+      jpeg_file_size_thresh = (out_surface['width'] * out_surface['height'] *
+                               _JPEG_MP_SIZE_SCALING)
+
       for zoom_ratio in zoom_ratios:
         req['android.control.zoomRatio'] = zoom_ratio
         logging.debug('zoom ratio: %.3f', zoom_ratio)
         cam.do_3a(zoom_ratio=zoom_ratio)
-        cap = cam.do_capture(req, cam.CAP_JPEG)
+        cap = cam.do_capture(req, out_surface)
 
         # Save JPEG image
         try:
@@ -125,15 +131,16 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         except PIL.UnidentifiedImageError as e:
           raise AssertionError(
               f'Cannot convert cap to JPEG for zoom: {zoom_ratio:.2f}') from e
+        logging.debug('cap size WxH: %dx%d', img.shape[1], img.shape[0])
         image_processing_utils.write_image(
             img, f'{test_name_with_log_path}_{zoom_ratio:.2f}{_JPEG_EXTENSION}')
 
       # Read JPEG files back to ensure readable encoding
       jpeg_size_max = _read_files_back_from_disk(log_path)
-      if jpeg_size_max < _JPEG_SIZE_THRESH:
+      if jpeg_size_max < jpeg_file_size_thresh:
         raise AssertionError(
             f'JPEG files are not large enough! max: {jpeg_size_max}, '
-            f'THRESH: {_JPEG_SIZE_THRESH}')
+            f'THRESH: {jpeg_file_size_thresh:.1f}')
 
 if __name__ == '__main__':
   test_runner.main()
