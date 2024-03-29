@@ -394,9 +394,18 @@ class RuntimePermissionsAppOpTrackingTest {
             val recognizerRef = AtomicReference<SpeechRecognizer>()
             var currentOperationComplete = CountDownLatch(1)
 
+            // Makes sure that all runnable for setting up temporary recognition service is done
+            // before moving on to start the recognizer.
             instrumentation.runOnMainSync {
-                val recognizer = SpeechRecognizer.createSpeechRecognizer(context,
-                        ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                instrumentation.uiAutomation
+                        .adoptShellPermissionIdentity("android.permission.MANAGE_SPEECH_RECOGNITION")
+                val recognizer = SpeechRecognizer.createOnDeviceTestingSpeechRecognizer(context)
+                recognizer.setTemporaryOnDeviceRecognizer(ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                recognizerRef.set(recognizer)
+            }
+
+            instrumentation.runOnMainSync {
+                val recognizer = recognizerRef.get()
 
                 recognizer.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {}
@@ -415,8 +424,6 @@ class RuntimePermissionsAppOpTrackingTest {
                 val recoIntent = Intent()
                 recoIntent.putExtra(OPERATION, OPERATION_INJECT_RECO_WITHOUT_ATTRIBUTION)
                 recognizer.startListening(recoIntent)
-
-                recognizerRef.set(recognizer)
             }
 
             try {
@@ -503,7 +510,11 @@ class RuntimePermissionsAppOpTrackingTest {
                         intThat(attributionChainIdMatcher))
             } finally {
                 // Take down the recognition service
-                instrumentation.runOnMainSync { recognizerRef.get().destroy() }
+                instrumentation.runOnMainSync {
+                    recognizerRef.get().setTemporaryOnDeviceRecognizer(null)
+                    recognizerRef.get().destroy()
+                    instrumentation.uiAutomation.dropShellPermissionIdentity()
+                }
             }
         }
     }
@@ -528,9 +539,18 @@ class RuntimePermissionsAppOpTrackingTest {
             val recognizerRef = AtomicReference<SpeechRecognizer>()
             var currentOperationComplete = CountDownLatch(1)
 
+            // Makes sure that all runnable for setting up temporary recognition service is done
+            // before moving on to start the recognizer.
             instrumentation.runOnMainSync {
-                val recognizer = SpeechRecognizer.createSpeechRecognizer(context,
-                        ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                instrumentation.uiAutomation
+                        .adoptShellPermissionIdentity("android.permission.MANAGE_SPEECH_RECOGNITION")
+                val recognizer = SpeechRecognizer.createOnDeviceTestingSpeechRecognizer(context)
+                recognizer.setTemporaryOnDeviceRecognizer(ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                recognizerRef.set(recognizer)
+            }
+
+            instrumentation.runOnMainSync {
+                val recognizer = recognizerRef.get()
 
                 recognizer.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {}
@@ -549,8 +569,6 @@ class RuntimePermissionsAppOpTrackingTest {
                 val recoIntent = Intent()
                 recoIntent.putExtra(OPERATION, OPERATION_MIC_RECO_WITH_ATTRIBUTION)
                 recognizer.startListening(recoIntent)
-
-                recognizerRef.set(recognizer)
             }
 
             try {
@@ -637,7 +655,11 @@ class RuntimePermissionsAppOpTrackingTest {
                         ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
             } finally {
                 // Take down the recognition service
-                instrumentation.runOnMainSync { recognizerRef.get().destroy() }
+                instrumentation.runOnMainSync {
+                    recognizerRef.get().setTemporaryOnDeviceRecognizer(null)
+                    recognizerRef.get().destroy()
+                    instrumentation.uiAutomation.dropShellPermissionIdentity()
+                }
             }
         }
     }
