@@ -143,29 +143,39 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTest
         codecDecoderBlockModelDrmtb.tearDownCrypto();
         OutputManager ref = codecDecoderBlockModelDrmtb.getOutputManager();
 
+        boolean[] boolStates = {true, false};
+        OutputManager testA = new OutputManager(ref.getSharedErrorLogs());
+        OutputManager testB = new OutputManager(ref.getSharedErrorLogs());
         mSaveToMem = true;
-        mOutputBuff = new OutputManager(ref.getSharedErrorLogs());
         MediaFormat format = setUpSource(mTestFile);
         int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
         mCodec = MediaCodec.createByCodecName(mCodecName);
         for (int[] outSizeInMs : OUT_SIZE_IN_MS) {
             configureKeysForLargeAudioBlockModelFrameMode(format, maxSampleSize, outSizeInMs[0],
                     outSizeInMs[1]);
-            mOutputBuff.reset();
-            setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][]{CLEAR_KEY_CENC});
-            configureCodec(format, true, true, false);
-            mMaxInputLimitMs = outSizeInMs[0];
-            mCodec.start();
-            mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-            doWork(Integer.MAX_VALUE);
-            queueEOS();
-            waitForAllOutputs();
-            mCodec.reset();
-            tearDownCrypto();
-            if (!ref.equalsByteOutput(mOutputBuff)) {
-                fail("Output of decoder component when fed with multiple access units in single"
-                        + " enqueue call differs from output received when each access unit is fed"
-                        + " separately. \n" + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
+            for (boolean eosType : boolStates) {
+                mOutputBuff = eosType ? testA : testB;
+                mOutputBuff.reset();
+                setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][]{CLEAR_KEY_CENC});
+                configureCodec(format, true, eosType, false);
+                mMaxInputLimitMs = outSizeInMs[0];
+                mCodec.start();
+                mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                doWork(Integer.MAX_VALUE);
+                queueEOS();
+                waitForAllOutputs();
+                mCodec.reset();
+                tearDownCrypto();
+                if (!ref.equalsByteOutput(mOutputBuff)) {
+                    fail("Output of decoder component when fed with multiple access units in single"
+                            + " enqueue call differs from output received when each access unit is"
+                            + "fed separately. \n" + mTestConfig + mTestEnv
+                            + mOutputBuff.getErrMsg());
+                }
+            }
+            if (!testA.equals(testB)) {
+                fail("Output of decoder component is not consistent across runs. \n" + mTestConfig
+                        + mTestEnv + testB.getErrMsg());
             }
         }
         mCodec.release();

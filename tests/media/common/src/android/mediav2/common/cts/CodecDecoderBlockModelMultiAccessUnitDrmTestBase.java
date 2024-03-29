@@ -87,17 +87,14 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTestBase
 
     @Override
     protected void configureCodec(MediaFormat format, boolean isAsyncUnUsed,
-            boolean signalEOSWithLastFrameUnUsed, boolean isEncoder, int flags) {
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         if (ENABLE_LOGS) {
             if (!isAsyncUnUsed) {
                 Log.d(LOG_TAG, "Ignoring synchronous mode of operation request");
             }
-            if (!signalEOSWithLastFrameUnUsed) {
-                Log.d(LOG_TAG, "Ignoring signal eos separately request");
-            }
         }
         flags |= MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL;
-        configureCodecCommon(format, true, true, isEncoder, flags);
+        configureCodecCommon(format, true, signalEOSWithLastFrame, isEncoder, flags);
         mCodec.configure(format, mSurface, mCrypto, flags);
         if (ENABLE_LOGS) {
             Log.v(LOG_TAG, "codec configured");
@@ -106,6 +103,10 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTestBase
 
     @Override
     protected void enqueueInput(int bufferIndex) {
+        if (mExtractor.getSampleSize() < 0) {
+            enqueueEOS(bufferIndex);
+            return;
+        }
         ArrayDeque<MediaCodec.BufferInfo> bufferInfos = new ArrayDeque<>();
         ArrayDeque<MediaCodec.CryptoInfo> cryptoInfos = new ArrayDeque<>();
         mLinearInputBlock.allocateBlock(mCodecName, mMaxInputSize);
@@ -151,7 +152,7 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTestBase
             if ((extractorFlags & MediaExtractor.SAMPLE_FLAG_PARTIAL_FRAME) != 0) {
                 codecFlags |= MediaCodec.BUFFER_FLAG_PARTIAL_FRAME;
             }
-            if (!mExtractor.advance()) {
+            if (!mExtractor.advance() && mSignalEOSWithLastFrame) {
                 codecFlags |= MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                 mSawInputEOS = true;
             }

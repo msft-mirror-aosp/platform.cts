@@ -318,7 +318,8 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
                     + mTestEnv + test.getErrMsg());
         }
 
-        mOutputBuff = new OutputManager(ref.getSharedErrorLogs());
+        OutputManager testA = new OutputManager(ref.getSharedErrorLogs());
+        OutputManager testB = new OutputManager(ref.getSharedErrorLogs());
         mSaveToMem = true;
         mMuxOutput = false;
         setUpSource(mActiveRawRes.mFileName);
@@ -333,17 +334,25 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
             format.setInteger(MediaFormat.KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE, maxOutputSize);
             format.setInteger(MediaFormat.KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE,
                     thresholdOutputSize);
-            configureCodec(format, true, true, true);
-            mOutputBuff.reset();
-            mInfoList.clear();
-            mCodec.start();
-            doWork(Integer.MAX_VALUE);
-            queueEOS();
-            waitForAllOutputs();
-            mCodec.reset();
-            if (!ref.equalsDequeuedOutput(mOutputBuff)) {
-                fail("Output of encoder in MultipleFrames mode differs from single access unit "
-                        + "mode.\n" + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
+            boolean[] boolStates = {true, false};
+            for (boolean eosType : boolStates) {
+                mOutputBuff = eosType ? testA : testB;
+                mOutputBuff.reset();
+                configureCodec(format, true, eosType, true);
+                mInfoList.clear();
+                mCodec.start();
+                doWork(Integer.MAX_VALUE);
+                queueEOS();
+                waitForAllOutputs();
+                mCodec.reset();
+                if (!ref.equalsDequeuedOutput(mOutputBuff)) {
+                    fail("Output of encoder in MultipleFrames mode differs from single access unit "
+                            + "mode.\n" + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
+                }
+            }
+            if (!testA.equals(testB)) {
+                fail("Output of encoder component is not consistent across runs. \n" + mTestConfig
+                        + mTestEnv + testB.getErrMsg());
             }
         }
         mCodec.release();

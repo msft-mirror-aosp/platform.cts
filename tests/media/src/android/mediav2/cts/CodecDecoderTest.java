@@ -423,7 +423,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                 CodecDecoderBlockModelTestBase cdbmtb = new CodecDecoderBlockModelTestBase(
                         mCodecName, mMediaType, null, mAllTestParams);
                 cdbmtb.decodeToMemory(mTestFile, mCodecName, test, 0,
-                        MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
+                        MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE, true, false);
                 if (!ref.equals(test)) {
                     fail("Output in block model mode is not same as output in normal mode. \n"
                             + mTestConfig + mTestEnv + test.getErrMsg());

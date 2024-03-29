@@ -55,16 +55,14 @@ public class CodecEncoderBlockModelTestBase extends CodecEncoderTestBase {
 
     @Override
     protected void configureCodec(MediaFormat format, boolean isAsyncUnUsed,
-            boolean signalEOSWithLastFrameUnUsed, boolean isEncoder) {
+            boolean signalEOSWithLastFrame, boolean isEncoder) {
         if (ENABLE_LOGS) {
             if (!isAsyncUnUsed) {
                 Log.d(LOG_TAG, "Ignoring synchronous mode of operation request");
             }
-            if (!signalEOSWithLastFrameUnUsed) {
-                Log.d(LOG_TAG, "Ignoring signal eos separately request");
-            }
         }
-        configureCodec(format, true, true, isEncoder, MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
+        configureCodec(format, true, signalEOSWithLastFrame, isEncoder,
+                MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
     }
 
     @Override
@@ -75,9 +73,29 @@ public class CodecEncoderBlockModelTestBase extends CodecEncoderTestBase {
     }
 
     @Override
+    protected void enqueueEOS(int bufferIndex) {
+        if (!mSawInputEOS) {
+            MediaCodec.QueueRequest request = mCodec.getQueueRequest(bufferIndex);
+            mLinearInputBlock.allocateBlock(mCodecName, 64);
+            request.setLinearBlock(mLinearInputBlock.getBlock(), mLinearInputBlock.getOffset(), 0);
+            request.setPresentationTimeUs(0);
+            request.setFlags(MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+            request.queue();
+            mSawInputEOS = true;
+            if (ENABLE_LOGS) {
+                Log.v(LOG_TAG, "Queued End of Stream");
+            }
+        }
+    }
+
+    @Override
     protected void enqueueInput(int bufferIndex) {
         if (mIsLoopBack && mInputBufferReadOffset >= mInputData.length) {
             mInputBufferReadOffset = 0;
+        }
+        if (mInputBufferReadOffset >= mInputData.length) {
+            enqueueEOS(bufferIndex);
+            return;
         }
         int frameSize = mActiveRawRes.mBytesPerSample * mActiveEncCfg.mChannelCount;
         int maxInputSize =
@@ -94,10 +112,12 @@ public class CodecEncoderBlockModelTestBase extends CodecEncoderTestBase {
                 size % ((long) mActiveRawRes.mBytesPerSample * mActiveEncCfg.mChannelCount));
         mLinearInputBlock.allocateBlock(mCodecName, size);
         mLinearInputBlock.getBuffer().put(mInputData, mInputBufferReadOffset, size);
-        if (mIsLoopBack ? (mInputCount + 1 >= mLoopBackFrameLimit) :
-                (mInputBufferReadOffset + size >= mInputData.length)) {
-            flags |= MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-            mSawInputEOS = true;
+        if (mSignalEOSWithLastFrame) {
+            if (mIsLoopBack ? (mInputCount + 1 >= mLoopBackFrameLimit) :
+                    (mInputBufferReadOffset + size >= mInputData.length)) {
+                flags |= MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                mSawInputEOS = true;
+            }
         }
         mInputBufferReadOffset += size;
         mNumBytesSubmitted += size;
