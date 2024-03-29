@@ -1604,9 +1604,11 @@ public class AccessibilityDisplayProxyTest {
     }
 
     private void assertVirtualDisplayActivityExistsToProxy() {
-        final List<AccessibilityWindowInfo> proxyWindows = mA11yProxy.getWindows();
-        assertThat(findWindowByTitleWithList(
-                mProxiedVirtualDisplayActivityTitle, proxyWindows)).isNotNull();
+        waitOn(mA11yProxy.mWaitObject, () -> {
+            final List<AccessibilityWindowInfo> proxyWindows = mA11yProxy.getWindows();
+            return findWindowByTitleWithList(
+                    mProxiedVirtualDisplayActivityTitle, proxyWindows) != null;
+        }, TIMEOUT_MS, "Find virtual display activity");
     }
 
     private AccessibilityKeyEventTestActivity launchProxyConcurrentActivityOnDefaultDisplay(
