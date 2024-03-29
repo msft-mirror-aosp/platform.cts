@@ -879,6 +879,7 @@ def main():
             test_not_yet_mandated = False
             test_mpc_req = ''
             perf_test_metrics = ''
+            hdr_mpc_req = ''
             content = file.read()
 
             # Find media performance class logging
@@ -892,6 +893,13 @@ def main():
                   one_line)
               if mpc_string_match:
                 test_mpc_req = one_line
+                break
+
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              gainmap_string_match = re.search('^has_gainmap:', one_line)
+              if gainmap_string_match:
+                hdr_mpc_req = one_line
                 break
 
             for one_line in lines:
@@ -939,6 +947,8 @@ def main():
             'status': return_string.strip()})
         if test_mpc_req:
           results[s][METRICS_KEY].append(test_mpc_req)
+        if hdr_mpc_req:
+          results[s][METRICS_KEY].append(hdr_mpc_req)
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if (test in _LIGHTING_CONTROL_TESTS and

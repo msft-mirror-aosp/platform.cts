@@ -201,6 +201,48 @@ public class PerformanceClassEvaluator {
         }
     }
 
+    public static class CameraUltraHdrRequirement extends Requirement {
+        private static final String TAG = CameraUltraHdrRequirement.class.getSimpleName();
+
+        private CameraUltraHdrRequirement(String id, RequiredMeasurement<?> ... reqs) {
+            super(id, reqs);
+        }
+
+        public void setFrontCameraUltraHdrSupported(boolean ultraHdrSupported) {
+            this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_ULTRA_HDR_SUPPORTED,
+                    ultraHdrSupported);
+        }
+
+        public void setRearCameraUltraHdrSupported(boolean ultraHdrSupported) {
+            this.setMeasuredValue(RequirementConstants.REAR_CAMERA_ULTRA_HDR_SUPPORTED,
+                    ultraHdrSupported);
+        }
+
+        /**
+         * [2.2.7.2/7.5/H-1-20] MUST by default output JPEG_R for the primary rear
+         * and primary front cameras in the default camera app.
+        **/
+        public static CameraUltraHdrRequirement createUltraHdrReq() {
+
+            RequiredMeasurement<Boolean> rearUltraHdrRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.REAR_CAMERA_ULTRA_HDR_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            RequiredMeasurement<Boolean> frontUltraHdrRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.FRONT_CAMERA_ULTRA_HDR_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new CameraUltraHdrRequirement(RequirementConstants.R7_5__H_1_20,
+                    rearUltraHdrRequirement, frontUltraHdrRequirement);
+        }
+    }
+
     public static class CameraLatencyRequirement extends Requirement {
         private static final String TAG = CameraTimestampSourceRequirement.class.getSimpleName();
 
@@ -2394,6 +2436,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(FaceDetectionRequirement.createFaceDetectionReq());
     }
 
+    /* Adds requirement 7.5/H-1-20 */
+    public CameraUltraHdrRequirement addR7_5__H_1_20() {
+        return this.addRequirement(CameraUltraHdrRequirement.createUltraHdrReq());
+    }
 
     public ResolutionRequirement addR7_1_1_1__H_1_1() {
         return this.<ResolutionRequirement>addRequirement(
