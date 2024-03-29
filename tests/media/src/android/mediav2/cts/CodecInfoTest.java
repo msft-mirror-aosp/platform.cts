@@ -165,6 +165,7 @@ public class CodecInfoTest {
      */
     @CddTest(requirements = {"5.1.7/C-1-2", "5.1.7/C-1-3", "5.1.7/C-4-1", "5.12/C-6-5",
             "5.12/C-7-1", "5.12/C-7-3"})
+    @VsrTest(requirements = {"VSR-4.4.011"})
     @Test
     public void testColorFormatSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
@@ -206,8 +207,9 @@ public class CodecInfoTest {
                         + " support any HDR profiles.", canHandleHdr);
             }
         } else {
-            if (FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T && BOARD_SDK_IS_AT_LEAST_T
-                    && canDisplaySupportHDRContent() && canHandleHdr) {
+            if (((FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T && BOARD_SDK_IS_AT_LEAST_T)
+                    || BOARD_SDK_IS_AT_LEAST_202404) && canDisplaySupportHDRContent()
+                    && canHandleHdr) {
                 if (MediaUtils.isTv()) {
                     // Some TV devices support HDR10 display with VO instead of GPU. In this
                     // case, skip checking P010 on TV devices.
