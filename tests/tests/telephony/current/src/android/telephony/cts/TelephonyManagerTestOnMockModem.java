@@ -251,7 +251,7 @@ public class TelephonyManagerTestOnMockModem {
     private static String getShaId(String packageName) {
         try {
             final PackageManager packageManager = getContext().getPackageManager();
-            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA1");
+            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA-256");
             final PackageInfo packageInfo = packageManager.getPackageInfo(packageName,
                     PackageManager.GET_SIGNATURES);
             for (Signature signature : packageInfo.signatures) {
@@ -907,7 +907,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -934,7 +934,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -962,7 +962,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -991,7 +991,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1020,7 +1020,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1048,7 +1048,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
