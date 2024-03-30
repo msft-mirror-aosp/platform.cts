@@ -484,10 +484,8 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
      * to support features like
      * {@link BroadcastOptions#DEFERRAL_POLICY_UNTIL_ACTIVE}.
      * <p>
-     * Even though the OS provides both a "modern" and "legacy" implementation
-     * that can be temporarily switched via a feature flag to aid debugging and
-     * triage, all devices must ship with the "modern" stack enabled to match
-     * documented developer expectations.
+     * In order to support these features, all devices must ship with the "modern" stack enabled
+     * to match documented developer expectations.
      */
     @CddTest(requirements = {"3.5/C-0-2"})
     @Test
