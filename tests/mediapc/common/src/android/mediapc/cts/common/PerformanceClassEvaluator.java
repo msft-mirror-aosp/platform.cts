@@ -2013,6 +2013,14 @@ public class PerformanceClassEvaluator {
             this.setMeasuredValue(RequirementConstants.AV1_ENC_BITRATE, bitrate);
         }
 
+        public void setHlgEditingSupportedReq(boolean HlgEditingSupported) {
+            this.setMeasuredValue(RequirementConstants.HLG_EDITING, HlgEditingSupported);
+        }
+
+        public void setPortraitResolutionSupportreq(boolean isPortraitSupported) {
+            this.setMeasuredValue(RequirementConstants.PORTRAIT_RESOLUTION, isPortraitSupported);
+        }
+
         public void setColorFormatSupportReq(boolean colorFormatSupported) {
             this.setMeasuredValue(RequirementConstants.RGBA_1010102_COLOR_FORMAT_REQ,
                     colorFormatSupported);
@@ -2120,6 +2128,22 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [5.1/H-1-20] MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+         * encoders present on the device at 4K resolution or the largest Camera-supported
+         * resolution, whichever is less.
+         */
+        public static VideoCodecRequirement createR5_1__H_1_20() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.HLG_EDITING)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_20, requirement);
+        }
+
+        /**
          * [5.1/H-1-21] MUST support FEATURE_DynamicColorAspects for all hardware video decoders
          *  (AVC, HEVC, VP9, AV1 or later).
          */
@@ -2132,6 +2156,22 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_21, requirement);
+        }
+
+        /**
+         * [5.12/H-1-22] MUST support both landscape and portrait resolution for all hardware
+         * codecs. AV1 codecs are limited to only 1080p resolution while others should support
+         * 4k or camera preferred resolution (whichever is less)
+         */
+        public static VideoCodecRequirement createR5_1__H_1_22() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PORTRAIT_RESOLUTION)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_22, requirement);
         }
 
         /**
@@ -2347,9 +2387,19 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19());
     }
 
+    /* Adds requirement 5.1/H-1-20 */
+    public VideoCodecRequirement addR5_1__H_1_20() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_20());
+    }
+
     /* Adds requirement 5.1/H-1-21 */
     public VideoCodecRequirement addR5_1__H_1_21() {
         return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_21());
+    }
+
+    /* Adds requirement 5.1/H-1-22 */
+    public VideoCodecRequirement addR5_1__H_1_22() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_22());
     }
 
     public FrameDropRequirement addR5_3__H_1_1_R() {
