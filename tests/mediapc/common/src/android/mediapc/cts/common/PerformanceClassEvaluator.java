@@ -82,19 +82,21 @@ public class PerformanceClassEvaluator {
                     .<Double>builder()
                     .setId(RequirementConstants.API_NATIVE_LATENCY)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 80.0)
                     .build();
             RequiredMeasurement<Double> apiJavaLatency = RequiredMeasurement
                     .<Double>builder()
                     .setId(RequirementConstants.API_JAVA_LATENCY)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 80.0)
                     .build();
 
             return new AudioTap2ToneLatencyRequirement(
@@ -127,6 +129,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new Camera240FpsRequirement(RequirementConstants.R7_5__H_1_9, requirement);
@@ -174,12 +177,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA2_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontCamera2NightRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Boolean> rearCameraXNightRequirement = RequiredMeasurement
@@ -187,12 +192,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERAX_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontCameraXNightRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERAX_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new CameraExtensionRequirement(RequirementConstants.R7_5__H_1_15,
@@ -272,6 +279,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1000.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1000.0f)
                     .build();
             RequiredMeasurement<Float> frontJpegLatency = RequiredMeasurement
                     .<Float>builder()
@@ -281,6 +289,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1000.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1000.0f)
                     .build();
 
             return new CameraLatencyRequirement(RequirementConstants.R7_5__H_1_5,
@@ -301,6 +310,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 500.0f)
                     .build();
             RequiredMeasurement<Float> frontLaunchLatency = RequiredMeasurement
                     .<Float>builder()
@@ -310,6 +320,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 500.0f)
                     .build();
 
             return new CameraLatencyRequirement(RequirementConstants.R7_5__H_1_6,
@@ -341,6 +352,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new CameraRawRequirement(RequirementConstants.R7_5__H_1_8, requirement);
@@ -378,6 +390,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TIMESTAMP_REALTIME)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TIMESTAMP_REALTIME)
                     .build();
             RequiredMeasurement<Integer> frontTimestampSource = RequiredMeasurement
                     .<Integer>builder()
@@ -387,6 +400,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TIMESTAMP_REALTIME)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TIMESTAMP_REALTIME)
                     .build();
 
             return new CameraTimestampSourceRequirement(RequirementConstants.R7_5__H_1_4,
@@ -1052,6 +1066,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new ConcurrentRearFrontRequirement(RequirementConstants.R7_5__H_1_11,
@@ -1134,12 +1149,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA_DYNAMIC_TENBITS_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontDynamicRangeTenBitsRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             return new DynamicRangeTenBitsRequirement(RequirementConstants.R7_5__H_1_16,
                     rearDynamicRangeTenBitsRequirement, frontDynamicRangeTenBitsRequirement);
@@ -1205,12 +1222,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA_FACE_DETECTION_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontFaceDetectionRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA_FACE_DETECTION_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             return new FaceDetectionRequirement(RequirementConstants.R7_5__H_1_17,
                     rearFaceDetectionRequirement, frontFaceDetectionRequirement);
@@ -1243,6 +1262,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 125.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 150.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 150.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_1, filesystem_io_rate);
@@ -1270,6 +1290,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 10.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 10.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 10.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_2, filesystem_io_rate);
@@ -1299,6 +1320,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 200.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 250.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 250.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 250.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_3, filesystem_io_rate);
@@ -1327,6 +1349,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 25.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 100.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_4, filesystem_io_rate);
@@ -1593,6 +1616,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new LogicalMultiCameraRequirement(RequirementConstants.R7_5__H_1_13,
@@ -1603,6 +1627,12 @@ public class PerformanceClassEvaluator {
     // used for requirements [7.6.1/H-1-1], [7.6.1/H-2-1]
     public static class MemoryRequirement extends Requirement {
         private static final String TAG = MemoryRequirement.class.getSimpleName();
+
+        // Media performance requires 6 GB minimum RAM, but keeping the following to
+        // 5 GB as activityManager.getMemoryInfo() typically returns around 5.4 GB on a 6 GB device,
+        // so these values are a bit lower than the required value stated on the Android CDD.
+        private static final long RS_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
+        private static final long TUV_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_T_MB;
 
         private MemoryRequirement(String id, RequiredMeasurement<?> ... reqs) {
             super(id, reqs);
@@ -1620,10 +1650,7 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6 GB minimum RAM, but keeping the following to
-                    // 5 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.R, 5L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.R, RS_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_1_1, physical_memory);
@@ -1637,13 +1664,10 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6/8 GB minimum RAM, but keeping the following to
-                    // 5/7 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.S, 5L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 7L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.S, RS_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TUV_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_2_1, physical_memory);
@@ -1674,6 +1698,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new PreviewStabilizationRequirement(RequirementConstants.R7_5__H_1_12,
@@ -1776,6 +1801,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Long> cameraResolution = RequiredMeasurement
@@ -1791,6 +1817,9 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(
                             Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                             MIN_FRONT_SENSOR_S_PERF_CLASS_RESOLUTION)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                            MIN_FRONT_SENSOR_S_PERF_CLASS_RESOLUTION)
                     .build();
 
             RequiredMeasurement<Boolean> videoSizeReqSatisfied = RequiredMeasurement
@@ -1801,6 +1830,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Double> videoFps = RequiredMeasurement
@@ -1811,6 +1841,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 29.9)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 29.9)
                     .build();
 
             return new PrimaryCameraRequirement(RequirementConstants.R7_5__H_1_2,
@@ -1964,6 +1995,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
                     .<Boolean>builder()
@@ -1971,6 +2003,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new StreamUseCaseRequirement(RequirementConstants.R7_5__H_1_14,
@@ -2220,6 +2253,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
                     .<Boolean>builder()
@@ -2227,6 +2261,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new UltraWideZoomRatioRequirement(RequirementConstants.R7_5__H_1_10,
