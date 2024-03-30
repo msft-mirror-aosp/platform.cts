@@ -201,6 +201,9 @@ public class ItsService extends Service implements SensorEventListener {
     // Performance class R version number
     private static final int PERFORMANCE_CLASS_R = Build.VERSION_CODES.R;
 
+    // Performance class VIC version number
+    private static final int PERFORMANCE_CLASS_VIC = Build.VERSION_CODES.VANILLA_ICE_CREAM;
+
     public static final int SERVERPORT = 6000;
 
     private static final float EPISILON = 0.05f;
@@ -1019,6 +1022,8 @@ public class ItsService extends Service implements SensorEventListener {
                     doCheckPrimaryCamera(cameraId);
                 } else if ("isPerformanceClass".equals(cmdObj.getString("cmdName"))) {
                     doCheckPerformanceClass();
+                } else if ("isVicPerformanceClass".equals(cmdObj.getString("cmdName"))) {
+                    doCheckVicPerformanceClass();
                 } else if ("measureCameraLaunchMs".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doMeasureCameraLaunchMs(cameraId);
@@ -1856,6 +1861,13 @@ public class ItsService extends Service implements SensorEventListener {
         boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_R);
 
         mSocketRunnableObj.sendResponse("performanceClass",
+                isPerfClass ? "true" : "false");
+    }
+
+    private void doCheckVicPerformanceClass() throws ItsException {
+        boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_VIC);
+
+        mSocketRunnableObj.sendResponse("vicPerformanceClass",
                 isPerfClass ? "true" : "false");
     }
 

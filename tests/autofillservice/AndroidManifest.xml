@@ -45,7 +45,8 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".activities.LoginActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdge">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
                                          this app during CTS development... -->

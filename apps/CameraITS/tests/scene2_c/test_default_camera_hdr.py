@@ -26,7 +26,14 @@ import ui_interaction_utils
 
 
 class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
-  """Checks if the default camera capture is Ultra HDR."""
+  """Checks if the default camera capture is Ultra HDR or not.
+
+  Test default camera capture is Ultra HDR for VIC performance class as
+  specified in CDD.
+
+  [2.2.7.2/7.5/H-1-20] MUST by default output JPEG_R for the primary rear
+  and primary front cameras in the default camera app.
+  """
 
   def test_default_camera_launch(self):
     with its_session_utils.ItsSession(
@@ -62,11 +69,16 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       # Analyze the captured image
       gainmap_present = cam.check_gain_map_present(device_img_path)
       logging.debug('gainmap_present: %s', gainmap_present)
+
       # Log has_gainmap so that the corresponding MPC level can be written
       # to report log. Text must match HAS_GAINMAP_PATTERN in
       # ItsTestActivity.java.
       # Note: Do not change from print to logging.
       print(f'has_gainmap:{gainmap_present}')
+
+      # Assert gainmap_present if device claims performance class
+      if (cam.is_vic_performance_class and not gainmap_present):
+        raise AssertionError(f'has_gainmap: {gainmap_present}')
 
 if __name__ == '__main__':
   test_runner.main()

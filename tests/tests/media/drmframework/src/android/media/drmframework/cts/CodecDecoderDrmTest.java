@@ -86,7 +86,7 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
         final boolean needAudio = true;
         final boolean needVideo = false;
         final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_stereo_48kHz_192kbps_aac_cenc.m4a"},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_stereo_48kHz_192kbps_aac_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_stereo_48kHz_flac_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_stereo_48kHz_192kbps_opus_cenc.mp4"},

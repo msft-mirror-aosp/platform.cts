@@ -29,6 +29,7 @@ import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Range;
@@ -89,6 +90,9 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
         }
     }
 
+    private final MediaAndColorSpaceAttrib mIncorrectColorSpaceAttrib =
+            new MediaAndColorSpaceAttrib(null, MediaFormat.COLOR_RANGE_FULL,
+                    MediaFormat.COLOR_STANDARD_BT601_NTSC, MediaFormat.COLOR_TRANSFER_LINEAR);
     private final ArrayList<MediaAndColorSpaceAttrib> mMediaAndColorSpaceAttribList;
     private final HashMap<Range<Integer>, MediaAndColorSpaceAttrib> mRangeMediaColorSpaceMap =
             new HashMap<>();
@@ -110,10 +114,21 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
                                 MediaFormat.COLOR_STANDARD_BT709,
                                 MediaFormat.COLOR_TRANSFER_SDR_VIDEO),
                         new MediaAndColorSpaceAttrib(
-                                "bbb_qcif_color_bt709_lr_srgb_avc.mp4",
+                                "bbb_qcif_color_bt601_625_fr_gamma22_avc.mp4",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT601_PAL,
+                                /* MediaFormat.COLOR_TRANSFER_GAMMA2_2 */ 4)))},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2084_bt2020Ncl_lr_avc.mp4",
                                 MediaFormat.COLOR_RANGE_LIMITED,
-                                MediaFormat.COLOR_STANDARD_BT709,
-                                /* MediaFormat.COLOR_TRANSFER_SRGB */ 2)))},
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_ST2084),
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_avc.mp4",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_HLG)))},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, new ArrayList<>(Arrays.asList(
                         new MediaAndColorSpaceAttrib(
                                 "bbb_qcif_color_bt709_lr_sdr_hevc.mp4",
@@ -125,6 +140,17 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
                                 MediaFormat.COLOR_RANGE_FULL,
                                 MediaFormat.COLOR_STANDARD_BT601_PAL,
                                 /* MediaFormat.COLOR_TRANSFER_GAMMA2_2 */ 4)))},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2084_bt2020Ncl_lr_hevc.mp4",
+                                MediaFormat.COLOR_RANGE_LIMITED,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_ST2084),
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_hevc.mp4",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_HLG)))},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, new ArrayList<>(Arrays.asList(
                         new MediaAndColorSpaceAttrib(
                                 "bbb_qcif_color_bt709_lr_sdr_av1.mp4",
@@ -136,6 +162,50 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
                                 MediaFormat.COLOR_RANGE_FULL,
                                 MediaFormat.COLOR_STANDARD_BT601_PAL,
                                 /* MediaFormat.COLOR_TRANSFER_GAMMA2_2 */ 4)))},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2084_bt2020Ncl_lr_av1.mp4",
+                                MediaFormat.COLOR_RANGE_LIMITED,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_ST2084),
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_av1.mp4",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_HLG)))},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bbb_qcif_color_bt709_lr_sdr_vp8.webm",
+                                MediaFormat.COLOR_RANGE_LIMITED,
+                                MediaFormat.COLOR_STANDARD_BT709,
+                                MediaFormat.COLOR_TRANSFER_SDR_VIDEO),
+                        new MediaAndColorSpaceAttrib(
+                                "bbb_qcif_color_bt601_625_fr_gamma22_vp8.mkv",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT601_PAL,
+                                /* MediaFormat.COLOR_TRANSFER_GAMMA2_2 */ 4)))},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bbb_qcif_color_bt709_lr_sdr_vp9.webm",
+                                MediaFormat.COLOR_RANGE_LIMITED,
+                                MediaFormat.COLOR_STANDARD_BT709,
+                                MediaFormat.COLOR_TRANSFER_SDR_VIDEO),
+                        new MediaAndColorSpaceAttrib(
+                                "bbb_qcif_color_bt601_625_fr_gamma22_vp9.mkv",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT601_PAL,
+                                /* MediaFormat.COLOR_TRANSFER_GAMMA2_2 */ 4)))},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, new ArrayList<>(Arrays.asList(
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2084_bt2020Ncl_lr_vp9.mkv",
+                                MediaFormat.COLOR_RANGE_LIMITED,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_ST2084),
+                        new MediaAndColorSpaceAttrib(
+                                "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_vp9.mkv",
+                                MediaFormat.COLOR_RANGE_FULL,
+                                MediaFormat.COLOR_STANDARD_BT2020,
+                                MediaFormat.COLOR_TRANSFER_HLG)))},
         });
         return CodecTestBase.prepareParamList(exhaustiveArgsList, false, false, true, false);
     }
@@ -203,6 +273,31 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
         buffer.clear();
         buffer.position(offset);
         return format;
+    }
+
+    @Override
+    protected void enqueueInput(int bufferIndex, ByteBuffer buffer, MediaCodec.BufferInfo info) {
+        for (Range range : mRangeMediaColorSpaceMap.keySet()) {
+            if (mInputCount == (int) range.getLower()) {
+                final Bundle colorAspectUpdate = new Bundle();
+                MediaAndColorSpaceAttrib mediaAndColorSpaceAttrib;
+                if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)
+                        || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8)) {
+                    mediaAndColorSpaceAttrib = mRangeMediaColorSpaceMap.get(range);
+                } else {
+                    mediaAndColorSpaceAttrib = mIncorrectColorSpaceAttrib;
+                }
+                colorAspectUpdate.putInt(MediaFormat.KEY_COLOR_RANGE,
+                        mediaAndColorSpaceAttrib.mColorRange);
+                colorAspectUpdate.putInt(MediaFormat.KEY_COLOR_STANDARD,
+                        mediaAndColorSpaceAttrib.mColorStandard);
+                colorAspectUpdate.putInt(MediaFormat.KEY_COLOR_TRANSFER,
+                        mediaAndColorSpaceAttrib.mColorTransfer);
+                mCodec.setParameters(colorAspectUpdate);
+                break;
+            }
+        }
+        super.enqueueInput(bufferIndex, buffer, info);
     }
 
     @Override

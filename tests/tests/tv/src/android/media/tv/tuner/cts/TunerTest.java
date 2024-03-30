@@ -86,6 +86,7 @@ import android.media.tv.tuner.frontend.DtmbFrontendCapabilities;
 import android.media.tv.tuner.frontend.DtmbFrontendSettings;
 import android.media.tv.tuner.frontend.DvbcFrontendCapabilities;
 import android.media.tv.tuner.frontend.DvbcFrontendSettings;
+import android.media.tv.tuner.frontend.DvbsCodeRate;
 import android.media.tv.tuner.frontend.DvbsFrontendCapabilities;
 import android.media.tv.tuner.frontend.DvbsFrontendSettings;
 import android.media.tv.tuner.frontend.DvbtFrontendCapabilities;
@@ -3309,9 +3310,12 @@ public class TunerTest {
                             DvbcFrontendSettings
                                     .builder()
                                     .setFrequencyLong(490000000)
+                                    .setBandwidth(DvbcFrontendSettings.BANDWIDTH_8MHZ)
                                     .setModulation(modulation)
                                     .setInnerFec(fec)
                                     .setAnnex(annex)
+                                    .setSpectralInversion(
+                                            FrontendSettings.FRONTEND_SPECTRAL_INVERSION_NORMAL)
                                     .build();
                     settings.setEndFrequencyLong(maxFreq);
                     return settings;
@@ -3320,6 +3324,11 @@ public class TunerTest {
                     DvbsFrontendCapabilities dvbsCaps = (DvbsFrontendCapabilities) caps;
                     int modulation = getFirstCapable(dvbsCaps.getModulationCapability());
                     int standard = getFirstCapable(dvbsCaps.getStandardCapability());
+                    long innerFec = getFirstCapable(dvbsCaps.getInnerFecCapability());
+                    DvbsCodeRate codeRate = DvbsCodeRate
+                            .builder()
+                            .setInnerFec(innerFec)
+                            .build();
                     int symbolRate = sTunerCtsConfiguration.getDvbsCapability()
                             .getTargetSymbolRate().intValueExact();
                     DvbsFrontendSettings settings =
@@ -3327,6 +3336,8 @@ public class TunerTest {
                                     .builder()
                                     .setFrequencyLong(950000000) //950Mhz
                                     .setModulation(modulation)
+                                    .setCodeRate(codeRate)
+                                    .setRolloff(DvbsFrontendSettings.ROLLOFF_0_20)
                                     .setStandard(standard)
                                     .setSymbolRate(symbolRate)
                                     .build();
@@ -3348,6 +3359,7 @@ public class TunerTest {
                             .setBandwidth(bandwidth)
                             .setConstellation(constellation)
                             .setHierarchy(hierarchy)
+                            .setHighPriority(true)
                             .setHighPriorityCodeRate(codeRate)
                             .setLowPriorityCodeRate(codeRate)
                             .setGuardInterval(guardInterval)
