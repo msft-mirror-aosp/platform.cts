@@ -2223,6 +2223,18 @@ class ItsSession(object):
       raise error_util.CameraItsError('Failed to query performance class')
     return data[_STR_VALUE_STR] == 'true'
 
+  def is_vic_performance_class(self):
+    """Return whether the mobile device is VIC performance class device.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isVicPerformanceClass'
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'vicPerformanceClass':
+      raise error_util.CameraItsError('Failed to query performance class')
+    return data[_STR_VALUE_STR] == 'true'
+
   def measure_camera_launch_ms(self):
     """Measure camera launch latency in millisecond, from open to first frame.
 

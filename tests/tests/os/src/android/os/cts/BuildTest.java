@@ -84,6 +84,7 @@ public class BuildTest {
      * Verify that the CPU ABI fields on device match the permitted ABIs defined by CDD.
      */
     @Test
+    @CddTest(requirements = {"3.3.1/C-0-6"})
     public void testCpuAbi_valuesMatchPermitted() throws Exception {
         for (String abi : Build.SUPPORTED_ABIS) {
             if (abi.endsWith("-hwasan")) {
