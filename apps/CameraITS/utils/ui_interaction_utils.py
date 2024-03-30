@@ -23,7 +23,7 @@ import its_device_utils
 
 _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
                      'ACCESS_COARSE_LOCATION', 'WRITE_EXTERNAL_STORAGE',
-                     'READ_EXTERNAL_STORAGE')
+                     'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE')
 
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
