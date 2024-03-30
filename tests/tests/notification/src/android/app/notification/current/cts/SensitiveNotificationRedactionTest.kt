@@ -58,6 +58,7 @@ import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -377,6 +378,10 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldRedact() {
         assumeFlagEnabled()
+        assertTrue(
+            "Expected a notification assistant to be present",
+            mPreviousEnabledAssistant != null
+        )
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
         mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
         // We just re-enabled the NAS. send one notification in order to start its process
@@ -438,6 +443,10 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldNotRedact() {
         assumeFlagEnabled()
+        assertTrue(
+            "Expected a notification assistant to be present",
+            mPreviousEnabledAssistant != null
+        )
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
         mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
         // We just re-enabled the NAS. send one notification in order to start its process

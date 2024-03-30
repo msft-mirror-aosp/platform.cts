@@ -40,9 +40,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class calculates the maximum number of concurrent decode sessions that it can
@@ -278,12 +275,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
                 testList.add(new Decode(mSecondPair.first, testFile, mSecondPair.second,
                         mIsAsync, isSecure));
             }
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            achievedFrameRate = invokeWithThread(maxInstances, testList);
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);

@@ -21,10 +21,10 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assertValidSplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotVisible;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
 import android.app.Activity;
@@ -34,6 +34,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
+import android.support.test.uiautomator.UiDevice;
 import android.util.Pair;
 import android.util.Size;
 
@@ -107,12 +108,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             // Shrink the display by 10% to make the activities stacked
             mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
                     (int) (originalDisplaySize.getHeight() * 0.9)));
+            UiDevice.getInstance(mInstrumentation).waitForIdle();
             waitAndAssertResumedAndFillsTask(secondaryActivity);
             waitAndAssertNotVisible(primaryActivity);
 
             // Return the display to its original size and verify that the activities are split
             mReportedDisplayMetrics.setSize(originalDisplaySize);
-            mInstrumentation.waitForIdleSync();
+            UiDevice.getInstance(mInstrumentation).waitForIdle();
             assertValidSplit(primaryActivity, secondaryActivity, splitPairRule);
         }
     }

@@ -523,3 +523,15 @@ android_test {
     ],
     v4_signature: true,
 }
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldMimeGroup",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src_mime_group/**/*.java"],
+    manifest: "AndroidManifestMimeGroup.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}

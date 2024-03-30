@@ -31,6 +31,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.cts.ActivityManagerFgsBgStartTest.toggleBgFgsTypeStartPermissionEnforcement;
 import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
 import static android.app.stubs.LocalForegroundServiceSticky.ACTION_RESTART_FGS_STICKY_RESULT;
+import static android.content.ContentResolver.SCHEME_CONTENT;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -55,6 +56,7 @@ import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundServiceLocation;
 import android.app.stubs.LocalForegroundServiceSticky;
 import android.app.stubs.ScreenOnActivity;
+import android.app.stubs.TestProvider;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -62,6 +64,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -104,6 +107,7 @@ public class ActivityManagerProcessStateTest {
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
     private static final String PACKAGE_NAME_APP2 = "com.android.app2";
     private static final String PACKAGE_NAME_APP3 = "com.android.app3";
+    private static final String PACKAGE_NAME_PROVIDER_APP = "com.android.app.cts.provider";
 
     private static final String[] PACKAGE_NAMES = {
             PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, PACKAGE_NAME_APP3
@@ -2553,6 +2557,145 @@ public class ActivityManagerProcessStateTest {
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     mAppInfo[0].packageName, mAppInfo[1].packageName, 0, null);
             shutdownWatchers();
+        }
+    }
+
+    @Test
+    public void testProcessDeathBindings() throws Exception {
+        ApplicationInfo clientAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner clientWatcher = new WatchUidRunner(mInstrumentation, clientAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo serviceAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP2, 0);
+        WatchUidRunner serviceWatcher = new WatchUidRunner(mInstrumentation, serviceAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo providerAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_PROVIDER_APP, 0);
+        WatchUidRunner providerWatcher = new WatchUidRunner(mInstrumentation, providerAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+        final Uri testProviderUri = new Uri.Builder()
+                .scheme(SCHEME_CONTENT)
+                .authority(TestProvider.AUTHORITY)
+                .build();
+        final Bundle providerUriBundle = new Bundle();
+        providerUriBundle.putParcelable(CommandReceiver.EXTRA_URI, testProviderUri);
+
+        try {
+            // Bring client app to TOP by starting an activity.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            clientWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+            // Bind client to service
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Bind client to provider
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Crash client
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "am crash " + clientAppInfo.packageName);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_CACHED_EMPTY);
+
+        } finally {
+            // Clean up: unbind services to avoid from interferences with other tests
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+
+            clientWatcher.finish();
+            serviceWatcher.finish();
+            providerWatcher.finish();
+        }
+    }
+
+    @Test
+    public void testProcessDeathBindings_anotherClient() throws Exception {
+        ApplicationInfo clientAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner clientWatcher = new WatchUidRunner(mInstrumentation, clientAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo serviceAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP2, 0);
+        WatchUidRunner serviceWatcher = new WatchUidRunner(mInstrumentation, serviceAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo providerAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_PROVIDER_APP, 0);
+        WatchUidRunner providerWatcher = new WatchUidRunner(mInstrumentation, providerAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+        final Uri testProviderUri = new Uri.Builder()
+                .scheme(SCHEME_CONTENT)
+                .authority(TestProvider.AUTHORITY)
+                .build();
+        final Bundle providerUriBundle = new Bundle();
+        providerUriBundle.putParcelable(CommandReceiver.EXTRA_URI, testProviderUri);
+
+        try {
+            // Start a FGS and bind to service and provider.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_BOUND_FG_SERVICE);
+
+            // Bring client app to TOP by starting an activity.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            clientWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+            // Bind client to service
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Bind client to provider
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Crash client
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "am crash " + clientAppInfo.packageName);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_BOUND_FG_SERVICE);
+
+        } finally {
+            // Clean up: unbind services to avoid from interferences with other tests
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, providerUriBundle);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+
+            clientWatcher.finish();
+            serviceWatcher.finish();
+            providerWatcher.finish();
         }
     }
 

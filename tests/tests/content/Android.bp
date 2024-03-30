@@ -218,6 +218,7 @@ android_test {
         ":HelloWorld5DifferentSigner",
         ":HelloWorld5Profileable",
         ":HelloWorld7",
+        ":HelloWorldMimeGroup",
         ":HelloWorldNoAppStorage",
         ":HelloWorldResHardening",
         ":HelloWorldSettings",

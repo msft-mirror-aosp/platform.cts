@@ -402,9 +402,6 @@ public class ActivityEmbeddingUtil {
                                             boolean shouldWaitForResume) {
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         final ComponentName activityName = activity.getComponentName();
-        // Wait for display idle before getting the task bounds since the display may be still
-        // resizing.
-        wmState.waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
         if (shouldWaitForResume) {
             wmState.waitAndAssertActivityState(activityName, STATE_RESUMED);
         } else {

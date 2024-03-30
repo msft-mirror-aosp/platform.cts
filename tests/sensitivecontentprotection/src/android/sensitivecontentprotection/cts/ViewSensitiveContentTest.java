@@ -20,10 +20,14 @@ import static android.view.flags.Flags.FLAG_SENSITIVE_CONTENT_APP_PROTECTION;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Activity;
 import android.app.UiAutomation;
+import android.content.Context;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -32,6 +36,7 @@ import android.view.cts.surfacevalidator.BitmapPixelChecker;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,8 +56,19 @@ public class ViewSensitiveContentTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static boolean isHeadlessSystemUser(Context context) {
+        return UserManager.isHeadlessSystemUserMode()
+                && context.getSystemService(UserManager.class).isSystemUser();
+    }
+
     @Before
     public void setup() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        assumeFalse("Device is in headless system user mode. Test requires screenshots"
+                + "which aren't supported in headless",
+                isHeadlessSystemUser(context));
+
         startMediaProjection();
     }
 

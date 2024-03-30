@@ -17,6 +17,7 @@
 package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1Level51;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
@@ -39,8 +40,10 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaFormat;
+import android.media.codec.Flags;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Range;
 
@@ -257,6 +260,40 @@ public class VideoCodecRequirementsTest {
         rAV1EncoderReq.setAv1EncResolution(height);
         rAV1EncoderReq.setAv1EncFps(fps);
         rAV1EncoderReq.setAv1EncBitrate(1);
+        pce.submitAndCheck();
+    }
+
+    /**
+     * [5.1/H-1-21] MUST support FEATURE_DynamicColorAspects for all hardware video decoders
+     *  (AVC, HEVC, VP9, AV1 or later)
+     */
+    @SmallTest
+    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_COLOR_ASPECTS)
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
+    @CddTest(requirement = "5.1/H-1-21")
+    public void testDynamicColorAspectFeature() {
+        final String[] mediaTypes =
+                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                 MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
+
+        boolean isSupported = true;
+        for (String mediaType : mediaTypes) {
+            isSupported = selectHardwareCodecs(mediaType, null, null, false).stream()
+                    .allMatch(decoder -> {
+                        CodecCapabilities caps =
+                                getCodecInfo(decoder).getCapabilitiesForType(mediaType);
+                        return caps != null && caps.isFeatureSupported(FEATURE_DynamicColorAspects);
+                    });
+            if (!isSupported) {
+                break;
+            }
+        }
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator.VideoCodecRequirement DynamicColorAspectsReq =
+                pce.addR5_1__H_1_21();
+        DynamicColorAspectsReq.setDynamicColorAspectsSupportReq(isSupported);
+
         pce.submitAndCheck();
     }
 

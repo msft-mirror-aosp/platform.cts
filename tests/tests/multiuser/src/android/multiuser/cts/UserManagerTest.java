@@ -1109,7 +1109,9 @@ public final class UserManagerTest {
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
-        final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
+        UserReference privateProfile = sDeviceState.privateProfile();
+        final UserHandle profileHandle = privateProfile.userHandle();
+        privateProfile.setSetupComplete(true);
         presetQuietModeStatus(true, profileHandle);
         assertThat(mUserManager.requestQuietModeEnabled(false, profileHandle))
                 .isFalse();

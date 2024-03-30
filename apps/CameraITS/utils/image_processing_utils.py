@@ -439,7 +439,8 @@ def convert_capture_to_planes(cap, props=None):
   elif cap['format'] in ('raw', 'rawQuadBayer'):
     assert_props_is_not_none(props)
     is_quad_bayer = 'QuadBayer' in cap['format']
-    white_level = float(props['android.sensor.info.whiteLevel'])
+    white_level = get_white_level(props, cap['metadata'])
+    logging.debug('dynamic white level: %.2f', white_level)
     img = numpy.ndarray(
         shape=(h * w,), dtype='<u2', buffer=cap['data'][0:w * h * 2])
     img = img.astype(numpy.float32).reshape(h, w) / white_level
@@ -512,7 +513,7 @@ def convert_capture_to_planes(cap, props=None):
   ):
     assert_props_is_not_none(props)
     is_quad_bayer = 'QuadBayer' in cap['format']
-    white_level = float(props['android.sensor.info.whiteLevel'])
+    white_level = get_white_level(props, cap['metadata'])
     if is_quad_bayer:
       num_channels = noise_model_constants.NUM_QUAD_BAYER_CHANNELS
     else:
@@ -592,13 +593,15 @@ def convert_raw_to_rgb_image(r_plane, gr_plane, gb_plane, b_plane, props,
   """
   # Values required for the RAW to RGB conversion.
   assert_props_is_not_none(props)
-  white_level = float(props['android.sensor.info.whiteLevel'])
+  white_level = get_white_level(props, cap_res)
+  logging.debug('dynamic white level: %.2f', white_level)
   gains = cap_res['android.colorCorrection.gains']
   ccm = cap_res['android.colorCorrection.transform']
 
   # Reorder black levels and gains to R,Gr,Gb,B, to match the order
   # of the planes.
   black_levels = get_black_levels(props, cap_res, is_quad_bayer=False)
+  logging.debug('dynamic black levels: %s', black_levels)
   gains = get_gains_in_canonical_order(props, gains)
 
   # Convert CCM from rational to float, as numpy arrays.
@@ -732,6 +735,28 @@ def get_gains_in_canonical_order(props, gains):
     return [gains[0], gains[2], gains[1], gains[3]]
   else:
     raise error_util.CameraItsError('Not supported')
+
+
+def get_white_level(props, cap_metadata=None):
+  """Gets white level to use for a given capture.
+
+  Uses a dynamic value from the capture result if available, else falls back
+  to the static global value in the camera characteristics.
+
+  Args:
+    props: The camera properties object.
+    cap_metadata: A capture results metadata object.
+
+  Returns:
+    Float white level value.
+  """
+  if (cap_metadata is not None and
+      'android.sensor.dynamicWhiteLevel' in cap_metadata and
+      cap_metadata['android.sensor.dynamicWhiteLevel'] is not None):
+    white_level = cap_metadata['android.sensor.dynamicWhiteLevel']
+  else:
+    white_level = props['android.sensor.info.whiteLevel']
+  return float(white_level)
 
 
 def get_black_levels(props, cap=None, is_quad_bayer=False):

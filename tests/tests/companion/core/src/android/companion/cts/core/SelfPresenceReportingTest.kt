@@ -205,10 +205,10 @@ class SelfPresenceReportingTest : CoreTestBase() {
     fun test_notifyAppears_from_onAssociationCreated() {
         // Create a self-managed association and call notifyDeviceAppeared() right from the
         // Callback.onAssociationCreated()
-        val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                cdm.notifyDeviceAppeared(it.id)
-            }
+        val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
         }
 
         // Avoid race condition where onDeviceDisappeared() is sometimes processed first

@@ -77,19 +77,12 @@ public class MainActivity extends AppCompatActivity {
   }
 
   /**
-   * Prepare the player and play the list
-   */
-  public void run() {
-    mPlayer.prepare();
-    mPlayer.play();
-  }
-
-  /**
-   * Resume the player.
+   * Prepare and play the player.
    */
   @Override
-  protected void onResume() {
-    super.onResume();
+  protected void onStart() {
+    super.onStart();
+    mPlayer.prepare();
     mPlayer.play();
   }
 
@@ -98,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
    */
   @Override
   protected void onStop() {
+    mPlayer.stop();
     super.onStop();
-    mPlayer.pause();
   }
 
   /**

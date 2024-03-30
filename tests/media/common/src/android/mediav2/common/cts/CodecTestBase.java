@@ -17,6 +17,7 @@
 package android.mediav2.common.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
 
 import static org.junit.Assert.assertEquals;
@@ -125,6 +126,8 @@ public abstract class CodecTestBase {
                 || ApiLevelUtil.codenameEquals("VanillaIceCream");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
+    public static final boolean FIRST_SDK_IS_AT_LEAST_V =
+            ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
@@ -145,6 +148,7 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= ANDROID_VENDOR_API_202404;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
+    public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
 
@@ -385,7 +389,9 @@ public abstract class CodecTestBase {
         MEDIA_CODEC_LIST_ALL = new MediaCodecList(MediaCodecList.ALL_CODECS);
         MEDIA_CODEC_LIST_REGULAR = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         IS_HDR_CAPTURE_SUPPORTED = isHDRCaptureSupported();
-        IS_HDR_EDITING_SUPPORTED = isHDREditingSupported();
+        IS_HDR_EDITING_SUPPORTED = isEncoderFeatureSupported(FEATURE_HdrEditing);
+        IS_HLG_EDITING_SUPPORTED = android.media.codec.Flags.hlgEditing()
+                ? isEncoderFeatureSupported(FEATURE_HlgEditing) : false;
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("av1", MediaFormat.MIMETYPE_VIDEO_AV1);
@@ -580,14 +586,17 @@ public abstract class CodecTestBase {
         return false;
     }
 
-    public static boolean isHDREditingSupported() {
+    /**
+     * Check if any encoder on the device supports the given feature
+     */
+    public static boolean isEncoderFeatureSupported(String feature) {
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
             if (!codecInfo.isEncoder()) {
                 continue;
             }
             for (String mediaType : codecInfo.getSupportedTypes()) {
                 CodecCapabilities caps = codecInfo.getCapabilitiesForType(mediaType);
-                if (caps != null && caps.isFeatureSupported(FEATURE_HdrEditing)) {
+                if (caps != null && caps.isFeatureSupported(feature)) {
                     return true;
                 }
             }

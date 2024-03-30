@@ -40,6 +40,7 @@ java_test_host {
         "src/**/jobscheduler/*.java",
         "src/**/integrity/*.java",
         "src/**/media/*.java",
+        "src/**/media/projection/*.java",
         "src/**/memory/*.java",
         "src/**/net/*.java",
         "src/**/notification/*.java",
@@ -90,6 +91,7 @@ java_test_host {
         ":CtsStatsdApp", //TODO(b/163546661): Remove once migration to new lib is complete.
         ":CtsAppExitTestCases",
         ":CtsExternalServiceService",
+        ":CtsMediaProjectionTestCases",
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",
         ":CtsStatsdAlarmHelper2",

@@ -42,7 +42,8 @@
          (as opposed to HTTPS). -->
     <application android:usesCleartextTraffic="true">
         <uses-library android:name="android.test.runner"/>
-        <activity android:name=".WaitForResultActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".WaitForResultActivity"
+                  android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

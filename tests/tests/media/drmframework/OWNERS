@@ -11,3 +11,4 @@ sigquit@google.com
 vickymin@google.com
 per-file src/android/media/drmframework/cts/CodecDecoderDrmTest.java = file:platform/frameworks/av:/media/janitors/codec_OWNERS
 per-file src/android/media/drmframework/cts/CodecDecoderMultiAccessUnitDrmTest.java = file:platform/frameworks/av:/media/janitors/codec_OWNERS
+per-file src/android/media/drmframework/cts/CodecDecoderBlockModelMultiAccessUnitDrmTest.java = file:platform/frameworks/av:/media/janitors/codec_OWNERS

@@ -107,6 +107,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     private static final int MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS = 10000;
     private static final float ZOOM_ERROR_MARGIN = 0.05f;
 
+    private static final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
+
     private static final CaptureRequest.Key[] FOCUS_CAPTURE_REQUEST_SET = {
             CaptureRequest.CONTROL_AF_MODE,
             CaptureRequest.CONTROL_AF_REGIONS,
@@ -1370,9 +1372,12 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         extensionChars.getAvailableCaptureRequestKeys(extension);
                 boolean supportsStrengthControl = supportedRequestKeys.contains(
                         CaptureRequest.EXTENSION_STRENGTH);
-
+                boolean supportsAFControlMode = supportedRequestKeys.contains(
+                        CaptureRequest.CONTROL_AF_MODE);
                 Set<CaptureResult.Key> supportedResultKeys =
                         extensionChars.getAvailableCaptureResultKeys(extension);
+                boolean supportsAFControlState = supportedResultKeys.contains(
+                        CaptureResult.CONTROL_AF_STATE);
                 if (supportsStrengthControl) {
                     assertTrue(supportedResultKeys.contains(CaptureResult.EXTENSION_STRENGTH));
                 }
@@ -1448,16 +1453,29 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     captureBuilder.addTarget(texturedSurface);
                     CameraExtensionSession.ExtensionCaptureCallback repeatingCallbackMock =
                             mock(CameraExtensionSession.ExtensionCaptureCallback.class);
+                    // Check passive AF
+                    AutoFocusStateListener mockAFListener =
+                            mock(AutoFocusStateListener.class);
+                    AutoFocusStateMachine afState = new AutoFocusStateMachine(
+                            new TestAutoFocusProxy(mockAFListener));
+                    afState.setPassiveAutoFocus(true /*picture*/, captureBuilder);
                     SimpleCaptureCallback repeatingCaptureCallback =
                             new SimpleCaptureCallback(extension, repeatingCallbackMock,
                                     extensionChars.getAvailableCaptureResultKeys(extension),
-                                    mCollector);
+                                    mCollector, afState, null /*flashState*/, null /*aeState*/,
+                                    false);
 
                     if (supportsStrengthControl) {
                         captureBuilder.set(CaptureRequest.EXTENSION_STRENGTH, 100);
                     }
 
                     CaptureRequest repeatingRequest = captureBuilder.build();
+                    if (supportsAFControlMode && supportsAFControlState) {
+                        captureBuilder.set(
+                                CaptureRequest.CONTROL_AF_MODE,
+                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                        );
+                    }
                     int repeatingSequenceId =
                             extensionSession.setRepeatingRequest(repeatingRequest,
                                     new HandlerExecutor(mTestRule.getHandler()),
@@ -1488,6 +1506,11 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     CameraExtensionSession.StillCaptureLatency stillCaptureLatency =
                             extensionSession.getRealtimeStillCaptureLatency();
                     CaptureRequest captureRequest = captureBuilder.build();
+                    if (supportsAFControlMode && supportsAFControlState) {
+                        verify(mockAFListener,
+                                timeout(WAIT_FOR_FOCUS_DONE_TIMEOUT_MS).atLeastOnce())
+                                .onDone(anyBoolean());
+                    }
                     long startTimeMs = SystemClock.elapsedRealtime();
                     int captureSequenceId = extensionSession.capture(captureRequest,
                             new HandlerExecutor(mTestRule.getHandler()), captureCallback);
@@ -2282,7 +2305,6 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     @Test
     public void testAFMetering() throws Exception {
         final int METERING_REGION_SCALE_RATIO = 8;
-        final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));

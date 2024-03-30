@@ -27,6 +27,7 @@ import static android.videocodec.cts.VideoEncoderInput.SELFIEGROUP_FULLHD_PORTRA
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 import static android.videocodec.cts.VideoEncoderInput.CompressedResource;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Rect;
@@ -58,6 +59,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -80,20 +82,29 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
     private static final double EXPECTED_BD_RATE = 0d;
     private static final int MAX_B_FRAMES = 0;
     private static final String[] FEATURES = {null, MediaCodecInfo.CodecCapabilities.FEATURE_Roi};
+    private static final int BLOCK_WD = 16;
+    private static final int BLOCK_HT = 16;
     private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
 
-    private Map<Long, List<QpOffsetRect>> mRoiMetadata = new HashMap<>();
+    public enum RoiType {
+        ROI_TYPE_RECTS,
+        ROI_TYPE_MAP
+    }
+
+    private final RoiType mRoiType;
 
     /**
      * Helper class for {@link VideoEncoderRoiTest}
      */
     public static class VideoEncoderRoiHelper extends VideoEncoderValidationTestBase {
         private final Map<Long, List<QpOffsetRect>> mRoiMetadata;
+        private final RoiType mRoiType;
 
         VideoEncoderRoiHelper(String encoder, String mediaType, EncoderConfigParams encCfgParams,
-                Map<Long, List<QpOffsetRect>> roiMetadata, String allTestParams) {
+                Map<Long, List<QpOffsetRect>> roiMetadata, RoiType roiType, String allTestParams) {
             super(encoder, mediaType, encCfgParams, allTestParams);
             mRoiMetadata = roiMetadata;
+            mRoiType = roiType;
         }
 
         private List<QpOffsetRect> getRoiMetadataForPts(Long pts) {
@@ -108,54 +119,101 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
             return null;
         }
 
+        private int clamp(int val, int min, int max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
+        private void fillOffsetArray(int arrayStride, byte[] qpOffsetArray,
+                QpOffsetRect qpOffsetRect) throws NoSuchFieldException, IllegalAccessException {
+            Field mContour = QpOffsetRect.class.getDeclaredField("mContour");
+            mContour.setAccessible(true);
+            Rect contour = (Rect) mContour.get(qpOffsetRect);
+            Field mQpOffset = QpOffsetRect.class.getDeclaredField("mQpOffset");
+            mQpOffset.setAccessible(true);
+            contour.left = clamp(contour.left, 0, mActiveEncCfg.mWidth);
+            contour.top = clamp(contour.top, 0, mActiveEncCfg.mHeight);
+            contour.right = clamp(contour.right, 0, mActiveEncCfg.mWidth);
+            contour.bottom = clamp(contour.bottom, 0, mActiveEncCfg.mHeight);
+            int qpOffset = (int) mQpOffset.get(qpOffsetRect);
+            for (int t = contour.top / BLOCK_HT; t < contour.bottom / BLOCK_HT; t++) {
+                for (int l = contour.left / BLOCK_WD; l < contour.right / BLOCK_WD; l++) {
+                    qpOffsetArray[t * arrayStride + l] = (byte) qpOffset;
+                }
+            }
+        }
+
         @Override
         protected void enqueueInput(int bufferIndex) {
             long pts = mInputOffsetPts + mInputCount * 1000000L / mActiveEncCfg.mFrameRate;
             List<QpOffsetRect> qpOffsetRects = getRoiMetadataForPts(pts);
             if (qpOffsetRects != null) {
                 Bundle param = new Bundle();
-                param.putString(MediaCodec.PARAMETER_KEY_QP_OFFSET_RECTS,
-                        QpOffsetRect.flattenToString(qpOffsetRects));
+                if (Objects.equals(mRoiType, RoiType.ROI_TYPE_RECTS)) {
+                    param.putString(MediaCodec.PARAMETER_KEY_QP_OFFSET_RECTS,
+                            QpOffsetRect.flattenToString(qpOffsetRects));
+                } else if (Objects.equals(mRoiType, RoiType.ROI_TYPE_MAP)) {
+                    int alignedWidth =
+                            ((mActiveEncCfg.mWidth + (BLOCK_WD - 1)) / BLOCK_WD) * BLOCK_WD;
+                    int alignedHeight =
+                            ((mActiveEncCfg.mHeight + (BLOCK_HT - 1)) / BLOCK_HT) * BLOCK_HT;
+                    int arraySize = (alignedWidth / BLOCK_WD) * (alignedHeight / BLOCK_HT);
+                    int arrayStride = alignedWidth / BLOCK_WD;
+                    byte[] qpOffsetArray = new byte[arraySize];
+                    for (int i = qpOffsetRects.size() - 1; i >= 0; i--) {
+                        try {
+                            fillOffsetArray(arrayStride, qpOffsetArray, qpOffsetRects.get(i));
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    param.putByteArray(MediaCodec.PARAMETER_KEY_QP_OFFSET_MAP, qpOffsetArray);
+                }
                 mCodec.setParameters(param);
             }
             super.enqueueInput(bufferIndex);
         }
     }
 
-    private static void addParams(CompressedResource cRes) {
+    private static void addParams(CompressedResource cRes, RoiType roiType) {
         final String[] mediaTypes =
                 new String[]{MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
                         MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
         RESOURCES.add(cRes);
         for (String mediaType : mediaTypes) {
             // mediaType, cfg
-            exhaustiveArgsList.add(new Object[]{mediaType, cRes});
+            exhaustiveArgsList.add(new Object[]{mediaType, cRes, roiType});
         }
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP);
         return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
     }
 
     public VideoEncoderRoiTest(String encoder, String mediaType, CompressedResource cRes,
-            String allTestParams) {
+            RoiType roiType, String allTestParams) {
         super(encoder, mediaType, cRes, allTestParams);
+        mRoiType = roiType;
     }
 
-    public Map<Long, List<Rect>> getPtsRectMap()
+    public Map<Long, List<Rect>> getPtsRectMap(Map<Long, List<QpOffsetRect>> roiMetadata)
             throws NoSuchFieldException, IllegalAccessException {
         Map<Long, List<Rect>> ptsRectMap = new HashMap<>();
         for (Map.Entry<Long, List<QpOffsetRect>> entry :
-                mRoiMetadata.entrySet()) {
+                roiMetadata.entrySet()) {
             Long keyPts = entry.getKey();
             List<QpOffsetRect> qpOffsetRects = entry.getValue();
             List<Rect> rects = new ArrayList<>();
             for (QpOffsetRect qpOffsetRect : qpOffsetRects) {
-                Field mContour = QpOffsetRect.class.getDeclaredField("mContour");
-                mContour.setAccessible(true);
-                rects.add((Rect) mContour.get(qpOffsetRect));
+                Field mQpOffset = QpOffsetRect.class.getDeclaredField("mQpOffset");
+                mQpOffset.setAccessible(true);
+                if ((int) mQpOffset.get(qpOffsetRect) < 0) {
+                    Field mContour = QpOffsetRect.class.getDeclaredField("mContour");
+                    mContour.setAccessible(true);
+                    rects.add((Rect) mContour.get(qpOffsetRect));
+                }
             }
             ptsRectMap.put(keyPts, rects);
         }
@@ -174,11 +232,12 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
                 isFeatureSupported(mCodecName, mMediaType,
                         MediaCodecInfo.CodecCapabilities.FEATURE_Roi));
         RawResource res = getRawResource(mCRes);
-        mRoiMetadata = GenerateRoiMetadata.ROI_INFO.get(mCRes);
+        Map<Long, List<QpOffsetRect>> roiMetadata = GenerateRoiMetadata.ROI_INFO.get(mCRes);
+        assertNotNull("no roi metadata found for resource " + mCRes.uniqueLabel(), roiMetadata);
         VideoEncoderValidationTestBase[] testInstances =
                 {new VideoEncoderValidationTestBase(null, mMediaType, null,
                         mAllTestParams), new VideoEncoderRoiHelper(null, mMediaType, null,
-                        mRoiMetadata, mAllTestParams)};
+                        roiMetadata, mRoiType, mAllTestParams)};
         String[] encoderNames = new String[FEATURES.length];
         List<EncoderConfigParams[]> cfgsUnion = new ArrayList<>();
         for (int i = 0; i < FEATURES.length; i++) {
@@ -197,7 +256,7 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
             encoderNames[i] = mCodecName;
         }
         Predicate<Double> predicate = bdRate -> bdRate <= EXPECTED_BD_RATE;
-        Map<Long, List<Rect>> frameCropRects = getPtsRectMap();
+        Map<Long, List<Rect>> frameCropRects = getPtsRectMap(roiMetadata);
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
                 FRAME_RATE, frameCropRects, false, predicate);
     }
@@ -214,34 +273,44 @@ class GenerateRoiMetadata {
         Map<Long, List<QpOffsetRect>> roiMetadata = new HashMap<>();
         roiMetadata.put(0L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(694, 668, 991, 1487), -5),
-                        new QpOffsetRect(new Rect(18, 627, 770, 1957), -5))));
+                        new QpOffsetRect(new Rect(18, 627, 770, 1957), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(33333L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(688, 643, 991, 1531), -5),
-                        new QpOffsetRect(new Rect(21, 645, 762, 1946), -5))));
+                        new QpOffsetRect(new Rect(21, 645, 762, 1946), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(66666L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(673, 613, 965, 1562), -5),
-                        new QpOffsetRect(new Rect(26, 636, 761, 1945), -5))));
+                        new QpOffsetRect(new Rect(26, 636, 761, 1945), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(100000L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(672, 642, 949, 1541), -5),
-                        new QpOffsetRect(new Rect(15, 639, 867, 1956), -5))));
+                        new QpOffsetRect(new Rect(15, 639, 867, 1956), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(133333L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(657, 668, 944, 1499), -5),
-                        new QpOffsetRect(new Rect(20, 638, 761, 1957), -5))));
+                        new QpOffsetRect(new Rect(20, 638, 761, 1957), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(166666L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(643, 674, 942, 1526), -5),
-                        new QpOffsetRect(new Rect(8, 647, 761, 1946), -5))));
+                        new QpOffsetRect(new Rect(8, 647, 761, 1946), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(200000L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(638, 694, 940, 1472), -5),
-                        new QpOffsetRect(new Rect(4, 653, 769, 1939), -5))));
+                        new QpOffsetRect(new Rect(4, 653, 769, 1939), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(233333L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(630, 693, 953, 1472), -5),
-                        new QpOffsetRect(new Rect(15, 652, 764, 1936), -5))));
+                        new QpOffsetRect(new Rect(15, 652, 764, 1936), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(266666L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(627, 687, 961, 1486), -5),
-                        new QpOffsetRect(new Rect(20, 661, 752, 1939), -5))));
+                        new QpOffsetRect(new Rect(20, 661, 752, 1939), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         roiMetadata.put(300000L, new ArrayList<>(
                 Arrays.asList(new QpOffsetRect(new Rect(634, 682, 926, 1466), -5),
-                        new QpOffsetRect(new Rect(18, 644, 758, 1946), -5))));
+                        new QpOffsetRect(new Rect(18, 644, 758, 1946), -5),
+                        new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         ROI_INFO.put(SELFIEGROUP_FULLHD_PORTRAIT, roiMetadata);
     }
 }

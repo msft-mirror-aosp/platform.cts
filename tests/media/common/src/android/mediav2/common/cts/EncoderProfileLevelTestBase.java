@@ -577,7 +577,13 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
 
     protected void validateFormatForProfileAndLevelWRTCfg(MediaFormat format, String msg) {
         validateProfile(mActiveEncCfg.mProfile, getProfile(format, msg), msg);
-        if (mActiveEncCfg.mLevel != -1) {
+        // Few bitstream specifications (e.g. vp9, h263) do not have a place holder for level.
+        // By extension, it is acceptable if this information is not provided in csd.
+        // But, if present, it MUST be according to the test requirements.
+        if (mActiveEncCfg.mLevel != -1
+                && (format.containsKey(MediaFormat.KEY_LEVEL)
+                        || (!mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)
+                                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)))) {
             validateMinLevel(mActiveEncCfg.mLevel, getLevel(format, msg), msg);
         }
     }
