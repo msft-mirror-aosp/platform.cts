@@ -632,18 +632,18 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 isVerticalContentView, false /*isBiometricAllowed*/);
         mInstrumentation.waitForIdleSync();
 
-        // Wait for any animations to complete. Ideally, this should be reflected in
-        // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different processes
-        // so we'd need to add some additional plumbing. We can improve this in the future.
-        // TODO(b/152240892)
-        Thread.sleep(1000);
-
         if (shouldShow) {
             if (shouldShowBpWithoutIconForCredential) {
                 waitForState(STATE_AUTH_STARTED_UI_SHOWING);
                 findAndPressButton(BUTTON_ID_USE_CREDENTIAL);
                 waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
             }
+            // Wait for any animations to complete. Ideally, this should be reflected in
+            // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different
+            // processes so we'd need to add some additional plumbing. We can improve this in the
+            // future.
+            // TODO(b/152240892)
+            Thread.sleep(1000);
             waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
             BiometricServiceState state = getCurrentState();
             assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);

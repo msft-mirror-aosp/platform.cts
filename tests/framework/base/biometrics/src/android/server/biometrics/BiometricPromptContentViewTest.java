@@ -43,10 +43,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
 
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiObjectNotFoundException;
-import androidx.test.uiautomator.UiScrollable;
-import androidx.test.uiautomator.UiSelector;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -509,6 +507,9 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         }
         itemList.forEach(
                 text -> contentViewBuilder.addListItem(new PromptContentItemBulletedText(text)));
+
+        itemList.add(VERTICAL_LIST_LAST_ITEM_TEXT);
+        // For testing API addListItem(PromptContentItem, int)
         contentViewBuilder.addListItem(
                 new PromptContentItemBulletedText(VERTICAL_LIST_LAST_ITEM_TEXT),
                 itemCountBesidesLastItem);
@@ -518,14 +519,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     private UiObject2 scrollBpBodyContentTo(String viewText) {
         UiObject2 view = findViewByText(viewText);
         while (view == null) {
-            try {
-                UiScrollable scroller = new UiScrollable(new UiSelector().scrollable(true));
-                scroller.setSwipeDeadZonePercentage(0.25);
-                scroller.scrollTextIntoView(viewText);
-            } catch (UiObjectNotFoundException e) {
-                Log.d(TAG, "View with text '" + viewText + "' was not found!");
-            }
-
+            findView(SCROLL_PARENT_VIEW).scroll(Direction.DOWN, .4f, 1000);
             view = findViewByText(viewText);
         }
         return view;
@@ -536,7 +530,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      */
     private void checkTopViews(boolean checkLogo,
             String expectedTitle, String expectedSubtitle, String expectedNegativeButtonText) {
-        final UiObject2 actualLogo = findView(LOGO_VIEW);
+        final UiObject2 actualLogo = waitForView(LOGO_VIEW);
         final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
         final UiObject2 actualTitle = findView(TITLE_VIEW);
         final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
