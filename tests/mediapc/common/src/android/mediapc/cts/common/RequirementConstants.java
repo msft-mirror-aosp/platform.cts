@@ -49,7 +49,9 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
+    public static final String R5_1__H_1_20 = "r5_1__h_1_20"; // 5.1/H-1-20
     public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
+    public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
 
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
@@ -142,6 +144,8 @@ public class RequirementConstants {
     public static final String FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "front_camera2_extension_night_supported";
 
+    public static final String HLG_EDITING = "hlg_editing";
+
     public static final String LONG_RESOLUTION = "long_resolution_pixels";
 
     public static final String NUM_4k_HW_DEC = "number_4k_hw_decoders";
@@ -150,6 +154,8 @@ public class RequirementConstants {
             "number_crypto_hw_secure_all_support";
 
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
+
+    public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
     public static final String PRIMARY_CAMERA_VIDEO_FPS =
