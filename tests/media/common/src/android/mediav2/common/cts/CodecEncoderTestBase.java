@@ -580,11 +580,11 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
-            int frameLimit, boolean saveToMem, boolean muxOutput)
+            OutputManager outputBuff, int frameLimit, boolean saveToMem, boolean muxOutput)
             throws IOException, InterruptedException {
         mSaveToMem = saveToMem;
         mMuxOutput = muxOutput;
-        mOutputBuff = new OutputManager();
+        mOutputBuff = outputBuff;
         mInfoList.clear();
         mActiveEncCfg = cfg;
         mActiveRawRes = res;
@@ -601,6 +601,12 @@ public class CodecEncoderTestBase extends CodecTestBase {
         mActiveEncCfg = null;
         mSaveToMem = false;
         mMuxOutput = false;
+    }
+
+    public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
+            int frameLimit, boolean saveToMem, boolean muxOutput)
+            throws IOException, InterruptedException {
+        encodeToMemory(encoder, cfg, res, new OutputManager(), frameLimit, saveToMem, muxOutput);
     }
 
     public void setLoopBack(boolean loopBack) {

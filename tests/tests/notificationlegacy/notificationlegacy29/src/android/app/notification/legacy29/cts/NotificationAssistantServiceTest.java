@@ -86,6 +86,7 @@ public class NotificationAssistantServiceTest {
     private Context mContext;
     private UiAutomation mUi;
     private NotificationHelper mHelper;
+    private String mPreviousAssistant;
 
     private boolean isWatch() {
       return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
@@ -103,6 +104,7 @@ public class NotificationAssistantServiceTest {
         mStatusBarManager = (StatusBarManager) mContext.getSystemService(
                 Context.STATUS_BAR_SERVICE);
         mHelper = new NotificationHelper(mContext);
+        mPreviousAssistant = mHelper.getEnabledAssistant();
     }
 
     @After
@@ -124,6 +126,7 @@ public class NotificationAssistantServiceTest {
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
         mStatusBarManager.collapsePanels();
         mUi.dropShellPermissionIdentity();
+        mHelper.enableOtherPkgAssistantIfNeeded(mPreviousAssistant);
     }
 
     @Test

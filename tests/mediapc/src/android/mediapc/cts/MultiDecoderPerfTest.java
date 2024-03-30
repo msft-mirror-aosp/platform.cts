@@ -40,9 +40,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent decode sessions that it can
@@ -178,7 +175,6 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         boolean meetsPreconditions = isSecure ? meetsSecureDecodePreconditions() : true;
 
         if (meetsPreconditions && maxInstances >= requiredMinInstances) {
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Decode> testList = new ArrayList<>();
             if (height > 1080 && !isSecure) {
                 int halfMaxInstances = maxInstances / 2;
@@ -193,11 +189,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
                     testList.add(new Decode(mMime, mTestFile, mDecoderName, mIsAsync, isSecure));
                 }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            achievedFrameRate = invokeWithThread(maxInstances, testList);
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);

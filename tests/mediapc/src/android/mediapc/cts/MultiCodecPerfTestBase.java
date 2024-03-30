@@ -42,9 +42,15 @@ import org.junit.Before;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MultiCodecPerfTestBase {
     private static final String LOG_TAG = MultiCodecPerfTestBase.class.getSimpleName();
@@ -163,6 +169,21 @@ public class MultiCodecPerfTestBase {
         ArrayList<MediaFormat> formatsList = new ArrayList<>();
         formatsList.add(fmt);
         return selectHardwareCodecs(mime, formatsList, null, isEncoder, allCodecs);
+    }
+
+    protected double invokeWithThread(int maxInstances, Collection<? extends Callable<Double>>
+            testList) throws ExecutionException, InterruptedException {
+        double measuredParams = 0;
+        ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
+        try {
+            List<Future<Double>> resultList = pool.invokeAll(testList);
+            for (Future<Double> result : resultList) {
+                measuredParams += result.get();
+            }
+        } finally {
+            pool.shutdown();
+        }
+        return measuredParams;
     }
 
     // Returns the max number of 30 fps instances that the given list of mimeCodecPairs

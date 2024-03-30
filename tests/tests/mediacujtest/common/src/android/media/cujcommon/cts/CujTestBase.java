@@ -112,12 +112,10 @@ public class CujTestBase {
     if (!mIsScrollTest) {
       mActivity.runOnUiThread(() -> {
         mActivity.prepareMediaItems(mediaUrls);
-        mActivity.run();
       });
     } else {
       mScrollActivity.runOnUiThread(() -> {
         mScrollActivity.prepareMediaItems(mediaUrls);
-        mScrollActivity.run();
       });
     }
 

@@ -26,6 +26,7 @@ import android.app.stubs.shared.TestNotificationAssistant
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Icon
+import android.os.UserManager
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -42,6 +43,7 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.After
 import org.junit.Assert.assertNotNull
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -61,10 +63,16 @@ class SensitiveNotificationAppHidingTest {
     private lateinit var notificationManager: NotificationManager
     private lateinit var notificationHelper: NotificationHelper
     private lateinit var notificationAssistant: TestNotificationAssistant
+    private var previousAssistant: String? = null
 
     @JvmField @Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @JvmField @Rule var testName = TestName()
+
+    private fun isHeadlessSystemUser(context: Context): Boolean {
+        return UserManager.isHeadlessSystemUserMode() &&
+            context.getSystemService(UserManager::class.java)!!.isSystemUser
+    }
 
     private fun sendSensitiveNotification(
         text: String = OTP_MESSAGE_BASIC,
@@ -151,7 +159,15 @@ class SensitiveNotificationAppHidingTest {
     @Before
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        assumeFalse(
+            "Device is in headless system user mode. Test requires screenshots" +
+                "which aren't supported in headless",
+            isHeadlessSystemUser(context)
+        )
+
         notificationHelper = NotificationHelper(context)
+        previousAssistant = notificationHelper.getEnabledAssistant()
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
         notificationHelper.disableListener(NLS_PACKAGE_NAME)
@@ -171,9 +187,15 @@ class SensitiveNotificationAppHidingTest {
 
     @After
     fun teardown() {
-        notificationManager.cancelAll()
-        notificationHelper.disableListener(NLS_PACKAGE_NAME)
-        notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
+        if (this::notificationManager.isInitialized) {
+            notificationManager.cancelAll()
+        }
+
+        if (this::notificationHelper.isInitialized) {
+            notificationHelper.disableListener(NLS_PACKAGE_NAME)
+            notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
+            notificationHelper.enableOtherPkgAssistantIfNeeded(previousAssistant)
+        }
     }
 
     @Test
