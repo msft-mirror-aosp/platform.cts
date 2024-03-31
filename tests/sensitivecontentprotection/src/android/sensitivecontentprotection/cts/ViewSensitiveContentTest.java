@@ -27,6 +27,7 @@ import static org.junit.Assume.assumeFalse;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
 import android.os.UserManager;
@@ -50,6 +51,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class ViewSensitiveContentTest {
+    private Context mContext;
     private final SensitiveContentMediaProjectionHelper mMediaProjectionHelper =
             new SensitiveContentMediaProjectionHelper();
     @Rule
@@ -66,11 +68,12 @@ public class ViewSensitiveContentTest {
 
     @Before
     public void setup() {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        // TODO: b/331064496 - projection service isn't started on auto
+        assumeFalse(isAutomotive());
         assumeFalse("Device is in headless system user mode. Test requires screenshots"
                 + "which aren't supported in headless",
-                isHeadlessSystemUser(context));
+                isHeadlessSystemUser(mContext));
 
         startMediaProjection();
     }
@@ -140,5 +143,9 @@ public class ViewSensitiveContentTest {
                     state -> state.findFirstWindowWithType(TYPE_TOAST) != null, "Toast"))
                     .isTrue();
         }
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }
