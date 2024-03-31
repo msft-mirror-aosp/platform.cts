@@ -37,6 +37,9 @@ import android.media.tv.tuner.Lnb;
 import android.media.tv.tuner.LnbCallback;
 import android.media.tv.tuner.Tuner;
 import android.media.tv.tuner.TunerVersionChecker;
+import android.media.tv.tuner.cts.configuration.v1.LnbSupportedVoltage;
+import android.media.tv.tuner.cts.configuration.v1.TunerCtsConfiguration;
+import android.media.tv.tuner.cts.configuration.v1.XmlParser;
 import android.media.tv.tuner.dvr.DvrPlayback;
 import android.media.tv.tuner.dvr.DvrRecorder;
 import android.media.tv.tuner.dvr.OnPlaybackStatusChangedListener;
@@ -83,6 +86,7 @@ import android.media.tv.tuner.frontend.DtmbFrontendCapabilities;
 import android.media.tv.tuner.frontend.DtmbFrontendSettings;
 import android.media.tv.tuner.frontend.DvbcFrontendCapabilities;
 import android.media.tv.tuner.frontend.DvbcFrontendSettings;
+import android.media.tv.tuner.frontend.DvbsCodeRate;
 import android.media.tv.tuner.frontend.DvbsFrontendCapabilities;
 import android.media.tv.tuner.frontend.DvbsFrontendSettings;
 import android.media.tv.tuner.frontend.DvbtFrontendCapabilities;
@@ -111,6 +115,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.tv.cts.R;
 import android.util.SparseIntArray;
 
 import androidx.test.InstrumentationRegistry;
@@ -121,10 +126,15 @@ import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -148,6 +158,12 @@ public class TunerTest {
     private static final int TIMEOUT_MS = 10 * 1000;  // 10 seconds
     private static final int SCAN_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
     private static final long TIMEOUT_BINDER_SERVICE_SEC = 2;
+    private static final String DEFAULT_TUNER_CTS_CONFIGURATION_FILE =
+            "/product/etc/tuner_cts_config_V1.xml";
+    private static final String VENDOR_TUNER_CTS_CONFIGURATION_FILE =
+            "/vendor/etc/tuner_cts_config_V1.xml";
+
+    private static TunerCtsConfiguration sTunerCtsConfiguration;
 
     private Context mContext;
     private Tuner mTuner;
@@ -440,6 +456,38 @@ public class TunerTest {
         }
     }
 
+    private static TunerCtsConfiguration getDefaultConfiguration() throws Exception {
+        Context context = InstrumentationRegistry.getTargetContext();
+        InputStream inputStream = context
+                .getResources().openRawResource(R.raw.tuner_cts_config_v1_default);
+        TunerCtsConfiguration tunerCtsConfiguration = XmlParser.read(inputStream);
+        return tunerCtsConfiguration;
+    }
+
+    private static TunerCtsConfiguration readTunerCtsConfiguration(File config) throws Exception {
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(config))) {
+            TunerCtsConfiguration tunerCtsConfiguration = XmlParser.read(inputStream);
+            return tunerCtsConfiguration;
+        }
+    }
+
+    private static void loadTunerCtsConfiguration() throws Exception {
+        File config = new File(DEFAULT_TUNER_CTS_CONFIGURATION_FILE);
+        if (!config.isFile()) {
+            config = new File(VENDOR_TUNER_CTS_CONFIGURATION_FILE);
+        }
+        if (!config.isFile()) {
+            sTunerCtsConfiguration = getDefaultConfiguration();
+        } else {
+            sTunerCtsConfiguration = readTunerCtsConfiguration(config);
+        }
+    }
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        loadTunerCtsConfiguration();
+    }
+
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getTargetContext();
@@ -488,7 +536,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         hwInfo = mTuner.getCurrentFrontendHardwareInfo();
         if (TunerVersionChecker.isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_2_0)) {
@@ -507,7 +556,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
         if (TunerVersionChecker.isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_3_0)) {
@@ -547,7 +597,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
         res = mTuner.cancelTuning();
@@ -559,7 +610,10 @@ public class TunerTest {
         res = mTuner.cancelTuning();
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
-        for (int i = 1; i < ids.size(); i++) {
+        for (int i = 0; i < ids.size(); i++) {
+            if (i == targetFrontendId) {
+                continue;
+            }
             FrontendInfo info2 = mTuner.getFrontendInfoById(ids.get(i));
             if (info2.getType() != info.getType()) {
                 res = mTuner.tune(createFrontendSettings(info2));
@@ -574,7 +628,8 @@ public class TunerTest {
         if (frontendInfos == null) return;
         assertFalse(frontendInfos.isEmpty());
 
-        FrontendInfo frontendInfo = frontendInfos.get(0);
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo frontendInfo = frontendInfos.get(targetFrontendId);
         int result = mTuner.applyFrontend(frontendInfo);
         assertEquals(Tuner.RESULT_SUCCESS, result);
 
@@ -601,7 +656,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.scan(
                         createFrontendSettings(info),
                         Tuner.SCAN_TYPE_AUTO,
@@ -1035,7 +1091,8 @@ public class TunerTest {
     public void testLnb() throws Exception {
         Lnb lnb = mTuner.openLnb(getExecutor(), getLnbCallback());
         if (lnb == null) return;
-        assertEquals(lnb.setVoltage(Lnb.VOLTAGE_5V), Tuner.RESULT_SUCCESS);
+        int targetLnbVoltage = getTargetLnbVoltage();
+        assertEquals(lnb.setVoltage(targetLnbVoltage), Tuner.RESULT_SUCCESS);
         assertEquals(lnb.setTone(Lnb.TONE_NONE), Tuner.RESULT_SUCCESS);
         assertEquals(
                 lnb.setSatellitePosition(Lnb.POSITION_A), Tuner.RESULT_SUCCESS);
@@ -1061,7 +1118,8 @@ public class TunerTest {
 
         List<Integer> ids = mTuner.getFrontendIds();
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
         int res = mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
@@ -1118,7 +1176,8 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         if (ids == null) return;
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1151,7 +1210,8 @@ public class TunerTest {
         if (ids == null)
             return;
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1240,7 +1300,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1279,7 +1340,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1328,7 +1390,8 @@ public class TunerTest {
         if (ids == null) return;
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1591,7 +1654,8 @@ public class TunerTest {
     public void testResourceReclaimed() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // first tune with mTuner to acquire resource
@@ -1613,7 +1677,8 @@ public class TunerTest {
     public void testResourceReclaimedDifferentThread() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // first tune with mTuner to acquire resource
@@ -1661,9 +1726,9 @@ public class TunerTest {
     @Test
     public void testResourceReclaimedDifferentProcess() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
-        int frontendIndex = 0;
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(frontendIndex));
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // set up the test server
@@ -1689,7 +1754,7 @@ public class TunerTest {
         tunerResourceTestServer.createTuner(200);
 
         // now tune on higher priority tuner to get mTuner reclaimed
-        res = tunerResourceTestServer.tune(frontendIndex);
+        res = tunerResourceTestServer.tune(targetFrontendId);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
         try {
@@ -1716,7 +1781,7 @@ public class TunerTest {
         assertNotNull(mTuner.getFrontendInfo());
 
         tunerResourceTestServer.createTuner(200);
-        tunerResourceTestServer.tuneAsync(frontendIndex);
+        tunerResourceTestServer.tuneAsync(targetFrontendId);
 
         // adjust timing to induce race/deadlock
         int sleepMS = 4;
@@ -1739,7 +1804,8 @@ public class TunerTest {
         if (frontendInfos == null) return;
         assertFalse(frontendInfos.isEmpty());
 
-        FrontendInfo frontendInfo = frontendInfos.get(0);
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo frontendInfo = frontendInfos.get(targetFrontendId);
         int result = mTuner.applyFrontend(frontendInfo);
         assertEquals(Tuner.RESULT_SUCCESS, result);
 
@@ -1756,7 +1822,8 @@ public class TunerTest {
         Tuner tuner100 = new Tuner(mContext, null, 100);
         List<Integer> ids = tuner100.getFrontendIds();
         assertFalse(ids.isEmpty());
-        FrontendInfo info = tuner100.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = tuner100.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
         int[] statusTypes = {1};
         boolean exceptionThrown = false;
@@ -1768,7 +1835,7 @@ public class TunerTest {
         res = tuner200.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
-        info = tuner200.getFrontendInfoById(ids.get(0));
+        info = tuner200.getFrontendInfoById(ids.get(targetFrontendId));
         res = tuner200.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -1850,7 +1917,8 @@ public class TunerTest {
             return;
         }
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // SCENARIO 1 - transfer and close the previous owner
@@ -1923,7 +1991,8 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assertNotNull(ids);
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // Create tuner and tune to get frontend resource
@@ -1984,7 +2053,8 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assertNotNull(ids);
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
         // Create tuner and tune to acquire frontend resource
@@ -2059,7 +2129,8 @@ public class TunerTest {
         List<Integer> ids = other.getFrontendIds();
         if (ids == null) return;
         assertFalse(ids.isEmpty());
-        FrontendInfo info = other.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = other.getFrontendInfoById(ids.get(targetFrontendId));
 
         FrontendSettings feSettings = createFrontendSettings(info);
         int res = other.tune(feSettings);
@@ -2120,7 +2191,8 @@ public class TunerTest {
 
         // SCENARIO 1 - without Lnb
         assertFalse(ids.isEmpty());
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
         int res = mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
@@ -2140,8 +2212,8 @@ public class TunerTest {
         }
         assertTrue(frontendClosed);
 
-        // now tune to a different setting
-        info = mTuner.getFrontendInfoById(ids.get(1));
+        // SCENARIO 2 - with Lnb
+        info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         feSettings = createFrontendSettings(info);
         mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
@@ -2149,8 +2221,7 @@ public class TunerTest {
         FrontendStatus status = mTuner.getFrontendStatus(statusCapabilities);
         assertNotNull(status);
 
-        // SCENARIO 2 - with Lnb
-
+        // open lnb
         TunerTestLnbCallback lnbCB1 = new TunerTestLnbCallback();
         Lnb lnb = mTuner.openLnb(getExecutor(), lnbCB1);
         if (lnb == null) {
@@ -2169,7 +2240,7 @@ public class TunerTest {
         }
         assertTrue(frontendClosed);
 
-        info = mTuner.getFrontendInfoById(ids.get(0));
+        info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         feSettings = createFrontendSettings(info);
         mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
@@ -2633,7 +2704,8 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -2781,7 +2853,8 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assertFalse(ids.isEmpty());
 
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         int res = mTuner.tune(createFrontendSettings(info));
         assertEquals(Tuner.RESULT_SUCCESS, res);
         assertTrue(mSharedFilterTestServer.verifySharedFilter(token));
@@ -2825,7 +2898,8 @@ public class TunerTest {
             List<Integer> ids = mTuner.getFrontendIds();
             assertFalse(ids.isEmpty());
 
-            FrontendInfo info = mTuner.getFrontendInfoById(ids.get(0));
+            int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+            FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
             int res = mTuner.tune(createFrontendSettings(info));
             assertEquals(Tuner.RESULT_SUCCESS, res);
 
@@ -2901,7 +2975,8 @@ public class TunerTest {
             }
         }
         // validate the behavior of tune
-        FrontendInfo info1 = mTuner.getFrontendInfoById(ids.get(0));
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info1 = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings1 = createFrontendSettings(info1);
         int type1 = info1.getType();
         if (TunerVersionChecker.isHigherOrEqualVersionTo(
@@ -3233,9 +3308,12 @@ public class TunerTest {
                             DvbcFrontendSettings
                                     .builder()
                                     .setFrequencyLong(490000000)
+                                    .setBandwidth(DvbcFrontendSettings.BANDWIDTH_8MHZ)
                                     .setModulation(modulation)
                                     .setInnerFec(fec)
                                     .setAnnex(annex)
+                                    .setSpectralInversion(
+                                            FrontendSettings.FRONTEND_SPECTRAL_INVERSION_NORMAL)
                                     .build();
                     settings.setEndFrequencyLong(maxFreq);
                     return settings;
@@ -3244,12 +3322,22 @@ public class TunerTest {
                     DvbsFrontendCapabilities dvbsCaps = (DvbsFrontendCapabilities) caps;
                     int modulation = getFirstCapable(dvbsCaps.getModulationCapability());
                     int standard = getFirstCapable(dvbsCaps.getStandardCapability());
+                    long innerFec = getFirstCapable(dvbsCaps.getInnerFecCapability());
+                    DvbsCodeRate codeRate = DvbsCodeRate
+                            .builder()
+                            .setInnerFec(innerFec)
+                            .build();
+                    int symbolRate = sTunerCtsConfiguration.getDvbsCapability()
+                            .getTargetSymbolRate().intValueExact();
                     DvbsFrontendSettings settings =
                             DvbsFrontendSettings
                                     .builder()
                                     .setFrequencyLong(950000000) //950Mhz
                                     .setModulation(modulation)
+                                    .setCodeRate(codeRate)
+                                    .setRolloff(DvbsFrontendSettings.ROLLOFF_0_20)
                                     .setStandard(standard)
+                                    .setSymbolRate(symbolRate)
                                     .build();
                     settings.setEndFrequencyLong(maxFreq);
                     return settings;
@@ -3269,6 +3357,7 @@ public class TunerTest {
                             .setBandwidth(bandwidth)
                             .setConstellation(constellation)
                             .setHierarchy(hierarchy)
+                            .setHighPriority(true)
                             .setHighPriorityCodeRate(codeRate)
                             .setLowPriorityCodeRate(codeRate)
                             .setGuardInterval(guardInterval)
@@ -3566,5 +3655,40 @@ public class TunerTest {
             }
             mTunerHandlerTaskComplete.open();
         }
+    }
+
+    private int getTargetLnbVoltage() {
+        if (!sTunerCtsConfiguration.hasLnbCapability()) {
+            return Lnb.VOLTAGE_NONE;
+        }
+        List<LnbSupportedVoltage> lnbSupportedVoltages =
+                sTunerCtsConfiguration.getLnbCapability().getSupportedVoltages().getVoltage();
+        int targetLnbVoltage = lnbSupportedVoltages.stream()
+                .filter(v -> v != LnbSupportedVoltage.VOLTAGE_NONE)
+                .findFirst()
+                .map(v -> {
+                    switch (v) {
+                        case VOLTAGE_5V:
+                            return Lnb.VOLTAGE_5V;
+                        case VOLTAGE_11V:
+                            return Lnb.VOLTAGE_11V;
+                        case VOLTAGE_12V:
+                            return Lnb.VOLTAGE_12V;
+                        case VOLTAGE_13V:
+                            return Lnb.VOLTAGE_13V;
+                        case VOLTAGE_14V:
+                            return Lnb.VOLTAGE_14V;
+                        case VOLTAGE_15V:
+                            return Lnb.VOLTAGE_15V;
+                        case VOLTAGE_18V:
+                            return Lnb.VOLTAGE_18V;
+                        case VOLTAGE_19V:
+                            return Lnb.VOLTAGE_19V;
+                        default:
+                            return Lnb.VOLTAGE_NONE;
+                    }
+                })
+                .orElse(Lnb.VOLTAGE_NONE);
+        return targetLnbVoltage;
     }
 }
