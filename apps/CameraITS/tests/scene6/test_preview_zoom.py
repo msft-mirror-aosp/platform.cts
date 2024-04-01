@@ -29,7 +29,7 @@ import zoom_capture_utils
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
+_NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
 _ZOOM_MIN_THRESH = 2.0
 
 
