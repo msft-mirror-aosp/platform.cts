@@ -23,6 +23,7 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -188,6 +189,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 checkAndGetMaxSupportedInstancesForCodecCombinations(height, width, mimeCodecPairs,
                         false, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         if (false) {
             // if we had a reason not to even try running the tests, we would report 0s.
             achievedFrameRate = 0.0;
@@ -215,7 +217,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                                     useHighBitDepth));
                 }
             }
-            List<Future<Double>> decodeResultList = null;
+            List<Future<CodecMetrics>> decodeResultList = null;
             if (maxInstances % 2 == 1) {
                 List<DecodeToSurface> decodeList = new ArrayList<>();
                 mActivityRule.getActivity().waitTillSurfaceIsCreated();
@@ -228,23 +230,25 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                         mIsAsync));
                 decodeResultList = pool.invokeAll(decodeList);
             }
-            List<Future<Double>> transcodeResultList = pool.invokeAll(transcodeList);
-            for (Future<Double> result : transcodeResultList) {
-                Double fps = result.get();
+            List<Future<CodecMetrics>> transcodeResultList = pool.invokeAll(transcodeList);
+            for (Future<CodecMetrics> result : transcodeResultList) {
+                Double fps = result.get().fps();
                 if (fps < 0) {
                     achievedFrameRate = -1;
                 } else if (achievedFrameRate >= 0) {
                     achievedFrameRate += fps;
                 }
+                frameDropsPerSec += result.get().fdps();
             }
             if (decodeResultList != null) {
-                for (Future<Double> result : decodeResultList) {
-                    Double fps = result.get();
+                for (Future<CodecMetrics> result : decodeResultList) {
+                    Double fps = result.get().fps();
                     if (fps < 0) {
                         achievedFrameRate = -1;
                     } else if (achievedFrameRate >= 0) {
                         achievedFrameRate += fps;
                     }
+                    frameDropsPerSec += result.get().fdps();
                 }
             }
         }
@@ -257,16 +261,22 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_5;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_6;
+        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_6_drop;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_19;
+        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_19_drop;
         if (height > 1080) {
             if (useHighBitDepth) {
                 r5_1__H_1_19 = pce.addR5_1__H_1_19();
+                r5_1__H_1_19_drop = pce.addR5_1__H_1_19_4k_drop();
                 r5_1__H_1_19.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_19_drop.setFrameDropsPerSecond(frameDropsPerSec);
             } else {
                 r5_1__H_1_5 = pce.addR5_1__H_1_5_4k();
                 r5_1__H_1_6 = pce.addR5_1__H_1_6_4k();
+                r5_1__H_1_6_drop = pce.addR5_1__H_1_6_4k_drop();
                 r5_1__H_1_5.setConcurrentInstances(maxInstances);
                 r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_6_drop.setFrameDropsPerSecond(frameDropsPerSec);
             }
         } else if (height == 1080) {
             r5_1__H_1_5 = pce.addR5_1__H_1_5_1080p();

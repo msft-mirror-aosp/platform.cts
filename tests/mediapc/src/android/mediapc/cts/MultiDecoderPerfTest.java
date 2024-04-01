@@ -21,6 +21,7 @@ import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -172,6 +173,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
                 mimeDecoderPairs, false, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         boolean meetsPreconditions = isSecure ? meetsSecureDecodePreconditions() : true;
 
         if (meetsPreconditions && maxInstances >= requiredMinInstances) {
@@ -189,15 +191,20 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
                     testList.add(new Decode(mMime, mTestFile, mDecoderName, mIsAsync, isSecure));
                 }
             }
-            achievedFrameRate = invokeWithThread(maxInstances, testList);
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         if (isSecure) {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9;
+            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9_drop;
             if(height > 1080){
                 r5_1__H_1_9 = pce.addR5_1__H_1_9_4k();
+                r5_1__H_1_9_drop = pce.addR5_1__H_1_9_4k_drop();
                 r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_9_drop.setFrameDropsPerSecond(frameDropsPerSec);
             } else {
                 r5_1__H_1_9 = pce.addR5_1__H_1_9_1080p();
                 r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
@@ -205,11 +212,14 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         } else {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_1;
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_2;
+            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_2_drop;
             if (height > 1080) {
                 r5_1__H_1_1 = pce.addR5_1__H_1_1_4k();
                 r5_1__H_1_2 = pce.addR5_1__H_1_2_4k();
+                r5_1__H_1_2_drop = pce.addR5_1__H_1_2_4k_drop();
                 r5_1__H_1_1.setConcurrentInstances(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_2_drop.setFrameDropsPerSecond(frameDropsPerSec);
             } else if (height == 1080) {
                 r5_1__H_1_1 = pce.addR5_1__H_1_1_1080p();
                 r5_1__H_1_2 = pce.addR5_1__H_1_2_1080p();
