@@ -164,7 +164,7 @@ public class VideoCodecRequirementsTest {
         boolean oneCodecDecoding = false;
         for (String codec : av1HwDecoders) {
             Decode decode = new Decode(MIMETYPE_VIDEO_AV1, FILE_AV1_REQ_SUPPORT, codec, true);
-            double achievedRate = decode.doDecode();
+            double achievedRate = decode.doDecode().fps();
             if (achievedRate > 0) {
                 oneCodecDecoding = true;
             }
