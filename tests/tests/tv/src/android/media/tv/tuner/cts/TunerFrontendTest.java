@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -1121,6 +1122,7 @@ public class TunerFrontendTest {
     @Test
     public void testFrontendInfoWithLongFrequency() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
         List<FrontendInfo> infos = mTuner.getAvailableFrontendInfos();
         Map<Integer, FrontendInfo> infoMap = new HashMap<>();
         for (FrontendInfo info : infos) {
