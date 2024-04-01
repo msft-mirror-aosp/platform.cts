@@ -60,13 +60,15 @@ public abstract class PlayerListener implements Player.Listener {
     PIP_MODE_TEST,
     SPLIT_SCREEN_TEST,
     DEVICE_LOCK_TEST,
-    LOCK_PLAYBACK_CONTROLLER_TEST
+    LOCK_PLAYBACK_CONTROLLER_TEST,
+    AUDIO_OFFLOAD_TEST
   }
 
   public static boolean mPlaybackEnded;
   protected long mExpectedTotalTime;
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
+  protected AudioOffloadTestActivity mAudioOffloadActivity;
   protected long mSendMessagePosition;
   protected int mPreviousOrientation;
   protected int mOrientationIndex;
@@ -130,6 +132,13 @@ public abstract class PlayerListener implements Player.Listener {
   }
 
   /**
+   * Returns True for Audio Offload test.
+   */
+  public final boolean isAudioOffloadTest() {
+    return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST);
+  }
+
+  /**
    * Returns expected playback time for the playlist.
    */
   public final long getExpectedTotalTime() {
@@ -166,6 +175,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final void setScrollActivity(ScrollTestActivity activity) {
     this.mScrollActivity = activity;
+  }
+
+  /**
+   * Sets activity for audio offload test.
+   */
+  public final void setAudioOffloadActivity(AudioOffloadTestActivity activity) {
+    this.mAudioOffloadActivity = activity;
   }
 
   /**
@@ -213,11 +229,13 @@ public abstract class PlayerListener implements Player.Listener {
           if (mPlaybackEnded) {
             throw new RuntimeException("mPlaybackEnded already set, player could be ended");
           }
-          if (!isScrollTest()) {
-            mActivity.removePlayerListener();
-          } else {
+          if (isScrollTest()) {
             assertTrue(mScrollRequested);
             mScrollActivity.removePlayerListener();
+          } else if (isAudioOffloadTest()) {
+            mAudioOffloadActivity.removePlayerListener();
+          } else {
+            mActivity.removePlayerListener();
           }
           // Verify the total time taken by the notification test
           if (getTestType().equals(TestType.CALL_NOTIFICATION_TEST) || getTestType().equals(
@@ -225,6 +243,12 @@ public abstract class PlayerListener implements Player.Listener {
             long actualTime = System.currentTimeMillis() - mStartTime;
             assertEquals((float) mExpectedTotalTime, (float) actualTime,
               NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+          }
+          if (isAudioOffloadTest()) {
+            assertTrue("Player did not sleep for audio offload",
+                mAudioOffloadActivity.mIsSleepingForAudioOffloadEnabled);
+            assertTrue("Audio offload was not enabled",
+                mAudioOffloadActivity.mIsAudioOffloadEnabled);
           }
           mPlaybackEnded = true;
           LISTENER_LOCK.notify();
