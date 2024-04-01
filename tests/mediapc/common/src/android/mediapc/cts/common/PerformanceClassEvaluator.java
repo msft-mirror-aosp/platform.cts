@@ -531,6 +531,10 @@ public class PerformanceClassEvaluator {
             this.setMeasuredValue(RequirementConstants.CONCURRENT_FPS, achievedFps);
         }
 
+        public void setFrameDropsPerSecond(double fdps) {
+            this.setMeasuredValue(RequirementConstants.FRAMES_DROPPED_PER_SECOND, fdps);
+        }
+
         // copied from android.mediapc.cts.getReqMinConcurrentInstances due to build issues on aosp
         public static int getReqMinConcurrentInstances(int performanceClass, String mimeType1,
             String mimeType2, int resolution) {
@@ -741,6 +745,26 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement create5_1__H_1_2_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-3] MUST advertise the maximum number of hardware video encoder
          * sessions that can be run concurrently in any codec combination via the
          * CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities
@@ -843,6 +867,27 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_4, reqConcurrentFps);
+        }
+
+        /**
+         * [5.1/H-1-4] MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions
+         * (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 4
+         * sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1.
+         * For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are
+         * only required to support 1080p resolution, but are still required to support 6 instances
+         * at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement create5_1__H_1_4_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
         }
 
         /**
@@ -960,6 +1005,24 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-6] Support 6 instances of hardware video decoder and hardware video
+         * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
+         * at 720p(R,S) /1080p(T) /4k(U) @30fps resolution.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_6_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-9] Support 2 instances of secure hardware video decoder sessions
          * (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently at 1080p
          * resolution@30fps.
@@ -988,6 +1051,25 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_9, reqConcurrentFps);
+        }
+
+        /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_9_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
         }
 
         /**
@@ -1025,6 +1107,25 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_10_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-19] Support 3 instances of hardware video decoder and hardware video
          * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
          * at 4k(U) @30fps resolution for 10-bit with at most one encoder session.
@@ -1041,6 +1142,23 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_19, reqConcurrentFps);
+        }
+
+        /**
+         * [2.2.7.1/5.1/H-1-19] Support 3 instances of hardware video decoder and hardware video
+         * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
+         * at 4k(U) @30fps resolution for 10-bit with at most one encoder session.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_19_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
         }
     }
 
@@ -2304,6 +2422,14 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_2_4k());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_2_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.create5_1__H_1_2_4k_drop());
+    }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_4_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.create5_1__H_1_4_4k_drop());
+    }
+
     public ConcurrentCodecRequirement addR5_1__H_1_3_720p(String mimeType1, String mimeType2,
         int resolution) {
         return this.addRequirement(
@@ -2358,6 +2484,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_6_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k_drop());
+    }
+
     public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
     }
@@ -2374,6 +2504,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_9_4k());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_9_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_9_4k_drop());
+    }
+
     public ConcurrentCodecRequirement addR5_1__H_1_10_1080p() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_1080p());
     }
@@ -2381,6 +2515,11 @@ public class PerformanceClassEvaluator {
     public ConcurrentCodecRequirement addR5_1__H_1_10_4k() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_4k());
     }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_10_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_4k_drop());
+    }
+
     public SecureCodecRequirement addR5_1__H_1_11() {
         return this.addRequirement(SecureCodecRequirement.createR5_1__H_1_11());
     }
@@ -2420,6 +2559,10 @@ public class PerformanceClassEvaluator {
 
     public ConcurrentCodecRequirement addR5_1__H_1_19() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19());
+    }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_19_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19_4k_drop());
     }
 
     /* Adds requirement 5.1/H-1-20 */
