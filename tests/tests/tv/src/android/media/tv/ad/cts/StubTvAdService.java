@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,6 +66,19 @@ public class StubTvAdService extends TvAdService {
         public int mErrorCount;
         public int mResetAdServiceCount;
         public byte[] mSigningResultByte;
+        public boolean mMediaViewEnabled;
+        public int mMediaViewEnabledCount;
+        public int mKeyDownCount;
+        public int mKeyLongPressCount;
+        public int mKeyMultipleCount;
+        public int mKeyUpCount;
+        public int mKeyDownCode;
+        public int mKeyLongPressCode;
+        public int mKeyMultipleCode;
+        public int mKeyUpCode;
+        public int mMediaViewSizeChangedCount;
+        public int mMediaViewWidth;
+        public int mMediaViewHeight;
 
         public String mCurrentTvInputId;
         public Rect mCurrentVideoBounds;
@@ -75,16 +89,6 @@ public class StubTvAdService extends TvAdService {
         public List<TvTrackInfo> mTvTrackInfo;
         public String mErrMessage;
         public Bundle mErrBundle;
-        public int mKeyDownCount;
-        public int mKeyLongPressCount;
-        public int mKeyMultipleCount;
-        public int mKeyUpCount;
-        public int mKeyDownCode;
-        public int mKeyLongPressCode;
-        public int mKeyMultipleCode;
-        public int mKeyUpCode;
-        private int mKeyMultipleRepeatCount;
-
         public KeyEvent mKeyDownEvent;
         public KeyEvent mKeyLongPressEvent;
         public KeyEvent mKeyMultipleEvent;
@@ -113,6 +117,11 @@ public class StubTvAdService extends TvAdService {
             mTvMessageCount = 0;
             mErrorCount = 0;
             mResetAdServiceCount = 0;
+            mMediaViewEnabled = false;
+            mMediaViewEnabledCount = 0;
+            mMediaViewSizeChangedCount = 0;
+            mMediaViewWidth = 0;
+            mMediaViewHeight = 0;
 
             mCurrentTvInputId = null;
             mCurrentVideoBounds = null;
@@ -132,7 +141,6 @@ public class StubTvAdService extends TvAdService {
             mKeyLongPressCode = 0;
             mKeyMultipleCode = 0;
             mKeyUpCode = 0;
-            mKeyMultipleRepeatCount = 0;
 
             mKeyDownEvent = null;
             mKeyLongPressEvent = null;
@@ -249,7 +257,6 @@ public class StubTvAdService extends TvAdService {
             super.onKeyDown(keyCode, event);
             mKeyMultipleCount++;
             mKeyMultipleCode = keyCode;
-            mKeyMultipleRepeatCount = repeatCnt;
             mKeyMultipleEvent = event;
             return false;
         }
@@ -271,5 +278,36 @@ public class StubTvAdService extends TvAdService {
             super.onGenericMotionEvent(event);
             return false;
         }
+
+
+
+        @Override
+        public boolean isMediaViewEnabled() {
+            super.isMediaViewEnabled();
+            mMediaViewEnabledCount++;
+            return true;
+        }
+
+        @Override
+        public View onCreateMediaView() {
+            super.onCreateMediaView();
+            mMediaViewEnabledCount++;
+            return null;
+        }
+
+        @Override
+        public void setMediaViewEnabled(boolean enable) {
+            super.setMediaViewEnabled(enable);
+            mMediaViewEnabledCount++;
+        }
+
+        @Override
+        public void onMediaViewSizeChanged(int w, int h) {
+            super.onMediaViewSizeChanged(w, h);
+            mMediaViewSizeChangedCount++;
+            mMediaViewWidth = w;
+            mMediaViewHeight = h;
+        }
+
     }
 }
