@@ -21,96 +21,124 @@ import cv2
 from mobly import test_runner
 import numpy
 
-import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
+import its_base_test
 import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
 
+_AE_CHANGE_THRESH = 1  # incorrect behavior is empirically < 0.5 percent
+_AWB_CHANGE_THRESH = 2  # incorrect behavior is empirically < 1.5 percent
 _AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
 _ARUCO_MARKERS_COUNT = 4
-_COLORS = ('r', 'g', 'b', 'gray')
-_INDEX = 2  # Compare every other frame of preview images
+_CH_FULL_SCALE = 255
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_AE_AWB_REGIONS = 4
-_NUM_TEST_FRAMES = 1
-_REGION_DURATION_MS = 1800
-_THRESH_RMS = 2  # Correct behavior is empirically > 4
-
-
-def _compare_rgb_means_3d(frames):
-  """Compare every other frame's RGB's RMS means.
-
-  8 frames are extracted from 8 seconds of preview recording,
-  which meters four different AE/AWB regions for 2 seconds each.
-  Compares frames from different AE/AWB regions metering.
-
-  Args:
-    frames: a list of extracted frames from preview recording.
-  Returns:
-    failure_messages: (list of strings) list of error messages.
-  """
-  failure_messages = []
-  # Enumerate up to the third to last item in list
-  # as to compare it to the last frame
-  for i, _ in enumerate(frames[:-_INDEX]):
-    rms_diff = image_processing_utils.compute_image_rms_difference_3d(
-        frames[i], frames[i+_INDEX])
-    logging.debug('frame %d & %d RGB RMS diff: %.2f', i, i+_INDEX, rms_diff)
-    if rms_diff < _THRESH_RMS:
-      failure_messages.append(
-          f'Frame {i} and frame {i+_INDEX} has RGB RMS diff: {rms_diff:.2f}'
-          f' THRESH: {_THRESH_RMS}'
-      )
-  return failure_messages
+_PERCENTAGE = 100
+_REGION_DURATION_MS = 1800  # 1.8 seconds
 
 
 def _define_metering_regions(img, img_path, chart_path, width, height):
   """Define 4 metering rectangles for AE/AWB regions based on ArUco markers.
 
   Args:
-    img: numpy array; RGB image
-    img_path: str; image file location
-    chart_path: str; chart file location
-    width: int; preview's width in pixels
-    height: int; preview's height in pixels
-
+    img: numpy array; RGB image.
+    img_path: str; image file location.
+    chart_path: str; chart file location.
+    width: int; preview's width in pixels.
+    height: int; preview's height in pixels.
   Returns:
-    ae_awb_regions: metering rectangles; AE/AWB metering regions
+    ae_awb_regions: metering rectangles; AE/AWB metering regions.
   """
   # Extract chart coordinates from aruco markers
+  # TODO: b/330382627 - get chart boundary from 4 aruco markers instead of 2
   aruco_corners, aruco_ids, _ = opencv_processing_utils.find_aruco_markers(
       img, img_path)
   tl, br = opencv_processing_utils.get_chart_boundary_from_aruco_markers(
       aruco_corners, aruco_ids, img, chart_path)
 
   # Define AE/AWB regions through ArUco markers' positions
-  region_1, region_2, region_3, region_4 = (
+  region_blue, region_light, region_dark, region_yellow = (
       opencv_processing_utils.define_metering_rectangle_values(
           tl, br, width, height))
 
   # Create a dictionary of AE/AWB regions for testing
   ae_awb_regions = {
-      'aeAwbRegionOne': region_1,
-      'aeAwbRegionTwo': region_2,
-      'aeAwbRegionThree': region_3,
-      'aeAwbRegionFour': region_4,
+      'aeAwbRegionOne': region_blue,
+      'aeAwbRegionTwo': region_light,
+      'aeAwbRegionThree': region_dark,
+      'aeAwbRegionFour': region_yellow,
   }
   logging.debug('aeAwbRegions: %s', ae_awb_regions)
   return ae_awb_regions
 
 
-def _extract_and_process_key_frames_from_recording(log_path, file_name):
-  """Extract key frames from recordings.
+def _do_ae_check(light, dark):
+  """Checks luma change between two images is above threshold.
+
+  Checks that the Y-average of image with darker metering region
+  is higher than the Y-average of image with lighter metering
+  region. Y stands for brightness, or "luma".
 
   Args:
-    log_path: str; file location
-    file_name: str file name for saved video
+    light: RGB image; metering light region.
+    dark: RGB image; metering dark region.
+  """
+  # Converts img to YUV and returns Y-average
+  light_y, _, _ = cv2.split(cv2.cvtColor(light, cv2.COLOR_BGR2YUV))
+  light_y_avg = numpy.average(light_y)
+  dark_y, _, _ = cv2.split(cv2.cvtColor(dark, cv2.COLOR_BGR2YUV))
+  dark_y_avg = numpy.average(dark_y)
+  logging.debug('Light image Y-average: %.4f', light_y_avg)
+  logging.debug('Dark image Y-average: %.4f', dark_y_avg)
+  # Checks average change in Y-average between two images
+  y_avg_change = (
+      (dark_y_avg-light_y_avg)/light_y_avg)*_PERCENTAGE
+  logging.debug('Y-average percentage change: %.4f', y_avg_change)
+  if y_avg_change < _AE_CHANGE_THRESH:
+    raise AssertionError(
+        f'Luma change {y_avg_change} is less than the threshold: '
+        f'{_AE_CHANGE_THRESH}')
 
+
+def _do_awb_check(blue, yellow):
+  """Checks the ratio of red over blue between two RGB images.
+
+  Checks that the R/B of image with blue metering region
+  is higher than the R/B of image with yellow metering
+  region.
+
+  Args:
+    blue: RGB image; metering blue region.
+    yellow: RGB image; metering yellow region.
   Returns:
-    dictionary of images
+    failure_messages: (list of strings) of error messages.
+  """
+  # Calculates average red value over average blue value in images
+  blue_r_b_ratio = _get_red_blue_ratio(blue)
+  yellow_r_b_ratio = _get_red_blue_ratio(yellow)
+  logging.debug('Blue image R/B ratio: %s', blue_r_b_ratio)
+  logging.debug('Yellow image R/B ratio: %s', yellow_r_b_ratio)
+  # Calculates change in red over blue values between two images
+  r_b_ratio_change = (
+      (blue_r_b_ratio-yellow_r_b_ratio)/yellow_r_b_ratio)*_PERCENTAGE
+  logging.debug('R/B ratio change in percentage: %.4f', r_b_ratio_change)
+  if r_b_ratio_change < _AWB_CHANGE_THRESH:
+    raise AssertionError(
+        f'R/B ratio change {r_b_ratio_change} is less than the'
+        f' threshold: {_AWB_CHANGE_THRESH}')
+
+
+def _extract_and_process_key_frames_from_recording(log_path, file_name):
+  """Extract key frames (1 frame/second) from recordings.
+
+  Args:
+    log_path: str; file location.
+    file_name: str; file name for saved video.
+  Returns:
+    dictionary of images.
   """
   # TODO: b/330382627 - Add function to preview_processing_utils
   # Extract key frames from video
@@ -128,14 +156,29 @@ def _extract_and_process_key_frames_from_recording(log_path, file_name):
   return key_frames
 
 
+def _get_red_blue_ratio(img):
+  """Computes the ratios of average red over blue in img.
+
+  Args:
+    img: numpy array; RGB image.
+  Returns:
+    r_b_ratio: float; ratio of R and B channel means.
+  """
+  img_means = image_processing_utils.compute_image_means(img)
+  img_means = [i * _CH_FULL_SCALE for i in img_means]
+  r_b_ratio = img_means[0]/img_means[2]
+  return r_b_ratio
+
+
 class AeAwbRegions(its_base_test.ItsBaseTest):
   """Tests that changing AE and AWB regions changes image's RGB values.
 
   Test records an 8 seconds preview recording, and meters a different
-  AE and AWB region for every 2 seconds. Extracts a frame from each second
-  of recording and calculates the RGB's root mean square (RMS) difference
-  between every other frame (2 seconds apart). This way, a frame from each
-  of the four AE/AWB metering regions is compared to each other.
+  AE/AWB region (blue, light, dark, yellow) for every 2 seconds.
+  Extracts a frame from each second of recording with a total of 8 frames
+  (2 from each region). For AE check, a frame from light is compared to the
+  dark region. For AWB check, a frame from blue is compared to the yellow
+  region.
 
   """
 
@@ -199,15 +242,18 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       file_name = recording_obj['recordedOutputPath'].split('/')[-1]
       logging.debug('file_name: %s', file_name)
 
-      # Extract and process key frames from preview recording
-      key_frames = _extract_and_process_key_frames_from_recording(
-          log_path, file_name)
+      # Extract 8 key frames per 8 seconds of preview recording
+      # Meters each region of 4 (blue, light, dark, yellow) for 2 seconds
+      # Unpack frames based on metering region's color
+      _, blue, _, light, _, dark, _, yellow = (
+          _extract_and_process_key_frames_from_recording(
+              log_path, file_name))
 
-      # Compare RGB's RMS between frames
-      failure_messages = _compare_rgb_means_3d(key_frames)
+      # AE Check: Extract the Y component from rectangle patch
+      _do_ae_check(light, dark)
 
-    if failure_messages:
-      raise AssertionError('\n'.join(failure_messages))
+      # AWB Check : Verify R/B ratio change is greater than threshold
+      _do_awb_check(blue, yellow)
 
 if __name__ == '__main__':
   test_runner.main()
