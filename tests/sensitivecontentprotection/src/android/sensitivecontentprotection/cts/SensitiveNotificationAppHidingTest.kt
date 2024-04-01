@@ -201,7 +201,7 @@ class SensitiveNotificationAppHidingTest {
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyBeforeAppLaunch() {
         sendSensitiveNotification()
@@ -216,7 +216,7 @@ class SensitiveNotificationAppHidingTest {
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAfterAppLaunch() {
         uiAutomation.adoptShellPermissionIdentity()
@@ -233,7 +233,7 @@ class SensitiveNotificationAppHidingTest {
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAppInBackground() {
         uiAutomation.adoptShellPermissionIdentity()
