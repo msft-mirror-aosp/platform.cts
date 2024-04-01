@@ -124,6 +124,14 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
                 mOnPasswordChangedCalled.countDown();
             }
         }
+
+        @Override
+        public void onSecurityLogsAvailable(@NonNull Context context, @NonNull Intent intent) {
+            super.onSecurityLogsAvailable(context, intent);
+            if (mOnSecurityLogsAvailableCalled != null) {
+                mOnSecurityLogsAvailableCalled.countDown();
+            }
+        }
     }
 
     private static final String TAG = BaseDeviceAdminTest.class.getSimpleName();
@@ -141,6 +149,7 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
     protected boolean mIsDeviceOwnerTest;
     static CountDownLatch mOnPasswordExpiryTimeoutCalled;
     static CountDownLatch mOnPasswordChangedCalled;
+    static CountDownLatch mOnSecurityLogsAvailableCalled;
     protected final String mTag = getClass().getSimpleName();
 
     @Override
