@@ -289,7 +289,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        writeToDisk(mFile, ONE_MEGABYTE);
+        long writtenBytes = writeToDisk(mFile, ONE_MEGABYTE);
+        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'")
+                .that(writtenBytes).isGreaterThan(0L);
         AtomicReference<List<ResourceOveruseStats>> statsList = new AtomicReference<>();
         PollingCheck.check(
                 "Either" + mPackageName + " stats not found or less than 2 stats found.",
@@ -865,19 +867,25 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                     "directory '" + dir.getAbsolutePath() + "' doesn't exist");
         }
         File uniqueFile = new File(dir, Long.toString(System.nanoTime()));
+        long writtenBytes = 0;
         try (FileOutputStream fos = new FileOutputStream(uniqueFile)) {
             Log.d(TAG, "Attempting to write " + size + " bytes");
-            writeToFos(fos, size);
+            writtenBytes = writeToFos(fos, size);
             fos.getFD().sync();
         }
-        return size;
+        return writtenBytes;
     }
 
-    private static void writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+    private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        long writtenBytes = 0;
         while (maxSize != 0) {
-            int writeSize = (int) Math.min(Integer.MAX_VALUE,
-                    Math.min(Runtime.getRuntime().freeMemory(), maxSize));
-            Log.i(TAG, "writeSize:" + writeSize);
+            int writeSize = Math.toIntExact(Math.min(Runtime.getRuntime().freeMemory(), maxSize));
+            Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
+            if (writeSize == 0) {
+                Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
+                        + writtenBytes);
+                return writtenBytes;
+            }
             try {
                 fos.write(new byte[writeSize]);
             } catch (InterruptedIOException e) {
@@ -885,7 +893,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                 continue;
             }
             maxSize -= writeSize;
+            writtenBytes += writeSize;
         }
+        return writtenBytes;
     }
 
     private static boolean containsPackage(String packageName,
