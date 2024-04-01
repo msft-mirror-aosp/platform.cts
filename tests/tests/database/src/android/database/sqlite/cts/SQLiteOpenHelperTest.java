@@ -233,6 +233,7 @@ public class SQLiteOpenHelperTest extends AndroidTestCase {
         helper.setOpenParams(paramsBuilder.build());
         assertTrue("database must be opened with ENABLE_WRITE_AHEAD_LOGGING flag",
                 helper.getWritableDatabase().isWriteAheadLoggingEnabled());
+        helper.close();
     }
 
     /**
