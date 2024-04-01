@@ -41,10 +41,10 @@ import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -146,7 +146,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      * activity it launched with is not finished.
      */
     @Test
-    @Ignore("b/222188067")
+    @FlakyTest(bugId = 332251465)
     public void testPlaceholderFinishPrimaryWithSecondary_FinishNever() {
         // Set embedding rules with finishPrimaryWithSecondary set to FINISH_NEVER
         final SplitPlaceholderRule splitPlaceholderRule =

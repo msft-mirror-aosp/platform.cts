@@ -18,11 +18,9 @@ package android.server.wm.jetpack.utils;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getActivityBounds;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getResumedActivityById;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.isActivityResumed;
@@ -44,7 +42,6 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
-import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.util.Log;
 import android.util.Pair;
@@ -135,16 +132,12 @@ public class ActivityEmbeddingUtil {
     /**
      * A wrapper to create {@link SplitPairRule} builder with extensions core functional interface
      * to prevent ambiguous issue when using lambda expressions.
-     * <p>
-     * It requires the vendor API version at least {@link ExtensionsUtil#EXTENSION_VERSION_2}.
      */
     @NonNull
     public static SplitPairRule.Builder createSplitPairRuleBuilder(
             @NonNull Predicate<Pair<Activity, Activity>> activitiesPairPredicate,
             @NonNull Predicate<Pair<Activity, Intent>> activityIntentPairPredicate,
             @NonNull Predicate<WindowMetrics> windowMetricsPredicate) {
-        assertTrue("This method requires vendor API version at least 2",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
         return new SplitPairRule.Builder(activitiesPairPredicate, activityIntentPairPredicate,
                 windowMetricsPredicate);
     }

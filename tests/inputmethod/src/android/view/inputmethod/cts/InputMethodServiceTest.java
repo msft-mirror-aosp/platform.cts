@@ -19,8 +19,7 @@ package android.view.inputmethod.cts;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
@@ -106,7 +105,6 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -889,15 +887,12 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
      * Here we use {@link WindowLayoutInfoParcelable} to pass {@link WindowLayoutInfo} values
      * between this test process and the MockIME process.
      */
-    @Ignore("b/264026686")
+    @FlakyTest(bugId = 332251465)
     @Test
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testImeListensToWindowLayoutInfo() throws Exception {
-        assumeTrue(
-                "This test should only be run on devices with extension version that supports IME"
-                        + " as WindowLayoutInfo listener ",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
+        assumeExtensionSupportedDevice();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
