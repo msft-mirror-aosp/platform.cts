@@ -36,7 +36,7 @@ import com.android.bedstead.nene.location.Locations
 import com.android.bedstead.nene.logcat.Logcat
 import com.android.bedstead.nene.notifications.Notifications
 import com.android.bedstead.nene.packages.Packages
-import com.android.bedstead.nene.permissions.Permissions
+import com.android.bedstead.permissions.Permissions
 import com.android.bedstead.nene.properties.Properties
 import com.android.bedstead.nene.resources.Resources
 import com.android.bedstead.nene.roles.Roles

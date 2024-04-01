@@ -14,22 +14,37 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.permissions.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.FailureMode;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Ensure that the given permission is grantable before running the test.
+ *
+ * <p>This is equivalent to {@link EnsureHasPermission} but does not actually grant the permission.
+ */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RepeatingAnnotation
-public @interface EnsureCanGetPermissionGroup {
-    EnsureCanGetPermission[] value();
+@Repeatable(EnsureCanGetPermissionGroup.class)
+public @interface EnsureCanGetPermission {
+    String[] value();
+
+    /** The minimum version where this permission is required. */
+    int minVersion() default 0;
+
+    /** The maximum version where this permission is required. */
+    int maxVersion() default Integer.MAX_VALUE;
+
+    FailureMode failureMode() default FailureMode.FAIL;
 
      /**
      * Priority sets the order that annotations will be resolved.

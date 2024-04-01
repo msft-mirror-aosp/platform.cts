@@ -18,12 +18,11 @@ package com.android.bedstead.nene.notifications
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.os.Build
-import android.service.notification.StatusBarNotification
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
-import com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_NOTIFICATION_LISTENERS
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_NOTIFICATION_LISTENERS
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.Tags

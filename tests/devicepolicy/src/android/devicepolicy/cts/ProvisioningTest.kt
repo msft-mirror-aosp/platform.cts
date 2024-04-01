@@ -31,11 +31,11 @@ import com.android.bedstead.deviceadminapp.DeviceAdminApp
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
@@ -61,7 +61,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
 import com.android.bedstead.nene.packages.CommonPackages
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType

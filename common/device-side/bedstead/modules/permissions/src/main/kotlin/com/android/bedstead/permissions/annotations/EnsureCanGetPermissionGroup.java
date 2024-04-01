@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.permissions.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
+
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Ensure that the given permission is denied before running the test.
- *
- * <p>Note that use of this annotation implies {@link RequireNotInstantApp} as instant apps are not
- * able to drop permissions.
- */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EnsureDoesNotHavePermission {
-    String[] value();
-
-    FailureMode failureMode() default FailureMode.FAIL;
+@RepeatingAnnotation
+public @interface EnsureCanGetPermissionGroup {
+    EnsureCanGetPermission[] value();
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -49,4 +45,3 @@ public @interface EnsureDoesNotHavePermission {
      */
     int priority() default MIDDLE;
 }
-

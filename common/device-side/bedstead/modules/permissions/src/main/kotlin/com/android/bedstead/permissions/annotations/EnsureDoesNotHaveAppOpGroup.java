@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.permissions.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
 import java.lang.annotation.ElementType;
@@ -28,8 +29,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RepeatingAnnotation
-public @interface EnsureHasPermissionGroup {
-    EnsureHasPermission[] value();
+public @interface EnsureDoesNotHaveAppOpGroup {
+    EnsureDoesNotHaveAppOp[] value();
 
      /**
      * Priority sets the order that annotations will be resolved.

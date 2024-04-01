@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 /**
  * Collection of required permissions to be granted or denied.

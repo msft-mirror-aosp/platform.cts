@@ -17,7 +17,7 @@ package com.android.bedstead.nene.wifi
 
 import android.net.wifi.WifiManager
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 

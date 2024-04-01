@@ -16,16 +16,15 @@
 
 package com.android.bedstead.nene.content;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_CONTENT_SUGGESTIONS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_CONTENT_SUGGESTIONS;
 
 import android.app.contentsuggestions.ContentSuggestionsManager;
-import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.UndoableContext;

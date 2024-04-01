@@ -22,6 +22,9 @@ java_library_host {
     srcs: [
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
+
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-common-srcs"
     ],
 
     static_libs: [
@@ -44,6 +47,9 @@ android_library {
     srcs: [
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
+
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-common-srcs"
     ],
 
     static_libs: [

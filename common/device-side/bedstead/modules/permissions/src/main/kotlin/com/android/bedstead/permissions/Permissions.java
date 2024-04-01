@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_APP_OPS_MODES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -548,7 +546,8 @@ public final class Permissions {
         if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
             // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
             // infinite loop so won't use .appOps().set()
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(MANAGE_APP_OPS_MODES);
+            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
+                    CommonPermissions.MANAGE_APP_OPS_MODES);
             for (String appOp : filteredGrantedAppOps) {
                 sAppOpsManager.setMode(appOp, appOpPackage.uid(sUser),
                         appOpPackage.packageName(), AppOpsMode.ALLOWED.value());

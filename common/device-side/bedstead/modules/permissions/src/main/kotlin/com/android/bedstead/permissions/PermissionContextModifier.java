@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.permissions;
+package com.android.bedstead.permissions;
 
 /** Methods available by classes which modify permission contexts. */
 public interface PermissionContextModifier extends PermissionContext, PermissionsController {
