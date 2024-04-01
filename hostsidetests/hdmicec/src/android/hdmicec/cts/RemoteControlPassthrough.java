@@ -342,6 +342,19 @@ public final class RemoteControlPassthrough {
 
         hdmiCecClient.sendUserControlPressAndRelease(
                 sourceDevice, dutLogicalAddress, cecKeycode, false);
+        // KEYCODE_SETUP_MENU might trigger the notification panel quitting the activity
+        // HdmiCecKeyEventCapture.
+        if (cecKeycode == HdmiCecConstants.CEC_KEYCODE_SETUP_MENU) {
+            try {
+                LogHelper.waitForLog(device, "ActivityTaskManager", 5,
+                        "TOGGLE_NOTIFICATION_HANDLER_PANEL");
+                return;
+            } catch (Exception e) {
+                // We have to send the key again since logcat was cleared.
+                hdmiCecClient.sendUserControlPressAndRelease(
+                        sourceDevice, dutLogicalAddress, cecKeycode, false);
+            }
+        }
         LogHelper.assertLog(device, CLASS, "Short press KEYCODE_" + androidKeycode);
     }
 }
