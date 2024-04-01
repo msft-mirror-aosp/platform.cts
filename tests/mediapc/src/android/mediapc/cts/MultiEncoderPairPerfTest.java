@@ -21,6 +21,7 @@ import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -151,6 +152,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
                 mimeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         boolean firstPairAV1 = mFirstPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         boolean secondPairAV1 = mSecondPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
@@ -189,17 +191,22 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
                             width, 30, bitrate));
                 }
             }
-            achievedFrameRate = invokeWithThread(maxInstances, testList);
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4;
+        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4_drop;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
         if (height > 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_4k();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
+            r5_1__H_1_4_drop = pce.addR5_1__H_1_4_4k_drop();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4_drop.setFrameDropsPerSecond(frameDropsPerSec);
         } else if (height == 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();

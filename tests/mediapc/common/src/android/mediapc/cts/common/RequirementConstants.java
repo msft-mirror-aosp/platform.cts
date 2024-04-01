@@ -124,6 +124,7 @@ public class RequirementConstants {
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
     public static final String FRAMES_DROPPED = "frame_drops_per_30sec";
+    public static final String FRAMES_DROPPED_PER_SECOND = "frame_drops_per_sec";
 
     public static final String FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
             "front_camera_dynamic_tenbits_supported";
