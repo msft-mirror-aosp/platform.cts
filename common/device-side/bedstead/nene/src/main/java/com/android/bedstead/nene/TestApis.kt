@@ -18,7 +18,6 @@ package com.android.bedstead.nene
 import com.android.bedstead.nene.accessibility.Accessibility
 import com.android.bedstead.nene.accounts.Accounts
 import com.android.bedstead.nene.activities.Activities
-import com.android.bedstead.nene.adb.Adb
 import com.android.bedstead.nene.annotations.Experimental
 import com.android.bedstead.nene.bluetooth.Bluetooth
 import com.android.bedstead.nene.broadcasts.Broadcasts
@@ -37,7 +36,7 @@ import com.android.bedstead.nene.location.Locations
 import com.android.bedstead.nene.logcat.Logcat
 import com.android.bedstead.nene.notifications.Notifications
 import com.android.bedstead.nene.packages.Packages
-import com.android.bedstead.nene.permissions.Permissions
+import com.android.bedstead.permissions.Permissions
 import com.android.bedstead.nene.properties.Properties
 import com.android.bedstead.nene.resources.Resources
 import com.android.bedstead.nene.roles.Roles
@@ -174,10 +173,6 @@ object TestApis {
     /** Access Test APIs related to system services.  */
     @JvmStatic
     fun services(): Services = Services.sInstance
-
-    /** Access Test APIs related to adb.  */
-    @JvmStatic
-    fun adb(): Adb = Adb
 
     /** Access Test APIs related to certificates.  */
     @JvmStatic

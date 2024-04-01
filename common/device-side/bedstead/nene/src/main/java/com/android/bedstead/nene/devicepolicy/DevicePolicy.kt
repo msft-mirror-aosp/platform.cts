@@ -32,11 +32,10 @@ import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
-import com.android.bedstead.nene.permissions.CommonPermissions
-import com.android.bedstead.nene.permissions.CommonPermissions.BIND_DEVICE_ADMIN
-import com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
-import com.android.bedstead.nene.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
-import com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ADMIN_POLICY
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
+import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
+import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Poll

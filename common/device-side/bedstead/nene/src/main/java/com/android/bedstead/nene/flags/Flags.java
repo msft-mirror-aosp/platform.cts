@@ -18,8 +18,8 @@ package com.android.bedstead.nene.flags;
 
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_DEVICE_CONFIG;
-import static com.android.bedstead.nene.permissions.CommonPermissions.WRITE_ALLOWLISTED_DEVICE_CONFIG;
+import static com.android.bedstead.permissions.CommonPermissions.READ_DEVICE_CONFIG;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_ALLOWLISTED_DEVICE_CONFIG;
 
 import android.provider.DeviceConfig;
 
@@ -28,7 +28,7 @@ import androidx.annotation.Nullable;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 

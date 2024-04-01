@@ -31,8 +31,8 @@ import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.R;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INSTALL_TEST_ONLY_PACKAGE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.USE_SYSTEM_DATA_LOADERS;
+import static com.android.bedstead.permissions.CommonPermissions.INSTALL_TEST_ONLY_PACKAGE;
+import static com.android.bedstead.permissions.CommonPermissions.USE_SYSTEM_DATA_LOADERS;
 import static com.android.compatibility.common.util.FileUtils.readInputStreamFully;
 
 import android.content.ComponentName;
@@ -57,7 +57,7 @@ import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingIntentSender;
 import com.android.bedstead.nene.utils.Poll;

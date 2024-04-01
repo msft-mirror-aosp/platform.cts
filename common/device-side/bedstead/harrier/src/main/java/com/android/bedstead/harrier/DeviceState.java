@@ -67,11 +67,11 @@ import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
-import com.android.bedstead.harrier.annotations.EnsureCanGetPermission;
+import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -81,10 +81,10 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -105,7 +105,6 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -178,8 +177,8 @@ import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.PermissionContextImpl;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
@@ -1296,12 +1295,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireStorageEncryptionUnsupported) {
                 requireStorageEncryptionUnsupported();
-                continue;
-            }
-
-            if (annotation instanceof RequireAdbRoot requireAdbRootAnnotation) {
-                requireAdbRoot(requireAdbRootAnnotation.failureMode());
-
                 continue;
             }
 
@@ -4273,7 +4266,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4458,7 +4452,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {
@@ -4510,18 +4505,6 @@ public final class DeviceState extends HarrierRule {
                 TestApis.devicePolicy().getStorageEncryptionStatus()
                         == ENCRYPTION_STATUS_UNSUPPORTED,
                 FailureMode.SKIP);
-    }
-
-    private void requireAdbRoot(FailureMode failureMode) {
-        if (TestApis.adb().isRootAvailable()) {
-            Tags.addTag(Tags.ADB_ROOT);
-        } else {
-            failOrSkip("Device does not have root available.", failureMode);
-        }
-    }
-
-    private static boolean shouldRunAsRoot() {
-        return Tags.hasTag(Tags.ADB_ROOT);
     }
 
     private void ensurePolicyOperationUnsafe(

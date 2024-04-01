@@ -18,7 +18,7 @@ package android.devicepolicy.cts;
 
 
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_BACKUP;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BACKUP;
+import static com.android.bedstead.permissions.CommonPermissions.BACKUP;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -35,7 +35,7 @@ import android.content.Context;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;

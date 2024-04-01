@@ -14,7 +14,7 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibility.cts.common.AccessibilityShortcutSettingsRule.ACCESSIBILITY_BUTTON;
+import static android.accessibility.cts.common.AccessibilityShortcutSettingsRule.SOFTWARE;
 import static android.accessibilityservice.AccessibilityServiceInfo.FLAG_REQUEST_ACCESSIBILITY_BUTTON;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 
@@ -114,7 +114,7 @@ public class AccessibilityButtonSdk29Test {
     public void getA11yBtn_withLegacyReqA11yBtnService_succeeds() {
         runWithShellPermissionIdentity(sUiAutomation, () -> {
             final List<String> targets = mAccessibilityManager.getAccessibilityShortcutTargets(
-                    ACCESSIBILITY_BUTTON);
+                    SOFTWARE);
             assertTrue("Single Tap should contain legacy accessibility service.",
                     shortcutTargetListContains(targets, mServiceComponentName));
         });
