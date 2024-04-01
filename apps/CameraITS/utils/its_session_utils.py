@@ -677,19 +677,42 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_OBJ_VALUE_STR]
 
-  def is_hlg10_recording_supported(self, profile_id):
+  def is_hlg10_recording_supported_for_profile(self, profile_id):
     """Query whether the camera device supports HLG10 video recording.
 
     Args:
       profile_id: int; profile id corresponding to the quality level.
     Returns:
-      Boolean: True, if device supports HLG10 video recording, False in
+      Boolean: True if device supports HLG10 video recording, False in
       all other cases.
     """
     cmd = {}
-    cmd[_CMD_NAME_STR] = 'isHLG10Supported'
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForProfile'
     cmd[_CAMERA_ID_STR] = self._camera_id
     cmd['profileId'] = profile_id
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'hlg10Response':
+      raise error_util.CameraItsError('Failed to query HLG10 support')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def is_hlg10_recording_supported_for_size_and_fps(
+      self, video_size, max_fps):
+    """Query whether the camera device supports HLG10 video recording.
+
+    Args:
+      video_size: String; the hlg10 video recording size.
+      max_fps: int; the maximum frame rate of the camera.
+    Returns:
+      Boolean: True if device supports HLG10 video recording, False in
+      all other cases.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForSizeAndFps'
+    cmd[_CAMERA_ID_STR] = self._camera_id
+    cmd['videoSize'] = video_size
+    cmd['maxFps'] = max_fps
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     data, _ = self.__read_response_from_socket()
