@@ -31,6 +31,7 @@ import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_202
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
@@ -196,7 +197,7 @@ public class CodecInfoTest {
             // Encoders that support FEATURE_HdrEditing / FEATURE_HlgEditing, must support
             // ABGR2101010 color format and at least one HDR profile
             boolean hdrEditingSupported = caps.isFeatureSupported(FEATURE_HdrEditing);
-            boolean hlgEditingSupported = android.media.codec.Flags.hlgEditing()
+            boolean hlgEditingSupported = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
                     ? caps.isFeatureSupported(FEATURE_HlgEditing) : false;
             if (hdrEditingSupported || hlgEditingSupported) {
                 boolean abgr2101010Supported = IntStream.of(caps.colorFormats)
