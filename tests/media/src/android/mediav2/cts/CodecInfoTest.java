@@ -24,8 +24,10 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420P
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
+import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
@@ -276,6 +278,28 @@ public class CodecInfoTest {
                 List.of(MediaCodecInfo.SECURITY_MODEL_SANDBOXED,
                         MediaCodecInfo.SECURITY_MODEL_MEMORY_SAFE).contains(
                         mCodecInfo.getSecurityModel()));
+    }
+
+    /**
+     * All decoders for compression technologies that were introduced after 2002 must support
+     * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
+     */
+    @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @VsrTest(requirements = {"VSR-4.2.005.001"})
+    @Test
+    public void testDynamicColorAspectSupport() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeFalse("Test is applicable only for decoders", mCodecInfo.isEncoder());
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+        Assume.assumeTrue("Skipping, Only intended for devices with board first_api_level >= V",
+                BOARD_FIRST_SDK_IS_AT_LEAST_202404);
+        assertTrue(mCodecName + " does not support FEATURE_DynamicColorAspects.",
+                isFeatureSupported(mCodecName, mMediaType, FEATURE_DynamicColorAspects));
     }
 
     /**
