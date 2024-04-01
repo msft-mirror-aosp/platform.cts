@@ -28,7 +28,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
-import com.android.bedstead.harrier.annotations.RequireAdbRoot
+import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
 import com.android.compatibility.common.util.SystemUtil
@@ -200,7 +200,7 @@ class IntentTest : PackageInstallerTestBase() {
     }
 
     @Test
-    @RequireAdbRoot
+    @RequireAdbRoot(reason = "b/322830652: Add reason")
     @Ignore("b/322830652: Test suite runs on non-rooted devices only.")
     fun disallowInstallApps_installFails() {
         try {

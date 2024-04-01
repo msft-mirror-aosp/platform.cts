@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.interactive.steps
+package com.android.xts.root
 
-import com.android.bedstead.adb.adb
-import com.android.bedstead.nene.TestApis
-import com.android.bedstead.usb.usb
-
-class ConnectViaAdbToHostStep : ActAndWaitStep(
-        "Connect this device via ADB to the host", { TestApis.adb().isEnabledOverWifi() || TestApis.usb().isConnected() }
-)
+object Tags {
+    /**
+     * Set when ADB has root capabilities.
+     *
+     * Note that this will only be set in tests which declare their use of ADB root using
+     * [com.android.xts.root.annotations.RequireAdbRoot].
+     */
+    val ADB_ROOT = "adb-root"
+}

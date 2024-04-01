@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.interactive.steps
+package com.android.interactive.steps.root
 
-import com.android.bedstead.adb.adb
-import com.android.bedstead.nene.TestApis
-import com.android.bedstead.usb.usb
+import com.android.interactive.annotations.NotFullyAutomated
+import com.android.interactive.steps.YesNoStep
 
-class ConnectViaAdbToHostStep : ActAndWaitStep(
-        "Connect this device via ADB to the host", { TestApis.adb().isEnabledOverWifi() || TestApis.usb().isConnected() }
-)
+/** See step instruction.  */
+@NotFullyAutomated(reason = "The purpose of this step is to validate external information about the device")
+class IsRootAvailableToAdbOnThisDeviceStep : YesNoStep("Is root available to ADB on this device?")
+

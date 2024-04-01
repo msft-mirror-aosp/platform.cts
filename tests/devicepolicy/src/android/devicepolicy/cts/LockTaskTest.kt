@@ -49,7 +49,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireAdbRoot
+import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
