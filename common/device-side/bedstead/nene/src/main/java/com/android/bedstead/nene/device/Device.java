@@ -16,7 +16,7 @@
 
 package com.android.bedstead.nene.device;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.DISABLE_KEYGUARD;
+import static com.android.bedstead.permissions.CommonPermissions.DISABLE_KEYGUARD;
 
 import android.app.KeyguardManager;
 import android.content.pm.PackageManager;
@@ -28,7 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 

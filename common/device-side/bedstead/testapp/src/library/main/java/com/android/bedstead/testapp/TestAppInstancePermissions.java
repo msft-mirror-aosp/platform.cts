@@ -16,8 +16,8 @@
 package com.android.bedstead.testapp;
 
 import com.android.bedstead.nene.appops.AppOpsMode;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.PermissionsController;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionsController;
 import com.android.bedstead.nene.utils.Versions;
 
 import java.util.ArrayList;

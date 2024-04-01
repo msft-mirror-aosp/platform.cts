@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_ADMINS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_ADMINS;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -26,7 +26,7 @@ import android.content.pm.PackageManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;

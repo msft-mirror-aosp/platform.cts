@@ -20,7 +20,7 @@ import static android.os.Build.VERSION_CODES.TIRAMISU;
 
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.DISABLE_RESOURCES_UPDATABILITY_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.WRITE_ALLOWLISTED_DEVICE_CONFIG;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_ALLOWLISTED_DEVICE_CONFIG;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -28,7 +28,7 @@ import android.provider.DeviceConfig;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.nene.TestApis;
 

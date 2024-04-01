@@ -509,6 +509,39 @@ public class NfcAdapterTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtension() throws InterruptedException {
+        CountDownLatch tagDetectedCountDownLatch = new CountDownLatch(1);
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(mContext);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtensionCallback cb =
+                new NfcOemExtensionCallback(tagDetectedCountDownLatch);
+        try {
+            nfcOemExtension.registerCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // TODO: Fix these tests as we add more functionality to this API surface.
+            nfcOemExtension.clearPreference();
+        } finally {
+            nfcOemExtension.unregisterCallback(cb);
+        }
+    }
+
+    private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
+        private final CountDownLatch mTagDetectedCountDownLatch;
+
+        NfcOemExtensionCallback(CountDownLatch countDownLatch) {
+            mTagDetectedCountDownLatch = countDownLatch;
+        }
+
+        @Override
+        public void onTagConnected(boolean connected, Tag tag) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+    }
+
     private class NfcVendorNciCallback implements NfcAdapter.NfcVendorNciCallback {
         private final CountDownLatch mRspCountDownLatch;
         private final CountDownLatch mNtfCountDownLatch;

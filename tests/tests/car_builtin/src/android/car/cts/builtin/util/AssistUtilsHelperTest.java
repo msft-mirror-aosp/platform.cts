@@ -18,7 +18,7 @@ package android.car.cts.builtin.util;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_VOICE_INTERACTION_SERVICE;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_VOICE_INTERACTION_SERVICE;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 

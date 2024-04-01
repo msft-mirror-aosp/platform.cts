@@ -101,7 +101,6 @@ public class JobThrottlingTest {
     private TestAppInterface mTestAppInterface;
     private DeviceConfigStateHelper mDeviceConfigStateHelper;
     private DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper;
-    private DeviceConfigStateHelper mTareDeviceConfigStateHelper;
 
     private static boolean isDeviceIdleEnabled(UiDevice uiDevice) throws Exception {
         final String output = uiDevice.executeShellCommand("cmd deviceidle enabled deep").trim();
@@ -155,7 +154,6 @@ public class JobThrottlingTest {
                         .setInt("fc_applied_constraints", 0).build());
         mActivityManagerDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
-        mTareDeviceConfigStateHelper = new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
         toggleAutoRestrictedBucketOnBgRestricted(false);
         // Make sure the screen doesn't turn off when the test turns it on.
         mInitialDisplayTimeout =
@@ -523,9 +521,6 @@ public class JobThrottlingTest {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         // Disable coalescing
         mDeviceConfigStateHelper.set("qc_timing_session_coalescing_duration_ms", "0");
 
@@ -552,9 +547,6 @@ public class JobThrottlingTest {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeFalse("not testable in automotive device", mAutomotiveDevice);
         assumeFalse("not testable in leanback device", mLeanbackOnly);
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         // Disable coalescing
         mDeviceConfigStateHelper.set("qc_timing_session_coalescing_duration_ms", "0");
@@ -584,9 +576,6 @@ public class JobThrottlingTest {
     public void testJobsInRestrictedBucket_DeferredUntilFreeResources() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         // Disable coalescing
         mDeviceConfigStateHelper.set("qc_timing_session_coalescing_duration_ms", "0");
@@ -628,9 +617,6 @@ public class JobThrottlingTest {
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
         assumeFalse("not testable, since ethernet is connected", hasEthernetConnection());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         // Disable coalescing and the parole session
         mDeviceConfigStateHelper.set("qc_timing_session_coalescing_duration_ms", "0");
         mDeviceConfigStateHelper.set("qc_max_session_count_restricted", "0");
@@ -667,9 +653,6 @@ public class JobThrottlingTest {
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
         assumeFalse("not testable, since ethernet is connected", hasEthernetConnection());
         assumeTrue(mNetworkingHelper.hasWifiFeature());
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         // Disable coalescing and the parole session
         mDeviceConfigStateHelper.set("qc_timing_session_coalescing_duration_ms", "0");
@@ -716,9 +699,6 @@ public class JobThrottlingTest {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         setChargingState(false);
         setTestPackageStandbyBucket(Bucket.NEVER);
         Thread.sleep(DEFAULT_WAIT_TIMEOUT);
@@ -730,9 +710,6 @@ public class JobThrottlingTest {
     public void testUidActiveBypassesStandby() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         setChargingState(false);
         setTestPackageStandbyBucket(Bucket.NEVER);
@@ -1096,9 +1073,6 @@ public class JobThrottlingTest {
         assumeTrue(BatteryUtils.hasBattery());
         assumeTrue(mNetworkingHelper.hasWifiFeature());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         setTestPackageStandbyBucket(Bucket.RESTRICTED);
 
         // Disable coalescing and the parole session
@@ -1128,9 +1102,6 @@ public class JobThrottlingTest {
     @Test
     public void testRestrictingStopReason_RestrictedBucket_idle() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         setTestPackageStandbyBucket(Bucket.RESTRICTED);
 
@@ -1162,9 +1133,6 @@ public class JobThrottlingTest {
         // Can't toggle charging state if there's no battery.
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         setTestPackageStandbyBucket(Bucket.RESTRICTED);
 
         // Disable coalescing and the parole session
@@ -1194,9 +1162,6 @@ public class JobThrottlingTest {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
 
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
-
         setTestPackageStandbyBucket(Bucket.RESTRICTED);
 
         // Disable coalescing and the parole session
@@ -1225,9 +1190,6 @@ public class JobThrottlingTest {
     public void testRestrictingStopReason_Quota() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         // Reduce allowed time for testing.
         mDeviceConfigStateHelper.set("qc_allowed_time_per_period_rare_ms", "60000");
@@ -1369,7 +1331,6 @@ public class JobThrottlingTest {
         mNetworkingHelper.tearDown();
         mDeviceConfigStateHelper.restoreOriginalValues();
         mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();
-        mTareDeviceConfigStateHelper.restoreOriginalValues();
 
         mUiDevice.executeShellCommand(
                 "cmd jobscheduler reset-execution-quota -u " + UserHandle.myUserId()

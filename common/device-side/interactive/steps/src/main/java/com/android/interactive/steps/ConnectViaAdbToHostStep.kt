@@ -16,6 +16,7 @@
 
 package com.android.interactive.steps
 
+import com.android.bedstead.adb.adb
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.usb.usb
 

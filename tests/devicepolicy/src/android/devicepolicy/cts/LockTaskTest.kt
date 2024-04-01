@@ -49,7 +49,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireAdbRoot
+import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
@@ -1265,7 +1265,7 @@ class LockTaskTest {
         }
 
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setLockTaskPackages", "android.app.admin.DevicePolicyManager#isLockTaskPermitted"])
-    @RequireAdbRoot
+    @RequireAdbRoot(reason = "TODO")
     @MostImportantCoexistenceTest(policy = LockTask::class)
     fun setLockTaskPackages_sameValues_applied() {
         try {

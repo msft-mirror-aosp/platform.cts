@@ -27,7 +27,7 @@ import android.location.LocationManager;
 import android.os.SystemClock;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 /** A test location provider on the device. */
 public final class LocationProvider implements AutoCloseable {

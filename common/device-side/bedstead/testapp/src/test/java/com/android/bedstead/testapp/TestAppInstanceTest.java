@@ -24,9 +24,9 @@ import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
 
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_CONNECT;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -42,7 +42,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.eventlib.EventLogs;

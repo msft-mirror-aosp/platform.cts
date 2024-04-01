@@ -224,6 +224,38 @@ public class CameraErrorCollector extends ErrorCollector {
     }
 
     /**
+     * Check if {@code values} contains all elements in {@code expected}. Duplicates in
+     * {@code expected} are ignored.
+     *
+     * @param msg      Message to be logged when check fails.
+     * @param values   Collection to check membership in.
+     * @param expected Collection which must be entirely present in {@code values}.
+     * @return {@code true} if the two collection are equal, {@code false} otherwise
+     */
+    public <T> boolean expectContainsAll(String msg, Collection<T> values, Collection<T> expected) {
+        Objects.requireNonNull(values);
+        Objects.requireNonNull(expected);
+
+        List<T> missing = expected.stream()
+                .filter(e -> !values.contains(e))
+                .collect(Collectors.toList());
+        if (missing.isEmpty()) {
+            return true;
+        }
+
+        String missingElems = missing.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+        String expectedElems = expected.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+
+        addMessage(String.format("%s (%s missing in %s)",
+                msg, missingElems, expectedElems));
+        return false;
+    }
+
+    /**
      * Check that the {@code actual} value is greater than the {@code expected} value.
      *
      * @param msg Message to be logged when check fails.

@@ -18,13 +18,13 @@ package android.telephony.cts;
 
 import static androidx.test.InstrumentationRegistry.getContext;
 
-import static com.android.compatibility.common.util.PropertyUtil.getVendorApiLevel;
-
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.SystemProperties;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -84,10 +84,20 @@ public final class TelephonyFeatureFlagsTest {
                     hasFeatureTelephony);
         }
 
-        if (hasFeatureSubscription) {
-            assertTrue("FEATURE_TELEPHONY_SUBSCRIPTION requires "
-                    + "FEATURE_TELEPHONY",
-                    hasFeatureTelephony);
+        // For vendor API V or above,
+        // FEATURE_TELEPHONY is defined, FEATURE_TELEPHONY_SUBSCRIPTION should be also defined
+        if (getVendorApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            boolean hasFeatureTelephonyNSubscription =
+                    hasFeatureTelephony ^ hasFeatureSubscription;
+            assertFalse("FEATURE_TELEPHONY and FEATURE_TELEPHONY_SUBSCRIPTION "
+                    + "must be defined or undefined together",
+                    hasFeatureTelephonyNSubscription);
+        } else {
+            if (hasFeatureSubscription) {
+                assertTrue("FEATURE_TELEPHONY_SUBSCRIPTION requires "
+                                + "FEATURE_TELEPHONY",
+                        hasFeatureTelephony);
+            }
         }
 
         if (hasFeatureCalling) {
@@ -170,5 +180,10 @@ public final class TelephonyFeatureFlagsTest {
                     hasFeatureData && hasFeatureGsm
                             && (hasFeatureCalling || hasFeatureMessaging || hasFeatureIms));
         }
+    }
+
+    private int getVendorApiLevel() {
+        return SystemProperties.getInt(
+                "ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
     }
 }

@@ -17,8 +17,8 @@
 package com.android.bedstead.testapp;
 
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.PermissionContextModifier;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextModifier;
 import com.android.bedstead.nene.utils.Versions;
 
 import java.util.Arrays;

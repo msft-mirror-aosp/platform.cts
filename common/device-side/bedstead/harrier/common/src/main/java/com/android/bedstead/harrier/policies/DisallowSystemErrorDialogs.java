@@ -20,7 +20,7 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePoli
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_SYSTEM_DIALOGS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_SYSTEM_DIALOGS;
 
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 

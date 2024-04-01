@@ -22,7 +22,7 @@ import static android.Manifest.permission.READ_DEVICE_CONFIG;
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import android.content.Context;
 import android.credentials.CredentialManager;
@@ -32,7 +32,7 @@ import androidx.annotation.RequiresApi;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 

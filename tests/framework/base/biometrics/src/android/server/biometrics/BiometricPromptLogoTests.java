@@ -204,7 +204,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                         mock(BiometricPrompt.AuthenticationCallback.class);
                 if (withPermission) {
                     showBiometricPromptWithLogo(testLogoRes, props.getSensorId(), callback);
-                    final UiObject2 actualLogo = findView(LOGO_VIEW);
+                    final UiObject2 actualLogo = waitForView(LOGO_VIEW);
                     final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
 
                     assertThat(actualLogo.getVisibleBounds()).isNotNull();

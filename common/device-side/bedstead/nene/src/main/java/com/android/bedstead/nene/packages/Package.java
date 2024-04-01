@@ -27,11 +27,11 @@ import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -63,8 +63,8 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.Permissions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
@@ -355,7 +355,8 @@ public final class Package {
         checkCanGrantOrRevokePermission(user, permission);
 
         try {
-            boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
+            // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+            boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
             ShellCommand.builderForUser(user, "pm grant")
                     .asRoot(shouldRunAsRoot)
@@ -410,7 +411,8 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        boolean shouldRunAsRoot = Tags.hasTag(Tags.ADB_ROOT);
+        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
         sUiAutomation.revokeRuntimePermission(packageName(), permission);
 
@@ -430,7 +432,9 @@ public final class Package {
                     + " on user " + user + ". But it is not installed");
         }
 
-        if (Tags.hasTag(Tags.ADB_ROOT)) {
+        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        if (shouldRunAsRoot) {
             // If the test is being run as root, every permission can be granted or revoked.
             Log.i(LOG_TAG,
                     "checkCanGrantOrRevokePermission skipped as test is being run as root");

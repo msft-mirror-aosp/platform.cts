@@ -346,10 +346,8 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
         mOutputBuff = new OutputManager();
         for (boolean isAsync : boolStates) {
             mOutputBuff.reset();
+            mSurface = null;
             mExtractor.seekTo(pts, mode);
-            // NOTE: Even though mSurface is not initialized directly or via setUpSurface(),
-            // current call to configure will configure the component in surface mode due to the
-            // flag 'MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE'
             configureCodec(format, isAsync, isAsync /* use crypto configure api */,
                     false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
             mCodec.start();
@@ -413,12 +411,10 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
         mOutputBuff = new OutputManager();
         for (boolean isAsync : boolStates) {
             mOutputBuff.reset();
+            mSurface = null;
             mExtractor.seekTo(pts, mode);
             if (hasSupport) {
                 try {
-                    // NOTE: Even though mSurface is not initialized directly or via setUpSurface(),
-                    // current call to configure will configure the component in surface mode due
-                    // to the flag 'MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE'
                     configureCodec(format, isAsync, isAsync /* use crypto configure api */,
                             false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
                 } catch (IllegalArgumentException e) {
@@ -468,9 +464,6 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                 getAllImagesInRenderQueue();
             } else {
                 try {
-                    // NOTE: Even though mSurface is not initialized directly or via setUpSurface(),
-                    // current call to configure will configure the component in surface mode due
-                    // to the flag 'MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE'
                     configureCodec(format, isAsync, isAsync /* use crypto configure api */,
                             false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
                     fail(mCodecName + " does not advertise support for feature:"

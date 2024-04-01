@@ -22,7 +22,7 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
@@ -36,7 +36,7 @@ import com.android.bedstead.harrier.policies.DisallowRemoveUser
 import com.android.bedstead.harrier.policies.DisallowUserSwitch
 import com.android.bedstead.harrier.policies.ReceiveUserCallbacks
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.types.OptionalBoolean.ANY
 import com.android.bedstead.nene.types.OptionalBoolean.FALSE
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_REMOVE_USER

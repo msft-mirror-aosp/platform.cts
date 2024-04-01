@@ -18,6 +18,7 @@ package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +35,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
+import android.mediapc.cts.common.CodecMetrics;
 import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
@@ -213,6 +215,8 @@ abstract class CodecTestBase {
     boolean mSignalEOSWithLastFrame;
     int mInputCount;
     int mOutputCount;
+    double mFrameDrops;
+    long mLastPresentationTimeUs = -1;
     long mPrevOutputPts;
     boolean mSignalledOutFormatChanged;
     MediaFormat mOutFormat;
@@ -251,6 +255,16 @@ abstract class CodecTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawOutputEOS = true;
         }
+
+        long expectedFrameDurationUs = 1000000 / 30;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
+
         int outputCount = mOutputCount;
         // handle output count prior to releasing the buffer as that can take time
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
@@ -300,6 +314,8 @@ abstract class CodecTestBase {
         mSignalEOSWithLastFrame = signalEOSWithLastFrame;
         mInputCount = 0;
         mOutputCount = 0;
+        mFrameDrops = 0;
+        mLastPresentationTimeUs = -1;
         mPrevOutputPts = Long.MIN_VALUE;
         mSignalledOutFormatChanged = false;
     }
@@ -900,7 +916,7 @@ class CodecEncoderTestBase extends CodecTestBase {
  * The following class decodes the given testFile using decoder created by the given decoderName
  * in surface mode(uses PersistentInputSurface) and returns the achieved fps for decoding.
  */
-class Decode extends CodecDecoderTestBase implements Callable<Double> {
+class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Decode.class.getSimpleName();
 
     final String mDecoderName;
@@ -941,13 +957,13 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
         }
     }
 
-    public Double doDecode() throws Exception {
+    public CodecMetrics doDecode() throws Exception {
         MediaFormat format = setUpSource(mTestFile);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(format);
         // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
         if (!areFormatsSupported(mDecoderName, formats)) {
-            return (Double) 0.0;
+            return getMetrics(0.0, 0.0);
         }
         mCodec = MediaCodec.createByCodecName(mDecoderName);
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -958,7 +974,7 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
         } catch (Exception e) {
             Log.e(LOG_TAG, "Stopping the test because codec.start() failed.", e);
             mCodec.release();
-            return (Double) 0.0;
+            return getMetrics(0.0, 0.0);
         }
 
         // capture timestamps at receipt of output buffers
@@ -981,17 +997,17 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
                 ((mEndTimeMillis - mStartTimeMillis) / 1000.0);
         Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
                 " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
+    public CodecMetrics call() throws Exception {
         try {
             return doDecode();
         } catch (Exception e) {
             Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName
                     + " Failed due to: " + e);
-            return -1.0;
+            return getMetrics(-1.0, 0.0);
         }
     }
 }
@@ -1017,7 +1033,7 @@ class DecodeToSurface extends Decode {
  * The following class encodes a YUV video file to a given mimeType using encoder created by the
  * given encoderName and configuring to 30fps format.
  */
-class Encode extends CodecEncoderTestBase implements Callable<Double> {
+class Encode extends CodecEncoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Encode.class.getSimpleName();
 
     private final String mEncoderName;
@@ -1069,7 +1085,7 @@ class Encode extends CodecEncoderTestBase implements Callable<Double> {
     }
 
 
-    public Double doEncode() throws Exception {
+    public CodecMetrics doEncode() throws Exception {
         MediaFormat format = setUpFormat();
         mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
         mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
@@ -1091,11 +1107,11 @@ class Encode extends CodecEncoderTestBase implements Callable<Double> {
                 ((mEndTimeMillis - mStartTimeMillis) / 1000.0);
         Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
                 " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
+    public CodecMetrics call() throws Exception {
         return doEncode();
     }
 }

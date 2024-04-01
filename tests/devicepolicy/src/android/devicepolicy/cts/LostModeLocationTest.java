@@ -34,7 +34,7 @@ import android.location.Location;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
@@ -42,7 +42,7 @@ import com.android.bedstead.harrier.policies.LostMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.location.LocationProvider;
 import com.android.bedstead.nene.location.Locations;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import org.junit.After;
 import org.junit.Before;

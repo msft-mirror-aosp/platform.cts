@@ -18,7 +18,6 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.assertNull;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.fail;
 
@@ -191,10 +190,10 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         for (String cameraId : cameraIdsUnderTest) {
             // Without the following check, mOrderedPreviewSizes will be null.
-            StaticMetadata metadata = new StaticMetadata(
+            StaticMetadata staticChars = new StaticMetadata(
                     mCameraManager.getCameraCharacteristics(cameraId));
 
-            if (!metadata.isColorOutputSupported()) {
+            if (!staticChars.isColorOutputSupported()) {
                 Log.i(TAG, "Camera " + cameraId + " does not support color outputs, skipping.");
                 continue;
             }
@@ -233,20 +232,42 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                         cameraDeviceSetup.getSessionCharacteristics(sessionConfig);
                 StaticMetadata sessionMetadata = new StaticMetadata(sessionCharacteristics);
 
-                List<CameraCharacteristics.Key<?>> sessionCharacteristicKeys =
-                        metadata.getCharacteristics().getAvailableSessionCharacteristicsKeys();
+                List<CameraCharacteristics.Key<?>> availableSessionCharKeys =
+                        staticChars.getCharacteristics().getAvailableSessionCharacteristicsKeys();
 
                 mCollector.expectNotNull("Session Characteristics keys must not be null",
-                        sessionCharacteristicKeys);
+                        availableSessionCharKeys);
 
-                // Ensure every key in sessionCharacteristicKeys is present in
+                // Ensure every key in availableSessionCharKeys is present in
                 // sessionCharacteristics.
-                for (CameraCharacteristics.Key<?> sessionCharacteristicKey :
-                        sessionCharacteristicKeys) {
-                    mCollector.expectNotNull(sessionCharacteristicKey.toString()
+                for (CameraCharacteristics.Key<?> key : availableSessionCharKeys) {
+                    mCollector.expectNotNull(key.toString()
                                     + " is null in Session Characteristics",
-                            sessionCharacteristics.get(sessionCharacteristicKey));
+                            sessionCharacteristics.get(key));
                 }
+
+                List<CameraCharacteristics.Key<?>> staticKeys =
+                        staticChars.getCharacteristics().getKeys();
+                List<CameraCharacteristics.Key<?>> sessionCharKeys =
+                        sessionCharacteristics.getKeys();
+
+                // Ensure that there are no duplicate keys in session chars
+                HashSet<CameraCharacteristics.Key<?>> uniqueSessionCharKeys =
+                        new HashSet<>(sessionCharKeys);
+                mCollector.expectEquals(
+                        "Session Characteristics should not contain duplicate keys.",
+                        uniqueSessionCharKeys.size(), sessionCharKeys.size());
+
+                // Ensure all keys in static chars are present in session chars.
+                mCollector.expectEquals(
+                        "Session Characteristics and Static Characteristics must have the same "
+                                + "number of keys.",
+                        staticKeys.size(), uniqueSessionCharKeys.size());
+                mCollector.expectContainsAll(
+                        "Session Characteristics must have all the keys in Static "
+                                + "Characteristics",
+                        uniqueSessionCharKeys, staticKeys);
+
 
                 // TODO: Do more thorough testing to make sure the max_digital_zoom and
                 //       zoom_ratio_range have valid values.
@@ -265,34 +286,47 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
      */
     private void checkSessionCharacteristicsForNoCallbackConfig(List<OutputConfiguration> outputs,
             CaptureRequest.Builder requestBuilder,
-            CameraDevice.CameraDeviceSetup unusedDeviceSetup,
-            CameraCharacteristics unusedSessionCharacteristics) throws Exception {
+            CameraDevice.CameraDeviceSetup deviceSetup,
+            CameraCharacteristics sessionCharacteristics) throws Exception {
         // Session configuration with no callbacks
         SessionConfiguration sessionConfigNoCallback = new SessionConfiguration(
                 SessionConfiguration.SESSION_REGULAR, outputs);
         sessionConfigNoCallback.setSessionParameters(requestBuilder.build());
 
-        // TODO: b/303645857: Currently getKeys() throws an exception because
-        // get(REQUEST_AVAILABLE_CHARACTERISTICS_KEYS) returns null.
-        //
-        //CameraCharacteristics sessionCharacteristicsForNoCallbackConfig =
-        //        deviceSetup.getSessionCharacteristics(sessionConfigNoCallback);
-        //List<CameraCharacteristics.Key<?>> keysForNoCallbackConfig =
-        //        sessionCharacteristicsForNoCallbackConfig.getKeys();
-        //
-        //List<CameraCharacteristics.Key<?>> keysForConfiguration =
-        //        sessionCharacteristics.getKeys();
-        //mCollector.expectTrue("sessionCharacteristics must match between from "
-        //       + "SessionConfigurations created from different constructors ",
-        //        keysForNoCallbackConfig.containsAll(keysForConfiguration)
-        //        && keysForConfiguration.containsAll(keysForNoCallbackConfig));
+        CameraCharacteristics sessionCharsWithoutCallbacks = deviceSetup.getSessionCharacteristics(
+                sessionConfigNoCallback);
+        List<CameraCharacteristics.Key<?>> sessionCharKeysWithoutCallback =
+                sessionCharsWithoutCallbacks.getKeys();
+
+        // Ensure that there are no duplicate keys in session chars without callbacks.
+        HashSet<CameraCharacteristics.Key<?>> uniqueSessionCharNoCallbackKeys =
+                new HashSet<>(sessionCharKeysWithoutCallback);
+        mCollector.expectEquals(
+                "Session Characteristics without callback should not contain duplicate keys.",
+                uniqueSessionCharNoCallbackKeys.size(), sessionCharKeysWithoutCallback.size());
+
+        // Ensure all keys in session chars with callback are present in session chars
+        // without callback.
+        List<CameraCharacteristics.Key<?>> sessionCharKeys = sessionCharacteristics.getKeys();
+        mCollector.expectEquals(
+                "Session Characteristics with and without callback must have the same "
+                        + "number of keys.",
+                sessionCharKeys.size(), uniqueSessionCharNoCallbackKeys.size());
+        mCollector.expectContainsAll(
+                "Session Characteristics without callback must have the all the keys in Session "
+                        + "Characteristics with callback.",
+                uniqueSessionCharNoCallbackKeys, sessionCharKeys);
 
         // setStateCallback works as expected
         CameraCaptureSession.StateCallback sessionListener = new BlockingSessionCallback();
         Executor executor = new CameraTestUtils.HandlerExecutor(mHandler);
         sessionConfigNoCallback.setStateCallback(executor, sessionListener);
-        assertEquals(executor, sessionConfigNoCallback.getExecutor());
-        assertEquals(sessionListener, sessionConfigNoCallback.getStateCallback());
+        mCollector.expectEquals(
+                "CameraCaptureSession.StateCallback set by setStateCallback not reflected in "
+                        + "getStateCallback.",
+                sessionListener, sessionConfigNoCallback.getStateCallback());
+        mCollector.expectEquals("Executor set by setStateCallback not reflect in getExecutor.",
+                executor, sessionConfigNoCallback.getExecutor());
     }
 
     @Test

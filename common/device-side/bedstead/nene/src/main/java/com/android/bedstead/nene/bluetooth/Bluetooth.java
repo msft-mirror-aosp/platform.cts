@@ -19,12 +19,12 @@ package com.android.bedstead.nene.bluetooth;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Process.BLUETOOTH_UID;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_CONNECT;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_PRIVILEGED;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.NETWORK_SETTINGS;
+import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH;
+import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
+import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_PRIVILEGED;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.NETWORK_SETTINGS;
 import static com.android.bedstead.nene.utils.Versions.T;
 
 import android.bluetooth.BluetoothAdapter;
@@ -37,7 +37,7 @@ import android.content.pm.PackageManager;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;

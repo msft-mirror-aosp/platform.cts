@@ -7,7 +7,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPL
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_PARENT
-import com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES
 
 /**
  * Policy for receiving a callback when a system update is available.
