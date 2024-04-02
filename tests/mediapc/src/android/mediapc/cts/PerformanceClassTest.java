@@ -27,6 +27,7 @@ import android.media.MediaCodecList;
 import android.media.MediaDrm;
 import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
+import android.mediapc.cts.common.HdrDisplayRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Log;
@@ -202,6 +203,18 @@ public class PerformanceClassTest {
 
         r7_6_1_h_1_1.setPhysicalMemory(totalMemoryMb);
         r7_6_1_h_2_1.setPhysicalMemory(totalMemoryMb);
+
+        pce.submitAndCheck();
+    }
+
+    @Test
+    @CddTest(requirements = {"2.2.7.3/7.1.1.3/H-3-1"})
+    public void testDisplayHdr() {
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        HdrDisplayRequirement r7_1_1_3__h_3_1 = pce.addR7_1_1_3__H_3_1();
+
+        r7_1_1_3__h_3_1.setIsHdr(Utils.IS_HDR);
+        r7_1_1_3__h_3_1.setDisplayLuminance(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);
 
         pce.submitAndCheck();
     }
