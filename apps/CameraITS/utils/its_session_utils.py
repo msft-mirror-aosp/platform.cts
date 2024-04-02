@@ -42,21 +42,26 @@ ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
 CHART_DISTANCE_NO_SCALING = 0
+PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
 JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
+PREVIEW_MIN_TESTED_AREA = 320 * 240
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
+# pylint: disable=line-too-long
 # Allowed tablets as listed on https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
 # List entries must be entered in lowercase
 TABLET_ALLOWLIST = (
     'dragon',  # Google Pixel C
     'hnhey-q',  # Honor Pad 8
     'hwcmr09',  # Huawei MediaPad M5
+    'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
+    'tb350fu',  # Lenovo Tab P11 (Gen 2)
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta9pwifi',  # Samsung Galaxy Tab A9+
@@ -581,7 +586,7 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
       raise error_util.CameraItsError(
-        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
+          'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
@@ -677,19 +682,42 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_OBJ_VALUE_STR]
 
-  def is_hlg10_recording_supported(self, profile_id):
+  def is_hlg10_recording_supported_for_profile(self, profile_id):
     """Query whether the camera device supports HLG10 video recording.
 
     Args:
       profile_id: int; profile id corresponding to the quality level.
     Returns:
-      Boolean: True, if device supports HLG10 video recording, False in
+      Boolean: True if device supports HLG10 video recording, False in
       all other cases.
     """
     cmd = {}
-    cmd[_CMD_NAME_STR] = 'isHLG10Supported'
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForProfile'
     cmd[_CAMERA_ID_STR] = self._camera_id
     cmd['profileId'] = profile_id
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'hlg10Response':
+      raise error_util.CameraItsError('Failed to query HLG10 support')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def is_hlg10_recording_supported_for_size_and_fps(
+      self, video_size, max_fps):
+    """Query whether the camera device supports HLG10 video recording.
+
+    Args:
+      video_size: String; the hlg10 video recording size.
+      max_fps: int; the maximum frame rate of the camera.
+    Returns:
+      Boolean: True if device supports HLG10 video recording, False in
+      all other cases.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForSizeAndFps'
+    cmd[_CAMERA_ID_STR] = self._camera_id
+    cmd['videoSize'] = video_size
+    cmd['maxFps'] = max_fps
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     data, _ = self.__read_response_from_socket()
@@ -1009,7 +1037,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1034,6 +1062,29 @@ class ItsSession(object):
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No supported preview sizes')
     return data[_STR_VALUE_STR].split(';')
+
+  def get_supported_preview_sizes(self, camera_id):
+    """Get supported preview resolutions for this camera device.
+
+    ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
+
+    Note: resolutions are sorted by width x height in ascending order
+    Note: max resolution is capped at 1440x1920.
+    Note: min resolution is capped at 320x240.
+
+    Args:
+      camera_id: int; device id
+    Returns:
+      List of all supported video resolutions in ascending order.
+    """
+    supported_preview_sizes = self.get_all_supported_preview_sizes(camera_id)
+    resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if (resolution_to_area(size)
+                                   <= PREVIEW_MAX_TESTED_AREA
+                                   and resolution_to_area(size)
+                                   >= PREVIEW_MIN_TESTED_AREA)]
+    return supported_preview_sizes
 
   def get_queryable_stream_combinations(self):
     """Get all queryable stream combinations for this camera device.

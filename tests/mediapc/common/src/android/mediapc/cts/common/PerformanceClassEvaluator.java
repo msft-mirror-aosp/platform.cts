@@ -65,7 +65,7 @@ public class PerformanceClassEvaluator {
     public static class AudioTap2ToneLatencyRequirement extends Requirement {
         private static final String TAG = AudioTap2ToneLatencyRequirement.class.getSimpleName();
 
-        private AudioTap2ToneLatencyRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private AudioTap2ToneLatencyRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -109,7 +109,7 @@ public class PerformanceClassEvaluator {
     public static class Camera240FpsRequirement extends Requirement {
         private static final String TAG = Camera240FpsRequirement.class.getSimpleName();
 
-        private Camera240FpsRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private Camera240FpsRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -143,7 +143,7 @@ public class PerformanceClassEvaluator {
         public static int PRIMARY_REAR_CAMERA = 0;
         public static int PRIMARY_FRONT_CAMERA = 1;
 
-        private CameraExtensionRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private CameraExtensionRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -253,7 +253,7 @@ public class PerformanceClassEvaluator {
     public static class CameraLatencyRequirement extends Requirement {
         private static final String TAG = CameraTimestampSourceRequirement.class.getSimpleName();
 
-        private CameraLatencyRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private CameraLatencyRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -331,7 +331,7 @@ public class PerformanceClassEvaluator {
     public static class CameraRawRequirement extends Requirement {
         private static final String TAG = CameraRawRequirement.class.getSimpleName();
 
-        private CameraRawRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private CameraRawRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -364,7 +364,7 @@ public class PerformanceClassEvaluator {
         private static final int TIMESTAMP_REALTIME =
                 CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME;
 
-        private CameraTimestampSourceRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private CameraTimestampSourceRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -377,6 +377,7 @@ public class PerformanceClassEvaluator {
             this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_TIMESTAMP_SOURCE,
                     timestampSource);
         }
+
         /**
          * [2.2.7.2/7.5/H-1-4] MUST support CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
          * for both primary cameras.
@@ -431,17 +432,18 @@ public class PerformanceClassEvaluator {
         public static CodecInitLatencyRequirement createR5_1__H_1_7(String mediaType) {
             long latency = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) ? 50L : 40L;
             RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.R, 65L)
-                        .addRequiredValue(Build.VERSION_CODES.S, 50L)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, latency)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, latency)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, latency)
-                        .build();
+                    RequiredMeasurement.<Long>builder().setId(
+                                    RequirementConstants.CODEC_INIT_LATENCY)
+                            .setPredicate(RequirementConstants.LONG_LTE)
+                            .addRequiredValue(Build.VERSION_CODES.R, 65L)
+                            .addRequiredValue(Build.VERSION_CODES.S, 50L)
+                            .addRequiredValue(Build.VERSION_CODES.TIRAMISU, latency)
+                            .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, latency)
+                            .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, latency)
+                            .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_7,
-                codec_init_latency);
+                    codec_init_latency);
         }
 
         /**
@@ -453,17 +455,18 @@ public class PerformanceClassEvaluator {
          */
         public static CodecInitLatencyRequirement createR5_1__H_1_8() {
             RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.R, 50L)
-                        .addRequiredValue(Build.VERSION_CODES.S, 40L)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
-                        .build();
+                    RequiredMeasurement.<Long>builder().setId(
+                                    RequirementConstants.CODEC_INIT_LATENCY)
+                            .setPredicate(RequirementConstants.LONG_LTE)
+                            .addRequiredValue(Build.VERSION_CODES.R, 50L)
+                            .addRequiredValue(Build.VERSION_CODES.S, 40L)
+                            .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
+                            .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
+                            .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
+                            .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_8,
-                codec_init_latency);
+                    codec_init_latency);
         }
 
         /**
@@ -474,12 +477,13 @@ public class PerformanceClassEvaluator {
          */
         public static CodecInitLatencyRequirement createR5_1__H_1_12() {
             RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 40L)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 40L)
-                        .build();
+                    RequiredMeasurement.<Long>builder().setId(
+                                    RequirementConstants.CODEC_INIT_LATENCY)
+                            .setPredicate(RequirementConstants.LONG_LTE)
+                            .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40L)
+                            .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 40L)
+                            .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 40L)
+                            .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_12,
                     codec_init_latency);
@@ -493,12 +497,13 @@ public class PerformanceClassEvaluator {
          */
         public static CodecInitLatencyRequirement createR5_1__H_1_13() {
             RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
-                        .build();
+                    RequiredMeasurement.<Long>builder().setId(
+                                    RequirementConstants.CODEC_INIT_LATENCY)
+                            .setPredicate(RequirementConstants.LONG_LTE)
+                            .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
+                            .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
+                            .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
+                            .build();
 
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_13,
                     codec_init_latency);
@@ -518,7 +523,7 @@ public class PerformanceClassEvaluator {
         static final int REQUIRED_MIN_CONCURRENT_INSTANCES = 6;
         static final int REQUIRED_MIN_CONCURRENT_INSTANCES_FOR_VP9 = 2;
 
-        private ConcurrentCodecRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private ConcurrentCodecRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -537,12 +542,12 @@ public class PerformanceClassEvaluator {
 
         // copied from android.mediapc.cts.getReqMinConcurrentInstances due to build issues on aosp
         public static int getReqMinConcurrentInstances(int performanceClass, String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             ArrayList<String> MEDIAPC_CONCURRENT_CODECS_R = new ArrayList<>(
-                Arrays.asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC));
+                    Arrays.asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC));
             ArrayList<String> MEDIAPC_CONCURRENT_CODECS = new ArrayList<>(Arrays
-                .asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1));
+                    .asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                            MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1));
 
             if (performanceClass >= Build.VERSION_CODES.TIRAMISU) {
                 return resolution >= 1080 ? REQUIRED_MIN_CONCURRENT_INSTANCES : 0;
@@ -551,9 +556,9 @@ public class PerformanceClassEvaluator {
                     return 0;
                 }
                 if (MEDIAPC_CONCURRENT_CODECS.contains(mimeType1) && MEDIAPC_CONCURRENT_CODECS
-                    .contains(mimeType2)) {
+                        .contains(mimeType2)) {
                     if (MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType1)
-                        || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType2)) {
+                            || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType2)) {
                         return REQUIRED_MIN_CONCURRENT_INSTANCES_FOR_VP9;
                     } else {
                         return REQUIRED_MIN_CONCURRENT_INSTANCES;
@@ -566,7 +571,7 @@ public class PerformanceClassEvaluator {
                     return 0;
                 }
                 if (MEDIAPC_CONCURRENT_CODECS_R.contains(mimeType1) && MEDIAPC_CONCURRENT_CODECS_R
-                    .contains(mimeType2)) {
+                        .contains(mimeType2)) {
                     return REQUIRED_MIN_CONCURRENT_INSTANCES;
                 } else {
                     return 0;
@@ -577,9 +582,9 @@ public class PerformanceClassEvaluator {
         }
 
         private static double getReqMinConcurrentFps(int performanceClass, String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             return FPS_30_TOLERANCE * getReqMinConcurrentInstances(performanceClass, mimeType1,
-                mimeType2, resolution);
+                    mimeType2, resolution);
         }
 
         /**
@@ -633,7 +638,7 @@ public class PerformanceClassEvaluator {
 
             ConcurrentCodecRequirement req = new ConcurrentCodecRequirement(requirementId, measure,
                     testResolution);
-            req.setMeasuredValue(RequirementConstants.TEST_RESOLUTION,  2160);
+            req.setMeasuredValue(RequirementConstants.TEST_RESOLUTION, 2160);
             return req;
         }
 
@@ -649,11 +654,11 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.R,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
                     .addRequiredValue(Build.VERSION_CODES.S,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
                     .build();
 
             return create720p(RequirementConstants.R5_1__H_1_1, maxInstances);
@@ -698,16 +703,16 @@ public class PerformanceClassEvaluator {
          * resolution@30 fps.
          */
         public static ConcurrentCodecRequirement createR5_1__H_1_2_720p(String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             RequiredMeasurement<Double> reqConcurrentFps = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.CONCURRENT_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.R,
-                        getReqMinConcurrentFps(
-                                Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentFps(
+                                    Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
                     .addRequiredValue(Build.VERSION_CODES.S,
-                        getReqMinConcurrentFps(
-                                Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentFps(
+                                    Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
                     .build();
 
             return create720p(RequirementConstants.R5_1__H_1_2, reqConcurrentFps);
@@ -771,16 +776,16 @@ public class PerformanceClassEvaluator {
          * .getSupportedPerformancePoints() methods.
          */
         public static ConcurrentCodecRequirement createR5_1__H_1_3_720p(String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             RequiredMeasurement<Integer> maxInstances = RequiredMeasurement.<Integer>builder()
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.R,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
                     .addRequiredValue(Build.VERSION_CODES.S,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
                     .build();
 
             return create720p(RequirementConstants.R5_1__H_1_3, maxInstances);
@@ -897,16 +902,16 @@ public class PerformanceClassEvaluator {
          * .getSupportedPerformancePoints() methods.
          */
         public static ConcurrentCodecRequirement createR5_1__H_1_5_720p(String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             RequiredMeasurement<Integer> maxInstances = RequiredMeasurement.<Integer>builder()
                     .setId(RequirementConstants.CONCURRENT_SESSIONS)
                     .setPredicate(RequirementConstants.INTEGER_GTE)
                     .addRequiredValue(Build.VERSION_CODES.R,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.R, mimeType1, mimeType2, resolution))
                     .addRequiredValue(Build.VERSION_CODES.S,
-                        getReqMinConcurrentInstances(
-                                Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
+                            getReqMinConcurrentInstances(
+                                    Build.VERSION_CODES.S, mimeType1, mimeType2, resolution))
                     .build();
 
             return create720p(RequirementConstants.R5_1__H_1_5, maxInstances);
@@ -951,19 +956,19 @@ public class PerformanceClassEvaluator {
          * at 720p(R,S) /1080p(T) /4k(U) @30fps resolution.
          */
         public static ConcurrentCodecRequirement createR5_1__H_1_6_720p(String mimeType1,
-            String mimeType2, int resolution) {
+                String mimeType2, int resolution) {
             RequiredMeasurement<Double> reqConcurrentFps = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.CONCURRENT_FPS)
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     // Test transcoding, fps calculated for encoder and decoder combined so req / 2
                     .addRequiredValue(Build.VERSION_CODES.R,
-                        getReqMinConcurrentFps(
-                                Build.VERSION_CODES.R, mimeType1, mimeType2, resolution)
-                            / 2)
+                            getReqMinConcurrentFps(
+                                    Build.VERSION_CODES.R, mimeType1, mimeType2, resolution)
+                                    / 2)
                     .addRequiredValue(Build.VERSION_CODES.S,
-                        getReqMinConcurrentFps(
-                                Build.VERSION_CODES.S, mimeType1, mimeType2, resolution)
-                            / 2)
+                            getReqMinConcurrentFps(
+                                    Build.VERSION_CODES.S, mimeType1, mimeType2, resolution)
+                                    / 2)
                     .build();
 
             return create720p(RequirementConstants.R5_1__H_1_6, reqConcurrentFps);
@@ -1165,7 +1170,7 @@ public class PerformanceClassEvaluator {
     public static class ConcurrentRearFrontRequirement extends Requirement {
         private static final String TAG = ConcurrentRearFrontRequirement.class.getSimpleName();
 
-        private ConcurrentRearFrontRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private ConcurrentRearFrontRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1196,7 +1201,7 @@ public class PerformanceClassEvaluator {
     public static class DensityRequirement extends Requirement {
         private static final String TAG = DensityRequirement.class.getSimpleName();
 
-        private DensityRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private DensityRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1243,7 +1248,7 @@ public class PerformanceClassEvaluator {
         public static int PRIMARY_REAR_CAMERA = 0;
         public static int PRIMARY_FRONT_CAMERA = 1;
 
-        private DynamicRangeTenBitsRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private DynamicRangeTenBitsRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1284,7 +1289,7 @@ public class PerformanceClassEvaluator {
     public static class ExtYuvTargetRequirement extends Requirement {
         private static final String TAG = ExtYuvTargetRequirement.class.getSimpleName();
 
-        private ExtYuvTargetRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private ExtYuvTargetRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1315,7 +1320,7 @@ public class PerformanceClassEvaluator {
         public static int PRIMARY_REAR_CAMERA = 0;
         public static int PRIMARY_FRONT_CAMERA = 1;
 
-        private FaceDetectionRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private FaceDetectionRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1362,6 +1367,7 @@ public class PerformanceClassEvaluator {
         private FileSystemRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
+
         /**
          * Set the Filesystem I/O Rate in MB/s.
          */
@@ -1714,7 +1720,7 @@ public class PerformanceClassEvaluator {
         private static final String TAG =
                 LogicalMultiCameraRequirement.class.getSimpleName();
 
-        private LogicalMultiCameraRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private LogicalMultiCameraRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1796,7 +1802,7 @@ public class PerformanceClassEvaluator {
         private static final String TAG =
                 PreviewStabilizationRequirement.class.getSimpleName();
 
-        private PreviewStabilizationRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private PreviewStabilizationRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1830,7 +1836,7 @@ public class PerformanceClassEvaluator {
         private static final long MIN_FRONT_SENSOR_R_PERF_CLASS_RESOLUTION = 4000000;
         private static final String TAG = PrimaryCameraRequirement.class.getSimpleName();
 
-        private PrimaryCameraRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private PrimaryCameraRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -1972,7 +1978,7 @@ public class PerformanceClassEvaluator {
     public static class ResolutionRequirement extends Requirement {
         private static final String TAG = ResolutionRequirement.class.getSimpleName();
 
-        private ResolutionRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private ResolutionRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -2002,7 +2008,7 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return new ResolutionRequirement(RequirementConstants.R7_1_1_1__H_1_1, long_resolution,
-                short_resolution);
+                    short_resolution);
         }
 
         /**
@@ -2029,7 +2035,7 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return new ResolutionRequirement(RequirementConstants.R7_1_1_1__H_2_1, long_resolution,
-                short_resolution);
+                    short_resolution);
         }
     }
 
@@ -2037,7 +2043,7 @@ public class PerformanceClassEvaluator {
     public static class SecureCodecRequirement extends Requirement {
         private static final String TAG = SecureCodecRequirement.class.getSimpleName();
 
-        private SecureCodecRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private SecureCodecRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -2088,7 +2094,7 @@ public class PerformanceClassEvaluator {
         private static final String TAG =
                 StreamUseCaseRequirement.class.getSimpleName();
 
-        private StreamUseCaseRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private StreamUseCaseRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -2132,7 +2138,7 @@ public class PerformanceClassEvaluator {
     public static class VideoCodecRequirement extends Requirement {
         private static final String TAG = VideoCodecRequirement.class.getSimpleName();
 
-        private VideoCodecRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private VideoCodecRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -2346,7 +2352,7 @@ public class PerformanceClassEvaluator {
         private static final String TAG =
                 UltraWideZoomRatioRequirement.class.getSimpleName();
 
-        private UltraWideZoomRatioRequirement(String id, RequiredMeasurement<?> ... reqs) {
+        private UltraWideZoomRatioRequirement(String id, RequiredMeasurement<?>... reqs) {
             super(id, reqs);
         }
 
@@ -2395,9 +2401,10 @@ public class PerformanceClassEvaluator {
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_1_720p(String mimeType1, String mimeType2,
-        int resolution) {
+            int resolution) {
         return this.addRequirement(
-            ConcurrentCodecRequirement.createR5_1__H_1_1_720p(mimeType1, mimeType2, resolution));
+                ConcurrentCodecRequirement.createR5_1__H_1_1_720p(mimeType1, mimeType2,
+                        resolution));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_1_1080p() {
@@ -2409,9 +2416,10 @@ public class PerformanceClassEvaluator {
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_2_720p(String mimeType1, String mimeType2,
-        int resolution) {
+            int resolution) {
         return this.addRequirement(
-            ConcurrentCodecRequirement.createR5_1__H_1_2_720p(mimeType1, mimeType2, resolution));
+                ConcurrentCodecRequirement.createR5_1__H_1_2_720p(mimeType1, mimeType2,
+                        resolution));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_2_1080p() {
@@ -2431,9 +2439,10 @@ public class PerformanceClassEvaluator {
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_3_720p(String mimeType1, String mimeType2,
-        int resolution) {
+            int resolution) {
         return this.addRequirement(
-            ConcurrentCodecRequirement.createR5_1__H_1_3_720p(mimeType1, mimeType2, resolution));
+                ConcurrentCodecRequirement.createR5_1__H_1_3_720p(mimeType1, mimeType2,
+                        resolution));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_3_1080p() {
@@ -2457,9 +2466,10 @@ public class PerformanceClassEvaluator {
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_5_720p(String mimeType1, String mimeType2,
-        int resolution) {
+            int resolution) {
         return this.addRequirement(
-            ConcurrentCodecRequirement.createR5_1__H_1_5_720p(mimeType1, mimeType2, resolution));
+                ConcurrentCodecRequirement.createR5_1__H_1_5_720p(mimeType1, mimeType2,
+                        resolution));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_5_1080p() {
@@ -2471,9 +2481,10 @@ public class PerformanceClassEvaluator {
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_6_720p(String mimeType1, String mimeType2,
-        int resolution) {
+            int resolution) {
         return this.addRequirement(
-            ConcurrentCodecRequirement.createR5_1__H_1_6_720p(mimeType1, mimeType2, resolution));
+                ConcurrentCodecRequirement.createR5_1__H_1_6_720p(mimeType1, mimeType2,
+                        resolution));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_6_1080p() {
@@ -2625,6 +2636,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ExtYuvTargetRequirement.createExtensionReq());
     }
 
+    /** Add requirement <b>7.1.4.1/H-1-2</b> */
+    public EglRequirement addR7_1_4_1__H_1_2() {
+        return this.addRequirement(EglRequirement.createR7_1_4_1__H_1_2());
+    }
 
     /* Adds requirement 7.5/H-1-1 */
     public PrimaryCameraRequirement addPrimaryRearCameraReq() {
@@ -2695,7 +2710,7 @@ public class PerformanceClassEvaluator {
 
     public ResolutionRequirement addR7_1_1_1__H_1_1() {
         return this.<ResolutionRequirement>addRequirement(
-            ResolutionRequirement.createR7_1_1_1__H_1_1());
+                ResolutionRequirement.createR7_1_1_1__H_1_1());
     }
 
     public DensityRequirement addR7_1_1_3__H_1_1() {
@@ -2708,11 +2723,16 @@ public class PerformanceClassEvaluator {
 
     public ResolutionRequirement addR7_1_1_1__H_2_1() {
         return this.<ResolutionRequirement>addRequirement(
-            ResolutionRequirement.createR7_1_1_1__H_2_1());
+                ResolutionRequirement.createR7_1_1_1__H_2_1());
     }
 
     public DensityRequirement addR7_1_1_3__H_2_1() {
         return this.<DensityRequirement>addRequirement(DensityRequirement.createR7_1_1_3__H_2_1());
+    }
+
+    public HdrDisplayRequirement addR7_1_1_3__H_3_1() {
+        return this.<HdrDisplayRequirement>addRequirement(
+            HdrDisplayRequirement.createR7_1_1_3__H_3_1());
     }
 
     public MemoryRequirement addR7_6_1__H_2_1() {
@@ -2775,7 +2795,7 @@ public class PerformanceClassEvaluator {
 
     private boolean submit(SubmitType type) {
         boolean perfClassMet = true;
-        for (Requirement req: this.mRequirements) {
+        for (Requirement req : this.mRequirements) {
             switch (type) {
                 case VERIFIER:
                     CtsVerifierReportLog verifierLog = new CtsVerifierReportLog(

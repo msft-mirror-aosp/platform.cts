@@ -16,8 +16,6 @@
 
 package com.android.cts.verifier.camera.its;
 
-import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
-
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -73,7 +71,6 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
@@ -1084,10 +1081,15 @@ public class ItsService extends Service implements SensorEventListener {
                             stabilize, ois, hlg10Enabled, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                             aeAwbRegionOne, aeAwbRegionTwo, aeAwbRegionThree, aeAwbRegionFour,
                             aeAwbRegionDuration, zoomStart, zoomEnd, stepSize, stepDuration);
-                } else if ("isHLG10Supported".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isHLG10SupportedForProfile".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
-                    doCheckHLG10Support(cameraId, profileId);
+                    doCheckHLG10SupportForProfile(cameraId, profileId);
+                } else if ("isHLG10SupportedForSizeAndFps".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    String videoSize = cmdObj.getString("videoSize");
+                    int maxFps = cmdObj.getInt("maxFps");
+                    doCheckHLG10SupportForSizeAndFps(cameraId, videoSize, maxFps);
                 } else if ("isP3Supported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckP3Support(cameraId);
@@ -1774,32 +1776,31 @@ public class ItsService extends Service implements SensorEventListener {
                 isPrimaryCamera ? "true" : "false");
     }
 
-    private static MediaFormat initializeHLG10Format(Size videoSize, int videoBitRate,
-            int videoFrameRate) {
-        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                videoSize.getWidth(), videoSize.getHeight());
-        format.setInteger(MediaFormat.KEY_PROFILE, HEVCProfileMain10);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitRate);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFrameRate);
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT2020);
-        format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
-        format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_HLG);
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
-        return format;
+    private void doCheckHLG10SupportForProfile(String cameraId, int profileId) throws ItsException {
+        validateCameraId(cameraId);
+
+        int cameraDeviceId = Integer.parseInt(cameraId);
+        CamcorderProfile camcorderProfile = getCamcorderProfile(cameraDeviceId, profileId);
+        assert (camcorderProfile != null);
+
+        Size videoSize = new Size(camcorderProfile.videoFrameWidth,
+                camcorderProfile.videoFrameHeight);
+        doCheckHLG10SupportInternal(cameraId, videoSize, camcorderProfile.videoBitRate,
+                camcorderProfile.videoFrameRate);
     }
 
-    private void doCheckHLG10Support(String cameraId, int profileId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
+    private void doCheckHLG10SupportForSizeAndFps(String cameraId, String videoSizeStr, int maxFps)
+            throws ItsException {
+        validateCameraId(cameraId);
+
+        Size videoSize = Size.parseSize(videoSizeStr);
+        int cameraIdInt = Integer.parseInt(cameraId);
+        int videoBitRate = ItsUtils.calculateBitrate(cameraIdInt, videoSize, maxFps);
+        doCheckHLG10SupportInternal(cameraId, videoSize, videoBitRate, maxFps);
+    }
+
+    private void doCheckHLG10SupportInternal(String cameraId, Size videoSize,
+            int videoBitRate, int maxFps) throws ItsException {
         boolean cameraHLG10OutputSupported = false;
         try {
             CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
@@ -1810,18 +1811,12 @@ public class ItsService extends Service implements SensorEventListener {
             throw new ItsException("Failed to get camera characteristics", e);
         }
 
-        int cameraDeviceId = Integer.parseInt(cameraId);
-        CamcorderProfile camcorderProfile = getCamcorderProfile(cameraDeviceId, profileId);
-        assert (camcorderProfile != null);
-
-        Size videoSize = new Size(camcorderProfile.videoFrameWidth,
-                camcorderProfile.videoFrameHeight);
         MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        MediaFormat format = initializeHLG10Format(videoSize, camcorderProfile.videoBitRate,
-                camcorderProfile.videoFrameRate);
+        MediaFormat format = ItsUtils.initializeHLG10Format(videoSize, videoBitRate,
+                maxFps);
         boolean codecSupported = (list.findEncoderForFormat(format) != null);
-        Log.v(TAG, "codecSupported: " + codecSupported + "cameraHLG10OutputSupported: " +
-                cameraHLG10OutputSupported);
+        Log.v(TAG, "codecSupported: " + codecSupported + ", cameraHLG10OutputSupported: "
+                + cameraHLG10OutputSupported);
 
         mSocketRunnableObj.sendResponse("hlg10Response",
                 codecSupported && cameraHLG10OutputSupported ? "true" : "false");
@@ -2632,11 +2627,6 @@ public class ItsService extends Service implements SensorEventListener {
             return;
         }
 
-        // s1440p which is the max supported stream size in a combination, when preview
-        // stabilization is on.
-        Size maxPreviewSize = new Size(1920, 1440);
-        // 320 x 240, we test only sizes >= this.
-        Size minPreviewSize = new Size(320, 240);
         Size[] outputSizes = configMap.getOutputSizes(ImageFormat.YUV_420_888);
         if (outputSizes == null) {
             mSocketRunnableObj.sendResponse("supportedPreviewSizes", "");
@@ -2645,10 +2635,6 @@ public class ItsService extends Service implements SensorEventListener {
 
         String response = Arrays.stream(outputSizes)
                 .distinct()
-                .filter(s -> s.getWidth() * s.getHeight()
-                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
-                .filter(s -> s.getWidth() * s.getHeight()
-                        >= minPreviewSize.getWidth() * minPreviewSize.getHeight())
                 .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
                 .map(Size::toString)
                 .collect(Collectors.joining(";"));
@@ -2777,62 +2763,12 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private static class MediaCodecListener extends MediaCodec.Callback {
-        private final MediaMuxer mMediaMuxer;
-        private final Object mCondition;
-        private int mTrackId = -1;
-        private boolean mEndOfStream = false;
-
-        private MediaCodecListener(MediaMuxer mediaMuxer, Object condition) {
-            mMediaMuxer = mediaMuxer;
-            mCondition = condition;
-        }
-
-        @Override
-        public void onInputBufferAvailable(MediaCodec codec, int index) {
-            Log.e(TAG, "Unexpected input buffer available callback!");
-        }
-
-        @Override
-        public void onOutputBufferAvailable(MediaCodec codec, int index,
-                MediaCodec.BufferInfo info) {
-            synchronized (mCondition) {
-                if (mTrackId < 0) {
-                    return;
-                }
-
-                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    mEndOfStream = true;
-                    mCondition.notifyAll();
-                }
-
-                if (!mEndOfStream) {
-                    mMediaMuxer.writeSampleData(mTrackId, codec.getOutputBuffer(index), info);
-                    codec.releaseOutputBuffer(index, false);
-                }
-            }
-        }
-
-        @Override
-        public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-            Log.e(TAG, "Codec error: " + e.getDiagnosticInfo());
-        }
-
-        @Override
-        public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-            synchronized (mCondition) {
-                mTrackId = mMediaMuxer.addTrack(format);
-                mMediaMuxer.start();
-            }
-        }
-    }
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
             boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax)
             throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
-        final long SESSION_CLOSE_TIMEOUT_MS  = 3000;
 
         if (!hlg10Enabled) {
             doBasicRecording(cameraId, profileId, quality, recordingDuration,
@@ -2860,8 +2796,8 @@ public class ItsService extends Service implements SensorEventListener {
         assert (outputFilePath != null);
 
         MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        MediaFormat format = initializeHLG10Format(videoSize, camcorderProfile.videoBitRate,
-                camcorderProfile.videoFrameRate);
+        MediaFormat format = ItsUtils.initializeHLG10Format(videoSize,
+                camcorderProfile.videoBitRate, camcorderProfile.videoFrameRate);
 
         String codecName = list.findEncoderForFormat(format);
         assert (codecName != null);
@@ -2894,7 +2830,7 @@ public class ItsService extends Service implements SensorEventListener {
         mediaCodec.configure(format, null, null,
                 MediaCodec.CONFIGURE_FLAG_ENCODE);
         Object condition = new Object();
-        mediaCodec.setCallback(new MediaCodecListener(muxer, condition), mCameraHandler);
+        mediaCodec.setCallback(new ItsUtils.MediaCodecListener(muxer, condition), mCameraHandler);
 
         mRecordSurface = mediaCodec.createInputSurface();
         assert(mRecordSurface != null);
@@ -2922,12 +2858,12 @@ public class ItsService extends Service implements SensorEventListener {
 
         mediaCodec.signalEndOfInputStream();
         mSession.close();
-        verify(mockCallback, timeout(SESSION_CLOSE_TIMEOUT_MS).
-                times(1)).onClosed(eq(mSession));
+        verify(mockCallback, timeout(ItsUtils.SESSION_CLOSE_TIMEOUT_MS)
+                .times(1)).onClosed(eq(mSession));
 
         synchronized (condition) {
             try {
-                condition.wait(SESSION_CLOSE_TIMEOUT_MS);
+                condition.wait(ItsUtils.SESSION_CLOSE_TIMEOUT_MS);
             } catch (InterruptedException e) {
                 throw new ItsException("Unexpected InterruptedException: ", e);
             }
@@ -3052,10 +2988,13 @@ public class ItsService extends Service implements SensorEventListener {
 
         int[] caps = mCameraCharacteristics.get(
                 CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
-        boolean supportHlg10 = (caps != null) && IntStream.of(caps).anyMatch(x -> x ==
-                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
-        if (hlg10Enabled && !supportHlg10) {
-            throw new ItsException("HLG10 requested, but not supported by device.");
+        boolean support10Bit = (caps != null) && IntStream.of(caps).anyMatch(x -> x
+                == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
+        if (hlg10Enabled) {
+            if (!support10Bit) {
+                throw new ItsException("HLG10 requested, but 10-bit capability "
+                        + "is not supported by device.");
+            }
         }
 
         int cameraDeviceId = Integer.parseInt(cameraId);
@@ -3076,7 +3015,7 @@ public class ItsService extends Service implements SensorEventListener {
             aeTargetFpsMax = 30;
         }
         try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
-                sensorOrientation, outputFilePath, mCameraHandler, this)) {
+                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled, this)) {
             int stabilizationMode = stabilize
                     ? CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
                     : CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF;
@@ -3085,8 +3024,10 @@ public class ItsService extends Service implements SensorEventListener {
             // if zoomRatio is not defined, then use zoomStart, zoomEnd, stepSize
             double zoomStartVal = (Double.isNaN(zoomRatio)) ? zoomStart : zoomRatio;
 
+            long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
+                    DynamicRangeProfiles.STANDARD;
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
-                    pr.getCameraSurface(), stabilizationMode, ois, DynamicRangeProfiles.STANDARD,
+                    pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomStartVal, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener);
 
@@ -3201,7 +3142,7 @@ public class ItsService extends Service implements SensorEventListener {
 
         int aeTargetFpsMax = 30;
         try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, previewSize, aeTargetFpsMax,
-                sensorOrientation, outputFilePath, mCameraHandler, this)) {
+                sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false, this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
             reqBuilder = ItsSerializer.deserialize(reqBuilder,

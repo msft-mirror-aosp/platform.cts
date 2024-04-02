@@ -252,7 +252,11 @@ def get_max_preview_test_size(cam, camera_id):
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
-  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
+  resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = [size for size in supported_preview_sizes
+                             if resolution_to_area(size)
+                             >= video_processing_utils.LOWEST_RES_TESTED_AREA]
   logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
 
   if _HIGH_RES_SIZE in supported_preview_sizes:

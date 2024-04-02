@@ -23,6 +23,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
+import org.junit.Ignore;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -45,7 +47,6 @@ import java.lang.annotation.Target;
 @EnsureTestAppInstalled(key = MostRestrictiveCoexistenceTest.DPC_2,
         query = @Query(packageName = @StringQuery(
                 isEqualTo = "com.android.bedstead.testapp.TestOnlyDeviceAdminTestApp")))
-// TODO: We need to expose the permission in the annotation and apply it in devicestate...
 public @interface MostRestrictiveCoexistenceTest {
 
     String DPC_1 = "dpc1";

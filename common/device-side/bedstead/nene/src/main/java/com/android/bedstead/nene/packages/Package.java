@@ -209,6 +209,9 @@ public final class Package {
         if (user == null) {
             throw new NullPointerException();
         }
+        if (!user.exists()) {
+            return this;
+        }
 
         IntentFilter packageRemovedIntentFilter =
                 new IntentFilter(Intent.ACTION_PACKAGE_REMOVED);
@@ -432,15 +435,6 @@ public final class Package {
                     + " on user " + user + ". But it is not installed");
         }
 
-        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
-        if (shouldRunAsRoot) {
-            // If the test is being run as root, every permission can be granted or revoked.
-            Log.i(LOG_TAG,
-                    "checkCanGrantOrRevokePermission skipped as test is being run as root");
-            return;
-        }
-
         try {
             PermissionInfo permissionInfo =
                     sPackageManager.getPermissionInfo(permission, /* flags= */ 0);
@@ -458,7 +452,7 @@ public final class Package {
                         + permission + " which was not requested by package " + packageName());
             }
         } catch (PackageManager.NameNotFoundException e) {
-            throw new NeneException("Permission does not exist: " + permission);
+            throw new NeneException("Permission does not exist: " + permission, e);
         }
     }
 

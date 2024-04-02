@@ -42,6 +42,8 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,6 +81,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
+    @CddTest(requirements = {"9.8.2/C-3-4"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlocked() {
         // SensitiveContentActivity has a sensitive view, so screen capture should be blocked.
@@ -89,6 +92,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
+    @CddTest(requirements = {"9.8.2/C-3-4"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForUsername() {
         try (ActivityScenario<UserNameAutofillHintActivity> activityScenario =
@@ -98,6 +102,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
+    @CddTest(requirements = {"9.8.2/C-3-4"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPassword() {
         try (ActivityScenario<PasswordAutofillHintActivity> activityScenario =
@@ -107,6 +112,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
+    @CddTest(requirements = {"9.8.2/C-3-4"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPasswordInputType() {
         try (ActivityScenario<InputTypePasswordActivity> activityScenario =

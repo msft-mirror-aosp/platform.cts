@@ -831,7 +831,7 @@ public class RemoteViewsTest {
 
     private void verifyBitmap(final int width, final int height, final Consumer<Bitmap> cb)
             throws Throwable {
-        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        final Bitmap bitmap = blank(width, height);
         mActivityRule.runOnUiThread(() -> {
             mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                     makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
@@ -840,6 +840,12 @@ public class RemoteViewsTest {
         });
         cb.accept(bitmap);
         bitmap.recycle();
+    }
+
+    private Bitmap blank(final int width, final int height) {
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(0xFFAABBCC);
+        return bitmap;
     }
 
     private static float compareImages(Bitmap bitmap1, Bitmap bitmap2, String testLabel) {
