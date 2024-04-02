@@ -32,6 +32,7 @@ android_test {
         "guava",
         "mobly-snippet-lib",
     ],
+    min_sdk_version: "34",
 }
 
 android_test {
@@ -48,4 +49,5 @@ android_test {
         "guava",
         "mobly-snippet-lib",
     ],
+    min_sdk_version: "34",
 }

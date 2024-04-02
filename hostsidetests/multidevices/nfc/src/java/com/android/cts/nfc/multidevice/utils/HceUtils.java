@@ -16,18 +16,30 @@
 
 package com.android.cts.nfc.multidevice.utils;
 
+import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
+
+import android.app.role.RoleManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.pm.PackageManager;
 
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 
+import com.google.common.util.concurrent.MoreExecutors;
+
 import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Utilites for multi-device HCE tests. */
 public final class HceUtils {
 
     private HceUtils() {}
 
+    public static final String MC_AID = "A0000000041010";
+    public static final String PPSE_AID = "325041592E5359532E4444463031";
     public static final String TRANSPORT_AID = "F001020304";
 
     /** Service-specific APDU Command/Response sequences */
@@ -44,6 +56,18 @@ public final class HceUtils {
 
         RESPONSE_APDUS_BY_SERVICE.put(
                 TransportService1.class.getName(), new String[] {"80CA9000", "83947102829000"});
+
+        // Payment Service #1
+        COMMAND_APDUS_BY_SERVICE.put(
+                PaymentService1.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(PPSE_AID, true),
+                    buildSelectApdu(MC_AID, true),
+                    buildCommandApdu("80CA01F000", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PaymentService1.class.getName(),
+                new String[] {"FFFF9000", "FFEF9000", "FFDFFFAABB9000"});
     }
 
     /** Enables specified component */
@@ -101,5 +125,34 @@ public final class HceUtils {
     public static CommandApdu buildSelectApdu(String aid, boolean reachable) {
         String apdu = String.format("00A40400%02X%s", aid.length() / 2, aid);
         return new CommandApdu(apdu, reachable);
+    }
+
+    /** Sets default wallet role holder to given package name */
+    public static boolean setDefaultWalletRoleHolder(Context context, String packageName) {
+        RoleManager roleManager = context.getSystemService(RoleManager.class);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AtomicReference<Boolean> result = new AtomicReference<>(false);
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+            roleManager.setDefaultApplication(
+                    RoleManager.ROLE_WALLET,
+                    packageName,
+                    0,
+                    MoreExecutors.directExecutor(),
+                    aBoolean -> {
+                        result.set(aBoolean);
+                        countDownLatch.countDown();
+                    });
+            countDownLatch.await(3000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+        return result.get();
     }
 }

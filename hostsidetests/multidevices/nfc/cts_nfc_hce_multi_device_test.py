@@ -41,7 +41,7 @@ from mobly.controllers import android_device
 
 # Timeout to give the NFC service time to perform async actions such as
 # discover tags.
-_NFC_TIMEOUT_SEC = 5
+_NFC_TIMEOUT_SEC = 10
 
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
@@ -90,11 +90,44 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         asserts.assert_is_not_none(test_pass_event,
                                    'ApduSuccess event was not received.')
 
+    def test_single_payment_service(self):
+        """Tests successful APDU exchange between payment service and
+        reader.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies emulator device sets the instrumentation emulator app to the
+        default wallet app.
+        2. Verifies a successful APDU exchange between the emulator and
+        Transport Service after _NFC_TIMEOUT_SEC.
+        """
+        # Wait for instrumentation app to hold onto wallet role before starting
+        # reader
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startSinglePaymentEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startSinglePaymentReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
     def teardown_test(self):
+        self.emulator.nfc_emulator.closeActivity()
+        self.reader.nfc_reader.closeActivity()
         utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
             self.current_test_info),
-            param_list=[[self.emulator], [self.reader]],
-            raise_on_exception=True)
+                              param_list=[[self.emulator], [self.reader]],
+                              raise_on_exception=True)
 
 
 if __name__ == '__main__':

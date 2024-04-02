@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
 public class CtsNfcEmulatorDeviceSnippet implements Snippet {
+    private BaseEmulatorActivity mActivity;
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     /** Opens single Non Payment emulator */
@@ -45,7 +46,20 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
                 instrumentation.getTargetContext(),
                 SingleNonPaymentEmulatorActivity.class.getName());
 
-        instrumentation.startActivitySync(intent);
+        mActivity = (SingleNonPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens single payment emulator activity */
+    @Rpc(description = "Open single payment emulator activity")
+    public void startSinglePaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), SinglePaymentEmulatorActivity.class.getName());
+
+        mActivity = (SinglePaymentEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
     /** Registers receiver for Test Pass event */
@@ -53,6 +67,21 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
     public void asyncWaitForTestPass(String callbackId, String eventName) {
         registerSnippetBroadcastReceiver(
                 callbackId, eventName, BaseEmulatorActivity.ACTION_TEST_PASSED);
+    }
+
+    /** Registers receiver for Role Held event */
+    @AsyncRpc(description = "Waits for Role Held event")
+    public void asyncWaitForRoleHeld(String callbackId, String eventName) {
+        registerSnippetBroadcastReceiver(
+                callbackId, eventName, BaseEmulatorActivity.ACTION_ROLE_HELD);
+    }
+
+    /** Closes emulator activity between tests */
+    @Rpc(description = "Close activity if one was opened.")
+    public void closeActivity() {
+        if (mActivity != null) {
+            mActivity.finish();
+        }
     }
 
     /** Creates a SnippetBroadcastReceiver that listens for when the specified action is received */

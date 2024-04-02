@@ -13,38 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.cts.nfc.multidevice.emulator;
 
 import android.content.ComponentName;
 import android.os.Bundle;
+import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SingleNonPaymentEmulatorActivity extends BaseEmulatorActivity {
+public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mEnableComponents = new ArrayList<ComponentName>(List.of(TransportService1.COMPONENT));
+        mEnableComponents = new ArrayList<>(List.of(PaymentService1.COMPONENT));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+        makeDefaultWalletRoleHolder();
     }
 
     @Override
     public void onApduSequenceComplete(ComponentName component, long duration) {
-        if (component.equals(TransportService1.COMPONENT)) {
+        if (component.equals(PaymentService1.COMPONENT)) {
             setTestPassed();
         }
-    }
-
-    @Override
-    protected void onServicesSetup() {
-        mCardEmulation.setPreferredService(this, TransportService1.COMPONENT);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mCardEmulation.unsetPreferredService(this);
     }
 }

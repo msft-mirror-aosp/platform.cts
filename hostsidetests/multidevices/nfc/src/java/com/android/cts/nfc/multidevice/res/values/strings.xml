@@ -16,4 +16,7 @@
 
 <resources>
     <string name="transportService1">Transport Service #1</string>
+    <string name="paymentService1">Payment Service #1</string>
+    <string name="ppse">PPSE</string>
+    <string name="mastercard">MasterCard</string>
 </resources>
