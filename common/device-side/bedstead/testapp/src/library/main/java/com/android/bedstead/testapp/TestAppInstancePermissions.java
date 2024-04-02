@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.testapp;
 
+import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.PermissionsController;
@@ -390,19 +391,15 @@ public final class TestAppInstancePermissions implements PermissionsController {
             }
         }
 
-        for (String permission : grantedPermissions) {
-            mTestAppInstance.testApp().pkg().grantPermission(mTestAppInstance.user(), permission);
-        }
-        for (String permission : deniedPermissions) {
-            mTestAppInstance.testApp().pkg().denyPermission(mTestAppInstance.user(), permission);
-        }
-        for (String appOp : grantedAppOps) {
-            mTestAppInstance.testApp().pkg().appOps(mTestAppInstance.user()).set(
-                    appOp, AppOpsMode.ALLOWED);
-        }
-        for (String appOp : deniedAppOps) {
-            mTestAppInstance.testApp().pkg().appOps().set(appOp, AppOpsMode.IGNORED);
-        }
+        TestApis.permissions().setPermissionState(
+                mTestAppInstance.testApp().pkg(),
+                mTestAppInstance.user(),
+                grantedPermissions,
+                deniedPermissions);
+        TestApis.permissions().setAppOpState(mTestAppInstance.testApp().pkg(),
+                mTestAppInstance.user(),
+                grantedAppOps,
+                deniedAppOps);
     }
 
     void undoPermission(TestAppPermissionContext permissionContext) {
