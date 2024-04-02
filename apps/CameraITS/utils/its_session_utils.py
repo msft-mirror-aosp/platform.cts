@@ -42,14 +42,17 @@ ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
 CHART_DISTANCE_NO_SCALING = 0
+PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
 JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
+PREVIEW_MIN_TESTED_AREA = 320 * 240
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
+# pylint: disable=line-too-long
 # Allowed tablets as listed on https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
 # List entries must be entered in lowercase
 TABLET_ALLOWLIST = (
@@ -581,7 +584,7 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
       raise error_util.CameraItsError(
-        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
+          'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
@@ -1032,7 +1035,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1057,6 +1060,29 @@ class ItsSession(object):
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No supported preview sizes')
     return data[_STR_VALUE_STR].split(';')
+
+  def get_supported_preview_sizes(self, camera_id):
+    """Get supported preview resolutions for this camera device.
+
+    ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
+
+    Note: resolutions are sorted by width x height in ascending order
+    Note: max resolution is capped at 1440x1920.
+    Note: min resolution is capped at 320x240.
+
+    Args:
+      camera_id: int; device id
+    Returns:
+      List of all supported video resolutions in ascending order.
+    """
+    supported_preview_sizes = self.get_all_supported_preview_sizes(camera_id)
+    resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if (resolution_to_area(size)
+                                   <= PREVIEW_MAX_TESTED_AREA
+                                   and resolution_to_area(size)
+                                   >= PREVIEW_MIN_TESTED_AREA)]
+    return supported_preview_sizes
 
   def get_queryable_stream_combinations(self):
     """Get all queryable stream combinations for this camera device.

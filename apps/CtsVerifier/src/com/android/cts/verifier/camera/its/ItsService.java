@@ -2627,11 +2627,6 @@ public class ItsService extends Service implements SensorEventListener {
             return;
         }
 
-        // s1440p which is the max supported stream size in a combination, when preview
-        // stabilization is on.
-        Size maxPreviewSize = new Size(1920, 1440);
-        // 320 x 240, we test only sizes >= this.
-        Size minPreviewSize = new Size(320, 240);
         Size[] outputSizes = configMap.getOutputSizes(ImageFormat.YUV_420_888);
         if (outputSizes == null) {
             mSocketRunnableObj.sendResponse("supportedPreviewSizes", "");
@@ -2640,10 +2635,6 @@ public class ItsService extends Service implements SensorEventListener {
 
         String response = Arrays.stream(outputSizes)
                 .distinct()
-                .filter(s -> s.getWidth() * s.getHeight()
-                        <= maxPreviewSize.getWidth() * maxPreviewSize.getHeight())
-                .filter(s -> s.getWidth() * s.getHeight()
-                        >= minPreviewSize.getWidth() * minPreviewSize.getHeight())
                 .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
                 .map(Size::toString)
                 .collect(Collectors.joining(";"));
