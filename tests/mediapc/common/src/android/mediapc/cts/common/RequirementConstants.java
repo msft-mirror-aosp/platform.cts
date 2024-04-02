@@ -94,6 +94,7 @@ public class RequirementConstants {
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
 
     public static final String R7_1_4_1__H_1_2 = "r7_1_4_1__h_1_2"; // 7.1.4.1/H-1-2
+    public static final String R7_1_4_1__H_1_3 = "r7_1_4_1__h_1_3"; // 7.1.4.1/H-1-3
 
     public static final String R8_2__H_1_1 = "r8_2__h_1_1"; // 8.2/H-1-1
     public static final String R8_2__H_1_2 = "r8_2__h_1_2"; // 8.2/H-1-2
@@ -128,6 +129,7 @@ public class RequirementConstants {
 
     public static final String EGL_IMG_CONTEXT_PRIORITY = "egl_img_context_priority";
     public static final String EGL_EXT_PROTECTED_CONTENT = "egl_ext_protected_content";
+
 
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
@@ -209,6 +211,11 @@ public class RequirementConstants {
     public static final String SUPPORTED_PERFORMANCE_POINTS = "supported_performance_points";
 
     public static final String TEST_RESOLUTION = "resolution";
+
+    public static final String VK_EXT_GLOBAL_PRIORITY = "vk_ext_global_priority";
+    public static final String VK_PHYSICAL_DEVICE_PROTECTED_MEMORY =
+            "vk_physical_device_protected_memory";
+    public static final String VK_NON_CPU_DEVICE_COUNT = "vk_non_cpu_device_count";
 
     public enum Result {
         NA, MET, UNMET
