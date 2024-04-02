@@ -18,7 +18,7 @@ package com.android.xts.root.annotations
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
-import com.android.xts.root.RootAnnotationExecutor
+import com.google.auto.value.AutoAnnotation
 
 /**
  * Mark that a test method requires adb to be able to access root capabilities.
@@ -29,10 +29,11 @@ import com.android.xts.root.RootAnnotationExecutor
 // This can only be applied directly to tests to make it clear to test authors
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor(RootAnnotationExecutor::class)
+@UsesAnnotationExecutor(weakValue = "com.android.xts.root.RootAnnotationExecutor")
 annotation class RequireAdbRoot(
-    val failureMode: FailureMode = FailureMode.SKIP,
     val reason: String = "",
+
+    val failureMode: FailureMode = FailureMode.SKIP,
 
     /**
      * Priority sets the order that annotations will be resolved.
@@ -49,3 +50,9 @@ annotation class RequireAdbRoot(
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
     val priority: Int = AnnotationPriorityRunPrecedence.FIRST)
+
+@AutoAnnotation
+fun requireAdbRoot(
+    reason: String,
+    failureMode: FailureMode): RequireAdbRoot =
+    AutoAnnotation_RequireAdbRootKt_requireAdbRoot(reason, failureMode)

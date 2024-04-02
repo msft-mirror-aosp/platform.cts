@@ -555,14 +555,17 @@ public final class Permissions {
      */
     public void setPermissionState(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
         // TODO: replace with dependency on bedstead-root when properly modularised
-        //if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        // if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            // We must reset as it may have been set previously
+        //    resetRootPermissionState(pkg, user);
+
         //    for (String grantedPermission : permissionsToGrant) {
         //        forceRootPermissionState(pkg, user, grantedPermission, true);
         //    }
         //    for (String deniedPermission : permissionsToDeny) {
         //        forceRootPermissionState(pkg, user, deniedPermission, false);
         //    }
-        //
+
         //    return;
         //}
 
@@ -619,7 +622,7 @@ public final class Permissions {
             if (pkg.equals(TestApis.packages().instrumented()) && user.equals(TestApis.users().instrumented())) {
                 // We can't deny permissions from ourselves or it'll kill the process
                 removePermissionContextsUntilCanApply();
-                throwPermissionException("Requires granting permission " + permission + " but cannot.", permission);
+                throwPermissionException("Requires denying permission " + permission + " but cannot.", permission);
             } else {
                 pkg.denyPermission(user, permission);
             }
@@ -677,9 +680,13 @@ public final class Permissions {
         if (!adoptedShellPermissions.isEmpty()) {
             adoptShellPermissionIdentity(adoptedShellPermissions);
         }
-        if (!grantedPermissions.isEmpty()) {
+        if (!grantedPermissions.isEmpty() || !deniedPermissions.isEmpty()) {
             setPermissionStateToPackageWithoutAdoption(pkg, user, grantedPermissions, deniedPermissions);
         }
+    }
+
+    private void resetRootPermissionState(Package pkg, UserReference user) {
+        // ShellCommandUtils.uiAutomation().clearOverridePermissionStates(pkg.uid(user));
     }
 
     private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
