@@ -35,8 +35,8 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeleg
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
@@ -64,8 +64,8 @@ import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDemoMode;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -75,7 +75,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
@@ -84,7 +84,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
@@ -105,9 +105,7 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports;
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports;
-import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbOverWifi;
 import com.android.bedstead.harrier.annotations.RequireAospBuild;
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
@@ -116,6 +114,8 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireGmsBuild;
+import com.android.bedstead.harrier.annotations.RequireGuestUserIsEphemeral;
+import com.android.bedstead.harrier.annotations.RequireGuestUserIsNotEphemeral;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
 import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
@@ -129,6 +129,7 @@ import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile;
@@ -1758,12 +1759,6 @@ public class DeviceStateTest {
         assertThat(TestApis.content().suggestions().defaultServiceEnabled(sDeviceState.additionalUser())).isTrue();
     }
 
-    @RequireAdbOverWifi(failureMode = FailureMode.SKIP)
-    @Test
-    public void requireAdbOverWifiAnnotation_enablesAdbOverWifi() {
-        assertThat(TestApis.adb().isEnabledOverWifi()).isTrue();
-    }
-
     @Test
     @RequireHasDefaultBrowser
     public void requireHasDefaultBrowser_onDifferentUser_defaultContentSuggestionsServiceIsEnabled() {
@@ -1786,5 +1781,45 @@ public class DeviceStateTest {
     @EnsureWillNotTakeQuickBugReports
     public void ensureWillNotTakeQuickBugReportsAnnotation_willNotTakeQuickBugReports() {
         assertThat(TestApis.bugReports().willTakeQuickBugReports()).isFalse();
+    }
+
+    @RequireResourcesBooleanValue(configName = "config_enableMultiUserUI", requiredValue = true)
+    @Test
+    public void requireResourcesBooleanValueIsTrue_resourceValueIsTrue() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_enableMultiUserUI")
+        ).isTrue();
+    }
+
+    @RequireResourcesBooleanValue(configName = "config_enableMultiUserUI", requiredValue = false)
+    @Test
+    public void requireResourcesBooleanValueIsFalse_resourceValueIsFalse() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_enableMultiUserUI")
+        ).isFalse();
+    }
+
+    @RequireGuestUserIsEphemeral
+    @Test
+    public void requireGuestUserIsEphemeral_guestUserIsEphemeral() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_guestUserEphemeral")
+        ).isTrue();
+    }
+
+    @RequireGuestUserIsNotEphemeral
+    @Test
+    public void requireGuestUserIsNotEphemeral_guestUserIsNotEphemeral() {
+        assertThat(TestApis
+                .resources()
+                .system()
+                .getBoolean("config_guestUserEphemeral")
+        ).isFalse();
     }
 }

@@ -16,13 +16,15 @@
 
 package com.android.bedstead.harrier;
 
+import static com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermissionKt.ensureDoesNotHavePermission;
+import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
+
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
@@ -108,18 +110,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
-
-    private static final String BEDSTEAD_PACKAGE_NAME = "com.android.bedstead";
-
-    @AutoAnnotation
-    private static EnsureHasPermission ensureHasPermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasPermission(value);
-    }
-
-    @AutoAnnotation
-    private static EnsureDoesNotHavePermission ensureDoesNotHavePermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureDoesNotHavePermission(value);
-    }
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -259,10 +249,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     private static int getAnnotationCost(Annotation annotation) {
-        if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
-            return AnnotationPriorityRunPrecedence.MIDDLE;
-        }
-
         try {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
@@ -277,10 +263,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         if (annotation instanceof DynamicParameterizedAnnotation) {
             // Special case, not important
             return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
-        }
-
-        if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
-            return AnnotationPriorityRunPrecedence.FIRST;
         }
 
         try {
@@ -756,11 +738,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         Map<Annotation, Integer> annotationCosts = mapAnnotationsCost(methods);
 
         List<Annotation> annotations = new ArrayList<>(annotationCosts.keySet());
-        annotations.removeIf(
-                annotation ->
-                        !annotation.annotationType()
-                                .getCanonicalName().contains(BEDSTEAD_PACKAGE_NAME));
-
         annotations.sort(Comparator.comparingInt(annotationCosts::get));
 
         return annotations;
@@ -769,12 +746,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private List<Annotation> bedsteadAnnotationsSortedByMostCommon(List<FrameworkMethod> methods) {
         Map<Annotation, Integer> annotationCounts = countAnnotations(methods);
         List<Annotation> annotations = new ArrayList<>(annotationCounts.keySet());
-
-        annotations.removeIf(
-                annotation ->
-                        !annotation.annotationType()
-                                .getCanonicalName().contains(BEDSTEAD_PACKAGE_NAME));
-
         annotations.sort(Comparator.comparingInt(annotationCounts::get));
         Collections.reverse(annotations);
 
@@ -974,7 +945,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     new DynamicParameterizedAnnotation(
                             permission,
                             new Annotation[]{
-                                    ensureHasPermission(new String[]{permission}),
+                                    ensureHasPermission(permission),
                                     ensureDoesNotHavePermission(allPermissions.toArray(new String[]{}))
                             }));
             allPermissions.add(permission);

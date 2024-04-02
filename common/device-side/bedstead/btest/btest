@@ -452,6 +452,32 @@ supported_modules = {
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_ADDITIONAL_USER]
     },
+
+    # Modules
+    "bedstead-usb-test": {
+        "package": "com.android.bedstead.usb.test",
+        "path": "com.android.bedstead.usb",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-adb-test": {
+        "package": "com.android.bedstead.adb.test",
+        "path": "com.android.bedstead.adb",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-root-test": {
+        "package": "com.android.xts.root.test",
+        "path": "com.android.xts.root",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-permissions-test": {
+        "package": "com.android.bedstead.permissions.test",
+        "path": "com.android.bedstead.permissions",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
 }
 
 TARGET_NAME = "target"
@@ -713,6 +739,9 @@ class Test:
         if self.exclude_annotations:
             command += " -e notAnnotation " + ",".join(self.exclude_annotations)
 
+        # btest supports untethering during the run
+        command += " -e CAN_UNTETHER true"
+
         if self.args.interactive:
             if self.args.manual_interactive:
                 command += " -e ENABLE_MANUAL true"
@@ -913,6 +942,10 @@ class Test:
                 print(" " + IGNORED_CODE + "// ASSUMPTION FAILED (" + test_result["message"] + ")" + RESET_CODE + " (" + time_str + ")", flush=True)
             return
         except Exception as e:
+            if not is_connected():
+                print("\nDevice not connected to ADB. Waiting for reconnection...")
+                wait_for_adb_reconnection()
+                return
             print("Exception ", e)
         print("ERROR PARSING TEST RESULT " + str(test_result), flush=True)
         self.dump_output()
@@ -956,13 +989,16 @@ def execute_shell_command(stage, args, command, **extra_args):
 
 def wait_for_adb_reconnection():
     while True:
-        r = subprocess.run(["adb", "shell", "echo", "hello"], capture_output=True, text=True)
-        output = r.stdout
-
-        if not r.stderr or (not "no devices/emulators found" in r.stderr and not "device offline" in r.stderr):
+        if is_connected():
             print("\nFound connection")
             return
         time.sleep(0.5)
+
+def is_connected():
+    r = subprocess.run(["adb", "shell", "echo", "hello"], capture_output=True, text=True)
+    output = r.stdout
+
+    return not r.stderr or (not "no devices/emulators found" in r.stderr and not "device offline" in r.stderr)
 
 def get_or_create_additional_user(device_state, args):
     users = get_users(args)

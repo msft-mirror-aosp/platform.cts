@@ -72,7 +72,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -84,7 +84,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
@@ -1109,7 +1109,9 @@ public final class UserManagerTest {
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
-        final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
+        UserReference privateProfile = sDeviceState.privateProfile();
+        final UserHandle profileHandle = privateProfile.userHandle();
+        privateProfile.setSetupComplete(true);
         presetQuietModeStatus(true, profileHandle);
         assertThat(mUserManager.requestQuietModeEnabled(false, profileHandle))
                 .isFalse();

@@ -40,6 +40,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.media.codec.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -406,6 +407,105 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
                         + " separately. \n" + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
             }
         }
+        mCodec.release();
+        mExtractor.release();
+    }
+
+    /**
+     * Verifies component and framework behaviour to flush API when the codec is operating in
+     * multiple frame block model mode. The test verifies if the component / framework output
+     * is consistent with single access unit normal mode.
+     * <p>
+     * While the component is decoding the test clip, mediacodec flush() is called. The flush API
+     * is called at various points :-
+     * <ul>
+     *     <li>In running state, after queueing n frames.</li>
+     *     <li>In eos state.</li>
+     * </ul>
+     * <p>
+     * In all situations (pre-flush or post-flush), the test expects the output timestamps to be
+     * strictly increasing. The flush call makes the output received non-deterministic even for a
+     * given input. Hence, besides timestamp checks, no additional validation is done for outputs
+     * received before flush. Post flush, the decode begins from a sync frame. So the test
+     * expects consistent output and this needs to be identical to the reference
+     * (single access unit mode)
+     * <p>
+     */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE",
+            "android.media.MediaFormat#KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE",
+            "android.media.MediaCodec.Callback#onOutputBuffersAvailable",
+            "android.media.MediaCodec#flush"})
+    @LargeTest
+    @Ignore("TODO(b/147576107)")
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testFlush() throws IOException, InterruptedException {
+        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
+                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
+
+        MediaFormat format = setUpSource(mTestFile);
+        final long pts = 250000;
+        mExtractor.release();
+        OutputManager ref = null, test;
+        if (isMediaTypeOutputUnAffectedBySeek(mMediaType)) {
+            CodecDecoderTestBase cdtb = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                    mAllTestParams);
+            cdtb.decodeToMemory(mTestFile, mCodecName, pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                    Integer.MAX_VALUE);
+            ref = cdtb.getOutputManager();
+            test = new OutputManager(ref.getSharedErrorLogs());
+        } else {
+            test = new OutputManager();
+        }
+
+        mOutputBuff = test;
+        setUpSource(mTestFile);
+        int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
+        configureKeysForLargeAudioBlockModelFrameMode(format, maxSampleSize, OUT_SIZE_IN_MS[0][0],
+                OUT_SIZE_IN_MS[0][1]);
+        mMaxInputLimitMs = OUT_SIZE_IN_MS[0][0];
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        configureCodec(format, true, true, false);
+
+        mCodec.start();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        test.reset();
+        doWork(23);
+        if (!test.isPtsStrictlyIncreasing(mPrevOutputPts)) {
+            fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test flush in running state */
+        flushCodec();
+        mCodec.start();
+        mSaveToMem = true;
+        test.reset();
+        mExtractor.seekTo(pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        if (ref != null && !ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test flush in eos state */
+        flushCodec();
+        mCodec.start();
+        test.reset();
+        mExtractor.seekTo(pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (ref != null && !ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        mSaveToMem = false;
         mCodec.release();
         mExtractor.release();
     }

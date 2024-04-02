@@ -45,7 +45,8 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".activities.LoginActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdge">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
                                          this app during CTS development... -->
@@ -65,7 +66,8 @@
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
-        <activity android:name=".activities.LoginCredentialMixedActivity"/>
+        <activity android:name=".activities.LoginCredentialMixedActivity"
+             android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"

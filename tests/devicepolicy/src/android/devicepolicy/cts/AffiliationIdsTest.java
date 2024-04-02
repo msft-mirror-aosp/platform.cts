@@ -42,8 +42,6 @@ public final class AffiliationIdsTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final Context sContext = TestApis.context().instrumentedContext();
-
     private ComponentName mAdmin;
     private RemoteDevicePolicyManager mDpm;
 

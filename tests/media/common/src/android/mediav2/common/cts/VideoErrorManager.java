@@ -19,6 +19,7 @@ package android.mediav2.common.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Rect;
 import android.util.Log;
 import android.util.Pair;
 
@@ -123,27 +124,45 @@ public class VideoErrorManager {
         return Pair.create(varianceSum, blocks);
     }
 
-    static double computeMSE(byte[] data0, byte[] data1, int bytesPerSample) {
+    static double computeMSE(byte[] data0, byte[] data1, int bytesPerSample, int imgWidth,
+            int imgHeight, Rect cropRect) {
         assertEquals(data0.length, data1.length);
         int length = data0.length / bytesPerSample;
         long squareError = 0;
+        int cropLeft = 0;
+        int cropTop = 0;
+        int cropWidth = imgWidth;
+        int cropHeight = imgHeight;
+        if (cropRect != null) {
+            cropLeft = cropRect.left;
+            cropTop = cropRect.top;
+            cropWidth = cropRect.width();
+            cropHeight = cropRect.height();
+        }
 
         if (bytesPerSample == 2) {
             short[] dataA = new short[length];
             ByteBuffer.wrap(data0).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(dataA);
             short[] dataB = new short[length];
             ByteBuffer.wrap(data1).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(dataB);
-            for (int i = 0; i < length; i++) {
-                long diff = ((int) dataA[i] & 0xffff) - ((int) dataB[i] & 0xffff);
-                squareError += diff * diff;
+            for (int h = 0; h < cropHeight; h++) {
+                int offset = (cropTop + h) * imgWidth + cropLeft;
+                for (int w = 0; w < cropWidth; w++) {
+                    long diff = (long) ((int) dataA[offset + w] & 0xffff) - ((int) dataB[offset + w]
+                            & 0xffff);
+                    squareError += diff * diff;
+                }
             }
         } else {
-            for (int i = 0; i < length; i++) {
-                int diff = ((int) data0[i] & 0xff) - ((int) data1[i] & 0xff);
-                squareError += diff * diff;
+            for (int h = 0; h < cropHeight; h++) {
+                int offset = (cropTop + h) * imgWidth + cropLeft;
+                for (int w = 0; w < cropWidth; w++) {
+                    int diff = ((int) data0[offset + w] & 0xff) - ((int) data1[offset + w] & 0xff);
+                    squareError += diff * ((long) diff);
+                }
             }
         }
-        return (double) squareError / length;
+        return (double) squareError / (cropWidth * cropHeight);
     }
 
     static double computePSNR(double mse, int bytesPerSample) {
@@ -174,7 +193,8 @@ public class VideoErrorManager {
                     refStream.seek(0);
                     refStream.read(yRef);
                 }
-                double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample);
+                double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample, mRefYuv.mWidth,
+                        mRefYuv.mHeight, null);
                 mGlobalMSE[0] += curYMSE;
                 mMinimumMSE[0] = Math.min(mMinimumMSE[0], curYMSE);
 
@@ -184,7 +204,8 @@ public class VideoErrorManager {
                 assertEquals("failed to read U Plane " + mTestYuv.mFileName
                                 + " contains insufficient bytes", uvSize,
                         testStream.read(uvTest));
-                double curUMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample);
+                double curUMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample,
+                        mRefYuv.mWidth / 2, mRefYuv.mHeight / 2, null);
                 mGlobalMSE[1] += curUMSE;
                 mMinimumMSE[1] = Math.min(mMinimumMSE[1], curUMSE);
 
@@ -194,7 +215,8 @@ public class VideoErrorManager {
                 assertEquals("failed to read V Plane " + mTestYuv.mFileName
                                 + " contains insufficient bytes", uvSize,
                         testStream.read(uvTest));
-                double curVMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample);
+                double curVMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample,
+                        mRefYuv.mWidth / 2, mRefYuv.mHeight / 2, null);
                 mGlobalMSE[2] += curVMSE;
                 mMinimumMSE[2] = Math.min(mMinimumMSE[2], curVMSE);
 

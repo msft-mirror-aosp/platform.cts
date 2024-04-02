@@ -75,10 +75,7 @@ public final class DelegationScopesTest {
 
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final TestApis sTestApis = new TestApis();
-    private static final UserReference sUser = sTestApis.users().instrumented();
-
+    private static final UserReference sUser = TestApis.users().instrumented();
     private static final TestApp sTestApp = sDeviceState.testApps()
             .query().whereActivities().isNotEmpty().get();
     private static final TestApp sTestApp2 = sDeviceState.testApps().any();

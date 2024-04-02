@@ -38,6 +38,7 @@ import java.lang.annotation.Target;
 @Repeatable(RequireFeatureGroup.class)
 public @interface RequireFeature {
     String value();
+    String reason() default "";
     FailureMode failureMode() default FailureMode.SKIP;
 
      /**

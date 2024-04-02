@@ -41,6 +41,7 @@ import android.content.pm.cts.PackageManagerTest.CTS_SHIM_PACKAGE_NAME
 import android.content.pm.cts.PackageManagerTest.getInstalledState
 import android.content.pm.cts.PackageManagerTest.installArchivedAsUser
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.UserManager
@@ -49,6 +50,7 @@ import android.platform.test.annotations.AppModeNonSdkSandbox
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -96,6 +98,7 @@ class PackageManagerShellCommandMultiUserTest {
 
         private const val TEST_HW_SYSTEM_USER_ONLY =
                 PackageManagerShellCommandInstallTest.TEST_HW_SYSTEM_USER_ONLY
+        private const val TEST_HW_MIME_GROUP = "HelloWorldMimeGroup.apk"
 
         private const val TEST_PROVIDER = "TestProvider"
         private const val TEST_SERVICE = "TestService"
@@ -103,6 +106,12 @@ class PackageManagerShellCommandMultiUserTest {
         private const val SYSTEM_USER_ONLY_PROVIDER = "SystemUserOnlyProvider"
         private const val SYSTEM_USER_ONLY_SERVICE = "SystemUserOnlyService"
 
+        private const val ACTION_UPDATE_MIME_GROUP_REQUEST =
+                "com.example.helloworld.UPDATE_MIME_GROUP_REQUEST"
+        private const val ACTION_UPDATE_MIME_GROUP_RESPONSE =
+                "com.example.helloworld.UPDATE_MIME_GROUP_RESPONSE"
+        private const val EXTRA_MIME_GROUP = "EXTRA_MIME_GROUP"
+        private const val EXTRA_MIME_TYPES = "EXTRA_MIME_TYPES"
         private const val MIME_GROUP = "mime_group"
 
         @JvmField
@@ -1021,6 +1030,122 @@ class PackageManagerShellCommandMultiUserTest {
         }
     }
 
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
+    @Test
+    fun testUpdateMimeGroup_changed_onlyInstalledUserReceivedBroadcast() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
+
+        installPackageAsUser(TEST_HW_MIME_GROUP, primaryUser)
+
+        assertTrue(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val mimeGroupResponseBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                primaryUser.id(),
+                ACTION_UPDATE_MIME_GROUP_RESPONSE
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextPrimaryUser.registerReceiver(
+                                mimeGroupResponseBroadcastReceiverForPrimaryUser,
+                                IntentFilter(ACTION_UPDATE_MIME_GROUP_RESPONSE),
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+
+                        // update mimeGroup via intent
+                        val mimeTypes = arrayListOf("text/*")
+                        val intent = Intent(ACTION_UPDATE_MIME_GROUP_REQUEST)
+                        intent.setPackage(TEST_APP_PACKAGE)
+                        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        intent.putExtra(EXTRA_MIME_GROUP, MIME_GROUP)
+                        intent.putStringArrayListExtra(EXTRA_MIME_TYPES, mimeTypes)
+                        contextPrimaryUser.sendBroadcast(intent)
+
+                        // make sure the setMimeGroup is called
+                        mimeGroupResponseBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+
+                        // Only the primary user receives the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                TEST_APP_PACKAGE
+                        )
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextPrimaryUser.unregisterReceiver(
+                                mimeGroupResponseBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
     @Test
     fun testUpdateMimeGroup_changed() {
         if (!backgroundThread.isAlive) {
@@ -1028,6 +1153,9 @@ class PackageManagerShellCommandMultiUserTest {
         }
         val backgroundHandler = Handler(backgroundThread.looper)
         val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
         val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
                 packageName,
                 primaryUser.id(),
@@ -1126,6 +1254,10 @@ class PackageManagerShellCommandMultiUserTest {
         )
     }
 
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
     @Test
     fun testUpdateMimeGroup_noChanged_noBroadcastReceived() {
         if (!backgroundThread.isAlive) {
@@ -1133,6 +1265,9 @@ class PackageManagerShellCommandMultiUserTest {
         }
         val backgroundHandler = Handler(backgroundThread.looper)
         val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
         val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
                 packageName,
                 primaryUser.id(),
@@ -1262,14 +1397,21 @@ class PackageManagerShellCommandMultiUserTest {
             user: UserReference
     ) {
         installPackageAsUser(baseName, user)
-        val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
-                .packageManager.getArchivedPackage(packageName)
-        assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
-        installArchivedAsUser(
-                archivedPackage,
-                PackageInstaller.STATUS_SUCCESS,
-                null,
-                user.userHandle()
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
+                            .packageManager.getArchivedPackage(packageName)
+                    assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
+                    installArchivedAsUser(
+                            archivedPackage,
+                            PackageInstaller.STATUS_SUCCESS,
+                            null,
+                            user.userHandle()
+                    )
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
         )
     }
 

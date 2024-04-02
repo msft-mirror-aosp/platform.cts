@@ -16,6 +16,7 @@
 
 package android.contextualsearch.cts
 
+import android.app.contextualsearch.CallbackToken
 import android.app.contextualsearch.ContextualSearchManager
 import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
@@ -116,9 +117,10 @@ class ContextualSearchManagerTest {
             "Waiting for CtsContextualSearchActivity.onCreate to be called."
         )
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!.getBinder(ContextualSearchManager.EXTRA_TOKEN)!!
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         // Waiting for the service to post data.
         await(callback.resultLatch, "Waiting for the service to post data.")
         // Verifying that the data posted is as expected.
@@ -135,12 +137,13 @@ class ContextualSearchManagerTest {
             "Waiting for CtsContextualSearchActivity.onCreate to be called."
         )
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!.getBinder(ContextualSearchManager.EXTRA_TOKEN)!!
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         await(callback.resultLatch, "Waiting for the service to post data.")
         // The token should now be expired. Using it again should invoke failure in the callback.
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         await(callback.errorLatch, "Waiting for the service to throw error.")
         // Make sure no more results were posted.
         assertThat(callback.resultLatch.count).isEqualTo(0)

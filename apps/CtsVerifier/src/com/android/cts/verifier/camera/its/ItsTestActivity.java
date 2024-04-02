@@ -112,6 +112,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("camera_launch_time_ms:(\\d+(\\.\\d+)?)");
     private static final Pattern MPC12_JPEG_CAPTURE_PATTERN =
             Pattern.compile("1080p_jpeg_capture_time_ms:(\\d+(\\.\\d+)?)");
+    private static final Pattern MPC15_ULTRA_HDR_PATTERN =
+            Pattern.compile("has_gainmap.*");
     private static final int AVAILABILITY_TIMEOUT_MS = 10;
 
     private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
@@ -207,12 +209,15 @@ public class ItsTestActivity extends DialogTestListActivity {
     private Set<ResultKey> mExecutedMpcTests = null;
     private static final String MPC_LAUNCH_REQ_NUM = "2.2.7.2/7.5/H-1-6";
     private static final String MPC_JPEG_CAPTURE_REQ_NUM = "2.2.7.2/7.5/H-1-5";
+    private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
     PerformanceClassEvaluator.CameraLatencyRequirement mJpegLatencyReq =
             mPce.addR7_5__H_1_5();
     PerformanceClassEvaluator.CameraLatencyRequirement mLaunchLatencyReq =
             mPce.addR7_5__H_1_6();
+    PerformanceClassEvaluator.CameraUltraHdrRequirement mUltraHdrReq =
+            mPce.addR7_5__H_1_20();
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
@@ -495,7 +500,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             Matcher jpegMatcher = MPC12_JPEG_CAPTURE_PATTERN.matcher(mpcResult);
             boolean jpegMatches = jpegMatcher.matches();
 
-            if (!launchMatches && !jpegMatches) {
+            Matcher gainmapMatcher = MPC15_ULTRA_HDR_PATTERN.matcher(mpcResult);
+            boolean gainmapMatches = gainmapMatcher.matches();
+            Log.i(TAG, "mpcResult: " + mpcResult);
+
+            if (!launchMatches && !jpegMatches && !gainmapMatches) {
                 return false;
             }
             if (!cameraId.equals(mPrimaryRearCameraId) &&
@@ -511,7 +520,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mLaunchLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_LAUNCH_REQ_NUM));
-            } else {
+            } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
                     mJpegLatencyReq.setRearCameraLatency(latency);
@@ -519,6 +528,19 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mJpegLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_JPEG_CAPTURE_REQ_NUM));
+            } else {
+                Log.i(TAG, "Gainmap pattern matches");
+                String result = mpcResult.split(":")[1];
+                boolean hasGainMap = false;
+                if (result.equals("true")) {
+                    hasGainMap = true;
+                }
+                if (cameraId.equals(mPrimaryRearCameraId)) {
+                    mUltraHdrReq.setRearCameraUltraHdrSupported(hasGainMap);
+                } else {
+                    mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
+                }
+                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_ULTRA_HDR_REQ_NUM));
             }
 
             // Save MPC info once both front primary and rear primary data are collected.

@@ -24,6 +24,7 @@ import socket
 import subprocess
 import sys
 import time
+import types
 import unicodedata
 
 from mobly.controllers.android_device_lib import adb
@@ -49,14 +50,35 @@ LOAD_SCENE_DELAY_SEC = 3
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
-DEFAULT_TABLET_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
-ELEVEN_BIT_TABLET_BRIGHTNESS = 1024  # 50% brightness for Xiaomi tablets
-ELEVEN_BIT_TABLET_NAMES = ('nabu',)
-LEGACY_TABLET_BRIGHTNESS = 96
-LEGACY_TABLET_NAME = 'dragon'
+# Allowed tablets as listed on https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
+# List entries must be entered in lowercase
+TABLET_ALLOWLIST = (
+    'dragon',  # Google Pixel C
+    'hnhey-q',  # Honor Pad 8
+    'hwcmr09',  # Huawei MediaPad M5
+    'x606f',  # Lenovo Tab M10 Plus
+    'gta4lwifi',  # Samsung Galaxy Tab A7
+    'gta8wifi',  # Samsung Galaxy Tab A8
+    'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'dpd2221',  # Vivo Pad2
+    'nabu',  # Xiaomi Pad 5
+    'xun',  # Xiaomi Redmi Pad SE
+    'yunluo',  # Xiaomi Redmi Pad
+)
+TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
+TABLET_LEGACY_BRIGHTNESS = 96
+TABLET_LEGACY_NAME = 'dragon'
+# List entries must be entered in lowercase
+TABLET_OS_VERSION = types.MappingProxyType({
+    'nabu': ANDROID13_API_LEVEL,
+    'yunluo': ANDROID14_API_LEVEL
+    })
 TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
-BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
-                        f'{TABLET_REQUIREMENTS_URL} in the config file')
+TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
+                               f'{TABLET_REQUIREMENTS_URL} in the config file')
+TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
+                                'not on our allowlist, please refer to '
+                                f'{TABLET_REQUIREMENTS_URL}')
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
@@ -94,25 +116,30 @@ _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
 
 
-def validate_tablet_brightness(tablet_name, brightness):
+def validate_tablet(tablet_name, brightness, device_id):
   """Ensures tablet brightness is set according to documentation.
 
   https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
   Args:
     tablet_name: tablet product name specified by `ro.build.product`.
     brightness: brightness specified by config file.
+    device_id: str; ID of the device.
   """
+  tablet_name = tablet_name.lower()
+  if tablet_name not in TABLET_ALLOWLIST:
+    raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+  if tablet_name in TABLET_OS_VERSION:
+    if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
+      raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
   name_to_brightness = {
-      LEGACY_TABLET_NAME: LEGACY_TABLET_BRIGHTNESS,
+      TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
   }
-  for name in ELEVEN_BIT_TABLET_NAMES:
-    name_to_brightness[name] = ELEVEN_BIT_TABLET_BRIGHTNESS
   if tablet_name in name_to_brightness:
     if brightness != name_to_brightness[tablet_name]:
-      raise AssertionError(BRIGHTNESS_ERROR_MSG)
+      raise AssertionError(TABLET_BRIGHTNESS_ERROR_MSG)
   else:
-    if brightness != DEFAULT_TABLET_BRIGHTNESS:
-      raise AssertionError(BRIGHTNESS_ERROR_MSG)
+    if brightness != TABLET_DEFAULT_BRIGHTNESS:
+      raise AssertionError(TABLET_BRIGHTNESS_ERROR_MSG)
 
 
 def check_apk_installed(device_id, package_name):
@@ -520,30 +547,30 @@ class ItsSession(object):
                                       cmd[_CMD_NAME_STR])
     return data[_OBJ_VALUE_STR]
 
-  def get_native_camera_pkg(self):
-    """Get native camera package name.
+  def get_default_camera_pkg(self):
+    """Get default camera app package name.
 
     Returns:
-       Native camera app pkg name.
+       Default camera app pkg name.
     """
     cmd = {}
-    cmd[_CMD_NAME_STR] = 'doGetNativeCameraPkgName'
+    cmd[_CMD_NAME_STR] = 'doGetDefaultCameraPkgName'
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
-    if data[_TAG_STR] != 'nativeCameraPkg':
+    if data[_TAG_STR] != 'defaultCameraPkg':
       raise error_util.CameraItsError('Invalid response for command: %s' %
                                       cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def check_gain_map_present(self, file_path):
-    """Checks if the image has gainmap present or not.
+    """Check if the image has gainmap present or not.
 
     The image stored at file_path is decoded and analyzed
     to check whether the gainmap is present or not. If the image
     captured is UltraHDR, it should have gainmap present.
 
     Args:
-      file_path: path of the image to be analyzed on DUT .
+      file_path: path of the image to be analyzed on DUT.
     Returns:
       Boolean: True if the image has gainmap present.
     """
@@ -553,8 +580,8 @@ class ItsSession(object):
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
-      raise error_util.CameraItsError('Invalid response for command: %s' %
-                                      cmd[_CMD_NAME_STR])
+      raise error_util.CameraItsError(
+        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
@@ -2193,6 +2220,18 @@ class ItsSession(object):
 
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'performanceClass':
+      raise error_util.CameraItsError('Failed to query performance class')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def is_vic_performance_class(self):
+    """Return whether the mobile device is VIC performance class device.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isVicPerformanceClass'
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'vicPerformanceClass':
       raise error_util.CameraItsError('Failed to query performance class')
     return data[_STR_VALUE_STR] == 'true'
 

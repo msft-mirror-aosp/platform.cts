@@ -54,15 +54,12 @@ public final class ShellCommandUtils {
     private static final int OUT_DESCRIPTOR_INDEX = 0;
     private static final int IN_DESCRIPTOR_INDEX = 1;
     private static final int ERR_DESCRIPTOR_INDEX = 2;
-
-    private static final TestApis sTestApis = new TestApis();
-
     private static final boolean SHOULD_LOG = shouldLog();
 
     private static boolean shouldLog() {
         try {
             return Settings.Global.getInt(
-                    sTestApis.context().instrumentedContext().getContentResolver(),
+                    TestApis.context().instrumentedContext().getContentResolver(),
                     "nene_log") == 1;
         } catch (Settings.SettingNotFoundException e) {
             return false;

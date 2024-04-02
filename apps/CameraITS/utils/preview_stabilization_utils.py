@@ -20,12 +20,10 @@ import os
 import threading
 import time
 
-import camera_properties_utils
 import its_session_utils
 import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
-import zoom_capture_utils
 
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
@@ -267,7 +265,8 @@ def get_max_preview_test_size(cam, camera_id):
   return preview_test_size
 
 
-def preview_over_zoom_range(dut, cam, preview_size, z_range, log_path):
+def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
+                            log_path):
   """Captures a preview video from the device over zoom range.
 
   Captures camera preview frames at various zoom level in zoom range.
@@ -277,24 +276,15 @@ def preview_over_zoom_range(dut, cam, preview_size, z_range, log_path):
     dut: device under test
     cam: camera object
     preview_size: str; preview resolution. ex. '1920x1080'
-    z_range: [float,float]; is the starting and ending zoom ratio
+    z_min: minimum zoom for preview capture
+    z_max: maximum zoom for preview capture
+    z_step_size: zoom step size from min to max
     log_path: str; path for video file directory
 
   Returns:
     capture_results: total capture results of each frame
     file_list: file name for each frame
-    z_min: minimum zoom for preview capture
-    z_max: maximum zoom for preview capture
-
   """
-
-  # Determine test zoom range
-  logging.debug('z_range = %s', str(z_range))
-  z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
-      z_range, _NUM_STEPS)
-
-  if z_max < z_min * _ZOOM_MIN_THRESH:
-    raise ValueError('Zoom range too small')
 
   # Converge 3A
   cam.do_3a()
@@ -328,4 +318,4 @@ def preview_over_zoom_range(dut, cam, preview_size, z_range, log_path):
   # skip frames which might not have 3A converged
   capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
   file_list = file_list[_SKIP_INITIAL_FRAMES:]
-  return capture_results, file_list, z_min, z_max
+  return capture_results, file_list

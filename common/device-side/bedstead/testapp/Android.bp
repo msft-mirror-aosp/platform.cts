@@ -131,7 +131,7 @@ java_genrule {
         ":RemoteAccountAuthenticatorApp",
         ":MLCTestApp",
         ":MultipleActivitiesTestApp",
-        ":HeadlessDOSingleUserTestApp"
+        ":HeadlessDOSingleUserTestApp",
     ],
     out: ["TestApp_Apps.res.zip"],
     tools: [

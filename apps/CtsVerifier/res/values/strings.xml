@@ -5704,6 +5704,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_not_tested">Not Tested</string>
     <string name="audio_general_not_required">Please Test If Supported</string>
     <string name="audio_general_required">Required</string>
+    <string name="audio_general_nohardware">No supporting hardware.</string>
+    <string name="audio_general_unknownhardware">Unknown hardware support. Please test if supported.</string>
     <string name="audio_general_run">Run</string>
     <string name="audio_general_cancel">Cancel</string>
     <string name="audio_general_left">Left</string>
@@ -5726,6 +5728,8 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_general_play_colon"> play:</string>
     <string name="audio_general_record_colon"> record:</string>
+
+    <string name="audio_general_results">Results</string>
 
     <!-- Audio Data Paths Test-->
     <string name="audio_datapaths_clearresults">Clear Results</string>
@@ -5812,6 +5816,18 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_running">Running&#8230;</string>
+
+    <!-- Immersive Audio Test -->
+    <string name="immersive_audio_test">Immersive Audio Test</string>
+    <string name="immersive_audio_test_info">This test verifies that the Immersive Audio Test has
+        been run on the associated test fixture and includes the results in the CTS Verifier report
+        sent to Google.
+        If you are not testing an Immersive audio device on the associated fixture, you are not
+        required to run this test and so can simply press the PASS button.
+    </string>
+    <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
+    If you are not testing an Immersive Audio device, simply press the PASS button.</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
@@ -5840,8 +5856,8 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
     <string name="audio_loopback_instructions2">
-          Set the audio level to a suitable value, then press Test button.
-          It might require multiple tries until a sufficient confidence is achieved.
+          Use the \"Calibrate Audio\" panel to set the audio level to a suitable value for each supported route.
+          Then press the \"Start\" button for each supported route.
     </string>
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
@@ -5851,13 +5867,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
     <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
-    in a quiet room. Press the Start button and allow the test to proceed.</string>
+        in a quiet room. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_headsetpath_instructions">If supported, insert the loopback plug
-        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_headsetpath_instructions">Insert the loopback plug
+        into the headset jack. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_usbpath_instructions">If USB Audio supported, Connect the USB
-        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+    <string name="audio_loopback_usbpath_instructions">Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the \"Start\"
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
@@ -5887,6 +5903,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
     <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
+
+    <!-- Status Strings -->
+    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownanalog">Support for an Analog Headset Jack could not be determined. If supported, insert the loopback plug
+        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+        button and allow the test to proceed.</string>
 
     <!-- Multichannel Mixdown Test -->
     <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
@@ -7459,4 +7484,41 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n3. Verify the CtsDefaultNotesApp informs can use API returned false.
         \n4. If so, pass this test else fail.
     </string>
+
+    <string name="notif_hiding_test">Notification Hiding Test</string>
+    <string name="notif_hiding_shade_test">Notification Hiding In Notification Shade During Screen Recording Test</string>
+    <string name="notif_hiding_shade_partial_test">Notification Not Hiding In Notification Shade During Single-App Screen Recording Test</string>
+    <string name="notif_hiding_launcher_test">Notification Hiding In Launcher During Screen Recording Test</string>
+    <string name="notif_hiding_bubble_test">Notification Hiding In Bubbles During Screen Recording Test</string>
+    <string name="notif_hiding_shade_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
+        \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_partial_test_instructions">
+        1. Press \"Start screen recording\", then select \"A Single App\" in the resulting recording dialog, then select \"Start\", then pick \"Cts Verifier\" in the list of apps that shows.
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n4. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n5. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_launcher_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send Notification\".
+        \n3. Return to the home screen, open the app drawer, and drag \"CTS Verifier\" onto the launcher home screen.
+        \n4. Long press \"CTS Verifier\" in the launcher. Verify that no message shows with the text \"Sensitive Text\".
+        \n5. Return to the verifier app. If there was no such message when long pressing, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_bubble_test_instructions">
+        1. Press \"Send Notification\", then pull down the notification shade and press the bubble button on the bottom right of the notification.
+        \n2. Exit the bubble activity by tapping on the bubble icon at the top of the screen
+        \n3. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n4. Press \"Send Notification\", and verify that no message containing the text \"Sensitive Text\" shows next to the bubble.
+        \n5. If no such message shows, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_start_screen_recording">Start screen recording</string>
+    <string name="notif_hiding_send_notification">Send notification</string>
+    <string name="notif_hiding_success">No failures found, please press the green check mark</string>
+    <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 </resources>

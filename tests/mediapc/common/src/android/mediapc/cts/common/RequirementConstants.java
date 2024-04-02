@@ -49,6 +49,9 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
+    public static final String R5_1__H_1_20 = "r5_1__h_1_20"; // 5.1/H-1-20
+    public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
+    public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
 
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
@@ -80,6 +83,7 @@ public class RequirementConstants {
     public static final String R7_5__H_1_15 = "r7_5__h_1_15"; // 7.5/H-1-15
     public static final String R7_5__H_1_16 = "r7_5__h_1_16"; // 7.5/H-1-16
     public static final String R7_5__H_1_17 = "r7_5__h_1_17"; // 7.5/H-1-17
+    public static final String R7_5__H_1_20 = "r7_5__h_1_20"; // 7.5/H-1-20
 
     public static final String R7_1_1_1__H_1_1 = "r7_1_1_1__h_1_1"; // 7.1.1.1/H-1-1
     public static final String R7_1_1_3__H_1_1 = "r7_1_1_3__h_1_1"; // 7.1.1.3/H-1-1
@@ -114,12 +118,14 @@ public class RequirementConstants {
     public static final String CONCURRENT_SESSIONS = "concurrent_sessions";
 
     public static final String DISPLAY_DENSITY = "display_density_dpi";
+    public static final String DYNAMIC_COLOR_ASPECTS = "dynamic_color_aspects";
 
     public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
 
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
     public static final String FRAMES_DROPPED = "frame_drops_per_30sec";
+    public static final String FRAMES_DROPPED_PER_SECOND = "frame_drops_per_sec";
 
     public static final String FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
             "front_camera_dynamic_tenbits_supported";
@@ -139,6 +145,10 @@ public class RequirementConstants {
             "front_camerax_extension_night_supported";
     public static final String FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "front_camera2_extension_night_supported";
+    public static final String FRONT_CAMERA_ULTRA_HDR_SUPPORTED =
+            "front_camera_ultra_hdr_supported";
+
+    public static final String HLG_EDITING = "hlg_editing";
 
     public static final String LONG_RESOLUTION = "long_resolution_pixels";
 
@@ -148,6 +158,8 @@ public class RequirementConstants {
             "number_crypto_hw_secure_all_support";
 
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
+
+    public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
     public static final String PRIMARY_CAMERA_VIDEO_FPS =
@@ -178,6 +190,8 @@ public class RequirementConstants {
             "rear_camerax_extension_night_supported";
     public static final String REAR_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "rear_camera2_extension_night_supported";
+    public static final String REAR_CAMERA_ULTRA_HDR_SUPPORTED =
+            "rear_camera_ultra_hdr_supported";
 
     public static final String RGBA_1010102_COLOR_FORMAT_REQ = "rgba_1010102_color_format";
 

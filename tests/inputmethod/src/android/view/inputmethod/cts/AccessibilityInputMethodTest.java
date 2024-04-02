@@ -34,7 +34,6 @@ import android.app.UiAutomation;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Editable;
 import android.text.InputType;
@@ -82,13 +81,6 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.AccessibilityInputMethodTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
-
     @FunctionalInterface
     private interface A11yImeTest {
         void run(@NonNull UiAutomation uiAutomation, @NonNull MockImeSession imeSession,
@@ -115,8 +107,8 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
         testA11yIme((uiAutomation, imeSession, a11yImeSession) -> {
             final var stream = a11yImeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String markerForRestartInput = marker + "++";
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String markerForRestartInput = getTestMarker(SECOND_EDIT_TEXT_TAG);
             final AtomicReference<EditText> anotherEditTextRef = new AtomicReference<>();
             TestActivity.startSync(testActivity -> {
                 final LinearLayout layout = new LinearLayout(testActivity);
@@ -196,7 +188,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
                 return !restarting;
             }, TIMEOUT);
 
-            final String markerForRestartInput = marker + "++";
+            final String markerForRestartInput = getTestMarker("restarted-" + EDIT_TEXT_TAG);
             runOnMainSync(() -> {
                 final EditText editText = editTextRef.get();
                 editText.setPrivateImeOptions(markerForRestartInput);

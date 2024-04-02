@@ -82,19 +82,21 @@ public class PerformanceClassEvaluator {
                     .<Double>builder()
                     .setId(RequirementConstants.API_NATIVE_LATENCY)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 80.0)
                     .build();
             RequiredMeasurement<Double> apiJavaLatency = RequiredMeasurement
                     .<Double>builder()
                     .setId(RequirementConstants.API_JAVA_LATENCY)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
-                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.S, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 80.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 80.0)
                     .build();
 
             return new AudioTap2ToneLatencyRequirement(
@@ -127,6 +129,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new Camera240FpsRequirement(RequirementConstants.R7_5__H_1_9, requirement);
@@ -174,12 +177,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA2_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontCamera2NightRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Boolean> rearCameraXNightRequirement = RequiredMeasurement
@@ -187,17 +192,61 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERAX_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontCameraXNightRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERAX_EXTENSION_NIGHT_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new CameraExtensionRequirement(RequirementConstants.R7_5__H_1_15,
                     rearCamera2NightRequirement, frontCamera2NightRequirement,
                     rearCameraXNightRequirement, frontCameraXNightRequirement);
+        }
+    }
+
+    public static class CameraUltraHdrRequirement extends Requirement {
+        private static final String TAG = CameraUltraHdrRequirement.class.getSimpleName();
+
+        private CameraUltraHdrRequirement(String id, RequiredMeasurement<?> ... reqs) {
+            super(id, reqs);
+        }
+
+        public void setFrontCameraUltraHdrSupported(boolean ultraHdrSupported) {
+            this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_ULTRA_HDR_SUPPORTED,
+                    ultraHdrSupported);
+        }
+
+        public void setRearCameraUltraHdrSupported(boolean ultraHdrSupported) {
+            this.setMeasuredValue(RequirementConstants.REAR_CAMERA_ULTRA_HDR_SUPPORTED,
+                    ultraHdrSupported);
+        }
+
+        /**
+         * [2.2.7.2/7.5/H-1-20] MUST by default output JPEG_R for the primary rear
+         * and primary front cameras in the default camera app.
+        **/
+        public static CameraUltraHdrRequirement createUltraHdrReq() {
+
+            RequiredMeasurement<Boolean> rearUltraHdrRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.REAR_CAMERA_ULTRA_HDR_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            RequiredMeasurement<Boolean> frontUltraHdrRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.FRONT_CAMERA_ULTRA_HDR_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new CameraUltraHdrRequirement(RequirementConstants.R7_5__H_1_20,
+                    rearUltraHdrRequirement, frontUltraHdrRequirement);
         }
     }
 
@@ -230,6 +279,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1000.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1000.0f)
                     .build();
             RequiredMeasurement<Float> frontJpegLatency = RequiredMeasurement
                     .<Float>builder()
@@ -239,6 +289,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 1000.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 1000.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1000.0f)
                     .build();
 
             return new CameraLatencyRequirement(RequirementConstants.R7_5__H_1_5,
@@ -259,6 +310,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 500.0f)
                     .build();
             RequiredMeasurement<Float> frontLaunchLatency = RequiredMeasurement
                     .<Float>builder()
@@ -268,6 +320,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 600.0f)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 500.0f)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 500.0f)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 500.0f)
                     .build();
 
             return new CameraLatencyRequirement(RequirementConstants.R7_5__H_1_6,
@@ -299,6 +352,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new CameraRawRequirement(RequirementConstants.R7_5__H_1_8, requirement);
@@ -336,6 +390,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TIMESTAMP_REALTIME)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TIMESTAMP_REALTIME)
                     .build();
             RequiredMeasurement<Integer> frontTimestampSource = RequiredMeasurement
                     .<Integer>builder()
@@ -345,6 +400,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TIMESTAMP_REALTIME)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TIMESTAMP_REALTIME)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TIMESTAMP_REALTIME)
                     .build();
 
             return new CameraTimestampSourceRequirement(RequirementConstants.R7_5__H_1_4,
@@ -473,6 +529,10 @@ public class PerformanceClassEvaluator {
 
         public void setConcurrentFps(double achievedFps) {
             this.setMeasuredValue(RequirementConstants.CONCURRENT_FPS, achievedFps);
+        }
+
+        public void setFrameDropsPerSecond(double fdps) {
+            this.setMeasuredValue(RequirementConstants.FRAMES_DROPPED_PER_SECOND, fdps);
         }
 
         // copied from android.mediapc.cts.getReqMinConcurrentInstances due to build issues on aosp
@@ -685,6 +745,26 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement create5_1__H_1_2_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-3] MUST advertise the maximum number of hardware video encoder
          * sessions that can be run concurrently in any codec combination via the
          * CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities
@@ -787,6 +867,27 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_4, reqConcurrentFps);
+        }
+
+        /**
+         * [5.1/H-1-4] MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions
+         * (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 4
+         * sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1.
+         * For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are
+         * only required to support 1080p resolution, but are still required to support 6 instances
+         * at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement create5_1__H_1_4_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
         }
 
         /**
@@ -904,6 +1005,24 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-6] Support 6 instances of hardware video decoder and hardware video
+         * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
+         * at 720p(R,S) /1080p(T) /4k(U) @30fps resolution.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_6_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-9] Support 2 instances of secure hardware video decoder sessions
          * (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently at 1080p
          * resolution@30fps.
@@ -932,6 +1051,25 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_9, reqConcurrentFps);
+        }
+
+        /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_9_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
         }
 
         /**
@@ -969,6 +1107,25 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [2.2.7.1/5.1/H-1-2] MUST support 6 instances of hardware video decoder sessions (AVC,
+         * HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions
+         * at 1080p resolution@30 fps and 3 sessions at 4k(U) resolution@30fps. For all sessions,
+         * there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to
+         * support 1080p resolution, but are still required to support 6 instances at 1080p30fps.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_10_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
+        }
+
+        /**
          * [2.2.7.1/5.1/H-1-19] Support 3 instances of hardware video decoder and hardware video
          * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
          * at 4k(U) @30fps resolution for 10-bit with at most one encoder session.
@@ -985,6 +1142,23 @@ public class PerformanceClassEvaluator {
                     .build();
 
             return create4k(RequirementConstants.R5_1__H_1_19, reqConcurrentFps);
+        }
+
+        /**
+         * [2.2.7.1/5.1/H-1-19] Support 3 instances of hardware video decoder and hardware video
+         * encoder sessions (AVC, HEVC, VP9 or AV1) in any codec combination running concurrently
+         * at 4k(U) @30fps resolution for 10-bit with at most one encoder session.
+         */
+        public static ConcurrentCodecRequirement createR5_1__H_1_19_4k_drop() {
+            RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
+                    .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
+                    .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
+                    .build();
+
+            return new ConcurrentCodecRequirement(RequirementConstants.FRAMES_DROPPED_PER_SECOND,
+                    frameDropsPerSec);
         }
     }
 
@@ -1010,6 +1184,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new ConcurrentRearFrontRequirement(RequirementConstants.R7_5__H_1_11,
@@ -1092,12 +1267,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA_DYNAMIC_TENBITS_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontDynamicRangeTenBitsRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             return new DynamicRangeTenBitsRequirement(RequirementConstants.R7_5__H_1_16,
                     rearDynamicRangeTenBitsRequirement, frontDynamicRangeTenBitsRequirement);
@@ -1163,12 +1340,14 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.REAR_CAMERA_FACE_DETECTION_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontFaceDetectionRequirement = RequiredMeasurement
                     .<Boolean>builder()
                     .setId(RequirementConstants.FRONT_CAMERA_FACE_DETECTION_SUPPORTED)
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             return new FaceDetectionRequirement(RequirementConstants.R7_5__H_1_17,
                     rearFaceDetectionRequirement, frontFaceDetectionRequirement);
@@ -1201,6 +1380,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 100.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 125.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 150.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 150.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_1, filesystem_io_rate);
@@ -1228,6 +1408,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.DOUBLE_GTE)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 10.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 10.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 10.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_2, filesystem_io_rate);
@@ -1257,6 +1438,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 200.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 250.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 250.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 250.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_3, filesystem_io_rate);
@@ -1285,6 +1467,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.R, 25.0)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 40.0)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 100.0)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 100.0)
                     .build();
 
             return new FileSystemRequirement(RequirementConstants.R8_2__H_1_4, filesystem_io_rate);
@@ -1551,6 +1734,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new LogicalMultiCameraRequirement(RequirementConstants.R7_5__H_1_13,
@@ -1561,6 +1745,12 @@ public class PerformanceClassEvaluator {
     // used for requirements [7.6.1/H-1-1], [7.6.1/H-2-1]
     public static class MemoryRequirement extends Requirement {
         private static final String TAG = MemoryRequirement.class.getSimpleName();
+
+        // Media performance requires 6 GB minimum RAM, but keeping the following to
+        // 5 GB as activityManager.getMemoryInfo() typically returns around 5.4 GB on a 6 GB device,
+        // so these values are a bit lower than the required value stated on the Android CDD.
+        private static final long RS_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
+        private static final long TUV_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_T_MB;
 
         private MemoryRequirement(String id, RequiredMeasurement<?> ... reqs) {
             super(id, reqs);
@@ -1578,10 +1768,7 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6 GB minimum RAM, but keeping the following to
-                    // 5 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.R, 5L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.R, RS_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_1_1, physical_memory);
@@ -1595,13 +1782,10 @@ public class PerformanceClassEvaluator {
                     .<Long>builder()
                     .setId(RequirementConstants.PHYSICAL_MEMORY)
                     .setPredicate(RequirementConstants.LONG_GTE)
-                    // Media performance requires 6/8 GB minimum RAM, but keeping the following to
-                    // 5/7 GB as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB
-                    // device.
-                    .addRequiredValue(Build.VERSION_CODES.S, 5L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 7L * 1024L)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 7L * 1024L)
+                    .addRequiredValue(Build.VERSION_CODES.S, RS_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TUV_REQUIRED_MEMORY_MB)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TUV_REQUIRED_MEMORY_MB)
                     .build();
 
             return new MemoryRequirement(RequirementConstants.R7_6_1__H_2_1, physical_memory);
@@ -1632,6 +1816,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new PreviewStabilizationRequirement(RequirementConstants.R7_5__H_1_12,
@@ -1734,6 +1919,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Long> cameraResolution = RequiredMeasurement
@@ -1749,6 +1935,9 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(
                             Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                             MIN_FRONT_SENSOR_S_PERF_CLASS_RESOLUTION)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                            MIN_FRONT_SENSOR_S_PERF_CLASS_RESOLUTION)
                     .build();
 
             RequiredMeasurement<Boolean> videoSizeReqSatisfied = RequiredMeasurement
@@ -1759,6 +1948,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Double> videoFps = RequiredMeasurement
@@ -1769,6 +1959,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 29.9)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 29.9)
                     .build();
 
             return new PrimaryCameraRequirement(RequirementConstants.R7_5__H_1_2,
@@ -1922,6 +2113,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
                     .<Boolean>builder()
@@ -1929,6 +2121,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new StreamUseCaseRequirement(RequirementConstants.R7_5__H_1_14,
@@ -1971,9 +2164,22 @@ public class PerformanceClassEvaluator {
             this.setMeasuredValue(RequirementConstants.AV1_ENC_BITRATE, bitrate);
         }
 
+        public void setHlgEditingSupportedReq(boolean HlgEditingSupported) {
+            this.setMeasuredValue(RequirementConstants.HLG_EDITING, HlgEditingSupported);
+        }
+
+        public void setPortraitResolutionSupportreq(boolean isPortraitSupported) {
+            this.setMeasuredValue(RequirementConstants.PORTRAIT_RESOLUTION, isPortraitSupported);
+        }
+
         public void setColorFormatSupportReq(boolean colorFormatSupported) {
             this.setMeasuredValue(RequirementConstants.RGBA_1010102_COLOR_FORMAT_REQ,
                     colorFormatSupported);
+        }
+
+        public void setDynamicColorAspectsSupportReq(boolean dynamicColorAspectsSupported) {
+            this.setMeasuredValue(RequirementConstants.DYNAMIC_COLOR_ASPECTS,
+                    dynamicColorAspectsSupported);
         }
 
         /**
@@ -2073,6 +2279,53 @@ public class PerformanceClassEvaluator {
         }
 
         /**
+         * [5.1/H-1-20] MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+         * encoders present on the device at 4K resolution or the largest Camera-supported
+         * resolution, whichever is less.
+         */
+        public static VideoCodecRequirement createR5_1__H_1_20() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.HLG_EDITING)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_20, requirement);
+        }
+
+        /**
+         * [5.1/H-1-21] MUST support FEATURE_DynamicColorAspects for all hardware video decoders
+         *  (AVC, HEVC, VP9, AV1 or later).
+         */
+        public static VideoCodecRequirement createR5_1__H_1_21() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.DYNAMIC_COLOR_ASPECTS)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_21, requirement);
+        }
+
+        /**
+         * [5.12/H-1-22] MUST support both landscape and portrait resolution for all hardware
+         * codecs. AV1 codecs are limited to only 1080p resolution while others should support
+         * 4k or camera preferred resolution (whichever is less)
+         */
+        public static VideoCodecRequirement createR5_1__H_1_22() {
+            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PORTRAIT_RESOLUTION)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+
+            return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_22, requirement);
+        }
+
+        /**
          * [5.12/H-1-2] MUST support RGBA_1010102 color format for all hardware AV1 and HEVC
          * encoders present on the device.
          */
@@ -2118,6 +2371,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
             RequiredMeasurement<Boolean> frontRequirement = RequiredMeasurement
                     .<Boolean>builder()
@@ -2125,6 +2379,7 @@ public class PerformanceClassEvaluator {
                     .setPredicate(RequirementConstants.BOOLEAN_EQ)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             return new UltraWideZoomRatioRequirement(RequirementConstants.R7_5__H_1_10,
@@ -2165,6 +2420,14 @@ public class PerformanceClassEvaluator {
 
     public ConcurrentCodecRequirement addR5_1__H_1_2_4k() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_2_4k());
+    }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_2_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.create5_1__H_1_2_4k_drop());
+    }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_4_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.create5_1__H_1_4_4k_drop());
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_3_720p(String mimeType1, String mimeType2,
@@ -2221,6 +2484,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_6_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k_drop());
+    }
+
     public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
     }
@@ -2237,6 +2504,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_9_4k());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_9_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_9_4k_drop());
+    }
+
     public ConcurrentCodecRequirement addR5_1__H_1_10_1080p() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_1080p());
     }
@@ -2244,6 +2515,11 @@ public class PerformanceClassEvaluator {
     public ConcurrentCodecRequirement addR5_1__H_1_10_4k() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_4k());
     }
+
+    public ConcurrentCodecRequirement addR5_1__H_1_10_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_10_4k_drop());
+    }
+
     public SecureCodecRequirement addR5_1__H_1_11() {
         return this.addRequirement(SecureCodecRequirement.createR5_1__H_1_11());
     }
@@ -2285,6 +2561,24 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19());
     }
 
+    public ConcurrentCodecRequirement addR5_1__H_1_19_4k_drop() {
+        return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_19_4k_drop());
+    }
+
+    /* Adds requirement 5.1/H-1-20 */
+    public VideoCodecRequirement addR5_1__H_1_20() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_20());
+    }
+
+    /* Adds requirement 5.1/H-1-21 */
+    public VideoCodecRequirement addR5_1__H_1_21() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_21());
+    }
+
+    /* Adds requirement 5.1/H-1-22 */
+    public VideoCodecRequirement addR5_1__H_1_22() {
+        return this.addRequirement(VideoCodecRequirement.createR5_1__H_1_22());
+    }
 
     public FrameDropRequirement addR5_3__H_1_1_R() {
         return this.addRequirement(FrameDropRequirement.createR5_3__H_1_1_R());
@@ -2394,6 +2688,10 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(FaceDetectionRequirement.createFaceDetectionReq());
     }
 
+    /* Adds requirement 7.5/H-1-20 */
+    public CameraUltraHdrRequirement addR7_5__H_1_20() {
+        return this.addRequirement(CameraUltraHdrRequirement.createUltraHdrReq());
+    }
 
     public ResolutionRequirement addR7_1_1_1__H_1_1() {
         return this.<ResolutionRequirement>addRequirement(

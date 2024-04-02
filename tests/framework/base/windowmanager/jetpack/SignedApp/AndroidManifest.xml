@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.server.wm.jetpack.signed">
 
-    <application>
+    <application android:debuggable="true">
         <uses-library android:name="androidx.window.extensions"
                       android:required="false" />
         <activity

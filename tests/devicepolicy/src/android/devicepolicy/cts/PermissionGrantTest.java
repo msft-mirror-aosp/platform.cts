@@ -24,18 +24,18 @@ import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT
 import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_PROMPT;
 
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_BACKGROUND_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_COARSE_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_FINE_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACTIVITY_RECOGNITION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BODY_SENSORS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.CAMERA;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CALENDAR;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_PHONE_STATE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_SMS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.WRITE_CALENDAR;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_BACKGROUND_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_COARSE_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_FINE_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACTIVITY_RECOGNITION;
+import static com.android.bedstead.permissions.CommonPermissions.BODY_SENSORS;
+import static com.android.bedstead.permissions.CommonPermissions.CAMERA;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CALENDAR;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.READ_PHONE_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.READ_SMS;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_CALENDAR;
 import static com.android.bedstead.nene.utils.Versions.U;
 
 import static com.google.common.truth.Truth.assertThat;

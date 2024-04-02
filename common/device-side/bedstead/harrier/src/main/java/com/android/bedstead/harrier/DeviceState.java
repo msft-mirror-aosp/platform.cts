@@ -18,9 +18,9 @@ package com.android.bedstead.harrier;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.app.admin.DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED;
-import static android.app.role.RoleManager.ROLE_BROWSER;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.os.Build.VERSION.SDK_INT;
+
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.Defaults.DEFAULT_PASSWORD;
@@ -42,8 +42,11 @@ import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequiremen
 import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
+
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -54,20 +57,21 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.quicksettings.TileService;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
+
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
-import com.android.bedstead.harrier.annotations.EnsureCanGetPermission;
+import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -77,10 +81,10 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -101,8 +105,6 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireAdbOverWifi;
-import com.android.bedstead.harrier.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -125,6 +127,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
@@ -174,8 +177,8 @@ import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.PermissionContextImpl;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
@@ -199,6 +202,7 @@ import com.android.bedstead.testapp.TestAppQueryBuilder;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
+
 import com.google.common.base.Objects;
 
 import junit.framework.AssertionFailedError;
@@ -1170,7 +1174,7 @@ public final class DeviceState extends HarrierRule {
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
                 AnnotationExecutor executor =
-                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value());
+                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value(), usesAnnotationExecutorAnnotation.weakValue());
                 executor.applyAnnotation(annotation);
                 continue;
             }
@@ -1294,18 +1298,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireAdbRoot requireAdbRootAnnotation) {
-                requireAdbRoot(requireAdbRootAnnotation.failureMode());
-
-                continue;
-            }
-
-            if (annotation instanceof RequireAdbOverWifi requireAdbOverWifiAnnotation) {
-                requireAdbOverWifi(requireAdbOverWifiAnnotation.failureMode());
-
-                continue;
-            }
-
             if (annotation instanceof EnsurePolicyOperationUnsafe ensurePolicyOperationUnsafeAnnotation) {
                 ensurePolicyOperationUnsafe(ensurePolicyOperationUnsafeAnnotation.operation(),
                         ensurePolicyOperationUnsafeAnnotation.reason());
@@ -1346,6 +1338,11 @@ public final class DeviceState extends HarrierRule {
                 ensureNoPackageRespondsToIntent(
                         ensureNoPackageRespondsToIntentAnnotation.intent(),
                         ensureNoPackageRespondsToIntentAnnotation.user());
+                continue;
+            }
+
+            if (annotation instanceof RequireResourcesBooleanValue requireResourcesBooleanValue) {
+                requireSystemBooleanResource(requireResourcesBooleanValue);
                 continue;
             }
         }
@@ -4218,20 +4215,46 @@ public final class DeviceState extends HarrierRule {
         return TestApis.users().isHeadlessSystemUserMode();
     }
 
-    private final Map<Class<? extends AnnotationExecutor>, AnnotationExecutor>
+    private final Map<String, AnnotationExecutor>
             mAnnotationExecutors = new HashMap<>();
 
     private AnnotationExecutor getAnnotationExecutor(
-            Class<? extends AnnotationExecutor> annotationExecutorClass) {
-        if (!mAnnotationExecutors.containsKey(annotationExecutorClass)) {
+            Class<? extends AnnotationExecutor> annotationExecutorClass,
+            String weakAnnotationExecutorClass) {
+
+        Class<? extends AnnotationExecutor> executorClass;
+
+        if (annotationExecutorClass == AnnotationExecutor.class) {
+            if (weakAnnotationExecutorClass == "") {
+                throw new IllegalStateException(
+                        "@UsesAnnotationExecutor must declare either a value or weakValue");
+            } else {
+                try {
+                    executorClass = (Class<? extends AnnotationExecutor>) Class.forName(weakAnnotationExecutorClass);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Could not find annotation executor " + weakAnnotationExecutorClass + ". Probably a dependency issue.");
+                }
+            }
+        } else {
+            if (weakAnnotationExecutorClass == "") {
+                executorClass = annotationExecutorClass;
+            } else {
+                throw new IllegalStateException(
+                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has declared both.");
+            }
+        }
+
+        String executorClassName = executorClass.getCanonicalName();
+
+        if (!mAnnotationExecutors.containsKey(executorClassName)) {
             try {
                 mAnnotationExecutors.put(
-                        annotationExecutorClass, annotationExecutorClass.newInstance());
+                        executorClassName, executorClass.newInstance());
             } catch (Exception e) {
                 throw new RuntimeException("Error creating annotation executor", e);
             }
         }
-        return mAnnotationExecutors.get(annotationExecutorClass);
+        return mAnnotationExecutors.get(executorClassName);
     }
 
     private void ensureHasUserRestriction(String restriction, UserType onUser) {
@@ -4243,7 +4266,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4428,7 +4452,8 @@ public final class DeviceState extends HarrierRule {
             return;
         }
 
-        boolean shouldRunAsRoot = shouldRunAsRoot();
+        // TODO use TestApis.root().testUsesAdbRoot when this is modularised
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {
@@ -4475,33 +4500,11 @@ public final class DeviceState extends HarrierRule {
                 TestApis.devicePolicy().getStorageEncryptionStatus() != ENCRYPTION_STATUS_UNSUPPORTED,
                 FailureMode.SKIP);
     }
-
-    private void requireAdbOverWifi(FailureMode failureMode) {
-        String message = "The test requires adb to be connected over wifi.\n "
-                + "Use the below commands to do this: \n"
-                + "adb tcpip 5555 \n"
-                + "adb connect ip-address-of-device:5555\n";
-
-        checkFailOrSkip(message, TestApis.adb().isEnabledOverWifi(), failureMode);
-    }
-
     private void requireStorageEncryptionUnsupported() {
         checkFailOrSkip("Requires storage encryption to not be supported.",
                 TestApis.devicePolicy().getStorageEncryptionStatus()
                         == ENCRYPTION_STATUS_UNSUPPORTED,
                 FailureMode.SKIP);
-    }
-
-    private void requireAdbRoot(FailureMode failureMode) {
-        if (TestApis.adb().isRootAvailable()) {
-            Tags.addTag(Tags.ADB_ROOT);
-        } else {
-            failOrSkip("Device does not have root available.", failureMode);
-        }
-    }
-
-    private static boolean shouldRunAsRoot() {
-        return Tags.hasTag(Tags.ADB_ROOT);
     }
 
     private void ensurePolicyOperationUnsafe(
@@ -4577,5 +4580,20 @@ public final class DeviceState extends HarrierRule {
             String packageName = resolveInfoWrapper.activityInfo().packageName;
             ensurePackageNotInstalled(packageName, user);
         }
+    }
+
+    private void requireSystemBooleanResource(
+            RequireResourcesBooleanValue requireResourcesBooleanValue
+    ) {
+        boolean resourceValue = TestApis
+                .resources()
+                .system()
+                .getBoolean(requireResourcesBooleanValue.configName());
+
+        assumeThat(
+                "resource with configName: " + requireResourcesBooleanValue.configName(),
+                resourceValue,
+                is(requireResourcesBooleanValue.requiredValue())
+        );
     }
 }

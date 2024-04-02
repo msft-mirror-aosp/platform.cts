@@ -16,6 +16,15 @@
 <configuration description="Configuration for Virtual Device Manager Camera Tests running the Camera CTS tests">
     <!-- Only run tests if the device under test is SDK version 34 (Android 14) or above. -->
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
+        <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
+        <option name="run-command" value="cmd -w virtual_camera" />
+        <!-- Skip the test if currently required EGL extension is not supported on device. -->
+        <option name="run-command" value="dumpsys SurfaceFlinger | grep GL_EXT_YUV_target" />
+        <!-- Skip if required aconfig flags are disabled -->
+        <option name="run-command" value="printflags | grep -E 'virtual_devices/android.companion.virtual.flags.virtual_camera.*ENABLED \(device_config\)'" />
+        <option name="run-command" value="printflags | grep -E 'virtual_devices/android.companion.virtualdevice.flags.virtual_camera_service_discovery.*ENABLED \(device_config\)'" />
+    </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -47,8 +56,7 @@
         <option name="throw-if-cmd-fail" value="true" />
         <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
         <option name="run-command" value="wm dismiss-keyguard" />
-        <option name="run-command" value="start virtual_camera" />
-        <option name="run-command" value="cmd virtual_camera enable_test_camera 637473" />
+        <option name="run-command" value="cmd -w virtual_camera enable_test_camera --camera_id=637473" />
         <option name="teardown-command" value="cmd virtual_camera disable_test_camera" />
     </target_preparer>
 

@@ -16,21 +16,31 @@
 
 package android.sensitivecontentprotection.cts;
 
+import static android.permission.flags.Flags.FLAG_SENSITIVE_CONTENT_IMPROVEMENTS;
+import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import static android.view.flags.Flags.FLAG_SENSITIVE_CONTENT_APP_PROTECTION;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Activity;
 import android.app.UiAutomation;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
+import android.os.UserManager;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.WindowManagerStateHelper;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +49,9 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeFull
 public class ViewSensitiveContentTest {
+    private Context mContext;
     private final SensitiveContentMediaProjectionHelper mMediaProjectionHelper =
             new SensitiveContentMediaProjectionHelper();
     @Rule
@@ -49,8 +61,20 @@ public class ViewSensitiveContentTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static boolean isHeadlessSystemUser(Context context) {
+        return UserManager.isHeadlessSystemUserMode()
+                && context.getSystemService(UserManager.class).isSystemUser();
+    }
+
     @Before
     public void setup() {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        // TODO: b/331064496 - projection service isn't started on auto
+        assumeFalse(isAutomotive());
+        assumeFalse("Device is in headless system user mode. Test requires screenshots"
+                + "which aren't supported in headless",
+                isHeadlessSystemUser(mContext));
+
         startMediaProjection();
     }
 
@@ -105,8 +129,23 @@ public class ViewSensitiveContentTest {
         activityScenario.onActivity(activity -> {
             BitmapPixelChecker pixelChecker = new BitmapPixelChecker(Color.BLACK);
             BitmapPixelChecker.validateScreenshot(mName, activity, pixelChecker,
-                    -1 /* expectedMatchingPixels */,
-                    BitmapPixelChecker.getInsets(activity));
+                    /* expectedMatchRatio= */ 0.5f, BitmapPixelChecker.getInsets(activity));
         });
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_SENSITIVE_CONTENT_APP_PROTECTION,
+            FLAG_SENSITIVE_CONTENT_IMPROVEMENTS})
+    public void testToastIsShown() {
+        try (ActivityScenario<PasswordAutofillHintActivity> ignored =
+                     ActivityScenario.launch(PasswordAutofillHintActivity.class)) {
+            assertThat(new WindowManagerStateHelper().waitFor(
+                    state -> state.findFirstWindowWithType(TYPE_TOAST) != null, "Toast"))
+                    .isTrue();
+        }
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

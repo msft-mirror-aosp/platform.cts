@@ -352,4 +352,23 @@ public class BiometricServiceTests extends BiometricTestBase {
             waitForAllUnenrolled();
         }
     }
+
+    @CddTest(requirements = {"7.3.10/C-1-15"})
+    @Test
+    public void testRemoveBiometricEnrollments() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        try (TestSessionList biometricSessions = new TestSessionList(this)) {
+            for (SensorProperties prop : mSensorProperties) {
+                BiometricTestSession session = mBiometricManager.createTestSession(
+                        prop.getSensorId());
+                enrollForSensor(session, prop.getSensorId());
+
+                final int userId = Utils.getUserId();
+                session.cleanupInternalState(userId);
+                biometricSessions.put(prop.getSensorId(), session);
+            }
+
+            waitForAllUnenrolled();
+        }
+    }
 }

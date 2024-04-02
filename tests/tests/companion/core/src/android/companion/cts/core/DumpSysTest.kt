@@ -66,7 +66,7 @@ class DumpSysTest : CoreTestBase() {
         out = dumpCurrentState()
         assertTrue(out[0].contains("mId=$associationId")) // Device is still associated
         assertTrue(out[1].contains("id=$associationId")) // And also present
-        assertTrue(out[2].contains("u$userId\\$targetPackageName")) // App is now bound
+        assertTrue(out[2].contains("u$userId, $targetPackageName")) // App is now bound
 
         // Clean up
         withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
@@ -86,7 +86,7 @@ class DumpSysTest : CoreTestBase() {
         assertTrue(out[0].contains("mId=$idB")) // Device B associated
         assertFalse(out[1].contains("id=$idA")) // Device A not present
         assertFalse(out[1].contains("id=$idB")) // Device B not present
-        assertFalse(out[2].contains("u$userId\\$targetPackageName")) // App is not bound yet
+        assertFalse(out[2].contains("u$userId, $targetPackageName")) // App is not bound yet
 
         // Only publish device A's presence and wait for callback.
         withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
@@ -97,7 +97,7 @@ class DumpSysTest : CoreTestBase() {
         out = dumpCurrentState()
         assertTrue(out[1].contains("id=$idA")) // Device A is now present
         assertFalse(out[1].contains("id=$idB")) // Device B still not present
-        assertTrue(out[2].contains("u$userId\\$targetPackageName")) // App is now bound
+        assertTrue(out[2].contains("u$userId, $targetPackageName")) // App is now bound
 
         // Clean up
         withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {

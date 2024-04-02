@@ -34,7 +34,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Gainmap;
 import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
@@ -79,7 +78,6 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
-import android.provider.MediaStore;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -90,6 +88,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -201,6 +200,9 @@ public class ItsService extends Service implements SensorEventListener {
 
     // Performance class R version number
     private static final int PERFORMANCE_CLASS_R = Build.VERSION_CODES.R;
+
+    // Performance class VIC version number
+    private static final int PERFORMANCE_CLASS_VIC = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     public static final int SERVERPORT = 6000;
 
@@ -1020,6 +1022,8 @@ public class ItsService extends Service implements SensorEventListener {
                     doCheckPrimaryCamera(cameraId);
                 } else if ("isPerformanceClass".equals(cmdObj.getString("cmdName"))) {
                     doCheckPerformanceClass();
+                } else if ("isVicPerformanceClass".equals(cmdObj.getString("cmdName"))) {
+                    doCheckVicPerformanceClass();
                 } else if ("measureCameraLaunchMs".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doMeasureCameraLaunchMs(cameraId);
@@ -1109,8 +1113,8 @@ public class ItsService extends Service implements SensorEventListener {
                     doCheckLowLightBoostAvailable(cameraId, extension);
                 } else if ("doCapturePreviewFrame".equals(cmdObj.getString("cmdName"))) {
                     doCapturePreviewFrame(cmdObj);
-                } else if ("doGetNativeCameraPkgName".equals(cmdObj.getString("cmdName"))) {
-                    doGetNativeCameraPkgName();
+                } else if ("doGetDefaultCameraPkgName".equals(cmdObj.getString("cmdName"))) {
+                    doGetDefaultCameraPkgName();
                 } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
                     doGainMapCheck(cmdObj);
                 } else {
@@ -1721,15 +1725,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doGetMaxCamcorderProfileSize(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
+        validateCameraId(cameraId);
 
         int cameraDeviceId = Integer.parseInt(cameraId);
         int maxArea = -1;
@@ -1752,15 +1748,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doCheckPrimaryCamera(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
+        validateCameraId(cameraId);
 
         boolean isPrimaryCamera = false;
         try {
@@ -1840,15 +1828,6 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doCheckP3Support(String cameraId) throws ItsException {
-        if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
-        }
-        if (mItsCameraIdList.mCameraIds.size() == 0) {
-            throw new ItsException("No camera devices");
-        }
-        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
-            throw new ItsException("Invalid cameraId " + cameraId);
-        }
         boolean cameraP3OutputSupported = false;
         try {
             CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
@@ -1882,6 +1861,13 @@ public class ItsService extends Service implements SensorEventListener {
         boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_R);
 
         mSocketRunnableObj.sendResponse("performanceClass",
+                isPerfClass ? "true" : "false");
+    }
+
+    private void doCheckVicPerformanceClass() throws ItsException {
+        boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_VIC);
+
+        mSocketRunnableObj.sendResponse("vicPerformanceClass",
                 isPerfClass ? "true" : "false");
     }
 
@@ -2572,12 +2558,12 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("supportedVideoQualities", profiles.toString());
     }
 
-    private void doGetNativeCameraPkgName() throws ItsException {
+    private void doGetDefaultCameraPkgName() throws ItsException {
         PackageManager pkgMgr = getPackageManager();
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         String pkgName = intent.resolveActivity(pkgMgr).getPackageName();
-        Log.i(TAG, "Native camera pkg name: " + pkgName);
-        mSocketRunnableObj.sendResponse("nativeCameraPkg", pkgName);
+        Log.i(TAG, "Default camera pkg name: " + pkgName);
+        mSocketRunnableObj.sendResponse("defaultCameraPkg", pkgName);
     }
 
     private void doGainMapCheck(JSONObject params) throws ItsException {
@@ -4906,5 +4892,17 @@ public class ItsService extends Service implements SensorEventListener {
         Float minFocusDistance = c.get(
                 CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
         return (minFocusDistance != null) && (minFocusDistance == 0.0);
+    }
+
+    private void validateCameraId(String cameraId) throws ItsException {
+        if (mItsCameraIdList == null) {
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+        }
+        if (mItsCameraIdList.mCameraIds.size() == 0) {
+            throw new ItsException("No camera devices");
+        }
+        if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
+            throw new ItsException("Invalid cameraId " + cameraId);
+        }
     }
 }
