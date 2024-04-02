@@ -20,6 +20,7 @@ android_library {
         "common/src/main/java/**/*.kt",
     ],
     manifest: "common/src/main/AndroidManifest.xml",
+    sdk_version: "current",
     min_sdk_version: "29",
     platform_apis: true,
     static_libs: [
@@ -36,6 +37,7 @@ android_library {
         "steps/src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
+    sdk_version: "test_current",
     min_sdk_version: "29",
     static_libs: [
         "Nene",

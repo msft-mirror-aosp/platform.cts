@@ -8,6 +8,7 @@ android_library {
         "src/main/kotlin/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
+    sdk_version: "current",
     min_sdk_version: "29",
     static_libs: [
         "Nene",
