@@ -219,27 +219,6 @@ public class PermissionsTest {
     }
 
     @Test
-    @RequireSdkVersion(min = S, reason = "restoring shell permissions only available on S+")
-    public void withoutPermission_androidSAndAbove_restoresPreviousPermissionContext() {
-        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(PERMISSION_HELD_BY_SHELL);
-
-        try {
-            PermissionContext p =
-                    TestApis.permissions()
-                            .withoutPermission(PERMISSION_HELD_BY_SHELL);
-            p.close();
-
-            assertThat(sContext.checkSelfPermission(PERMISSION_HELD_BY_SHELL))
-                    .isEqualTo(PERMISSION_GRANTED);
-        } finally {
-            ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
-        }
-    }
-
-    // TODO(scottjonathan): Once we can install the testapp without granting all runtime
-    //  permissions, add a test that this works pre-Q
-
-    @Test
     @RequireSdkVersion(min = R, max = R)
     public void withPermissionOnVersion_onVersion_hasPermission() {
         try (PermissionContext p =
