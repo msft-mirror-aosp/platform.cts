@@ -34,6 +34,7 @@ import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.jetpack.utils.ActivityEmbeddingUtil;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
+import android.support.test.uiautomator.UiDevice;
 import android.util.Pair;
 import android.util.Size;
 import android.view.WindowMetrics;
@@ -289,6 +290,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         final Size currentSize = mReportedDisplayMetrics.getSize();
         mReportedDisplayMetrics.setSize(new Size((int) (currentSize.getWidth() * 0.9),
                 (int) (currentSize.getHeight() * 0.9)));
+        UiDevice.getInstance(mInstrumentation).waitForIdle();
 
         // Verify that the placeholder was not finished and fills the task
         waitAndAssertResumedAndFillsTask(placeholderActivity);

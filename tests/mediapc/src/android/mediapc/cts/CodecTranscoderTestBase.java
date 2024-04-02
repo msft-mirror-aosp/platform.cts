@@ -16,6 +16,7 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediapc.cts.CodecTestBase.areFormatsSupported;
 
@@ -26,6 +27,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -44,6 +46,8 @@ public class CodecTranscoderTestBase {
     String mTestFile;
     int mBitrate;
     int mFrameRate;
+    double mFrameDrops;
+    long mLastPresentationTimeUs = -1;
     boolean mUseHighBitDepth;
     MediaExtractor mExtractor;
     int mMaxBFrames;
@@ -115,6 +119,8 @@ public class CodecTranscoderTestBase {
         mDecInputCount = 0;
         mDecOutputCount = 0;
         mEncOutputCount = 0;
+        mFrameDrops = 0;
+        mLastPresentationTimeUs = -1;
     }
 
     void configureCodec(MediaFormat decFormat, MediaFormat encFormat, boolean isAsync,
@@ -172,6 +178,14 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawDecOutputEOS = true;
         }
+        long expectedFrameDurationUs = 1000000 / mFrameRate;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mDecOutputCount++;
         }
@@ -182,6 +196,14 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawEncOutputEOS = true;
         }
+        long expectedFrameDurationUs = 1000000 / mFrameRate;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mEncOutputCount++;
         }
@@ -371,7 +393,7 @@ public class CodecTranscoderTestBase {
 /**
  * The following class transcodes the given testFile and returns the achieved fps for transcoding.
  */
-class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
+class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Transcode.class.getSimpleName();
 
     final String mDecoderName;
@@ -386,13 +408,13 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
         mIsAsync = isAsync;
     }
 
-    public Double doTranscode() throws Exception {
+    public CodecMetrics doTranscode() throws Exception {
         MediaFormat decoderFormat = setUpSource(mTestFile);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(decoderFormat);
         // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
         if (!areFormatsSupported(mDecoderName, formats)) {
-            return (Double) 0.0;
+            return getMetrics(0.0, 0.0);
         }
 
         mDecoder = MediaCodec.createByCodecName(mDecoderName);
@@ -416,17 +438,17 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
         double fps = mEncOutputCount / ((end - start) / 1000.0);
         Log.d(LOG_TAG, "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: " +
                 mEncoderName + " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
+    public CodecMetrics call() throws Exception {
         try {
             return doTranscode();
         } catch (Exception e) {
             Log.d(LOG_TAG, "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: "
                     + mEncoderName + " Failed due to: " + e);
-            return -1.0;
+            return getMetrics(-1.0, 0.0);
         }
     }
 }
@@ -501,7 +523,7 @@ class TranscodeLoad extends Transcode {
     }
 
     @Override
-    public Double doTranscode() throws Exception {
+    public CodecMetrics doTranscode() throws Exception {
         MediaFormat decoderFormat = setUpSource(mTestFile);
         mDecoder = MediaCodec.createByCodecName(mDecoderName);
         MediaFormat encoderFormat = setUpEncoderFormat(decoderFormat);
@@ -525,7 +547,7 @@ class TranscodeLoad extends Transcode {
         Log.d(LOG_TAG,
                 "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: " + mEncoderName
                         + " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override

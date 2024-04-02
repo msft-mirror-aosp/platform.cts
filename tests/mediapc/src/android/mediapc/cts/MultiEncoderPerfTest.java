@@ -21,6 +21,7 @@ import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -39,9 +40,6 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent encode sessions that it can
@@ -135,9 +133,9 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
                 mimeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         boolean hasAV1 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
                 int instances4k = maxInstances / 3;
@@ -161,21 +159,22 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                             new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
                 }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4;
+        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4_drop;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
         if (height > 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_4k();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
+            r5_1__H_1_4_drop = pce.addR5_1__H_1_4_4k_drop();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4_drop.setFrameDropsPerSecond(frameDropsPerSec);
         } else if (height == 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();
