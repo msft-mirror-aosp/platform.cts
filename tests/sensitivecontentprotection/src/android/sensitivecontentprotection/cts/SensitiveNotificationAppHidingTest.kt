@@ -257,6 +257,43 @@ class SensitiveNotificationAppHidingTest {
         }
     }
 
+    @Test
+    @CddTest(requirements = ["9.8.2/C-3-3"])
+    @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
+    fun testScreenCaptureIsUnblockedAfterScreenshareEnd() {
+        sendSensitiveNotification()
+
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
+            mediaProjection.stop()
+
+            // Give app time to update its window state to reflect sensitive protection state
+            Thread.sleep(500)
+
+            verifyScreenCaptureNotProtected(activityScenario)
+        }
+    }
+
+    @Test
+    @CddTest(requirements = ["9.8.2/C-0-5"])
+    @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
+    fun testScreenCaptureRemainsBlockedAfterScreenshareEnd_appSetFlagSecure() {
+        sendSensitiveNotification()
+
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleFlagSecureActivity::class.java).use { activityScenario ->
+            mediaProjection.stop()
+
+            verifyScreenCaptureProtected(activityScenario)
+        }
+    }
+
     private fun isAutomotive(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
     }
