@@ -16,7 +16,6 @@
 
 package android.appsecurity.cts;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -27,6 +26,7 @@ import android.cts.statsdatom.lib.ReportUtils;
 import com.android.os.AtomsProto;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -81,8 +81,14 @@ public class StatsdAppSecurityAtomTest extends BaseHostJUnit4Test {
             AtomsProto.RoleHolder roleHolder = atom.getRoleHolder();
 
             assertThat(roleHolder.getPackageName()).isNotNull();
-            assertThat(roleHolder.getUid()).isAtLeast(0);
             assertThat(roleHolder.getRole()).isNotNull();
+
+            // Verify that only empty roles have the special -1 UID
+            if (roleHolder.getPackageName().equals("")) {
+                assertThat(roleHolder.getUid()).isEqualTo(-1);
+            } else {
+                assertThat(roleHolder.getUid()).isAtLeast(0);
+            }
 
             if (roleHolder.getPackageName().equals(STATSD_APP_PKG)) {
                 assertThat(getAppId(roleHolder.getUid())).isEqualTo(testAppId);
