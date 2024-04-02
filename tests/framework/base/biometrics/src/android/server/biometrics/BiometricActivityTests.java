@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.hardware.biometrics.BiometricPrompt;
@@ -339,6 +340,8 @@ public class BiometricActivityTests extends BiometricTestBase {
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         assumeTrue(mSensorProperties.isEmpty());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             try (ActivitySession activitySession =
