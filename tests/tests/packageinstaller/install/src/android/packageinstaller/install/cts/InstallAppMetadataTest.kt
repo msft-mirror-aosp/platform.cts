@@ -21,6 +21,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.APP_METADATA_SOURCE_APK
 import android.content.pm.PackageManager.APP_METADATA_SOURCE_INSTALLER
+import android.content.pm.PackageManager.APP_METADATA_SOURCE_UNKNOWN
 import android.content.pm.PackageManager.NameNotFoundException
 import android.os.PersistableBundle
 import android.platform.test.annotations.AppModeFull
@@ -43,6 +44,7 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
 
     private val TEST_FIELD = "testField"
     private val TEST_APK2_NAME = "CtsEmptyTestApp_AppMetadataInApk.apk"
+    private val TEST_APK3_NAME = "CtsEmptyTestApp_MissingAppMetadataInApk.apk"
 
     private val uiAutomation: UiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -107,20 +109,10 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
 
     @RequiresFlagsEnabled(Flags.FLAG_ASL_IN_APK_APP_METADATA_SOURCE)
     @Test
-    fun getAppMetadataInApk() {
-        installPackage(TEST_APK2_NAME)
-
-        uiAutomation.adoptShellPermissionIdentity()
-        try {
-            val data = pm.getAppMetadata(TEST_APK_PACKAGE_NAME)
-            assertThat(data.size()).isEqualTo(2)
-            assertThat(data.getString("source")).isEqualTo("apk")
-            assertThat(data.getLong("version")).isEqualTo(2)
-            assertThat(pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME))
-                .isEqualTo(APP_METADATA_SOURCE_APK)
-        } finally {
-            uiAutomation.dropShellPermissionIdentity()
-        }
+    fun appMetadataInApk() {
+        installAslInApk()
+        installMissingAslInApk()
+        installAslInApk()
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ASL_IN_APK_APP_METADATA_SOURCE)
@@ -297,5 +289,35 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
         // create a bundle that is greater than default size limit of 32KB.
         bundle.putString(TEST_FIELD, "a".repeat(32000))
         return bundle
+    }
+
+    private fun installAslInApk() {
+        installPackage(TEST_APK2_NAME)
+
+        uiAutomation.adoptShellPermissionIdentity()
+        try {
+            val data = pm.getAppMetadata(TEST_APK_PACKAGE_NAME)
+            assertThat(data.size()).isEqualTo(2)
+            assertThat(data.getString("source")).isEqualTo("apk")
+            assertThat(data.getLong("version")).isEqualTo(2)
+            assertThat(pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME))
+                .isEqualTo(APP_METADATA_SOURCE_APK)
+        } finally {
+            uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    private fun installMissingAslInApk() {
+        installPackage(TEST_APK3_NAME)
+
+        uiAutomation.adoptShellPermissionIdentity()
+        try {
+            val data = pm.getAppMetadata(TEST_APK_PACKAGE_NAME)
+            assertThat(data.size()).isEqualTo(0)
+            assertThat(pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME))
+                .isEqualTo(APP_METADATA_SOURCE_UNKNOWN)
+        } finally {
+            uiAutomation.dropShellPermissionIdentity()
+        }
     }
 }
