@@ -56,7 +56,9 @@ TABLET_ALLOWLIST = (
     'dragon',  # Google Pixel C
     'hnhey-q',  # Honor Pad 8
     'hwcmr09',  # Huawei MediaPad M5
+    'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
+    'tb350fu',  # Lenovo Tab P11 (Gen 2)
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta9pwifi',  # Samsung Galaxy Tab A9+
@@ -581,7 +583,7 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
       raise error_util.CameraItsError(
-        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
+          'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
