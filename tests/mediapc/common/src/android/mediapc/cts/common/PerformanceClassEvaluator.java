@@ -1286,6 +1286,79 @@ public class PerformanceClassEvaluator {
         }
     }
 
+    public static class HLGCombinationRequirement extends Requirement {
+        private static final String TAG =
+                HLGCombinationRequirement.class.getSimpleName();
+
+        private HLGCombinationRequirement(String id, RequiredMeasurement<?> ... reqs) {
+            super(id, reqs);
+        }
+
+        public void setHLGCombinationSupported(boolean supported) {
+            this.setMeasuredValue(RequirementConstants.PRIMARY_CAMERA_HLG_COMBINATION_SUPPORTED,
+                    supported);
+        }
+
+        /**
+         * [2.2.7.2/7.5/H-1-19] MUST support PREVIEW_STABILIZATION for
+         *     1080p PRIV HLG10 + max-size JPEG
+         *     720p PRIV HLG10 + max-size JPEG
+         *     for primary rear camera
+         */
+        public static HLGCombinationRequirement createRearHLGCombinationReq() {
+            RequiredMeasurement<Boolean> rearHLGCombinationRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PRIMARY_CAMERA_HLG_COMBINATION_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+            return new HLGCombinationRequirement(RequirementConstants.R7_5__H_1_19,
+                    rearHLGCombinationRequirement);
+        }
+    }
+
+    public static class JpegRRequirement extends Requirement {
+        private static final String TAG =
+                JpegRRequirement.class.getSimpleName();
+
+        public static int PRIMARY_REAR_CAMERA = 0;
+        public static int PRIMARY_FRONT_CAMERA = 1;
+
+        private JpegRRequirement(String id, RequiredMeasurement<?> ... reqs) {
+            super(id, reqs);
+        }
+
+        public void setJpegRSupported(int camera, boolean supported) {
+            if (camera == PRIMARY_REAR_CAMERA) {
+                this.setMeasuredValue(RequirementConstants.PRIMARY_REAR_CAMERA_JPEG_R_SUPPORTED,
+                        supported);
+            } else if (camera == PRIMARY_FRONT_CAMERA) {
+                this.setMeasuredValue(RequirementConstants.PRIMARY_FRONT_CAMERA_JPEG_R_SUPPORTED,
+                        supported);
+            }
+        }
+
+        /**
+         * [2.2.7.2/7.5/H-1-18] MUST support JPEG_R for the primary cameras.
+         */
+        public static JpegRRequirement createJpegRReq() {
+            RequiredMeasurement<Boolean> rearJpegRRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PRIMARY_REAR_CAMERA_JPEG_R_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+            RequiredMeasurement<Boolean> frontJpegRRequirement = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PRIMARY_FRONT_CAMERA_JPEG_R_SUPPORTED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+            return new JpegRRequirement(RequirementConstants.R7_5__H_1_18,
+                    rearJpegRRequirement, frontJpegRRequirement);
+        }
+    }
+
     public static class ExtYuvTargetRequirement extends Requirement {
         private static final String TAG = ExtYuvTargetRequirement.class.getSimpleName();
 
@@ -1855,8 +1928,27 @@ public class PerformanceClassEvaluator {
                     videoSizeReqSatisfied);
         }
 
+        public void set720pVideoSizeReqSatisfied(boolean videoSizeReqSatisfied) {
+            this.setMeasuredValue(
+                    RequirementConstants.PRIMARY_CAMERA_720p_VIDEO_SIZE_REQ_SATISFIED,
+                    videoSizeReqSatisfied);
+        }
+        public void set1080pVideoSizeReqSatisfied(boolean videoSizeReqSatisfied) {
+            this.setMeasuredValue(
+                    RequirementConstants.PRIMARY_CAMERA_1080p_VIDEO_SIZE_REQ_SATISFIED,
+                    videoSizeReqSatisfied);
+        }
         public void setVideoFps(double videoFps) {
             this.setMeasuredValue(RequirementConstants.PRIMARY_CAMERA_VIDEO_FPS, videoFps);
+        }
+
+        public void set720pVideoFps(double videoFps) {
+            this.setMeasuredValue(RequirementConstants.PRIMARY_CAMERA_720p_VIDEO_FPS,
+                    videoFps);
+        }
+        public void set1080pVideoFps(double videoFps) {
+            this.setMeasuredValue(RequirementConstants.PRIMARY_CAMERA_1080p_VIDEO_FPS,
+                    videoFps);
         }
 
         /**
@@ -1872,6 +1964,7 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
 
             RequiredMeasurement<Long> cameraResolution = RequiredMeasurement
@@ -1885,6 +1978,9 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(
                             Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                             MIN_BACK_SENSOR_PERF_CLASS_RESOLUTION)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                            MIN_BACK_SENSOR_PERF_CLASS_RESOLUTION)
                     .build();
 
             RequiredMeasurement<Boolean> videoSizeReqSatisfied = RequiredMeasurement
@@ -1895,8 +1991,21 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, true)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, true)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                     .build();
-
+            // Split definitions of 720p and 1080p for future flexibility
+            RequiredMeasurement<Boolean> videoSize720pReqSatisfied = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PRIMARY_CAMERA_720p_VIDEO_SIZE_REQ_SATISFIED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
+            RequiredMeasurement<Boolean> videoSize1080pReqSatisfied = RequiredMeasurement
+                    .<Boolean>builder()
+                    .setId(RequirementConstants.PRIMARY_CAMERA_1080p_VIDEO_SIZE_REQ_SATISFIED)
+                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
+                    .build();
             RequiredMeasurement<Double> videoFps = RequiredMeasurement
                     .<Double>builder()
                     .setId(RequirementConstants.PRIMARY_CAMERA_VIDEO_FPS)
@@ -1905,11 +2014,25 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.S, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 29.9)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 29.9)
+                    .build();
+            RequiredMeasurement<Double> video720pFps = RequiredMeasurement
+                    .<Double>builder()
+                    .setId(RequirementConstants.PRIMARY_CAMERA_720p_VIDEO_FPS)
+                    .setPredicate(RequirementConstants.DOUBLE_GTE)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 59.9)
+                    .build();
+            RequiredMeasurement<Double> video1080pFps = RequiredMeasurement
+                    .<Double>builder()
+                    .setId(RequirementConstants.PRIMARY_CAMERA_1080p_VIDEO_FPS)
+                    .setPredicate(RequirementConstants.DOUBLE_GTE)
+                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 59.9)
                     .build();
 
             return new PrimaryCameraRequirement(RequirementConstants.R7_5__H_1_1,
                     hasPrimaryCamera, cameraResolution, videoSizeReqSatisfied,
-                    videoFps);
+                    videoFps, videoSize720pReqSatisfied,  videoSize1080pReqSatisfied,
+                    video720pFps, video1080pFps);
         }
 
         /**
@@ -1967,7 +2090,6 @@ public class PerformanceClassEvaluator {
                     .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 29.9)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 29.9)
                     .build();
-
             return new PrimaryCameraRequirement(RequirementConstants.R7_5__H_1_2,
                     hasPrimaryCamera, cameraResolution, videoSizeReqSatisfied,
                     videoFps);
@@ -2702,10 +2824,18 @@ public class PerformanceClassEvaluator {
     public FaceDetectionRequirement addR7_5__H_1_17() {
         return this.addRequirement(FaceDetectionRequirement.createFaceDetectionReq());
     }
+    public JpegRRequirement addR7_5__H_1_18() {
+        return this.addRequirement(JpegRRequirement.createJpegRReq());
+    }
 
     /* Adds requirement 7.5/H-1-20 */
     public CameraUltraHdrRequirement addR7_5__H_1_20() {
         return this.addRequirement(CameraUltraHdrRequirement.createUltraHdrReq());
+    }
+
+    // TODO: b/329526179 Move all camera requirements to separate file
+    public HLGCombinationRequirement addR7_5__H_1_19() {
+        return this.addRequirement(HLGCombinationRequirement.createRearHLGCombinationReq());
     }
 
     public ResolutionRequirement addR7_1_1_1__H_1_1() {
