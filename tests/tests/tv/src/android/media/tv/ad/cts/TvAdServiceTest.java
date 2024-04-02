@@ -395,6 +395,48 @@ public class TvAdServiceTest {
         assertKeyEventEquals(mSession.mKeyMultipleEvent, event);
     }
 
+    @Test
+    public void testSetMediaViewEnabled() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mSession.setMediaViewEnabled(false);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mMediaViewEnabledCount > 0);
+        assertThat(mSession.mMediaViewEnabledCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testIsMediaViewEnabled() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+
+        assertThat(mSession.isMediaViewEnabled()).isEqualTo(true);
+        assertThat(mSession.mMediaViewEnabledCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testOnCreateMediaView() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mSession.onCreateMediaView();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mMediaViewEnabledCount > 0);
+        assertThat(mSession.mMediaViewEnabledCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testMediaViewSizeChanged() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        int w = 5;
+        int h = 10;
+        mSession.onMediaViewSizeChanged(w, h);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mMediaViewSizeChangedCount > 0);
+        assertThat(mSession.mMediaViewSizeChangedCount).isEqualTo(1);
+        assertThat(mSession.mMediaViewWidth).isEqualTo(w);
+        assertThat(mSession.mMediaViewHeight).isEqualTo(h);
+    }
 
     @Test
     public void testViewOnAttachedToWindow() {

@@ -151,7 +151,6 @@ class AutoRevokeTest {
         }
         runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
         resetJob(context)
-        bypassBatterySavingRestrictions(context)
 
         if (isAutomotiveDevice()) {
             supportedApkPath = APK_PATH_S_APP
@@ -169,7 +168,6 @@ class AutoRevokeTest {
     @After
     fun cleanUp() {
         goHome()
-        resetBatterySavingRestrictions(context)
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")

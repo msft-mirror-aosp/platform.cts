@@ -44,9 +44,7 @@ import java.util.concurrent.CompletableFuture;
 public class GestureUtils {
 
     public static final String LOG_TAG = "GestureUtils";
-    public static final long STROKE_TIME_GAP_MS_MIN = 1;
-    public static final long STROKE_TIME_GAP_MS_DEFAULT = 40;
-    public static final long STROKE_TIME_GAP_MS_MAX = ViewConfiguration.getDoubleTapTimeout() - 1;
+
 
     public static final Matcher<MotionEvent> IS_ACTION_DOWN =
             new MotionEventActionMatcher(MotionEvent.ACTION_DOWN);
@@ -61,12 +59,23 @@ public class GestureUtils {
     public static final Matcher<MotionEvent> IS_ACTION_MOVE =
             new MotionEventActionMatcher(MotionEvent.ACTION_MOVE);
 
+    // Bounds for the amount of time between taps
+    private static final long STROKE_TIME_GAP_MS_MIN = 1;
+    private static final long STROKE_TIME_GAP_MS_DEFAULT = 40;
+    private static final long STROKE_TIME_GAP_MS_MAX = ViewConfiguration.getDoubleTapTimeout() - 1;
+
+    // Bounds for the duration of a tap.
+    static final long TAP_DURATION_MS_MIN = 1;
+    static final long TAP_DURATION_MS_MAX = ViewConfiguration.getTapTimeout();
+    static final long TAP_DURATION_MS_DEFAULT = ViewConfiguration.getTapTimeout();
     private static Random sRandom = null;
+
     private static boolean sShouldRandomize = false;
     // We generate the random seed later in randomize() and store it here to enable users to
     // reproduce randomized test failures.
     private static long sRandomSeed = 0;
     private static long sStrokeGapTimeMs = STROKE_TIME_GAP_MS_DEFAULT;
+    private static long sTapDuration = TAP_DURATION_MS_DEFAULT;
 
     private GestureUtils() {}
 
@@ -112,7 +121,7 @@ public class GestureUtils {
     }
 
     public static StrokeDescription click(PointF point) {
-        return new StrokeDescription(path(point), 0, ViewConfiguration.getTapTimeout());
+        return new StrokeDescription(path(point), 0, sTapDuration);
     }
 
     public static StrokeDescription longClick(PointF point) {
@@ -495,7 +504,10 @@ public class GestureUtils {
         sStrokeGapTimeMs =
                 sRandom.nextLong(STROKE_TIME_GAP_MS_MAX - STROKE_TIME_GAP_MS_MIN)
                         + STROKE_TIME_GAP_MS_MIN;
+        sTapDuration =
+                sRandom.nextLong(TAP_DURATION_MS_MAX - TAP_DURATION_MS_MIN) + TAP_DURATION_MS_MIN;
         Log.d(LOG_TAG, "Stroke gap time = " + sStrokeGapTimeMs);
+        Log.d(LOG_TAG, "Tap Duration = " + sTapDuration);
     }
 
     /** Rule used to report values in the failure message for easier bug reporting. */
@@ -520,27 +532,35 @@ public class GestureUtils {
                 } catch (Throwable throwable) {
                     if (sShouldRandomize) {
                         // Give instructions on how to reproduce this behavior
-                        StringBuilder message = new StringBuilder();
-                        message.append(throwable.getMessage());
-                        message.append("\nFor convenience, the randomized values are as follows:");
-                        message.append("\nStroke gap time: ");
-                        message.append(sStrokeGapTimeMs);
-                        message.append("\nTo reproduce this failure using atest,");
-                        message.append(" run this test with the options");
-                        message.append("\n-- --test-arg");
-                        message.append(" com.android.tradefed.testtype.AndroidJUnitTest:");
-                        message.append("instrumentation-arg:randomize:=");
-                        message.append(sShouldRandomize);
-                        message.append(" --test-arg");
-                        message.append(" com.android.tradefed.testtype.AndroidJUnitTest:");
-                        message.append("instrumentation-arg:randomSeed:=");
-                        message.append(sRandomSeed);
-                        throw new Exception(message.toString(), throwable);
+                        String message = createFailureMessage(throwable.getMessage());
+                        throw new Exception(message, throwable);
                     } else {
                         throw throwable;
                     }
                 }
             }
         }
+
+        private String createFailureMessage(String originalMessage) {
+            StringBuilder message = new StringBuilder();
+            message.append(originalMessage)
+                    .append("\nFor convenience, the randomized values are as follows:")
+                    .append("\nStroke gap time: ")
+                    .append(sStrokeGapTimeMs)
+                    .append("\nTap duration: ")
+                    .append(sTapDuration)
+                    .append("\nTo reproduce this failure using atest,")
+                    .append(" run this test with the options")
+                    .append("\n-- --test-arg")
+                    .append(" com.android.tradefed.testtype.AndroidJUnitTest:")
+                    .append("instrumentation-arg:randomize:=")
+                    .append(sShouldRandomize)
+                    .append(" --test-arg")
+                    .append(" com.android.tradefed.testtype.AndroidJUnitTest:")
+                    .append("instrumentation-arg:randomSeed:=")
+                    .append(sRandomSeed);
+            return message.toString();
+        }
+
     }
 }

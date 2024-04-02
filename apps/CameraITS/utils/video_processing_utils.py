@@ -166,9 +166,9 @@ def extract_key_frames_from_video(log_path, video_file_name):
   Ffmpeg tool is used to extract key frames from the video at path
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
-  suffix to identify the frames for video of each quality.Since there can be
+  suffix to identify the frames for video of each quality. Since there can be
   multiple key frames, each key frame image will be differentiated with it's
-  frame index.All the extracted key frames will be available in  jpeg format
+  frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
   The run time flag '-loglevel quiet' hides the information from terminal.
@@ -176,15 +176,15 @@ def extract_key_frames_from_video(log_path, video_file_name):
   option to 'info'.
 
   Args:
-    log_path: path for video file directory
+    log_path: path for video file directory.
     video_file_name: name of the video file.
   Returns:
-    key_frame_files: A list of paths for each key frame extracted from the
-    video. Ex: VID_20220325_050918_0_CIF_352x288.mp4
+    key_frame_files: a sorted list of files which contains a name per key
+      frame. Ex: VID_20220325_050918_0_preview_1920x1440_key_frame_0001.png
   """
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_key_frame"
   ffmpeg_image_file_path = os.path.join(
-      log_path, ffmpeg_image_name + '_%02d.png')
+      log_path, ffmpeg_image_name + '_%04d.png')
   cmd = ['ffmpeg',
          '-skip_frame',
          'nokey',
@@ -208,7 +208,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   for file in arr:
     if '.png' in file and not os.path.isdir(file) and ffmpeg_image_name in file:
       key_frame_files.append(file)
-
+  key_frame_files.sort()
   logging.debug('Extracted key frames: %s', key_frame_files)
   logging.debug('Length of key_frame_files: %d', len(key_frame_files))
   if not key_frame_files:

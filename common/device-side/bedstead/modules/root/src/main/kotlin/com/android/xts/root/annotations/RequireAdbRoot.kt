@@ -26,11 +26,8 @@ import com.android.xts.root.RootAnnotationExecutor
  * You can use `DeviceState` to ensure that the device enters
  * the correct state for the method.
  */
-@Target(AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY_GETTER,
-    AnnotationTarget.PROPERTY_SETTER,
-    AnnotationTarget.ANNOTATION_CLASS,
-    AnnotationTarget.CLASS)
+// This can only be applied directly to tests to make it clear to test authors
+@Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesAnnotationExecutor(RootAnnotationExecutor::class)
 annotation class RequireAdbRoot(

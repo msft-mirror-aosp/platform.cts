@@ -27,47 +27,12 @@ import camera_properties_utils
 import its_session_utils
 import preview_stabilization_utils
 import sensor_fusion_utils
-import video_processing_utils
 
-_HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _PRINCIPAL_POINT_THRESH = 1  # Threshold for principal point changes in pixels.
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
-
-
-def _get_preview_test_size(cam, camera_id):
-  """Finds the max preview size to be tested.
-
-  If the device supports the _HIGH_RES_SIZE preview size then
-  it uses that for testing, otherwise uses the max supported
-  preview size.
-
-  Args:
-    cam: camera object
-    camera_id: str; camera device id under test
-
-  Returns:
-    preview_test_size: str; wxh resolution of the size to be tested
-  """
-
-  lowest_res_area = video_processing_utils.LOWEST_RES_TESTED_AREA
-  resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
-  supported_preview_sizes = [size for size in supported_preview_sizes
-                             if resolution_to_area(size)
-                             >= lowest_res_area]
-  logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
-
-  if _HIGH_RES_SIZE in supported_preview_sizes:
-    preview_test_size = _HIGH_RES_SIZE
-  else:
-    preview_test_size = supported_preview_sizes[-1]
-
-  logging.debug('Selected preview resolution: %s', preview_test_size)
-
-  return preview_test_size
 
 
 def calculate_principal_point(f_x, f_y, c_x, c_y, s):
@@ -238,10 +203,12 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
-      preview_test_size = _get_preview_test_size(cam, self.camera_id)
+      preview_size = preview_stabilization_utils.get_max_preview_test_size(
+          cam, self.camera_id)
+      logging.debug('preview_test_size: %s', preview_size)
 
       recording_obj = preview_stabilization_utils.collect_data(
-          cam, self.tablet_device, preview_test_size, False,
+          cam, self.tablet_device, preview_size, False,
           rot_rig=rot_rig, ois=True)
 
       # Get gyro events

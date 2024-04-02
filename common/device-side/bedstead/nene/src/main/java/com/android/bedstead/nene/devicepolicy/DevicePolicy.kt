@@ -772,14 +772,16 @@ object DevicePolicy {
         }
     }
 
-    /** See [DevicePolicyManager#isInputMethodSetByOwner]. */
+    /** See [DevicePolicyManager#getScreenCaptureDisabled]. */
     @Experimental
-    fun isCurrentInputMethodSetByOwner() =
-        isCurrentInputMethodSetByOwner(TestApis.users().instrumented())
+    @JvmOverloads
+    fun isScreenCaptureDisabled(user: UserReference = TestApis.users().instrumented()) =
+        devicePolicyManager(user).getScreenCaptureDisabled(/* admin = */ null)
 
     /** See [DevicePolicyManager#isInputMethodSetByOwner]. */
     @Experimental
-    fun isCurrentInputMethodSetByOwner(user: UserReference) =
+    @JvmOverloads
+    fun isCurrentInputMethodSetByOwner(user: UserReference = TestApis.users().instrumented()) =
         TestApis.permissions().withPermission(QUERY_ADMIN_POLICY).use {
             devicePolicyManager(user).isCurrentInputMethodSetByOwner
         }

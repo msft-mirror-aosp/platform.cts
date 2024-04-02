@@ -310,6 +310,7 @@ public final class TestAppInstanceTest {
     }
 
     @Test
+    @Ignore // TestApis are currently disabled in TestApp
     public void testApi_canCall() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
             // Arbitrary call which does not require specific permissions to confirm no crash
@@ -375,7 +376,7 @@ public final class TestAppInstanceTest {
         try (TestAppInstance testAppInstance = sTestApp.install();
              PermissionContext p = testAppInstance.permissions().withPermission(
                      READ_PRIVILEGED_PHONE_STATE)) {
-            assertThat(testAppInstance.telephonyManager().getDeviceId()).isNotNull();
+            testAppInstance.telephonyManager().getAllowedNetworkTypes();
         }
     }
 

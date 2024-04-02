@@ -16,6 +16,7 @@
 
 package com.android.bedstead.permissions;
 
+import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -40,7 +41,10 @@ import com.android.bedstead.nene.utils.Versions;
 
 import com.google.common.collect.ImmutableSet;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +62,7 @@ public final class Permissions {
     private static final AppOpsManager sAppOpsManager =
             TestApis.context().instrumentedContext().getSystemService(AppOpsManager.class);
     private static final Package sInstrumentedPackage =
-            TestApis.packages().find(sContext.getPackageName());
+            TestApis.packages().instrumented();
     private static final UserReference sUser = TestApis.users().instrumented();
     private static final Package sShellPackage =
             TestApis.packages().find("com.android.shell");
@@ -88,13 +92,12 @@ public final class Permissions {
         Permissions.sIgnorePermissions.set(true);
 
         if (SUPPORTS_ADOPT_SHELL_PERMISSIONS) {
-            ShellCommandUtils.uiAutomation()
-                    .adoptShellPermissionIdentity();
+            adoptShellPermissionIdentity();
         }
 
         return new UndoableContext(() -> {
             if (SUPPORTS_ADOPT_SHELL_PERMISSIONS) {
-                ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
+                dropShellPermissionIdentity();
             }
             Permissions.sIgnorePermissions.set(original);
         });
@@ -393,18 +396,6 @@ public final class Permissions {
             return;
         }
 
-        if (TestApis.packages().instrumented().isInstantApp()) {
-            // Instant Apps aren't able to know the permissions of shell so we can't know if we can
-            // adopt it - we'll assume we can adopt and log
-            Log.i(LOG_TAG,
-                    "Adopting all shell permissions as can't check shell: " + mPermissionContexts);
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity();
-            return;
-        }
-
-        if (SUPPORTS_ADOPT_SHELL_PERMISSIONS) {
-            ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
-        }
         Set<String> grantedPermissions = new HashSet<>();
         Set<String> deniedPermissions = new HashSet<>();
         Set<String> grantedAppOps = new HashSet<>();
@@ -434,113 +425,17 @@ public final class Permissions {
             }
         }
 
-        Log.d(LOG_TAG, "Applying permissions granting: "
-                + grantedPermissions + " denying: " + deniedPermissions);
-
-        // We first try to use shell permissions, because they can be revoked/etc. much more easily
-
-        Set<String> adoptedShellPermissions = new HashSet<>();
-        for (String permission : grantedPermissions) {
-            checkCanGrantOnAllSupportedVersions(permission);
-
-            Log.d(LOG_TAG, "Trying to grant " + permission);
-            if (sInstrumentedPackage.hasPermission(sUser, permission)) {
-                // Already granted, can skip
-                Log.d(LOG_TAG, permission + " already granted at runtime");
-            } else if (mInstrumentedRequestedPermissions.contains(permission)
-                    && sContext.checkSelfPermission(permission) == PERMISSION_GRANTED) {
-                // Already granted, can skip
-                Log.d(LOG_TAG, permission + " already granted from manifest");
-            } else if (SUPPORTS_ADOPT_SHELL_PERMISSIONS
-                    && mShellPermissions.contains(permission)) {
-                adoptedShellPermissions.add(permission);
-            } else if (canGrantPermission(permission)) {
-                sInstrumentedPackage.grantPermission(sUser, permission);
-            } else {
-                removePermissionContextsUntilCanApply();
-
-                throwPermissionException("PermissionContext requires granting "
-                        + permission + " but cannot.", permission);
-            }
-        }
-
-        for (String permission : deniedPermissions) {
-            checkCanDenyOnAllSupportedVersions(permission, sUser);
-
-            if (!sInstrumentedPackage.hasPermission(sUser, permission)) {
-                // Already denied, can skip
-            } else if (SUPPORTS_ADOPT_SHELL_PERMISSIONS
-                    && !mShellPermissions.contains(permission)) {
-                adoptedShellPermissions.add(permission);
-            } else { // We can't deny a permission to ourselves
-                removePermissionContextsUntilCanApply();
-                throwPermissionException("PermissionContext requires denying "
-                        + permission + " but cannot.", permission);
-            }
-        }
-
-        Package appOpPackage = adoptedShellPermissions.isEmpty()
-                ? sInstrumentedPackage : sShellPackage;
-
-        // Filter so we get just the appOps which require a state that they are not currently in
-        Set<String> filteredGrantedAppOps = grantedAppOps.stream()
-                .filter(o -> appOpPackage.appOps().get(o) != AppOpsMode.ALLOWED)
-                .collect(Collectors.toSet());
-        Set<String> filteredDeniedAppOps = deniedAppOps.stream()
-                .filter(o -> appOpPackage.appOps().get(o) != AppOpsMode.IGNORED)
-                .collect(Collectors.toSet());
-
-        if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
-            // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
-            // infinite loop so won't use .appOps().set()
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
-                    CommonPermissions.MANAGE_APP_OPS_MODES);
-            for (String appOp : filteredGrantedAppOps) {
-                sAppOpsManager.setMode(appOp, appOpPackage.uid(sUser),
-                        appOpPackage.packageName(), AppOpsMode.ALLOWED.value());
-            }
-            for (String appOp : filteredDeniedAppOps) {
-                sAppOpsManager.setMode(appOp, appOpPackage.uid(sUser),
-                        appOpPackage.packageName(), AppOpsMode.IGNORED.value());
-            }
-            ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
-        }
-
-        if (!adoptedShellPermissions.isEmpty()) {
-            Log.d(LOG_TAG, "Adopting " + adoptedShellPermissions);
-            ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
-                    adoptedShellPermissions.toArray(new String[0]));
-        }
-    }
-
-    private void checkCanGrantOnAllSupportedVersions(
-            String permission) {
-        if (sCheckedGrantPermissions.contains(permission)) {
-            return;
-        }
-
-        if (Versions.isDevelopmentVersion()
-                && !mShellPermissions.contains(permission)
-                && !EXEMPT_SHELL_PERMISSIONS.contains(permission)) {
-            throwPermissionException(permission + " is not granted to shell on latest development"
-                            + "version. You must add it to the com.android.shell manifest. If "
-                            + "that is not"
-                            + "possible add it to"
-                            + "com.android.bedstead.permissions"
-                            + ".Permissions#EXEMPT_SHELL_PERMISSIONS",
-                    permission);
-        }
-
-        sCheckedGrantPermissions.add(permission);
-    }
-
-    private void checkCanDenyOnAllSupportedVersions(
-            String permission, UserReference user) {
-        if (sCheckedDenyPermissions.contains(permission)) {
-            return;
-        }
-
-        sCheckedDenyPermissions.add(permission);
+        setPermissionState(
+                TestApis.packages().instrumented(),
+                TestApis.users().instrumented(),
+                grantedPermissions,
+                deniedPermissions);
+        setAppOpState(
+                hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage,
+                TestApis.users().instrumented(),
+                grantedAppOps,
+                deniedAppOps
+        );
     }
 
     /**
@@ -559,7 +454,9 @@ public final class Permissions {
 
 
         try (UndoableContext c = ignoringPermissions()){
-            throw new NeneException(message + "\n\nRunning On User: " + sUser
+            throw new NeneException(message + "\n\nIf this is a new test. Consider moving it to a "
+                    + "root-enabled test suite and adding @RequireAdbRoot to the method. This "
+                    + "enables arbitrary use of permissions.\n\nRunning On User: " + sUser
                     + "\nPermission: " + permission
                     + "\nPermission protection level: " + protectionLevel
                     + "\nPermission state: " + sContext.checkSelfPermission(permission)
@@ -596,6 +493,9 @@ public final class Permissions {
     }
 
     private void removePermissionContextsUntilCanApply() {
+        if (mPermissionContexts.size() == 0) {
+            return;
+        }
         try {
             mPermissionContexts.remove(mPermissionContexts.size() - 1);
             applyPermissions();
@@ -621,14 +521,200 @@ public final class Permissions {
         return sContext.checkSelfPermission(permission) == PERMISSION_GRANTED;
     }
 
-    /** True if the current process has the given appOp set to ALLOWED. */
+    /**
+     * True if the current process has the given appOp set to ALLOWED.
+     *
+     * <p>This accounts for shell identity being adopted (in which case it will check the appop
+     * status of the shell identity).
+     */
     public boolean hasAppOpAllowed(String appOp) {
         Package appOpPackage = sInstrumentedPackage;
-        if (!ShellCommandUtils.uiAutomation().getAdoptedShellPermissions().isEmpty()) {
+        if (hasAdoptedShellPermissionIdentity) {
             // We care about the shell package
             appOpPackage = sShellPackage;
         }
 
         return appOpPackage.appOps().get(appOp) == AppOpsMode.ALLOWED;
+    }
+
+    /**
+     * Sets a permission state for a given package on a given user.
+     *
+     * Generally tests should not use this method directly. They should instead used the
+     * {@link #withPermission} and {@link #withoutPermission} methods.
+     *
+     * When this is used while executing a test which uses the RequireAdbRoot annotation, and using
+     * Android 15+, it will have access to all permissions for all apps.
+     *
+     * Otherwise, when applying to the instrumented package, shell permission adoption will
+     * be used.
+     *
+     * Otherwise, if the permission is able to be granted/denied by ADB then that will be done.
+     *
+     * Otherwise an error will be thrown.
+     */
+    public void setPermissionState(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+        // TODO: replace with dependency on bedstead-root when properly modularised
+        //if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        //    for (String grantedPermission : permissionsToGrant) {
+        //        forceRootPermissionState(pkg, user, grantedPermission, true);
+        //    }
+        //    for (String deniedPermission : permissionsToDeny) {
+        //        forceRootPermissionState(pkg, user, deniedPermission, false);
+        //    }
+        //
+        //    return;
+        //}
+
+        setPermissionStateToPackageWithoutRoot(pkg, user, permissionsToGrant, permissionsToDeny);
+    }
+
+    /**
+     * Sets an appOp state for a given package on a given user.
+     *
+     * Generally tests should not use this method directly. They should instead used the
+     * {@link #withAppOp} and {@link #withoutAppOp} methods.
+     *
+     * Note that if shell permission identity is adopted, then the app op state will not be queried
+     * for the package - and the shell package should have its app op state set instead.
+     */
+    public void setAppOpState(Package pkg, UserReference user, Collection<String> grantedAppOps, Collection<String> deniedAppOps) {
+        // Filter so we get just the appOps which require a state that they are not currently in
+        Set<String> filteredGrantedAppOps = grantedAppOps.stream()
+                .filter(o -> pkg.appOps().get(o) != AppOpsMode.ALLOWED)
+                .collect(Collectors.toSet());
+        Set<String> filteredDeniedAppOps = deniedAppOps.stream()
+                .filter(o -> pkg.appOps().get(o) != AppOpsMode.IGNORED)
+                .collect(Collectors.toSet());
+
+        if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
+            // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
+            // infinite loop so won't use .appOps().set()
+            Set<String> previousAdoptedShellPermissions = ShellCommandUtils.uiAutomation().getAdoptedShellPermissions();
+            adoptShellPermissionIdentity(CommonPermissions.MANAGE_APP_OPS_MODES);
+            for (String appOp : filteredGrantedAppOps) {
+                sAppOpsManager.setMode(appOp, pkg.uid(sUser),
+                        pkg.packageName(), AppOpsMode.ALLOWED.value());
+            }
+            for (String appOp : filteredDeniedAppOps) {
+                sAppOpsManager.setMode(appOp, pkg.uid(sUser),
+                        pkg.packageName(), AppOpsMode.IGNORED.value());
+            }
+
+            adoptShellPermissionIdentity(previousAdoptedShellPermissions);
+        }
+    }
+
+    private void setPermissionStateToPackageWithoutAdoption(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+        for (String permission : permissionsToGrant) {
+            if (canGrantPermission(permission)) {
+                pkg.grantPermission(user, permission);
+            } else {
+                removePermissionContextsUntilCanApply();
+                throwPermissionException("Requires granting permission " + permission + " but cannot.", permission);
+            }
+        }
+
+        for (String permission : permissionsToDeny) {
+            if (pkg.equals(TestApis.packages().instrumented()) && user.equals(TestApis.users().instrumented())) {
+                // We can't deny permissions from ourselves or it'll kill the process
+                removePermissionContextsUntilCanApply();
+                throwPermissionException("Requires granting permission " + permission + " but cannot.", permission);
+            } else {
+                pkg.denyPermission(user, permission);
+            }
+        }
+    }
+
+    private void setPermissionStateToPackageWithoutRoot(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+        if (!pkg.equals(TestApis.packages().instrumented()) || !SUPPORTS_ADOPT_SHELL_PERMISSIONS) {
+            // We can't adopt...
+            setPermissionStateToPackageWithoutAdoption(pkg, user, permissionsToGrant, permissionsToDeny);
+            return;
+        }
+
+        if (TestApis.packages().instrumented().isInstantApp()) {
+            // Instant Apps aren't able to know the permissions of shell so we can't know if we can
+            // adopt it - we'll assume we can adopt and log
+            Log.i(LOG_TAG,
+                    "Adopting all shell permissions as can't check shell: " + mPermissionContexts);
+            adoptShellPermissionIdentity();
+            return;
+        }
+
+        dropShellPermissionIdentity();
+        // We first try to use shell permissions, because they can be revoked/etc. much more easily
+
+        Set<String> adoptedShellPermissions = new HashSet<>();
+        Set<String> grantedPermissions = new HashSet<>();
+        Set<String> deniedPermissions = new HashSet<>();
+        for (String permission : permissionsToGrant) {
+            Log.d(LOG_TAG, "Trying to grant " + permission);
+            if (sInstrumentedPackage.hasPermission(user, permission)) {
+                // Already granted, can skip
+                Log.d(LOG_TAG, permission + " already granted at runtime");
+            } else if (mInstrumentedRequestedPermissions.contains(permission)
+                    && sContext.checkSelfPermission(permission) == PERMISSION_GRANTED) {
+                // Already granted, can skip
+                Log.d(LOG_TAG, permission + " already granted from manifest");
+            } else if (mShellPermissions.contains(permission)) {
+                adoptedShellPermissions.add(permission);
+            } else {
+                grantedPermissions.add(permission);
+            }
+        }
+
+        for (String permission : permissionsToDeny) {
+            if (!sInstrumentedPackage.hasPermission(sUser, permission)) {
+                // Already denied, can skip
+            } else if (!mShellPermissions.contains(permission)) {
+                adoptedShellPermissions.add(permission);
+            } else {
+                deniedPermissions.add(permission);
+            }
+        }
+
+        if (!adoptedShellPermissions.isEmpty()) {
+            adoptShellPermissionIdentity(adoptedShellPermissions);
+        }
+        if (!grantedPermissions.isEmpty()) {
+            setPermissionStateToPackageWithoutAdoption(pkg, user, grantedPermissions, deniedPermissions);
+        }
+    }
+
+    private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
+        // ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
+    }
+
+    public void removeRootPermissionState(Package pkg, UserReference user, String permission) {
+        // ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
+    }
+
+    private static boolean hasAdoptedShellPermissionIdentity = false;
+    private static void adoptShellPermissionIdentity(Collection<String> permissions) {
+        adoptShellPermissionIdentity(permissions.toArray(new String[0]));
+    }
+
+    private static void adoptShellPermissionIdentity(String... permissions) {
+        if (permissions.length == 0) {
+            dropShellPermissionIdentity();
+            return;
+        }
+
+        Log.d(LOG_TAG, "Adopting " + Arrays.toString(permissions));
+        hasAdoptedShellPermissionIdentity = true;
+        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(permissions);
+    }
+
+    private static void adoptShellPermissionIdentity() {
+        Log.d(LOG_TAG, "Adopting all shell permissions");
+        hasAdoptedShellPermissionIdentity = true;
+        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity();
+    }
+
+    private static void dropShellPermissionIdentity() {
+        Log.d(LOG_TAG, "Dropping shell permissions");
+        hasAdoptedShellPermissionIdentity = false;
+        ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
     }
 }

@@ -62,7 +62,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
 @LargeTest
-@RequiresFlagsEnabled(Flags.FLAG_CROSS_USER_SUSPENSION_ENABLED)
+@RequiresFlagsEnabled(Flags.FLAG_CROSS_USER_SUSPENSION_ENABLED_RO)
 public class CrossUserSuspendTest {
     @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();

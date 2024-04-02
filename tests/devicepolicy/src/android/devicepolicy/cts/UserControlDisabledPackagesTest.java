@@ -19,8 +19,6 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyIdentifiers.USER_CONTROL_DISABLED_PACKAGES_POLICY;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 
-import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest.DPC_1;
-import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest.DPC_2;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
@@ -50,7 +48,6 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.UserControlDisabledPackages;
@@ -305,148 +302,6 @@ public final class UserControlDisabledPackagesTest {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                         sDeviceState.dpc().componentName(),
                         new ArrayList<>());
-            }
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setUserControlDisabledPackages",
-            "android.app.admin.DevicePolicyManager#setUserControlDisabledPackages"})
-    @MostRestrictiveCoexistenceTest(policy = UserControlDisabledPackages.class)
-    public void setUserControlDisabledPackages_bothSet_appliesBoth() {
-        String testAppPackageName = sTestApp.packageName();
-        String secondTestAppPackageName = sSecondTestApp.packageName();
-        try (TestAppInstance instance = sTestApp.install()) {
-            try (TestAppInstance secondInstance = sSecondTestApp.install()) {
-                try {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(testAppPackageName));
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(secondTestAppPackageName));
-
-                    PolicyState<Set<String>> policyState =
-                            PolicyEngineUtils.getStringSetPolicyState(
-                                    new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
-                                    TestApis.users().instrumented().userHandle());
-
-                    assertThat(policyState.getCurrentResolvedPolicy()).containsExactlyElementsIn(
-                            Set.of(testAppPackageName, secondTestAppPackageName));
-                    assertThat(sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .containsExactlyElementsIn(
-                                    Set.of(testAppPackageName, secondTestAppPackageName));
-                    assertThat(sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .containsExactlyElementsIn(
-                                    Set.of(testAppPackageName, secondTestAppPackageName));
-                } finally {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                }
-            }
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setUserControlDisabledPackages",
-            "android.app.admin.DevicePolicyManager#setUserControlDisabledPackages"})
-    @MostRestrictiveCoexistenceTest(policy = UserControlDisabledPackages.class)
-    public void setUserControlDisabledPackages_bothSetThenOneUnsets_appliesOne() {
-        String testAppPackageName = sTestApp.packageName();
-        String secondTestAppPackageName = sSecondTestApp.packageName();
-        try (TestAppInstance instance = sTestApp.install()) {
-            try (TestAppInstance secondInstance = sSecondTestApp.install()) {
-                try {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(testAppPackageName));
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(secondTestAppPackageName));
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-
-                    PolicyState<Set<String>> policyState =
-                            PolicyEngineUtils.getStringSetPolicyState(
-                                    new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
-                                    TestApis.users().instrumented().userHandle());
-
-                    assertThat(policyState.getCurrentResolvedPolicy()).containsExactly(
-                            secondTestAppPackageName);
-                    assertThat(sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .containsExactly(secondTestAppPackageName);
-                    assertThat(sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .containsExactly(secondTestAppPackageName);
-                } finally {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                }
-            }
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setUserControlDisabledPackages",
-            "android.app.admin.DevicePolicyManager#setUserControlDisabledPackages"})
-    @MostRestrictiveCoexistenceTest(policy = UserControlDisabledPackages.class)
-    public void setUserControlDisabledPackages_bothSetThenBothUnsets_nothingApplied() {
-        String testAppPackageName = sTestApp.packageName();
-        String secondTestAppPackageName = sSecondTestApp.packageName();
-        try (TestAppInstance instance = sTestApp.install()) {
-            try (TestAppInstance secondInstance = sSecondTestApp.install()) {
-                try {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(testAppPackageName));
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null,
-                                    Arrays.asList(secondTestAppPackageName));
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-
-                    PolicyState<Set<String>> policyState =
-                            PolicyEngineUtils.getStringSetPolicyState(
-                                    new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
-                                    TestApis.users().instrumented().userHandle());
-
-                    assertThat(policyState).isNull();
-                    assertThat(sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .isEmpty();
-                    assertThat(sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .getUserControlDisabledPackages(/* componentName= */ null))
-                            .isEmpty();
-                } finally {
-                    sDeviceState.testApp(DPC_1).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                    sDeviceState.testApp(DPC_2).devicePolicyManager()
-                            .setUserControlDisabledPackages(
-                                    /* componentName= */ null, new ArrayList<>());
-                }
             }
         }
     }

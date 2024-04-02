@@ -132,6 +132,8 @@ public class VirtualCameraTest {
     private static final String GL_EXT_YUV_target = "GL_EXT_YUV_target";
     private static final String BACK_CAMERA_ID = "0";
     private static final String FRONT_CAMERA_ID = "1";
+    private static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
+            new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
 
     private static final boolean hasGlExtYuvTarget = hasEGLExtension(GL_EXT_YUV_target);
 
@@ -402,7 +404,7 @@ public class VirtualCameraTest {
 
         CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
                 virtualCamera.getId());
-        assertThat(characteristics.get(CameraCharacteristics.INFO_DEVICE_ID))
+        assertThat(characteristics.get(INFO_DEVICE_ID))
                 .isEqualTo(mVirtualDevice.getDeviceId());
     }
 

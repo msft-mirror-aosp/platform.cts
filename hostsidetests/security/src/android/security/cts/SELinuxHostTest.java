@@ -231,7 +231,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             return builtPolicyFile;
         }
 
-
         builtPolicyFile = createTempFile(tmpFileName, ".tmp");
 
         File secilc = copyResourceToTempFile("/secilc");
@@ -239,14 +238,31 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
         File systemSepolicyCilFile = createTempFile("plat_sepolicy", ".cil");
         File fileContextsFile = createTempFile("file_contexts", ".txt");
-
         assertTrue(device.pullFile("/system/etc/selinux/plat_sepolicy.cil", systemSepolicyCilFile));
 
-        String errorString = tryRunCommand(secilc.getAbsolutePath(),
-                "-m", "-M", "true", "-c", "30",
-                "-o", builtPolicyFile.getAbsolutePath(),
-                "-f", fileContextsFile.getAbsolutePath(),
-                systemSepolicyCilFile.getAbsolutePath());
+        List<String> command = new ArrayList<>(Arrays.asList(
+                secilc.getAbsolutePath(),
+                "-m",
+                "-M",
+                "true",
+                "-c",
+                "30",
+                "-o",
+                builtPolicyFile.getAbsolutePath(),
+                "-f",
+                fileContextsFile.getAbsolutePath(),
+                systemSepolicyCilFile.getAbsolutePath()));
+
+        File systemExtCilFile = createTempFile("system_ext_sepolicy", ".cil");
+        File productCilFile = createTempFile("product_sepolicy", ".cil");
+        if (device.pullFile("/system_ext/etc/selinux/system_ext_sepolicy.cil", systemExtCilFile)) {
+            command.add(systemExtCilFile.getAbsolutePath());
+        }
+        if (device.pullFile("/product/etc/selinux/product_sepolicy.cil", productCilFile)) {
+            command.add(productCilFile.getAbsolutePath());
+        }
+
+        String errorString = tryRunCommand(command.toArray(new String[0]));
         assertTrue(errorString, errorString.length() == 0);
 
         synchronized (cache) {

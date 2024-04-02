@@ -749,7 +749,7 @@ public final class Packages {
         Intent toResolve = new Intent(ACTION_VIEW, Uri.parse("http://"));
 
         PackageManager pm = TestApis.context()
-                .instrumentationContextAsUser(user)
+                .androidContextAsUser(user)
                 .getPackageManager();
 
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.T)) {
