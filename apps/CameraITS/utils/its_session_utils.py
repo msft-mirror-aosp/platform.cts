@@ -59,7 +59,9 @@ TABLET_ALLOWLIST = (
     'dragon',  # Google Pixel C
     'hnhey-q',  # Honor Pad 8
     'hwcmr09',  # Huawei MediaPad M5
+    'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
+    'tb350fu',  # Lenovo Tab P11 (Gen 2)
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta9pwifi',  # Samsung Galaxy Tab A9+
