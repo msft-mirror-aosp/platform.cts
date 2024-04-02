@@ -21,7 +21,7 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.nfc.multidevice.emulator">
-    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.NFC_TRANSACTION_EVENT" />
@@ -38,6 +38,11 @@
             android:label="Single Non Payment Emulator"
             android:exported="true">
         </activity>
+        <activity
+            android:name=".SinglePaymentEmulatorActivity"
+            android:label="Single Payment Emulator"
+            android:exported="true">
+        </activity>
         <service android:name=".service.TransportService1" android:exported="true"
                  android:permission="android.permission.BIND_NFC_SERVICE"
                  android:enabled="false">
@@ -46,6 +51,15 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_aid_list_1"/>
+        </service>
+        <service android:name=".service.PaymentService1" android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
         </service>
     </application>
     <instrumentation android:name="com.google.android.mobly.snippet.SnippetRunner"
