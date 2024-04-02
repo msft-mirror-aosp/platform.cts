@@ -19,6 +19,7 @@ package android.mediapc.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_SecurePlayback;
 import static android.mediapc.cts.CodecDecoderTestBase.WIDEVINE_UUID;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 
 import static org.junit.Assert.assertTrue;
 
@@ -29,6 +30,7 @@ import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaDrm;
 import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.Utils;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
@@ -42,9 +44,15 @@ import org.junit.Before;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MultiCodecPerfTestBase {
     private static final String LOG_TAG = MultiCodecPerfTestBase.class.getSimpleName();
@@ -163,6 +171,24 @@ public class MultiCodecPerfTestBase {
         ArrayList<MediaFormat> formatsList = new ArrayList<>();
         formatsList.add(fmt);
         return selectHardwareCodecs(mime, formatsList, null, isEncoder, allCodecs);
+    }
+
+    protected CodecMetrics invokeWithThread(int maxInstances, Collection<? extends
+            Callable<CodecMetrics>> testList) throws ExecutionException, InterruptedException {
+        double measuredParams = 0;
+        double framesDroppedPerSecond = 0;
+        ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
+        try {
+            List<Future<CodecMetrics>> resultList = pool.invokeAll(testList);
+            for (Future<CodecMetrics> result : resultList) {
+                CodecMetrics metrics = result.get();
+                measuredParams += metrics.fps();
+                framesDroppedPerSecond += metrics.fdps();
+            }
+        } finally {
+            pool.shutdown();
+        }
+        return getMetrics(measuredParams, framesDroppedPerSecond);
     }
 
     // Returns the max number of 30 fps instances that the given list of mimeCodecPairs

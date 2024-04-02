@@ -49,6 +49,9 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
+    public static final String R5_1__H_1_20 = "r5_1__h_1_20"; // 5.1/H-1-20
+    public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
+    public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
 
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
@@ -86,6 +89,7 @@ public class RequirementConstants {
     public static final String R7_6_1__H_1_1 = "r7_6_1__h_1_1"; // 7.6.1/H-1-1
     public static final String R7_1_1_1__H_2_1 = "r7_1_1_1__h_2_1"; // 7.1.1.1/H-2-1
     public static final String R7_1_1_3__H_2_1 = "r7_1_1_3__h_2_1"; // 7.1.1.3/H-2-1
+    public static final String R7_1_1_3__H_3_1 = "r7_1_1_3__H_3_1"; // 7.1.1.3/H-3-1
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
 
     public static final String R8_2__H_1_1 = "r8_2__h_1_1"; // 8.2/H-1-1
@@ -114,12 +118,15 @@ public class RequirementConstants {
     public static final String CONCURRENT_SESSIONS = "concurrent_sessions";
 
     public static final String DISPLAY_DENSITY = "display_density_dpi";
+    public static final String DISPLAY_LUMINANCE_NITS = "display_luminance_nits";
+    public static final String DYNAMIC_COLOR_ASPECTS = "dynamic_color_aspects";
 
     public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
 
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
     public static final String FRAMES_DROPPED = "frame_drops_per_30sec";
+    public static final String FRAMES_DROPPED_PER_SECOND = "frame_drops_per_sec";
 
     public static final String FRONT_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
             "front_camera_dynamic_tenbits_supported";
@@ -140,6 +147,10 @@ public class RequirementConstants {
     public static final String FRONT_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "front_camera2_extension_night_supported";
 
+    public static final String HLG_EDITING = "hlg_editing";
+
+    public static final String IS_HDR = "is_hdr";
+
     public static final String LONG_RESOLUTION = "long_resolution_pixels";
 
     public static final String NUM_4k_HW_DEC = "number_4k_hw_decoders";
@@ -148,6 +159,8 @@ public class RequirementConstants {
             "number_crypto_hw_secure_all_support";
 
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
+
+    public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
     public static final String PRIMARY_CAMERA_VIDEO_FPS =
@@ -202,6 +215,7 @@ public class RequirementConstants {
     public static final BiPredicate<Double, Double> DOUBLE_LTE = RequirementConstants.lte();
     public static final BiPredicate<Double, Double> DOUBLE_EQ = RequirementConstants.eq();
 
+    public static final BiPredicate<Float, Float> FLOAT_GTE = RequirementConstants.gte();
     public static final BiPredicate<Float, Float> FLOAT_LTE = RequirementConstants.lte();
 
     public static final BiPredicate<Boolean, Boolean> BOOLEAN_EQ = RequirementConstants.eq();
