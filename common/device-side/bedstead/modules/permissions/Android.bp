@@ -24,7 +24,7 @@ filegroup {
 android_test {
     name: "bedstead-permissions-test",
     srcs: [
-        "src/test/java/**/*.java",
+        "src/test/kotlin/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -32,6 +32,7 @@ android_test {
     static_libs: [
         "Harrier",
         "Nene",
+        "bedstead-root",
         "truth",
         "testng", // used for assertThrows
     ],

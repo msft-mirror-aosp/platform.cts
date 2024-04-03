@@ -226,6 +226,12 @@ public final class FakeAppSearchConfig implements FrameworkAppSearchConfig {
     }
 
     @Override
+    public long getCachedFullyPersistJobIntervalMillis() {
+        throwIfClosed();
+        return DEFAULT_FULLY_PERSIST_JOB_INTERVAL;
+    }
+
+    @Override
     public int getIntegerIndexBucketSplitThreshold() {
         throwIfClosed();
         return DEFAULT_INTEGER_INDEX_BUCKET_SPLIT_THRESHOLD;

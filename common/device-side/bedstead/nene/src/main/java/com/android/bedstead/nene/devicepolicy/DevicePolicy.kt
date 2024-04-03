@@ -43,6 +43,7 @@ import com.android.bedstead.nene.utils.Retry
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Versions
+import com.android.bedstead.permissions.CommonPermissions.READ_NEARBY_STREAMING_POLICY
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
 import java.util.stream.Collectors
@@ -796,6 +797,24 @@ object DevicePolicy {
         TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY).use {
             devicePolicyManager(user).getOwnerInstalledCaCerts(user.userHandle())
         }
+
+    /** See [DevicePolicyManager#getNearbyNotificationStreamingPolicy]. */
+    @JvmOverloads
+    @Experimental
+    @TargetApi(Build.VERSION_CODES.S)
+    fun getNearbyNotificationStreamingPolicy(user: UserReference = TestApis.users().instrumented()): NearbyNotificationStreamingPolicy {
+        return TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL, READ_NEARBY_STREAMING_POLICY).use {
+            val intDef = devicePolicyManager(user).nearbyNotificationStreamingPolicy
+            NearbyNotificationStreamingPolicy.entries.first { it.intDef == intDef }
+        }
+    }
+
+    enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
+        NotManaged(0),
+        Disabled(1),
+        Enabled(2),
+        SameManagedAccountOnly(3)
+    }
 
 
     private const val LOG_TAG = "DevicePolicy"

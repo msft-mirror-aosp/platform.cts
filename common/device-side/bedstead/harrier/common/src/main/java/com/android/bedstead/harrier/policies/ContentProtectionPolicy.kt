@@ -17,6 +17,9 @@
 package com.android.bedstead.harrier.policies
 
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy
+import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER
+import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER
+import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER
 
 /**
  * Policy for controlling content protection.
@@ -25,11 +28,10 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy
  * and `DevicePolicyManager#setContentProtectionPolicy(ComponentName, int)`.
  */
 @EnterprisePolicy(
-        dpc = [
-            EnterprisePolicy.APPLIED_BY_DEVICE_OWNER
-                    or EnterprisePolicy.APPLIED_BY_PROFILE_OWNER
-                    or EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER
-                    or EnterprisePolicy.APPLIES_TO_OWN_USER
-        ]
+    dpc = [
+        APPLIED_BY_DEVICE_OWNER
+                or APPLIED_BY_PROFILE_OWNER
+                or APPLIES_TO_OWN_USER
+    ]
 )
 class ContentProtectionPolicy

@@ -57,11 +57,8 @@ import java.util.TimeZone;
 
 @RunWith(BedsteadJUnit4.class)
 public final class TimeTest {
-
     private static final long MILLIS_SINCE_EPOCH = 1660000000000l;
-
     private static final String TIMEZONE = "Singapore";
-
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();

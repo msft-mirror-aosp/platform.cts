@@ -21,6 +21,7 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePoli
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_AIRPLANE_MODE;
 
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 
@@ -34,5 +35,8 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
                 | APPLIES_GLOBALLY
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
         })
+        // TODO(331606832): This doesn't work because MANAGE_DEVICE_POLICY_AIRPLANE_MODE also
+//  requires MANAGE_DEVICE_POLICY_ACROSS_USERS
+//        permissions = @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_AIRPLANE_MODE, appliesTo = APPLIES_GLOBALLY))
 public final class DisallowAirplaneMode {
 }

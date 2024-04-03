@@ -16,6 +16,7 @@
 
 package com.android.xts.root
 
+import android.util.Log
 import com.android.bedstead.adb.adb
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.AnnotationExecutorUtil

@@ -17,6 +17,7 @@
 package android.devicepolicy.cts;
 
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CAMERA;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_CAMERA;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -25,7 +26,8 @@ import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
 
-
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.xts.root.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
@@ -36,7 +38,6 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
-import com.android.bedstead.harrier.policies.DisallowCamera;
 import com.android.bedstead.harrier.policies.UserRestrictions;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
@@ -369,7 +370,8 @@ public final class UserRestrictionsTest {
     }
 
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#addUserRestriction"})
-    @CanSetPolicyTest(policy = DisallowCamera.class)
+    @RequireAdbRoot(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
+    @EnsureHasPermission(MANAGE_DEVICE_POLICY_CAMERA)
     public void addUserRestriction_setByPermission_appRemoved_notEnforced() {
         try {
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(

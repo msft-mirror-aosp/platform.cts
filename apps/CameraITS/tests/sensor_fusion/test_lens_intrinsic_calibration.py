@@ -28,6 +28,7 @@ import its_session_utils
 import preview_stabilization_utils
 import sensor_fusion_utils
 
+_INTRINSICS_SAMPLES = 'android.statistics.lensIntrinsicsSamples'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _PRINCIPAL_POINT_THRESH = 1  # Threshold for principal point changes in pixels.
@@ -117,11 +118,7 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
     intrinsic_calibration = capture_result['android.lens.intrinsicCalibration']
     logging.debug('IntrinsicCalibration = %s', str(intrinsic_calibration))
 
-    principal_point = calculate_principal_point(intrinsic_calibration[0],
-                                                intrinsic_calibration[1],
-                                                intrinsic_calibration[2],
-                                                intrinsic_calibration[3],
-                                                intrinsic_calibration[4])
+    principal_point = calculate_principal_point(*intrinsic_calibration[:5])
     principal_points.append(principal_point)
 
   # Calculate variations in principal points
@@ -165,6 +162,85 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
 
   return {'gyro': max_gyro_angle, 'max_pp_diff': max_pp_diff,
           'failure': failure_msg}
+
+
+def verify_lens_intrinsics_sample(recording_obj):
+  """Verify principal points changes in intrinsics samples.
+
+  Validate if principal points changes in at least one intrinsics samples.
+  Validate if timestamp changes in each intrinsics samples.
+
+  Args:
+    recording_obj: Camcorder recording object.
+
+  Returns:
+    a failure message if principal point doesn't change.
+    a failure message if timestamps doesn't change
+    None: either test passes or capture results doesn't include
+          intrinsics samples
+  """
+
+  file_name = recording_obj['recordedOutputPath'].split('/')[-1]
+  logging.debug('recorded file name: %s', file_name)
+  video_size = recording_obj['videoSize']
+  logging.debug('video size: %s', video_size)
+
+  capture_results = recording_obj['captureMetadata']
+
+  # Extract Lens Intrinsics Samples from capture result
+  intrinsics_samples_list = []
+  for capture_result in capture_results:
+    if _INTRINSICS_SAMPLES in capture_result:
+      samples = capture_result[_INTRINSICS_SAMPLES]
+      intrinsics_samples_list.append(samples)
+
+  if not intrinsics_samples_list:
+    logging.debug('Lens Intrincis Samples are not reported')
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: false')
+    return None
+
+  failure_msg = ''
+
+  max_samples_pp_diffs = []
+  max_samples_timestamp_diffs = []
+  for samples in intrinsics_samples_list:
+    pp_diffs = []
+    timestamp_diffs = []
+
+    # Evaluate intrinsics samples
+    first_sample = samples[0]
+    first_instrinsics = first_sample['lensIntrinsics']
+    first_ts = first_sample['timestamp']
+    first_point = calculate_principal_point(*first_instrinsics[:5])
+
+    for sample in samples:
+      samples_intrinsics = sample['lensIntrinsics']
+      timestamp = sample['timestamp']
+      principal_point = calculate_principal_point(*samples_intrinsics[:5])
+      distance = math.dist(first_point, principal_point)
+      pp_diffs.append(distance)
+      timestamp_diffs.append(timestamp-first_ts)
+
+    max_samples_pp_diffs.append(max(pp_diffs))
+    max_samples_timestamp_diffs.append(max(timestamp_diffs))
+
+  if any(value != 0 for value in max_samples_pp_diffs):
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: true')
+    logging.debug('Principal points variations found in at lease one sample')
+  else:
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: false')
+    failure_msg = failure_msg + (
+        'No variation of principal points found in any samples.\n\n'
+    )
+  if all(diff > 0 for diff in max_samples_timestamp_diffs[1:]):
+    logging.debug('Timestamps variations found in all samples')
+  else:
+    failure_msg = failure_msg + 'Timestamps in samples did not change. \n\n'
+
+  return failure_msg if failure_msg else None
 
 
 class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
@@ -235,6 +311,9 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
                                f'\n\n{failure_msg}')
 
+      failure_msg = verify_lens_intrinsics_sample(recording_obj)
+      if failure_msg:
+        raise AssertionError(failure_msg)
 
 if __name__ == '__main__':
   test_runner.main()

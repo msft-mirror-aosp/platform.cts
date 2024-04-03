@@ -43,9 +43,11 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import com.android.compatibility.common.util.CddTest
 import com.android.cts.verifier.PassFailButtons
 import com.android.cts.verifier.R
 
+@CddTest(requirements = ["9.8.2/C-0-6,C-3-1,C-3-2,C-3-3"])
 class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
     private lateinit var mediaProjectionServiceIntent: Intent
@@ -305,6 +307,17 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         }
     }
 
+    private val notificationContentHiddenInAppTest = object : NotificationHidingTestCase() {
+
+        override fun getTestTitle(): Int {
+            return R.string.notif_hiding_app_test
+        }
+
+        override fun getTestInstructions(): Int {
+            return R.string.notif_hiding_app_test_instructions
+        }
+    }
+
     private val notificationContentHiddenInShadePartialTest =
         object : NotificationHidingTestCase() {
 
@@ -339,10 +352,59 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         override fun sendNotification() = sendNotification(createBubble = true)
     }
 
+    private val notificationContentHiddenInShadeLocalScreenRecorderTest =
+        object : NotificationHidingTestCase() {
+            override fun getTestTitle(): Int {
+                return R.string.notif_hiding_shade_local_screen_recorder_test
+            }
+
+            override fun getTestInstructions(): Int {
+                return R.string.notif_hiding_shade_local_screen_recorder_test_instructions
+            }
+        }
+
+    private val notificationContentHiddenInAppLocalScreenRecorderTest =
+        object : NotificationHidingTestCase() {
+            override fun getTestTitle(): Int {
+                return R.string.notif_hiding_app_local_screen_recorder_test
+            }
+
+            override fun getTestInstructions(): Int {
+                return R.string.notif_hiding_app_local_screen_recorder_test_instructions
+            }
+        }
+
+    private val notificationContentHiddenInShadeDisableProtectionsTest =
+        object : NotificationHidingTestCase() {
+            override fun getTestTitle(): Int {
+                return R.string.notif_hiding_shade_disable_protections_test
+            }
+
+            override fun getTestInstructions(): Int {
+                return R.string.notif_hiding_shade_disable_protections_test_instructions
+            }
+        }
+
+    private val notificationContentHiddenInAppDisableProtectionsTest =
+        object : NotificationHidingTestCase() {
+            override fun getTestTitle(): Int {
+                return R.string.notif_hiding_app_disable_protections_test
+            }
+
+            override fun getTestInstructions(): Int {
+                return R.string.notif_hiding_app_disable_protections_test_instructions
+            }
+        }
+
     private val tests = mutableListOf(
         notificationContentHiddenInShadeTest,
+        notificationContentHiddenInAppTest,
         notificationContentHiddenInShadePartialTest,
-        notificationContentHiddenInLauncherTest
+        notificationContentHiddenInLauncherTest,
+        notificationContentHiddenInShadeLocalScreenRecorderTest,
+        notificationContentHiddenInAppLocalScreenRecorderTest,
+        notificationContentHiddenInShadeDisableProtectionsTest,
+        notificationContentHiddenInAppDisableProtectionsTest
     )
 
     companion object {
@@ -354,7 +416,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         private const val REQUEST_PROJECTION_CODE = 1
         private const val PERSON = "Person"
         private const val FGS = "Media Projection FGS"
-        private const val SENSITIVE_TEXT = "Sensitive Text"
+        private const val SENSITIVE_TEXT = "Sensitive Text code 123 123"
         private const val FGS_MESSAGE = "FGS Running"
     }
 

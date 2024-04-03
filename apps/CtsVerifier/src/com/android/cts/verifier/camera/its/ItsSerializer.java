@@ -27,6 +27,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.BlackLevelPattern;
 import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.Face;
+import android.hardware.camera2.params.LensIntrinsicsSample;
 import android.hardware.camera2.params.LensShadingMap;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
@@ -277,6 +278,22 @@ public class ItsSerializer {
         return mapObj;
     }
 
+    @SuppressWarnings("unchecked")
+    private static Object serializeIntrinsicsSamples(LensIntrinsicsSample [] samples)
+            throws org.json.JSONException {
+        JSONArray top = new JSONArray();
+        for (LensIntrinsicsSample sample : samples) {
+            JSONObject jSample = new JSONObject();
+            jSample.put("timestamp", sample.getTimestampNanos());
+            JSONArray lensIntrinsics = new JSONArray();
+            for (float intrinsic : sample.getLensIntrinsics()) {
+                lensIntrinsics.put(intrinsic);
+            }
+            jSample.put("lensIntrinsics", lensIntrinsics);
+            top.put(jSample);
+        }
+        return top;
+    }
     private static String getKeyName(Object keyObj) throws ItsException {
         if (keyObj.getClass() == CaptureResult.Key.class
                 || keyObj.getClass() == TotalCaptureResult.class) {
@@ -363,6 +380,9 @@ public class ItsSerializer {
             } else if (keyType == LensShadingMap.class) {
                 return new MetadataEntry(keyName,
                         serializeLensShadingMap((LensShadingMap)keyValue));
+            } else if (keyValue instanceof LensIntrinsicsSample[]) {
+                return new MetadataEntry(keyName,
+                        serializeIntrinsicsSamples((LensIntrinsicsSample []) keyValue));
             } else if (keyValue instanceof float[]) {
                 return new MetadataEntry(keyName, new JSONArray(keyValue));
             } else {

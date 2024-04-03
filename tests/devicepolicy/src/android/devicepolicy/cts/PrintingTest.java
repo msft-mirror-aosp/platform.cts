@@ -57,7 +57,8 @@ import org.junit.runner.RunWith;
 @RequireFeature("android.software.print")
 public final class PrintingTest {
 
-    @ClassRule @Rule
+    @ClassRule
+    @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String PRINT_NAME = "print";
@@ -80,38 +81,68 @@ public final class PrintingTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_cannotSet_throwsException() {
-        assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_PRINTING));
+        try {
+            assertThrows(SecurityException.class,
+                    () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                            sDeviceState.dpc().componentName(), DISALLOW_PRINTING));
+        } finally {
+            try {
+                sDeviceState.dpc().devicePolicyManager()
+                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                                DISALLOW_PRINTING);
+            } catch (Exception e) {
+                // Expected
+            }
+        }
     }
 
     @PolicyAppliesTest(policy = DisallowPrinting.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
+        try {
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
 
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
-                .isTrue();
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
+                    .isTrue();
+        } finally {
+            try {
+                sDeviceState.dpc().devicePolicyManager()
+                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                                DISALLOW_PRINTING);
+            } catch (Exception e) {
+                // Expected
+            }
+        }
     }
 
     @PolicyDoesNotApplyTest(policy = DisallowPrinting.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
+        try {
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
 
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
-                .isFalse();
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
+                    .isFalse();
+        } finally {
+            try {
+                sDeviceState.dpc().devicePolicyManager()
+                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                                DISALLOW_PRINTING);
+            } catch (Exception e) {
+                // Expected
+            }
+        }
     }
 
     @EnsureHasUserRestriction(DISALLOW_PRINTING)
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
-    public void print_disallowPrintingIsSet_returnsNull() throws Exception{
+    public void print_disallowPrintingIsSet_returnsNull() throws Exception {
         PrintJob printJob = ActivityContext.getWithContext(
                 (ctx) -> ctx.getSystemService(PrintManager.class)
                         .print(PRINT_NAME, PRINT_DOCUMENT_ADAPTER, /* attributes= */ null));

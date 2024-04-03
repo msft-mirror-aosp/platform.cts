@@ -32,8 +32,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 // This is not applied by profile owner as the behaviour is different with a unified challenge
 @EnterprisePolicy(dpc =
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER
-                | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
-        permissions =
-        @EnterprisePolicy.Permission(appliedWith = LOCK_DEVICE, appliesTo = APPLIES_TO_OWN_USER))
+                | CANNOT_BE_APPLIED_BY_ROLE_HOLDER)
+// TODO: LockNow metrics need to be updated to include the package name of permission holders
+//        permissions =
+//        @EnterprisePolicy.Permission(appliedWith = LOCK_DEVICE, appliesTo = APPLIES_TO_OWN_USER))
 public final class LockNow {
 }

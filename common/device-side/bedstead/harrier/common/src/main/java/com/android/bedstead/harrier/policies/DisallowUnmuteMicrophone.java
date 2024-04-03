@@ -23,6 +23,7 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePoli
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.INHERITABLE;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_MICROPHONE;
 
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 
@@ -31,8 +32,8 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  */
 @EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
-        APPLIED_BY_PROFILE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE //| APPLIED_BY_DPM_ROLE_HOLDER
+        APPLIED_BY_PROFILE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                 | APPLIES_TO_OWN_USER | CANNOT_BE_APPLIED_BY_ROLE_HOLDER | INHERITABLE
-})//, permissions = @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_MICROPHONE, appliesTo = APPLIES_TO_OWN_USER))
+}, permissions = @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_MICROPHONE, appliesTo = APPLIES_TO_OWN_USER))
 public final class DisallowUnmuteMicrophone {
 }

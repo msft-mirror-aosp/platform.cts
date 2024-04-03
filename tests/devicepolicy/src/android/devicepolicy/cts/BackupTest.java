@@ -35,6 +35,7 @@ import android.content.Context;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -177,7 +178,7 @@ public final class BackupTest {
     @Postsubmit(reason = "new test")
     public void setBackupServiceEnabled_enableBackup_SecurityLogEventsEmitted()
             throws Exception {
-        ensureNoAdditionalFullUsers();
+        ensureNoAdditionalUsers();
         ComponentName admin = sDeviceState.dpc().componentName();
         boolean backupState = sDeviceState.dpc().devicePolicyManager()
                 .isBackupServiceEnabled(admin);
@@ -213,7 +214,7 @@ public final class BackupTest {
     @Postsubmit(reason = "new test")
     public void setBackupServiceEnabled_disableBackup_SecurityLogEventsEmitted()
             throws Exception {
-        ensureNoAdditionalFullUsers();
+        ensureNoAdditionalUsers();
         ComponentName admin = sDeviceState.dpc().componentName();
         boolean backupState = sDeviceState.dpc().devicePolicyManager()
                 .isBackupServiceEnabled(admin);
@@ -241,7 +242,7 @@ public final class BackupTest {
             sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, backupState);
         }
     }
-    private void ensureNoAdditionalFullUsers() {
+    private void ensureNoAdditionalUsers() {
         // TODO(273474964): Move into infra
         try {
             TestApis.users().all().stream().filter(u -> (u != TestApis.users().instrumented()
@@ -249,7 +250,8 @@ public final class BackupTest {
                     && u != TestApis.users().current() // We can't remove the profile of
                     // the instrumented user for the run on parent profile tests. But the profiles
                     // of other users will be removed when the full-user is removed anyway.
-                    && !u.isProfile())).forEach(u -> u.remove());
+//                    && !u.isProfile() - temporarily disabled as this would cause failures if there was a clone profile on the device
+            )).forEach(UserReference::remove);
         } catch (NeneException e) {
             // Happens when we can't remove a user
             throw new NeneException(

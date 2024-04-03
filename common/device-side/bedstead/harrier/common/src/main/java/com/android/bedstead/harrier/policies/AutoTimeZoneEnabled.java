@@ -35,8 +35,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
         | APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO
         | APPLIES_GLOBALLY
         | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
-        APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER},
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = SET_TIME_ZONE, appliesTo = APPLIES_GLOBALLY))
+        APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER})
+// permission isn't enabled
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = SET_TIME_ZONE, appliesTo = APPLIES_GLOBALLY))
 public class AutoTimeZoneEnabled {
 }
