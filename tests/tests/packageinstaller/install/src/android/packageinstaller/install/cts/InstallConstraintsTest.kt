@@ -36,15 +36,16 @@ import com.android.cts.install.lib.LocalIntentSender
 import com.android.cts.install.lib.TestApp
 import com.android.cts.install.lib.Uninstall
 import com.google.common.truth.Truth.assertThat
+import java.security.MessageDigest
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assume.assumeFalse
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.security.MessageDigest
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull
@@ -104,6 +105,7 @@ class InstallConstraintsTest {
         }
     }
 
+    @Ignore("b/331166570")
     @Test
     fun testCheckInstallConstraints_AppIsInteracting() {
         // Skip this test as the current audio focus detection doesn't work on Auto
