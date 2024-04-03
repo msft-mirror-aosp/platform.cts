@@ -21,6 +21,9 @@ import android.content.Intent;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
@@ -52,6 +55,72 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
                         instrumentation,
                         HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentService1.class.getName()),
                         HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentService1.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens simple reader activity for dual payment services test */
+    @Rpc(description = "Opens simple reader activity for dual payment services test")
+    public void startDualPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentService1.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentService1.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens simple reader activity for foreground payment test */
+    @Rpc(description = "Opens simple reader activity for foreground payment test")
+    public void startForegroundPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentService2.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentService2.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens simple reader activity for dynamic AID test */
+    @Rpc(description = "Opens simple reader activity for dynamic AID test")
+    public void startDynamicAidReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                PaymentServiceDynamicAids.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                PaymentServiceDynamicAids.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens simple reader activity for prefix payment test */
+    @Rpc(description = "Opens simple reader activity for prefix payment test")
+    public void startPrefixPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                PrefixPaymentService1.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                PrefixPaymentService1.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens simple reader activity for prefix payment 2 test */
+    @Rpc(description = "Opens simple reader activity for prefix payment 2 test")
+    public void startPrefixPaymentReader2Activity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                PrefixPaymentService1.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                PrefixPaymentService1.class.getName()));
         mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
     }
 

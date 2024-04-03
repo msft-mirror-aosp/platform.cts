@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.cts.nfc.multidevice.emulator;
 
 import android.content.ComponentName;
+import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
-import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.utils.HceUtils;
 
-public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
+import java.util.ArrayList;
+
+public class DynamicAidEmulatorActivity extends BaseEmulatorActivity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,14 +34,23 @@ public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
-        setupServices(PaymentService1.COMPONENT);
+        setupServices(PaymentServiceDynamicAids.COMPONENT);
+    }
+
+    @Override
+    protected void onServicesSetup() {
+        ArrayList<String> paymentAids = new ArrayList<String>();
+        paymentAids.add(HceUtils.PPSE_AID);
+        paymentAids.add(HceUtils.VISA_AID);
+        // Register a different set of AIDs for the foreground
+        mCardEmulation.registerAidsForService(
+                PaymentServiceDynamicAids.COMPONENT, CardEmulation.CATEGORY_PAYMENT, paymentAids);
         makeDefaultWalletRoleHolder();
     }
 
     @Override
-    public void onApduSequenceComplete(ComponentName component, long duration) {
-        if (component.equals(PaymentService1.COMPONENT)) {
+    protected void onApduSequenceComplete(ComponentName component, long duration) {
+        if (component.equals(PaymentServiceDynamicAids.COMPONENT)) {
             setTestPassed();
         }
     }
