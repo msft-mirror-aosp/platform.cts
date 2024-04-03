@@ -28,12 +28,22 @@ android_test {
         "general-tests",
         "mts-extservices",
         "mcts-extservices",
+        "mts-crashrecovery",
     ],
-    libs: ["android.test.base"],
+    libs: [
+        "android.test.base",
+        "android.test.runner",
+    ],
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "truth",
+        "services.core",
+        "services.net",
+
+        "androidx.test.core",
+        "androidx.test.rules",
+        "platform-test-annotations",
     ],
     srcs: [
         "src/**/*.java",
