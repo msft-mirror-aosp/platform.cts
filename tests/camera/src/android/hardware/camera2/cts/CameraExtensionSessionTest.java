@@ -566,194 +566,207 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     }
 
                     Size maxSize = CameraTestUtils.getMaxSize(extensionSizes.toArray(new Size[0]));
-                    List<Size> postviewSizes = extensionChars.getPostviewSupportedSizes(extension,
-                            maxSize, captureFormat);
-                    if (postviewSizes.isEmpty()) {
-                        continue;
-                    }
 
-                    SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
-                            1);
-                    ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
-                            captureFormat, /*maxImages*/ 1, imageListener,
-                            mTestRule.getHandler());
-                    Surface imageReaderSurface = extensionImageReader.getSurface();
-                    OutputConfiguration readerOutput = new OutputConfiguration(imageReaderSurface);
-                    List<OutputConfiguration> outputConfigs = new ArrayList<>();
-                    outputConfigs.add(readerOutput);
-
-                    Size postviewSize =
-                            CameraTestUtils.getMaxSize(postviewSizes.toArray(new Size[0]));
-                    SimpleImageReaderListener imageListenerPostview =
-                            new SimpleImageReaderListener(false, 1);
-                    ImageReader postviewImageReader = CameraTestUtils.makeImageReader(postviewSize,
-                            captureFormat, /*maxImages*/ 1, imageListenerPostview,
-                            mTestRule.getHandler());
-                    Surface postviewImageReaderSurface = postviewImageReader.getSurface();
-                    OutputConfiguration postviewReaderOutput =
-                            new OutputConfiguration(postviewImageReaderSurface);
-
-                    BlockingExtensionSessionCallback sessionListener =
-                            new BlockingExtensionSessionCallback(mock(
-                                    CameraExtensionSession.StateCallback.class));
-                    ExtensionSessionConfiguration configuration =
-                            new ExtensionSessionConfiguration(extension, outputConfigs,
-                                    new HandlerExecutor(mTestRule.getHandler()),
-                                    sessionListener);
-                    configuration.setPostviewOutputConfiguration(postviewReaderOutput);
-                    assertNotNull(configuration.getPostviewOutputConfiguration());
-
-                    String streamName = "test_extension_postview_capture";
-                    mReportLog = new DeviceReportLog(REPORT_LOG_NAME, streamName);
-                    mReportLog.addValue("camera_id", id, ResultType.NEUTRAL, ResultUnit.NONE);
-                    mReportLog.addValue("extension_id", extension, ResultType.NEUTRAL,
-                            ResultUnit.NONE);
-                    double[] captureTimes = new double[IMAGE_COUNT];
-                    double[] postviewCaptureTimes = new double[IMAGE_COUNT];
-                    boolean captureResultsSupported =
-                            !extensionChars.getAvailableCaptureResultKeys(extension).isEmpty();
-
-                    try {
-                        mTestRule.openDevice(id);
-                        CameraDevice camera = mTestRule.getCamera();
-                        camera.createExtensionSession(configuration);
-                        CameraExtensionSession extensionSession =
-                                sessionListener.waitAndGetSession(
-                                        SESSION_CONFIGURE_TIMEOUT_MS);
-                        assertNotNull(extensionSession);
-
-                        CaptureRequest.Builder captureBuilder =
-                                mTestRule.getCamera().createCaptureRequest(
-                                        CameraDevice.TEMPLATE_STILL_CAPTURE);
-                        captureBuilder.addTarget(imageReaderSurface);
-                        captureBuilder.addTarget(postviewImageReaderSurface);
-                        CameraExtensionSession.ExtensionCaptureCallback captureMockCallback =
-                                mock(CameraExtensionSession.ExtensionCaptureCallback.class);
-                        SimpleCaptureCallback captureCallback =
-                                new SimpleCaptureCallback(extension, captureMockCallback,
-                                        extensionChars.getAvailableCaptureResultKeys(extension),
-                                        mCollector);
-
-                        for (int i = 0; i < IMAGE_COUNT; i++) {
-                            int jpegOrientation = (i * 90) % 360; // degrees [0..270]
-                            if (captureFormat == ImageFormat.JPEG
-                                    || captureFormat == ImageFormat.JPEG_R) {
-                                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
-                                        jpegOrientation);
-                            }
-                            CaptureRequest request = captureBuilder.build();
-                            long startTimeMs = SystemClock.elapsedRealtime();
-                            captureCallback.resetCaptureProgress();
-                            int sequenceId = extensionSession.capture(request,
-                                    new HandlerExecutor(mTestRule.getHandler()), captureCallback);
-
-                            Image imgPostview  =
-                                    imageListenerPostview
-                                    .getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
-                            postviewCaptureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
-
-                            if (captureFormat == ImageFormat.JPEG
-                                    || captureFormat == ImageFormat.JPEG_R) {
-                                verifyJpegOrientation(imgPostview, postviewSize,
-                                        jpegOrientation, captureFormat);
-                            } else {
-                                validateImage(imgPostview, postviewSize.getWidth(),
-                                        postviewSize.getHeight(), captureFormat, null);
-                            }
-
-                            Long imgTsPostview = imgPostview.getTimestamp();
-                            imgPostview.close();
-
-                            Image img =
-                                    imageListener.getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
-                            captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
-
-                            if (captureFormat == ImageFormat.JPEG
-                                    || captureFormat == ImageFormat.JPEG_R) {
-                                verifyJpegOrientation(img, maxSize,
-                                        jpegOrientation, captureFormat);
-                            } else {
-                                validateImage(img, maxSize.getWidth(),
-                                        maxSize.getHeight(), captureFormat, null);
-                            }
-
-                            Long imgTs = img.getTimestamp();
-                            img.close();
-
-                            assertEquals("Still capture timestamp does not match its "
-                                    + "postview timestamp", imgTsPostview, imgTs);
-
-                            verify(captureMockCallback,
-                                    timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
-                                    .onCaptureStarted(eq(extensionSession), eq(request), eq(imgTs));
-                            verify(captureMockCallback, times(1))
-                                    .onCaptureStarted(eq(extensionSession), eq(request), anyLong());
-                            verify(captureMockCallback,
-                                    timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
-                                    .onCaptureProcessStarted(extensionSession, request);
-                            verify(captureMockCallback,
-                                    timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
-                                    .onCaptureSequenceCompleted(extensionSession, sequenceId);
-                            if (captureResultsSupported) {
-                                verify(captureMockCallback,
-                                        timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
-                                        .onCaptureResultAvailable(eq(extensionSession), eq(request),
-                                                any(TotalCaptureResult.class));
-                            }
-                            if (captureProgressSupported) {
-                                verify(captureMockCallback,
-                                        timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
-                                        .onCaptureProcessProgressed(eq(extensionSession),
-                                        eq(request), eq(100));
-                            }
+                    for (int postviewFormat : SUPPORTED_CAPTURE_OUTPUT_FORMATS) {
+                        List<Size> postviewSizes = extensionChars.getPostviewSupportedSizes(
+                                extension, maxSize, postviewFormat);
+                        if (postviewSizes.isEmpty()) {
+                            continue;
                         }
 
-                        mReportLog.addValue("width", maxSize.getWidth(), ResultType.NEUTRAL,
-                                ResultUnit.NONE);
-                        mReportLog.addValue("height", maxSize.getHeight(),
-                                ResultType.NEUTRAL, ResultUnit.NONE);
-                        mReportLog.addValue("format", captureFormat, ResultType.NEUTRAL,
-                                ResultUnit.NONE);
-                        long avgPostviewLatency = (long) Stat.getAverage(postviewCaptureTimes);
-                        mReportLog.addValue("avg_postview_latency", avgPostviewLatency,
-                                ResultType.LOWER_BETTER, ResultUnit.MS);
-                        long avgCaptureLatency = (long) Stat.getAverage(captureTimes);
-                        mReportLog.addValue("avg_capture_latency", avgCaptureLatency,
-                                ResultType.LOWER_BETTER, ResultUnit.MS);
+                        SimpleImageReaderListener imageListener = new SimpleImageReaderListener(
+                                false, 1);
+                        ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
+                                captureFormat, /*maxImages*/ 1, imageListener,
+                                mTestRule.getHandler());
+                        Surface imageReaderSurface = extensionImageReader.getSurface();
+                        OutputConfiguration readerOutput =
+                                new OutputConfiguration(imageReaderSurface);
+                        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+                        outputConfigs.add(readerOutput);
 
-                        verify(captureMockCallback, times(0))
-                                .onCaptureSequenceAborted(any(CameraExtensionSession.class),
-                                        anyInt());
-                        verify(captureMockCallback, times(0))
-                                .onCaptureFailed(any(CameraExtensionSession.class),
-                                        any(CaptureRequest.class));
-                        verify(captureMockCallback, times(0))
-                                .onCaptureFailed(any(CameraExtensionSession.class),
-                                        any(CaptureRequest.class), anyInt());
-                        Range<Long> latencyRange =
-                                extensionChars.getEstimatedCaptureLatencyRangeMillis(extension,
-                                        maxSize, captureFormat);
-                        if (latencyRange != null) {
-                            String msg = String.format("Camera [%s]: The measured average "
-                                            + "capture latency of %d ms. for extension type %d  "
-                                            + "with image format: %d and size: %dx%d must be "
-                                            + "within the advertised range of [%d, %d] ms.",
-                                    id, avgCaptureLatency, extension, captureFormat,
-                                    maxSize.getWidth(), maxSize.getHeight(),
-                                    latencyRange.getLower(), latencyRange.getUpper());
-                            assertTrue(msg, latencyRange.contains(avgCaptureLatency));
+                        Size postviewSize =
+                                CameraTestUtils.getMaxSize(postviewSizes.toArray(new Size[0]));
+                        SimpleImageReaderListener imageListenerPostview =
+                                new SimpleImageReaderListener(false, 1);
+                        ImageReader postviewImageReader = CameraTestUtils.makeImageReader(
+                                    postviewSize, postviewFormat, /*maxImages*/ 1,
+                                    imageListenerPostview, mTestRule.getHandler());
+
+                        Surface postviewImageReaderSurface = postviewImageReader.getSurface();
+                        OutputConfiguration postviewReaderOutput =
+                                new OutputConfiguration(postviewImageReaderSurface);
+                        BlockingExtensionSessionCallback sessionListener =
+                                new BlockingExtensionSessionCallback(mock(
+                                        CameraExtensionSession.StateCallback.class));
+                        ExtensionSessionConfiguration configuration =
+                                new ExtensionSessionConfiguration(extension, outputConfigs,
+                                        new HandlerExecutor(mTestRule.getHandler()),
+                                        sessionListener);
+                        configuration.setPostviewOutputConfiguration(postviewReaderOutput);
+                        assertNotNull(configuration.getPostviewOutputConfiguration());
+
+                        String streamName = "test_extension_postview_capture";
+                        mReportLog = new DeviceReportLog(REPORT_LOG_NAME, streamName);
+                        mReportLog.addValue("camera_id", id, ResultType.NEUTRAL, ResultUnit.NONE);
+                        mReportLog.addValue("extension_id", extension, ResultType.NEUTRAL,
+                                ResultUnit.NONE);
+                        double[] captureTimes = new double[IMAGE_COUNT];
+                        double[] postviewCaptureTimes = new double[IMAGE_COUNT];
+                        boolean captureResultsSupported =
+                                !extensionChars.getAvailableCaptureResultKeys(extension).isEmpty();
+
+                        try {
+                            mTestRule.openDevice(id);
+                            CameraDevice camera = mTestRule.getCamera();
+                            camera.createExtensionSession(configuration);
+                            CameraExtensionSession extensionSession =
+                                    sessionListener.waitAndGetSession(
+                                            SESSION_CONFIGURE_TIMEOUT_MS);
+                            assertNotNull(extensionSession);
+
+                            CaptureRequest.Builder captureBuilder =
+                                    mTestRule.getCamera().createCaptureRequest(
+                                            CameraDevice.TEMPLATE_STILL_CAPTURE);
+                            captureBuilder.addTarget(imageReaderSurface);
+                            captureBuilder.addTarget(postviewImageReaderSurface);
+                            CameraExtensionSession.ExtensionCaptureCallback captureMockCallback =
+                                    mock(CameraExtensionSession.ExtensionCaptureCallback.class);
+                            SimpleCaptureCallback captureCallback =
+                                    new SimpleCaptureCallback(extension, captureMockCallback,
+                                            extensionChars.getAvailableCaptureResultKeys(
+                                            extension), mCollector);
+
+                            for (int i = 0; i < IMAGE_COUNT; i++) {
+                                int jpegOrientation = (i * 90) % 360; // degrees [0..270]
+                                if (captureFormat == ImageFormat.JPEG
+                                        || captureFormat == ImageFormat.JPEG_R
+                                        || postviewFormat == ImageFormat.JPEG
+                                        || postviewFormat == ImageFormat.JPEG_R) {
+                                    captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
+                                            jpegOrientation);
+                                }
+                                CaptureRequest request = captureBuilder.build();
+                                long startTimeMs = SystemClock.elapsedRealtime();
+                                captureCallback.resetCaptureProgress();
+                                int sequenceId = extensionSession.capture(request,
+                                        new HandlerExecutor(mTestRule.getHandler()),
+                                        captureCallback);
+
+                                Image imgPostview  =
+                                        imageListenerPostview
+                                        .getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
+                                postviewCaptureTimes[i] =
+                                        SystemClock.elapsedRealtime() - startTimeMs;
+
+                                if (postviewFormat == ImageFormat.JPEG
+                                        || postviewFormat == ImageFormat.JPEG_R) {
+                                    verifyJpegOrientation(imgPostview, postviewSize,
+                                            jpegOrientation, postviewFormat);
+                                } else {
+                                    validateImage(imgPostview, postviewSize.getWidth(),
+                                            postviewSize.getHeight(), postviewFormat, null);
+                                }
+
+                                Long imgTsPostview = imgPostview.getTimestamp();
+                                imgPostview.close();
+
+                                Image img =
+                                        imageListener.getImage(
+                                        MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
+                                captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
+
+                                if (captureFormat == ImageFormat.JPEG
+                                        || captureFormat == ImageFormat.JPEG_R) {
+                                    verifyJpegOrientation(img, maxSize,
+                                            jpegOrientation, captureFormat);
+                                } else {
+                                    validateImage(img, maxSize.getWidth(),
+                                            maxSize.getHeight(), captureFormat, null);
+                                }
+
+                                Long imgTs = img.getTimestamp();
+                                img.close();
+
+                                assertEquals("Still capture timestamp does not match its "
+                                        + "postview timestamp", imgTsPostview, imgTs);
+
+                                verify(captureMockCallback,
+                                        timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                        .onCaptureStarted(eq(extensionSession), eq(request),
+                                        eq(imgTs));
+                                verify(captureMockCallback, times(1))
+                                        .onCaptureStarted(eq(extensionSession), eq(request),
+                                        anyLong());
+                                verify(captureMockCallback,
+                                        timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                        .onCaptureProcessStarted(extensionSession, request);
+                                verify(captureMockCallback,
+                                        timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                        .onCaptureSequenceCompleted(extensionSession, sequenceId);
+                                if (captureResultsSupported) {
+                                    verify(captureMockCallback,
+                                            timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                            .onCaptureResultAvailable(eq(extensionSession),
+                                            eq(request), any(TotalCaptureResult.class));
+                                }
+                                if (captureProgressSupported) {
+                                    verify(captureMockCallback,
+                                            timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                            .onCaptureProcessProgressed(eq(extensionSession),
+                                            eq(request), eq(100));
+                                }
+                            }
+
+                            mReportLog.addValue("width", maxSize.getWidth(), ResultType.NEUTRAL,
+                                    ResultUnit.NONE);
+                            mReportLog.addValue("height", maxSize.getHeight(),
+                                    ResultType.NEUTRAL, ResultUnit.NONE);
+                            mReportLog.addValue("captureFormat", captureFormat, ResultType.NEUTRAL,
+                                    ResultUnit.NONE);
+                            mReportLog.addValue("postviewFormat", postviewFormat,
+                                    ResultType.NEUTRAL, ResultUnit.NONE);
+                            long avgPostviewLatency = (long) Stat.getAverage(postviewCaptureTimes);
+                            mReportLog.addValue("avg_postview_latency", avgPostviewLatency,
+                                    ResultType.LOWER_BETTER, ResultUnit.MS);
+                            long avgCaptureLatency = (long) Stat.getAverage(captureTimes);
+                            mReportLog.addValue("avg_capture_latency", avgCaptureLatency,
+                                    ResultType.LOWER_BETTER, ResultUnit.MS);
+
+                            verify(captureMockCallback, times(0))
+                                    .onCaptureSequenceAborted(any(CameraExtensionSession.class),
+                                            anyInt());
+                            verify(captureMockCallback, times(0))
+                                    .onCaptureFailed(any(CameraExtensionSession.class),
+                                            any(CaptureRequest.class));
+                            verify(captureMockCallback, times(0))
+                                    .onCaptureFailed(any(CameraExtensionSession.class),
+                                            any(CaptureRequest.class), anyInt());
+                            Range<Long> latencyRange =
+                                    extensionChars.getEstimatedCaptureLatencyRangeMillis(extension,
+                                            maxSize, captureFormat);
+                            if (latencyRange != null) {
+                                String msg = String.format("Camera [%s]: The measured average "
+                                        + "capture latency of %d ms. for extension type %d  "
+                                        + "with image format: %d and size: %dx%d must be "
+                                        + "within the advertised range of [%d, %d] ms.",
+                                        id, avgCaptureLatency, extension, captureFormat,
+                                        maxSize.getWidth(), maxSize.getHeight(),
+                                        latencyRange.getLower(), latencyRange.getUpper());
+                                assertTrue(msg, latencyRange.contains(avgCaptureLatency));
+                            }
+
+                            extensionSession.close();
+
+                            sessionListener.getStateWaiter().waitForState(
+                                    BlockingExtensionSessionCallback.SESSION_CLOSED,
+                                    SESSION_CLOSE_TIMEOUT_MS);
+                        } finally {
+                            mTestRule.closeDevice(id);
+                            postviewImageReader.close();
+                            extensionImageReader.close();
+                            mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                         }
-
-                        extensionSession.close();
-
-                        sessionListener.getStateWaiter().waitForState(
-                                BlockingExtensionSessionCallback.SESSION_CLOSED,
-                                SESSION_CLOSE_TIMEOUT_MS);
-                    } finally {
-                        mTestRule.closeDevice(id);
-                        postviewImageReader.close();
-                        extensionImageReader.close();
-                        mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                     }
                 }
             }
