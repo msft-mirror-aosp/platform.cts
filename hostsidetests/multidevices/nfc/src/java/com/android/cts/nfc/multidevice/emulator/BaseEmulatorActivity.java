@@ -28,10 +28,15 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public abstract class BaseEmulatorActivity extends Activity {
@@ -50,7 +55,10 @@ public abstract class BaseEmulatorActivity extends Activity {
 
     protected static final ArrayList<ComponentName> SERVICES =
             new ArrayList<ComponentName>(
-                    List.of(TransportService1.COMPONENT, PaymentService1.COMPONENT));
+                    List.of(
+                            TransportService1.COMPONENT, PaymentService1.COMPONENT,
+                            PaymentService2.COMPONENT, PaymentServiceDynamicAids.COMPONENT,
+                            PrefixPaymentService1.COMPONENT, PrefixPaymentService2.COMPONENT));
 
     protected static final String TAG = "BaseEmulatorActivity";
     protected NfcAdapter mAdapter;
@@ -88,7 +96,6 @@ public abstract class BaseEmulatorActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        setupServices();
     }
 
     @Override
@@ -98,9 +105,10 @@ public abstract class BaseEmulatorActivity extends Activity {
     }
 
     /** Sets up HCE services for this emulator */
-    public void setupServices() {
+    public void setupServices(ComponentName... components) {
+        List<ComponentName> enableComponents = Arrays.asList(components);
         for (ComponentName component : SERVICES) {
-            if (mEnableComponents.contains(component)) {
+            if (enableComponents.contains(component)) {
                 Log.d(TAG, "Enabling component " + component);
                 HceUtils.enableComponent(getPackageManager(), component);
             } else {

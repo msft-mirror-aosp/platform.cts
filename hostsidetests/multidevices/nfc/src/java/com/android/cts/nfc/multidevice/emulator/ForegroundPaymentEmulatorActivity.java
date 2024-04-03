@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.cts.nfc.multidevice.emulator;
 
 import android.content.ComponentName;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 
-public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
+public class ForegroundPaymentEmulatorActivity extends BaseEmulatorActivity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,14 +31,24 @@ public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
-        setupServices(PaymentService1.COMPONENT);
+        setupServices(PaymentService2.COMPONENT, PaymentService1.COMPONENT);
+    }
+
+    @Override
+    protected void onServicesSetup() {
         makeDefaultWalletRoleHolder();
+        mCardEmulation.setPreferredService(this, PaymentService2.COMPONENT);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mCardEmulation.unsetPreferredService(this);
     }
 
     @Override
     public void onApduSequenceComplete(ComponentName component, long duration) {
-        if (component.equals(PaymentService1.COMPONENT)) {
+        if (component.equals(PaymentService2.COMPONENT)) {
             setTestPassed();
         }
     }
