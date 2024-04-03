@@ -33,7 +33,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 @EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
         APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
-                | APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO //| APPLIED_BY_DPM_ROLE_HOLDER
+                | APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO
                 | APPLIES_TO_OWN_USER | INHERITABLE
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
         },

@@ -27,10 +27,13 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  * Policy related to setting {@code DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY}
  */
 @EnterprisePolicy(dpc = {
-        APPLIED_BY_DEVICE_OWNER  // | APPLIED_BY_DPM_ROLE_HOLDER
+        APPLIED_BY_DEVICE_OWNER
         | APPLIED_BY_PROFILE_OWNER | APPLIES_GLOBALLY
-        }, permissions = @EnterprisePolicy.Permission(
-        appliedWith = MANAGE_DEVICE_POLICY_INSTALL_UNKNOWN_SOURCES,
-        appliesTo = APPLIES_GLOBALLY))
+        }
+        // This needs a separate permission as behaviour is different for permission holders (they must explicitly set global permissions using the global method)
+//        permissions = @EnterprisePolicy.Permission(
+//        appliedWith = MANAGE_DEVICE_POLICY_INSTALL_UNKNOWN_SOURCES,
+//        appliesTo = APPLIES_GLOBALLY)
+)
 public final class DisallowInstallUnknownSourcesGlobally {
 }

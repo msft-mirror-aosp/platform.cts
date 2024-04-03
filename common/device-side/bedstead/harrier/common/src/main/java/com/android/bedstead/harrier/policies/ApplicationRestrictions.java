@@ -40,10 +40,10 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
                     | CAN_BE_DELEGATED | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
             APPLIED_BY_PROFILE_OWNER  | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED
                     | CANNOT_BE_APPLIED_BY_ROLE_HOLDER},
-        delegatedScopes = DELEGATION_APP_RESTRICTIONS,
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_APP_RESTRICTIONS,
-                appliesTo = APPLIES_TO_OWN_USER)
+        delegatedScopes = DELEGATION_APP_RESTRICTIONS
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = MANAGE_DEVICE_POLICY_APP_RESTRICTIONS,
+//                appliesTo = APPLIES_TO_OWN_USER)
         )
 public final class ApplicationRestrictions {
 }

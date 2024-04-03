@@ -1231,7 +1231,7 @@ public final class DeviceState extends HarrierRule {
                         resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 
                 checkFailOrSkip("User: " + user + " does not have a default browser",
-                        TestApis.packages().defaultBrowserForUser(user) != null,
+                        TestApis.packages().defaultBrowser(user) != null,
                         requireHasDefaultBrowser.failureMode());
                 continue;
             }
@@ -3016,7 +3016,7 @@ public final class DeviceState extends HarrierRule {
         try {
             mTestApps.get(testAppKey).permissions().withoutPermission(permissions);
         } catch (NeneException e) {
-            if (failureMode.equals(FailureMode.SKIP) && e.getMessage().contains("Cannot deny")) {
+            if (failureMode.equals(FailureMode.SKIP)) {
                 failOrSkip(e.getMessage(), FailureMode.SKIP);
             } else {
                 throw e;
@@ -3632,6 +3632,10 @@ public final class DeviceState extends HarrierRule {
     private void ensureCanGetPermission(String permission) {
         if (mPermissionsInstrumentationPackage == null) {
             // We just need to check if we can get it generally
+            // TODO: replace with dependency on bedstead-root when properly modularised
+            if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+                return; // If we're rooted we're always able to get permissions
+            }
 
             if (TestApis.permissions().usablePermissions().contains(permission)) {
                 return;

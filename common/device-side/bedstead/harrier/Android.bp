@@ -85,6 +85,7 @@ android_library {
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
         "auto_value_annotations",
+        "bedstead-root-annotations"
     ],
 
     manifest: "src/main/AndroidManifest.xml",

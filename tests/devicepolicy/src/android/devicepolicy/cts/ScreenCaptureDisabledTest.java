@@ -445,8 +445,7 @@ public final class ScreenCaptureDisabledTest {
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(
-                            sDeviceState.dpc().componentName().getPackageName())
+                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
                     .whereBoolean().isEqualTo(true))
                     .wasLogged();
         } finally {
@@ -470,8 +469,7 @@ public final class ScreenCaptureDisabledTest {
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(
-                            sDeviceState.dpc().componentName().getPackageName())
+                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
                     .whereBoolean().isEqualTo(false))
                     .wasLogged();
         } finally {

@@ -33,12 +33,13 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  * Policy used for {@code DevicePolicyManager#setKeyguardDisabledFeatures} with
  * {@code DevicePolicyManager#KEYGUARD_DISABLE_SECURE_CAMERA}
  */
-@EnterprisePolicy(dpc = { // APPLIED_BY_DPM_ROLE_HOLDER
+@EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER_USER | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | CANNOT_BE_APPLIED_BY_ROLE_HOLDER | INHERITABLE,
         APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIED_BY_PROFILE_OWNER_PROFILE // Doesn't apply to anyone - filtered out when setting
-}, permissions = {
-        @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_KEYGUARD, appliesTo = APPLIES_TO_OWN_USER)
-})
+}) // setKeyguardDisabledFeatures needs to be updated to accept a null componentName
+//, permissions = {
+//        @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_KEYGUARD, appliesTo = APPLIES_TO_OWN_USER)
+//})
 // TODO: Add USES_POLICY_DISABLE_KEYGUARD_FEATURES device admin
 public final class KeyguardDisableSecureCamera {
 }

@@ -83,6 +83,8 @@ public class RequirementConstants {
     public static final String R7_5__H_1_15 = "r7_5__h_1_15"; // 7.5/H-1-15
     public static final String R7_5__H_1_16 = "r7_5__h_1_16"; // 7.5/H-1-16
     public static final String R7_5__H_1_17 = "r7_5__h_1_17"; // 7.5/H-1-17
+    public static final String R7_5__H_1_18 = "r7_5__h_1_18"; // 7.5/H-1-18
+    public static final String R7_5__H_1_19 = "r7_5__h_1_19"; // 7.5/H-1-19
     public static final String R7_5__H_1_20 = "r7_5__h_1_20"; // 7.5/H-1-20
 
     public static final String R7_1_1_1__H_1_1 = "r7_1_1_1__h_1_1"; // 7.1.1.1/H-1-1
@@ -94,6 +96,7 @@ public class RequirementConstants {
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
 
     public static final String R7_1_4_1__H_1_2 = "r7_1_4_1__h_1_2"; // 7.1.4.1/H-1-2
+    public static final String R7_1_4_1__H_1_3 = "r7_1_4_1__h_1_3"; // 7.1.4.1/H-1-3
 
     public static final String R8_2__H_1_1 = "r8_2__h_1_1"; // 8.2/H-1-1
     public static final String R8_2__H_1_2 = "r8_2__h_1_2"; // 8.2/H-1-2
@@ -128,6 +131,7 @@ public class RequirementConstants {
 
     public static final String EGL_IMG_CONTEXT_PRIORITY = "egl_img_context_priority";
     public static final String EGL_EXT_PROTECTED_CONTENT = "egl_ext_protected_content";
+
 
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAME_RATE = "frame_rate";
@@ -171,11 +175,24 @@ public class RequirementConstants {
     public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
 
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
-    public static final String PRIMARY_CAMERA_VIDEO_FPS =
-            "primary_camera_video_fps";
+    public static final String PRIMARY_CAMERA_VIDEO_FPS = "primary_camera_video_fps";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_FPS =
+            "primary_camera_720p_video_fps";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_FPS =
+            "primary_camera_1080p_video_fps";
     public static final String PRIMARY_CAMERA_RESOLUTION = "primary_camera_resolution";
     public static final String PRIMARY_CAMERA_VIDEO_SIZE_REQ_SATISFIED =
             "primary_camera_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_720p_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_1080p_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_HLG_COMBINATION_SUPPORTED =
+            "primary_camera_hlg_combination_supported";
+    public static final String PRIMARY_REAR_CAMERA_JPEG_R_SUPPORTED =
+            "primary_rear_camera_jpeg_r_supported";
+    public static final String PRIMARY_FRONT_CAMERA_JPEG_R_SUPPORTED =
+            "primary_front_camera_jpeg_r_supported";
 
     public static final String REAR_CAMERA_240FPS_SUPPORTED = "rear_camera_240fps_supported";
     public static final String REAR_CAMERA_DYNAMIC_TENBITS_SUPPORTED =
@@ -209,6 +226,11 @@ public class RequirementConstants {
     public static final String SUPPORTED_PERFORMANCE_POINTS = "supported_performance_points";
 
     public static final String TEST_RESOLUTION = "resolution";
+
+    public static final String VK_EXT_GLOBAL_PRIORITY = "vk_ext_global_priority";
+    public static final String VK_PHYSICAL_DEVICE_PROTECTED_MEMORY =
+            "vk_physical_device_protected_memory";
+    public static final String VK_NON_CPU_DEVICE_COUNT = "vk_non_cpu_device_count";
 
     public enum Result {
         NA, MET, UNMET
