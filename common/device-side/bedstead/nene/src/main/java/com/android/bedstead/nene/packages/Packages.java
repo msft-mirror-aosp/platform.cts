@@ -737,13 +737,23 @@ public final class Packages {
     }
 
     /**
+     * Finds the browser assigned to handle browsing intents
+     *
+     * @return the package for the default browser if there is one, null otherwise.
+     */
+    @Experimental
+    public Package defaultBrowser() {
+        return defaultBrowser(/* forUser= */ TestApis.users().instrumented());
+    }
+
+    /**
      * Finds the browser assigned to handle browsing intents by default for selected user.
      *
      * @return the package for the default browser if there is one, null otherwise.
      */
     @SuppressWarnings("NewApi")
     @Experimental
-    public Package defaultBrowserForUser(UserReference user) {
+    public Package defaultBrowser(UserReference user) {
         ResolveInfo resolvedActivity;
         List<ResolveInfo> possibleActivities;
         Intent toResolve = new Intent(ACTION_VIEW, Uri.parse("http://"));
