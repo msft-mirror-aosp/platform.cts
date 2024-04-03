@@ -1258,7 +1258,8 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
      * Verify behavior of OutputConfiguration when sharing surfaces
      */
     private void testSharedSurfacesConfigByCamera(String cameraId) throws Exception {
-        Size previewSize = getOrderedPreviewSizes(cameraId).get(0);
+        List<Size> orderedPreviewSizes = getOrderedPreviewSizes(cameraId);
+        Size previewSize = orderedPreviewSizes.get(0);
 
         SurfaceTexture[] previewTexture = new SurfaceTexture[2];
         Surface[] surfaces = new Surface[2];
@@ -1285,19 +1286,22 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
                 String.format("Surfaces returned from getSurfaces() don't match those passed in"),
                 previewSurfaces.equals(inputSurfaces));
 
-        // Verify that createCaptureSession fails if 2 surfaces are different size
-        SurfaceTexture outputTexture2 = new SurfaceTexture(/* random texture ID*/ 5);
-        outputTexture2.setDefaultBufferSize(previewSize.getWidth()/2,
-                previewSize.getHeight()/2);
-        Surface outputSurface2 = new Surface(outputTexture2);
-        OutputConfiguration configuration = new OutputConfiguration(
-                OutputConfiguration.SURFACE_GROUP_ID_NONE, surfaces[0]);
-        configuration.enableSurfaceSharing();
-        configuration.addSurface(outputSurface2);
-        List<OutputConfiguration> outputConfigurations = new ArrayList<>();
-        outputConfigurations.add(configuration);
-        verifyCreateSessionWithConfigsFailure(cameraId, outputConfigurations);
-
+        if (orderedPreviewSizes.size() > 1) {
+            // Verify that createCaptureSession fails if 2 surfaces are different size
+            SurfaceTexture outputTexture2 = new SurfaceTexture(/* random texture ID*/ 5);
+            Size previewSize2 = orderedPreviewSizes.get(1);
+            outputTexture2.setDefaultBufferSize(previewSize2.getWidth(),
+                previewSize2.getHeight());
+            Surface outputSurface2 = new Surface(outputTexture2);
+            OutputConfiguration configuration = new OutputConfiguration(
+                    OutputConfiguration.SURFACE_GROUP_ID_NONE, surfaces[0]);
+            configuration.enableSurfaceSharing();
+            configuration.addSurface(outputSurface2);
+            List<OutputConfiguration> outputConfigurations = new ArrayList<>();
+            outputConfigurations.add(configuration);
+            verifyCreateSessionWithConfigsFailure(cameraId, outputConfigurations);
+        }
+        OutputConfiguration configuration;
         // Verify that outputConfiguration throws exception if 2 surfaces are different format
         ImageReader imageReader = makeImageReader(previewSize, ImageFormat.YUV_420_888,
                 MAX_READER_IMAGES, new ImageDropperListener(), mHandler);
