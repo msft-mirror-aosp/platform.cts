@@ -21,6 +21,7 @@ import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
+import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -343,17 +344,24 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
                     + testRunResult.getName() + ": " + testRunResult.getRunFailureMessage());
         }
         if (testRunResult.getNumTests() != testRunResult.getPassedTests().size()) {
-            StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
             for (Map.Entry<TestDescription, TestResult> resultEntry :
                     testRunResult.getTestResults().entrySet()) {
-                if (!resultEntry.getValue().getStatus()
-                        .equals(com.android.ddmlib.testrunner.TestResult.TestStatus.PASSED)) {
+                if (resultEntry.getValue().getStatus().equals(TestStatus.FAILURE)) {
+                    StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
                     errorBuilder.append(resultEntry.getKey().toString());
                     errorBuilder.append(":\n");
                     errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    throw new AssertionError(errorBuilder.toString());
+                }
+                if (resultEntry.getValue().getStatus().equals(TestStatus.ASSUMPTION_FAILURE)) {
+                    StringBuilder errorBuilder =
+                            new StringBuilder("On-device tests assumption failed:\n");
+                    errorBuilder.append(resultEntry.getKey().toString());
+                    errorBuilder.append(":\n");
+                    errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    Assume.assumeTrue(errorBuilder.toString(), false);
                 }
             }
-            throw new AssertionError(errorBuilder.toString());
         }
     }
 }
