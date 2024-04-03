@@ -3064,7 +3064,6 @@ public class ItsService extends Service implements SensorEventListener {
                             "AE/AWB region set to %s during preview recording.",
                                     Arrays.toString(region)));
                     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, region);
-                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, region);
                     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AWB_REGIONS, region);
                     mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                             recordingResultListener, mCameraHandler);
