@@ -45,6 +45,7 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
     protected void onResume() {
         super.onResume();
         Intent intent = getIntent();
+        setIntent(intent);
         int nfcTech = intent.getIntExtra(EXTRA_NFC_TECH, NfcAdapter.FLAG_READER_NFC_A);
         mAdapter.enableReaderMode(this, this, nfcTech, null);
         Parcelable[] apdus = intent.getParcelableArrayExtra(EXTRA_APDUS);
@@ -63,6 +64,7 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
 
     @Override
     public void onTagDiscovered(Tag tag) {
+        Log.d(TAG, "onTagDiscovered");
         final StringBuilder sb = new StringBuilder();
         IsoDep isoDep = IsoDep.get(tag);
         if (isoDep == null) {
