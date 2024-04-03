@@ -28,6 +28,7 @@ import static android.graphics.ImageFormat.RGB_565;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
+import static android.media.MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START;
 import static android.opengl.EGL14.EGL_NO_DISPLAY;
 import static android.opengl.EGL14.EGL_NO_SURFACE;
 import static android.opengl.EGL14.eglCreateContext;
@@ -43,6 +44,7 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualC
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
@@ -59,6 +61,7 @@ import static org.mockito.Mockito.verify;
 
 import static java.lang.Byte.toUnsignedInt;
 
+import android.annotation.NonNull;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCamera;
@@ -67,6 +70,7 @@ import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
@@ -83,6 +87,8 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
@@ -107,12 +113,17 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
 
 @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
         Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
@@ -136,6 +147,7 @@ public class VirtualCameraTest {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
 
     private static final boolean hasGlExtYuvTarget = hasEGLExtension(GL_EXT_YUV_target);
+    private static final double BITMAP_MAX_DIFF = 0.1;
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
@@ -863,6 +875,54 @@ public class VirtualCameraTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
+            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
+    public void virtualCamera_renderFromMediaCodec() throws Exception {
+        setupVirtualDeviceCameraManager();
+        int width = 460;
+        int height = 260;
+        VirtualCameraConfig config = createVirtualCameraConfig(width, height,
+                CAMERA_FORMAT, CAMERA_MAX_FPS, SENSOR_ORIENTATION_0, LENS_FACING_FRONT,
+                CAMERA_NAME, mExecutor, mVirtualCameraCallback);
+        try {
+            mVirtualDevice.createVirtualCamera(config);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("Virtual camera is not available on this device", e);
+        }
+
+        try (ImageReader imageReader = ImageReader.newInstance(width, height, JPEG,
+                IMAGE_READER_MAX_IMAGES)) {
+
+            Image image = captureImage(FRONT_CAMERA_ID, imageReader,
+                    new VideoRenderer(R.raw.test_video));
+
+            Bitmap bitmap = jpegImageToBitmap(image);
+            Bitmap golden = loadGolden(R.raw.golden_test_video);
+            assertImagesSimilar(bitmap, golden, "media_codec_virtual_camera");
+        }
+    }
+
+    /**
+     * @param generated Bitmap generated from the test.
+     * @param golden    Golden bitmap to compare to.
+     * @param prefix    Prefix for the image file generated in case of error.
+     */
+    private static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix) {
+        boolean assertionPassed = false;
+        try {
+            double actual = BitmapUtils.calcDifferenceMetric(generated, golden);
+            assertWithMessage("Generated image does not match golden").that(actual).isAtMost(
+                    BITMAP_MAX_DIFF);
+            assertionPassed = true;
+        } finally {
+            if (!assertionPassed) {
+                writeImageToDisk(prefix + "_generated", generated);
+                writeImageToDisk(prefix + "_golden", golden);
+            }
+        }
+    }
+
     private VirtualCamera createFrontVirtualCamera() {
         return createVirtualCamera(LENS_FACING_FRONT);
     }
@@ -1053,6 +1113,7 @@ public class VirtualCameraTest {
         }
     }
 
+    @NonNull
     private Image captureImage(String cameraId, ImageReader reader,
             Consumer<Surface> inputSurfaceConsumer) throws CameraAccessException {
         mCameraManager.openCamera(cameraId, mExecutor, mCameraStateCallback);
@@ -1174,9 +1235,7 @@ public class VirtualCameraTest {
     }
 
     private static boolean jpegImageHasColor(Image image, int color) throws IOException {
-        Bitmap bitmap = ImageDecoder.decodeBitmap(
-                ImageDecoder.createSource(image.getPlanes()[0].getBuffer())).copy(
-                Bitmap.Config.ARGB_8888, false);
+        Bitmap bitmap = jpegImageToBitmap(image);
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
         for (int j = 0; j < height; ++j) {
@@ -1187,6 +1246,37 @@ public class VirtualCameraTest {
             }
         }
         return true;
+    }
+
+    private static Bitmap loadGolden(int goldenResId) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScaled = false;
+        return BitmapFactory.decodeResource(getApplicationContext().getResources(),
+                goldenResId, options);
+    }
+
+    private static Bitmap jpegImageToBitmap(Image image) throws IOException {
+        assertThat(image.getFormat()).isEqualTo(JPEG);
+        return ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(image.getPlanes()[0].getBuffer())).copy(
+                Bitmap.Config.ARGB_8888, false);
+    }
+
+
+    /**
+     * Will write the image to disk so it can be pulled by the collector in case of error
+     *
+     * @see com.android.tradefed.device.metric.FilePullerLogCollector
+     */
+    private static void writeImageToDisk(String imageName, Bitmap bitmap) {
+        File dir = getApplicationContext().getFilesDir();
+        // The FilePullerLogCollector only pulls image in png
+        File imageFile = new File(dir, imageName + ".png");
+        try {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 80, new FileOutputStream(imageFile));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // TODO(b/316326725) Turn this into proper custom matcher.
@@ -1237,9 +1327,44 @@ public class VirtualCameraTest {
     }
 
     private static Integer[] getAllLensFacingDirections() {
-        return new Integer[] {
+        return new Integer[]{
                 LENS_FACING_BACK,
                 LENS_FACING_FRONT,
         };
+    }
+
+    private static class VideoRenderer implements Consumer<Surface> {
+        private final MediaPlayer mPlayer;
+        private final CountDownLatch mLatch;
+
+        private VideoRenderer(int resId) {
+            String path =
+                    "android.resource://" + getApplicationContext().getPackageName() + "/" + resId;
+            mPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(path));
+            mLatch = new CountDownLatch(1);
+
+            mPlayer.setOnInfoListener((mp, what, extra) -> {
+                if (what == MEDIA_INFO_VIDEO_RENDERING_START) {
+                    mLatch.countDown();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        @Override
+        public void accept(Surface surface) {
+            mPlayer.setSurface(surface);
+            mPlayer.seekTo(1000);
+            mPlayer.start();
+            try {
+                // Block until media player has drawn the first video frame
+                assertWithMessage("Media player did not notify first frame on time")
+                        .that(mLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+                        .isTrue();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
