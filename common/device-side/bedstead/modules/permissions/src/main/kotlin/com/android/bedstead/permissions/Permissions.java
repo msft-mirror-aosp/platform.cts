@@ -555,19 +555,19 @@ public final class Permissions {
      */
     public void setPermissionState(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
         // TODO: replace with dependency on bedstead-root when properly modularised
-        // if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-            // We must reset as it may have been set previously
-        //    resetRootPermissionState(pkg, user);
+         if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+             // We must reset as it may have been set previously
+            resetRootPermissionState(pkg, user);
 
-        //    for (String grantedPermission : permissionsToGrant) {
-        //        forceRootPermissionState(pkg, user, grantedPermission, true);
-        //    }
-        //    for (String deniedPermission : permissionsToDeny) {
-        //        forceRootPermissionState(pkg, user, deniedPermission, false);
-        //    }
+            for (String grantedPermission : permissionsToGrant) {
+                forceRootPermissionState(pkg, user, grantedPermission, true);
+            }
+            for (String deniedPermission : permissionsToDeny) {
+                forceRootPermissionState(pkg, user, deniedPermission, false);
+            }
 
-        //    return;
-        //}
+            return;
+        }
 
         setPermissionStateToPackageWithoutRoot(pkg, user, permissionsToGrant, permissionsToDeny);
     }
@@ -686,15 +686,15 @@ public final class Permissions {
     }
 
     private void resetRootPermissionState(Package pkg, UserReference user) {
-        // ShellCommandUtils.uiAutomation().clearOverridePermissionStates(pkg.uid(user));
+         ShellCommandUtils.uiAutomation().clearOverridePermissionStates(pkg.uid(user));
     }
 
     private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
-        // ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
+         ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
     }
 
     public void removeRootPermissionState(Package pkg, UserReference user, String permission) {
-        // ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
+         ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
     }
 
     private static boolean hasAdoptedShellPermissionIdentity = false;
