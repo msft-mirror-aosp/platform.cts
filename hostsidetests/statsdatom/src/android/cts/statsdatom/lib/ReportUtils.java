@@ -65,9 +65,28 @@ public final class ReportUtils {
      */
     public static List<EventMetricData> getEventMetricDataList(ConfigMetricsReportList reportList)
             throws Exception {
-        assertThat(reportList.getReportsCount()).isEqualTo(1);
-        ConfigMetricsReport report = reportList.getReports(0);
+        return getEventMetricDataList(reportList, /*reportIndex*/ 0);
+    }
 
+    /**
+     * Returns a list of event metrics, which is sorted by timestamp, from the statsd report.
+     * Note: Calling this function deletes the report from statsd.
+     */
+    public static List<EventMetricData> getEventMetricDataList(ITestDevice device,
+            ExtensionRegistry extensionRegistry, int reportIndex) throws Exception {
+        ConfigMetricsReportList reportList = getReportList(device, extensionRegistry);
+        return getEventMetricDataList(reportList, reportIndex);
+    }
+
+    /**
+     * Extracts and sorts the EventMetricData from the given ConfigMetricsReportList containing the
+     * report at the specified index. The atoms are sorted by timestamp within the report.
+     */
+    public static List<EventMetricData> getEventMetricDataList(
+            ConfigMetricsReportList reportList, int reportIndex) throws Exception {
+        assertThat(reportList.getReportsCount()).isGreaterThan(reportIndex);
+        ConfigMetricsReport report = reportList.getReports(reportIndex);
+        CLog.d("Got ConfigMetricsReportList: %s", report.toString());
         List<EventMetricData> data = new ArrayList<>();
         for (StatsLogReport metric : report.getMetricsList()) {
             for (EventMetricData metricData :
@@ -88,8 +107,7 @@ public final class ReportUtils {
         return data;
     }
 
-
-    private static List<EventMetricData> backfillAggregatedAtomsInEventMetric(
+    public static List<EventMetricData> backfillAggregatedAtomsInEventMetric(
             EventMetricData metricData) {
         if (!metricData.hasAggregatedAtomInfo()) {
             return Collections.emptyList();
@@ -115,17 +133,14 @@ public final class ReportUtils {
      * Note: calling this function deletes the report from statsd.
      *
      * @param extensionRegistry ExtensionRegistry containing extensions that should be parsed
-     * @param checkTimestampTrucated if true, checks that atom timestmaps are properly truncated
+     * @param checkTimestampTruncated if true, checks that atom timestamps are properly truncated
      */
     public static List<Atom> getGaugeMetricAtoms(ITestDevice device,
             ExtensionRegistry extensionRegistry, boolean checkTimestampTruncated) throws Exception {
-        ConfigMetricsReportList reportList = getReportList(device, extensionRegistry);
-        assertThat(reportList.getReportsCount()).isEqualTo(1);
-        ConfigMetricsReport report = reportList.getReports(0);
-        assertThat(report.getMetricsCount()).isEqualTo(1);
-        CLog.d("Got the following report: " + report.getMetrics(0).getGaugeMetrics().toString());
+        StatsLogReport statsLogReport = getStatsLogReport(device, extensionRegistry);
+        CLog.d("Got the following report: " + statsLogReport.getGaugeMetrics().toString());
         List<Atom> atoms = new ArrayList<>();
-        for (GaugeMetricData d : report.getMetrics(0).getGaugeMetrics().getDataList()) {
+        for (GaugeMetricData d : statsLogReport.getGaugeMetrics().getDataList()) {
             assertThat(d.getBucketInfoCount()).isEqualTo(1);
             GaugeBucketInfo bucketInfo = d.getBucketInfo(0);
             if (bucketInfo.getAtomCount() != 0) {
@@ -173,15 +188,30 @@ public final class ReportUtils {
         getReportList(device, ExtensionRegistry.getEmptyRegistry());
     }
 
+    public static StatsLogReport getStatsLogReport(ITestDevice device,
+            ExtensionRegistry extensionRegistry) throws Exception {
+        ConfigMetricsReport report = getConfigMetricsReport(device, extensionRegistry);
+        assertThat(report.hasUidMap()).isTrue();
+        assertThat(report.getMetricsCount()).isEqualTo(1);
+        return report.getMetrics(0);
+    }
+
+    private static ConfigMetricsReport getConfigMetricsReport(ITestDevice device,
+            ExtensionRegistry extensionRegistry) throws Exception {
+        ConfigMetricsReportList reportList = getReportList(device, extensionRegistry);
+        assertThat(reportList.getReportsCount()).isEqualTo(1);
+        return reportList.getReports(0);
+    }
+
     /**
      * Retrieves the ConfigMetricsReports corresponding to the CTS config from statsd.
      * Note: Calling this functions deletes the report from statsd.
      */
-    private static ConfigMetricsReportList getReportList(
+    public static ConfigMetricsReportList getReportList(
             ITestDevice device, ExtensionRegistry extensionRegistry) throws Exception {
         try {
-            String cmd = String.join(" ", DUMP_REPORT_CMD, ConfigUtils.CONFIG_ID_STRING,
-                    "--include_current_bucket", "--proto");
+            String cmd = String.join(" ", DUMP_REPORT_CMD, ConfigUtils.SHELL_UID_STRING,
+                    ConfigUtils.CONFIG_ID_STRING, "--include_current_bucket", "--proto");
             ConfigMetricsReportList reportList = DeviceUtils.getShellCommandOutput(
                     device, ConfigMetricsReportList.parser(), extensionRegistry, cmd);
             return reportList;
