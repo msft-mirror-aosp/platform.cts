@@ -60,6 +60,7 @@ import androidx.window.extensions.embedding.ActivityStack;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -524,6 +525,7 @@ public class ActivityEmbeddingLifecycleTests extends ActivityEmbeddingTestBase {
      * Tests launching a new activity on an ActivityStack with wildcard split rule, new activity
      * shows on top.
      */
+    @Ignore("It's only available after Window Manager Extensions vendor API level 5.")
     @Test
     public void testLaunchActivityInActivityStack() {
         // Launch primary activity

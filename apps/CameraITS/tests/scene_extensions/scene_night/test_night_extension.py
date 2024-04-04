@@ -322,14 +322,12 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
 
       # Take auto capture with night mode on
       logging.debug('Taking auto capture with night mode ON')
-      cam.do_3a()
       night_capture_duration, night_cap = self._time_and_take_captures(
           cam, req, out_surfaces, use_extensions=True)
       night_y, night_img = _convert_captures(night_cap, f'{file_stem}_night')
 
       # Take auto capture with night mode OFF
       logging.debug('Taking auto capture with night mode OFF')
-      cam.do_3a()
       no_night_capture_duration, no_night_cap = self._time_and_take_captures(
           cam, req, out_surfaces, use_extensions=False)
       _, no_night_img = _convert_captures(
