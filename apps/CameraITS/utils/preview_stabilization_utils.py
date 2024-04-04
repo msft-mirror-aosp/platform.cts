@@ -38,7 +38,6 @@ _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 _PREVIEW_DURATION = 400  # milliseconds
-_ZOOM_MIN_THRESH = 2.0
 
 
 def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,

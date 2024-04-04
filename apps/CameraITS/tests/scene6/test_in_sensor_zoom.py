@@ -28,7 +28,6 @@ from mobly import test_runner
 import numpy as np
 
 _NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
 _THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE = 0.06
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -58,7 +57,8 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       logging.debug('In sensor zoom: testing zoomRatioRange: %s', str(z_range))
 
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_list = np.arange(z_min, z_max, float(z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
 
