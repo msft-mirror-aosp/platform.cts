@@ -34,7 +34,6 @@ _CIRCLE_R = 2
 _CIRCLE_X = 0
 _CIRCLE_Y = 1
 _CIRCLISH_RTOL = 0.15  # contour area vs ideal circle area pi*((w+h)/4)**2
-_JPEG_STR = 'jpg'
 _LINE_COLOR = (255, 0, 0)  # red
 _MAX_STR = 'max'
 _MIN_STR = 'min'
@@ -47,7 +46,6 @@ _OFFSET_TOL = 5  # pixels
 _RADIUS_RTOL = 0.1  # 10% tolerance Video/Preview circle size
 _RECORDING_DURATION = 2  # seconds
 _ZOOM_COMP_MAX_THRESH = 1.15
-_ZOOM_MIN_THRESH = 2.0
 _ZOOM_RATIO = 2
 
 
@@ -151,7 +149,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       # Determine zoom factors
       z_min = z_range[0]
       camera_properties_utils.skip_unless(
-          float(z_range[-1]) >= z_min * _ZOOM_MIN_THRESH)
+          float(z_range[-1]) >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       zoom_ratios_to_be_tested = [z_min]
       if z_min < 1.0:
         zoom_ratios_to_be_tested.append(float(_ZOOM_RATIO))
@@ -248,7 +246,9 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
               # so for sensor orientation 90 or 270, it is up or down
               # Sensor orientation 0 or 180 is left or right
               img_name_stem = os.path.join(log_path, 'flipped_preview')
-              img_name = f'{img_name_stem}_zoomRatio_{z:.2f}.{_JPEG_STR}'
+              img_name = (
+                  f'{img_name_stem}_zoomRatio_{z:.2f}.'
+                  f'{zoom_capture_utils.JPEG_STR}')
               if props['android.sensor.orientation'] in (90, 270):
                 preview_img = np.ndarray.copy(np.flipud(preview_img))
                 logging.debug(
