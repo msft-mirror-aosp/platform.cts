@@ -49,6 +49,7 @@ public class Constants {
     public static final String PACKAGE_UPDATE_APP = "android.dynamicmime.update";
     public static final String PACKAGE_PREFERRED_APP = "android.dynamicmime.preferred";
 
+    public static final String APPLICATION_LABEL_TEST_APP = "TestApp.Application";
     public static final String ACTIVITY_FIRST = ".FirstActivity";
     public static final String ACTIVITY_SECOND = ".SecondActivity";
     public static final String ACTIVITY_BOTH = ".TwoGroupsActivity";
