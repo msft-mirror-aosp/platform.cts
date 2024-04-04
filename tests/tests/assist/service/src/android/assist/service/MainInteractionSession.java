@@ -154,7 +154,9 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
                     displayPoint.y = statusBarContainsCutout
                             ? bound.height() - min.top - min.bottom : bound.height();
-                    displayPoint.x = bound.width();
+                    displayPoint.x = statusBarContainsCutout ?
+                            bound.width() - min.left - min.right :
+                            bound.width() - displayCutoutInsets.left - displayCutoutInsets.right;
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area
