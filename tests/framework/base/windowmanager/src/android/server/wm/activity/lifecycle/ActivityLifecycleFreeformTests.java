@@ -36,6 +36,7 @@ import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_TEST_ACTIVITY;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -45,6 +46,8 @@ import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 
 import androidx.test.filters.MediumTest;
+
+import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -247,6 +250,12 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testPreQTopProcessResumedActivityInFreeform() throws Exception {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+
         // Resume app switches, so the activities that we are going to launch won't be deferred
         // since Home activity was started in #setUp().
         resumeAppSwitches();
