@@ -1012,6 +1012,8 @@ public class ItsService extends Service implements SensorEventListener {
                     mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
                 } else if ("isStreamCombinationSupported".equals(cmdObj.getString("cmdName"))) {
                     doCheckStreamCombination(cmdObj);
+                } else if ("getCameraSessionProperties".equals(cmdObj.getString("cmdName"))) {
+                    doGetSessionProps(cmdObj);
                 } else if ("isCameraPrivacyModeSupported".equals(cmdObj.getString("cmdName"))) {
                     doCheckCameraPrivacyModeSupport();
                 } else if ("isPrimaryCamera".equals(cmdObj.getString("cmdName"))) {
@@ -1612,45 +1614,55 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private void doCheckStreamCombination(JSONObject params) throws ItsException {
-        try {
-            JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
-            prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                    /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
-                    /*reuseSession*/ false);
-            int numSurfaces = mOutputImageReaders.length;
-            List<OutputConfiguration> outputConfigs = new ArrayList<>(numSurfaces);
-            for (int i = 0; i < numSurfaces; i++) {
-                OutputConfiguration config = new OutputConfiguration(
-                        mOutputImageReaders[i].getSurface());
-                if (mPhysicalStreamMap.get(i) != null) {
-                    config.setPhysicalCameraId(mPhysicalStreamMap.get(i));
-                }
-                if (mStreamUseCaseMap.get(i) != null) {
-                    config.setStreamUseCase(mStreamUseCaseMap.get(i));
-                }
-                outputConfigs.add(config);
+    private SessionConfiguration getSessionConfiguration(JSONObject params)
+            throws ItsException {
+        JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
+        prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
+                /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
+                /*reuseSession*/ false);
+        int numSurfaces = mOutputImageReaders.length;
+        List<OutputConfiguration> outputConfigs = new ArrayList<>(numSurfaces);
+        for (int i = 0; i < numSurfaces; i++) {
+            OutputConfiguration config = new OutputConfiguration(
+                    mOutputImageReaders[i].getSurface());
+            if (mPhysicalStreamMap.get(i) != null) {
+                config.setPhysicalCameraId(mPhysicalStreamMap.get(i));
             }
+            if (mStreamUseCaseMap.get(i) != null) {
+                config.setStreamUseCase(mStreamUseCaseMap.get(i));
+            }
+            outputConfigs.add(config);
+        }
 
-            mSessionListener = new BlockingSessionCallback();
-            SessionConfiguration sessionConfig = new SessionConfiguration(
-                SessionConfiguration.SESSION_REGULAR, outputConfigs,
-                new HandlerExecutor(mCameraHandler), mSessionListener);
+        SessionConfiguration sessionConfig = new SessionConfiguration(
+                SessionConfiguration.SESSION_REGULAR, outputConfigs);
 
-            CaptureRequest.Builder templateReq = null;
-            if (params.has(SETTINGS_KEY)) {
+        CaptureRequest.Builder templateReq = null;
+        if (params.has(SETTINGS_KEY)) {
+            try {
                 CaptureRequest.Builder defaultReq = mCamera.createCaptureRequest(
                         CameraDevice.TEMPLATE_STILL_CAPTURE);
-                try {
-                    JSONObject settingsObj = params.getJSONObject(SETTINGS_KEY);
-                    templateReq = ItsSerializer.deserialize(defaultReq, settingsObj);
-                } catch (org.json.JSONException e) {
-                    throw new ItsException("JSON error: ", e);
-                }
+                JSONObject settingsObj = params.getJSONObject(SETTINGS_KEY);
+                templateReq = ItsSerializer.deserialize(defaultReq, settingsObj);
+            } catch (CameraAccessException e) {
+                throw new ItsException("Failed to create capture request", e);
+            } catch (org.json.JSONException e) {
+                throw new ItsException("JSON error: ", e);
             }
+        }
 
+        if (templateReq != null) {
+            sessionConfig.setSessionParameters(templateReq.build());
+        }
+        return sessionConfig;
+    }
+
+    private void doCheckStreamCombination(JSONObject params) throws ItsException {
+        try {
             String returnString;
-            if (templateReq == null) {
+            SessionConfiguration sessionConfig = getSessionConfiguration(params);
+
+            if (sessionConfig.getSessionParameters() == null) {
                 returnString = mCamera.isSessionConfigurationSupported(sessionConfig)
                         ? "supportedCombination" : "unsupportedCombination";
             } else if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
@@ -1659,7 +1671,6 @@ public class ItsService extends Service implements SensorEventListener {
                                 + "CameraDeviceSetup is not supported.");
                 returnString = "unsupportedOperation";
             } else {
-                sessionConfig.setSessionParameters(templateReq.build());
                 CameraDevice.CameraDeviceSetup cameraDeviceSetup =
                         mCameraManager.getCameraDeviceSetup(mCamera.getId());
                 boolean supported = cameraDeviceSetup.isSessionConfigurationSupported(
@@ -1673,6 +1684,26 @@ public class ItsService extends Service implements SensorEventListener {
             mSocketRunnableObj.sendResponse("streamCombinationSupport", "unsupportedOperation");
         } catch (IllegalArgumentException | CameraAccessException e) {
             throw new ItsException("Error checking stream combination", e);
+        }
+    }
+
+    private void doGetSessionProps(JSONObject params) throws ItsException {
+        try {
+            if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
+                throw new ItsException("Attempting to query session characteristics, but "
+                        + "CameraDeviceSetup is not supported.");
+            }
+
+            SessionConfiguration sessionConfig = getSessionConfiguration(params);
+
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup =
+                    mCameraManager.getCameraDeviceSetup(mCamera.getId());
+            CameraCharacteristics sessionProps = cameraDeviceSetup.getSessionCharacteristics(
+                    sessionConfig);
+
+            mSocketRunnableObj.sendResponse(sessionProps);
+        } catch (android.hardware.camera2.CameraAccessException e) {
+            throw new ItsException("Access error: ", e);
         }
     }
 
@@ -2022,6 +2053,7 @@ public class ItsService extends Service implements SensorEventListener {
     private void do3A(JSONObject params) throws ItsException {
         ThreeAResultListener threeAListener = new ThreeAResultListener();
         boolean reuseSession = params.optBoolean("reuseSession", false);
+        boolean firstSurfaceFor3A = params.optBoolean("firstSurfaceFor3A", false);
         List<OutputConfiguration> captureOutputConfigurations = new ArrayList<>();
         try {
             // Start a 3A action, and wait for it to converge.
@@ -2051,25 +2083,31 @@ public class ItsService extends Service implements SensorEventListener {
 
             // Configure output format and size for 3A session, and prepare ImageReader.
             if (mThreeAOutputImageReader == null) {
-                Logt.i(TAG, "Setting up 3A image reader");
-                int outputFormat = ImageFormat.YUV_420_888;
-                Size size = ItsUtils.getYuvOutputSizes(c)[0];
-                mThreeAOutputImageReader = ImageReader.newInstance(
-                        size.getWidth(), size.getHeight(), outputFormat,
-                        MAX_CONCURRENT_READER_BUFFERS,
-                        getReaderUsage(outputFormat, /*has10bitOutput=*/false));
+                if (firstSurfaceFor3A && reuseSession) {
+                    mThreeAOutputImageReader = mOutputImageReaders[0];
+                } else {
+                    Logt.i(TAG, "Setting up 3A image reader");
+                    int outputFormat = ImageFormat.YUV_420_888;
+                    Size size = ItsUtils.getYuvOutputSizes(c)[0];
+                    mThreeAOutputImageReader = ImageReader.newInstance(
+                            size.getWidth(), size.getHeight(), outputFormat,
+                            MAX_CONCURRENT_READER_BUFFERS,
+                            getReaderUsage(outputFormat, /*has10bitOutput=*/false));
+                }
             }
 
             // Add all necessary output configurations for the capture session
             List<OutputConfiguration> sessionOutputConfigs = new ArrayList<>();
-            OutputConfiguration threeAConfig =
-                    new OutputConfiguration(mThreeAOutputImageReader.getSurface());
-            if (physicalId != null) {
-                threeAConfig.setPhysicalCameraId(physicalId);
-            }
-            sessionOutputConfigs.add(threeAConfig);
             for (OutputConfiguration config : captureOutputConfigurations) {
                 sessionOutputConfigs.add(config);
+            }
+            if (!firstSurfaceFor3A) {
+                OutputConfiguration threeAConfig =
+                        new OutputConfiguration(mThreeAOutputImageReader.getSurface());
+                if (physicalId != null) {
+                    threeAConfig.setPhysicalCameraId(physicalId);
+                }
+                sessionOutputConfigs.add(threeAConfig);
             }
 
             if (mSession != null && reuseSession &&
@@ -2355,7 +2393,8 @@ public class ItsService extends Service implements SensorEventListener {
      */
     private boolean prepareImageReadersWithOutputSpecs(JSONArray jsonOutputSpecs,
             Size inputSize, int inputFormat, int maxInputBuffers,
-            boolean backgroundRequest, boolean reuseSession) throws ItsException {
+            boolean backgroundRequest, boolean reuseSession)
+            throws ItsException {
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
@@ -3742,6 +3781,8 @@ public class ItsService extends Service implements SensorEventListener {
             List<CaptureRequest.Builder> backgroundRequests = ItsSerializer.deserializeRequestList(
                     mCamera, params, "repeatRequests");
             boolean backgroundRequest = backgroundRequests.size() > 0;
+            boolean firstSurfaceFor3A = params.optBoolean("firstSurfaceFor3A", false);
+            int indexOffsetFor3A = firstSurfaceFor3A ? 1 : 0;
 
             int numSurfaces = 0;
             int numCaptureSurfaces = 0;
@@ -3776,7 +3817,14 @@ public class ItsService extends Service implements SensorEventListener {
                         backgroundRequest, reuseSession);
                 }
                 numSurfaces = mOutputImageReaders.length;
-                numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0);
+                numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0)
+                        - indexOffsetFor3A;
+                if (numCaptureSurfaces <= 0) {
+                    throw new ItsException(String.format(
+                            "Invalid number of capture surfaces: numSurfaces %d, "
+                            + "backgroundRequest %b, firstSurfaceFor3A: %b!", numSurfaces,
+                            backgroundRequest, firstSurfaceFor3A));
+                }
 
                 List<OutputConfiguration> outputConfigs = getCaptureOutputConfigurations(
                         jsonOutputSpecs, is10bitOutputPresent);
@@ -3795,7 +3843,7 @@ public class ItsService extends Service implements SensorEventListener {
                 }
                 mCaptureOutputConfigs = new ArrayList<OutputConfiguration>(outputConfigs);
 
-                for (int i = 0; i < numSurfaces; i++) {
+                for (int i = indexOffsetFor3A; i < numSurfaces; i++) {
                     ImageReader.OnImageAvailableListener readerListener;
                     if (backgroundRequest && i == numSurfaces - 1) {
                         readerListener = createAvailableListenerDropper();
@@ -3852,7 +3900,7 @@ public class ItsService extends Service implements SensorEventListener {
                 }
 
                 for (int j = 0; j < numCaptureSurfaces; j++) {
-                    req.addTarget(mOutputImageReaders[j].getSurface());
+                    req.addTarget(mOutputImageReaders[j + indexOffsetFor3A].getSurface());
                 }
                 requestList.add(req.build());
             }
