@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 
 import android.media.MediaCodec;
@@ -183,7 +184,7 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         }
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,
                 needVideo, false);
-        if (android.media.codec.Flags.dynamicColorAspects()) {
+        if (IS_AT_LEAST_V && android.media.codec.Flags.dynamicColorAspects()) {
             List<Object[]> dynamicColorAspectsArgs = Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AVC, new String[]{
                             "bbb_640x360_512kbps_30fps_avc_nob.mp4",
