@@ -14,9 +14,6 @@
      limitations under the License.
 -->
 <configuration description="Configuration for Telecom Tests">
-    <!-- Do NOT define values for flags via
-         com.android.tradefed.targetprep.FeatureFlagTargetPreparer, this will cause the device to
-          restart and slow down tests -->
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="telecom" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -40,6 +37,12 @@
         <option name="test-file-name" value="ThirdPtyDialerTestApp.apk" />
         <option name="test-file-name" value="ThirdPtyDialerTestAppTwo.apk" />
         <option name="test-file-name" value="NonUiInCallServiceWoExport.apk" />
+    </target_preparer>
+
+    <!-- TODO:: remove FeatureFlagTargetPreparer once cache_call_audio_callbacks is released-->
+    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.cache_call_audio_callbacks=true"/>
     </target_preparer>
 
     <!-- Enabling change id ALLOW_TEST_API_ACCESS allows that package to access @TestApi methods -->
