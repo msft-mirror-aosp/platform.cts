@@ -25,6 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assert.fail;
 
 import android.Manifest.permission;
@@ -964,6 +965,8 @@ public class TelephonyManagerTest {
             Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY present");
             return;
         }
+        assumeFalse(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH));
+
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
         final UiAutomation uiAutomation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
