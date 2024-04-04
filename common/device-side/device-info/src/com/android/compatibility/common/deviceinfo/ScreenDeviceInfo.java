@@ -34,6 +34,8 @@ import com.android.compatibility.common.util.DeviceInfoStore;
 import com.android.compatibility.common.util.DummyActivity;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Screen device info collector.
@@ -104,7 +106,59 @@ public final class ScreenDeviceInfo extends DeviceInfo {
 
         // Get the supported device states on device if DeviceStateManager is available
         if (deviceStateManager != null) {
-            store.addArrayResult("device_states", deviceStateManager.getSupportedStates());
+            store.addArrayResult("device_states", getDeviceStateIdentifiers(deviceStateManager));
+        }
+    }
+
+    /**
+     * Returns the array of device state identifiers from {@link DeviceStateManager}. Due to GTS and
+     * ATS running tests on many different sdk-levels, this method may be running on a newer or
+     * older Android version, possibly bringing in issues if {@link DeviceStateManager}'s API
+     * surface has changed. This method uses reflection to call the correct API if that has
+     * occurred.
+     *
+     * b/329875626 for reference.
+     */
+    private int[] getDeviceStateIdentifiers(DeviceStateManager deviceStateManager) {
+        try {
+
+            return deviceStateManager.getSupportedStates();
+        } catch (NoSuchMethodError e) {
+            return getDeviceStateIdentifiersFromMethod(deviceStateManager,
+                    getMethod(deviceStateManager.getClass(), "getSupportedDeviceStates"));
+        }
+    }
+
+    /**
+     * Attempst to retrieve the array of device state identifiers from the provided {@link Method}
+     * using reflection.
+     */
+    private int[] getDeviceStateIdentifiersFromMethod(DeviceStateManager deviceStateManager,
+            Method getSupportedDeviceStatesMethod) {
+        try {
+            List<Object> supportedDeviceStates =
+                    (List<Object>) getSupportedDeviceStatesMethod.invoke(deviceStateManager);
+            int[] identifiers = new int[supportedDeviceStates.size()];
+            for (int i = 0; i < supportedDeviceStates.size(); i++) {
+                Class<?> c = Class.forName("android.hardware.devicestate.DeviceState");
+                int id = (int) getMethod(c, "getIdentifier").invoke(supportedDeviceStates.get(i));
+                identifiers[i] = id;
+            }
+            return identifiers;
+        } catch (Exception ignored) {
+            return new int[0];
+        }
+    }
+
+    /**
+     * Returns the {@link Method} for the provided {@code methodName} on the provided
+     * {@code classToCheck}. If that method does not exist, return {@code null};
+     */
+    private Method getMethod(Class<?> classToCheck, String methodName) {
+        try {
+            return classToCheck.getMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            return null;
         }
     }
 

@@ -23,6 +23,8 @@ import static android.server.wm.overlay.Components.TranslucentFloatingActivity.E
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -31,6 +33,8 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.overlay.Components;
 
 import androidx.annotation.Nullable;
+
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +66,9 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
 
     @Before
     public void setUp() {
+        //  Skipping the test on watch as Wear does not support overlapping activities
+        assumeFalse("Skipping test: in Wear OS activities should always be fullscreen",
+                FeatureUtil.isWatch());
         ActivityRecordInputSinkTestsActivity.sButtonClickCount.set(0);
     }
 
