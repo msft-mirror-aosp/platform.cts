@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.annotation.NonNull;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -142,6 +143,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -183,12 +185,6 @@ public class ItsService extends Service implements SensorEventListener {
 
     // Timeout to wait for a capture result after the capture buffer has arrived, in ms.
     private static final long TIMEOUT_CAP_RES = 2000;
-
-    // Time to sleep after a preview recording with dynamic zoom.
-    private static final long PREVIEW_RECORDING_FINAL_SLEEP_MS = 200;
-
-    // Time to sleep for AutoFocus to converge
-    private static final long PREVIEW_AUTOFOCUS_SLEEP_MS = 400;
 
     private static final int MAX_CONCURRENT_READER_BUFFERS = 10;
 
@@ -283,6 +279,8 @@ public class ItsService extends Service implements SensorEventListener {
     private CameraExtensionCharacteristics mCameraExtensionCharacteristics = null;
     private HashMap<String, CameraCharacteristics> mPhysicalCameraChars = new HashMap<>();
     private ItsUtils.ItsCameraIdList mItsCameraIdList = null;
+    // Declared here so that IntraPreviewAction can access configured CameraCaptureSession
+    private IntraPreviewAction mPreviewAction;
 
     // To reuse mSession, track output configurations, image reader args, and session listener.
     private List<OutputConfiguration> mCaptureOutputConfigs = new ArrayList<>();
@@ -1060,29 +1058,14 @@ public class ItsService extends Service implements SensorEventListener {
                     doBasicRecording(cameraId, profileId, quality, recordingDuration,
                             videoStabilizationMode, hlg10Enabled, zoomRatio,
                             aeTargetFpsMin, aeTargetFpsMax);
-                } else if ("doPreviewRecording".equals(cmdObj.getString("cmdName"))) {
-                    String cameraId = cmdObj.getString("cameraId");
-                    String videoSize = cmdObj.getString("videoSize");
-                    int recordingDuration = cmdObj.getInt("recordingDuration");
-                    boolean stabilize = cmdObj.getBoolean("stabilize");
-                    boolean ois = cmdObj.getBoolean("ois");
-                    double zoomRatio = cmdObj.optDouble("zoomRatio");
-                    int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
-                    int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
-                    boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
-                    JSONArray aeAwbRegionOne = cmdObj.optJSONArray("aeAwbRegionOne");
-                    JSONArray aeAwbRegionTwo = cmdObj.optJSONArray("aeAwbRegionTwo");
-                    JSONArray aeAwbRegionThree = cmdObj.optJSONArray("aeAwbRegionThree");
-                    JSONArray aeAwbRegionFour = cmdObj.optJSONArray("aeAwbRegionFour");
-                    double aeAwbRegionDuration = cmdObj.optDouble("aeAwbRegionDuration");
-                    double zoomStart = cmdObj.optDouble("zoomStart");
-                    double zoomEnd = cmdObj.optDouble("zoomEnd");
-                    double stepSize = cmdObj.optDouble("stepSize");
-                    double stepDuration = cmdObj.optDouble("stepDuration");
-                    doBasicPreviewRecording(cameraId, videoSize, recordingDuration,
-                            stabilize, ois, hlg10Enabled, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                            aeAwbRegionOne, aeAwbRegionTwo, aeAwbRegionThree, aeAwbRegionFour,
-                            aeAwbRegionDuration, zoomStart, zoomEnd, stepSize, stepDuration);
+                } else if ("doStaticPreviewRecording".equals(cmdObj.getString("cmdName"))) {
+                    doStaticPreviewRecording(cmdObj);
+                } else if ("doDynamicZoomPreviewRecording".equals(
+                        cmdObj.getString("cmdName"))) {
+                    doDynamicZoomPreviewRecording(cmdObj);
+                } else if ("doDynamicMeteringRegionPreviewRecording".equals(
+                        cmdObj.getString("cmdName"))) {
+                    doDynamicMeteringRegionPreviewRecording(cmdObj);
                 } else if ("isHLG10SupportedForProfile".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -2997,24 +2980,23 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     /**
-     * Records a video of a surface set up as a preview.
+     * Sets up a PreviewRecorder with a surface set up as a preview.
      *
      * This method sets up 2 surfaces: an {@link ImageReader} surface and a
      * {@link MediaRecorder} surface. The ImageReader surface is set up with
-     * {@link HardwareBuffer#USAGE_COMPOSER_OVERLAY} and set as the target of a capture request
-     * created with {@link CameraDevice#TEMPLATE_PREVIEW}. This should force the HAL to use the
-     * Preview pipeline and output to the ImageReader. An {@link ImageWriter} pipes the images from
-     * ImageReader to the MediaRecorder surface which is encoded into a video.
+     * {@link HardwareBuffer#USAGE_COMPOSER_OVERLAY} and set as the target of one or many capture
+     * requests created with {@link CameraDevice#TEMPLATE_PREVIEW}. This should force the HAL to
+     * use the Preview pipeline and output to the ImageReader. An {@link ImageWriter} pipes the
+     * images from ImageReader to the MediaRecorder surface which is encoded into a video.
      */
-    private void doBasicPreviewRecording(String cameraId, String videoSizeString,
-            int recordingDuration, boolean stabilize, boolean ois, boolean hlg10Enabled,
-            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax, JSONArray aeAwbRegionOne,
-            JSONArray aeAwbRegionTwo, JSONArray aeAwbRegionThree, JSONArray aeAwbRegionFour,
-            double aeAwbRegionDuration, double zoomStart, double zoomEnd, double stepSize,
-            double stepDuration)
-            throws ItsException {
-        RecordingResultListener recordingResultListener = new RecordingResultListener();
-        List<RecordingResult> recordingResults = new ArrayList<>();
+    private PreviewRecorder getPreviewRecorder(JSONObject cmdObj, String outputFilePath)
+            throws ItsException, JSONException {
+        String cameraId = cmdObj.getString("cameraId");
+        String videoSizeString = cmdObj.getString("videoSize");
+        boolean stabilize = cmdObj.getBoolean("stabilize");
+        int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
+        boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             throw new ItsException("Cannot record preview before API level 33");
         }
@@ -3038,98 +3020,118 @@ public class ItsService extends Service implements SensorEventListener {
 
         int cameraDeviceId = Integer.parseInt(cameraId);
         Size videoSize = Size.parseSize(videoSizeString);
-        int sensorOrientation = mCameraCharacteristics.get(
-                CameraCharacteristics.SENSOR_ORIENTATION);
-
-        // Set up MediaRecorder to accept Images from ImageWriter
-        int fileFormat = MediaRecorder.OutputFormat.DEFAULT;
-
-        String outputFilePath = getOutputMediaFile(cameraDeviceId, videoSize,
-                /* quality= */"preview", fileFormat, hlg10Enabled, stabilize, zoomRatio,
-                aeTargetFpsMin, aeTargetFpsMax);
-        assert outputFilePath != null;
+        int sensorOrientation = Objects.requireNonNull(
+                mCameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION),
+                "Sensor orientation must not be null"
+        );
 
         // By default aeTargetFpsMax is not set. In that case, default to 30
         if (aeTargetFpsMax == 0) {
             aeTargetFpsMax = 30;
         }
-        try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
-                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled, this)) {
+        return new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
+                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled, this);
+    }
+
+    private void doStaticPreviewRecording(JSONObject cmdObj) throws JSONException, ItsException {
+        int recordingDuration = cmdObj.getInt("recordingDuration");
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
+        mPreviewAction = new PreviewSleepAction(
+                mCameraCharacteristics,
+                mCameraHandler,
+                recordingResultListener,
+                recordingDuration * 1000L);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
+    }
+
+    private void doDynamicZoomPreviewRecording(JSONObject cmdObj)
+            throws JSONException, ItsException {
+        double zoomStart = cmdObj.getDouble("zoomStart");
+        double zoomEnd = cmdObj.getDouble("zoomEnd");
+        double stepSize = cmdObj.getDouble("stepSize");
+        long stepDuration = cmdObj.getLong("stepDuration");
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
+        mPreviewAction = new PreviewDynamicZoomAction(
+                mCameraCharacteristics,
+                mCameraHandler,
+                recordingResultListener,
+                zoomStart,
+                zoomEnd,
+                stepSize,
+                stepDuration);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
+    }
+
+    private void doDynamicMeteringRegionPreviewRecording(JSONObject cmdObj)
+            throws JSONException, ItsException {
+        JSONArray aeAwbRegionOne = cmdObj.getJSONArray("aeAwbRegionOne");
+        JSONArray aeAwbRegionTwo = cmdObj.getJSONArray("aeAwbRegionTwo");
+        JSONArray aeAwbRegionThree = cmdObj.getJSONArray("aeAwbRegionThree");
+        JSONArray aeAwbRegionFour = cmdObj.getJSONArray("aeAwbRegionFour");
+        long aeAwbRegionDuration = cmdObj.getLong("aeAwbRegionDuration");
+        RecordingResultListener recordingResultListener = new RecordingResultListener();
+        mPreviewAction = new PreviewDynamicMeteringAction(
+                mCameraCharacteristics,
+                mCameraHandler,
+                recordingResultListener,
+                aeAwbRegionOne,
+                aeAwbRegionTwo,
+                aeAwbRegionThree,
+                aeAwbRegionFour,
+                aeAwbRegionDuration);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
+    }
+
+    /**
+     * Records a video of a surface set up as a preview, performing an action while recording.
+     */
+    private void doPreviewRecordingWithAction(
+            JSONObject cmdObj,
+            IntraPreviewAction action)
+            throws JSONException, ItsException {
+        String cameraId = cmdObj.getString("cameraId");
+        String videoSizeString = cmdObj.getString("videoSize");
+        boolean stabilize = cmdObj.getBoolean("stabilize");
+        boolean ois = cmdObj.getBoolean("ois");
+        double zoomRatio = cmdObj.optDouble("zoomRatio");
+        // Override with zoomStart if zoomRatio was not specified
+        zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
+        int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
+        int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
+        boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
+
+        List<RecordingResult> recordingResults;
+        int fileFormat = MediaRecorder.OutputFormat.DEFAULT;
+        int cameraDeviceId = Integer.parseInt(cameraId);
+        Size videoSize = Size.parseSize(videoSizeString);
+        String outputFilePath = getOutputMediaFile(cameraDeviceId, videoSize,
+                /* quality= */"preview", fileFormat, hlg10Enabled, stabilize, zoomRatio,
+                aeTargetFpsMin, aeTargetFpsMax);
+        assert outputFilePath != null;
+
+        try (PreviewRecorder pr = getPreviewRecorder(cmdObj, outputFilePath)) {
             int stabilizationMode = stabilize
                     ? CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
                     : CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF;
             BlockingSessionCallback sessionListener = new BlockingSessionCallback();
-
-            // if zoomRatio is not defined, then use zoomStart, zoomEnd, stepSize
-            double zoomStartVal = (Double.isNaN(zoomRatio)) ? zoomStart : zoomRatio;
-
             long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
                     DynamicRangeProfiles.STANDARD;
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
-                    sessionListener, zoomStartVal, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener);
+                    sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
+                    action.getRecordingResultListener());
 
             pr.startRecording();
-
-            // wait for autofocus
-            Thread.sleep((long) PREVIEW_AUTOFOCUS_SLEEP_MS);
-            for (double z = zoomStart; z <= zoomEnd; z += stepSize) {
-                Logt.i(TAG, String.format(
-                        Locale.getDefault(),
-                        "zoomRatio set to %.4f during preview recording.", z));
-                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, (float) z);
-                mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
-                        recordingResultListener, mCameraHandler);
-                if (!Double.isNaN(stepDuration)) {
-                    Logt.i(TAG, String.format(
-                            Locale.getDefault(),
-                            "Sleeping %.2f ms during video recording", stepDuration));
-                    mCameraThread.sleep((long) stepDuration);
-                }
-            }
-            Rect activeArray = mCameraCharacteristics.get(
-                    CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-            int aaWidth = activeArray.right - activeArray.left;
-            int aaHeight = activeArray.bottom - activeArray.top;
-            JSONArray[] aeAwbRegionRoutine = {
-                    aeAwbRegionOne, aeAwbRegionTwo, aeAwbRegionThree, aeAwbRegionFour};
-            if (aeAwbRegionOne != null) {
-                for (JSONArray aeAwbRegion : aeAwbRegionRoutine){
-                    MeteringRectangle[] region = ItsUtils.getJsonWeightedRectsFromArray(
-                            aeAwbRegion, /*normalized=*/true, aaWidth, aaHeight);
-                    Logt.i(TAG, String.format(
-                            Locale.getDefault(),
-                            "AE/AWB region set to %s during preview recording.",
-                                    Arrays.toString(region)));
-                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, region);
-                    mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AWB_REGIONS, region);
-                    mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
-                            recordingResultListener, mCameraHandler);
-                    if (!Double.isNaN(aeAwbRegionDuration)) {
-                        Logt.i(TAG, String.format(
-                                Locale.getDefault(),
-                                "Sleeping %.2f ms during recording", aeAwbRegionDuration));
-                        mCameraThread.sleep((long) aeAwbRegionDuration);
-                    } else {
-                        throw new ItsException("aeAwbRegionDuration is not specified.");
-                    }
-                }
-            }
-            if (!Double.isNaN(stepDuration) || !Double.isNaN(aeAwbRegionDuration)) {
-                mCameraThread.sleep(PREVIEW_RECORDING_FINAL_SLEEP_MS);
-            } else {
-                mCameraThread.sleep(recordingDuration * 1000L);  // recordingDuration is in seconds
-            }
-
+            action.execute();
             // Stop repeating request and ensure frames in flight are sent to MediaRecorder
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
                     BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
             pr.stopRecording();
             // From the end of the recording capture results, keep number of frames of recording
+            // TODO: b/324255495 - use timestamps to ensure that results and frames are 1:1
             List<RecordingResult> allResults =
-                    new ArrayList<>(recordingResultListener.mRecordingCaptureResults);
+                    new ArrayList<>(action.getRecordingResultListener().mRecordingCaptureResults);
             recordingResults = allResults.subList(
                     Math.max(allResults.size() - pr.getNumFrames(), 0),
                     allResults.size());
@@ -3466,8 +3468,12 @@ public class ItsService extends Service implements SensorEventListener {
                 new HandlerExecutor(mCameraHandler),
                 new CameraCaptureSession.StateCallback() {
                     @Override
-                    public void onConfigured(CameraCaptureSession session) {
+                    public void onConfigured(@NonNull CameraCaptureSession session) {
                         mSession = session;
+                        if (mPreviewAction != null) {
+                            mPreviewAction.setSession(session);
+                            mPreviewAction.setCaptureRequestBuilder(mCaptureRequestBuilder);
+                        }
                         try {
                             mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                                     captureCallback, mResultHandler);
@@ -4634,9 +4640,8 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
-    private class RecordingResultListener extends CaptureResultListener {
-        private List<RecordingResult> mRecordingCaptureResults = new ArrayList<>();
-
+    class RecordingResultListener extends CaptureResultListener {
+        private final List<RecordingResult> mRecordingCaptureResults = new ArrayList<>();
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                 long timestamp, long frameNumber) {
