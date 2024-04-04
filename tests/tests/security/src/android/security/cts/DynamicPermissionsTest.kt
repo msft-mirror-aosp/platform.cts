@@ -57,7 +57,9 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
 
     @After
     fun tearDown() {
-        context.unbindService(serviceConnection)
+        if (this::serviceConnection.isInitialized) {
+            context.unbindService(serviceConnection)
+        }
         uninstallPackage(REMOVE_PERMISSION_SERVICE_PKG)
     }
 
