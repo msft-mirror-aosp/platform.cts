@@ -307,8 +307,8 @@ void SurfaceTransaction_releaseBuffer(JNIEnv* /*env*/, jclass, jlong buffer) {
 void SurfaceTransaction_setVisibility(JNIEnv* /*env*/, jclass,
                                       jlong surfaceControl,
                                       jlong surfaceTransaction, jboolean show) {
-    int8_t visibility = (show) ? ASURFACE_TRANSACTION_VISIBILITY_SHOW :
-                                 ASURFACE_TRANSACTION_VISIBILITY_HIDE;
+    auto visibility = (show) ? ASURFACE_TRANSACTION_VISIBILITY_SHOW :
+                               ASURFACE_TRANSACTION_VISIBILITY_HIDE;
     ASurfaceTransaction_setVisibility(
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction),
             reinterpret_cast<ASurfaceControl*>(surfaceControl), visibility);
@@ -318,7 +318,7 @@ void SurfaceTransaction_setBufferOpaque(JNIEnv* /*env*/, jclass,
                                         jlong surfaceControl,
                                         jlong surfaceTransaction,
                                         jboolean opaque) {
-    int8_t transparency = (opaque) ? ASURFACE_TRANSACTION_TRANSPARENCY_OPAQUE :
+    auto transparency = (opaque) ? ASURFACE_TRANSACTION_TRANSPARENCY_OPAQUE :
                                    ASURFACE_TRANSACTION_TRANSPARENCY_TRANSPARENT;
     ASurfaceTransaction_setBufferTransparency(
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction),
