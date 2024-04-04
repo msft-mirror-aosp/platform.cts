@@ -31,6 +31,7 @@ _PATCH_H = 0.1  # center 10% patch params
 _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
+_START_FRAME = 2  # allow 1st frame to have some push out (see test_jitter.py)
 _THRESH_MIN_LEVEL = 0.1  # check images aren't too dark
 
 
@@ -69,18 +70,21 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
                              f'THRESH: {_THRESH_MIN_LEVEL}')
 
       # Check frames are consecutive
-      frame_times = [cap['metadata']['android.sensor.timestamp']
-                     for cap in caps]
-      for i, time in enumerate(frame_times):
-        if i >= 1:
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+        frame_times = [cap['metadata']['android.sensor.timestamp']
+                       for cap in caps]
+        for i, time in enumerate(frame_times):
+          if i < _START_FRAME:
+            continue
           frame_time_delta = time - frame_times[i-1]
           frame_duration = caps[i]['metadata']['android.sensor.frameDuration']
           logging.debug('cap %d frameDuration: %d ns', i, frame_duration)
-          frame_time_delta_atol = frame_duration * (1 + _FRAME_TIME_DELTA_RTOL)
+          frame_time_delta_atol = frame_duration * (1+_FRAME_TIME_DELTA_RTOL)
           if frame_time_delta > frame_time_delta_atol:
             raise AssertionError(
-                f'Frame drop! Frame time delta: {frame_time_delta} ns, '
-                f'ATOL: {frame_time_delta_atol} ns')
+                f'Frame drop! Frame {i-1} --> {i} delta: {frame_time_delta}, '
+                f'ATOL: {frame_time_delta_atol:.1f} ns')
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ android_library {
     srcs: [":bedstead-root-annotations-srcs"],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
+    sdk_version: "current",
     static_libs: [
         "HarrierCommonAndroid",
         "auto_value_annotations"

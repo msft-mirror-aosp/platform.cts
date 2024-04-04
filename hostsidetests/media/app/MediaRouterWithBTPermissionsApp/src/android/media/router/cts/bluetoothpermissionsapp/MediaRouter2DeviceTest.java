@@ -615,6 +615,29 @@ public class MediaRouter2DeviceTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
+    @Test
+    public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() {
+        // Permission required for the proxy router scan (also known as manager scan).
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        // We use self-pointing proxy router to trigger a manager scan.
+        MediaRouter2 proxyRouter = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        ConditionVariable conditionVariable = new ConditionVariable();
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        conditionVariable.open();
+                    }
+                });
+        proxyRouter.startScan();
+        try {
+            assertThat(conditionVariable.block(TIMEOUT_MS)).isFalse();
+        } finally {
+            proxyRouter.stopScan();
+        }
+    }
+
     @ApiTest(apis = {"android.media.MediaRouter2"})
     @Test
     public void selfScanOnlyProvider_notScannedByAnotherApp() {

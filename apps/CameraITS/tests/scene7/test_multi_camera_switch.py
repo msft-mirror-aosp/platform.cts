@@ -105,40 +105,42 @@ def _do_awb_check(uw_img, w_img):
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
   """
-  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img)
-  logging.debug('UW R/G ratio: %s', uw_r_g_ratio)
-  logging.debug('UW B/G ratio: %s', uw_b_g_ratio)
-
-  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img)
-  logging.debug('W R/G ratio: %s', w_r_g_ratio)
-  logging.debug('W B/G ratio: %s', w_b_g_ratio)
+  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
+  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
 
   r_g_ratio_change_percent = (
       abs(w_r_g_ratio-uw_r_g_ratio)/uw_r_g_ratio)*100
   logging.debug('r_g_ratio_change_percent: %.4f', r_g_ratio_change_percent)
   if r_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('R/G percent change is greater than threshold value')
+    raise AssertionError(
+        f'R/G change {r_g_ratio_change_percent:.4f}% > THRESH: '
+        f'{_PERCENTAGE_CHANGE_THRESHOLD}')
 
   b_g_ratio_change_percent = (
       abs(w_b_g_ratio-uw_b_g_ratio)/uw_b_g_ratio)*100
   logging.debug('b_g_ratio_change_percent: %.4f', b_g_ratio_change_percent)
   if b_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('B/G percent change is greater than threshold value')
+    raise AssertionError(
+        f'B/G change {b_g_ratio_change_percent:.4f}% > THRESH: '
+        f'{_PERCENTAGE_CHANGE_THRESHOLD}')
 
 
-def _get_color_ratios(img):
+def _get_color_ratios(img, identifier):
   """Computes the ratios of R/G and B/G for img.
 
   Args:
     img: RGB img in numpy format.
+    identifier: str; identifier for logging statement. ie. 'UW' or 'W'
+
   Returns:
     r_g_ratio: Ratio of R and G channel means.
     b_g_ratio: Ratio of B and G channel means.
   """
   img_means = image_processing_utils.compute_image_means(img)
-  img_means = [i * _CH_FULL_SCALE for i in img_means]
   r_g_ratio = img_means[0]/img_means[1]
   b_g_ratio = img_means[2]/img_means[1]
+  logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
+  logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
   return r_g_ratio, b_g_ratio
 
 
@@ -273,7 +275,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Check the zoom range
       zoom_range = props['android.control.zoomRatioRange']
-      logging.debug('zoomRatioRange: %s', str(zoom_range))
+      logging.debug('zoomRatioRange: %s', zoom_range)
       camera_properties_utils.skip_unless(
           len(zoom_range) > 1 and
           (zoom_range[0] <= _ZOOM_RANGE_UW_W[0] <= zoom_range[1]) and
@@ -297,8 +299,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       preview_file_name = (
           recording_obj['recordedOutputPath'].split('/')[-1])
       logging.debug('preview_file_name: %s', preview_file_name)
-      logging.debug('recorded video size : %s',
-                    str(recording_obj['videoSize']))
+      logging.debug('recorded video size : %s', recording_obj['videoSize'])
 
       # Extract frames as png from mp4 preview recording
       file_list = video_processing_utils.extract_all_frames_from_video(
@@ -342,12 +343,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       img_uw_file = file_list[counter-2]
       capture_result_uw = capture_results[counter-2]
-      logging.debug('Capture results uw crossover: %s',
-                    capture_result_uw)
+      logging.debug('Capture results uw crossover: %s', capture_result_uw)
       img_w_file = file_list[counter-1]
       capture_result_w = capture_results[counter-1]
-      logging.debug('Capture results w crossover: %s',
-                    capture_result_w)
+      logging.debug('Capture results w crossover: %s', capture_result_w)
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
@@ -356,19 +355,13 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           os.path.join(self.log_path, img_w_file)])
 
       # Add suffix to the UW and W image files
-      uw_path = pathlib.Path(os.path.join(self.log_path,
-                                          img_uw_file))
-      uw_name = uw_path.with_name(
-          f'{uw_path.stem}_uw{uw_path.suffix}')
-      os.rename(os.path.join(self.log_path,
-                             img_uw_file), uw_name)
+      uw_path = pathlib.Path(os.path.join(self.log_path, img_uw_file))
+      uw_name = uw_path.with_name(f'{uw_path.stem}_uw{uw_path.suffix}')
+      os.rename(os.path.join(self.log_path, img_uw_file), uw_name)
 
-      w_path = pathlib.Path(os.path.join(self.log_path,
-                                         img_w_file))
-      w_name = w_path.with_name(
-          f'{w_path.stem}_w{w_path.suffix}')
-      os.rename(os.path.join(self.log_path, img_w_file),
-                w_name)
+      w_path = pathlib.Path(os.path.join(self.log_path, img_w_file))
+      w_name = w_path.with_name(f'{w_path.stem}_w{w_path.suffix}')
+      os.rename(os.path.join(self.log_path, img_w_file), w_name)
 
       # Convert UW and W img to numpy array
       uw_img = image_processing_utils.convert_image_to_numpy_array(
