@@ -434,6 +434,17 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "activeScanRouteDiscoveryPreference_scansOnSelfScanProvider");
     }
 
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
+    @Test
+    public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "managerScan_withNoAppsScanning_doesNotWakeUpProvider");
+    }
+
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
