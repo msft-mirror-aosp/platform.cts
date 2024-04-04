@@ -41,6 +41,7 @@ DEFAULT_GAMMA_LUT = numpy.array([
     for i in range(MAX_LUT_SIZE)])
 NUM_TRIES = 2
 NUM_FRAMES = 4
+RGB2GRAY_WEIGHTS = (0.299, 0.587, 0.114)
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 
 # Expected adapted primaries in ICC profile per color space
@@ -975,18 +976,18 @@ def compute_image_snrs(img):
 
 
 def convert_rgb_to_grayscale(img):
-  """Convert and 3-D array RGB image to grayscale image.
+  """Convert a 3-D array RGB image to grayscale image.
 
   Args:
-    img: numpy float RGB/luma image array, with pixel values in [0,1].
+    img: numpy 3-D array RGB image of type [0.0, 1.0] float or [0, 255] uint8.
 
   Returns:
-    2-D grayscale image
+    2-D grayscale image.
   """
   chans = img.shape[2]
   if chans != 3:
     raise AssertionError(f'Not an RGB image! Depth: {chans}')
-  return 0.299*img[:, :, 0] + 0.587*img[:, :, 1] + 0.114*img[:, :, 2]
+  return numpy.dot(img[..., :3], RGB2GRAY_WEIGHTS)
 
 
 def normalize_img(img):
