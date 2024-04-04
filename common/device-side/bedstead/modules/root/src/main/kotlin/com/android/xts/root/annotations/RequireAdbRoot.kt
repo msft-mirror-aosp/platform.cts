@@ -27,7 +27,7 @@ import com.google.auto.value.AutoAnnotation
  * the correct state for the method.
  */
 // This can only be applied directly to tests to make it clear to test authors
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesAnnotationExecutor(weakValue = "com.android.xts.root.RootAnnotationExecutor")
 annotation class RequireAdbRoot(
@@ -49,10 +49,12 @@ annotation class RequireAdbRoot(
      *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.FIRST)
+    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+)
 
 @AutoAnnotation
 fun requireAdbRoot(
     reason: String,
-    failureMode: FailureMode): RequireAdbRoot =
+    failureMode: FailureMode
+): RequireAdbRoot =
     AutoAnnotation_RequireAdbRootKt_requireAdbRoot(reason, failureMode)
