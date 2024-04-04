@@ -19,10 +19,7 @@ package com.android.bedstead.permissions;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import android.app.AppOpsManager;
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
@@ -41,7 +38,6 @@ import com.android.bedstead.nene.utils.Versions;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -492,15 +488,16 @@ public final class Permissions {
         return usablePermissions;
     }
 
-    private void removePermissionContextsUntilCanApply() {
-        if (mPermissionContexts.size() == 0) {
-            return;
-        }
-        try {
-            mPermissionContexts.remove(mPermissionContexts.size() - 1);
-            applyPermissions();
-        } catch (NeneException e) {
-            // Suppress NeneException here as we may get a few as we pop through the stack
+    private void removePermissionContextsUntilCanApplyPermissions() {
+        boolean appliedPermissions = false;
+        while (!mPermissionContexts.isEmpty() && !appliedPermissions) {
+            try {
+                mPermissionContexts.remove(mPermissionContexts.size() - 1);
+                applyPermissions();
+                appliedPermissions = true;
+            } catch (NeneException e) {
+                // Suppress NeneException here as we may get a few as we pop through the stack
+            }
         }
     }
 
@@ -613,7 +610,7 @@ public final class Permissions {
             if (canGrantPermission(permission)) {
                 pkg.grantPermission(user, permission);
             } else {
-                removePermissionContextsUntilCanApply();
+                removePermissionContextsUntilCanApplyPermissions();
                 throwPermissionException("Requires granting permission " + permission + " but cannot.", permission);
             }
         }
@@ -621,7 +618,7 @@ public final class Permissions {
         for (String permission : permissionsToDeny) {
             if (pkg.equals(TestApis.packages().instrumented()) && user.equals(TestApis.users().instrumented())) {
                 // We can't deny permissions from ourselves or it'll kill the process
-                removePermissionContextsUntilCanApply();
+                removePermissionContextsUntilCanApplyPermissions();
                 throwPermissionException("Requires denying permission " + permission + " but cannot.", permission);
             } else {
                 pkg.denyPermission(user, permission);

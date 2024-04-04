@@ -35,7 +35,6 @@ _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
 _MIN_CIRCLE_PTS = 25
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
 
 
 class LowLatencyZoomTest(its_base_test.ItsBaseTest):
@@ -67,7 +66,8 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)

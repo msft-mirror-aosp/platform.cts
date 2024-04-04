@@ -29,8 +29,8 @@ import its_session_utils
 
 
 _JPEG_EXTENSION = '.jpg'
-_JPEG_QUALITY_SETTING = 100  # set value fairly high
-_JPEG_MP_SIZE_SCALING = 0.085  # MP --> bytes to ensure busy scene (empirical)
+_JPEG_QUALITY_SETTING = 100  # set value to max
+_JPEG_MP_SIZE_SCALING = 0.08  # MP --> bytes to ensure busy scene (empirical)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
 _ZOOM_RATIO_MAX = 4  # too high zoom ratios will eventualy reduce entropy
@@ -131,7 +131,7 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         except PIL.UnidentifiedImageError as e:
           raise AssertionError(
               f'Cannot convert cap to JPEG for zoom: {zoom_ratio:.2f}') from e
-        logging.debug('cap size WxH: %dx%d', img.shape[1], img.shape[0])
+        logging.debug('cap size (pixels): %d', img.shape[1]*img.shape[0])
         image_processing_utils.write_image(
             img, f'{test_name_with_log_path}_{zoom_ratio:.2f}{_JPEG_EXTENSION}')
 

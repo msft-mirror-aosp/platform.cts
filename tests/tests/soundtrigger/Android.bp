@@ -19,6 +19,7 @@ package {
 
 java_library {
     name: "CtsSoundTriggerInstrumentation",
+    sdk_version: "test_current",
     libs: [
         "guava",
         "androidx.annotation_annotation",
