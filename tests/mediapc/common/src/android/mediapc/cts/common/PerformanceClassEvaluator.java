@@ -722,6 +722,7 @@ public class PerformanceClassEvaluator {
             RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
@@ -835,6 +836,7 @@ public class PerformanceClassEvaluator {
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
                     // MUST NOT drop more than 1 frame per second
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
@@ -956,6 +958,7 @@ public class PerformanceClassEvaluator {
             RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
@@ -994,6 +997,7 @@ public class PerformanceClassEvaluator {
             RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
@@ -1035,6 +1039,7 @@ public class PerformanceClassEvaluator {
             RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
@@ -1061,6 +1066,7 @@ public class PerformanceClassEvaluator {
             RequiredMeasurement<Double> frameDropsPerSec = RequiredMeasurement.<Double>builder()
                     .setId(RequirementConstants.FRAMES_DROPPED_PER_SECOND)
                     .setPredicate(RequirementConstants.DOUBLE_LTE)
+                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, Double.MAX_VALUE)
                     .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 1.0)
                     .build();
 
