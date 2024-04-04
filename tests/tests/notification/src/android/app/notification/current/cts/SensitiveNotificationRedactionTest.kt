@@ -54,6 +54,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
+import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
@@ -500,15 +501,15 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
     private fun assumeFlagEnabled() {
         // TODO b/331633527: STOPSHIP remove once flag ramped
-        runWithShellPermissionIdentity {
-            assumeTrue(
-                DeviceConfig.getBoolean(
-                "device_personalization_services",
-                "Notification__enable_otp_in_smart_suggestion",
-                false
-            ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
-            )
-        }
+        assumeTrue(
+            callWithShellPermissionIdentity {
+                return@callWithShellPermissionIdentity DeviceConfig.getBoolean(
+                    "device_personalization_services",
+                    "Notification__enable_otp_in_smart_suggestion",
+                    false
+                ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
+            }
+        )
     }
 
     private fun assertNotificationNotRedacted() {
