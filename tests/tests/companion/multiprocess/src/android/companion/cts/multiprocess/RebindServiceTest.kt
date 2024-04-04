@@ -15,6 +15,7 @@
  */
 package android.companion.cts.multiprocess
 
+import android.Manifest
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
 import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
@@ -140,7 +141,9 @@ class RebindServiceTest : TestBase() {
         val request = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request)
         }
@@ -164,7 +167,9 @@ class RebindServiceTest : TestBase() {
 
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request)
         }
