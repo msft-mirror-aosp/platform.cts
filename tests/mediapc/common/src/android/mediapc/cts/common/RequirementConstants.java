@@ -31,11 +31,17 @@ public class RequirementConstants {
     public static final String PC_FIELD_NAME = "performance_class";
 
     // Requirement IDs.
-    // keep-sorted start
+    // keep-sorted start numeric=yes
 
-    public static final String R5_12__H_1_2 = "r5_12__h_1_2"; // 5.12/H-1-2
-    public static final String R5_12__H_1_3 = "r5_12__h_1_3"; // 5.12/H-1-3
     public static final String R5_1__H_1_1 = "r5_1__h_1_1"; // 5.1/H-1-1
+    public static final String R5_1__H_1_2 = "r5_1__h_1_2"; // 5.1/H-1-2
+    public static final String R5_1__H_1_3 = "r5_1__h_1_3"; // 5.1/H-1-3
+    public static final String R5_1__H_1_4 = "r5_1__h_1_4"; // 5.1/H-1-4
+    public static final String R5_1__H_1_5 = "r5_1__h_1_5"; // 5.1/H-1-5
+    public static final String R5_1__H_1_6 = "r5_1__h_1_6"; // 5.1/H-1-6
+    public static final String R5_1__H_1_7 = "r5_1__h_1_7"; // 5.1/H-1-7
+    public static final String R5_1__H_1_8 = "r5_1__h_1_8"; // 5.1/H-1-8
+    public static final String R5_1__H_1_9 = "r5_1__h_1_9"; // 5.1/H-1-9
     public static final String R5_1__H_1_10 = "r5_1__h_1_10"; // 5.1/H-1-10
     public static final String R5_1__H_1_11 = "r5_1__h_1_11"; // 5.1/H-1-11
     public static final String R5_1__H_1_12 = "r5_1__h_1_12"; // 5.1/H-1-12
@@ -46,22 +52,16 @@ public class RequirementConstants {
     public static final String R5_1__H_1_17 = "r5_1__h_1_17"; // 5.1/H-1-17
     public static final String R5_1__H_1_18 = "r5_1__h_1_18"; // 5.1/H-1-18
     public static final String R5_1__H_1_19 = "r5_1__h_1_19"; // 5.1/H-1-19
-    public static final String R5_1__H_1_2 = "r5_1__h_1_2"; // 5.1/H-1-2
     public static final String R5_1__H_1_20 = "r5_1__h_1_20"; // 5.1/H-1-20
     public static final String R5_1__H_1_21 = "r5_1__h_1_21"; // 5.1/H-1-21
     public static final String R5_1__H_1_22 = "r5_1__h_1_22"; // 5.1/H-1-22
-    public static final String R5_1__H_1_3 = "r5_1__h_1_3"; // 5.1/H-1-3
-    public static final String R5_1__H_1_4 = "r5_1__h_1_4"; // 5.1/H-1-4
-    public static final String R5_1__H_1_5 = "r5_1__h_1_5"; // 5.1/H-1-5
-    public static final String R5_1__H_1_6 = "r5_1__h_1_6"; // 5.1/H-1-6
-    public static final String R5_1__H_1_7 = "r5_1__h_1_7"; // 5.1/H-1-7
-    public static final String R5_1__H_1_8 = "r5_1__h_1_8"; // 5.1/H-1-8
-    public static final String R5_1__H_1_9 = "r5_1__h_1_9"; // 5.1/H-1-9
     public static final String R5_3__H_1_1 = "r5_3__h_1_1"; // 5.3/H-1-1
     public static final String R5_3__H_1_2 = "r5_3__h_1_2"; // 5.3/H-1-2
     public static final String R5_6__H_1_1 = "r5_6__h_1_1"; // 5.6/H-1-1
     public static final String R5_7__H_1_1 = "r5_7__h_1_1"; // 5.7/H-1-1
     public static final String R5_7__H_1_2 = "r5_7__h_1_2"; // 5.7/H-1-2
+    public static final String R5_12__H_1_2 = "r5_12__h_1_2"; // 5.12/H-1-2
+    public static final String R5_12__H_1_3 = "r5_12__h_1_3"; // 5.12/H-1-3
     public static final String R7_1_1_1__H_1_1 = "r7_1_1_1__h_1_1"; // 7.1.1.1/H-1-1
     public static final String R7_1_1_1__H_2_1 = "r7_1_1_1__h_2_1"; // 7.1.1.1/H-2-1
     public static final String R7_1_1_3__H_1_1 = "r7_1_1_3__h_1_1"; // 7.1.1.3/H-1-1
@@ -70,6 +70,15 @@ public class RequirementConstants {
     public static final String R7_1_4_1__H_1_2 = "r7_1_4_1__h_1_2"; // 7.1.4.1/H-1-2
     public static final String R7_1_4_1__H_1_3 = "r7_1_4_1__h_1_3"; // 7.1.4.1/H-1-3
     public static final String R7_5__H_1_1 = "r7_5__h_1_1"; // 7.5/H-1-1
+    public static final String R7_5__H_1_2 = "r7_5__h_1_2"; // 7.5/H-1-2
+    public static final String R7_5__H_1_3 = "r7_5__h_1_3"; // 7.5/H-1-3
+    public static final String R7_5__H_1_4 = "r7_5__h_1_4"; // 7.5/H-1-4
+    // includes "its" because the proto in google3 was originally implemented incorrectly
+    public static final String R7_5__H_1_5 = "r7_5__h_1_5__its"; // 7.5/H-1-5
+    // includes "its" because the proto in google3 was originally implemented incorrectly
+    public static final String R7_5__H_1_6 = "r7_5__h_1_6__its"; // 7.5/H-1-6
+    public static final String R7_5__H_1_8 = "r7_5__h_1_8"; // 7.5/H-1-8
+    public static final String R7_5__H_1_9 = "r7_5__h_1_9"; // 7.5/H-1-9
     public static final String R7_5__H_1_10 = "r7_5__h_1_10"; // 7.5/H-1-10
     public static final String R7_5__H_1_11 = "r7_5__h_1_11"; // 7.5/H-1-11
     public static final String R7_5__H_1_12 = "r7_5__h_1_12"; // 7.5/H-1-12
@@ -80,16 +89,7 @@ public class RequirementConstants {
     public static final String R7_5__H_1_17 = "r7_5__h_1_17"; // 7.5/H-1-17
     public static final String R7_5__H_1_18 = "r7_5__h_1_18"; // 7.5/H-1-18
     public static final String R7_5__H_1_19 = "r7_5__h_1_19"; // 7.5/H-1-19
-    public static final String R7_5__H_1_2 = "r7_5__h_1_2"; // 7.5/H-1-2
     public static final String R7_5__H_1_20 = "r7_5__h_1_20"; // 7.5/H-1-20
-    public static final String R7_5__H_1_3 = "r7_5__h_1_3"; // 7.5/H-1-3
-    public static final String R7_5__H_1_4 = "r7_5__h_1_4"; // 7.5/H-1-4
-    // includes "its" because the proto in google3 was originally implemented incorrectly
-    public static final String R7_5__H_1_5 = "r7_5__h_1_5__its"; // 7.5/H-1-5
-    // includes "its" because the proto in google3 was originally implemented incorrectly
-    public static final String R7_5__H_1_6 = "r7_5__h_1_6__its"; // 7.5/H-1-6
-    public static final String R7_5__H_1_8 = "r7_5__h_1_8"; // 7.5/H-1-8
-    public static final String R7_5__H_1_9 = "r7_5__h_1_9"; // 7.5/H-1-9
     public static final String R7_6_1__H_1_1 = "r7_6_1__h_1_1"; // 7.6.1/H-1-1
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
     public static final String R7_6_1__H_3_1 = "r7_6_1__h_3_1"; // 7.6.1/H-3-1, currently unused
