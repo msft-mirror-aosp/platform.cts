@@ -18,6 +18,7 @@ package android.app.appsearch.cts.functions;
 import static android.app.appsearch.AppSearchResult.RESULT_INTERNAL_ERROR;
 import static android.app.appsearch.AppSearchResult.RESULT_INVALID_ARGUMENT;
 import static android.app.appsearch.AppSearchResult.RESULT_NOT_FOUND;
+import static android.app.appsearch.AppSearchResult.RESULT_SECURITY_ERROR;
 import static android.app.appsearch.AppSearchResult.RESULT_TIMED_OUT;
 import static android.app.appsearch.AppSearchResult.RESULT_UNKNOWN_ERROR;
 import static android.app.appsearch.functions.ExecuteAppFunctionResponse.PROPERTY_RESULT;
@@ -40,18 +41,32 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.android.appsearch.flags.Flags;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)
+@RunWith(BedsteadJUnit4.class)
 public class AppFunctionManagerCtsTest {
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String TARGET_PACKAGE = "com.android.cts.appsearch";
     private static final long SHORT_TIMEOUT_SECOND = 1;
     private static final long LONG_TIMEOUT_SECOND = 5;
@@ -75,27 +90,6 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
-    public void executeAppFunction_success() throws Exception {
-        GenericDocument parameters = new GenericDocument.Builder("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build();
-
-        ExecuteAppFunctionRequest request =
-                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
-                        .setParameters(parameters)
-                        .build();
-
-        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
-
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getResultValue().getResult().getPropertyLong(PROPERTY_RESULT))
-                .isEqualTo(3);
-        assertServiceDestroyed();
-    }
-
-    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
-    @Test
     public void executeAppFunction_failed_noSuchMethod() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "invalid").build();
@@ -109,6 +103,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_onlyInvokeCallbackOnce() throws Exception {
         GenericDocument parameters = new GenericDocument.Builder("", "", "")
                 .setPropertyLong("a", 1)
@@ -137,6 +132,29 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
+    public void executeAppFunction_success() throws Exception {
+        GenericDocument parameters = new GenericDocument.Builder("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build();
+
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
+                        .setParameters(parameters)
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getResultValue().getResult().getPropertyLong(PROPERTY_RESULT))
+                .isEqualTo(3);
+        assertServiceDestroyed();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_otherPackage() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder("other.package", "someMethod").build();
@@ -151,6 +169,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_startActivity() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "startActivity").build();
@@ -165,6 +184,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_throwsException() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "throwException").build();
@@ -178,6 +198,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_onRemoteProcessKilled() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "kill").build();
@@ -193,6 +214,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_timedOut() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "notInvokeCallback").build();
@@ -206,6 +228,7 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_success_async() throws Exception {
         GenericDocument parameters = new GenericDocument.Builder<>("", "", "")
                 .setPropertyLong("a", 1)
@@ -226,20 +249,66 @@ public class AppFunctionManagerCtsTest {
 
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
+    @EnsureHasNoDeviceOwner
     public void executeAppFunction_emptyPackage() throws Exception {
-        GenericDocument parameters = new GenericDocument.Builder<>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build();
         ExecuteAppFunctionRequest request =
-                new ExecuteAppFunctionRequest.Builder("", "add")
-                        .setParameters(parameters)
+                new ExecuteAppFunctionRequest.Builder("", "noOp")
                         .build();
 
         AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
 
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertServiceWasNotCreated();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @RequireRunOnWorkProfile
+    @EnsureHasNoDeviceOwner
+    @Postsubmit(reason = "new test")
+    public void executeAppFunction_runInManagedProfile_fail() throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getResultCode()).isEqualTo(RESULT_SECURITY_ERROR);
+        assertServiceWasNotCreated();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasWorkProfile
+    @EnsureHasNoDeviceOwner
+    public void executeAppFunction_hasManagedProfileRunInPersonalProfile_success()
+            throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isTrue();
+        assertServiceDestroyed();
+    }
+
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasDeviceOwner
+    public void executeAppFunction_deviceOwner_fail() throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response =
+                executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getResultCode()).isEqualTo(RESULT_SECURITY_ERROR);
         assertServiceWasNotCreated();
     }
 
