@@ -139,6 +139,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     @After
     public void tearDown() {
         mUiAutomation.dropShellPermissionIdentity();
+        // Clean up any previous custom collections. If some tests do not start any custom
+        // collections, then this is effectively a no-op.
+        runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
     }
 
     @Test

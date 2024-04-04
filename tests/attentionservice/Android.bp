@@ -19,6 +19,7 @@ package {
 java_library {
     name: "CtsAttentionServiceDevice",
     srcs: ["src/**/CtsTestAttentionService.java"],
+    sdk_version: "test_current",
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",

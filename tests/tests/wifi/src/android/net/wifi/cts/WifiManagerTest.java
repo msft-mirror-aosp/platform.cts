@@ -27,6 +27,7 @@ import static android.net.wifi.WifiConfiguration.INVALID_NETWORK_ID;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_SOFTAP;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
+import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
 import static android.os.Process.myUid;
 
@@ -1018,6 +1019,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             synchronized (mSoftApLock) {
                 mCurrentSoftApState = state;
                 mOnSoftApStateChangedCalled = true;
+                onStateChanged(state.getState(),
+                        state.getState() == WIFI_AP_STATE_FAILED ? state.getFailureReason() : 0);
             }
         }
 

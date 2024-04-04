@@ -39,7 +39,7 @@
 
         <activity
                 android:name=".ScanningActivity"
-                android:exported="false"
+                android:exported="true"
                 android:turnScreenOn="true"/>
 
         <service android:name=".PlaceholderSelfScanMediaRoute2ProviderService"

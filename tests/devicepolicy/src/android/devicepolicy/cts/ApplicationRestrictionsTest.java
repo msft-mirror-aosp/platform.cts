@@ -17,34 +17,56 @@ package android.devicepolicy.cts;
 
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED;
+
+import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
+import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
+
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.app.admin.flags.Flags;
+import android.content.ComponentName;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.devicepolicy.cts.utils.BundleUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
+
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.ApplicationRestrictions;
 import com.android.bedstead.harrier.policies.ApplicationRestrictionsManagingPackage;
+import com.android.bedstead.harrier.policies.DmrhOnlyApplicationRestrictions;
 import com.android.bedstead.harrier.policies.DpcOnlyApplicationRestrictions;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
-import java.util.List;
+
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 @RunWith(BedsteadJUnit4.class)
 public final class ApplicationRestrictionsTest {
@@ -117,8 +139,12 @@ public final class ApplicationRestrictionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = ApplicationRestrictions.class)
+    @CanSetPolicyTest(policy = {
+            ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
+    //TODO: wait for b/332662548 so we can test DMRH calling
+    // dpm.getParentInstance().getApplicationRestrictions()
     public void getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions() {
+        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -259,8 +285,10 @@ public final class ApplicationRestrictionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = ApplicationRestrictions.class)
+    @PolicyAppliesTest(policy = {
+            ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_restrictionsChangedBroadcastIsReceived() {
+        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -324,8 +352,10 @@ public final class ApplicationRestrictionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = ApplicationRestrictions.class)
+    @PolicyAppliesTest(policy = {
+            ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_logged() {
+        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -354,7 +384,8 @@ public final class ApplicationRestrictionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = ApplicationRestrictions.class)
+    @CanSetPolicyTest(policy = {
+            ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_invalidPackageName_throwsException() {
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_invalidPackageName_throwsException");
@@ -364,8 +395,10 @@ public final class ApplicationRestrictionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CanSetPolicyTest(policy = ApplicationRestrictions.class)
+    @CanSetPolicyTest(policy = {
+            ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void getApplicationRestrictionsPerAdmin_restrictionsSetForOneAdmin_returnsApplicationRestrictions() {
+        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -391,6 +424,133 @@ public final class ApplicationRestrictionsTest {
             sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
                     sDeviceState.dpc().componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
+    @RequireFlagsEnabled(Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION)
+    public void roleHolderSetApplicationRestrictions_UserManagerReturnsNull() {
+        Bundle originalApplicationRestrictions =
+                sDeviceState.dpc().devicePolicyManager()
+                        .getApplicationRestrictions(
+                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+        Bundle bundle = BundleUtils.createBundle(
+                "roleHolderSetApplicationRestrictions_UserManagerReturnsNull");
+
+        try (TestAppInstance testApp = sTestApp.install()) {
+            sDeviceState.dpc().devicePolicyManager()
+                    .setApplicationRestrictions(
+                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            bundle);
+
+            assertThat(testApp.userManager()
+                    .getApplicationRestrictions(testApp.packageName()).isEmpty()).isTrue();
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+                    sDeviceState.dpc().componentName(),
+                    sTestApp.packageName(), originalApplicationRestrictions);
+        }
+    }
+
+    @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true, onUser = WORK_PROFILE)
+    @EnsureHasWorkProfile(isOrganizationOwned = true)
+    @RequireFlagsEnabled(Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION)
+    @UserTest({WORK_PROFILE, PRIVATE_PROFILE})
+    @Test
+    public void roleHolderSetApplicationRestrictionsOnParent_successWithBroadcastSent() {
+        skipRoleHolderTestIfFlagNotEnabled();
+        if (TestApis.users().instrumented().type().name().equals(MANAGED_PROFILE_TYPE_NAME)) {
+            ProfileOwner profileOwner = (ProfileOwner) sDeviceState.profileOwner(
+                    sDeviceState.workProfile()).devicePolicyController();
+            profileOwner.setIsOrganizationOwned(true);
+        }
+        ComponentName admin = sDeviceState.dpc().componentName();
+        Bundle originalApplicationRestrictions = sDeviceState.dpc().devicePolicyManager()
+                        .getApplicationRestrictions(admin, sTestApp.packageName());
+
+        String bundleName = "parentUserBundle";
+
+        try (TestAppInstance testApp = sTestApp.install(TestApis.users().initial())) {
+            testApp.registerReceiver(new IntentFilter(ACTION_APPLICATION_RESTRICTIONS_CHANGED),
+                    RECEIVER_EXPORTED);
+
+            sDeviceState.dpc().devicePolicyManager()
+                    .getParentProfileInstance(admin)
+                    .setApplicationRestrictions(
+                    admin, sTestApp.packageName(), BundleUtils.createBundle(bundleName));
+
+            List<Bundle> restrictions = testApp.restrictionsManager()
+                    .getApplicationRestrictionsPerAdmin();
+            assertThat(restrictions.size()).isEqualTo(1);
+            BundleUtils.assertEqualToBundle(bundleName, restrictions.get(0));
+
+            assertThat(testApp.events().broadcastReceived().whereIntent().action().isEqualTo(
+                    ACTION_APPLICATION_RESTRICTIONS_CHANGED)).eventOccurred();
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+                    admin, sTestApp.packageName(), originalApplicationRestrictions);
+        }
+    }
+
+    @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true, onUser = WORK_PROFILE)
+    @EnsureHasWorkProfile(isOrganizationOwned = false)
+    @RequireFlagsEnabled(Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION)
+    @RequireRunOnInitialUser
+    @Test
+    public void roleHolderSetApplicationRestrictionsOnParent_throwExceptionIfNotCope() {
+        assertThrows(IllegalStateException.class, () -> {
+            sDeviceState.dpc().devicePolicyManager().getParentProfileInstance(null)
+                    .setApplicationRestrictions(
+                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            new Bundle());
+        });
+    }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @EnsureHasDeviceOwner(isPrimary = true)
+    @RequireFlagsEnabled(Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION)
+    @Test
+    public void dpcAndRoleHolderSetApplicationRestrictions_doesNotOverlap() {
+        skipRoleHolderTestIfFlagNotEnabled();
+        ComponentName dpcAdmin = sDeviceState.dpc().componentName();
+        ComponentName dmrhAdmin = sDeviceState.dpmRoleHolder().componentName();
+        Bundle originalDpcAppRestrictions = sDeviceState.dpc().devicePolicyManager()
+                .getApplicationRestrictions(dpcAdmin, sTestApp.packageName());
+        Bundle originalRoleHolderAppRestrictions = sDeviceState.dpmRoleHolder()
+                .devicePolicyManager()
+                .getApplicationRestrictions(dmrhAdmin, sTestApp.packageName());
+
+        try (TestAppInstance testApp = sTestApp.install()) {
+            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+                    dpcAdmin, sTestApp.packageName(), BundleUtils.createBundle("dpcBundle"));
+            sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationRestrictions(
+                    null, sTestApp.packageName(), BundleUtils.createBundle("dmrhBundle"));
+
+            BundleUtils.assertEqualToBundle("dpcBundle",
+                    testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
+
+            List<Bundle> restrictions = testApp.restrictionsManager()
+                    .getApplicationRestrictionsPerAdmin();
+            BundleUtils.assertEqualToBundleList(restrictions, "dpcBundle", "dmrhBundle");
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+                    dpcAdmin, sTestApp.packageName(), originalDpcAppRestrictions);
+            sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationRestrictions(
+                    dmrhAdmin, sTestApp.packageName(), originalRoleHolderAppRestrictions);
+        }
+    }
+
+    private void skipRoleHolderTestIfFlagNotEnabled() {
+        try {
+            if (sDeviceState.dpc() == sDeviceState.dpmRoleHolder()) {
+                assumeTrue("This test only runs with flag "
+                        + Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION
+                        + " is enabled", Flags.dmrhCanSetAppRestriction());
+            }
+        } catch (IllegalStateException e) {
+            // Fine - DMRH is not set
         }
     }
 }
