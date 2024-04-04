@@ -34,6 +34,7 @@ android_test {
 
     srcs: [
         "src/**/*.java",
+        ":CameraCtsBitmapUtils",
     ],
 
     // Tag this module as a cts test artifact
