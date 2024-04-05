@@ -1999,6 +1999,8 @@ public class CommonPermissions {
     public static final String MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL = "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL";
     /** See {@link Manifest#MANAGE_DEVICE_POLICY_THREAD_NETWORK} */
     public static final String MANAGE_DEVICE_POLICY_THREAD_NETWORK = "android.permission.MANAGE_DEVICE_POLICY_THREAD_NETWORK";
+    /** See {@link Manifest#MANAGE_DEVICE_POLICY_STORAGE_LIMIT} */
+    public static final String MANAGE_DEVICE_POLICY_STORAGE_LIMIT = "android.permission.MANAGE_DEVICE_POLICY_STORAGE_LIMIT";
 
     public static final String MANAGE_DEFAULT_APPLICATIONS = "android.permission.MANAGE_DEFAULT_APPLICATIONS";
 }
