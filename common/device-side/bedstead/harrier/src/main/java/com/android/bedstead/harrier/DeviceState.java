@@ -3801,7 +3801,7 @@ public final class DeviceState extends HarrierRule {
     private void ensurePasswordSet(UserType forUser, String password) {
         UserReference user = resolveUserTypeToUser(forUser);
 
-        if (user.hasLockCredential()) {
+        if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
             return;
         }
 
