@@ -17,6 +17,8 @@ java_library {
         "auto_value_annotations",
     ],
 
+    sdk_version: "current",
+
     plugins: ["auto_annotation_plugin"],
 }
 
