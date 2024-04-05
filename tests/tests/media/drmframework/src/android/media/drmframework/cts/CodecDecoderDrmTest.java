@@ -27,6 +27,7 @@ import android.media.UnsupportedSchemeException;
 import android.mediav2.common.cts.CodecDecoderBlockModelDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.filters.LargeTest;
 
@@ -50,6 +51,7 @@ import java.util.UUID;
  * normal mode and block model mode. The test expects consistent output in both scenarios.
  * <p>
  */
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
