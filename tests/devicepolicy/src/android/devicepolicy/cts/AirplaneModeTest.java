@@ -20,6 +20,7 @@ import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.provider.Settings.Global.AIRPLANE_MODE_ON;
 
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_AIRPLANE_MODE;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_ACROSS_USERS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -37,6 +38,7 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
 import com.android.bedstead.harrier.policies.DisallowAirplaneModePermissionBased;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
@@ -102,8 +104,7 @@ public final class AirplaneModeTest {
     @CanSetPolicyTest(policy = DisallowAirplaneModePermissionBased.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    // TODO: Add restriction for permission based targeting U+
-    // TODO: Test that this is actually global
+    @EnsureHasPermission(MANAGE_DEVICE_POLICY_ACROSS_USERS) // TODO: b/331606832 this should be part of the policy
     public void addUserRestrictionGlobally_disallowAirplaneMode_isSet() {
         try {
             sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
@@ -117,15 +118,13 @@ public final class AirplaneModeTest {
         }
     }
 
-    @CanSetPolicyTest(policy = DisallowAirplaneModePermissionBased.class)
+    @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    // TODO: Add restriction for permission based targeting U+
-    // TODO: Test that this is actually global
     public void clearUserRestriction_disallowAirplaneMode_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
-                    DISALLOW_AIRPLANE_MODE);
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
 
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
