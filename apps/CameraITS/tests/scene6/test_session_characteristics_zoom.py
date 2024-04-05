@@ -27,9 +27,6 @@ import its_session_utils
 import zoom_capture_utils
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
-_FMT_CODE_PRV = 0x22
-_FMT_CODE_YUV = 0x23
-_FMT_CODE_JPG = 0x100
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -126,19 +123,20 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
           fmt = None
           size = [int(e) for e in stream['size'].split('x')]
           if stream['format'] == 'priv':
-            fmt = _FMT_CODE_PRV
+            fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
-            fmt = _FMT_CODE_JPG
+            fmt = capture_request_utils.FMT_CODE_JPEG
           elif stream['format'] == 'yuv':
-            fmt = _FMT_CODE_YUV
+            fmt = capture_request_utils.FMT_CODE_YUV
 
           # Assume first stream is always a preview stream with priv format
-          if i == 0 and fmt != _FMT_CODE_PRV:
+          if i == 0 and fmt != capture_request_utils.FMT_CODE_PRIV:
             raise AssertionError(
                 'first stream in the combination must be priv format preview.')
 
           # Second stream must be jpeg or yuv for zoom test. If not, skip
-          if i == 1 and fmt != _FMT_CODE_JPG and fmt != _FMT_CODE_YUV:
+          if (i == 1 and fmt != capture_request_utils.FMT_CODE_JPEG and
+              fmt != capture_request_utils.FMT_CODE_YUV):
             logging.debug(
                 'second stream format %s is not yuv/jpeg. Skip',
                 stream['format'])
