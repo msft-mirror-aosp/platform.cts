@@ -39,6 +39,7 @@ import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
 import com.android.bedstead.harrier.policies.DisallowAirplaneModePermissionBased;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.testapp.TestAppPermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
@@ -48,6 +49,7 @@ import com.android.interactive.steps.settings.CanYouTurnOnAirplaneModeStep;
 import com.android.interactive.steps.settings.IsThereTextExplainingThatAnITAdminHasLimitedThisFunctionalityStep;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -104,17 +106,21 @@ public final class AirplaneModeTest {
     @CanSetPolicyTest(policy = DisallowAirplaneModePermissionBased.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    @EnsureHasPermission(MANAGE_DEVICE_POLICY_ACROSS_USERS) // TODO: b/331606832 this should be part of the policy
+    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_ACROSS_USERS")
     public void addUserRestrictionGlobally_disallowAirplaneMode_isSet() {
-        try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
-                    DISALLOW_AIRPLANE_MODE);
+        // TODO: b/331606832 this should be part of the policy
+        try (TestAppPermissionContext s = sDeviceState.dpc().permissions()
+                .withPermission(MANAGE_DEVICE_POLICY_ACROSS_USERS)) {
+            try {
+                sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+                        DISALLOW_AIRPLANE_MODE);
 
-            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
-                    .isTrue();
-        } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+                assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
+                        .isTrue();
+            } finally {
+                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                        sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            }
         }
     }
 
