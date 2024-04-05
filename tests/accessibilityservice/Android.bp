@@ -1,7 +1,7 @@
 // Copyright (C) 2010 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in compliance th the License.
 // You may obtain a copy of the License at
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,7 @@ android_test {
         "android.test.runner",
         "android.test.base",
     ],
+
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -49,6 +50,9 @@ android_test {
         ":CtsAccessibilityMultipleServicesApp",
         ":CtsAccessibilityWidgetProvider",
         ":CtsAccessibilityProxyApp",
+        ":CtsAccessibilityUpdateServiceAppV1",
+        ":CtsAccessibilityUpdateServiceAppV2",
+        ":CtsAccessibilityUpdateServiceAppV3",
     ],
 }
 
