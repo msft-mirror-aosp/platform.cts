@@ -33,6 +33,7 @@ android_test {
         "android.test.runner",
         "android.test.base",
     ],
+    
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -44,5 +45,8 @@ android_test {
     data: [
         ":CtsAccessibilityMultipleServicesApp",
         ":CtsAccessibilityWidgetProvider",
+        ":CtsAccessibilityUpdateServiceAppV1",
+        ":CtsAccessibilityUpdateServiceAppV2",
+        ":CtsAccessibilityUpdateServiceAppV3",
     ],
 }
