@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,12 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
-/**
- * Mark that a test method requires adb to be able to access root capabilities.
- *
- * You can use `DeviceState` to ensure that the device enters
- * the correct state for the method.
- */
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS, AnnotationTarget.ANNOTATION_CLASS)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesAnnotationExecutor(weakValue = "com.android.xts.root.RootAnnotationExecutor")
-annotation class RequireAdbRoot(
-    val reason: String = "",
+@RequireAdbRoot(reason = "adb root is a prerequisite of root instrumentation")
+annotation class RequireRootInstrumentation(
+    val reason: String,
 
     val failureMode: FailureMode = FailureMode.SKIP,
 
@@ -48,12 +43,13 @@ annotation class RequireAdbRoot(
      *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+    // This executes immediately after RequireAdbRoot
+    val priority: Int = AnnotationPriorityRunPrecedence.FIRST + 1
 )
 
 @AutoAnnotation
-fun requireAdbRoot(
+fun requireRootInstrumentation(
     reason: String,
     failureMode: FailureMode
-): RequireAdbRoot =
-    AutoAnnotation_RequireAdbRootKt_requireAdbRoot(reason, failureMode)
+): RequireRootInstrumentation =
+    AutoAnnotation_RequireRootInstrumentationKt_requireRootInstrumentation(reason, failureMode)

@@ -67,11 +67,8 @@ import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
-import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -81,10 +78,8 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -177,8 +172,6 @@ import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
@@ -187,6 +180,13 @@ import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextImpl;
+import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
@@ -461,7 +461,8 @@ public final class DeviceState extends HarrierRule {
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
-        String coexistenceOption = TestApis.instrumentation().arguments().getString("COEXISTENCE", "?");
+        String coexistenceOption =
+                TestApis.instrumentation().arguments().getString("COEXISTENCE", "?");
         if (coexistenceOption.equals("true")) {
             ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG);
             ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG);
@@ -3633,7 +3634,7 @@ public final class DeviceState extends HarrierRule {
         if (mPermissionsInstrumentationPackage == null) {
             // We just need to check if we can get it generally
             // TODO: replace with dependency on bedstead-root when properly modularised
-            if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            if (Tags.hasTag("root-instrumentation") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
                 return; // If we're rooted we're always able to get permissions
             }
 
@@ -4229,22 +4230,26 @@ public final class DeviceState extends HarrierRule {
         Class<? extends AnnotationExecutor> executorClass;
 
         if (annotationExecutorClass == AnnotationExecutor.class) {
-            if (weakAnnotationExecutorClass == "") {
+            if (weakAnnotationExecutorClass.isEmpty()) {
                 throw new IllegalStateException(
                         "@UsesAnnotationExecutor must declare either a value or weakValue");
             } else {
                 try {
                     executorClass = (Class<? extends AnnotationExecutor>) Class.forName(weakAnnotationExecutorClass);
                 } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException("Could not find annotation executor " + weakAnnotationExecutorClass + ". Probably a dependency issue.");
+                    throw new IllegalStateException(
+                            "Could not find annotation executor "
+                                    + weakAnnotationExecutorClass
+                                    + ". Probably a dependency issue.");
                 }
             }
         } else {
-            if (weakAnnotationExecutorClass == "") {
+            if (weakAnnotationExecutorClass.isEmpty()) {
                 executorClass = annotationExecutorClass;
             } else {
                 throw new IllegalStateException(
-                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has declared both.");
+                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has"
+                            + " declared both.");
             }
         }
 
@@ -4271,7 +4276,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        boolean shouldRunAsRoot = Tags.hasTag("");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4457,15 +4462,17 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        boolean shouldRunAsRoot = Tags.hasTag("");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {
                 TestApis.devicePolicy().userRestrictions(onUser).set(restriction,
                         /* set= */ false);
             } catch (AdbException e) {
-                Log.i(LOG_TAG,
-                        "Unable to clear user restriction as root, trying to clear using heuristics.",
+                Log.i(
+                        LOG_TAG,
+                        "Unable to clear user restriction as root, trying to clear using"
+                            + " heuristics.",
                         e);
                 tryClearUserRestriction(onUser, restriction);
             }
@@ -4539,7 +4546,10 @@ public final class DeviceState extends HarrierRule {
         boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
 
         if(packageResponded) {
-            checkFailOrSkip("Requires at least one package to respond to this intent.", /* value= */ true, failureMode);
+            checkFailOrSkip(
+                    "Requires at least one package to respond to this intent.",
+                    /* value= */ true,
+                    failureMode);
         }
         else {
             failOrSkip("Requires at least one package to respond to this intent.", failureMode);
@@ -4551,7 +4561,10 @@ public final class DeviceState extends HarrierRule {
         boolean noPackageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).isEmpty();
 
         if(noPackageResponded) {
-            checkFailOrSkip("Requires no package to respond to this intent.", /* value= */ true, failureMode);
+            checkFailOrSkip(
+                    "Requires no package to respond to this intent.",
+                    /* value= */ true,
+                    failureMode);
         }
         else {
             failOrSkip("Requires no package to respond to this intent.", failureMode);
@@ -4571,7 +4584,12 @@ public final class DeviceState extends HarrierRule {
                                 .get()
                         , user);
             } catch (NotFoundException notFoundException) {
-                failOrSkip("Could not found the testApp which contains an activity matching the intent action '" + paramIntent.action() + "'.", failureMode);
+                failOrSkip(
+                        "Could not found the testApp which contains an activity matching the intent"
+                            + " action '"
+                                + paramIntent.action()
+                                + "'.",
+                        failureMode);
             }
         }
     }

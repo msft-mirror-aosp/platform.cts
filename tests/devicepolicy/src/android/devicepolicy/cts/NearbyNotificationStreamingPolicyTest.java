@@ -21,9 +21,9 @@ import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
 import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.NotManaged;
 import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.SameManagedAccountOnly;
+import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -31,35 +31,32 @@ import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManager;
-import android.content.Context;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
-import com.android.bedstead.nene.devicepolicy.DevicePolicy;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.harrier.policies.GetNearbyNotificationStreamingPolicy;
 import com.android.bedstead.harrier.policies.SetNearbyNotificationStreamingPolicy;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import com.android.xts.root.annotations.RequireAdbRoot;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireFeature(FEATURE_DEVICE_ADMIN)
@@ -81,7 +78,7 @@ public class NearbyNotificationStreamingPolicyTest {
     }
 
     @CannotSetPolicyTest(policy = GetNearbyNotificationStreamingPolicy.class)
-    @RequireAdbRoot(reason = "removal of permission from testapp")
+    @RequireRootInstrumentation(reason = "removal of permission from testapp")
     public void getNearbyNotificationStreamingPolicy_policyIsNotAllowedToBeSet_throwsException() {
         assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager().getNearbyNotificationStreamingPolicy());
     }

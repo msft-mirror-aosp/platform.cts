@@ -30,7 +30,7 @@ import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
-import com.android.xts.root.annotations.RequireAdbRoot
+import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
@@ -41,8 +41,10 @@ import org.testng.Assert.assertThrows
 @RunWith(BedsteadJUnit4::class)
 class PermissionsTest {
     @Test
-    @RequireSdkVersion(min = Build.VERSION_CODES.Q,
-        reason = "drop shell permissions only available on Q+")
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.Q,
+        reason = "drop shell permissions only available on Q+"
+    )
     fun default_permissionIsNotGranted() {
         ShellCommandUtils.uiAutomation().dropShellPermissionIdentity()
 
@@ -51,41 +53,52 @@ class PermissionsTest {
     }
 
     @Test
-    @RequireSdkVersion(min = Build.VERSION_CODES.Q,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.Q,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun withPermission_shellPermission_permissionIsGranted() {
         TestApis.permissions().withPermission(PERMISSION_HELD_BY_SHELL).use {
             assertThat(context.checkSelfPermission(
-                PERMISSION_HELD_BY_SHELL))
+                PERMISSION_HELD_BY_SHELL
+            ))
                     .isEqualTo(PackageManager.PERMISSION_GRANTED)
         }
     }
 
     @Test
-    @RequireSdkVersion(max = Build.VERSION_CODES.P,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        max = Build.VERSION_CODES.P,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun withoutPermission_alreadyGranted_androidPreQ_throwsException() {
         assertThrows(NeneException::class.java) {
             TestApis.permissions().withoutPermission(
-                DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S)
+                DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S
+            )
         }
     }
 
     @Test
-    @RequireSdkVersion(min = Build.VERSION_CODES.Q,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.Q,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun withoutPermission_permissionIsNotGranted() {
         TestApis.permissions().withPermission(PERMISSION_HELD_BY_SHELL).use {
             TestApis.permissions().withoutPermission(PERMISSION_HELD_BY_SHELL).use {
                 assertThat(context.checkSelfPermission(
-                    PERMISSION_HELD_BY_SHELL)).isEqualTo(PackageManager.PERMISSION_DENIED)
+                    PERMISSION_HELD_BY_SHELL
+                )).isEqualTo(PackageManager.PERMISSION_DENIED)
             }
         }
     }
 
     @Test
-    @RequireSdkVersion(min = Build.VERSION_CODES.Q,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.Q,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun autoclose_withoutPermission_permissionIsGrantedAgain() {
         TestApis.permissions().withPermission(PERMISSION_HELD_BY_SHELL).use {
             TestApis.permissions().withoutPermission(PERMISSION_HELD_BY_SHELL).use { }
@@ -96,8 +109,10 @@ class PermissionsTest {
     }
 
     @Test
-    @RequireSdkVersion(max = Build.VERSION_CODES.P,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        max = Build.VERSION_CODES.P,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun withoutPermission_installPermission_androidPreQ_throwsException() {
         assertThrows(NeneException::class.java) {
             TestApis.permissions().withoutPermission(INSTALL_PERMISSION)
@@ -105,35 +120,44 @@ class PermissionsTest {
     }
 
     @Test
-    @RequireSdkVersion(min = Build.VERSION_CODES.Q,
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.Q,
         max = Build.VERSION_CODES.R,
-        reason = "adopt shell permissions only available on Q+ - after S - all available"
-                + " permissions are held by shell")
+        reason = "adopt shell permissions only available on Q+ - after S - all available" +
+                " permissions are held by shell"
+    )
     fun withoutPermission_permissionIsAlreadyGrantedInInstrumentedApp_permissionIsNotGranted() {
         TestApis.permissions().withoutPermission(
-            DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S).use {
+            DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S
+        ).use {
             assertThat(
-                context.checkSelfPermission(DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S))
+                context.checkSelfPermission(DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S)
+            )
                     .isEqualTo(PackageManager.PERMISSION_DENIED)
         }
     }
 
     @Test
-    @RequireSdkVersion(max = Build.VERSION_CODES.P,
-        reason = "adopt shell permissions only available on Q+")
+    @RequireSdkVersion(
+        max = Build.VERSION_CODES.P,
+        reason = "adopt shell permissions only available on Q+"
+    )
     fun withoutPermission_permissionIsAlreadyGrantedInInstrumentedApp_androidPreQ_throwsException() {
         assertThrows(NeneException::class.java) {
             TestApis.permissions().withoutPermission(
-                DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S)
+                DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S
+            )
         }
     }
 
     @Test
     fun withPermission_permissionIsAlreadyGrantedInInstrumentedApp_permissionIsGranted() {
         TestApis.permissions().withPermission(
-            DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S).use {
+            DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S
+        ).use {
             assertThat(
-                context.checkSelfPermission(DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S))
+                context.checkSelfPermission(DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S)
+            )
                     .isEqualTo(PackageManager.PERMISSION_GRANTED)
         }
     }
@@ -155,7 +179,6 @@ class PermissionsTest {
     fun withPermissionAndWithoutPermission_bothApplied() {
         TestApis.permissions().withPermission(PERMISSION_HELD_BY_SHELL)
                 .withoutPermission(DIFFERENT_PERMISSION_HELD_BY_SHELL).use {
-
                     assertThat(context.checkSelfPermission(PERMISSION_HELD_BY_SHELL))
                             .isEqualTo(PackageManager.PERMISSION_GRANTED)
                     assertThat(context.checkSelfPermission(DIFFERENT_PERMISSION_HELD_BY_SHELL))
@@ -169,7 +192,6 @@ class PermissionsTest {
         TestApis.permissions()
                 .withoutPermission(DIFFERENT_PERMISSION_HELD_BY_SHELL)
                 .withPermission(PERMISSION_HELD_BY_SHELL).use {
-
                     assertThat(context.checkSelfPermission(PERMISSION_HELD_BY_SHELL))
                             .isEqualTo(PackageManager.PERMISSION_GRANTED)
                     assertThat(context.checkSelfPermission(DIFFERENT_PERMISSION_HELD_BY_SHELL))
@@ -198,10 +220,13 @@ class PermissionsTest {
     @Test
     @RequireSdkVersion(min = Build.VERSION_CODES.R, max = Build.VERSION_CODES.R)
     fun withPermissionOnVersion_onVersion_hasPermission() {
-        TestApis.permissions().withPermissionOnVersion(Build.VERSION_CODES.R,
-            permission.MANAGE_EXTERNAL_STORAGE).use {
+        TestApis.permissions().withPermissionOnVersion(
+            Build.VERSION_CODES.R,
+            permission.MANAGE_EXTERNAL_STORAGE
+        ).use {
             assertThat(
-                context.checkSelfPermission(permission.MANAGE_EXTERNAL_STORAGE))
+                context.checkSelfPermission(permission.MANAGE_EXTERNAL_STORAGE)
+            )
                     .isEqualTo(PackageManager.PERMISSION_GRANTED)
         }
     }
@@ -209,10 +234,13 @@ class PermissionsTest {
     @Test
     @RequireSdkVersion(min = Build.VERSION_CODES.S)
     fun withPermissionOnVersion_notOnVersion_doesNotHavePermission() {
-        TestApis.permissions().withPermissionOnVersion(Build.VERSION_CODES.R,
-            permission.MANAGE_EXTERNAL_STORAGE).use {
+        TestApis.permissions().withPermissionOnVersion(
+            Build.VERSION_CODES.R,
+            permission.MANAGE_EXTERNAL_STORAGE
+        ).use {
             assertThat(
-                context.checkSelfPermission(permission.MANAGE_EXTERNAL_STORAGE))
+                context.checkSelfPermission(permission.MANAGE_EXTERNAL_STORAGE)
+            )
                     .isNotEqualTo(PackageManager.PERMISSION_GRANTED)
         }
     }
@@ -220,19 +248,22 @@ class PermissionsTest {
     @Test
     @EnsureHasPermission(permission.INTERACT_ACROSS_USERS_FULL)
     fun hasPermission_permissionIsGranted_returnsTrue() {
-        assertThat(TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)).isTrue()
+        assertThat(
+            TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)
+        ).isTrue()
     }
 
     @Test
     @EnsureDoesNotHavePermission(permission.INTERACT_ACROSS_USERS_FULL)
     fun hasPermission_permissionIsNotGranted_returnsFalse() {
-        assertThat(TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)).isFalse()
+        assertThat(
+            TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)
+        ).isFalse()
     }
 
     @Test
     fun withAppOp_appOpIsGranted() {
         TestApis.permissions().withAppOp(APP_OP).use {
-
             assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isTrue()
         }
     }
@@ -240,7 +271,6 @@ class PermissionsTest {
     @Test
     fun withoutAppOp_appOpIsNotGranted() {
         TestApis.permissions().withoutAppOp(APP_OP).use {
-
             assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isFalse()
         }
     }
@@ -249,9 +279,10 @@ class PermissionsTest {
     fun withAppOpAndPermission_hasBoth() {
         TestApis.permissions().withAppOp(APP_OP)
                 .withPermission(permission.INTERACT_ACROSS_USERS_FULL).use {
-
                     assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isTrue()
-                    assertThat(TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL))
+                    assertThat(
+                        TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)
+                    )
                             .isTrue()
                 }
     }
@@ -260,9 +291,10 @@ class PermissionsTest {
     fun withoutAppOpAndWithPermission_hasPermissionButNotAppOp() {
         TestApis.permissions().withoutAppOp(APP_OP)
                 .withPermission(permission.INTERACT_ACROSS_USERS_FULL).use {
-
                     assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isFalse()
-                    assertThat(TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL))
+                    assertThat(
+                        TestApis.permissions().hasPermission(permission.INTERACT_ACROSS_USERS_FULL)
+                    )
                             .isTrue()
                 }
     }
@@ -294,7 +326,7 @@ class PermissionsTest {
     }
 
     @Test
-    @RequireAdbRoot(reason = "Use of MANAGE_USERS")
+    @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun withPermission_unadoptablePermission_withRoot_hasPermission() {
         TestApis.permissions().withPermission(MANAGE_USERS).use {
             assertThat(TestApis.permissions().hasPermission(MANAGE_USERS)).isTrue()
@@ -302,7 +334,7 @@ class PermissionsTest {
     }
 
     @Test
-    @RequireAdbRoot(reason = "Use of INSTALL_PERMISSION")
+    @RequireRootInstrumentation(reason = "Use of INSTALL_PERMISSION")
     fun withoutPermission_undroppablePermission_withRoot_doesNotHavePermission() {
         TestApis.permissions().withoutPermission(INSTALL_PERMISSION).use {
             assertThat(TestApis.permissions().hasPermission(INSTALL_PERMISSION)).isFalse()
@@ -311,14 +343,14 @@ class PermissionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_USERS)
-    @RequireAdbRoot(reason = "Use of MANAGE_USERS")
+    @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun ensureHasPermissionAnnotation_unadoptablePermission_withRoot_hasPermission() {
         assertThat(TestApis.permissions().hasPermission(MANAGE_USERS)).isTrue()
     }
 
     @Test
     @EnsureDoesNotHavePermission(INSTALL_PERMISSION)
-    @RequireAdbRoot(reason = "Use of INSTALL_PERMISSION")
+    @RequireRootInstrumentation(reason = "Use of INSTALL_PERMISSION")
     fun ensureDoesNotHavePermissionAnnotation_undroppablePermission_withRoot_doesNotHavePermission() {
         assertThat(TestApis.permissions().hasPermission(INSTALL_PERMISSION)).isFalse()
     }
