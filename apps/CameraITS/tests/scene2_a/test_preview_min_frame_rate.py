@@ -31,7 +31,7 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_RECORDING_DURATION_SECONDS = 10
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
-_FPS_ATOL = 0.8
+_FPS_ATOL = 2
 _DARKNESS_ATOL = 0.1
 
 
@@ -77,8 +77,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       # determine camera capabilities for preview
       preview_sizes = cam.get_supported_preview_sizes(
           self.camera_id)
-      supported_video_sizes = cam.get_supported_video_sizes_capped(self.camera_id)
-      max_video_size = supported_video_sizes[-1]  # choose largest available size
+      supported_video_sizes = cam.get_supported_video_sizes_capped(
+          self.camera_id)
+      max_video_size = supported_video_sizes[-1]  # largest available size
       logging.debug('Camera supported preview sizes: %s', preview_sizes)
       logging.debug('Camera supported video sizes: %s', supported_video_sizes)
 

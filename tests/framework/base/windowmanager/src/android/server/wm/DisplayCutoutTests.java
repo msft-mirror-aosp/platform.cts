@@ -21,6 +21,7 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.DisplayCutoutTests.TestActivity.EXTRA_CUTOUT_MODE;
 import static android.server.wm.DisplayCutoutTests.TestActivity.EXTRA_ORIENTATION;
 import static android.server.wm.DisplayCutoutTests.TestDef.Which.DISPATCHED;
@@ -91,6 +92,7 @@ import org.junit.runners.Parameterized.Parameter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -184,6 +186,8 @@ public class DisplayCutoutTests {
                 (int) ((context.getResources().getConfiguration().densityDpi
                         / (float) DENSITY_DEFAULT)
                         * MAXIMUM_SIZE_FOR_NO_LETTERBOX_IF_DEFAULT_OR_SHORT_EDGE_DP);
+        assertTrue("Failed to reach stable window geometry",
+                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
     }
 
     @Test

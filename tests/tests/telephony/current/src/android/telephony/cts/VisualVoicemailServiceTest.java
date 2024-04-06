@@ -110,6 +110,9 @@ public class VisualVoicemailServiceTest {
         assumeTrue(hasFeatureSupported(mContext));
         // The tests run on real modem with visual voicemail SMS.
         assumeFalse(isEmulator());
+        // Wear does not support Visual Voicemail
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_WATCH));
         mPreviousDefaultDialer = getDefaultDialer(getInstrumentation());
         setDefaultDialer(getInstrumentation(), PACKAGE);
 

@@ -90,9 +90,12 @@ public class PermissionPolicyTest {
     private static final String ATTR_PERMISSION_FLAGS = "permissionFlags";
     private static final String ATTR_PROTECTION_LEVEL = "protectionLevel";
     private static final String ATTR_BACKGROUND_PERMISSION = "backgroundPermission";
+    private static final String ATTR_FEATURE_FLAG = "featureFlag";
 
     private static final String OBSERVE_APP_USAGE_PERMISSION =
             "android.permission.OBSERVE_APP_USAGE";
+    private static final String SET_THEME_OVERLAY_CONTROLLER_READY_PERMISSION =
+            "android.permission.SET_THEME_OVERLAY_CONTROLLER_READY";
     private static final String MODIFY_DAY_NIGHT_MODE_PERMISSION =
             "android.permission.MODIFY_DAY_NIGHT_MODE";
 
@@ -330,6 +333,11 @@ public class PermissionPolicyTest {
                     continue;
                 }
                 if (TAG_PERMISSION.equals(parser.getName())) {
+                    String featureFlag = parser.getAttributeValue(null, ATTR_FEATURE_FLAG);
+                    if (featureFlag != null) {
+                        // If the permission is flagged it should not be visible on Android 14
+                        continue;
+                    }
                     ExpectedPermissionInfo permissionInfo = new ExpectedPermissionInfo(
                             parser.getAttributeValue(null, ATTR_NAME),
                             parser.getAttributeValue(null, ATTR_PERMISSION_GROUP),
@@ -522,6 +530,7 @@ public class PermissionPolicyTest {
         switch (permissionName) {
             case SYNC_FLAGS_PERMISSION:
             case WRITE_FLAGS_PERMISSION:
+            case SET_THEME_OVERLAY_CONTROLLER_READY_PERMISSION:
                 return true;  // Added in u-qpr.
             case HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PERMISSION:
                 return parseDate(SECURITY_PATCH).before(HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PATCH_DATE);
