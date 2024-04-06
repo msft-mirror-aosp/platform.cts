@@ -170,6 +170,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
+              if configured_stream['format'] != 'priv':
+                hlg10 = False
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],

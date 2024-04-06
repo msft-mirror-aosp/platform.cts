@@ -53,6 +53,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -437,6 +438,41 @@ public final class ForceStopTest {
         assertTrue("Did not receive PendingIntent cancellation callback",
                 pendingIntentCancelled.block(DELAY_MILLIS));
         assertThrows(CanceledException.class, () -> pendingIntent.send());
+
+        // Trigger the PendingIntent creation to verify the app can create new PendingIntents
+        // as usual.
+        final PendingIntent pendingIntent2 = triggerPendingIntentCreation(APP_PACKAGE);
+        assertNotNull(pendingIntent2);
+
+        // Force-stop it again to clean up
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_STAY_STOPPED)
+    public void testPendingIntentRetained() throws Exception {
+        final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
+        assertNotNull(pendingIntent);
+
+        final ConditionVariable pendingIntentCancelled = new ConditionVariable();
+        pendingIntent.addCancelListener(mTargetContext.getMainExecutor(), pi -> {
+            if (pendingIntent.equals(pi)) {
+                pendingIntentCancelled.open();
+            }
+        });
+
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+        assertTrue("Package " + APP_PACKAGE + " should be in the stopped state",
+                mPackageManager.isPackageStopped(APP_PACKAGE));
+
+        // Verify that pending intent does not get cancelled when the app that created it
+        // is force-stopped.
+        assertFalse("Received PendingIntent cancellation callback",
+                pendingIntentCancelled.block(DELAY_MILLIS));
+        // Trigger pendingIntent to verify there is no exception thrown.
+        pendingIntent.send();
 
         // Trigger the PendingIntent creation to verify the app can create new PendingIntents
         // as usual.

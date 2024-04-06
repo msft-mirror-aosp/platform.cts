@@ -143,11 +143,10 @@ def verify_preview_stabilization(recording_obj, gyro_events,
         os.path.join(log_path, file)
     )
     frames.append(img / 255)
-  frame_shape = frames[0].shape
-  logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
+  frame_h, frame_w, _ = frames[0].shape
+  logging.debug('Frame size %d x %d', frame_w, frame_h)
 
   # Extract camera rotations
-  img_h = frames[0].shape[0]
   if zoom_ratio:
     zoom_ratio_suffix = f'{zoom_ratio:.1f}'
   else:
@@ -157,7 +156,7 @@ def verify_preview_stabilization(recording_obj, gyro_events,
   cam_rots = sensor_fusion_utils.get_cam_rotations(
       frames[_START_FRAME:],
       facing,
-      img_h,
+      frame_h,
       file_name_stem,
       _START_FRAME,
       stabilized_video=True

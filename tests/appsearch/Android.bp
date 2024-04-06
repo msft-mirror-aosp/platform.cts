@@ -26,6 +26,7 @@ android_test {
         "compatibility-device-util-axt",
         "testng",
         "appsearch_flags_java_lib",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",

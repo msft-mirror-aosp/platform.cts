@@ -85,6 +85,11 @@ public class TestAppFunctionService extends AppFunctionService {
                 });
                 break;
             }
+            case "noOp": {
+                callback.accept(
+                        newSuccessfulResult(new ExecuteAppFunctionResponse.Builder().build()));
+                break;
+            }
             default:
                 callback.accept(newFailedResult(RESULT_NOT_FOUND, "no such method"));
         }

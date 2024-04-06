@@ -189,7 +189,9 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         withShellPermissionIdentity(
             Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request)
         }
@@ -219,7 +221,9 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         withShellPermissionIdentity(
             Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request)
         }
@@ -260,6 +264,11 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         // App should not bind at this moment.
         assertValidCompanionDeviceServicesUnbind()
+
+        // Start observing presence.
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.stopObservingDevicePresence(request)
+        }
     }
 
     @Test
@@ -292,6 +301,15 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
         simulateDeviceEventDeviceUnlocked(userId)
         // App should not bind at this moment.
         assertValidCompanionDeviceServicesUnbind()
+
+        withShellPermissionIdentity(
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        ) {
+            cdm.stopObservingDevicePresence(request)
+        }
     }
 
     @Test
@@ -300,7 +318,9 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         withShellPermissionIdentity(
             Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request)
         }
@@ -321,5 +341,14 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
         simulateDeviceEventDeviceUnlocked(userId)
         // App should not bind at this moment.
         assertValidCompanionDeviceServicesUnbind()
+
+        withShellPermissionIdentity(
+            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        ) {
+            cdm.stopObservingDevicePresence(request)
+        }
     }
 }

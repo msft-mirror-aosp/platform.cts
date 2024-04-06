@@ -261,22 +261,18 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_5;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_6;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_6_drop;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_19;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_19_drop;
         if (height > 1080) {
             if (useHighBitDepth) {
                 r5_1__H_1_19 = pce.addR5_1__H_1_19();
-                r5_1__H_1_19_drop = pce.addR5_1__H_1_19_4k_drop();
                 r5_1__H_1_19.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_19_drop.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_19.setFrameDropsPerSecond(frameDropsPerSec);
             } else {
                 r5_1__H_1_5 = pce.addR5_1__H_1_5_4k();
                 r5_1__H_1_6 = pce.addR5_1__H_1_6_4k();
-                r5_1__H_1_6_drop = pce.addR5_1__H_1_6_4k_drop();
                 r5_1__H_1_5.setConcurrentInstances(maxInstances);
                 r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_6_drop.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_6.setFrameDropsPerSecond(frameDropsPerSec);
             }
         } else if (height == 1080) {
             r5_1__H_1_5 = pce.addR5_1__H_1_5_1080p();

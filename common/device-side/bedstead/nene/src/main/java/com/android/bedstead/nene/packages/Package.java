@@ -418,16 +418,11 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
-
         sUiAutomation.revokeRuntimePermission(packageName(), permission);
 
         String message = "Error denying permission " + permission
                 + " to package " + this + " on user " + user
-                + ". Command appeared successful but not revoked."
-                + (shouldRunAsRoot ? "" : " If this test requires permissions that can only be "
-                + "granted on devices where adb has root. Add @RequireAdbRoot to the test.");
+                + ". Command appeared successful but not revoked.";
         assertWithMessage(message).that(hasPermission(user, permission)).isFalse();
 
         return this;

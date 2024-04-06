@@ -199,12 +199,10 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         if (isSecure) {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9;
-            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9_drop;
             if(height > 1080){
                 r5_1__H_1_9 = pce.addR5_1__H_1_9_4k();
-                r5_1__H_1_9_drop = pce.addR5_1__H_1_9_4k_drop();
                 r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_9_drop.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_9.setFrameDropsPerSecond(frameDropsPerSec);
             } else {
                 r5_1__H_1_9 = pce.addR5_1__H_1_9_1080p();
                 r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
@@ -212,14 +210,12 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         } else {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_1;
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_2;
-            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_2_drop;
             if (height > 1080) {
                 r5_1__H_1_1 = pce.addR5_1__H_1_1_4k();
                 r5_1__H_1_2 = pce.addR5_1__H_1_2_4k();
-                r5_1__H_1_2_drop = pce.addR5_1__H_1_2_4k_drop();
                 r5_1__H_1_1.setConcurrentInstances(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_2_drop.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_2.setFrameDropsPerSecond(frameDropsPerSec);
             } else if (height == 1080) {
                 r5_1__H_1_1 = pce.addR5_1__H_1_1_1080p();
                 r5_1__H_1_2 = pce.addR5_1__H_1_2_1080p();

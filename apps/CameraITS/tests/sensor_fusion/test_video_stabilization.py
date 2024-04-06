@@ -203,10 +203,9 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
         logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
 
         # Extract camera rotations
-        img_h = frames[0].shape[0]
         file_name_stem = f'{os.path.join(log_path, _NAME)}_{video_quality}'
         cam_rots = sensor_fusion_utils.get_cam_rotations(
-            frames[_START_FRAME:], facing, img_h,
+            frames[_START_FRAME:], facing, frame_shape[0],
             file_name_stem, _START_FRAME, stabilized_video=True)
         sensor_fusion_utils.plot_camera_rotations(
             cam_rots, _START_FRAME, video_quality, file_name_stem)

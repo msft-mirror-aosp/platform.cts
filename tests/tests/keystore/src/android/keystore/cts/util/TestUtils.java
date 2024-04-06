@@ -1253,4 +1253,14 @@ public class TestUtils {
         final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
         return initGsiRc.exists();
     }
+
+    /**
+     * Ed25519 algorithm name is added in Android V. So CTS using this algorithm
+     * name should check SDK_INT for Android V/preview.
+     * @return true if current SDK_INT is 34 and PREVIEW_SDK_INT >= 1 or SDK_INT >= 35
+     */
+    public static boolean isEd25519AlgorithmExpectedToSupport() {
+        return ((Build.VERSION.SDK_INT == 34 && Build.VERSION.PREVIEW_SDK_INT >= 1)
+                || Build.VERSION.SDK_INT >= 35);
+    }
 }

@@ -21,23 +21,27 @@ import android.Manifest.permission.INJECT_EVENTS
 import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
 import android.companion.virtual.VirtualDeviceParams
+import android.content.Context
 import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
 import android.util.Log
+import android.view.Display
+import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.PointerIcon
 import android.virtualdevice.cts.common.FakeAssociationRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.cts.input.DefaultPointerSpeedRule
+import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import java.io.File
 import java.io.FileOutputStream
@@ -52,6 +56,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameter
 
 /**
  * End-to-end tests for the [PointerIcon] pipeline.
@@ -64,12 +70,10 @@ import org.junit.runner.RunWith
  * factors and sizes.
  */
 @MediumTest
-@RunWith(AndroidJUnit4::class)
+@RunWith(Parameterized::class)
 class PointerIconTest {
     private lateinit var activity: CaptureEventActivity
     private lateinit var verifier: EventVerifier
-    private lateinit var virtualDevice: VirtualDevice
-    private lateinit var virtualMouse: VirtualMouse
 
     @get:Rule
     val testName = TestName()
@@ -80,6 +84,9 @@ class PointerIconTest {
     @get: Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
 
+    @Parameter(0)
+    lateinit var device: PointerDevice
+
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -89,33 +96,14 @@ class PointerIconTest {
             activity.window.decorView.rootView.setBackgroundColor(Color.WHITE)
         }
 
-        val virtualDeviceManager =
-            context.getSystemService(VirtualDeviceManager::class.java)!!
-        runWithShellPermissionIdentity({
-            virtualDevice =
-                virtualDeviceManager.createVirtualDevice(fakeAssociationRule.associationInfo.id,
-                    VirtualDeviceParams.Builder().build())
-            virtualMouse =
-                virtualDevice.createVirtualMouse(VirtualMouseConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(NAME)
-                        .setAssociatedDisplayId(virtualDisplayRule.displayId).build())
-        }, CREATE_VIRTUAL_DEVICE, INJECT_EVENTS)
+        device.setUp(context, virtualDisplayRule.virtualDisplay.display, fakeAssociationRule)
 
         verifier = EventVerifier(activity::getInputEvent)
     }
 
     @After
     fun tearDown() {
-        runWithShellPermissionIdentity({
-            if (this::virtualMouse.isInitialized) {
-                virtualMouse.close()
-            }
-            if (this::virtualDevice.isInitialized) {
-                virtualDevice.close()
-            }
-        }, CREATE_VIRTUAL_DEVICE)
+        device.tearDown()
     }
 
     @Test
@@ -127,22 +115,13 @@ class PointerIconTest {
         val view = activity.window.decorView.rootView
         view.pointerIcon = PointerIcon.create(bitmap, 50f, 50f)
 
-        moveMouse(1f, 1f)
+        device.hoverMove(1, 1)
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
         val actualScreenshot = getActualScreenshot()
         val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertEquals(
-            "Actual and expected screenshots should be the same width.",
-            expectedScreenshot.width,
-            actualScreenshot.width
-        )
-        assertEquals(
-            "Actual and expected screenshots should be the same height.",
-            expectedScreenshot.height,
-            actualScreenshot.height
-        )
+        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
 
         assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
     }
@@ -154,22 +133,13 @@ class PointerIconTest {
             PointerIcon.load(InstrumentationRegistry.getInstrumentation().targetContext.resources,
                 R.drawable.pointer_arrow_bitmap_icon)
 
-        moveMouse(1f, 1f)
+        device.hoverMove(1, 1)
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
         val actualScreenshot = getActualScreenshot()
         val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertEquals(
-            "Actual and expected screenshots should be the same width.",
-            expectedScreenshot.width,
-            actualScreenshot.width
-        )
-        assertEquals(
-            "Actual and expected screenshots should be the same height.",
-            expectedScreenshot.height,
-            actualScreenshot.height
-        )
+        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
 
         assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
     }
@@ -190,22 +160,13 @@ class PointerIconTest {
         pointer.setDrawNativeDropShadow(false)
         view.pointerIcon = pointer
 
-        moveMouse(1f, 1f)
+        device.hoverMove(1, 1)
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
         val actualScreenshot = getActualScreenshot()
         val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertEquals(
-            "Actual and expected screenshots should be the same width.",
-            expectedScreenshot.width,
-            actualScreenshot.width
-        )
-        assertEquals(
-            "Actual and expected screenshots should be the same height.",
-            expectedScreenshot.height,
-            actualScreenshot.height
-        )
+        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
 
         assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
     }
@@ -220,12 +181,22 @@ class PointerIconTest {
             PointerIcon.load(InstrumentationRegistry.getInstrumentation().targetContext.resources,
                 R.drawable.pointer_arrow_vector_icon)
 
-        moveMouse(1f, 1f)
-        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
+        device.hoverMove(1, 1)
         waitForPointerIconUpdate()
 
         val actualScreenshot = getActualScreenshot()
         val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
+        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
+
+        // Drop shadows drawn in the hardware can be device dependent. Test that screenshots are
+        // similar enough within a threshold to account for these differences.
+        assertScreenshotsSimilar(actualScreenshot, expectedScreenshot)
+    }
+
+    private fun assertScreenshotDimensionsMatch(
+        actualScreenshot: Bitmap,
+        expectedScreenshot: Bitmap
+    ) {
         assertEquals(
             "Actual and expected screenshots should be the same width.",
             expectedScreenshot.width,
@@ -236,10 +207,6 @@ class PointerIconTest {
             expectedScreenshot.height,
             actualScreenshot.height
         )
-
-        // Drop shadows drawn in the hardware can be device dependent. Test that screenshots are
-        // similar enough within a threshold to account for these differences.
-        assertScreenshotsSimilar(actualScreenshot, expectedScreenshot)
     }
 
     private fun assertScreenshotsSimilar(actualScreenshot: Bitmap, expectedScreenshot: Bitmap) {
@@ -319,36 +286,141 @@ class PointerIconTest {
             dir.mkdirs()
         }
         val actualScreenshot = File(dir, testName.methodName + "_actual.png")
+        if (actualScreenshot.exists()) {
+            Log.i(TAG, "Overwriting existing screenshot file: " + actualScreenshot.path)
+            actualScreenshot.delete()
+        }
         actualScreenshot.createNewFile()
-        bitmap.compress(
-            Bitmap.CompressFormat.PNG,
-            100,
-            FileOutputStream(actualScreenshot)
-        )
-        Log.d(TAG, "Actual screenshot saved to: " + dir)
-    }
-
-    private fun moveMouse(dx: Float, dy: Float) {
-        runWithShellPermissionIdentity({
-            virtualMouse.sendRelativeEvent(
-                VirtualMouseRelativeEvent.Builder()
-                    .setRelativeX(dx)
-                    .setRelativeY(dy)
-                    .build()
+        FileOutputStream(actualScreenshot).use { outputStream ->
+            bitmap.compress(
+                Bitmap.CompressFormat.PNG,
+                100,
+                outputStream
             )
-        }, CREATE_VIRTUAL_DEVICE)
+        }
+        Log.d(TAG, "Actual screenshot saved to: $dir")
     }
 
     // We don't have a way to synchronously know when the requested pointer icon has been drawn
     // to the display, so wait some time (at least one display frame) for the icon to propagate.
     private fun waitForPointerIconUpdate() = Thread.sleep(100)
 
-    private companion object {
-        const val VENDOR_ID = 1
-        const val PRODUCT_ID = 11
-        const val NAME = "Pointer Icon Test Mouse"
+    companion object {
         const val TAG = "PointerIconTest"
         const val SCREENSHOT_DIFF_PERCENT = 0.01f // 1% total difference threshold
         const val MAX_PER_CHANNEL_DIFF = 0 // Default allow no difference per channel
+
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun data(): Iterable<Any> =
+            listOf(PointerDevice.MOUSE, PointerDevice.DRAWING_TABLET)
+    }
+}
+
+enum class PointerDevice {
+
+    MOUSE {
+        private lateinit var virtualDevice: VirtualDevice
+        private lateinit var virtualMouse: VirtualMouse
+
+        override fun setUp(
+            context: Context,
+            display: Display,
+            fakeAssociationRule: FakeAssociationRule
+        ) {
+            val virtualDeviceManager =
+                context.getSystemService(VirtualDeviceManager::class.java)!!
+            runWithShellPermissionIdentity({
+                virtualDevice =
+                    virtualDeviceManager.createVirtualDevice(fakeAssociationRule.associationInfo.id,
+                        VirtualDeviceParams.Builder().build())
+                virtualMouse =
+                    virtualDevice.createVirtualMouse(VirtualMouseConfig.Builder()
+                            .setVendorId(TEST_VENDOR_ID)
+                            .setProductId(TEST_PRODUCT_ID)
+                            .setInputDeviceName("Pointer Icon Test Mouse")
+                            .setAssociatedDisplayId(display.displayId).build())
+            }, CREATE_VIRTUAL_DEVICE, INJECT_EVENTS)
+        }
+
+        override fun hoverMove(dx: Int, dy: Int) {
+            runWithShellPermissionIdentity({
+                virtualMouse.sendRelativeEvent(
+                    VirtualMouseRelativeEvent.Builder()
+                            .setRelativeX(dx.toFloat())
+                            .setRelativeY(dy.toFloat())
+                            .build()
+                )
+            }, CREATE_VIRTUAL_DEVICE)
+        }
+
+        override fun tearDown() {
+            runWithShellPermissionIdentity({
+                if (this::virtualMouse.isInitialized) {
+                    virtualMouse.close()
+                }
+                if (this::virtualDevice.isInitialized) {
+                    virtualDevice.close()
+                }
+            }, CREATE_VIRTUAL_DEVICE)
+        }
+
+        override fun toString(): String = "MOUSE"
+    },
+
+    DRAWING_TABLET {
+        private lateinit var drawingTablet: UinputTouchDevice
+        private lateinit var pointer: Point
+
+        @Suppress("DEPRECATION")
+        override fun setUp(
+            context: Context,
+            display: Display,
+            fakeAssociationRule: FakeAssociationRule
+        ) {
+            drawingTablet =
+                UinputTouchDevice(
+                    InstrumentationRegistry.getInstrumentation(),
+                    display,
+                    R.raw.test_drawing_tablet_register,
+                    InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
+                    useDisplaySize = true,
+                )
+            // Start with the pointer in the middle of the display.
+            pointer = Point((display.width - 1) / 2, (display.height - 1) / 2)
+        }
+
+        override fun hoverMove(dx: Int, dy: Int) {
+            pointer.offset(dx, dy)
+            drawingTablet.sendBtn(UinputTouchDevice.BTN_TOOL_PEN, isDown = true)
+            drawingTablet.sendDown(
+                id = 0,
+                location = pointer,
+                toolType = UinputTouchDevice.MT_TOOL_PEN
+            )
+            drawingTablet.sync()
+        }
+
+        override fun tearDown() {
+            if (this::drawingTablet.isInitialized) {
+                drawingTablet.close()
+            }
+        }
+
+        override fun toString(): String = "DRAWING_TABLET"
+    };
+
+    abstract fun setUp(
+        context: Context,
+        display: Display,
+        fakeAssociationRule: FakeAssociationRule
+    )
+
+    abstract fun hoverMove(dx: Int, dy: Int)
+    abstract fun tearDown()
+
+    companion object {
+        const val TEST_VENDOR_ID = 0x18d1
+        const val TEST_PRODUCT_ID = 0xabcd
     }
 }

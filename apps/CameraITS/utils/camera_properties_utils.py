@@ -733,6 +733,19 @@ def cropped_raw_stream_use_case(props):
       'android.scaler.availableStreamUseCases']
 
 
+def dynamic_range_ten_bit(props):
+  """Returns whether a device supports the DYNAMIC_RANGE_TEN_BIT capability.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+     Boolean. True if the device supports the DYNAMIC_RANGE_TEN_BIT capability.
+  """
+  return 'android.request.availableCapabilities' in props and 18 in props[
+      'android.request.availableCapabilities']
+
+
 def intrinsic_calibration(props):
   """Returns whether a device supports android.lens.intrinsicCalibration.
 

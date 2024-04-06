@@ -405,7 +405,7 @@ public class TelephonyUtils {
         }
 
         String allowList = "package:" + packageName + "," + "carrierIds:" + carrierId + ","
-                + "callerSHA1Id:" + shaId;
+                + "callerSHA256Ids:" + shaId;
         executeShellCommand(instr, COMMAND_CARRIER_RESTRICTION_STATUS + allowList);
     }
 

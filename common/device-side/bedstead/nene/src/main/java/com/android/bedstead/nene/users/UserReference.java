@@ -1041,4 +1041,22 @@ public final class UserReference implements AutoCloseable {
     public boolean isGuest() {
         return userInfo().isGuest();
     }
+
+    /**
+     * Check if the provided user {@code credential} equals the set credential
+     *
+     * @param credential The credential to verify.
+     * @return {@code true} if the credential matches.
+     */
+    public boolean lockCredentialEquals(String credential) {
+        try {
+            return ShellCommand.builder("cmd lock_settings verify")
+                    .addOperand("--user")
+                    .addOperand(userInfo().id)
+                    .addOperand(credential.isEmpty() ? "" : "--old "+credential)
+                    .execute().startsWith("Lock credential verified");
+        } catch (AdbException e) {
+            throw new NeneException("Could not verify user credential");
+        }
+    }
 }

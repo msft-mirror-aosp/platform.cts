@@ -440,6 +440,45 @@ class ItsSession(object):
     self.props = data[_OBJ_VALUE_STR]['cameraProperties']
     return data[_OBJ_VALUE_STR]['cameraProperties']
 
+  def get_session_properties(self, out_surfaces, cap_request):
+    """Get the camera properties object for a session configuration.
+
+    Args:
+      out_surfaces: output surfaces used to query session props.
+      cap_request: capture request used to query session props.
+
+    Returns:
+     The Python dictionary object for the CameraProperties object.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'getCameraSessionProperties'
+    if out_surfaces:
+      if isinstance(out_surfaces, list):
+        cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
+      formats = [
+          c['format'] if 'format' in c else 'yuv' for c in cmd['outputSurfaces']
+      ]
+      formats = [s if s != 'jpg' else 'jpeg' for s in formats]
+    else:
+      max_yuv_size = capture_request_utils.get_available_output_sizes(
+          'yuv', self.props)[0]
+      formats = ['yuv']
+      cmd['outputSurfaces'] = [{
+          'format': 'yuv',
+          'width': max_yuv_size[0],
+          'height': max_yuv_size[1]
+      }]
+    cmd['captureRequest'] = cap_request
+
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'cameraProperties':
+      raise error_util.CameraItsError('Invalid command response')
+    self.props = data[_OBJ_VALUE_STR]['cameraProperties']
+    return data[_OBJ_VALUE_STR]['cameraProperties']
+
   def get_camera_properties_by_id(self, camera_id, override_to_portrait=None):
     """Get the camera properties object for device with camera_id.
 
@@ -1547,7 +1586,8 @@ class ItsSession(object):
                  out_surfaces=None,
                  reprocess_format=None,
                  repeat_request=None,
-                 reuse_session=False):
+                 reuse_session=False,
+                 first_surface_for_3a=False):
     """Issue capture request(s), and read back the image(s) and metadata.
 
     The main top-level function for capturing one or more images using the
@@ -1686,6 +1726,8 @@ class ItsSession(object):
       repeat_request: Repeating request list.
       reuse_session: True if ItsService.java should try to use
         the existing CameraCaptureSession.
+      first_surface_for_3a: Use first surface in out_surfaces for 3A, not capture
+        Only applicable if out_surfaces contains at least 1 surface.
 
     Returns:
       An object, list of objects, or list of lists of objects, where each
@@ -1719,11 +1761,11 @@ class ItsSession(object):
     else:
       cmd['captureRequests'] = cap_request
 
-    if out_surfaces is not None:
-      if not isinstance(out_surfaces, list):
-        cmd['outputSurfaces'] = [out_surfaces]
-      else:
+    if out_surfaces:
+      if isinstance(out_surfaces, list):
         cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
       formats = [
           c['format'] if 'format' in c else 'yuv' for c in cmd['outputSurfaces']
       ]
@@ -1737,10 +1779,17 @@ class ItsSession(object):
           'width': max_yuv_size[0],
           'height': max_yuv_size[1]
       }]
+
     cmd['reuseSession'] = reuse_session
+    cmd['firstSurfaceFor3A'] = first_surface_for_3a
+
+    requested_surfaces = cmd['outputSurfaces'][:]
+    if first_surface_for_3a:
+      formats.pop(0)
+      requested_surfaces.pop(0)
 
     ncap = len(cmd['captureRequests'])
-    nsurf = 1 if out_surfaces is None else len(cmd['outputSurfaces'])
+    nsurf = len(formats)
 
     cam_ids = []
     bufs = {}
@@ -1776,22 +1825,22 @@ class ItsSession(object):
        # Only allow yuv output to multiple targets
       if cam_id == self._camera_id:
         yuv_surfaces = [
-            s for s in cmd['outputSurfaces']
+            s for s in requested_surfaces
             if s['format'] == 'yuv' and 'physicalCamera' not in s
         ]
         formats_for_id = [
             s['format']
-            for s in cmd['outputSurfaces']
+            for s in requested_surfaces
             if 'physicalCamera' not in s
         ]
       else:
         yuv_surfaces = [
-            s for s in cmd['outputSurfaces'] if s['format'] == 'yuv' and
+            s for s in requested_surfaces if s['format'] == 'yuv' and
             'physicalCamera' in s and s['physicalCamera'] == cam_id
         ]
         formats_for_id = [
             s['format']
-            for s in cmd['outputSurfaces']
+            for s in requested_surfaces
             if 'physicalCamera' in s and s['physicalCamera'] == cam_id
         ]
 
@@ -1907,8 +1956,8 @@ class ItsSession(object):
     rets = []
     for j, fmt in enumerate(formats):
       objs = []
-      if 'physicalCamera' in cmd['outputSurfaces'][j]:
-        cam_id = cmd['outputSurfaces'][j]['physicalCamera']
+      if 'physicalCamera' in requested_surfaces[j]:
+        cam_id = requested_surfaces[j]['physicalCamera']
       else:
         cam_id = self._camera_id
 
@@ -1997,7 +2046,8 @@ class ItsSession(object):
             mono_camera=False,
             zoom_ratio=None,
             out_surfaces=None,
-            repeat_request=None):
+            repeat_request=None,
+            first_surface_for_3a=False):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -2024,6 +2074,8 @@ class ItsSession(object):
         CameraCaptureSession will only be reused if out_surfaces is specified.
       repeat_request: repeating request list.
         See do_capture() for specifications on repeat_request.
+      first_surface_for_3a: Use first surface in output_surfaces for 3A.
+        Only applicable if out_surfaces contains at least 1 surface.
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -2046,12 +2098,12 @@ class ItsSession(object):
     cmd = {}
     cmd[_CMD_NAME_STR] = 'do3A'
     reuse_session = False
-    if out_surfaces is not None:
+    if out_surfaces:
       reuse_session = True
-      if not isinstance(out_surfaces, list):
-        cmd['outputSurfaces'] = [out_surfaces]
-      else:
+      if isinstance(out_surfaces, list):
         cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
     if repeat_request is None:
       cmd['repeatRequests'] = []
     elif not isinstance(repeat_request, list):
@@ -2081,6 +2133,7 @@ class ItsSession(object):
       else:
         raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
     cmd['reuseSession'] = reuse_session
+    cmd['firstSurfaceFor3A'] = first_surface_for_3a
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     # Wait for each specified 3A to converge.
@@ -2205,10 +2258,10 @@ class ItsSession(object):
     cmd[_CMD_NAME_STR] = 'isStreamCombinationSupported'
     cmd[_CAMERA_ID_STR] = self._camera_id
 
-    if not isinstance(out_surfaces, list):
-      cmd['outputSurfaces'] = [out_surfaces]
-    else:
+    if isinstance(out_surfaces, list):
       cmd['outputSurfaces'] = out_surfaces
+    else:
+      cmd['outputSurfaces'] = [out_surfaces]
 
     if settings:
       cmd['settings'] = settings

@@ -25,9 +25,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
-
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.xts.root.annotations.RequireAdbRoot;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
@@ -43,8 +40,10 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -370,7 +369,7 @@ public final class UserRestrictionsTest {
     }
 
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#addUserRestriction"})
-    @RequireAdbRoot(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
+    @RequireRootInstrumentation(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_CAMERA)
     public void addUserRestriction_setByPermission_appRemoved_notEnforced() {
         try {
