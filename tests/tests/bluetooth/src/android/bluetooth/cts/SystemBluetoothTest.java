@@ -70,9 +70,11 @@ public class SystemBluetoothTest {
     private static final int DISCOVERY_START_TIMEOUT = 500;
     private static final String BLE_SCAN_ALWAYS_AVAILABLE = "ble_scan_always_enabled";
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final BluetoothAdapter mAdapter =
+            mContext.getSystemService(BluetoothManager.class).getAdapter();
+    private final UiAutomation mUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     private ReentrantLock mDiscoveryStartedLock;
     private Condition mConditionDiscoveryStarted;
@@ -80,32 +82,23 @@ public class SystemBluetoothTest {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         Assume.assumeTrue(
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
 
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
     }
 
     @After
     public void tearDown() {
-        if (mUiAutomation != null) {
-            mUiAutomation.dropShellPermissionIdentity();
-        }
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     /** Test enable/disable silence mode and check whether the device is in correct state. */
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void silenceMode() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
         BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertTrue(device.setSilenceMode(true));
         assertFalse(device.isInSilenceMode());
@@ -121,8 +114,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMetadata() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
         byte[] testByteData = "Test Data".getBytes();
         BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         BluetoothAdapter.OnMetadataChangedListener listener =
@@ -149,8 +140,6 @@ public class SystemBluetoothTest {
     public void discoveryEndMillis() {
         boolean recoverOffState = false;
         try {
-            assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
             if (!TestUtils.isLocationOn(mContext)) {
                 recoverOffState = true;
                 TestUtils.enableLocation(mContext);
@@ -189,8 +178,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void containsAnyUuid() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
         ParcelUuid[] deviceAUuids =
                 new ParcelUuid[] {
                     BluetoothUuid.A2DP_SOURCE,
@@ -268,8 +255,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void canBondWithoutDialog() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
         // Verify the method returns false on a device that doesn't meet the criteria
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertFalse(testDevice.canBondWithoutDialog());
@@ -288,8 +273,6 @@ public class SystemBluetoothTest {
                             mContext.getContentResolver(), BLE_SCAN_ALWAYS_AVAILABLE);
         } catch (Settings.SettingNotFoundException e) { // Uses 0 or not available as original
         }
-
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
         // Allows BLE scanning to be performed even if the adapter is off
         Settings.Global.putInt(mContext.getContentResolver(), BLE_SCAN_ALWAYS_AVAILABLE, 1);
@@ -361,8 +344,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getSupportedProfiles() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
         List<Integer> profiles = mAdapter.getSupportedProfiles();
         assertNotNull(profiles);
     }
@@ -371,7 +352,6 @@ public class SystemBluetoothTest {
     @Test
     public void enableNoAutoConnect() {
         // Assert that when Bluetooth is already enabled, the method immediately returns true
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         assertTrue(mAdapter.enableNoAutoConnect());
     }
 
@@ -385,7 +365,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void disableBluetoothPersistFalse() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, /* persist= */ false, mContext));
         assertFalse(isBluetoothPersistedOff());
     }
@@ -393,7 +372,6 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void disableBluetoothPersistTrue() {
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, /* persist= */ true, mContext));
         assertTrue(isBluetoothPersistedOff());
     }
@@ -403,13 +381,12 @@ public class SystemBluetoothTest {
     public void setLowLatencyAudioAllowed() {
         BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
+        assertTrue(device.setLowLatencyAudioAllowed(true));
+        assertTrue(device.setLowLatencyAudioAllowed(false));
+
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         assertFalse(device.setLowLatencyAudioAllowed(true));
         assertFalse(device.setLowLatencyAudioAllowed(false));
-
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-        assertTrue(device.setLowLatencyAudioAllowed(true));
-        assertTrue(device.setLowLatencyAudioAllowed(false));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -455,16 +432,16 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setScanMode() {
-        assertEquals(
-                BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED,
-                mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE));
 
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         try {
             mAdapter.setScanMode(0);
             fail("Invalid scan mode");
         } catch (IllegalArgumentException ignored) {
         }
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertEquals(
+                BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED,
+                mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE));
 
         /* TODO(rahulsabnis): Fix the callback system so these work as intended
         assertEquals(BluetoothStatusCodes.SUCCESS,
