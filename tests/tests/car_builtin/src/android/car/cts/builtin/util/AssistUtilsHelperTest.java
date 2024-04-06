@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
@@ -47,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 public final class AssistUtilsHelperTest {
 
     private static final String TAG = AssistUtilsHelper.class.getSimpleName();
-    private static final int TIMEOUT = 20_000;
+    private static final int TIMEOUT_MS = 20_000;
 
     @Rule
     public final PermissionsCheckerRule mPermissionsCheckerRule = new PermissionsCheckerRule();
@@ -135,44 +134,47 @@ public final class AssistUtilsHelperTest {
     }
 
     private void hideSessionAndWait() throws Exception {
-        if (!AssistUtilsHelper.isSessionRunning(mContext)) {
-            return;
-        }
         VoiceInteractionSessionListener listener = new VoiceInteractionSessionListener();
         AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
 
-        listener.reset();
+        // Do nothing if no Assistant session is running.
+        if (!AssistUtilsHelper.isSessionRunning(mContext)) {
+            return;
+        }
+
+        AssistUtilsHelper.hideCurrentSession(mContext);
+
         listener.waitForSessionChange();
     }
 
     private static final class VoiceInteractionSessionListener implements
             AssistUtilsHelper.VoiceInteractionSessionListenerHelper {
 
-        private final Semaphore mChangeWait = new Semaphore(0);
+        private CountDownLatch mChangeWait = new CountDownLatch(1);
         private boolean mIsSessionShown;
 
         @Override
         public void onVoiceSessionShown() {
             mIsSessionShown = true;
             Log.d(TAG, "onVoiceSessionShown is called");
-            mChangeWait.release();
+            mChangeWait.countDown();
         }
 
         @Override
         public void onVoiceSessionHidden() {
             mIsSessionShown = false;
             Log.d(TAG, "onVoiceSessionHidden is called");
-            mChangeWait.release();
+            mChangeWait.countDown();
         }
 
         private void waitForSessionChange() throws Exception {
-            if (!mChangeWait.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+            if (!mChangeWait.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                 throw new IllegalStateException("Timed out waiting for session change");
             }
         }
 
         private void reset() {
-            mChangeWait.drainPermits();
+            mChangeWait = new CountDownLatch(1);
         }
     }
 
@@ -197,7 +199,7 @@ public final class AssistUtilsHelperTest {
         }
 
         private void waitForCallback() throws Exception {
-            mCallbackLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+            mCallbackLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
     }
 }

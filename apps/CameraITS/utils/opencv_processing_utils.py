@@ -22,6 +22,7 @@ import cv2
 import numpy
 import scipy.spatial
 
+import camera_properties_utils
 import capture_request_utils
 import error_util
 import image_processing_utils
@@ -1063,7 +1064,9 @@ def get_chart_boundary_from_aruco_markers(
     output_img_path: string; output image path.
   Returns:
     top_left: tuple; aruco marker corner coordinates in pixel.
+    top_right: tuple; aruco marker corner coordinates in pixel.
     bottom_right: tuple; aruco marker corner coordinates in pixel.
+    bottom_left: tuple; aruco marker corner coordinates in pixel.
   """
   outer_rect_coordinates = {}
   for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
@@ -1075,39 +1078,67 @@ def get_chart_boundary_from_aruco_markers(
     logging.debug('Index: %s', index)
     logging.debug('Outer rect coordinates: %s', outer_rect_coordinates[index])
   top_left = tuple(map(int, outer_rect_coordinates[0]))
+  top_right = tuple(map(int, outer_rect_coordinates[1]))
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
+  bottom_left = tuple(map(int, outer_rect_coordinates[3]))
+
   cv2.rectangle(input_img, top_left, bottom_right,
                 CV2_RED_NORM, CV2_LINE_THICKNESS)
   image_processing_utils.write_image(input_img/255, output_img_path)
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)
-  return top_left, bottom_right
+  return top_left, top_right, bottom_right, bottom_left
 
 
 def define_metering_rectangle_values(
-    tl_coordinates, br_coordinates, w, h):
+    props, top_left, top_right, bottom_right, bottom_left, w, h):
   """Find normalized values of coordinates and return 4 metering rects.
 
   Args:
-    tl_coordinates: defined by aruco markers for targeted image.
-    br_coordinates: defined by aruco markers for targeted image.
-    w: int; preview width in pixels.
-    h: int; preview height in pixels.
+    props: dict; camera properties object.
+    top_left: coordinates; defined by aruco markers for targeted image.
+    top_right: coordinates; defined by aruco markers for targeted image.
+    bottom_right: coordinates; defined by aruco markers for targeted image.
+    bottom_left: coordinates; defined by aruco markers for targeted image.
+    w: int; active array width in pixels.
+    h: int; active array height in pixels.
   Returns:
     meter_rects: 4 metering rectangles made of (x, y, width, height, weight).
-      x & y is the top left coordinate of the metering rectangle.
+      x, y are the top left coordinate of the metering rectangle.
   """
-  tl_normalized_x = round((tl_coordinates[0] / w), 2)
-  tl_normalized_y = round((tl_coordinates[1] / h), 2)
-  br_normalized_x = round((br_coordinates[0] / w), 2)
-  br_normalized_y = round((br_coordinates[1] / h), 2)
+  # If testing front camera, mirror coordinates either left/right or up/down
+  # Preview are flipped on device's natural orientation
+  # For sensor orientation 90 or 270, it is up or down
+  # For sensor orientation 0 or 180, it is left or right
+  if (props['android.lens.facing'] ==
+      camera_properties_utils.LENS_FACING['FRONT']):
+    if props['android.sensor.orientation'] in (90, 270):
+      tl_coordinates = (bottom_left[0], h - bottom_left[1])
+      br_coordinates = (top_right[0], h - top_right[1])
+      logging.debug('Found sensor orientation %d, flipping up down',
+                    props['android.sensor.orientation'])
+    else:
+      tl_coordinates = (w - top_right[0], top_right[1])
+      br_coordinates = (w - bottom_left[0], bottom_left[1])
+      logging.debug('Found sensor orientation %d, flipping left right',
+                    props['android.sensor.orientation'])
+    logging.debug('Mirrored top-left coordinates: %s', tl_coordinates)
+    logging.debug('Mirrored bottom-right coordinates: %s', br_coordinates)
+  else:
+    tl_coordinates, br_coordinates = top_left, bottom_right
+
+  # Normalize coordinates' values to construct metering rectangles
   meter_rects = []
-  rect_width = (br_normalized_x - tl_normalized_x) / NUM_AE_AWB_REGIONS
-  rect_height = br_normalized_y - tl_normalized_y
+  tl_normalized_x = tl_coordinates[0] / w
+  tl_normalized_y = tl_coordinates[1] / h
+  br_normalized_x = br_coordinates[0] / w
+  br_normalized_y = br_coordinates[1] / h
+  rect_w = round((br_normalized_x - tl_normalized_x) / NUM_AE_AWB_REGIONS, 2)
+  rect_h = round(br_normalized_y - tl_normalized_y, 2)
   for i in range(NUM_AE_AWB_REGIONS):
-    x = tl_normalized_x + (rect_width * i)
-    y = tl_normalized_y
-    meter_rect = [x, y, rect_width, rect_height, AE_AWB_METER_WEIGHT]
+    x = round(tl_normalized_x + (rect_w * i), 2)
+    y = round(tl_normalized_y, 2)
+    meter_rect = [x, y, rect_w, rect_h, AE_AWB_METER_WEIGHT]
     meter_rects.append(meter_rect)
   logging.debug('metering rects: %s', meter_rects)
   return meter_rects

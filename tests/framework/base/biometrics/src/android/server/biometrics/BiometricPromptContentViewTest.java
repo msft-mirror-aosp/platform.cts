@@ -33,6 +33,7 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.PromptContentItemBulletedText;
+import android.hardware.biometrics.PromptContentItemPlainText;
 import android.hardware.biometrics.PromptContentViewWithMoreOptionsButton;
 import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
@@ -516,7 +517,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         itemList.add(VERTICAL_LIST_LAST_ITEM_TEXT);
         // For testing API addListItem(PromptContentItem, int)
         contentViewBuilder.addListItem(
-                new PromptContentItemBulletedText(VERTICAL_LIST_LAST_ITEM_TEXT),
+                new PromptContentItemPlainText(VERTICAL_LIST_LAST_ITEM_TEXT),
                 itemCountBesidesLastItem);
         return itemList;
     }
