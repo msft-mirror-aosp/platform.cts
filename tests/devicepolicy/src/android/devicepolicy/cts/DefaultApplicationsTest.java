@@ -47,6 +47,8 @@ public final class DefaultApplicationsTest {
             includeNonDeviceAdminStates = false)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
+    // TODO(b/329419195): Restore this after the API bump for 24Q3.
+    @Ignore
     public void addUserRestriction_disallowConfigDefaultApps_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
                 () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
