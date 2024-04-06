@@ -57,12 +57,14 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
 
     @After
     fun tearDown() {
-        context.unbindService(serviceConnection)
+        if (this::serviceConnection.isInitialized) {
+            context.unbindService(serviceConnection)
+        }
         uninstallPackage(REMOVE_PERMISSION_SERVICE_PKG)
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321555066])
+    @AsbSecurityTest(cveBugId = [321711213])
     fun testRemovePermission_dynamicPermission_permissionRemoved() {
         val permissionInfo = PermissionInfo().apply {
             name = DYNAMIC_PERMISSION
@@ -81,7 +83,7 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321555066])
+    @AsbSecurityTest(cveBugId = [321711213])
     fun testPermissionPermission_nonDynamicPermission_permissionUnchanged() {
         assertThat(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
             .isEqualTo(NON_DYNAMIC_PERMISSION)

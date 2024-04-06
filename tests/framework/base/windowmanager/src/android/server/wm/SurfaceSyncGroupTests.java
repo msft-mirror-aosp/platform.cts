@@ -38,8 +38,8 @@ import android.view.ViewTreeObserver;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
 import android.window.SurfaceSyncGroup;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,8 +53,8 @@ public class SurfaceSyncGroupTests {
     private static final String TAG = "SurfaceSyncGroupTests";
 
     @Rule
-    public ActivityTestRule<SurfaceSyncGroupActivity> mActivityRule = new ActivityTestRule<>(
-            SurfaceSyncGroupActivity.class);
+    public ActivityScenarioRule<SurfaceSyncGroupActivity> mActivityRule =
+            new ActivityScenarioRule<>(SurfaceSyncGroupActivity.class);
 
     private SurfaceSyncGroupActivity mActivity;
 
@@ -62,7 +62,7 @@ public class SurfaceSyncGroupTests {
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
     }
 
