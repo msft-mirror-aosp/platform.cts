@@ -82,8 +82,8 @@ public class SystemBluetoothTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        Assume.assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH));
+        Assume.assumeTrue(
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
 
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
@@ -100,9 +100,7 @@ public class SystemBluetoothTest {
         }
     }
 
-    /**
-     * Test enable/disable silence mode and check whether the device is in correct state.
-     */
+    /** Test enable/disable silence mode and check whether the device is in correct state. */
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void silenceMode() {
@@ -117,9 +115,8 @@ public class SystemBluetoothTest {
     }
 
     /**
-     * Test whether the metadata would be stored in Bluetooth storage successfully,
-     * also test whether OnMetadataChangedListener would callback correct values when
-     * metadata is changed..
+     * Test whether the metadata would be stored in Bluetooth storage successfully, also test
+     * whether OnMetadataChangedListener would callback correct values when metadata is changed..
      */
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
@@ -139,12 +136,11 @@ public class SystemBluetoothTest {
                 };
 
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        assertTrue(adapter.addOnMetadataChangedListener(device,
-                mContext.getMainExecutor(), listener));
-        assertTrue(device.setMetadata(
-                BluetoothDevice.METADATA_MANUFACTURER_NAME, testByteData));
-        assertArrayEquals(device.getMetadata(
-                BluetoothDevice.METADATA_MANUFACTURER_NAME), testByteData);
+        assertTrue(
+                adapter.addOnMetadataChangedListener(device, mContext.getMainExecutor(), listener));
+        assertTrue(device.setMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME, testByteData));
+        assertArrayEquals(
+                device.getMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME), testByteData);
         assertTrue(adapter.removeOnMetadataChangedListener(device, listener));
     }
 
@@ -159,8 +155,7 @@ public class SystemBluetoothTest {
                 recoverOffState = true;
                 TestUtils.enableLocation(mContext);
                 mUiAutomation.grantRuntimePermission(
-                        "android.bluetooth.cts",
-                        android.Manifest.permission.ACCESS_FINE_LOCATION);
+                        "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
 
             mDiscoveryStartedLock = new ReentrantLock();
@@ -182,8 +177,7 @@ public class SystemBluetoothTest {
             if (recoverOffState) {
                 TestUtils.disableLocation(mContext);
                 mUiAutomation.revokeRuntimePermission(
-                        "android.bluetooth.cts",
-                        android.Manifest.permission.ACCESS_FINE_LOCATION);
+                        "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
         }
     }
@@ -197,19 +191,42 @@ public class SystemBluetoothTest {
     public void containsAnyUuid() {
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
 
-        ParcelUuid[] deviceAUuids = new ParcelUuid[]{BluetoothUuid.A2DP_SOURCE, BluetoothUuid.HFP,
-                BluetoothUuid.ADV_AUDIO_DIST, BluetoothUuid.AVRCP_CONTROLLER,
-                BluetoothUuid.BASE_UUID, BluetoothUuid.HID, BluetoothUuid.HEARING_AID};
-        ParcelUuid[] deviceBUuids = new ParcelUuid[]{BluetoothUuid.A2DP_SINK, BluetoothUuid.BNEP,
-                BluetoothUuid.AVRCP_TARGET, BluetoothUuid.HFP_AG,
-                BluetoothUuid.HOGP, BluetoothUuid.HSP_AG};
-        ParcelUuid[] deviceCUuids = new ParcelUuid[]{BluetoothUuid.HSP, BluetoothUuid.MAP,
-                BluetoothUuid.MAS, BluetoothUuid.MNS, BluetoothUuid.NAP,
-                BluetoothUuid.OBEX_OBJECT_PUSH, BluetoothUuid.PANU, BluetoothUuid.PBAP_PCE,
-                BluetoothUuid.PBAP_PSE, BluetoothUuid.SAP, BluetoothUuid.A2DP_SOURCE};
+        ParcelUuid[] deviceAUuids =
+                new ParcelUuid[] {
+                    BluetoothUuid.A2DP_SOURCE,
+                    BluetoothUuid.HFP,
+                    BluetoothUuid.ADV_AUDIO_DIST,
+                    BluetoothUuid.AVRCP_CONTROLLER,
+                    BluetoothUuid.BASE_UUID,
+                    BluetoothUuid.HID,
+                    BluetoothUuid.HEARING_AID
+                };
+        ParcelUuid[] deviceBUuids =
+                new ParcelUuid[] {
+                    BluetoothUuid.A2DP_SINK,
+                    BluetoothUuid.BNEP,
+                    BluetoothUuid.AVRCP_TARGET,
+                    BluetoothUuid.HFP_AG,
+                    BluetoothUuid.HOGP,
+                    BluetoothUuid.HSP_AG
+                };
+        ParcelUuid[] deviceCUuids =
+                new ParcelUuid[] {
+                    BluetoothUuid.HSP,
+                    BluetoothUuid.MAP,
+                    BluetoothUuid.MAS,
+                    BluetoothUuid.MNS,
+                    BluetoothUuid.NAP,
+                    BluetoothUuid.OBEX_OBJECT_PUSH,
+                    BluetoothUuid.PANU,
+                    BluetoothUuid.PBAP_PCE,
+                    BluetoothUuid.PBAP_PSE,
+                    BluetoothUuid.SAP,
+                    BluetoothUuid.A2DP_SOURCE
+                };
         assertTrue(BluetoothUuid.containsAnyUuid(null, null));
-        assertTrue(BluetoothUuid.containsAnyUuid(new ParcelUuid[]{}, null));
-        assertTrue(BluetoothUuid.containsAnyUuid(null, new ParcelUuid[]{}));
+        assertTrue(BluetoothUuid.containsAnyUuid(new ParcelUuid[] {}, null));
+        assertTrue(BluetoothUuid.containsAnyUuid(null, new ParcelUuid[] {}));
         assertFalse(BluetoothUuid.containsAnyUuid(null, deviceAUuids));
         assertFalse(BluetoothUuid.containsAnyUuid(deviceAUuids, null));
         assertFalse(BluetoothUuid.containsAnyUuid(deviceAUuids, deviceBUuids));
@@ -220,14 +237,31 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void parseUuidFrom() {
-        byte[] uuid16 = new byte[]{0x0B, 0x11};
+        byte[] uuid16 = new byte[] {0x0B, 0x11};
         assertEquals(BluetoothUuid.A2DP_SINK, BluetoothUuid.parseUuidFrom(uuid16));
 
-        byte[] uuid32 = new byte[]{(byte) 0xF0, (byte) 0xFD, 0x00, 0x00};
+        byte[] uuid32 = new byte[] {(byte) 0xF0, (byte) 0xFD, 0x00, 0x00};
         assertEquals(BluetoothUuid.HEARING_AID, BluetoothUuid.parseUuidFrom(uuid32));
 
-        byte[] uuid128 = new byte[]{(byte) 0xFB, 0x34, (byte) 0x9B, 0x5F, (byte) 0x80, 0x00, 0x00,
-                (byte) 0x80, 0x00, 0x10, 0x00, 0x00, 0x1F, 0x11, 0x00, 0x00};
+        byte[] uuid128 =
+                new byte[] {
+                    (byte) 0xFB,
+                    0x34,
+                    (byte) 0x9B,
+                    0x5F,
+                    (byte) 0x80,
+                    0x00,
+                    0x00,
+                    (byte) 0x80,
+                    0x00,
+                    0x10,
+                    0x00,
+                    0x00,
+                    0x1F,
+                    0x11,
+                    0x00,
+                    0x00
+                };
         assertEquals(BluetoothUuid.HFP_AG, BluetoothUuid.parseUuidFrom(uuid128));
     }
 
@@ -249,8 +283,9 @@ public class SystemBluetoothTest {
         int originalScanAlwaysAvailableValue = 0;
 
         try {
-            originalScanAlwaysAvailableValue = Settings.Global.getInt(mContext.getContentResolver(),
-                    BLE_SCAN_ALWAYS_AVAILABLE);
+            originalScanAlwaysAvailableValue =
+                    Settings.Global.getInt(
+                            mContext.getContentResolver(), BLE_SCAN_ALWAYS_AVAILABLE);
         } catch (Settings.SettingNotFoundException e) { // Uses 0 or not available as original
         }
 
@@ -265,7 +300,9 @@ public class SystemBluetoothTest {
         assertTrue(BTAdapterUtils.enableBLE(mAdapter, mContext));
         assertTrue(BTAdapterUtils.disableBLE(mAdapter, mContext));
 
-        Settings.Global.putInt(mContext.getContentResolver(), BLE_SCAN_ALWAYS_AVAILABLE,
+        Settings.Global.putInt(
+                mContext.getContentResolver(),
+                BLE_SCAN_ALWAYS_AVAILABLE,
                 originalScanAlwaysAvailableValue);
     }
 
@@ -276,36 +313,48 @@ public class SystemBluetoothTest {
 
         AdvertisingSetParameters.Builder paramsBuilder = new AdvertisingSetParameters.Builder();
 
-        assertEquals(paramsBuilder,
+        assertEquals(
+                paramsBuilder,
                 paramsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT,
                 paramsBuilder.build().getOwnAddressType());
 
-        assertEquals(paramsBuilder,
+        assertEquals(
+                paramsBuilder,
                 paramsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC,
                 paramsBuilder.build().getOwnAddressType());
 
-        assertEquals(paramsBuilder,
+        assertEquals(
+                paramsBuilder,
                 paramsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_RANDOM));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_RANDOM,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_RANDOM,
                 paramsBuilder.build().getOwnAddressType());
 
         AdvertiseSettings.Builder settingsBuilder = new AdvertiseSettings.Builder();
 
-        assertEquals(settingsBuilder,
+        assertEquals(
+                settingsBuilder,
                 settingsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT,
                 settingsBuilder.build().getOwnAddressType());
 
-        assertEquals(settingsBuilder,
+        assertEquals(
+                settingsBuilder,
                 settingsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_PUBLIC,
                 settingsBuilder.build().getOwnAddressType());
 
-        assertEquals(settingsBuilder,
+        assertEquals(
+                settingsBuilder,
                 settingsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_RANDOM));
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_RANDOM,
+        assertEquals(
+                AdvertisingSetParameters.ADDRESS_TYPE_RANDOM,
                 settingsBuilder.build().getOwnAddressType());
     }
 
@@ -329,7 +378,8 @@ public class SystemBluetoothTest {
     private boolean isBluetoothPersistedOff() {
         // A value of "0" in Settings.Global.BLUETOOTH_ON means the OFF state was persisted
         return (Settings.Global.getInt(
-                mContext.getContentResolver(), Settings.Global.BLUETOOTH_ON, -1) == 0);
+                        mContext.getContentResolver(), Settings.Global.BLUETOOTH_ON, -1)
+                == 0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -365,33 +415,37 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void generateLocalOobData() {
-        Executor executor = new Executor() {
-            @Override
-            public void execute(Runnable command) {
-            }
-        };
-        BluetoothAdapter.OobDataCallback callback = new BluetoothAdapter.OobDataCallback() {
-            @Override
-            public void onOobData(int transport, @NonNull OobData oobData) {
-                fail("Should have failed to generate local oob data as Bluetooth is disabled");
-            }
+        Executor executor =
+                new Executor() {
+                    @Override
+                    public void execute(Runnable command) {}
+                };
+        BluetoothAdapter.OobDataCallback callback =
+                new BluetoothAdapter.OobDataCallback() {
+                    @Override
+                    public void onOobData(int transport, @NonNull OobData oobData) {
+                        fail(
+                                "Should have failed to generate local oob data as Bluetooth is"
+                                    + " disabled");
+                    }
 
-            @Override
-            public void onError(int errorCode) {
-            }
-        };
+                    @Override
+                    public void onError(int errorCode) {}
+                };
 
         try {
             mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_AUTO, executor, callback);
-            fail("generateLocalOobData should throw an IllegalArgumentException due to invalid "
-                    + "transport");
+            fail(
+                    "generateLocalOobData should throw an IllegalArgumentException due to invalid "
+                            + "transport");
         } catch (IllegalArgumentException ignored) {
         }
 
         try {
             mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, null);
-            fail("generateLocalOobData should throw a NullPointerException due to passing a null "
-                    + "callback");
+            fail(
+                    "generateLocalOobData should throw a NullPointerException due to passing a null"
+                        + " callback");
         } catch (NullPointerException ignored) {
         }
 
@@ -401,7 +455,8 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setScanMode() {
-        assertEquals(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED,
+        assertEquals(
+                BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED,
                 mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE));
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
@@ -452,21 +507,22 @@ public class SystemBluetoothTest {
         return mIsDiscoveryStarted;
     }
 
-    private final BroadcastReceiver mDiscoveryStartedReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (action.equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
-                Log.i(TAG, "Discovery started");
-                mDiscoveryStartedLock.lock();
-                mIsDiscoveryStarted = true;
-                try {
-                    mConditionDiscoveryStarted.signal();
-                } catch (IllegalMonitorStateException ex) {
-                } finally {
-                    mDiscoveryStartedLock.unlock();
+    private final BroadcastReceiver mDiscoveryStartedReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    if (action.equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
+                        Log.i(TAG, "Discovery started");
+                        mDiscoveryStartedLock.lock();
+                        mIsDiscoveryStarted = true;
+                        try {
+                            mConditionDiscoveryStarted.signal();
+                        } catch (IllegalMonitorStateException ex) {
+                        } finally {
+                            mDiscoveryStartedLock.unlock();
+                        }
+                    }
                 }
-            }
-        }
-    };
+            };
 }
