@@ -990,11 +990,18 @@ public class CardEmulationTest {
     }
 
     private PollingFrame createFrame(@PollingFrameType int type) {
+        if (type == PollingFrame.POLLING_LOOP_TYPE_ON
+                || type == PollingFrame.POLLING_LOOP_TYPE_OFF) {
+            return new PollingFrame(type,
+                    new byte[] { ((type == PollingFrame.POLLING_LOOP_TYPE_ON)
+                            ? (byte) 0x01 : (byte) 0x00) }, 8, 0,
+                    false);
+        }
         return new PollingFrame(type, null, 8, 0, false);
     }
 
     private PollingFrame createFrameWithData(@PollingFrameType int type, byte[] data) {
-        return new PollingFrame(type, data, 8, Integer.MAX_VALUE + 1, false);
+        return new PollingFrame(type, data, 8, (long) Integer.MAX_VALUE + 1L, false);
     }
 
     private ComponentName setDefaultPaymentService(Class serviceClass) {
@@ -1056,6 +1063,8 @@ public class CardEmulationTest {
                 Assert.assertEquals(mFrames.get(mFrameIndex).getType(), receivedFrame.getType());
                 Assert.assertEquals(mFrames.get(mFrameIndex).getVendorSpecificGain(),
                         receivedFrame.getVendorSpecificGain());
+                Assert.assertEquals(mFrames.get(mFrameIndex).getTimestamp(),
+                        receivedFrame.getTimestamp());
                 Assert.assertArrayEquals(mFrames.get(mFrameIndex).getData(),
                         receivedFrame.getData());
                 mFrameIndex++;
