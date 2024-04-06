@@ -17,7 +17,6 @@
 package android.sensitivecontentprotection.cts;
 
 import static android.permission.flags.Flags.FLAG_SENSITIVE_CONTENT_IMPROVEMENTS;
-import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import static android.view.flags.Flags.FLAG_SENSITIVE_CONTENT_APP_PROTECTION;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -35,7 +34,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.WindowManagerStateHelper;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
 
 import androidx.test.core.app.ActivityScenario;
@@ -139,9 +137,7 @@ public class ViewSensitiveContentTest {
     public void testToastIsShown() {
         try (ActivityScenario<PasswordAutofillHintActivity> ignored =
                      ActivityScenario.launch(PasswordAutofillHintActivity.class)) {
-            assertThat(new WindowManagerStateHelper().waitFor(
-                    state -> state.findFirstWindowWithType(TYPE_TOAST) != null, "Toast"))
-                    .isTrue();
+            ToastVerifier.Companion.verifyToastShowsAndGoes();
         }
     }
 
