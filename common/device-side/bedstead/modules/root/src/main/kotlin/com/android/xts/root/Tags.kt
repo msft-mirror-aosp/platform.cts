@@ -24,4 +24,12 @@ object Tags {
      * [com.android.xts.root.annotations.RequireAdbRoot].
      */
     val ADB_ROOT = "adb-root"
+
+    /**
+     * Set when the test is instrumented as the root UID.
+     *
+     * Note that this will only be set in tests which declare their use of root instrumentation using
+     * [com.android.xts.root.annotations.RequireRootInstrumentation].
+     */
+    val ROOT_INSTRUMENTATION = "root-instrumentation"
 }

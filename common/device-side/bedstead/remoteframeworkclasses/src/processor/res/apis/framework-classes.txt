@@ -19,3 +19,4 @@ android.telephony.SmsManager
 android.app.WallpaperManager
 android.telephony.TelephonyManager
 android.telephony.euicc.EuiccManager
+android.media.projection.MediaProjectionManager

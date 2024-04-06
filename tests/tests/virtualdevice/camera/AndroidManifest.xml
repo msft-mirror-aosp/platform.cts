@@ -25,6 +25,7 @@
     <uses-feature android:name="android.software.companion_device_setup" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.virtualdevice.cts.camera"

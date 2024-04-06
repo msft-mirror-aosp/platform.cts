@@ -79,8 +79,6 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
-RGB_GRAY_WEIGHTS = (0.299, 0.587, 0.114)  # RGB to Gray conversion matrix
-
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -96,17 +94,6 @@ SQUARISH_AR_RTOL = 0.10
 
 VGA_HEIGHT = 480
 VGA_WIDTH = 640
-
-
-def convert_to_gray(img):
-  """Returns openCV grayscale image.
-
-  Args:
-    img: A numpy image.
-  Returns:
-    An openCV image converted to grayscale.
-  """
-  return numpy.dot(img[..., :3], RGB_GRAY_WEIGHTS)
 
 
 def convert_to_y(img):
@@ -503,7 +490,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
                                    cv2.THRESH_BINARY, CV2_THRESHOLD_BLOCK_SIZE,
                                    CV2_THRESHOLD_CONSTANT)
   else:
-    img_gray = convert_to_gray(img)
+    img_gray = image_processing_utils.convert_rgb_to_grayscale(img)
     img_bw = binarize_image(img_gray)
 
   # find contours
@@ -706,7 +693,7 @@ def find_white_square(img, min_area):
   img_size = img.shape
 
   # convert to gray-scale image
-  img_gray = convert_to_gray(img)
+  img_gray = image_processing_utils.convert_rgb_to_grayscale(img)
 
   # otsu threshold to binarize the image
   img_bw = binarize_image(img_gray)

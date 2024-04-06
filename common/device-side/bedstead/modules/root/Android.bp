@@ -9,27 +9,15 @@ filegroup {
     ],
 }
 
-java_library_host {
-    name: "bedstead-root-annotations-host",
-    srcs: [":bedstead-root-annotations-srcs"],
-    static_libs: [
-        "HarrierCommon",
-        "auto_value_annotations"
-    ],
-
-    plugins: ["auto_annotation_plugin"],
-}
-
-android_library {
+java_library {
     name: "bedstead-root-annotations",
     srcs: [":bedstead-root-annotations-srcs"],
-    manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "29",
-    sdk_version: "current",
     static_libs: [
         "HarrierCommonAndroid",
-        "auto_value_annotations"
+        "auto_value_annotations",
     ],
+
+    sdk_version: "current",
 
     plugins: ["auto_annotation_plugin"],
 }

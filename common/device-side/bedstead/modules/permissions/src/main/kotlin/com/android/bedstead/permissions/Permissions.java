@@ -450,19 +450,30 @@ public final class Permissions {
 
 
         try (UndoableContext c = ignoringPermissions()){
-            throw new NeneException(message + "\n\nIf this is a new test. Consider moving it to a "
-                    + "root-enabled test suite and adding @RequireAdbRoot to the method. This "
-                    + "enables arbitrary use of permissions.\n\nRunning On User: " + sUser
-                    + "\nPermission: " + permission
-                    + "\nPermission protection level: " + protectionLevel
-                    + "\nPermission state: " + sContext.checkSelfPermission(permission)
-                    + "\nInstrumented Package: " + sInstrumentedPackage.packageName()
-                    + "\n\nRequested Permissions:\n"
-                    + sInstrumentedPackage.requestedPermissions()
-                    + "\n\nCan adopt shell permissions: " + SUPPORTS_ADOPT_SHELL_PERMISSIONS
-                    + "\nShell permissions:"
-                    + mShellPermissions
-                    + "\nExempt Shell permissions: " + EXEMPT_SHELL_PERMISSIONS);
+            throw new NeneException(
+                    message
+                            + "\n\n"
+                            + "If this is a new test. Consider moving it to a root-enabled test"
+                            + " suite and adding @RequireRootInstrumentation to the method. This"
+                            + " enables arbitrary use of permissions.\n\n"
+                            + "Running On User: "
+                            + sUser
+                            + "\nPermission: "
+                            + permission
+                            + "\nPermission protection level: "
+                            + protectionLevel
+                            + "\nPermission state: "
+                            + sContext.checkSelfPermission(permission)
+                            + "\nInstrumented Package: "
+                            + sInstrumentedPackage.packageName()
+                            + "\n\nRequested Permissions:\n"
+                            + sInstrumentedPackage.requestedPermissions()
+                            + "\n\nCan adopt shell permissions: "
+                            + SUPPORTS_ADOPT_SHELL_PERMISSIONS
+                            + "\nShell permissions:"
+                            + mShellPermissions
+                            + "\nExempt Shell permissions: "
+                            + EXEMPT_SHELL_PERMISSIONS);
         }
     }
 
@@ -537,22 +548,27 @@ public final class Permissions {
     /**
      * Sets a permission state for a given package on a given user.
      *
-     * Generally tests should not use this method directly. They should instead used the
-     * {@link #withPermission} and {@link #withoutPermission} methods.
+     * <p>Generally tests should not use this method directly. They should instead used the {@link
+     * #withPermission} and {@link #withoutPermission} methods.
      *
-     * When this is used while executing a test which uses the RequireAdbRoot annotation, and using
-     * Android 15+, it will have access to all permissions for all apps.
+     * <p>When this is used while executing a test which uses the RequireRootInstrumentation
+     * annotation, and using Android 15+, it will have access to all permissions for all apps.
      *
-     * Otherwise, when applying to the instrumented package, shell permission adoption will
-     * be used.
+     * <p>Otherwise, when applying to the instrumented package, shell permission adoption will be
+     * used.
      *
-     * Otherwise, if the permission is able to be granted/denied by ADB then that will be done.
+     * <p>Otherwise, if the permission is able to be granted/denied by ADB then that will be done.
      *
-     * Otherwise an error will be thrown.
+     * <p>Otherwise an error will be thrown.
      */
-    public void setPermissionState(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+    public void setPermissionState(
+            Package pkg,
+            UserReference user,
+            Collection<String> permissionsToGrant,
+            Collection<String> permissionsToDeny) {
         // TODO: replace with dependency on bedstead-root when properly modularised
-         if (Tags.hasTag("adb-root") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        if (Tags.hasTag("root-instrumentation")
+                && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
              // We must reset as it may have been set previously
             resetRootPermissionState(pkg, user);
 
@@ -611,7 +627,8 @@ public final class Permissions {
                 pkg.grantPermission(user, permission);
             } else {
                 removePermissionContextsUntilCanApplyPermissions();
-                throwPermissionException("Requires granting permission " + permission + " but cannot.", permission);
+                throwPermissionException(
+                        "Requires granting permission " + permission + " but cannot.", permission);
             }
         }
 
@@ -619,7 +636,8 @@ public final class Permissions {
             if (pkg.equals(TestApis.packages().instrumented()) && user.equals(TestApis.users().instrumented())) {
                 // We can't deny permissions from ourselves or it'll kill the process
                 removePermissionContextsUntilCanApplyPermissions();
-                throwPermissionException("Requires denying permission " + permission + " but cannot.", permission);
+                throwPermissionException(
+                        "Requires denying permission " + permission + " but cannot.", permission);
             } else {
                 pkg.denyPermission(user, permission);
             }

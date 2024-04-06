@@ -198,15 +198,13 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4_drop;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
         if (height > 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_4k();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
-            r5_1__H_1_4_drop = pce.addR5_1__H_1_4_4k_drop();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
-            r5_1__H_1_4_drop.setFrameDropsPerSecond(frameDropsPerSec);
+            r5_1__H_1_4.setFrameDropsPerSecond(frameDropsPerSec);
         } else if (height == 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();

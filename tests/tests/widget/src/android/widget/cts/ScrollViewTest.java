@@ -731,6 +731,34 @@ public class ScrollViewTest {
         assertEquals(0, mScrollViewCustom.getScrollY());
     }
 
+    @UiThreadTest
+    @Test
+    public void testKeySpaceScroll() {
+        final KeyEvent spaceDownEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE);
+        final KeyEvent spaceUpEvent = new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE);
+
+        final KeyEvent shiftSpaceDownEvent = new KeyEvent(0 /* downTime */, 0 /* eventTime */,
+                KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE, 0 /* repeat */,
+                KeyEvent.META_SHIFT_ON);
+        final KeyEvent shiftSpaceUpEvent = new KeyEvent(0 /* downTime */, 0 /* eventTime */,
+                KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE, 0 /* repeat */, KeyEvent.META_SHIFT_ON);
+
+        mScrollViewCustom.setSmoothScrollingEnabled(false);
+        assertEquals(0, mScrollViewCustom.getScrollY());
+
+        // Send SPACE KeyEvent at scroll view top
+        assertTrue(mScrollViewCustom.dispatchKeyEvent(spaceDownEvent));
+        mScrollViewCustom.dispatchKeyEvent(spaceUpEvent);
+        assertEquals(mPageHeight, mScrollViewCustom.getScrollY(), TOLERANCE);
+
+        mScrollViewCustom.scrollTo(mPageWidth, mScrollBottom);
+
+        // Send SHIFT + SPACE at scroll view bottom
+        assertTrue(mScrollViewCustom.dispatchKeyEvent(shiftSpaceDownEvent));
+        mScrollViewCustom.dispatchKeyEvent(shiftSpaceUpEvent);
+        assertEquals(mScrollBottom - mPageHeight, mScrollViewCustom.getScrollY(), TOLERANCE);
+    }
+
     @Test
     public void testSmoothScrollBy() throws Throwable {
         assertEquals(0, mScrollViewCustom.getScrollX());

@@ -5731,6 +5731,11 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_general_results">Results</string>
 
+    <string name="audio_general_supporteddevices">Supported Devices</string>
+    <string name="audio_general_availabledevices">Available Devices</string>
+    <string name="audio_general_inputscolon">Inputs:</string>
+    <string name="audio_general_outputscolon">Outputs:</string>
+
     <!-- Audio Data Paths Test-->
     <string name="audio_datapaths_clearresults">Clear Results</string>
     <string name="audio_datapaths_legacy">Legacy</string>
@@ -5740,6 +5745,23 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
+
+    <string name="audio_loopback_devsupport_button">Audio Devices</string>
+    <string name="audio_devicesupport_title">Audio Devices</string>
+    <string name="audio_devicesupport_cantdetermine">Audio device support could not be determined.</string>
+
+    <string name="audio_supported_devices_explain">This is a list of audio devices which are
+        supported by the hardware of this Android device. This includes both built-in
+        devices and audio peripherals that can be connected. A given audio device may or may
+        not be available, i.e. an audio peripheral device may or may not be actually connected
+        to the Android device.
+    </string>
+
+    <string name="audio_available_devices_explain">This is a list of currently available audio devices.
+        It contains both built-in audio devices and any audio peripherals that are currently connected
+        to this Android device. The contents of this list will change as audio peripherals are connected
+        and disconnected.
+    </string>
 
     <string name="audio_exempt_nonhandheld">This is a non-handheld device and is exempt from this test.
         Press the \"Pass\" button (below) to continue.</string>
@@ -5855,9 +5877,12 @@ You should be prompted to select credentials; choose the ones you just installed
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
-    <string name="audio_loopback_instructions2">
+    <string name="audio_loopback_instructions_calibrate">
           Use the \"Calibrate Audio\" panel to set the audio level to a suitable value for each supported route.
           Then press the \"Start\" button for each supported route.
+    </string>
+    <string name="audio_loopback_instructions_supportdevs">
+          Use the \"Audio Devices\" panel to determine which audio devices are supported and/or available.
     </string>
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>

@@ -27,11 +27,11 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePoli
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
+import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_SYSTEM_DEVICE_OWNER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER;
@@ -59,15 +59,13 @@ import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATI
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_PERMISSION_GRANT;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_SECURITY_LOGGING;
 import static com.android.bedstead.testapp.TestAppQueryBuilder.queryBuilder;
-import static com.android.xts.root.annotations.RequireAdbRootKt.requireAdbRoot;
+import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
@@ -635,18 +633,27 @@ public final class Policy {
 
         for (Permission permission : enterprisePolicy.permissions()) {
             // TODO(b/219750042): Currently we only test that permissions apply to the current user
-            Annotation[] withPermissionAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY, queryBuilder()
-                                    .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(),
-                            INSTRUMENTED_USER, /* isPrimary= */ true),
-                    ensureTestAppHasPermission(DELEGATE_KEY,
-                            new String[]{permission.appliedWith()}, FailureMode.SKIP),
-                    requireAdbRoot("Use of device policy permission", FailureMode.SKIP)
-            };
+            Annotation[] withPermissionAnnotations =
+                    new Annotation[] {
+                        ensureTestAppInstalled(
+                                DELEGATE_KEY,
+                                queryBuilder()
+                                        .wherePackageName()
+                                        .isEqualTo(DELEGATE_PACKAGE_NAME)
+                                        .toAnnotation(),
+                                INSTRUMENTED_USER,
+                                /* isPrimary= */ true),
+                        ensureTestAppHasPermission(
+                                DELEGATE_KEY,
+                                new String[] {permission.appliedWith()},
+                                FailureMode.SKIP),
+                        requireRootInstrumentation(
+                                "Use of device policy permission", FailureMode.SKIP)
+                    };
             annotations.add(
                     new DynamicParameterizedAnnotation(
-                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()),
+                            withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);
@@ -777,17 +784,19 @@ public final class Policy {
                             EnsureHasDelegate.AdminType.PRIMARY, new String[]{scope},
                             /* isPrimary= */ true);
                     annotations.add(
-                            new DynamicParameterizedAnnotation("DelegateWithScope:" + scope, newAnnotations));
+                            new DynamicParameterizedAnnotation(
+                                    "DelegateWithScope:" + scope, newAnnotations));
                 }
             } else {
                 Annotation[] newAnnotations = Arrays.copyOf(existingAnnotations,
                         existingAnnotations.length + 2);
                 newAnnotations[newAnnotations.length - 2] = ensureHasDelegate(
                         EnsureHasDelegate.AdminType.PRIMARY, scopes, /* isPrimary= */ true);
-                // TODO: We should add @RequireAdbRoot if the permission is root-only - but we
-                // need to be able to determine that from the host
-                newAnnotations[newAnnotations.length - 1] = ensureTestAppDoesNotHavePermission(
-                        DELEGATE_KEY, validPermissions, FailureMode.SKIP);
+                // TODO: We should add @RequireRootInstrumentation if the permission is root-only
+                //  - but we need to be able to determine that from the host
+                newAnnotations[newAnnotations.length - 1] =
+                        ensureTestAppDoesNotHavePermission(
+                                DELEGATE_KEY, validPermissions, FailureMode.SKIP);
                 annotations.add(
                         new DynamicParameterizedAnnotation("DelegateWithoutValidScope",
                                 newAnnotations));
@@ -848,20 +857,29 @@ public final class Policy {
         }
 
         for (Permission permission : enterprisePolicy.permissions()) {
-            // TODO(b/219750042): Currently we only test that permissions can be set as the primary user
-            Annotation[] withPermissionAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY,
-                            queryBuilder()
-                                    .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(), INSTRUMENTED_USER,
-                            /* isPrimary= */ true),
-                    ensureTestAppHasPermission(
-                            DELEGATE_KEY, new String[]{permission.appliedWith()}, FailureMode.SKIP),
-                    requireAdbRoot("Use of device policy permission", FailureMode.SKIP)
-            };
+            // TODO(b/219750042): Currently we only test that permissions can be set as the primary
+            // user
+            Annotation[] withPermissionAnnotations =
+                    new Annotation[] {
+                        ensureTestAppInstalled(
+                                DELEGATE_KEY,
+                                queryBuilder()
+                                        .wherePackageName()
+                                        .isEqualTo(DELEGATE_PACKAGE_NAME)
+                                        .toAnnotation(),
+                                INSTRUMENTED_USER,
+                                /* isPrimary= */ true),
+                        ensureTestAppHasPermission(
+                                DELEGATE_KEY,
+                                new String[] {permission.appliedWith()},
+                                FailureMode.SKIP),
+                        requireRootInstrumentation(
+                                "Use of device policy permission", FailureMode.SKIP)
+                    };
             annotations.add(
                     new DynamicParameterizedAnnotation(
-                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()),
+                            withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);
