@@ -22,6 +22,12 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -29,7 +35,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.BluetoothUuid;
-import android.bluetooth.OobData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.content.BroadcastReceiver;
@@ -41,7 +46,6 @@ import android.os.ParcelUuid;
 import android.provider.Settings;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -56,6 +60,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -66,6 +71,7 @@ public class SystemBluetoothTest {
     @Rule public final Expect expect = Expect.create();
     private static final String TAG = SystemBluetoothTest.class.getSimpleName();
 
+    private static final Duration OOB_TIMEOUT = Duration.ofSeconds(1);
     private static final long DEFAULT_DISCOVERY_TIMEOUT_MS = 12800;
     private static final int DISCOVERY_START_TIMEOUT = 500;
     private static final String BLE_SCAN_ALWAYS_AVAILABLE = "ble_scan_always_enabled";
@@ -388,20 +394,12 @@ public class SystemBluetoothTest {
         Executor executor =
                 new Executor() {
                     @Override
-                    public void execute(Runnable command) {}
-                };
-        BluetoothAdapter.OobDataCallback callback =
-                new BluetoothAdapter.OobDataCallback() {
-                    @Override
-                    public void onOobData(int transport, @NonNull OobData oobData) {
-                        fail(
-                                "Should have failed to generate local oob data as Bluetooth is"
-                                    + " disabled");
+                    public void execute(Runnable command) {
+                        command.run();
                     }
-
-                    @Override
-                    public void onError(int errorCode) {}
                 };
+        BluetoothAdapter.OobDataCallback callback = mock(BluetoothAdapter.OobDataCallback.class);
+
         // Invalid transport
         assertThrows(
                 IllegalArgumentException.class,
@@ -416,8 +414,13 @@ public class SystemBluetoothTest {
                         mAdapter.generateLocalOobData(
                                 BluetoothDevice.TRANSPORT_BREDR, executor, null));
 
-
         mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
+        verify(callback, timeout(OOB_TIMEOUT.toMillis())).onOobData(anyInt(), any());
+
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
+        verify(callback, timeout(OOB_TIMEOUT.toMillis()))
+                .onError(eq(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
