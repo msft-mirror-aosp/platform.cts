@@ -78,6 +78,10 @@ public class CodecDecoderBlockModelMultiAccessUnitTestBase extends CodecDecoderB
 
     @Override
     protected void enqueueInput(int bufferIndex) {
+        if (mExtractor.getSampleSize() < 0) {
+            enqueueEOS(bufferIndex);
+            return;
+        }
         ArrayDeque<MediaCodec.BufferInfo> infos = new ArrayDeque<>();
         mLinearInputBlock.allocateBlock(mCodecName, mMaxInputSize);
         int basePts = (int) mExtractor.getSampleTime();

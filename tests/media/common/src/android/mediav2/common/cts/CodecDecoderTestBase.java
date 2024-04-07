@@ -373,12 +373,13 @@ public class CodecDecoderTestBase extends CodecTestBase {
     }
 
     public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
-            int mode, int frameLimit) throws IOException, InterruptedException {
+            int mode, int frameLimit, boolean isAsync, boolean signalledEos)
+            throws IOException, InterruptedException {
         mSaveToMem = true;
         mOutputBuff = outputBuff;
         mCodec = MediaCodec.createByCodecName(decoder);
         MediaFormat format = setUpSource(file);
-        configureCodec(format, false, true, false);
+        configureCodec(format, isAsync, signalledEos, false);
         mCodec.start();
         mExtractor.seekTo(pts, mode);
         doWork(frameLimit);
@@ -388,6 +389,11 @@ public class CodecDecoderTestBase extends CodecTestBase {
         mCodec.release();
         mExtractor.release();
         mSaveToMem = false;
+    }
+
+    public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
+            int mode, int frameLimit) throws IOException, InterruptedException {
+        decodeToMemory(file, decoder, outputBuff, pts, mode, frameLimit, false, true);
     }
 
     public void decodeToMemory(String file, String decoder, long pts, int mode, int frameLimit)

@@ -19,13 +19,10 @@ package android.server.wm.jetpack;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionLatest;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
-import android.app.ActivityTaskManager;
 import android.platform.test.annotations.Presubmit;
 import android.view.WindowManager;
 
@@ -39,7 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for the {@link androidx.window.extensions.WindowExtensionsImpl} implementation.
+ * Tests for the {@link androidx.window.extensions.WindowExtensions} implementation.
  * Verifies that the extensions API level is aligned or higher than the current level.
  *
  * Build/Install/Run:
@@ -58,11 +55,7 @@ public class WindowExtensionsImplTest {
         assumeNotNull(windowExtensions);
 
         if (WindowManager.hasWindowExtensionsEnabled()) {
-            // Up to the device on whether or not to provide WM Extensions if it doesn't support
-            // multi window.
-            if (ActivityTaskManager.supportsMultiWindow(getInstrumentation().getContext())) {
-                assertTrue(isExtensionVersionLatest());
-            }
+            assertTrue(isExtensionVersionLatest());
         } else {
             assertEquals(0, windowExtensions.getVendorApiLevel());
         }

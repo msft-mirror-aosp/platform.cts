@@ -55,10 +55,6 @@ public class ExtensionsUtil {
 
     public static final int EXTENSION_VERSION_DISABLED = 0;
 
-    public static final int EXTENSION_VERSION_1 = 1;
-
-    public static final int EXTENSION_VERSION_2 = 2;
-
     /**
      * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
      * Extensions versions</a>.
@@ -141,17 +137,12 @@ public class ExtensionsUtil {
     }
 
     /**
-     * Assumes that extensions is present on the device and asserts that the extension version is
-     * valid.
+     * Assumes that extensions is present on the device.
      */
     public static void assumeExtensionSupportedDevice() {
         assumeNotNull("Device does not contain extensions library", getWindowExtensions());
         assumeTrue("Device doesn't config to support extensions",
                 WindowManager.hasWindowExtensionsEnabled());
-
-        // If extensions are supported on the device, make sure that the version is valid.
-        assertTrue("Extension version is invalid, must be at least " + EXTENSION_VERSION_1,
-                isExtensionVersionValid());
     }
 
     /**
@@ -168,41 +159,14 @@ public class ExtensionsUtil {
     }
 
     /**
-     * Publishes a WindowLayoutInfo update to a test consumer. In EXTENSION_VERSION_1, only type
-     * Activity can be the listener to WindowLayoutInfo changes. This method should be called at
-     * most once for each given Activity because addWindowLayoutInfoListener implementation
-     * assumes a 1-1 mapping between the activity and consumer.
-     */
-    @Nullable
-    public static WindowLayoutInfo getExtensionWindowLayoutInfo(Activity activity)
-            throws InterruptedException {
-        WindowLayoutComponent windowLayoutComponent = getExtensionWindowLayoutComponent();
-        if (windowLayoutComponent == null) {
-            return null;
-        }
-        TestValueCountConsumer<WindowLayoutInfo> windowLayoutInfoConsumer =
-                new TestValueCountConsumer<>();
-        windowLayoutComponent.addWindowLayoutInfoListener(activity, windowLayoutInfoConsumer);
-        WindowLayoutInfo info = windowLayoutInfoConsumer.waitAndGet();
-
-        // The default implementation only allows a single listener per activity. Since we are using
-        // a local windowLayoutInfoConsumer within this function, we must remember to clean up.
-        // Otherwise, subsequent calls to addWindowLayoutInfoListener with the same activity will
-        // fail to have its callback registered.
-        windowLayoutComponent.removeWindowLayoutInfoListener(windowLayoutInfoConsumer);
-        return info;
-    }
-
-    /**
-     * Publishes a WindowLayoutInfo update to a test consumer. In EXTENSION_VERSION_2 both type
-     * WindowContext and Activity can be listeners. This method should be called at most once for
-     * each given Context because addWindowLayoutInfoListener implementation assumes a 1-1
+     * Publishes a WindowLayoutInfo update to a test consumer. Both type WindowContext and Activity
+     * can be listeners. This method should be called at most once for each given Context because
+     * {@link WindowLayoutComponent#addWindowLayoutInfoListener} implementation assumes a 1-1
      * mapping between the context and consumer.
      */
     @Nullable
     public static WindowLayoutInfo getExtensionWindowLayoutInfo(@UiContext Context context)
             throws InterruptedException {
-        assertTrue(isExtensionVersionAtLeast(EXTENSION_VERSION_2));
         WindowLayoutComponent windowLayoutComponent = getExtensionWindowLayoutComponent();
         if (windowLayoutComponent == null) {
             return null;
@@ -391,10 +355,9 @@ public class ExtensionsUtil {
      */
     @Nullable
     public static WindowAreaComponent getExtensionWindowAreaComponent() {
-        WindowExtensions extension = getWindowExtensions();
-        if (extension == null || extension.getVendorApiLevel() < EXTENSION_VERSION_2) {
-            return null;
-        }
-        return extension.getWindowAreaComponent();
+        final WindowExtensions extension = getWindowExtensions();
+        return extension != null
+                ? extension.getWindowAreaComponent()
+                : null;
     }
 }

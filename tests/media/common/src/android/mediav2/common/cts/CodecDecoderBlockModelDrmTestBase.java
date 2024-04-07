@@ -102,6 +102,10 @@ public class CodecDecoderBlockModelDrmTestBase extends CodecDecoderBlockModelTes
     @Override
     protected void enqueueInput(int bufferIndex) {
         int sampleSize = (int) mExtractor.getSampleSize();
+        if (sampleSize < 0) {
+            enqueueEOS(bufferIndex);
+            return;
+        }
         mLinearInputBlock.allocateBlock(mCodecName, sampleSize);
         long pts = mExtractor.getSampleTime();
         mExtractor.readSampleData(mLinearInputBlock.getBuffer(), mLinearInputBlock.getOffset());
