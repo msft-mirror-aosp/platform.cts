@@ -425,22 +425,4 @@
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
-
-    <!-- b/330276352 -->
-    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppCanReadChangeLogsUsingDataOriginFilters" />
-    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests#testChangeLogTokenRequest" />
-    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests#testChangeLogsRequest" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_dataOrigin_filter_correct" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_correct" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_beforePermission" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_default" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withNextPageToken" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_dataOrigin_filter_incorrect" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_checkToken_hasMorePages_False" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withPageSize" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withSamePageToken" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testGetChangeLogToken" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_incorrect" />
-    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testDataApis_migrationInProgress_apisBlocked" />
 </configuration>
