@@ -403,7 +403,8 @@ public class ActivityEmbeddingUtil {
         return wmState.getTaskByActivity(activityName).getBounds();
     }
 
-    private static void waitForActivityBoundsEquals(@NonNull Activity activity,
+    /** Waits until the bounds of the activity matches the given bounds. */
+    public static void waitForActivityBoundsEquals(@NonNull Activity activity,
             @NonNull Rect bounds) {
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS,
                 () -> getActivityBounds(activity).equals(bounds),
