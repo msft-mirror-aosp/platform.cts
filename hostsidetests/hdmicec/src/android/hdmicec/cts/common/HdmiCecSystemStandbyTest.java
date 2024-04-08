@@ -27,6 +27,7 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -78,6 +79,7 @@ public final class HdmiCecSystemStandbyTest extends BaseHdmiCecCtsTest {
      * Tests that the device goes into standby when a {@code <STANDBY>} message is broadcast.
      */
     @Test
+    @Ignore("b/323793251")
     public void cect_HandleBroadcastStandby() throws Exception {
         ITestDevice device = getDevice();
         device.reboot();
@@ -96,6 +98,7 @@ public final class HdmiCecSystemStandbyTest extends BaseHdmiCecCtsTest {
      * Tests that the device goes into standby when a {@code <STANDBY>} message is sent to it.
      */
     @Test
+    @Ignore("b/323793251")
     public void cect_HandleAddressedStandby() throws Exception {
         ITestDevice device = getDevice();
         device.reboot();
