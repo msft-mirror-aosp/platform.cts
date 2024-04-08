@@ -15,14 +15,15 @@
  */
 
 #include "binary_loader.h"
-#include <dlfcn.h>
-#include <link.h>
 
+// If dlopen is unnecessary (eg. for shared libs), absoluteBinPath should be empty.
 BinaryLoader::BinaryLoader(const std::string absoluteBinPath) {
-    binPath = absoluteBinPath.c_str();
-    binHandle = dlopen(binPath, RTLD_NOW);
-    if (!binHandle) {
-        printf("Error opening binary: %s. Error: %s\n", binPath, dlerror());
+    if (!absoluteBinPath.empty()) {
+        binPath = absoluteBinPath.c_str();
+        binHandle = dlopen(binPath, RTLD_NOW);
+        if (!binHandle) {
+            printf("Error opening binary: %s. Error: %s\n", binPath, dlerror());
+        }
     }
 }
 
@@ -35,9 +36,14 @@ BinaryLoader::~BinaryLoader() {
     baseAddress = 0;
 }
 
-uintptr_t BinaryLoader::getBaseAddress() {
-    dl_iterate_phdr(callback, (void*)this);
-    return baseAddress;
+// When functionOffset is 0, return the base address
+uintptr_t BinaryLoader::getFunctionAddress(uintptr_t functionOffset) {
+    if (!baseAddress) {
+        if (!dl_iterate_phdr(callback, (void*)this) || !baseAddress) {
+            return 0;
+        }
+    }
+    return baseAddress + functionOffset;
 }
 
 // Callback function to iterate loaded binaries

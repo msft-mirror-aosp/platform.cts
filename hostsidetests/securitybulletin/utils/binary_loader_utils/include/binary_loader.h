@@ -17,13 +17,15 @@
 #ifndef BINARY_LOADER_H
 #define BINARY_LOADER_H
 
+#include <dlfcn.h>
+#include <link.h>
 #include <string>
 
 class BinaryLoader {
 public:
     BinaryLoader(const std::string absoluteBinPath);
     ~BinaryLoader();
-    uintptr_t getBaseAddress();
+    uintptr_t getFunctionAddress(uintptr_t functionOffset);
 
 private:
     const char* binPath;
