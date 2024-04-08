@@ -138,7 +138,6 @@ public class CarTaskViewControllerTest {
         mUiAutomation.dropShellPermissionIdentity();
     }
 
-    @FlakyTest(bugId = 329451793)
     @Test
     @ApiTest(apis = {
             "android.car.app.ControlledRemoteCarTaskViewConfig.Builder#setActivityIntent",
@@ -194,7 +193,6 @@ public class CarTaskViewControllerTest {
         assertThat(taskViewCallback2.mTaskView.getTaskInfo()).isNotNull();
     }
 
-    @FlakyTest(bugId = 329451793)
     @Test
     @ApiTest(apis = {"android.car.app.ControlledRemoteCarTaskViewCallback#onTaskViewReleased"})
     public void multipleControlledCarTaskView_released_whenHostDestroyed() throws Exception {
@@ -358,7 +356,6 @@ public class CarTaskViewControllerTest {
         return new Point(mTmpLocation[0] + mTmpWidth / 2, mTmpLocation[1] + mTmpHeight / 4);
     }
 
-    @FlakyTest(bugId = 329451793)
     @Test
     @NonApiTest(exemptionReasons = {}, justification = "No CDD Requirement")
     public void remoteCarTaskView_receivesTouchInput() throws Exception {
