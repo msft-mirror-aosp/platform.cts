@@ -16,6 +16,7 @@
 
 package android.virtualdevice.cts.camera;
 
+import static android.Manifest.permission.CAMERA;
 import static android.graphics.ImageFormat.JPEG;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.media.MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START;
@@ -30,6 +31,7 @@ import static android.opengl.GLES20.GL_EXTENSIONS;
 import static android.opengl.GLES20.glGetString;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -42,6 +44,7 @@ import static java.lang.Byte.toUnsignedInt;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtual.camera.VirtualCameraStreamConfig;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -56,6 +59,7 @@ import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.os.UserHandle;
 import android.view.Surface;
 
 import com.google.common.collect.Iterables;
@@ -314,6 +318,13 @@ public final class VirtualCameraUtils {
         return ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(image.getPlanes()[0].getBuffer())).copy(
                 Bitmap.Config.ARGB_8888, false);
+    }
+
+    static void grantCameraPermission(int deviceId) {
+        Context deviceContext = getInstrumentation().getTargetContext()
+                .createDeviceContext(deviceId);
+        deviceContext.getPackageManager().grantRuntimePermission("android.virtualdevice.cts.camera",
+                CAMERA, UserHandle.of(deviceContext.getUserId()));
     }
 
     private VirtualCameraUtils() {}
