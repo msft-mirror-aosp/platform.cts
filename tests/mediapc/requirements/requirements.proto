@@ -18,6 +18,8 @@ package android.media.performanceclass.requirements;
 import "cts/tests/mediapc/requirements/mpc.proto";
 
 option java_multiple_files = true;
+option go_package = "cts/test/mediapc/requirements/requirements_go_proto";
+
 
 message RequirementList {
 
