@@ -33,6 +33,7 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-permission",
+        "mcts-permission",
     ],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
@@ -98,4 +99,45 @@ java_test_host {
         ":TestIme",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+// Currently, there are no tests marked flaky or large in CtsDevicePolicyManagerTestCases
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_NoFlakes_NoLarge",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.FlakyTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.LockSettingsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_ParentProfileApiDisabled",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.cts.devicepolicy.ManagedProfileTest#testParentProfileApiDisabled"],
 }
