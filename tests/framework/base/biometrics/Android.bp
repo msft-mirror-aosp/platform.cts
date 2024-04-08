@@ -110,10 +110,11 @@ android_test {
 
 java_test_helper_library {
     name: "cts-biometric-util",
-
+    sdk_version: "test_current",
     static_libs: [
         "androidx.annotation_annotation",
         "cts-wm-util",
+        "android.hardware.biometrics.flags-aconfig-java",
     ],
 
     srcs: ["src/android/server/biometrics/util/*.java"],
