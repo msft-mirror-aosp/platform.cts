@@ -29,6 +29,7 @@ import com.android.utils.SparseIntArray;
 import com.google.common.collect.Range;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -42,6 +43,8 @@ public final class AtomTestUtils {
 
     public static final long NS_PER_SEC = (long) 1E+9;
 
+    private static int sShellUid = 2000;
+
     /**
      * Sends an AppBreadcrumbReported atom to statsd. For GaugeMetrics that are added using
      * ConfigUtils, pulls are triggered when statsd receives an AppBreadcrumbReported atom, so
@@ -51,10 +54,27 @@ public final class AtomTestUtils {
      */
     public static void sendAppBreadcrumbReportedAtom(ITestDevice device)
             throws DeviceNotAvailableException {
-        String cmd = String.format("cmd stats log-app-breadcrumb %d %d", /*label=*/1,
-                AppBreadcrumbReported.State.START.ordinal());
+        sendAppBreadcrumbReportedAtom(device,
+                AppBreadcrumbReported.State.START.ordinal(), /*label=*/ 1);
+    }
+
+    /**
+     * Sends an AppBreadcrumbReported atom to statsd. For GaugeMetrics that are added using
+     * ConfigUtils, pulls are triggered when statsd receives an AppBreadcrumbReported atom, so
+     * calling this function is necessary for gauge data to be acquired.
+     *
+     * @param device test device can be retrieved using getDevice()
+     * @param state  the breadcrumb atom state field
+     * @param label  the breadcrumb atom label field
+     */
+    public static void sendAppBreadcrumbReportedAtom(ITestDevice device, int state, int label)
+            throws DeviceNotAvailableException {
+        String cmd = String.format(Locale.US, "cmd stats log-app-breadcrumb %d %d %d",
+                sShellUid, label,
+                state);
         device.executeShellCommand(cmd);
     }
+
 
     /**
      * Asserts that each set of states in {@code stateSets} occurs in {@code data} without assuming
@@ -206,5 +226,6 @@ public final class AtomTestUtils {
         data.subList(lastStateIdx + 1, data.size()).clear();
     }
 
-    private AtomTestUtils() {}
+    private AtomTestUtils() {
+    }
 }

@@ -1807,6 +1807,16 @@ public abstract class ActivityManagerTestBase {
                 removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
             }
 
+            // If keyguard is occluded, credential cannot be removed as expected.
+            // LockScreenSession#close is always called before stopping all test activities,
+            // which could cause the keyguard to stay occluded after wakeup.
+            // If Keyguard is occluded, pressing the back key can hide the ShowWhenLocked activity.
+            wakeUpDevice();
+            mWmState.computeState();
+            if (WindowManagerStateHelper.isKeyguardOccluded(mWmState)) {
+                pressBackButton();
+            }
+
             final boolean wasCredentialSet = mLockCredentialSet;
             boolean wasDeviceLocked = false;
             if (mLockCredentialSet) {
@@ -1816,14 +1826,19 @@ public abstract class ActivityManagerTestBase {
             }
             setLockDisabled(mIsLockDisabled);
 
+            if (isWatch()) {
+                // Keyguard will be dismissed when the credential is removed.
+                mWmState.waitForKeyguardGone();
+            }
+
+            if (!isKeyguardLocked()) {
+                // we can return early if keyguard is not locked
+                log("Returning early since keyguard is not locked");
+                return;
+            }
+
             // Dismiss active keyguard after credential is cleared, so keyguard doesn't ask for
             // the stale credential.
-            // TODO (b/112015010) If keyguard is occluded, credential cannot be removed as expected.
-            // LockScreenSession#close is always called before stopping all test activities,
-            // which could cause the keyguard to stay occluded after wakeup.
-            // If Keyguard is occluded, pressing the back key can hide the ShowWhenLocked activity.
-            wakeUpDevice();
-            pressBackButton();
 
             // If the credential wasn't set, the steps for restoring can be simpler.
             if (!wasCredentialSet) {
