@@ -121,6 +121,9 @@ import java.util.function.Predicate;
 
 /**
  * Tests for {@link InputMethodService} methods.
+ *
+ * Build/Install/Run:
+ * atest CtsInputMethodTestCases:InputMethodServiceTest
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -1409,10 +1412,11 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private static WindowLayoutInfoParcelable verifyReceivedWindowLayout(ImeEventStream stream)
             throws TimeoutException {
-        WindowLayoutInfoParcelable received = expectEvent(stream,
+        final ImeEvent imeEvent = expectEvent(stream,
                 event -> "getWindowLayoutInfo".equals(event.getEventName()),
-                TIMEOUT).getArguments().getParcelable("WindowLayoutInfo",
-                WindowLayoutInfoParcelable.class);
-        return received;
+                TIMEOUT);
+        final Bundle arguments = imeEvent.getArguments();
+        arguments.setClassLoader(ImeEvent.class.getClassLoader());
+        return arguments.getParcelable("WindowLayoutInfo", WindowLayoutInfoParcelable.class);
     }
 }

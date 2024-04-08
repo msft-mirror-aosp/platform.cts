@@ -385,6 +385,7 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
 
         // The first callback is when the embedded activity enters pip, so the SplitInfo is empty.
         List<SplitInfo> info = mSplitInfoConsumer.waitAndGet();
+        assertNotNull("Must receive non-null SplitInfo in the callback", info);
         assertTrue(
                 "The first SplitInfo must be empty when the embedded activity enters pip",
                 info.isEmpty());
@@ -393,6 +394,7 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
             // The second callback should happen if split is restored after exiting pip, and the
             // SplitInfo should be non-empty.
             info = mSplitInfoConsumer.waitAndGet();
+            assertNotNull("Must receive non-null SplitInfo in the callback", info);
             assertFalse(
                     "The second SplitInfo must be non-empty when the embedded activity exits pip",
                     info.isEmpty());

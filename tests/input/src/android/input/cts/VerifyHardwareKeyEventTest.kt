@@ -30,10 +30,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private fun injectEvents(device: UinputDevice, events: IntArray) {
-    device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
-}
-
 /**
  * Create a virtual keyboard and inject a 'hardware' key event. Ensure that the event can be
  * verified using the InputManager::verifyInputEvent api.
@@ -41,6 +37,11 @@ private fun injectEvents(device: UinputDevice, events: IntArray) {
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class VerifyHardwareKeyEventTest {
+
+    companion object {
+        const val KEY_A = 30
+    }
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
     @get:Rule
@@ -58,7 +59,7 @@ class VerifyHardwareKeyEventTest {
         PollingCheck.waitFor { activity.hasWindowFocus() }
     }
 
-    fun assertReceivedEventsCanBeVerified(numEvents: Int) {
+    private fun assertReceivedEventsCanBeVerified(numEvents: Int) {
         for (i in 1..numEvents) {
             val lastInputEvent = activity.getInputEvent()
             assertNotNull("Event number $i is null!", lastInputEvent)
@@ -78,16 +79,9 @@ class VerifyHardwareKeyEventTest {
                 InputDevice.SOURCE_KEYBOARD,
         )
 
-        val EV_SYN = 0
-        val SYN_REPORT = 0
-        val EV_KEY = 1
-        val EV_KEY_DOWN = 1
-        val EV_KEY_UP = 0
-        val KEY_A = 30
-
-        injectEvents(keyboardDevice, intArrayOf(EV_KEY, KEY_A, EV_KEY_DOWN, EV_SYN, SYN_REPORT, 0))
+        injectKeyDown(keyboardDevice, KEY_A)
         // Send the UP event right away to avoid key repeat
-        injectEvents(keyboardDevice, intArrayOf(EV_KEY, KEY_A, EV_KEY_UP, EV_SYN, SYN_REPORT, 0))
+        injectKeyUp(keyboardDevice, KEY_A)
 
         assertReceivedEventsCanBeVerified(numEvents = 2)
 

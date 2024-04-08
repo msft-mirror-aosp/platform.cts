@@ -21,14 +21,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.hardware.input.InputManager
-import android.view.InputDevice
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
-import com.android.cts.input.UinputDevice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.fail
@@ -43,8 +41,6 @@ import org.junit.runner.RunWith
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class KeyboardLayoutTest {
-
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
     @get:Rule
     val rule = ActivityScenarioRule<CaptureEventActivity>(CaptureEventActivity::class.java)
@@ -63,51 +59,41 @@ class KeyboardLayoutTest {
 
     @Test
     fun testKeyboardLayoutType_CorrectlyInitialized() {
-        UinputDevice.create(
-            instrumentation, R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use { virtualDevice ->
-            val keyboard = inputManager.getInputDevice(virtualDevice.deviceId)!!
+        val englishQwertyLayoutDesc = getKeyboardLayoutDescriptor("english_us_qwerty")
+        val englishUndefinedLayoutDesc = getKeyboardLayoutDescriptor("english_us_undefined")
 
-            val englishQwertyLayoutDesc = getKeyboardLayoutDescriptor(keyboard, "english_us_qwerty")
-            val englishUndefinedLayoutDesc =
-                getKeyboardLayoutDescriptor(keyboard, "english_us_undefined")
+        assertNotEquals(
+            "English qwerty layout should not be empty",
+            "",
+            englishQwertyLayoutDesc!!
+        )
+        assertNotEquals(
+            "English undefined layout should not be empty",
+            "",
+            englishUndefinedLayoutDesc!!
+        )
 
-            assertNotEquals(
-                "English qwerty layout should not be empty",
-                "",
-                englishQwertyLayoutDesc!!
-            )
-            assertNotEquals(
-                "English undefined layout should not be empty",
-                "",
-                englishUndefinedLayoutDesc!!
-            )
-
-            assertEquals(
-                "Layout type should be qwerty",
-                "qwerty",
-                getKeyboardLayoutTypeForLayoutDescriptor(englishQwertyLayoutDesc)
-            )
-            assertEquals(
-                "Layout type should be undefined",
-                "undefined",
-                getKeyboardLayoutTypeForLayoutDescriptor(englishUndefinedLayoutDesc)
-            )
-        }
+        assertEquals(
+            "Layout type should be qwerty",
+            "qwerty",
+            getKeyboardLayoutTypeForLayoutDescriptor(englishQwertyLayoutDesc)
+        )
+        assertEquals(
+            "Layout type should be undefined",
+            "undefined",
+            getKeyboardLayoutTypeForLayoutDescriptor(englishUndefinedLayoutDesc)
+        )
     }
 
     /**
-     * Returns the first matching keyboard layout id that is supported by the provided input device
-     * and matches the provided language.
+     * Returns the first matching keyboard layout id that matches the provided language.
      *
-     * @param device The input device for which to query the keyboard layouts.
      * @param language The language to query for.
-     * @return The first matching keyboard layout descriptor or an empty string if none was found.
+     * @return The first matching keyboard layout or an empty string if none was found.
      */
-    private fun getKeyboardLayoutDescriptor(device: InputDevice, language: String): String? {
+    private fun getKeyboardLayoutDescriptor(language: String): String? {
         return SystemUtil.runWithShellPermissionIdentity<String>({
-            for (kl in inputManager.getKeyboardLayoutDescriptorsForInputDevice(device)) {
+            for (kl in inputManager.keyboardLayoutDescriptors) {
                 if (kl.endsWith(language)) {
                     return@runWithShellPermissionIdentity kl
                 }

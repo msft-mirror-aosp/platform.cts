@@ -641,6 +641,7 @@
 
         <activity android:name="android.widget.cts.RadioButtonCtsActivity"
              android:label="RadioButtonCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

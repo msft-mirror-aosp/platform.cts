@@ -36,18 +36,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private fun injectEvents(device: UinputDevice, events: IntArray) {
-    device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
-}
-
-private fun injectKeyDown(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(1, scanCode, 1, 0, 0, 0))
-}
-
-private fun injectKeyUp(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(1, scanCode, 0, 0, 0, 0))
-}
-
 /**
  * Create virtual keyboard devices and inject a 'hardware' key event after remapping keys. Ensure
  * that the event keys are correctly remapped.
