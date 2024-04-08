@@ -18,6 +18,8 @@ package android.scopedstorage.cts.host;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
@@ -71,6 +73,9 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
 
     @Before
     public void setup() throws Exception {
+        // Ignore tests on automotive devices b/319785789
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+
         setupExternalStorage();
         executeShellCommand("mkdir /sdcard/Android/data/com.android.shell -m 2770");
         executeShellCommand("mkdir /sdcard/Android/data/com.android.shell/files -m 2770");

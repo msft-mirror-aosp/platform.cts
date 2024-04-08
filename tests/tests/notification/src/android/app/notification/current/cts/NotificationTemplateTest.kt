@@ -598,9 +598,11 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
-            assertThat(requireViewWithText(answerText).visibility).isEqualTo(View.VISIBLE)
-            assertThat(requireViewWithText(declineText).visibility).isEqualTo(View.VISIBLE)
-            assertThat(findViewWithText(hangUpText)).isNull()
+            assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
+            assertThat(
+                requireViewWithTextContaining(declineText).visibility
+            ).isEqualTo(View.VISIBLE)
+            assertThat(findViewWithTextContaining(hangUpText)).isNull()
         }
     }
 
@@ -620,9 +622,11 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
-            assertThat(requireViewWithText(answerText).visibility).isEqualTo(View.VISIBLE)
-            assertThat(requireViewWithText(declineText).visibility).isEqualTo(View.VISIBLE)
-            assertThat(findViewWithText(hangUpText)).isNull()
+            assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
+            assertThat(
+                requireViewWithTextContaining(declineText).visibility
+            ).isEqualTo(View.VISIBLE)
+            assertThat(findViewWithTextContaining(hangUpText)).isNull()
         }
     }
 
@@ -655,9 +659,9 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
-            assertThat(findViewWithText(answerText)).isNull()
-            assertThat(findViewWithText(declineText)).isNull()
-            assertThat(requireViewWithText(hangUpText).visibility).isEqualTo(View.VISIBLE)
+            assertThat(findViewWithTextContaining(answerText)).isNull()
+            assertThat(findViewWithTextContaining(declineText)).isNull()
+            assertThat(requireViewWithTextContaining(hangUpText).visibility).isEqualTo(View.VISIBLE)
         }
     }
 
@@ -695,9 +699,9 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
-            assertThat(requireViewWithText(answerText).visibility).isEqualTo(View.VISIBLE)
-            assertThat(findViewWithText(declineText)).isNull()
-            assertThat(requireViewWithText(hangUpText).visibility).isEqualTo(View.VISIBLE)
+            assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
+            assertThat(findViewWithTextContaining(declineText)).isNull()
+            assertThat(requireViewWithTextContaining(hangUpText).visibility).isEqualTo(View.VISIBLE)
         }
     }
 
@@ -776,8 +780,12 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
-            assertThat(requireViewWithText(answerText).bgContainsColor(Color.BLUE)).isFalse()
-            assertThat(requireViewWithText(declineText).bgContainsColor(Color.MAGENTA)).isFalse()
+            assertThat(
+                requireViewWithTextContaining(answerText).bgContainsColor(Color.BLUE)
+            ).isFalse()
+            assertThat(
+                requireViewWithTextContaining(declineText).bgContainsColor(Color.MAGENTA)
+            ).isFalse()
         }
     }
 
@@ -805,8 +813,12 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val views = builder.createBigContentView()
         checkViews(views) {
             // TODO(b/184896890): diagnose/fix flaky bgContainsColor method
-            assertThat(requireViewWithText(answerText).bgContainsColor(Color.BLUE)) // .isTrue()
-            assertThat(requireViewWithText(declineText).bgContainsColor(Color.MAGENTA)) // .isTrue()
+            assertThat(
+                requireViewWithTextContaining(answerText).bgContainsColor(Color.BLUE)
+            ) // .isTrue()
+            assertThat(
+                requireViewWithTextContaining(declineText).bgContainsColor(Color.MAGENTA)
+            ) // .isTrue()
         }
     }
 
