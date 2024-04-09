@@ -16,6 +16,7 @@
 
 package android.virtualdevice.cts.camera;
 
+import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
@@ -71,6 +72,9 @@ import android.util.Size;
 import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -85,9 +89,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
         Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
@@ -108,7 +109,8 @@ public class VirtualCameraTest {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
+            GRANT_RUNTIME_PERMISSIONS);
 
     @Mock
     private CameraManager.AvailabilityCallback mMockDefaultContextCameraAvailabilityCallback;
@@ -161,6 +163,7 @@ public class VirtualCameraTest {
                 new VirtualDeviceParams.Builder()
                         .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
                         .build());
+        VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
     }
 
     @After
