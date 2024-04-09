@@ -85,10 +85,11 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
                 TestConfigChangeHandlingActivity.class);
         waitAndAssertResumed(nonEmbeddedActivity);
 
-        final EmbeddedActivityWindowInfo info = mActivityEmbeddingComponent
-                .getEmbeddedActivityWindowInfo(nonEmbeddedActivity);
-
-        assertEmbeddedActivityWindowInfo(info, nonEmbeddedActivity, false /* isEmbedded */);
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo info = mActivityEmbeddingComponent
+                    .getEmbeddedActivityWindowInfo(nonEmbeddedActivity);
+            assertEmbeddedActivityWindowInfo(info, nonEmbeddedActivity, false /* isEmbedded */);
+        });
     }
 
     /**
@@ -112,13 +113,16 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
 
-        final EmbeddedActivityWindowInfo primaryInfo = mActivityEmbeddingComponent
-                .getEmbeddedActivityWindowInfo(primaryActivity);
-        final EmbeddedActivityWindowInfo secondaryInfo = mActivityEmbeddingComponent
-                .getEmbeddedActivityWindowInfo(secondaryActivity);
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo primaryInfo = mActivityEmbeddingComponent
+                    .getEmbeddedActivityWindowInfo(primaryActivity);
+            final EmbeddedActivityWindowInfo secondaryInfo = mActivityEmbeddingComponent
+                    .getEmbeddedActivityWindowInfo(secondaryActivity);
 
-        assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
-        assertEmbeddedActivityWindowInfo(secondaryInfo, secondaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(
+                    secondaryInfo, secondaryActivity, true /* isEmbedded */);
+        });
     }
 
     /**
@@ -145,37 +149,49 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
                 TestConfigChangeHandlingActivity.class);
         waitAndAssertResumed(primaryActivity);
 
-        final EmbeddedActivityWindowInfo nonEmbeddedInfo = listener.getLastReportedInfo(
-                primaryActivity);
-        assertEmbeddedActivityWindowInfo(nonEmbeddedInfo, primaryActivity, false /* isEmbedded */);
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo nonEmbeddedInfo = listener.getLastReportedInfo(
+                    primaryActivity);
+            assertEmbeddedActivityWindowInfo(
+                    nonEmbeddedInfo, primaryActivity, false /* isEmbedded */);
+        });
 
         // Report info when activity enters split.
         final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
 
-        final EmbeddedActivityWindowInfo primaryInfo = listener
-                .getLastReportedInfo(primaryActivity);
-        final EmbeddedActivityWindowInfo secondaryInfo = listener
-                .getLastReportedInfo(secondaryActivity);
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo primaryInfo = listener
+                    .getLastReportedInfo(primaryActivity);
+            final EmbeddedActivityWindowInfo secondaryInfo = listener
+                    .getLastReportedInfo(secondaryActivity);
 
-        assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
-        assertEmbeddedActivityWindowInfo(secondaryInfo, secondaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(
+                    secondaryInfo, secondaryActivity, true /* isEmbedded */);
+        });
 
         // Report info when the primary activity exit split. Not update anymore for the secondary
         // activity that has been finished.
+        final EmbeddedActivityWindowInfo lastSecondaryInfo = listener.getLastReportedInfo(
+                secondaryActivity);
         secondaryActivity.finish();
 
         waitAndAssertResumedAndFillsTask(primaryActivity);
 
-        final EmbeddedActivityWindowInfo primaryInfo2 = listener
-                .getLastReportedInfo(primaryActivity);
-        final EmbeddedActivityWindowInfo secondaryInfo2 = listener
-                .getLastReportedInfo(secondaryActivity);
-        assertEmbeddedActivityWindowInfo(primaryInfo2, primaryActivity, false /* isEmbedded */);
-        assertEquals(secondaryInfo, secondaryInfo2);
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo primaryInfo2 = listener
+                    .getLastReportedInfo(primaryActivity);
+            final EmbeddedActivityWindowInfo secondaryInfo2 = listener
+                    .getLastReportedInfo(secondaryActivity);
+            assertEmbeddedActivityWindowInfo(primaryInfo2, primaryActivity, false /* isEmbedded */);
+            assertEquals(lastSecondaryInfo, secondaryInfo2);
+        });
 
         // No more update after #clearEmbeddedActivityWindowInfoCallback.
+        final EmbeddedActivityWindowInfo lastPrimaryInfo = listener.getLastReportedInfo(
+                primaryActivity);
         mActivityEmbeddingComponent.clearEmbeddedActivityWindowInfoCallback();
         // The last split state is back to fullscreen. Clear queue to wait for the new split update.
         mSplitInfoConsumer.clearQueue();
@@ -183,8 +199,10 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
 
-        assertEquals(primaryInfo2, listener.getLastReportedInfo(primaryActivity));
-        assertNull(listener.getLastReportedInfo(secondaryActivity2));
+        mInstrumentation.runOnMainSync(() -> {
+            assertEquals(lastPrimaryInfo, listener.getLastReportedInfo(primaryActivity));
+            assertNull(listener.getLastReportedInfo(secondaryActivity2));
+        });
     }
 
     private void assertEmbeddedActivityWindowInfo(@Nullable EmbeddedActivityWindowInfo info,
@@ -192,12 +210,18 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         assertNotNull(info);
 
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
-        final Rect activityBounds = getActivityBounds(activity);
+        final Rect activityStackBounds = getActivityBounds(activity);
 
-        assertEquals(isEmbedded, info.isEmbedded());
-        assertEquals(activity, info.getActivity());
-        assertEquals(activityBounds, info.getActivityStackBounds());
-        assertEquals(taskBounds, info.getTaskBounds());
+        final String errorMessage = "Expected value: \nisEmbedded=" + isEmbedded
+                + "\nactivity=" + activity
+                + "\nactivityStackBounds=" + activityStackBounds
+                + "\ntaskBounds=" + taskBounds
+                + "\nActual value: " + info;
+
+        assertEquals(errorMessage, isEmbedded, info.isEmbedded());
+        assertEquals(errorMessage, activity, info.getActivity());
+        assertEquals(errorMessage, activityStackBounds, info.getActivityStackBounds());
+        assertEquals(errorMessage, taskBounds, info.getTaskBounds());
     }
 
     private static class TestWindowInfoChangeListener implements
