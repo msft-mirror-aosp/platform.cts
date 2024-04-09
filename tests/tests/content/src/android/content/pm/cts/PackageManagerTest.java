@@ -83,6 +83,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
+import android.Manifest;
 import android.annotation.NonNull;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -2380,7 +2381,8 @@ public class PackageManagerTest {
             if (expectedResultStartsWith != null) {
                 assertThat(statusMessage.get()).startsWith(expectedResultStartsWith);
             }
-        }, INSTALL_PACKAGES);
+        }, INSTALL_PACKAGES, Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL);
     }
 
     @Test
