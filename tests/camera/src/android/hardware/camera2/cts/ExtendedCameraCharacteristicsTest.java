@@ -67,10 +67,8 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
-import android.mediapc.cts.common.PerformanceClassEvaluator.CameraExtensionRequirement;
-import android.mediapc.cts.common.PerformanceClassEvaluator.DynamicRangeTenBitsRequirement;
-import android.mediapc.cts.common.PerformanceClassEvaluator.FaceDetectionRequirement;
 import android.mediapc.cts.common.RequiredMeasurement;
 import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.RequirementConstants;
@@ -3506,27 +3504,27 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mAdoptShellPerm);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.PrimaryCameraRequirement primaryRearReq =
+        CameraRequirement.PrimaryCameraRequirement primaryRearReq =
                 pce.addPrimaryRearCameraReq();
-        PerformanceClassEvaluator.PrimaryCameraRequirement primaryFrontReq =
+        CameraRequirement.PrimaryCameraRequirement primaryFrontReq =
                 pce.addPrimaryFrontCameraReq();
         PrimaryCameraHwLevelReq hwLevelReq = pce.addRequirement(
                 PrimaryCameraHwLevelReq.createPrimaryCameraHwLevelReq());
-        PerformanceClassEvaluator.CameraTimestampSourceRequirement timestampSourceReq =
+        CameraRequirement.CameraTimestampSourceRequirement timestampSourceReq =
                 pce.addR7_5__H_1_4();
-        PerformanceClassEvaluator.CameraRawRequirement rearRawReq =
+        CameraRequirement.CameraRawRequirement rearRawReq =
                 pce.addR7_5__H_1_8();
-        PerformanceClassEvaluator.Camera240FpsRequirement hfrReq =
+        CameraRequirement.Camera240FpsRequirement hfrReq =
                 pce.addR7_5__H_1_9();
-        PerformanceClassEvaluator.UltraWideZoomRatioRequirement ultrawideZoomRatioReq =
+        CameraRequirement.UltraWideZoomRatioRequirement ultrawideZoomRatioReq =
                 pce.addR7_5__H_1_10();
-        PerformanceClassEvaluator.ConcurrentRearFrontRequirement concurrentRearFrontReq =
+        CameraRequirement.ConcurrentRearFrontRequirement concurrentRearFrontReq =
                 pce.addR7_5__H_1_11();
-        PerformanceClassEvaluator.PreviewStabilizationRequirement previewStabilizationReq =
+        CameraRequirement.PreviewStabilizationRequirement previewStabilizationReq =
                 pce.addR7_5__H_1_12();
-        PerformanceClassEvaluator.LogicalMultiCameraRequirement logicalMultiCameraReq =
+        CameraRequirement.LogicalMultiCameraRequirement logicalMultiCameraReq =
                 pce.addR7_5__H_1_13();
-        PerformanceClassEvaluator.StreamUseCaseRequirement streamUseCaseReq =
+        CameraRequirement.StreamUseCaseRequirement streamUseCaseReq =
                 pce.addR7_5__H_1_14();
 
         String primaryRearId = null;
@@ -3819,8 +3817,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mAdoptShellPerm);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
-        FaceDetectionRequirement faceDetectionReq = pce.addR7_5__H_1_17();
+        CameraRequirement.DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
+        CameraRequirement.FaceDetectionRequirement faceDetectionReq = pce.addR7_5__H_1_17();
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
@@ -3829,15 +3827,17 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
         // H-1-16
         verifyDynamicRangeTenBits(primaryRearId,
-                DynamicRangeTenBitsRequirement.PRIMARY_REAR_CAMERA, dynamicRangeTenBitsReq);
+                CameraRequirement.DynamicRangeTenBitsRequirement.PRIMARY_REAR_CAMERA,
+                dynamicRangeTenBitsReq);
         verifyDynamicRangeTenBits(primaryFrontId,
-                DynamicRangeTenBitsRequirement.PRIMARY_FRONT_CAMERA, dynamicRangeTenBitsReq);
+                CameraRequirement.DynamicRangeTenBitsRequirement.PRIMARY_FRONT_CAMERA,
+                dynamicRangeTenBitsReq);
 
         // H-1-17
         verifyFaceDetection(primaryRearId,
-                FaceDetectionRequirement.PRIMARY_REAR_CAMERA, faceDetectionReq);
+                CameraRequirement.FaceDetectionRequirement.PRIMARY_REAR_CAMERA, faceDetectionReq);
         verifyFaceDetection(primaryFrontId,
-                FaceDetectionRequirement.PRIMARY_FRONT_CAMERA, faceDetectionReq);
+                CameraRequirement.FaceDetectionRequirement.PRIMARY_FRONT_CAMERA, faceDetectionReq);
 
         pce.submitAndCheck();
     }
@@ -3850,7 +3850,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mAdoptShellPerm);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.JpegRRequirement jpegRReq = pce.addR7_5__H_1_18();
+        CameraRequirement.JpegRRequirement jpegRReq = pce.addR7_5__H_1_18();
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
@@ -3859,10 +3859,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
         // H-1-18
         verifyJpegRRequirement(primaryRearId,
-                PerformanceClassEvaluator.JpegRRequirement.PRIMARY_REAR_CAMERA,
+                CameraRequirement.JpegRRequirement.PRIMARY_REAR_CAMERA,
                 jpegRReq);
         verifyJpegRRequirement(primaryFrontId,
-                PerformanceClassEvaluator.JpegRRequirement.PRIMARY_FRONT_CAMERA,
+                CameraRequirement.JpegRRequirement.PRIMARY_FRONT_CAMERA,
                 jpegRReq);
 
         pce.submitAndCheck();
@@ -3881,16 +3881,18 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mAdoptShellPerm);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
+        CameraRequirement.CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
         String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
                 getCameraIdsUnderTest());
 
-        verifyExtensionForCamera(primaryRearId, CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
+        verifyExtensionForCamera(primaryRearId,
+                CameraRequirement.CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
                 cameraExtensionReq);
-        verifyExtensionForCamera(primaryFrontId, CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
+        verifyExtensionForCamera(primaryFrontId,
+                CameraRequirement.CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
                 cameraExtensionReq);
 
         pce.submitAndCheck();
@@ -3900,7 +3902,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Verify camera2 and CameraX extension requirements for a camera id
      */
     private void verifyExtensionForCamera(String cameraId, int facing,
-            PerformanceClassEvaluator.CameraExtensionRequirement req) throws Exception {
+            CameraRequirement.CameraExtensionRequirement req) throws Exception {
         if (cameraId == null) {
             req.setCamera2NightExtensionSupported(facing, false);
             req.setCameraXNightExtensionSupported(facing, false);
@@ -3918,9 +3920,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         req.setCamera2NightExtensionSupported(facing, nightExtensionSupported);
 
         CameraSelector selector;
-        if (facing == CameraExtensionRequirement.PRIMARY_REAR_CAMERA) {
+        if (facing == CameraRequirement.CameraExtensionRequirement.PRIMARY_REAR_CAMERA) {
             selector = CameraSelector.DEFAULT_BACK_CAMERA;
-        } else if (facing == CameraExtensionRequirement.PRIMARY_FRONT_CAMERA) {
+        } else if (facing == CameraRequirement.CameraExtensionRequirement.PRIMARY_FRONT_CAMERA) {
             selector = CameraSelector.DEFAULT_FRONT_CAMERA;
         } else {
             return;
@@ -3934,7 +3936,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Verify JPEG_R requirement for a camera id
      */
     private void verifyJpegRRequirement(String cameraId, int facing,
-                                        PerformanceClassEvaluator.JpegRRequirement req)
+                                        CameraRequirement.JpegRRequirement req)
             throws Exception {
         if (cameraId == null) {
             req.setJpegRSupported(facing, false);
@@ -3948,7 +3950,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Verify dynamic range ten bits requirement for a camera id
      */
     private void verifyDynamicRangeTenBits(String cameraId, int facing,
-            PerformanceClassEvaluator.DynamicRangeTenBitsRequirement req) throws Exception {
+            CameraRequirement.DynamicRangeTenBitsRequirement req) throws Exception {
         if (cameraId == null) {
             req.setDynamicRangeTenBitsSupported(facing, false);
             return;
@@ -3964,7 +3966,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     /**
      * Verify face detection requirements for a camera id
      */
-    private void verifyFaceDetection(String cameraId, int facing, FaceDetectionRequirement req) {
+    private void verifyFaceDetection(String cameraId, int facing,
+                                     CameraRequirement.FaceDetectionRequirement req) {
         if (cameraId == null) {
             req.setFaceDetectionSupported(facing, false);
             return;
