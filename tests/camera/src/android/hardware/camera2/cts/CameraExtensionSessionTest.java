@@ -751,6 +751,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                 SESSION_CLOSE_TIMEOUT_MS);
                     } finally {
                         mTestRule.closeDevice(id);
+                        postviewImageReader.close();
                         extensionImageReader.close();
                         mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                     }
