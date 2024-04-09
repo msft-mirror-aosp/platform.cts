@@ -16,7 +16,9 @@
 package android.virtualdevice.cts.audio;
 
 import static android.Manifest.permission.CAPTURE_AUDIO_OUTPUT;
+import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
+import static android.Manifest.permission.RECORD_AUDIO;
 import static android.media.AudioFormat.CHANNEL_IN_MONO;
 import static android.media.AudioFormat.CHANNEL_OUT_MONO;
 import static android.media.AudioFormat.ENCODING_PCM_16BIT;
@@ -56,6 +58,7 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -106,7 +109,7 @@ public class VirtualAudioTest {
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
-            MODIFY_AUDIO_ROUTING, CAPTURE_AUDIO_OUTPUT);
+            MODIFY_AUDIO_ROUTING, CAPTURE_AUDIO_OUTPUT, GRANT_RUNTIME_PERMISSIONS);
 
     private VirtualDevice mVirtualDevice;
     private VirtualDisplay mVirtualDisplay;
@@ -130,6 +133,7 @@ public class VirtualAudioTest {
                 mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
         mVirtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
+        grantRecordAudioPermission(mVirtualDevice.getDeviceId());
     }
 
 
@@ -355,6 +359,13 @@ public class VirtualAudioTest {
     private AudioActivity startAudioActivity() {
         return mVirtualDeviceRule.startActivityOnDisplaySync(
                 mVirtualDisplay, AudioActivity.class);
+    }
+
+    private void grantRecordAudioPermission(int deviceId) {
+        Context deviceContext = getInstrumentation().getTargetContext()
+                .createDeviceContext(deviceId);
+        deviceContext.getPackageManager().grantRuntimePermission("android.virtualdevice.cts.audio",
+                RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
     }
 
     public static class AudioActivity extends Activity {

@@ -838,6 +838,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 .runTest();
     }
 
+    @FlakyTest(bugId = 333155542)
     @Test
     public void testBatchEdit_getCommitSpaceAndSetComposingRegionTestInSelectionTest_webView()
             throws Exception {
@@ -1415,8 +1416,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         final ImeEvent imeEvent = expectEvent(stream,
                 event -> "getWindowLayoutInfo".equals(event.getEventName()),
                 TIMEOUT);
-        final Bundle arguments = imeEvent.getArguments();
-        arguments.setClassLoader(ImeEvent.class.getClassLoader());
-        return arguments.getParcelable("WindowLayoutInfo", WindowLayoutInfoParcelable.class);
+        return imeEvent.getArguments()
+                .getParcelable("WindowLayoutInfo", WindowLayoutInfoParcelable.class);
     }
 }

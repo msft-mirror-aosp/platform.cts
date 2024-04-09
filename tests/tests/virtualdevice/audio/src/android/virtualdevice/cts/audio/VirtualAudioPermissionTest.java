@@ -19,6 +19,7 @@ import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.media.AudioFormat.CHANNEL_IN_MONO;
+import static android.media.AudioFormat.ENCODING_PCM_16BIT;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -31,6 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtual.audio.AudioInjection;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.companion.virtual.flags.Flags;
 import android.content.Context;
@@ -39,7 +41,11 @@ import android.hardware.display.VirtualDisplay;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.media.audiopolicy.AudioMix;
+import android.media.audiopolicy.AudioMixingRule;
+import android.media.audiopolicy.AudioPolicy;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -47,8 +53,8 @@ import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,8 +68,11 @@ import org.mockito.MockitoAnnotations;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualAudioPermissionTest {
+
+    private static final int SAMPLE_RATE = 44100;
+    private static final int BUFFER_SIZE_IN_BYTES = 65536;
     private static final AudioFormat INJECTION_FORMAT = new AudioFormat.Builder()
-            .setSampleRate(44100)
+            .setSampleRate(SAMPLE_RATE)
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setChannelMask(CHANNEL_IN_MONO)
             .build();
@@ -76,8 +85,11 @@ public class VirtualAudioPermissionTest {
     VirtualAudioDevice.AudioConfigurationChangeCallback mAudioConfigurationChangeCallback;
 
     private final Context mContext = getInstrumentation().getTargetContext();
+    private VirtualDevice mVirtualDevice;
+    private VirtualDisplay mVirtualDisplay;
     private int mVirtualDeviceId;
     private int mVirtualDisplayId;
+    private AudioPolicy mAudioPolicy;
 
     @Before
     public void setUp() throws Exception {
@@ -88,19 +100,11 @@ public class VirtualAudioPermissionTest {
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE));
     }
 
-    private void setupVirtualDevice(int audioPolicy) {
-        VirtualDeviceParams params = new VirtualDeviceParams.Builder()
-                .setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_AUDIO, audioPolicy)
-                .build();
-        VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
-        mVirtualDeviceId = virtualDevice.getDeviceId();
-        VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(
-                virtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
-        mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-
-        VirtualAudioDevice virtualAudioDevice = virtualDevice.createVirtualAudioDevice(
-                virtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
-        virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
+    @After
+    public void tearDown() throws Exception {
+        if (mAudioPolicy != null) {
+            mContext.getSystemService(AudioManager.class).unregisterAudioPolicy(mAudioPolicy);
+        }
     }
 
     @RequiresFlagsEnabled({
@@ -110,9 +114,10 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
     public void audioInjection_defaultDevice_works() {
-        assertThat(getPermissionState(Display.DEFAULT_DISPLAY))
+        PermissionActivity permissionActivity = launchPermissionActivity(Display.DEFAULT_DISPLAY);
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
-        recordAudio(Display.DEFAULT_DISPLAY);
+        permissionActivity.recordAudio();
     }
 
     @RequiresFlagsEnabled({
@@ -123,9 +128,12 @@ public class VirtualAudioPermissionTest {
     @Test
     public void audioInjection_virtualDevice_permissionNotGranted() {
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
-        assertThat(getPermissionState(mVirtualDisplayId))
+        setupVirtualAudioDevice();
+        PermissionActivity permissionActivity = launchPermissionActivity(mVirtualDisplayId);
+
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
-        assertThrows(UnsupportedOperationException.class, () -> recordAudio(mVirtualDisplayId));
+        assertThrows(IllegalStateException.class, permissionActivity::recordAudio);
     }
 
     @RequiresFlagsEnabled({
@@ -137,15 +145,14 @@ public class VirtualAudioPermissionTest {
     @Test
     public void audioInjection_virtualDeviceWithMicrophone_permissionGranted() {
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
-        assertThat(getPermissionState(mVirtualDisplayId))
-                .isEqualTo(PackageManager.PERMISSION_DENIED);
-        assertThrows(UnsupportedOperationException.class, () -> recordAudio(mVirtualDisplayId));
+        setupVirtualAudioDevice();
+        PermissionActivity permissionActivity = launchPermissionActivity(mVirtualDisplayId);
 
         grantPermission(mVirtualDeviceId);
-        assertThat(getPermissionState(mVirtualDisplayId))
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
 
-        recordAudio(mVirtualDisplayId);
+        permissionActivity.recordAudio();
     }
 
     @RequiresFlagsEnabled({
@@ -154,18 +161,85 @@ public class VirtualAudioPermissionTest {
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
-    @FlakyTest
     @Test
     public void audioInjection_virtualDeviceWithoutMicrophone_permissionGrantedOnlyOnDefaultDevice() {
         // The POLICY_TYPE_AUDIO for the VirtualDevice is set to DEVICE_POLICY_DEFAULT.
         // Thus device-awareness for the RECORD_AUDIO permission is disabled and falls back to the
         // default device.
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_DEFAULT);
-        assertThat(getPermissionState(Display.DEFAULT_DISPLAY))
+
+        PermissionActivity permissionActivity = launchPermissionActivity(Display.DEFAULT_DISPLAY);
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
-        assertThat(getPermissionState(mVirtualDisplayId))
+        permissionActivity = launchPermissionActivity(mVirtualDisplayId);
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
-        recordAudio(mVirtualDisplayId);
+        permissionActivity.recordAudio();
+    }
+
+    @RequiresFlagsEnabled({
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
+            Flags.FLAG_VDM_PUBLIC_APIS,
+            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
+    @Test
+    public void audioInjection_virtualDeviceWithManualAudioPolicy_permissionGrantedOnlyOnDefaultDevice() {
+        // The POLICY_TYPE_AUDIO for the VirtualDevice is set to DEVICE_POLICY_DEFAULT.
+        // Thus device-awareness for the RECORD_AUDIO permission is disabled and falls back to the
+        // default device.
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_DEFAULT);
+        PermissionActivity permissionActivity = launchPermissionActivity(Display.DEFAULT_DISPLAY);
+        setupAudioPolicy(permissionActivity.getAttributionSource().getUid());
+
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        permissionActivity = launchPermissionActivity(mVirtualDisplayId);
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThrows(IllegalStateException.class, permissionActivity::recordAudio);
+
+        grantPermission(mVirtualDeviceId);
+        assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        permissionActivity.recordAudio();
+    }
+
+    private void setupVirtualDevice(int audioPolicy) {
+        VirtualDeviceParams params = new VirtualDeviceParams.Builder()
+                .setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_AUDIO, audioPolicy)
+                .build();
+        mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
+        mVirtualDeviceId = mVirtualDevice.getDeviceId();
+        mVirtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(mVirtualDevice,
+                VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+        mVirtualDisplayId = mVirtualDisplay.getDisplay().getDisplayId();
+    }
+
+    private void setupVirtualAudioDevice() {
+        VirtualAudioDevice virtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
+                mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
+        AudioInjection audioInjection = virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
+        audioInjection.play();
+    }
+
+    private void setupAudioPolicy(int uid) {
+        Context deviceContext = mContext.createDeviceContext(mVirtualDeviceId);
+        AudioManager audioManager = deviceContext.getSystemService(AudioManager.class);
+        assumeNotNull(audioManager);
+        AudioMixingRule mixingRule = new AudioMixingRule.Builder()
+                .setTargetMixRole(AudioMixingRule.MIX_ROLE_INJECTOR)
+                .addMixRule(AudioMixingRule.RULE_MATCH_UID, uid)
+                .build();
+        AudioMix audioMix = new android.media.audiopolicy.AudioMix.Builder(mixingRule)
+                .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                .setFormat(INJECTION_FORMAT)
+                .build();
+        mAudioPolicy = new AudioPolicy.Builder(deviceContext).addMix(audioMix).build();
+        int res = audioManager.registerAudioPolicy(mAudioPolicy);
+        assertThat(res).isEqualTo(AudioManager.SUCCESS);
+        AudioTrack audioTrackSource = mAudioPolicy.createAudioTrackSource(audioMix);
+        audioTrackSource.play();
     }
 
     private void grantPermission(int deviceId) {
@@ -174,31 +248,16 @@ public class VirtualAudioPermissionTest {
                 RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
     }
 
-    private int getPermissionState(int displayId) {
-        PermissionActivity permissionActivity = mVirtualDeviceRule.startActivityOnDisplaySync(
-                displayId, PermissionActivity.class);
-        int permissionState = permissionActivity.checkSelfPermission(RECORD_AUDIO);
-        permissionActivity.finish();
-        return permissionState;
-    }
-
-    private void recordAudio(int displayId) {
-        PermissionActivity permissionActivity = mVirtualDeviceRule.startActivityOnDisplaySync(
-                displayId, PermissionActivity.class);
-        permissionActivity.recordAudio();
-        permissionActivity.finish();
+    private PermissionActivity launchPermissionActivity(int displayId) {
+        return mVirtualDeviceRule.startActivityOnDisplaySync(displayId, PermissionActivity.class);
     }
 
     public static class PermissionActivity extends Activity {
         void recordAudio() {
-            AudioRecord audioRecord = new AudioRecord.Builder()
-                    .setContext(this)
-                    .setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-                    .setAudioFormat(new AudioFormat.Builder().setSampleRate(
-                            44100).setChannelMask(
-                            AudioFormat.CHANNEL_IN_MONO).setEncoding(
-                            AudioFormat.ENCODING_PCM_16BIT).build())
-                    .build();
+            AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO, ENCODING_PCM_16BIT,
+                    BUFFER_SIZE_IN_BYTES);
 
             audioRecord.startRecording();
 

@@ -74,7 +74,7 @@ android_test {
     resource_dirs: ["res"],
     sdk_version: "test_current",
     min_sdk_version: "30",
-    test_config_template: "AndroidTestMcts.xml",
+    test_config: "AndroidTestMcts.xml",
     data: [
         ":CtsQueryTextClassifierServiceActivity",
     ],

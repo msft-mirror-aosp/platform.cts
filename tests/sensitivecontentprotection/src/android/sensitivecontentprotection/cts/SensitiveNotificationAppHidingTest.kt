@@ -138,7 +138,7 @@ class SensitiveNotificationAppHidingTest {
                 testName,
                 activity,
                 pixelChecker,
-                -1, // expectedMatchingPixels
+                .5f, // expectedMatchRatio
                 BitmapPixelChecker.getInsets(activity)
             )
         }
@@ -151,7 +151,7 @@ class SensitiveNotificationAppHidingTest {
                 testName,
                 activity,
                 pixelChecker,
-                -1, // expectedMatchingPixels
+                .5f, // expectedMatchRatio
                 BitmapPixelChecker.getInsets(activity)
             )
         }
@@ -213,6 +213,9 @@ class SensitiveNotificationAppHidingTest {
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureProtected(activityScenario)
         }
+        if (Flags.sensitiveContentImprovements()) {
+            ToastVerifier.verifyToastShowsAndGoes()
+        }
     }
 
     @Test
@@ -229,6 +232,9 @@ class SensitiveNotificationAppHidingTest {
             sendSensitiveNotification()
 
             verifyScreenCaptureProtected(activityScenario)
+        }
+        if (Flags.sensitiveContentImprovements()) {
+            ToastVerifier.verifyToastShowsAndGoes()
         }
     }
 
@@ -254,6 +260,9 @@ class SensitiveNotificationAppHidingTest {
             Thread.sleep(500)
 
             verifyScreenCaptureProtected(activityScenario)
+        }
+        if (Flags.sensitiveContentImprovements()) {
+            ToastVerifier.verifyToastShowsAndGoes()
         }
     }
 

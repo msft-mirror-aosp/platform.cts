@@ -48,6 +48,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.ImageFormat;
+import android.hardware.camera2.cts.rs.BitmapUtils;
 import android.hardware.graphics.common.PixelFormat;
 import android.media.Image;
 import android.media.MediaPlayer;

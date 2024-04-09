@@ -435,6 +435,30 @@ public class CardEmulationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testTypeAOneLoopPollingLoopToForeground() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext,
+                            CtsMyHostApduService.class)));
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+            ensurePreferredService(CtsMyHostApduService.class);
+            notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testTypeAPollingLoopToForegroundWithWalletHolder() {

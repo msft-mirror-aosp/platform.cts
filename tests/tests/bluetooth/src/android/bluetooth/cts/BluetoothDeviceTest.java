@@ -585,7 +585,7 @@ public class BluetoothDeviceTest {
             // Skip the test if bluetooth or companion device are not present.
             return;
         }
-        String deviceAddress = "00:11:22:AA:BB:CC";
+        String deviceAddress = "00:11:22:AA:AA:AA";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
         // This should throw a SecurityException because no BLUETOOTH_CONNECT permission

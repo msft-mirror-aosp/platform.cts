@@ -19,6 +19,7 @@ package android.media.tv.ad.cts;
 import android.content.Context;
 import android.media.tv.TvInputService;
 import android.net.Uri;
+import android.os.Bundle;
 import android.view.Surface;
 
 import androidx.annotation.Nullable;
@@ -45,6 +46,10 @@ public class StubTvInputService2 extends TvInputService {
 
     public static class StubSessionImpl2 extends Session {
 
+        public int mOnTvAdSessionDataCount;
+        public String mOnTvAdSessionDataType;
+        public Bundle mOnTvAdSessionDataBundle;
+
         StubSessionImpl2(Context context) {
             super(context);
         }
@@ -53,6 +58,9 @@ public class StubTvInputService2 extends TvInputService {
          * Resets values.
          */
         public void resetValues() {
+            mOnTvAdSessionDataCount = 0;
+            mOnTvAdSessionDataType = null;
+            mOnTvAdSessionDataBundle = null;
         }
 
         @Override
@@ -76,6 +84,14 @@ public class StubTvInputService2 extends TvInputService {
 
         @Override
         public void onSetCaptionEnabled(boolean enabled) {
+        }
+
+        @Override
+        public void onTvAdSessionData(String type, Bundle data) {
+            super.onTvAdSessionData(type, data);
+            mOnTvAdSessionDataCount++;
+            mOnTvAdSessionDataType = type;
+            mOnTvAdSessionDataBundle = data;
         }
     }
 }

@@ -304,6 +304,7 @@ public class ActivityContext extends Activity {
     protected void onResume() {
         super.onResume();
         synchronized (ActivityContext.class) {
+            sGetActivityCallback = new BlockingCallbackImpl();
             sActivityContext = this;
             if (sRunnable == null) {
                 Log.e(LOG_TAG, "Launched ActivityContext without runnable");
@@ -319,7 +320,6 @@ public class ActivityContext extends Activity {
     }
 
     @Override
-    // TODO(b/198280332): Remove this temporary solution to set return values for methods
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         sGetActivityCallback.set(new ActivityResult(requestCode, resultCode, data));
     }

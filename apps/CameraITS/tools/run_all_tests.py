@@ -204,7 +204,7 @@ _LIGHTING_CONTROL_TESTS = (
 
 _EXTENSION_NAMES = (
     'hdr',
-    'low_light_boost',
+    'low_light',
 )
 
 _DST_SCENE_DIR = '/sdcard/Download/'

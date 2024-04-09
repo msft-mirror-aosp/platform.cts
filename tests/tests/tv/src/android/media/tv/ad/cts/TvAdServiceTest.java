@@ -17,6 +17,11 @@
 package android.media.tv.ad.cts;
 
 
+import static android.media.tv.TvInputManager.SESSION_DATA_KEY_AD_RESPONSE;
+import static android.media.tv.TvInputManager.SESSION_DATA_TYPE_AD_RESPONSE;
+import static android.media.tv.ad.TvAdManager.SESSION_DATA_KEY_BROADCAST_INFO_REQUEST;
+import static android.media.tv.ad.TvAdManager.SESSION_DATA_TYPE_BROADCAST_INFO_REQUEST;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -28,6 +33,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
+import android.media.tv.AdResponse;
+import android.media.tv.CommandRequest;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.media.tv.TvTrackInfo;
@@ -88,9 +95,11 @@ public class TvAdServiceTest {
     private TvInputInfo mTvInputInfo;
     private StubTvAdService.StubSessionImpl mSession;
     private TvAdView.OnUnhandledInputEventListener mOnUnhandledInputEventListener;
+    private StubTvInputService2.StubSessionImpl2 mInputSession;
 
+    private final MockTvInputCallback mTvInputCallback = new MockTvInputCallback();
     private final MockCallback mCallback = new MockCallback();
-    private final MockTvAdServiceCallBack mMockTvAdServiceCallBack = new MockTvAdServiceCallBack();
+    private final MockTvAdServiceCallBack mTvAdServiceCallBack = new MockTvAdServiceCallBack();
 
     public static class MockCallback extends TvAdView.TvAdCallback {
 
@@ -104,6 +113,12 @@ public class TvAdServiceTest {
         private void resetValues() {
         }
 
+    }
+
+    public static class MockTvInputCallback extends TvView.TvInputCallback {
+        private void resetValues() {
+
+        }
     }
 
     @Before
@@ -138,7 +153,7 @@ public class TvAdServiceTest {
         }
         assertNotNull(mStubInfo);
         mTvAdView.setCallback(getExecutor(), mCallback);
-        mManager.registerCallback(getExecutor(), mMockTvAdServiceCallBack);
+        mManager.registerCallback(getExecutor(), mTvAdServiceCallBack);
         mTvAdView.setOnUnhandledInputEventListener(
                 new TvAdView.OnUnhandledInputEventListener() {
                     @Override
@@ -177,7 +192,7 @@ public class TvAdServiceTest {
         if (mActivityScenario != null) {
             mActivityScenario.close();
         }
-        mManager.unregisterCallback(mMockTvAdServiceCallBack);
+        mManager.unregisterCallback(mTvAdServiceCallBack);
     }
 
     @Test
@@ -472,6 +487,55 @@ public class TvAdServiceTest {
         assertBundlesAreEqual(StubTvAdService.sAppLinkCommand, bundle);
     }
 
+    @Test
+    public void testOnTvInputSessionData() {
+        linkTvView();
+
+        String type = SESSION_DATA_TYPE_AD_RESPONSE;
+        Bundle bundle = new Bundle();
+        String key = SESSION_DATA_KEY_AD_RESPONSE;
+        AdResponse value = new AdResponse(767, AdResponse.RESPONSE_TYPE_PLAYING, 909L);
+        bundle.putObject(key, value);
+
+        mInputSession.sendTvInputSessionData(type, bundle);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mOnTvInputSessionDataCount > 0);
+
+        assertThat(mSession.mOnTvInputSessionDataCount).isEqualTo(1);
+        assertThat(mSession.mOnTvInputSessionDataType).isEqualTo(type);
+        assertThat(mSession.mOnTvInputSessionDataBundle.keySet()).isEqualTo(bundle.keySet());
+        AdResponse expected = (AdResponse) mSession.mOnTvInputSessionDataBundle.get(key);
+        assertThat(expected.getId()).isEqualTo(value.getId());
+        assertThat(expected.getResponseType()).isEqualTo(value.getResponseType());
+        assertThat(expected.getElapsedTimeMillis()).isEqualTo(value.getElapsedTimeMillis());
+    }
+
+    @Test
+    public void testSendTvAdSessionData() {
+        linkTvView();
+
+        String type = SESSION_DATA_TYPE_BROADCAST_INFO_REQUEST;
+        Bundle bundle = new Bundle();
+        String key = SESSION_DATA_KEY_BROADCAST_INFO_REQUEST;
+        CommandRequest value = new CommandRequest(767, 25, "a", "b", "c", "d");
+        bundle.putObject(key, value);
+
+        mSession.sendTvAdSessionData(type, bundle);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mOnTvAdSessionDataCount > 0);
+
+        assertThat(mInputSession.mOnTvAdSessionDataCount).isEqualTo(1);
+        assertThat(mInputSession.mOnTvAdSessionDataType).isEqualTo(type);
+        assertThat(mInputSession.mOnTvAdSessionDataBundle.keySet()).isEqualTo(bundle.keySet());
+        CommandRequest expected = (CommandRequest) mInputSession.mOnTvAdSessionDataBundle.get(key);
+        assertThat(expected.getRequestId()).isEqualTo(value.getRequestId());
+        assertThat(expected.getOption()).isEqualTo(value.getOption());
+        assertThat(expected.getNamespace()).isEqualTo(value.getNamespace());
+        assertThat(expected.getName()).isEqualTo(value.getName());
+        assertThat(expected.getArguments()).isEqualTo(value.getArguments());
+        assertThat(expected.getArgumentType()).isEqualTo(value.getArgumentType());
+    }
+
     private TvAdView findTvAdViewById(int id) {
         return (TvAdView) mActivity.findViewById(id);
     }
@@ -539,5 +603,18 @@ public class TvAdServiceTest {
         } else {
             assertThat(actual).isEqualTo(expected);
         }
+    }
+
+    private void linkTvView() {
+        assertNotNull(mSession);
+        mSession.resetValues();
+
+        mTvView.setCallback(mTvInputCallback);
+        mTvView.tune(mTvInputInfo.getId(), createTestUri());
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mTvView.getInputSession() != null);
+        mInputSession = StubTvInputService2.sStubSessionImpl2;
+        assertNotNull(mInputSession);
+        mInputSession.resetValues();
+        mTvAdView.setTvView(mTvView);
     }
 }

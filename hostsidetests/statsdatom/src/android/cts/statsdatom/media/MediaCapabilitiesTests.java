@@ -80,9 +80,9 @@ public class MediaCapabilitiesTests extends DeviceTestCase implements IBuildRece
 
         // Setting the values of audio setting via shell commands
         getDevice().executeShellCommand(
-                "cmd audio set-surround-format-enabled 7 true");
+                "cmd audio set-surround-format-enabled 5 true");
         getDevice().executeShellCommand(
-                "cmd audio set-surround-format-enabled 14 false");
+                "cmd audio set-surround-format-enabled 6 false");
         getDevice().executeShellCommand("cmd audio set-encoded-surround-mode 2");
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
 
@@ -98,10 +98,10 @@ public class MediaCapabilitiesTests extends DeviceTestCase implements IBuildRece
                     .isAtLeast(1);
             assertEquals(Mediametrics.EncodedSurroundOutputMode.ENCODED_SURROUND_OUTPUT_NEVER,
                     atom.getMediaCapabilities().getSurroundOutputMode());
-            assertThat(Mediametrics.AudioEncoding.ENCODING_DTS).isIn(
+            assertThat(Mediametrics.AudioEncoding.ENCODING_AC3).isIn(
                     atom.getMediaCapabilities()
                             .getUserEnabledSurroundEncodings().getAudioEncodingsList());
-            assertThat(Mediametrics.AudioEncoding.ENCODING_DOLBY_TRUEHD).isNotIn(
+            assertThat(Mediametrics.AudioEncoding.ENCODING_E_AC3).isNotIn(
                     atom.getMediaCapabilities()
                             .getUserEnabledSurroundEncodings().getAudioEncodingsList());
         }

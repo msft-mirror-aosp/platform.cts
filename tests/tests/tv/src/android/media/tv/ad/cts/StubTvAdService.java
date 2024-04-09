@@ -66,20 +66,20 @@ public class StubTvAdService extends TvAdService {
         public int mErrorCount;
         public int mResetAdServiceCount;
         public byte[] mSigningResultByte;
-        public boolean mMediaViewEnabled;
+        public Boolean mMediaViewEnabled;
         public int mMediaViewEnabledCount;
+        public int mMediaViewSizeChangedCount;
+        public Integer mMediaViewWidth;
+        public Integer mMediaViewHeight;
         public int mKeyDownCount;
         public int mKeyLongPressCount;
         public int mKeyMultipleCount;
         public int mKeyUpCount;
-        public int mKeyDownCode;
-        public int mKeyLongPressCode;
-        public int mKeyMultipleCode;
-        public int mKeyUpCode;
-        public int mMediaViewSizeChangedCount;
-        public int mMediaViewWidth;
-        public int mMediaViewHeight;
-
+        public Integer mKeyDownCode;
+        public Integer mKeyLongPressCode;
+        public Integer mKeyMultipleCode;
+        public Integer mKeyUpCode;
+        public int mOnTvInputSessionDataCount;
         public String mCurrentTvInputId;
         public Rect mCurrentVideoBounds;
         public Uri mCurrentChannelUri;
@@ -93,6 +93,8 @@ public class StubTvAdService extends TvAdService {
         public KeyEvent mKeyLongPressEvent;
         public KeyEvent mKeyMultipleEvent;
         public KeyEvent mKeyUpEvent;
+        public String mOnTvInputSessionDataType;
+        public Bundle mOnTvInputSessionDataBundle;
 
         /**
          * Creates a new Session.
@@ -117,12 +119,20 @@ public class StubTvAdService extends TvAdService {
             mTvMessageCount = 0;
             mErrorCount = 0;
             mResetAdServiceCount = 0;
-            mMediaViewEnabled = false;
+            mMediaViewEnabled = null;
             mMediaViewEnabledCount = 0;
             mMediaViewSizeChangedCount = 0;
-            mMediaViewWidth = 0;
-            mMediaViewHeight = 0;
-
+            mMediaViewWidth = null;
+            mMediaViewHeight = null;
+            mKeyDownCount = 0;
+            mKeyLongPressCount = 0;
+            mKeyMultipleCount = 0;
+            mKeyUpCount = 0;
+            mKeyDownCode = null;
+            mKeyLongPressCode = null;
+            mKeyMultipleCode = null;
+            mKeyUpCode = null;
+            mOnTvInputSessionDataCount = 0;
             mCurrentTvInputId = null;
             mCurrentVideoBounds = null;
             mCurrentChannelUri = null;
@@ -133,15 +143,8 @@ public class StubTvAdService extends TvAdService {
             mTvTrackInfo = null;
             mErrMessage = null;
             mErrBundle = null;
-            mKeyDownCount = 0;
-            mKeyLongPressCount = 0;
-            mKeyMultipleCount = 0;
-            mKeyUpCount = 0;
-            mKeyDownCode = 0;
-            mKeyLongPressCode = 0;
-            mKeyMultipleCode = 0;
-            mKeyUpCode = 0;
-
+            mOnTvInputSessionDataType = null;
+            mOnTvInputSessionDataBundle = null;
             mKeyDownEvent = null;
             mKeyLongPressEvent = null;
             mKeyMultipleEvent = null;
@@ -279,8 +282,6 @@ public class StubTvAdService extends TvAdService {
             return false;
         }
 
-
-
         @Override
         public boolean isMediaViewEnabled() {
             super.isMediaViewEnabled();
@@ -309,5 +310,12 @@ public class StubTvAdService extends TvAdService {
             mMediaViewHeight = h;
         }
 
+        @Override
+        public void onTvInputSessionData(String type, Bundle bundle) {
+            super.onTvInputSessionData(type, bundle);
+            mOnTvInputSessionDataCount++;
+            mOnTvInputSessionDataType = type;
+            mOnTvInputSessionDataBundle = bundle;
+        }
     }
 }
