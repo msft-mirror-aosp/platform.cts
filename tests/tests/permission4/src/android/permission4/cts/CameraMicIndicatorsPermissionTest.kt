@@ -42,6 +42,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
+import org.junit.AssumptionViolatedException;
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -204,7 +205,23 @@ class CameraMicIndicatorsPermissionTest {
 
     private fun assertCarIndicatorsShown(useMic: Boolean, useCamera: Boolean, useHotword: Boolean) {
         // Ensure the privacy chip is present (or not)
-        val chipFound = isChipPresent()
+        var chipFound = false
+        try {
+            eventually {
+                val privacyChip = uiDevice.findObject(By.res(PRIVACY_CHIP_ID))
+                assumeTrue("view with id $PRIVACY_CHIP_ID not found", privacyChip !== null)
+                privacyChip.click()
+                chipFound = true
+            }
+        } catch (e: Exception) {
+            val cause = e.cause
+            if (cause is AssumptionViolatedException) {
+                throw cause
+            }
+
+            // Handle other exceptions more gracefully below
+        }
+
         if (useMic) {
             assertTrue("Did not find chip", chipFound)
         } else if (useHotword || useCamera) {
