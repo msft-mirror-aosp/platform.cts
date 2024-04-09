@@ -2897,9 +2897,10 @@ public class TunerTest {
 
             mLockLatch = new CountDownLatch(1);
             d.start();
+            f.start();
+
             byte[] buffer = getTestDataBuffer();
             d.read(buffer, 0, buffer.length);
-            f.start();
             assertTrue(mLockLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
             Instant finish = Instant.now();
