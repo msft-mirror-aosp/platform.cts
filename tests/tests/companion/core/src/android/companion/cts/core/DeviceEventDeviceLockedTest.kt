@@ -23,13 +23,13 @@ import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.UUID_A
+import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.assertValidCompanionDeviceServicesBind
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlin.test.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,10 +81,8 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         PrimaryCompanionService.waitAssociationToAppear(associationId)
         // App should receive ble appeared event after device is unlocked.
-        assertEquals(
-            expected = DevicePresenceEvent.EVENT_BLE_APPEARED,
-            actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BLE_APPEARED, it) }
 
         assertValidCompanionDeviceServicesBind()
 
@@ -123,10 +121,8 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         PrimaryCompanionService.waitAssociationToBtConnect(associationId)
         // App should receive BT connected event after device is unlocked.
-        assertEquals(
-            expected = DevicePresenceEvent.EVENT_BT_CONNECTED,
-            actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BT_CONNECTED, it) }
 
         assertValidCompanionDeviceServicesBind()
 
@@ -210,11 +206,8 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
 
         assertValidCompanionDeviceServicesBind()
-
-        assertEquals(
-            expected = DevicePresenceEvent.EVENT_BT_CONNECTED,
-            actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BT_CONNECTED, it) }
 
         simulateDeviceUuidEvent(UUID_A, DevicePresenceEvent.EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitDeviceUuidDisconnect(UUID_A)
