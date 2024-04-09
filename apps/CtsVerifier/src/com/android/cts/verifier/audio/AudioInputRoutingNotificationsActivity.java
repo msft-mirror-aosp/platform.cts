@@ -19,20 +19,16 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
-import android.content.Context;
 import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
-import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
-import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
@@ -43,10 +39,8 @@ import org.hyphonate.megaaudio.recorder.sinks.NopAudioSinkProvider;
 /*
  * Tests AudioRecord (re)Routing messages.
  */
-public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBaseActivity {
+public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBaseActivity {
     private static final String TAG = "AudioInputRoutingNotificationsActivity";
-
-    Context mContext;
 
     int mNumRoutingNotifications;
 
@@ -58,13 +52,49 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
     private boolean mIsRecording;
 
     // ignore messages sent as a consequence of starting the player
-    private static final int NUM_IGNORE_MESSAGES = 2;
-
-    boolean mRoutingNotificationReceived;
+    private static final int NUM_IGNORE_MESSAGES = 0; // 2;
 
     // ReportLog schema
     protected static final String SECTION_INPUT_ROUTING = "audio_in_routing_notifications";
 
+    public AudioInputRoutingNotificationsActivity() {
+        super(AudioManager.GET_DEVICES_INPUTS);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.audio_routingnotifications_test);
+        super.onCreate(savedInstanceState);
+
+        ((TextView) findViewById(R.id.audio_routingnotification_instructions))
+                .setText(getText(R.string.audio_input_routingnotification_instructions));
+
+        // Setup Recorder
+        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
+
+        try {
+            RecorderBuilder builder = new RecorderBuilder();
+            builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
+                    .setAudioSinkProvider(new NopAudioSinkProvider())
+                    .setChannelCount(NUM_CHANNELS)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setNumExchangeFrames(numExchangeFrames);
+            mAudioRecorder = (JavaRecorder) builder.build();
+        } catch (RecorderBuilder.BadStateException ex) {
+            Log.e(TAG, "Failed MegaRecorder build.");
+        }
+
+        setInfoResources(R.string.audio_input_routingnotifications_test,
+                R.string.audio_input_routingnotification_instructions, -1);
+
+        mRouteChangeListener = new AudioRecordRoutingChangeListener();
+
+        startAudio();
+    }
+
+    //
+    // Audio Handlers
+    //
     @Override
     void startAudio() {
         if (mAudioRecorder == null) {
@@ -81,7 +111,6 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
                     new Handler());
 
             mIsRecording = true;
-            enableTestButtons(false);
         }
     }
 
@@ -98,7 +127,6 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
             audioRecord.removeOnRoutingChangedListener(mRouteChangeListener);
 
             mIsRecording = false;
-            enableTestButtons(true);
         }
     }
 
@@ -111,8 +139,8 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
             }
 
             TextView textView =
-                    (TextView)findViewById(R.id.audio_routingnotification_audioRecord_change);
-            String msg = mContext.getResources().getString(
+                    (TextView) findViewById(R.id.audio_routingnotification_change);
+            String msg = mContext.getString(
                     R.string.audio_routingnotification_recordRoutingMsg);
             AudioDeviceInfo routedDevice = audioRecord.getRoutedDevice();
             mConnectedPeripheralName = AudioDeviceUtils.formatDeviceName(routedDevice);
@@ -124,77 +152,7 @@ public class AudioInputRoutingNotificationsActivity extends AudioWiredDeviceBase
     }
 
     @Override
-    protected void calculatePass() {
-        getPassButton().setEnabled(isReportLogOkToPass()
-                && mRoutingNotificationReceived || !mSupportsWiredPeripheral);
-        TextView tv = ((TextView) findViewById(R.id.audio_routingnotification_testresult));
-        if (!isReportLogOkToPass()) {
-            tv.setText(getResources().getString(R.string.audio_general_reportlogtest));
-        } else if (mRoutingNotificationReceived) {
-            tv.setText("Test PASSES - Routing notification received");
-        } else if (!mSupportsWiredPeripheral) {
-            tv.setText("Test PASSES - No peripheral support");
-        } else {
-            tv.setText("");
-        }
-    }
-
-    @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_INPUT_ROUTING);
-    }
-
-    @Override
-    public void recordTestResults() {
-        super.recordTestResults();
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        reportLog.addValue(
-                KEY_ROUTING_RECEIVED,
-                mRoutingNotificationReceived ? 1 : 0,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        reportLog.submit();
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.audio_input_routingnotifications_test);
-
-        mContext = this;
-
-        connectProcessUI();
-
-        enableTestButtons(false);
-
-        // Setup Recorder
-        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
-
-        try {
-            RecorderBuilder builder = new RecorderBuilder();
-            builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
-                .setAudioSinkProvider(new NopAudioSinkProvider())
-                .setChannelCount(NUM_CHANNELS)
-                .setSampleRate(SAMPLE_RATE)
-                .setNumExchangeFrames(numExchangeFrames);
-            mAudioRecorder = (JavaRecorder) builder.build();
-        } catch (RecorderBuilder.BadStateException ex) {
-            Log.e(TAG, "Failed MegaRecorder build.");
-        }
-
-        mRouteChangeListener = new AudioRecordRoutingChangeListener();
-        AudioRecord audioRecord = mAudioRecorder.getAudioRecord();
-        audioRecord.addOnRoutingChangedListener(mRouteChangeListener, new Handler());
-
-        // "Honor System" buttons
-        super.setup();
-        setPassFailButtonClickListeners();
-        getPassButton().setEnabled(false);
-        setInfoResources(R.string.audio_input_routingnotifications_test,
-                R.string.audio_input_routingnotification_instructions, -1);
-
-        DisplayUtils.setKeepScreenOn(this, true);
     }
 }
