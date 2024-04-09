@@ -111,7 +111,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
   """
 
   def test_low_light_boost(self):
-    self.scene = 'scene_low_light_boost'
+    self.scene = 'scene_low_light'
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
