@@ -96,6 +96,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
+import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
+import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
@@ -166,6 +168,8 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
+import com.android.bedstead.nene.display.Display;
+import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.flags.Flags;
@@ -461,8 +465,7 @@ public final class DeviceState extends HarrierRule {
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
-        String coexistenceOption =
-                TestApis.instrumentation().arguments().getString("COEXISTENCE", "?");
+        String coexistenceOption = TestApis.instrumentation().arguments().getString("COEXISTENCE", "?");
         if (coexistenceOption.equals("true")) {
             ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG);
             ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG);
@@ -1088,6 +1091,16 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof EnsureUsingDisplayTheme ensureUsingDisplayTheme) {
+                ensureUsingDisplayTheme(ensureUsingDisplayTheme.theme());
+                continue;
+            }
+
+            if (annotation instanceof EnsureUsingScreenOrientation ensureUsingScreenOrientation) {
+                ensureUsingScreenOrientation(ensureUsingScreenOrientation.orientation());
+                continue;
+            }
+
             if (annotation instanceof EnsureGlobalSettingSet ensureGlobalSettingSetAnnotation) {
                 ensureGlobalSettingSet(
                         ensureGlobalSettingSetAnnotation.key(),
@@ -1407,8 +1420,8 @@ public final class DeviceState extends HarrierRule {
 
         checkAnnotations(annotations);
 
-        BedsteadJUnit4.resolveRecursiveAnnotations(this, annotations,
-                /* parameterizedAnnotation= */ null);
+        BedsteadJUnit4.resolveRecursiveAnnotations(
+                this, annotations, /* parameterizedAnnotations= */ List.of());
 
         checkAnnotations(annotations);
 
@@ -1799,9 +1812,13 @@ public final class DeviceState extends HarrierRule {
     private DevicePolicyController mOriginalDeviceOwner;
     private Integer mOriginalDeviceOwnerType;
     private boolean mHasChangedDeviceOwnerType;
-    private final Map<UserReference, DevicePolicyController> mChangedProfileOwners = new HashMap<>();
+    private final Map<UserReference, DevicePolicyController> mChangedProfileOwners =
+            new HashMap<>();
     private UserReference mOriginalSwitchedUser;
     private Boolean mOriginalBluetoothEnabled;
+    private DisplayProperties.Theme mOriginalDisplayTheme;
+    private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
+
     private Boolean mOriginalWifiEnabled;
     private final Map<String, Map<String, String>> mOriginalFlagValues = new HashMap<>();
     private final TestAppProvider mTestAppProvider = new TestAppProvider();
@@ -2598,6 +2615,18 @@ public final class DeviceState extends HarrierRule {
         mUsers.clear();
         mAnnotationHasSwitchedUser = false;
         mAdditionalUser = null;
+
+        // TODO(b/329570492): Support sharing of theme in bedstead across tests
+        if (mOriginalDisplayTheme != null) {
+            Display.INSTANCE.setDisplayTheme(mOriginalDisplayTheme);
+            mOriginalDisplayTheme = null;
+        }
+
+        // TODO(b/329570492): Support sharing of orientation in bedstead across tests
+        if (mOriginalScreenOrientation != null) {
+            Display.INSTANCE.setScreenOrientation(mOriginalScreenOrientation);
+            mOriginalScreenOrientation = null;
+        }
 
         for (Map.Entry<UserReference, Set<String>> userRestrictions
                 : mAddedUserRestrictions.entrySet()) {
@@ -4539,6 +4568,20 @@ public final class DeviceState extends HarrierRule {
         }
 
         TestApis.properties().set(key, value);
+    }
+
+    private void ensureUsingDisplayTheme(DisplayProperties.Theme theme) {
+        if (mOriginalDisplayTheme == null) {
+            mOriginalDisplayTheme = Display.INSTANCE.getDisplayTheme();
+        }
+        Display.INSTANCE.setDisplayTheme(theme);
+    }
+
+    private void ensureUsingScreenOrientation(DisplayProperties.ScreenOrientation orientation) {
+        if (mOriginalScreenOrientation == null) {
+            mOriginalScreenOrientation = Display.INSTANCE.getScreenOrientation();
+        }
+        Display.INSTANCE.setScreenOrientation(orientation);
     }
 
     private void requirePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {

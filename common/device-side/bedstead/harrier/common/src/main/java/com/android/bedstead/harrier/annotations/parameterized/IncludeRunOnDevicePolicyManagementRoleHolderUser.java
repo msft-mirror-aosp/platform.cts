@@ -18,6 +18,8 @@ package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
+import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
+
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
@@ -35,7 +37,7 @@ import java.lang.annotation.Target;
  * holder and has no other dpcs. */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation
+@ParameterizedAnnotation(scope = ENTERPRISE)
 @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)
 @EnsureHasNoDpc(onUser = ANY)
 @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true)
