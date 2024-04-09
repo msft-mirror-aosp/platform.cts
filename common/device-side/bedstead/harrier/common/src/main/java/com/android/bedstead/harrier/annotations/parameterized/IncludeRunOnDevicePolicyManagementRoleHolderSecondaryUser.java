@@ -19,7 +19,6 @@ package com.android.bedstead.harrier.annotations.parameterized;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
@@ -37,7 +36,7 @@ import java.lang.annotation.Target;
  * device policy management role holder set on the system user. */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation(scope = ENTERPRISE)
+@ParameterizedAnnotation
 @RequireRunOnSecondaryUser
 @EnsureHasNoDpc(onUser = ANY)
 @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER, isPrimary = true)

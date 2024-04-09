@@ -48,12 +48,8 @@ import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.harrier.policies.LockTask;
 import com.android.bedstead.harrier.test.TestPolicy;
@@ -92,10 +88,6 @@ public class BedsteadJUnit4Test {
     private static int sSimpleParameterizedCalls = 0;
     private static int sMultipleSimpleParameterizedCalls = 0;
     private static int sBedsteadParameterizedCalls = 0;
-    private static int sBedsteadParameterizedDifferentScopeTwoAnnotationCalls = 0;
-    private static int sBedsteadParameterizedSameScopeTwoAnnotationCalls = 0;
-    private static int sBedsteadParameterizedTwoScopeThreeAnnotationCalls = 0;
-    private static int sBedsteadParameterizedTwoScopesFourAnnotationCalls = 0;
     private static int sBedsteadPlusSimpleParameterizedCalls = 0;
     private static int sIndirectParameterizedCalls = 0;
     private static int sIntParameterizedCalls = 0;
@@ -123,10 +115,6 @@ public class BedsteadJUnit4Test {
         assertThat(sIntParameterizedCalls).isEqualTo(2);
         assertThat(sEnumParameterizedCalls).isEqualTo(3);
         assertThat(sFeatureFlagTestCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedDifferentScopeTwoAnnotationCalls).isEqualTo(1);
-        assertThat(sBedsteadParameterizedSameScopeTwoAnnotationCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedTwoScopeThreeAnnotationCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedTwoScopesFourAnnotationCalls).isEqualTo(4);
 
         sPolicyAppliesTestArguments.clear();
         sPolicyDoesNotApplyTestArguments.clear();
@@ -142,38 +130,6 @@ public class BedsteadJUnit4Test {
     @Before
     public void before() {
         sBeforeCalls += 1;
-    }
-
-
-    @Test
-    @IncludeDarkMode
-    @IncludeLandscapeOrientation
-    public void bedsteadParameterized_twoParameters_eachDifferentScope_ranOnce() {
-        sBedsteadParameterizedDifferentScopeTwoAnnotationCalls += 1;
-    }
-
-    @Test
-    @IncludeDarkMode
-    @IncludeLightMode
-    public void bedsteadParameterized_twoParameters_bothSameScope_ranTwice() {
-        sBedsteadParameterizedSameScopeTwoAnnotationCalls += 1;
-    }
-
-    @Test
-    @IncludeDarkMode
-    @IncludeLightMode
-    @IncludeLandscapeOrientation
-    public void bedsteadParameterized_threeParameters_twoScope_ranTwice() {
-        sBedsteadParameterizedTwoScopeThreeAnnotationCalls += 1;
-    }
-
-    @Test
-    @IncludeDarkMode
-    @IncludeLightMode
-    @IncludeLandscapeOrientation
-    @IncludePortraitOrientation
-    public void bedsteadParameterized_fourParameters_twoEachOfSameScope_ranFourTimes() {
-        sBedsteadParameterizedTwoScopesFourAnnotationCalls += 1;
     }
 
     @Test

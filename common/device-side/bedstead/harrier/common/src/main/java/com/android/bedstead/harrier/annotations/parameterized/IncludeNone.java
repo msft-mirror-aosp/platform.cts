@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
@@ -32,7 +31,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation(scope = ENTERPRISE)
+@ParameterizedAnnotation
 public @interface IncludeNone {
      /**
      * Priority sets the order that annotations will be resolved.
