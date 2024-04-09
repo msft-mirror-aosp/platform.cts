@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
@@ -35,7 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation(
-        shadows = IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile.class, scope = ENTERPRISE)
+        shadows = IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile.class)
 @RequireRunOnInitialUser
 @EnsureHasNoDeviceOwner
 @EnsureHasWorkProfile(dpcIsPrimary = true, dpcKey = "dpc")
