@@ -127,6 +127,9 @@ public final class ImeEvent {
         mArguments = arguments;
         mReturnValue = returnValue;
         mReturnType = returnType;
+
+        // For unmarshalling ImeEventStreamTestUtils.WindowLayoutInfoParcelable
+        mArguments.setClassLoader(getClass().getClassLoader());
     }
 
     @NonNull
