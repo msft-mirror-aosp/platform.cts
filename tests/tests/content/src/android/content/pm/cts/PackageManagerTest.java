@@ -1487,9 +1487,11 @@ public class PackageManagerTest {
         // Check ContentProviders
         ProviderInfo provider = findPackageItemOrFail(pkgInfo.providers, PROVIDER_NAME);
         assertTrue(provider.enabled);
-        assertFalse(provider.exported); // Don't export by default.
         assertEquals(PACKAGE_NAME, provider.packageName);
         assertEquals("ctstest", provider.authority);
+        ProviderInfo nonExportedProvider =
+                findPackageItemOrFail(pkgInfo.providers, "android.content.cts.MockBuggyProvider");
+        assertFalse(nonExportedProvider.exported); // Don't export by default.
 
         // Check Receivers
         ActivityInfo receiver = findPackageItemOrFail(pkgInfo.receivers, RECEIVER_NAME);

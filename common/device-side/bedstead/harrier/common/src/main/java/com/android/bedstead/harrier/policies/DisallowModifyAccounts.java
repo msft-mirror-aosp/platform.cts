@@ -28,9 +28,12 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  * Policy for disallow modify accounts user restriction.
  */
 @EnterprisePolicy(dpc = APPLIED_BY_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
-        | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT,
-                appliesTo = APPLIES_TO_OWN_USER))
+        | CANNOT_BE_APPLIED_BY_ROLE_HOLDER)
+// MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT doesn't enable managing of accounts when the restriction
+// is set (like DPCs can) - so we need to either split the policy or enable that for permission
+// holders
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT,
+//                appliesTo = APPLIES_TO_OWN_USER))
 public final class DisallowModifyAccounts {
 }

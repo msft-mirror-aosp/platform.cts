@@ -253,6 +253,8 @@ public class VirtualDeviceRule implements TestRule {
     @NonNull
     public static VirtualDisplayConfig.Builder createDefaultVirtualDisplayConfigBuilder(
             int width, int height) {
+        // VirtualDevice#close will cause this to be recycled.
+        //noinspection Recycle
         SurfaceTexture texture = new SurfaceTexture(1);
         texture.setDefaultBufferSize(width, height);
         return new VirtualDisplayConfig.Builder(
