@@ -717,6 +717,25 @@ public class VirtualCameraTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
+            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
+    public void virtualCamera_supports_mandatory_capture_use_cases() throws Exception {
+        setupVirtualDeviceCameraManager();
+        try (VirtualCamera camera = createFrontVirtualCamera()) {
+            long[] availableUseCases = mCameraManager.getCameraCharacteristics(
+                    FRONT_CAMERA_ID).get(CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES);
+            assertThat(availableUseCases).asList().containsExactly(
+                    (long) CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES_DEFAULT,
+                    (long) CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW,
+                    (long) CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES_STILL_CAPTURE,
+                    (long) CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD,
+                    (long) CameraCharacteristics
+                            .SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW_VIDEO_STILL,
+                    (long) CameraCharacteristics.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL);
+        }
+    }
+
     private VirtualCamera createFrontVirtualCamera() {
         return createVirtualCamera(LENS_FACING_FRONT);
     }
@@ -846,7 +865,7 @@ public class VirtualCameraTest {
     }
 
     private static Integer[] getAllSensorOrientations() {
-        return new Integer[] {
+        return new Integer[]{
                 SENSOR_ORIENTATION_0,
                 SENSOR_ORIENTATION_90,
                 SENSOR_ORIENTATION_180,
