@@ -18,7 +18,7 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="android.companion.multidevice">
+    package="android.companion.cts.multidevice">
 
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.REQUEST_COMPANION_SELF_MANAGED" />
@@ -41,7 +41,7 @@
         android:name="mobly-snippets"
         tools:replace="android:value"
         android:value="com.google.android.mobly.snippet.bundled.bluetooth.BluetoothAdapterSnippet,
-                       android.companion.multidevice.CompanionDeviceManagerSnippet" />
+                       android.companion.cts.multidevice.CompanionDeviceManagerSnippet" />
   </application>
 
   <!-- Add an instrumentation tag so that the app can be launched through an
@@ -50,5 +50,5 @@
        Mobly Snippet Lib. -->
   <instrumentation
       android:name="com.google.android.mobly.snippet.SnippetRunner"
-      android:targetPackage="android.companion.multidevice" />
+      android:targetPackage="android.companion.cts.multidevice" />
 </manifest>
