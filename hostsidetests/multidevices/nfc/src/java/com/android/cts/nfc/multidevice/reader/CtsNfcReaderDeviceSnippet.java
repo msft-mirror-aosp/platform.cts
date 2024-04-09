@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import android.content.Intent;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
@@ -28,6 +29,7 @@ import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
 public class CtsNfcReaderDeviceSnippet implements Snippet {
+    private BaseReaderActivity mActivity;
 
     /** Opens NFC reader for single non-payment test */
     @Rpc(description = "Open simple reader activity for single non-payment test")
@@ -38,7 +40,27 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
                         instrumentation,
                         HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService1.class.getName()),
                         HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService1.class.getName()));
-        instrumentation.startActivitySync(intent);
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for single non-payment test */
+    @Rpc(description = "Open simple reader activity for single non-payment test")
+    public void startSinglePaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentService1.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentService1.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Closes reader activity between tests */
+    @Rpc(description = "Close activity if one was opened.")
+    public void closeActivity() {
+        if (mActivity != null) {
+            mActivity.finish();
+        }
     }
 
     private Intent buildReaderIntentWithApduSequence(

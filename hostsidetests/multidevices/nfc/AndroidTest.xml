@@ -15,6 +15,7 @@
   ~ limitations under the License.
   -->
 <configuration description="Config for CTS NFC multi device test cases">
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="nfc" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
