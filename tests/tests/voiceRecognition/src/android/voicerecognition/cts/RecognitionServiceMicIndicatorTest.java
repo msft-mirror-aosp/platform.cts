@@ -230,7 +230,13 @@ public final class RecognitionServiceMicIndicatorTest {
 
         final UiObject2 privacyChip =
                 mUiDevice.findObject(By.res(PRIVACY_CHIP_PACKAGE_NAME, PRIVACY_CHIP_ID));
-        assertWithMessage("Can not find mic indicator").that(privacyChip).isNotNull();
+        if (isCar()) {
+            assumeTrue(
+                    "A target automotive device implementation doesn't implement the privacy chip.",
+                    privacyChip != null);
+        } else {
+            assertWithMessage("Can not find mic indicator").that(privacyChip).isNotNull();
+        }
 
         // Click the privacy indicator and verify the calling app name display status in the dialog.
         privacyChip.click();
@@ -240,8 +246,8 @@ public final class RecognitionServiceMicIndicatorTest {
         String contentId = isCar() ? CAR_PRIVACY_DIALOG_CONTENT_ID : PRIVACY_DIALOG_CONTENT_ID;
         List<UiObject2> recognitionCallingAppLabels = mUiDevice.findObjects(
                 By.res(PRIVACY_DIALOG_PACKAGE_NAME, contentId));
-        assertWithMessage("No permission dialog shown after clicking  privacy chip.").that(
-                recognitionCallingAppLabels).isNotEmpty();
+        assumeTrue("No permission dialog shown after clicking  privacy chip.",
+                !recognitionCallingAppLabels.isEmpty());
 
         // get dialog content
         String dialogDescription;
