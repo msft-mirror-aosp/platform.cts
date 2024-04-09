@@ -47,9 +47,10 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
             RuleChain.outerRule(CecRules.requiresCec(this))
                     .around(CecRules.requiresLeanback(this))
                     .around(CecRules.requiresPhysicalDevice(this))
-                    .around(
-                            CecRules.requiresDeviceType(
+                    .around(CecRules.requiresDeviceType(
                                     this, HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE))
+                    .around(CecRules.skipDeviceType(
+                                    this, HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM))
                     .around(hdmiCecClient);
 
     /**

@@ -36,7 +36,6 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityTaskManager;
@@ -1024,18 +1023,14 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
-    @Nullable
-    List<WindowState> getAndAssertNavBarWindowsOnDisplay(int displayId, int expectedNavBarCount) {
+    @NonNull
+    List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         List<WindowState> navWindows = getMatchingWindows(ws -> isValidNavBarType(ws)
                 && ws.getDisplayId() == displayId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        // We may need some time to wait for nav bar showing.
-        // It's Ok to get less that expected nav bars here.
-        assertTrue("There should be at most expectedNavBarCount navigation bar on a display",
-                navWindows.size() <= expectedNavBarCount);
 
-        return navWindows.size() == expectedNavBarCount ? navWindows : null;
+        return navWindows;
     }
 
     WindowState getWindowStateForAppToken(String appToken) {

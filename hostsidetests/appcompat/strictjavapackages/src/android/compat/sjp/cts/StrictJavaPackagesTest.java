@@ -247,7 +247,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/sdksandbox/ISendDataCallback;",
                     "Landroid/app/sdksandbox/ISharedPreferencesSyncCallback;",
                     "Landroid/app/sdksandbox/ISdkToServiceCallback;",
-                    "Landroid/app/sdksandbox/IUnloadSdkCallback;"
+                    "Landroid/app/sdksandbox/IUnloadSdkCallback;",
+                    // b/325060980 : Remove duplication between telephony-common.jar and
+                    // services.jar
+                    "Lcom/android/server/updates/ConfigUpdateInstallReceiver;"
             );
 
     private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
@@ -701,15 +704,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
             .build();
 
-    /**
-     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-U devices.
-     *
-     * <p> Add the new item into this list only if the failure is caused by base device image (not the mainline train).
-     */
-    private static final ImmutableMap<String, ImmutableSet<String>> PRE_U_APK_IN_APEX_BURNDOWN_LIST =
-        new ImmutableMap.Builder<String, ImmutableSet<String>>()
-            .put("/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
-                ImmutableSet.of(
+    // Bluetooth has not been updated on pre-u device
+    private static ImmutableSet<String> PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST =
+            ImmutableSet.of(
                     // b/310322439
                     "Lcom/android/bluetooth/x/android/sysprop/AdbProperties;",
                     "Lcom/android/bluetooth/x/android/sysprop/ApkVerityProperties;",
@@ -732,9 +729,24 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Lcom/android/bluetooth/x/android/sysprop/TraceProperties;",
                     "Lcom/android/bluetooth/x/android/sysprop/VndkProperties;",
                     "Lcom/android/bluetooth/x/android/sysprop/VoldProperties;",
-                    "Lcom/android/bluetooth/x/android/sysprop/WifiProperties;"
-                ))
-            .build();
+                    "Lcom/android/bluetooth/x/android/sysprop/WifiProperties;");
+
+    /**
+     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-U devices.
+     *
+     * <p>Add the new item into this list only if the failure is caused by base device image (not
+     * the mainline train).
+     */
+    private static final ImmutableMap<String, ImmutableSet<String>>
+            PRE_U_APK_IN_APEX_BURNDOWN_LIST =
+                    new ImmutableMap.Builder<String, ImmutableSet<String>>()
+                            .put(
+                                    "/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
+                                    PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST)
+                            .put(
+                                    "/apex/com.android.btservices/app/Bluetooth/Bluetooth.apk",
+                                    PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST)
+                            .build();
 
     /**
      * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-T devices.

@@ -4430,4 +4430,18 @@ public class CameraTestUtils extends Assert {
         }
 
     }
+
+    /**
+     * Check if the camera device keeps stabilization off
+     *
+     * @param result The capture request builder
+     * @return true if stabilization is OFF
+     */
+    public static boolean isStabilizationOff(CaptureRequest request) {
+        Integer stabilizationMode = request.get(
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE);
+
+        return (stabilizationMode == null
+                || stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+    }
 }

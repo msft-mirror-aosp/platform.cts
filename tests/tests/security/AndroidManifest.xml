@@ -316,6 +316,19 @@
 
         <activity android:name="android.security.cts.CVE_2022_20429.PocActivity" />
 
+        <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
+
+        <service
+            android:name="android.security.cts.CVE_2024_23713.PocNotificationListenerService"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
