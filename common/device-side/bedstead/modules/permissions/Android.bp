@@ -11,6 +11,7 @@ filegroup {
     srcs: [
         "src/main/kotlin/com/android/bedstead/permissions/annotations/*.kt",
         "src/main/kotlin/com/android/bedstead/permissions/annotations/*.java",
+        "src/main/kotlin/com/android/bedstead/permissions/CommonPermissions.java",
     ],
 }
 
