@@ -2540,15 +2540,19 @@ public class AudioManagerTest {
                         attr, device, defaultMixerAttributes));
             } else {
                 for (AudioMixerAttributes mixerAttr : supportedMixerAttributes) {
+                    ListenableFuture<Void> setMixerFuture = getMixerAttrChangedFuture(attr,
+                            device.getId());
                     assertNotNull(mixerAttr.getFormat());
                     assertTrue(ALL_MIXER_BEHAVIORS.contains(mixerAttr.getMixerBehavior()));
                     assertTrue(mAudioManager.setPreferredMixerAttributes(attr, device, mixerAttr));
-                    waitForMixerAttrChanged(attr, device.getId());
+                    waitForMixerAttrChanged(setMixerFuture);
+                    ListenableFuture<Void> clearMixerFuture = getMixerAttrChangedFuture(attr,
+                            device.getId());
                     final AudioMixerAttributes mixerAttrFromQuery =
                             mAudioManager.getPreferredMixerAttributes(attr, device);
                     assertEquals(mixerAttr, mixerAttrFromQuery);
                     assertTrue(mAudioManager.clearPreferredMixerAttributes(attr, device));
-                    waitForMixerAttrChanged(attr, device.getId());
+                    waitForMixerAttrChanged(clearMixerFuture);
                     assertNull(mAudioManager.getPreferredMixerAttributes(attr, device));
                 }
             }
@@ -2782,8 +2786,13 @@ public class AudioManagerTest {
         }
     }
 
-    private void waitForMixerAttrChanged(AudioAttributes audioAttributes, int deviceId)
+    private void waitForMixerAttrChanged(ListenableFuture<Void> future)
             throws Exception {
+        future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+    }
+
+    private ListenableFuture<Void> getMixerAttrChangedFuture(AudioAttributes audioAttributes,
+            int deviceId) {
         final ListenableFuture<Void> future =
                 mCancelRule.registerFuture(
                         getFutureForListener(
@@ -2801,7 +2810,7 @@ public class AudioManagerTest {
                                             }
                                         },
                                 "Wait for mixer attr changed future"));
-        future.get(FUTURE_WAIT_SECS, TimeUnit.MILLISECONDS);
+        return future;
     }
 
     private void assertCallChangesStreamVolume(Runnable r, int stream, int expectedVolume)
