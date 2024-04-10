@@ -62,6 +62,72 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (SinglePaymentEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens dual payment emulator activity */
+    @Rpc(description = "Opens dual payment emulator activity")
+    public void startDualPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), DualPaymentEmulatorActivity.class.getName());
+
+        mActivity = (DualPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens foreground payment emulator activity */
+    @Rpc(description = "Opens foreground payment emulator activity")
+    public void startForegroundPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ForegroundPaymentEmulatorActivity.class.getName());
+
+        mActivity = (ForegroundPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens dynamic AID emulator activity */
+    @Rpc(description = "Opens dynamic AID emulator activity")
+    public void startDynamicAidEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), DynamicAidEmulatorActivity.class.getName());
+
+        mActivity = (DynamicAidEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens prefix payment emulator activity */
+    @Rpc(description = "Opens prefix payment emulator activity")
+    public void startPrefixPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), PrefixPaymentEmulatorActivity.class.getName());
+
+        mActivity = (PrefixPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens prefix payment emulator 2 activity */
+    @Rpc(description = "Opens prefix payment emulator 2 activity")
+    public void startPrefixPaymentEmulator2Activity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), PrefixPaymentEmulator2Activity.class.getName());
+
+        mActivity = (PrefixPaymentEmulator2Activity) instrumentation.startActivitySync(intent);
+    }
+
     /** Registers receiver for Test Pass event */
     @AsyncRpc(description = "Waits for Test Pass event")
     public void asyncWaitForTestPass(String callbackId, String eventName) {

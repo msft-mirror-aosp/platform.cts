@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.cts.nfc.multidevice.emulator;
 
 import android.content.ComponentName;
@@ -21,8 +20,17 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 
-public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
+public class DualPaymentEmulatorActivity extends BaseEmulatorActivity {
+
+    private static final String TAG = "DualPaymentEm";
+    private static final int STATE_IDLE = 0;
+    private static final int STATE_SERVICE1_SETTING_UP = 1;
+    private static final int STATE_SERVICE2_SETTING_UP = 2;
+
+    private int mState = STATE_IDLE;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,7 +40,17 @@ public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        setupServices(PaymentService1.COMPONENT);
+        mState = STATE_SERVICE2_SETTING_UP;
+        setupServices(PaymentService2.COMPONENT);
+    }
+
+    @Override
+    protected void onServicesSetup() {
+        if (mState == STATE_SERVICE2_SETTING_UP) {
+            mState = STATE_SERVICE1_SETTING_UP;
+            setupServices(PaymentService1.COMPONENT, PaymentService2.COMPONENT);
+            return;
+        }
         makeDefaultWalletRoleHolder();
     }
 

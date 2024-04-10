@@ -24,6 +24,10 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
+import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -40,6 +44,8 @@ public final class HceUtils {
 
     public static final String MC_AID = "A0000000041010";
     public static final String PPSE_AID = "325041592E5359532E4444463031";
+    public static final String VISA_AID = "A0000000030000";
+
     public static final String TRANSPORT_AID = "F001020304";
 
     /** Service-specific APDU Command/Response sequences */
@@ -68,6 +74,51 @@ public final class HceUtils {
         RESPONSE_APDUS_BY_SERVICE.put(
                 PaymentService1.class.getName(),
                 new String[] {"FFFF9000", "FFEF9000", "FFDFFFAABB9000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PaymentService2.class.getName(),
+                new CommandApdu[] {buildSelectApdu(PPSE_AID, true), buildSelectApdu(MC_AID, true)});
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PaymentService2.class.getName(), new String[] {"12349000", "56789000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PaymentServiceDynamicAids.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(PPSE_AID, true),
+                    buildSelectApdu(VISA_AID, true),
+                    buildCommandApdu("80CA01F000", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PaymentServiceDynamicAids.class.getName(),
+                new String[] {"FFFF9000", "FF0F9000", "FFDFFFAACB9000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PrefixPaymentService1.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(PPSE_AID, true),
+                    buildSelectApdu(MC_AID, true),
+                    buildCommandApdu("80CA01F000", true)
+                });
+
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PrefixPaymentService1.class.getName(),
+                new String[] {"F1239000", "F4569000", "F789FFAABB9000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PrefixPaymentService2.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(PPSE_AID, true),
+                    buildSelectApdu(MC_AID, true),
+                    buildCommandApdu("80CA02F000", true),
+                    buildSelectApdu("F0000000FFFFFFFFFFFFFFFFFFFFFFFF", true),
+                    buildSelectApdu("F000000000", true)
+                });
+
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PrefixPaymentService2.class.getName(),
+                new String[] {
+                    "FAAA9000", "FBBB9000", "F789FFCCDD9000", "FFBAFEBECA", "F0BABEFECA"
+                });
     }
 
     /** Enables specified component */
@@ -136,6 +187,7 @@ public final class HceUtils {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation()
                     .adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+            assert roleManager != null;
             roleManager.setDefaultApplication(
                     RoleManager.ROLE_WALLET,
                     packageName,
