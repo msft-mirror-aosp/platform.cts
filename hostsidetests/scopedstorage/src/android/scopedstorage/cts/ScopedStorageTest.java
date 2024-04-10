@@ -57,7 +57,6 @@ import static android.scopedstorage.cts.lib.TestUtils.getMoviesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getMusicDir;
 import static android.scopedstorage.cts.lib.TestUtils.getPicturesDir;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
-import static android.scopedstorage.cts.lib.TestUtils.pollForCondition;
 import static android.scopedstorage.cts.lib.TestUtils.pollForExternalStorageState;
 import static android.scopedstorage.cts.lib.TestUtils.pollForManageExternalStorageAllowed;
 import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
@@ -72,8 +71,6 @@ import static android.scopedstorage.cts.lib.TestUtils.verifyUpdateToExternalDirs
 import static android.scopedstorage.cts.lib.TestUtils.verifyUpdateToExternalMediaDirViaRelativePath_allowed;
 import static android.scopedstorage.cts.lib.TestUtils.verifyUpdateToExternalPrivateDirsViaRelativePath_denied;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -85,6 +82,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -97,7 +95,8 @@ import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.RedactionTestHelper;
 import android.util.Log;
 
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.install.lib.TestApp;
 import com.android.modules.utils.build.SdkLevel;
@@ -110,6 +109,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Runs the scoped storage tests on primary external storage.
@@ -119,7 +120,8 @@ import java.io.IOException;
 @RunWith(AndroidJUnit4.class)
 public class ScopedStorageTest {
     static final String TAG = "ScopedStorageTest";
-    static final String THIS_PACKAGE_NAME = getContext().getPackageName();
+    static final String THIS_PACKAGE_NAME =
+            InstrumentationRegistry.getInstrumentation().getContext().getPackageName();
     static final int USER_SYSTEM = 0;
 
     /**
@@ -165,17 +167,33 @@ public class ScopedStorageTest {
     private static final TestApp APP_D_LEGACY_HAS_RW = new TestApp("TestAppDLegacy",
             "android.scopedstorage.cts.testapp.D", 1, false, "CtsScopedStorageTestAppDLegacy.apk");
 
+    // Polling timeout in millis
+    private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
+
+    // Polling sleep time in millis
+    private static final long POLLING_SLEEP_MILLIS = 100;
     @Before
     public void setup() throws Exception {
-        PackageManager packageManager = getContext().getPackageManager();
+        PackageManager packageManager = InstrumentationRegistry.getInstrumentation()
+                .getContext().getPackageManager();
         if (!packageManager.isInstantApp()) {
             pollForExternalStorageState();
             getExternalFilesDir().mkdirs();
         }
 
         pollForCondition(
-                () -> packageManager.resolveContentProvider(MediaStore.AUTHORITY, 0) != null,
-                "ContentProvider not available for authority media.");
+                () -> packageManager.resolveContentProvider(MediaStore.AUTHORITY, 0) != null);
+        assumeTrue(packageManager.resolveContentProvider(MediaStore.AUTHORITY, 0) != null);
+    }
+
+    public static void pollForCondition(Supplier<Boolean> condition)
+            throws Exception {
+        for (int i = 0; i < POLLING_TIMEOUT_MILLIS / POLLING_SLEEP_MILLIS; i++) {
+            if (condition.get()) {
+                return;
+            }
+            Thread.sleep(POLLING_SLEEP_MILLIS);
+        }
     }
 
     /**
@@ -193,7 +211,8 @@ public class ScopedStorageTest {
     public void testCheckInstallerAppAccessToObbDirs() throws Exception {
         assertCanAccessPrivateAppAndroidObbDir(true /*canAccess*/, APP_B_NO_PERMS,
                 THIS_PACKAGE_NAME, NONMEDIA_FILE_NAME);
-        final int uid = getContext().getPackageManager().getPackageUid(THIS_PACKAGE_NAME, 0);
+        final int uid = InstrumentationRegistry.getInstrumentation().getContext()
+                .getPackageManager().getPackageUid(THIS_PACKAGE_NAME, 0);
         if (isAtLeastS()) {
             assertMountMode(THIS_PACKAGE_NAME, uid, StorageManager.MOUNT_MODE_EXTERNAL_INSTALLER);
         }
@@ -206,7 +225,8 @@ public class ScopedStorageTest {
     public void testCheckInstallerAppCannotAccessDataDirs() throws Exception {
         assertCanAccessPrivateAppAndroidDataDir(false /*canAccess*/, APP_B_NO_PERMS,
                 THIS_PACKAGE_NAME, NONMEDIA_FILE_NAME);
-        final int uid = getContext().getPackageManager().getPackageUid(THIS_PACKAGE_NAME, 0);
+        final int uid = InstrumentationRegistry.getInstrumentation().getContext()
+                .getPackageManager().getPackageUid(THIS_PACKAGE_NAME, 0);
         if (isAtLeastS()) {
             assertMountMode(THIS_PACKAGE_NAME, uid, StorageManager.MOUNT_MODE_EXTERNAL_INSTALLER);
         }
@@ -583,7 +603,7 @@ public class ScopedStorageTest {
             assertAccess(new File("/storage/emulated"), true, false, false);
 
             // Verify we can enter "/storage/emulated/<userId>" and read
-            int userId = getContext().getUserId();
+            int userId = InstrumentationRegistry.getInstrumentation().getContext().getUserId();
             assertAccess(new File("/storage/emulated/" + userId), true, true, false);
 
             // Verify we can't get another userId
@@ -1144,9 +1164,10 @@ public class ScopedStorageTest {
     @Test
     @AppModeInstant
     public void testInstantAppsCantAccessExternalStorage() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
         assumeTrue("This test requires that the test runs as an Instant app",
-                getContext().getPackageManager().isInstantApp());
-        assertThat(getContext().getPackageManager().isInstantApp()).isTrue();
+                context.getPackageManager().isInstantApp());
+        assertThat(context.getPackageManager().isInstantApp()).isTrue();
 
         // Check that the app does not have legacy external storage access
         assertThat(Environment.isExternalStorageLegacy()).isFalse();

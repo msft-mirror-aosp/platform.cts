@@ -39,6 +39,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.util.Pair;
@@ -81,6 +82,8 @@ public class ActivityEmbeddingUtil {
             .build();
 
     public static final String EMBEDDED_ACTIVITY_ID = "embedded_activity_id";
+
+    private static final long WAIT_PERIOD = 500;
 
     @NonNull
     public static SplitPairRule createWildcardSplitPairRule(boolean shouldClearTop) {
@@ -390,7 +393,7 @@ public class ActivityEmbeddingUtil {
     }
 
     @NonNull
-    private static Rect getTaskBounds(@NonNull Activity activity, boolean shouldWaitForResume) {
+    public static Rect getTaskBounds(@NonNull Activity activity, boolean shouldWaitForResume) {
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         final ComponentName activityName = activity.getComponentName();
         if (shouldWaitForResume) {
@@ -421,6 +424,7 @@ public class ActivityEmbeddingUtil {
             if (allActivitiesResumed) {
                 return true;
             }
+            waitAndLog("resumed:" + activityList);
         }
         return false;
     }
@@ -431,6 +435,7 @@ public class ActivityEmbeddingUtil {
             if (getResumedActivityById(activityId) != null) {
                 return true;
             }
+            waitAndLog("resumed:" + activityId);
         }
         return false;
     }
@@ -464,6 +469,7 @@ public class ActivityEmbeddingUtil {
             if (WindowManagerJetpackTestBase.isActivityVisible(activity) == visible) {
                 return true;
             }
+            waitAndLog("visible:" + visible + " on " + activity);
         }
         return false;
     }
@@ -484,12 +490,18 @@ public class ActivityEmbeddingUtil {
             if (activity.isFinishing()) {
                 return true;
             }
+            waitAndLog("finishing:" + activity);
         }
         return activity.isFinishing();
     }
 
     public static void waitAndAssertFinishing(@NonNull Activity activity) {
         assertTrue(activity + " should be finishing", waitForFinishing(activity));
+    }
+
+    private static void waitAndLog(String reason) {
+        Log.d(TAG, "** Waiting for " + reason);
+        SystemClock.sleep(WAIT_PERIOD);
     }
 
     @Nullable

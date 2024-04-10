@@ -440,8 +440,10 @@ public class TestUtils {
             throws Exception {
         final String actionName = QUERY_MEDIA_BY_URI_QUERY;
         final Bundle bundle = new Bundle();
-        for (String columnName : projection) {
-            bundle.putString(columnName, "");
+        if (projection != null) {
+            for (String columnName : projection) {
+                bundle.putString(columnName, "");
+            }
         }
 
         return getFromTestApp(testApp, uri, actionName, bundle).getBundle(actionName);
@@ -1019,7 +1021,8 @@ public class TestUtils {
 
             try {
                 getContentResolver().delete(uri, Bundle.EMPTY);
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                Log.e("Exception while deleting files", exception.getMessage());
             }
         }
     }
@@ -1155,12 +1158,7 @@ public class TestUtils {
             // to keep rolling forward if we can't find our grant button
             final UiSelector grant = new UiSelector().textMatches("(?i)Allow");
             if (isWatch(inst.getContext().getPackageManager())) {
-                UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
-                try {
-                    uiScrollable.scrollIntoView(grant);
-                } catch (UiObjectNotFoundException e) {
-                    // Scrolling can fail if the UI is not scrollable
-                }
+                scrollIntoView(grant);
             }
             final boolean grantExists = new UiObject(grant).waitForExists(timeout);
 
@@ -1177,6 +1175,9 @@ public class TestUtils {
         } else {
             // fine the Deny button
             final UiSelector deny = new UiSelector().textMatches("(?i)Deny");
+            if (isWatch(inst.getContext().getPackageManager())) {
+                scrollIntoView(deny);
+            }
             final boolean denyExists = new UiObject(deny).waitForExists(timeout);
 
             assertThat(denyExists).isTrue();
@@ -1195,6 +1196,15 @@ public class TestUtils {
 
     private static boolean hasFeature(PackageManager packageManager, String feature) {
         return packageManager.hasSystemFeature(feature);
+    }
+
+    private static void scrollIntoView(UiSelector selector) {
+        UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        try {
+            uiScrollable.scrollIntoView(selector);
+        } catch (UiObjectNotFoundException e) {
+            // Scrolling can fail if the UI is not scrollable
+        }
     }
 
     /**

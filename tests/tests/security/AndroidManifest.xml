@@ -41,6 +41,9 @@
      <!-- CVE-2023-21143 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- CVE-2024-0022 -->
+    <uses-feature android:name="android.software.companion_device_setup" />
+
     <application android:usesCleartextTraffic="true">
         <uses-library android:name="android.test.runner"/>
         <uses-library android:name="org.apache.http.legacy"
@@ -312,6 +315,19 @@
         </service>
 
         <activity android:name="android.security.cts.CVE_2022_20429.PocActivity" />
+
+        <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
+
+        <service
+            android:name="android.security.cts.CVE_2024_23713.PocNotificationListenerService"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
 
     </application>
 

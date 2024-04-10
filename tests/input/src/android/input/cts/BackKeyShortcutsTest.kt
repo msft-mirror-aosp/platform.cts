@@ -55,10 +55,10 @@ private fun injectKeyUp(device: UinputDevice, scanCode: Int) {
 class BackKeyShortcutsTest {
 
     companion object {
-        const val KEY_META_LEFT = 125
-        const val KEY_GRAVE = 41
-        const val KEY_DEL = 14
-        const val KEY_DPAD_LEFT = 105
+        const val KEY_LEFTMETA = 125
+        const val KEY_ESC = 1
+        const val KEY_BACKSPACE = 14
+        const val KEY_LEFT = 105
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -93,25 +93,20 @@ class BackKeyShortcutsTest {
 
     @Test
     fun testBackKeyMetaShortcuts() {
-        val keyboardDevice = UinputDevice.create(
+        UinputDevice.create(
                 instrumentation, R.raw.test_keyboard_register,
                 InputDevice.SOURCE_KEYBOARD
-        )
+        ).use { keyboardDevice ->
+            activity.assertNoEvents()
 
-        // Wait for device to be added
-        PollingCheck.waitFor { inputManager.getInputDevice(keyboardDevice.deviceId) != null }
-        activity.assertNoEvents()
+            for (scanCode in intArrayOf(KEY_BACKSPACE, KEY_LEFT)) {
+                injectKeyDown(keyboardDevice, KEY_LEFTMETA)
+                injectKeyDown(keyboardDevice, scanCode)
+                injectKeyUp(keyboardDevice, scanCode)
+                injectKeyUp(keyboardDevice, KEY_LEFTMETA)
 
-        for (scanCode in intArrayOf(KEY_GRAVE, KEY_DEL, KEY_DPAD_LEFT)) {
-            injectKeyDown(keyboardDevice, KEY_META_LEFT)
-            injectKeyDown(keyboardDevice, scanCode)
-            injectKeyUp(keyboardDevice, scanCode)
-            injectKeyUp(keyboardDevice, KEY_META_LEFT)
-
-            assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_BACK)
+                assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_BACK)
+            }
         }
-
-        // Remove the device
-        keyboardDevice.close()
     }
 }

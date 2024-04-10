@@ -132,8 +132,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private static final int TEST_CONTENT = AudioAttributes.CONTENT_TYPE_UNKNOWN;
     private static final int TEST_STREAM_FOR_USAGE = STREAM_NOTIFICATION;
 
-    // test marshalling/unmarshalling of an AudioPlaybackConfiguration instance. Since we can't
-    // create an AudioPlaybackConfiguration directly, we first need to play something to get one.
+    // test writing to/ reading from a Parcel for an AudioPlaybackConfiguration instance.
+    // Since we can't create an AudioPlaybackConfiguration directly, we first need to
+    // play something to get one.
     public void testParcelableWriteToParcel() throws Exception {
         if (!isValidPlatform("testParcelableWriteToParcel")) return;
         if (hasAudioSilentProperty()) {
@@ -156,30 +157,28 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         List<AudioPlaybackConfiguration> configs = am.getActivePlaybackConfigurations();
         mMp.stop();
         assertTrue("No playback reported", configs.size() > 0);
-        AudioPlaybackConfiguration configToMarshall = null;
+        AudioPlaybackConfiguration configToParcel = null;
         for (AudioPlaybackConfiguration config : configs) {
             if (config.getAudioAttributes().equals(aa)) {
-                configToMarshall = config;
+                configToParcel = config;
                 break;
             }
         }
 
-        assertNotNull("Configuration not found during playback", configToMarshall);
-        assertEquals(0, configToMarshall.describeContents());
+        assertNotNull("Configuration not found during playback", configToParcel);
+        assertEquals(0, configToParcel.describeContents());
 
         final Parcel srcParcel = Parcel.obtain();
         final Parcel dstParcel = Parcel.obtain();
-        final byte[] mbytes;
 
-        configToMarshall.writeToParcel(srcParcel, 0 /*no public flags for marshalling*/);
-        mbytes = srcParcel.marshall();
-        dstParcel.unmarshall(mbytes, 0, mbytes.length);
+        configToParcel.writeToParcel(srcParcel, 0 /*no public flags for parcelling operations*/);
+        dstParcel.appendFrom(srcParcel, 0 /*offset*/, srcParcel.dataSize() /*size*/);
         dstParcel.setDataPosition(0);
         final AudioPlaybackConfiguration restoredConfig =
                 AudioPlaybackConfiguration.CREATOR.createFromParcel(dstParcel);
 
         assertEquals("Marshalled/restored AudioAttributes don't match",
-                configToMarshall.getAudioAttributes(), restoredConfig.getAudioAttributes());
+                configToParcel.getAudioAttributes(), restoredConfig.getAudioAttributes());
     }
 
     public void testGetterMediaPlayer() throws Exception {
@@ -683,6 +682,12 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         AudioManager am = new AudioManager(getContext());
         assertNotNull("Could not create AudioManager", am);
 
+        boolean isMuted = am.isStreamMute(TEST_STREAM_FOR_USAGE);
+        if (isMuted) {
+            am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, 0);
+        }
+        Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
+
         MyAudioPlaybackCallback callback = new MyAudioPlaybackCallback();
 
         try {
@@ -727,6 +732,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
             unmute.run();
+
+            if (isMuted) {
+                am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, 0);
+            }
         }
     }
 

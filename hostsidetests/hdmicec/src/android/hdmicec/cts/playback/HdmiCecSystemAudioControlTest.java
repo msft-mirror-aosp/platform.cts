@@ -18,6 +18,8 @@ package android.hdmicec.cts.playback;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
@@ -45,9 +47,10 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
             RuleChain.outerRule(CecRules.requiresCec(this))
                     .around(CecRules.requiresLeanback(this))
                     .around(CecRules.requiresPhysicalDevice(this))
-                    .around(
-                            CecRules.requiresDeviceType(
+                    .around(CecRules.requiresDeviceType(
                                     this, HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE))
+                    .around(CecRules.skipDeviceType(
+                                    this, HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM))
                     .around(hdmiCecClient);
 
     /**
@@ -60,6 +63,8 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
     public void cect_hf4_10_5_RemoteControlCommandsWithSystemAudioControlProperty()
             throws Exception {
         setCec20();
+        // The DUT won't send <User Control Pressed> messages if this condition is not met.
+        assumeTrue(isPlayingStreamMusicOnHdmiOut());
 
         ITestDevice device = getDevice();
         String volumeControlEnabled =

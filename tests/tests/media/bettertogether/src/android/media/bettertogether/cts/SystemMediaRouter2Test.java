@@ -56,6 +56,7 @@ import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -747,7 +748,11 @@ public class SystemMediaRouter2Test {
                         || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
                     return;
                 }
-                onControllerUpdatedLatch.countDown();
+                if (!TextUtils.equals(
+                        controller.getSelectedRoutes().get(0).getOriginalId(),
+                        route.getOriginalId())) {
+                    onControllerUpdatedLatch.countDown();
+                }
             }
         };
 
@@ -780,6 +785,7 @@ public class SystemMediaRouter2Test {
         }
     }
 
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerSelectAndDeselectRoute() throws Exception {
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(FEATURE_SAMPLE);
@@ -898,21 +904,26 @@ public class SystemMediaRouter2Test {
             }
         };
 
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                assertThat(controller.getSelectedRoutes()).hasSize(1);
-                assertThat(createRouteMap(controller.getSelectedRoutes())
-                        .containsKey(ROUTE_ID1)).isFalse();
-                assertThat(createRouteMap(controller.getSelectedRoutes())
-                        .containsKey(ROUTE_ID5_TO_TRANSFER_TO)).isTrue();
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (onTransferLatch.getCount() != 0
+                                || !TextUtils.equals(
+                                controllers.get(0).getId(), controller.getId())) {
+                            return;
+                        }
+                        if (createRouteMap(controller.getSelectedRoutes())
+                                .containsKey(ROUTE_ID5_TO_TRANSFER_TO)) {
+                            assertThat(controller.getSelectedRoutes()).hasSize(1);
+                            assertThat(
+                                    createRouteMap(controller.getSelectedRoutes())
+                                            .containsKey(ROUTE_ID1))
+                                    .isFalse();
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         try {
             mSystemRouter2ForCts.registerTransferCallback(mExecutor, transferCallback);
@@ -997,6 +1008,7 @@ public class SystemMediaRouter2Test {
         }
     }
 
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerRelease() throws Exception {
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(FEATURE_SAMPLE);

@@ -247,7 +247,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/sdksandbox/ISendDataCallback;",
                     "Landroid/app/sdksandbox/ISharedPreferencesSyncCallback;",
                     "Landroid/app/sdksandbox/ISdkToServiceCallback;",
-                    "Landroid/app/sdksandbox/IUnloadSdkCallback;"
+                    "Landroid/app/sdksandbox/IUnloadSdkCallback;",
+                    // b/325060980 : Remove duplication between telephony-common.jar and
+                    // services.jar
+                    "Lcom/android/server/updates/ConfigUpdateInstallReceiver;"
             );
 
     private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
@@ -701,6 +704,64 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
             .build();
 
+    // Bluetooth has not been updated on pre-u device
+    private static ImmutableSet<String> PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST =
+            ImmutableSet.of(
+                    // b/310322439
+                    "Lcom/android/bluetooth/x/android/sysprop/AdbProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/ApkVerityProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/BluetoothProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/CarProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/ContactsProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/CryptoProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/DeviceProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/DisplayProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/HdmiProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/HypervisorProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/InputProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/MediaProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/NetworkProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/OtaProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/PowerProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/SetupWizardProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/SocProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/TelephonyProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/TraceProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/VndkProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/VoldProperties;",
+                    "Lcom/android/bluetooth/x/android/sysprop/WifiProperties;");
+
+    /**
+     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-U devices.
+     *
+     * <p>Add the new item into this list only if the failure is caused by base device image (not
+     * the mainline train).
+     */
+    private static final ImmutableMap<String, ImmutableSet<String>>
+            PRE_U_APK_IN_APEX_BURNDOWN_LIST =
+                    new ImmutableMap.Builder<String, ImmutableSet<String>>()
+                            .put(
+                                    "/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
+                                    PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST)
+                            .put(
+                                    "/apex/com.android.btservices/app/Bluetooth/Bluetooth.apk",
+                                    PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST)
+                            .build();
+
+    /**
+     * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-T devices.
+     *
+     * <p> Add the new item into this list only if the failure is caused by base device image (not the mainline train).
+     */
+    private static final ImmutableMap<String, ImmutableSet<String>> PRE_T_APK_IN_APEX_BURNDOWN_LIST =
+        new ImmutableMap.Builder<String, ImmutableSet<String>>()
+            .put("/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
+                ImmutableSet.of(
+                    // b/303732833
+                    "Lcom/android/internal/util/Preconditions;"
+                ))
+            .build();
+
     /**
      * Fetch all jar files in BCP, SSCP and shared libs and extract all the classes.
      *
@@ -948,8 +1009,22 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         // e.g. /apex/com.android.btservices/app/Bluetooth@SC-DEV/Bluetooth.apk ->
                         //      /apex/com.android.btservices/app/Bluetooth/Bluetooth.apk
                         apk = apk.replaceFirst("@[^/]*", "");
-                        final ImmutableSet<String> burndownClasses =
-                                FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of());
+                        ImmutableSet<String> burndownClasses;
+                        if (mDeviceSdkLevel.isDeviceAtLeastU()) {
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of())).build();
+                        } else if (mDeviceSdkLevel.isDeviceAtLeastT()) {
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of()))
+                                    .addAll(PRE_U_APK_IN_APEX_BURNDOWN_LIST.getOrDefault(apk, ImmutableSet.of())).build();
+                        } else {
+                            // testApkInApex_nonClasspathClasses is not part of CTS until T
+                            // therefore, running this for pre-T devices with additional list of known failures.
+                            // Another option would be to skip this test entirely for pre-T devices.
+                            burndownClasses = ImmutableSet.<String>builder()
+                                    .addAll(FULL_APK_IN_APEX_BURNDOWN.getOrDefault(apk, ImmutableSet.of()))
+                                    .addAll(PRE_T_APK_IN_APEX_BURNDOWN_LIST.getOrDefault(apk, ImmutableSet.of())).build();
+                        }
                         final Multimap<String, String> duplicates =
                                 Multimaps.filterValues(sJarsToClasses, apkClasses::contains);
                         final Multimap<String, String> filteredDuplicates =
