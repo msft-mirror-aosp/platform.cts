@@ -198,6 +198,10 @@ class SensitiveNotificationAppHidingTest {
             notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
             notificationHelper.enableOtherPkgAssistantIfNeeded(previousAssistant)
         }
+
+        if (Flags.sensitiveContentImprovements()) {
+            ToastVerifier.waitForNoToast()
+        }
     }
 
     @Test
