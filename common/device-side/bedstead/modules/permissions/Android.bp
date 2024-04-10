@@ -16,7 +16,14 @@ filegroup {
 }
 
 filegroup {
-    name: "bedstead-permissions-srcs",
+    name: "bedstead-permissions-harrier-srcs",
+    srcs: [
+        "src/main/kotlin/com/android/bedstead/permissions/*.kt",
+    ],
+}
+
+filegroup {
+    name: "bedstead-permissions-nene-srcs",
     srcs: [
         "src/main/kotlin/com/android/bedstead/permissions/*.java",
     ],

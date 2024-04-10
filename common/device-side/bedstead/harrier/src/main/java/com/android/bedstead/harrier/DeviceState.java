@@ -27,9 +27,6 @@ import static com.android.bedstead.harrier.Defaults.DEFAULT_PASSWORD;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.DELEGATE_KEY;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
@@ -68,9 +65,6 @@ import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
@@ -103,9 +97,6 @@ import com.android.bedstead.harrier.annotations.OtherUser;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
@@ -174,7 +165,6 @@ import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
@@ -189,11 +179,6 @@ import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.PermissionContextImpl;
-import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
@@ -236,6 +221,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -271,8 +257,6 @@ public final class DeviceState extends HarrierRule {
     private static final String SKIP_CLASS_TEARDOWN_KEY = "skip-class-teardown";
     private static final String SKIP_TESTS_REASON_KEY = "skip-tests-reason";
     private static final String MIN_SDK_VERSION_KEY = "min-sdk-version";
-    private static final String PERMISSIONS_INSTRUMENTATION_PACKAGE_KEY =
-            "permission-instrumentation-package";
     private static final String ADDITIONAL_FEATURES_KEY = "additional-features";
     private boolean mSkipTestTeardown;
     private final boolean mSkipClassTeardown;
@@ -285,13 +269,6 @@ public final class DeviceState extends HarrierRule {
     // The minimum version supported by tests, defaults to current version
     private final int mMinSdkVersion;
     private int mMinSdkVersionCurrentTest;
-    private final @Nullable String mPermissionsInstrumentationPackage;
-    private final Set<String> mPermissionsInstrumentationPackagePermissions = new HashSet<>();
-
-    // Marks if the conditions for requiring running under permission instrumentation have been set
-    // if not - we assume the test should never run under permission instrumentation
-    // This is only used if a permission instrumentation package is set
-    private boolean mHasRequirePermissionInstrumentation = false;
 
     private boolean mNextSafetyOperationSet = false;
 
@@ -348,15 +325,8 @@ public final class DeviceState extends HarrierRule {
         mSkipTests = !mSkipTestsReason.isEmpty();
         mMinSdkVersion = TestApis.instrumentation().arguments().getInt(MIN_SDK_VERSION_KEY,
                 SDK_INT);
-        mPermissionsInstrumentationPackage = TestApis.instrumentation().arguments().getString(
-                PERMISSIONS_INSTRUMENTATION_PACKAGE_KEY);
         mAdditionalFeatures = Arrays.asList(TestApis.instrumentation().arguments().getString(
                 ADDITIONAL_FEATURES_KEY, "").split(","));
-        if (mPermissionsInstrumentationPackage != null) {
-            mPermissionsInstrumentationPackagePermissions.addAll(
-                    TestApis.packages().find(mPermissionsInstrumentationPackage)
-                            .requestedPermissions());
-        }
     }
 
     public DeviceState() {
@@ -467,14 +437,6 @@ public final class DeviceState extends HarrierRule {
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
-        String coexistenceOption = TestApis.instrumentation().arguments().getString("COEXISTENCE", "?");
-        if (coexistenceOption.equals("true")) {
-            ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG);
-            ensureFeatureFlagEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG);
-        } else if (coexistenceOption.equals("false")) {
-            ensureFeatureFlagNotEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG);
-            ensureFeatureFlagNotEnabled(NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG);
-        }
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
@@ -948,89 +910,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof EnsureCanGetPermission ensureCanGetPermissionAnnotation) {
-
-                if (!meetsSdkVersionRequirements(
-                        ensureCanGetPermissionAnnotation.minVersion(),
-                        ensureCanGetPermissionAnnotation.maxVersion())) {
-                    Log.d(LOG_TAG,
-                            "Version " + SDK_INT + " does not need to get permissions "
-                                    + Arrays.toString(
-                                    ensureCanGetPermissionAnnotation.value()));
-                    continue;
-                }
-
-                for (String permission : ensureCanGetPermissionAnnotation.value()) {
-                    ensureCanGetPermission(permission);
-                }
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasAppOp ensureHasAppOpAnnotation) {
-
-                if (!meetsSdkVersionRequirements(
-                        ensureHasAppOpAnnotation.minVersion(),
-                        ensureHasAppOpAnnotation.maxVersion())) {
-                    Log.d(LOG_TAG,
-                            "Version " + SDK_INT + " does not need to get appOp "
-                                    + ensureHasAppOpAnnotation.value());
-                    continue;
-                }
-
-                try {
-                    withAppOp(ensureHasAppOpAnnotation.value());
-                } catch (NeneException e) {
-                    failOrSkip("Error getting appOp: " + e,
-                            ensureHasAppOpAnnotation.failureMode());
-                }
-                continue;
-            }
-
-            if (annotation instanceof EnsureDoesNotHaveAppOp ensureDoesNotHaveAppOpAnnotation) {
-
-                try {
-                    withoutAppOp(ensureDoesNotHaveAppOpAnnotation.value());
-                } catch (NeneException e) {
-                    failOrSkip("Error denying appOp: " + e,
-                            ensureDoesNotHaveAppOpAnnotation.failureMode());
-                }
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasPermission ensureHasPermissionAnnotation) {
-
-                if (!meetsSdkVersionRequirements(
-                        ensureHasPermissionAnnotation.minVersion(),
-                        ensureHasPermissionAnnotation.maxVersion())) {
-                    Log.d(LOG_TAG,
-                            "Version " + SDK_INT + " does not need to get permission "
-                                    + Arrays.toString(ensureHasPermissionAnnotation.value()));
-                    continue;
-                }
-
-                try {
-                    for (String permission : ensureHasPermissionAnnotation.value()) {
-                        ensureCanGetPermission(permission);
-                    }
-                    withPermission(ensureHasPermissionAnnotation.value());
-                } catch (NeneException e) {
-                    failOrSkip("Error getting permission: " + e,
-                            ensureHasPermissionAnnotation.failureMode());
-                }
-                continue;
-            }
-
-            if (annotation instanceof EnsureDoesNotHavePermission ensureDoesNotHavePermission) {
-
-                try {
-                    withoutPermission(ensureDoesNotHavePermission.value());
-                } catch (NeneException e) {
-                    failOrSkip("Error denying permission: " + e,
-                            ensureDoesNotHavePermission.failureMode());
-                }
-                continue;
-            }
-
             if (annotation instanceof EnsureScreenIsOn) {
                 ensureScreenIsOn();
                 continue;
@@ -1128,53 +1007,6 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof RequireNotInstantApp requireNotInstantAppAnnotation) {
                 requireNotInstantApp(requireNotInstantAppAnnotation.reason(),
                         requireNotInstantAppAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireFeatureFlagEnabled requireFeatureFlagEnabledAnnotation) {
-                requireFeatureFlagEnabled(
-                        requireFeatureFlagEnabledAnnotation.namespace(),
-                        requireFeatureFlagEnabledAnnotation.key(),
-                        requireFeatureFlagEnabledAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsureFeatureFlagEnabled ensureFeatureFlagEnabledAnnotation) {
-                ensureFeatureFlagEnabled(
-                        ensureFeatureFlagEnabledAnnotation.namespace(),
-                        ensureFeatureFlagEnabledAnnotation.key());
-                continue;
-            }
-
-            if (annotation instanceof RequireFeatureFlagNotEnabled requireFeatureFlagNotEnabledAnnotation) {
-                requireFeatureFlagNotEnabled(
-                        requireFeatureFlagNotEnabledAnnotation.namespace(),
-                        requireFeatureFlagNotEnabledAnnotation.key(),
-                        requireFeatureFlagNotEnabledAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsureFeatureFlagNotEnabled ensureFeatureFlagNotEnabledAnnotation) {
-                ensureFeatureFlagNotEnabled(
-                        ensureFeatureFlagNotEnabledAnnotation.namespace(),
-                        ensureFeatureFlagNotEnabledAnnotation.key());
-                continue;
-            }
-
-            if (annotation instanceof RequireFeatureFlagValue requireFeatureFlagValueAnnotation) {
-                requireFeatureFlagValue(
-                        requireFeatureFlagValueAnnotation.namespace(),
-                        requireFeatureFlagValueAnnotation.key(),
-                        requireFeatureFlagValueAnnotation.value(),
-                        requireFeatureFlagValueAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsureFeatureFlagValue ensureFeatureFlagValueAnnotation) {
-                ensureFeatureFlagValue(
-                        ensureFeatureFlagValueAnnotation.namespace(),
-                        ensureFeatureFlagValueAnnotation.key(),
-                        ensureFeatureFlagValueAnnotation.value());
                 continue;
             }
 
@@ -1358,11 +1190,6 @@ public final class DeviceState extends HarrierRule {
 
         requireSdkVersion(/* min= */ mMinSdkVersionCurrentTest,
                 /* max= */ Integer.MAX_VALUE, FailureMode.SKIP);
-
-        if (isTest && mPermissionsInstrumentationPackage != null
-                && !mHasRequirePermissionInstrumentation) {
-            requireNoPermissionsInstrumentation("No reason to use instrumentation");
-        }
     }
 
     private static TestAppQueryBuilder defaultDpcQuery() {
@@ -1456,8 +1283,6 @@ public final class DeviceState extends HarrierRule {
 
                 TestClass testClass = new TestClass(description.getTestClass());
 
-                PermissionContextImpl permissionContext = null;
-
                 if (mSkipTests || mFailTests) {
                     Log.d(
                             LOG_TAG,
@@ -1477,13 +1302,8 @@ public final class DeviceState extends HarrierRule {
                     Tags.addTag(Tags.INSTANT_APP);
                 }
 
-                boolean originalFlagSyncEnabled = TestApis.flags().getFlagSyncEnabled();
-
                 try {
                     TestApis.device().keepScreenOn(true);
-                    if (Versions.meetsMinimumSdkVersionRequirement(T)) {
-                        TestApis.flags().setFlagSyncEnabled(false);
-                    }
 
                     if (!Tags.hasTag(Tags.INSTANT_APP)) {
                         TestApis.device().setKeyguardEnabled(false);
@@ -1516,10 +1336,6 @@ public final class DeviceState extends HarrierRule {
                 } finally {
                     runAnnotatedMethods(testClass, AfterClass.class);
 
-                    if (permissionContext != null) {
-                        permissionContext.close();
-                    }
-
                     if (!mSkipClassTeardown) {
                         teardownShareableState();
                     }
@@ -1530,9 +1346,6 @@ public final class DeviceState extends HarrierRule {
                     // TODO(b/249710985): Reset to the default for the device or the previous value
                     // TestApis.device().keepScreenOn(false);
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.ANY);
-                    if (Versions.meetsMinimumSdkVersionRequirement(T)) {
-                        TestApis.flags().setFlagSyncEnabled(originalFlagSyncEnabled);
-                    }
 
                     Log.i(LOG_TAG, "Shutting down test thread executor");
                     mTestExecutor.shutdown();
@@ -1709,35 +1522,6 @@ public final class DeviceState extends HarrierRule {
                 !TestApis.packages().features().contains(feature), failureMode);
     }
 
-    private void requireNoPermissionsInstrumentation(String reason) {
-        boolean instrumentingPermissions =
-                TestApis.context()
-                        .instrumentedContext().getPackageName()
-                        .equals(mPermissionsInstrumentationPackage);
-
-        checkFailOrSkip(
-                "This test never runs using permissions instrumentation on this version"
-                        + " of Android: " + reason,
-                !instrumentingPermissions,
-                FailureMode.SKIP
-        );
-    }
-
-    private void requirePermissionsInstrumentation(String reason) {
-        mHasRequirePermissionInstrumentation = true;
-        boolean instrumentingPermissions =
-                TestApis.context()
-                        .instrumentedContext().getPackageName()
-                        .equals(mPermissionsInstrumentationPackage);
-
-        checkFailOrSkip(
-                "This test only runs when using permissions instrumentation on this"
-                        + " version of Android: " + reason,
-                instrumentingPermissions,
-                FailureMode.SKIP
-        );
-    }
-
     private void requireTargetSdkVersion(
             int min, int max, FailureMode failureMode) {
         int targetSdkVersion = TestApis.packages().instrumented().targetSdkVersion();
@@ -1801,9 +1585,8 @@ public final class DeviceState extends HarrierRule {
     private RemoteDevicePolicyManagerRoleHolder mDevicePolicyManagerRoleHolder;
     private UserType mOtherUserType;
 
-    private PermissionContextImpl mPermissionContext = null;
-    private final Map<UserReference, Set<String>> mAddedUserRestrictions = new HashMap<>();
-    private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new HashMap<>();
+    private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
+    private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
     private final List<UserReference> mCreatedUsers = new ArrayList<>();
     private final List<RemovedUser> mRemovedUsers = new ArrayList<>();
     private final List<UserReference> mUsersSetPasswords = new ArrayList<>();
@@ -1820,7 +1603,6 @@ public final class DeviceState extends HarrierRule {
     private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
 
     private Boolean mOriginalWifiEnabled;
-    private final Map<String, Map<String, String>> mOriginalFlagValues = new HashMap<>();
     private final TestAppProvider mTestAppProvider = new TestAppProvider();
     private final Map<String, TestAppInstance> mTestApps = new HashMap<>();
 
@@ -2663,17 +2445,6 @@ public final class DeviceState extends HarrierRule {
         mAccountAuthenticators.clear();
 
         mTestAppProvider.restore();
-        if (mPermissionContext != null) {
-            mPermissionContext.close();
-            mPermissionContext = null;
-        }
-
-        for (Map.Entry<String, Map<String, String>> namespace : mOriginalFlagValues.entrySet()) {
-            for (Map.Entry<String, String> key : namespace.getValue().entrySet()) {
-                TestApis.flags().set(namespace.getKey(), key.getKey(), key.getValue());
-            }
-        }
-        mOriginalFlagValues.clear();
 
         mAnnotationExecutors.values().forEach(AnnotationExecutor::teardownNonShareableState);
 
@@ -2930,11 +2701,6 @@ public final class DeviceState extends HarrierRule {
     private void ensureHasDevicePolicyManagerRoleHolder(UserType onUser, boolean isPrimary) {
         UserReference user = resolveUserTypeToUser(onUser);
 
-        if (!user.equals(TestApis.users().instrumented())) {
-            // INTERACT_ACROSS_USERS_FULL is required for RemoteDPC
-            ensureCanGetPermission(INTERACT_ACROSS_USERS_FULL);
-        }
-
         ensureHasNoAccounts(UserType.ANY, /* allowPreCreatedAccounts= */ true,
                 FailureMode.FAIL);
         ensureTestAppInstalled(RemoteDevicePolicyManagerRoleHolder.sTestApp, user);
@@ -2968,11 +2734,6 @@ public final class DeviceState extends HarrierRule {
             throw new IllegalStateException(
                     "Only one DPC can be marked as primary per test (current primary is "
                             + mPrimaryPolicyManager + ")");
-        }
-
-        if (!dpc.user().equals(TestApis.users().instrumented())) {
-            // INTERACT_ACROSS_USERS_FULL is required for RemoteDPC
-            ensureCanGetPermission(INTERACT_ACROSS_USERS_FULL);
         }
 
         ensureTestAppInstalled(DELEGATE_KEY, RemoteDelegate.sTestApp, dpc.user());
@@ -3168,10 +2929,6 @@ public final class DeviceState extends HarrierRule {
                     "Only one DPC can be marked as primary per test (current primary is "
                             + mPrimaryPolicyManager + ")");
         }
-        if (!deviceOwnerUser.equals(TestApis.users().instrumented())) {
-            // INTERACT_ACROSS_USERS_FULL is required for RemoteDPC
-            ensureCanGetPermission(INTERACT_ACROSS_USERS_FULL);
-        }
 
         DeviceOwner currentDeviceOwner = TestApis.devicePolicy().getDeviceOwner();
 
@@ -3345,11 +3102,6 @@ public final class DeviceState extends HarrierRule {
                 && !user.equals(mPrimaryPolicyManager.user())) {
             throw new IllegalStateException(
                     "Only one DPC can be marked as primary per test");
-        }
-
-        if (!user.equals(TestApis.users().instrumented())) {
-            // INTERACT_ACROSS_USERS_FULL is required for RemoteDPC
-            ensureCanGetPermission(INTERACT_ACROSS_USERS_FULL);
         }
 
         ProfileOwner currentProfileOwner = TestApis.devicePolicy().getProfileOwner(user);
@@ -3668,48 +3420,6 @@ public final class DeviceState extends HarrierRule {
         return mTestApps.get(key);
     }
 
-    private void ensureCanGetPermission(String permission) {
-        if (mPermissionsInstrumentationPackage == null) {
-            // We just need to check if we can get it generally
-            // TODO: replace with dependency on bedstead-root when properly modularised
-            if (Tags.hasTag("root-instrumentation") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-                return; // If we're rooted we're always able to get permissions
-            }
-
-            if (TestApis.permissions().usablePermissions().contains(permission)) {
-                return;
-            }
-
-            if (TestApis.packages().instrumented().isInstantApp()) {
-                // Instant Apps aren't able to know the permissions of shell so we can't know
-                // if we
-                // can adopt it - we'll assume we can adopt and log
-                Log.i(LOG_TAG,
-                        "Assuming we can get permission " + permission
-                                + " as running on instant app");
-                return;
-            }
-
-            TestApis.permissions().throwPermissionException(
-                    "Can not get required permission", permission);
-        }
-
-        if (TestApis.permissions().adoptablePermissions().contains(permission)) {
-            requireNoPermissionsInstrumentation("Requires permission " + permission);
-        } else if (mPermissionsInstrumentationPackagePermissions.contains(permission)) {
-            requirePermissionsInstrumentation("Requires permission " + permission);
-        } else {
-            // Can't get permission at all - error (including the permissions for both)
-            TestApis.permissions().throwPermissionException(
-                    "Can not get permission " + permission + " including by instrumenting "
-                            + mPermissionsInstrumentationPackage
-                            + "\n " + mPermissionsInstrumentationPackage + " permissions: "
-                            + mPermissionsInstrumentationPackagePermissions,
-                    permission
-            );
-        }
-    }
-
     private void switchToUser(UserReference user) {
         UserReference currentUser = TestApis.users().current();
         if (!currentUser.equals(user)) {
@@ -3930,40 +3640,6 @@ public final class DeviceState extends HarrierRule {
         return (boolean) isOrganizationOwnedMethod.invoke(annotation);
     }
 
-    private void withAppOp(String... appOp) {
-        if (mPermissionContext == null) {
-            mPermissionContext = TestApis.permissions().withAppOp(appOp);
-        } else {
-            mPermissionContext = mPermissionContext.withAppOp(appOp);
-        }
-    }
-
-    private void withoutAppOp(String... appOp) {
-        if (mPermissionContext == null) {
-            mPermissionContext = TestApis.permissions().withoutAppOp(appOp);
-        } else {
-            mPermissionContext = mPermissionContext.withoutAppOp(appOp);
-        }
-    }
-
-    private void withPermission(String... permission) {
-        if (mPermissionContext == null) {
-            mPermissionContext = TestApis.permissions().withPermission(permission);
-        } else {
-            mPermissionContext = mPermissionContext.withPermission(permission);
-        }
-    }
-
-    private void withoutPermission(String... permission) {
-        requireNotInstantApp("Uses withoutPermission", FailureMode.SKIP);
-
-        if (mPermissionContext == null) {
-            mPermissionContext = TestApis.permissions().withoutPermission(permission);
-        } else {
-            mPermissionContext = mPermissionContext.withoutPermission(permission);
-        }
-    }
-
     private void ensureGlobalSettingSet(String key, String value) {
         if (!mOriginalGlobalSettings.containsKey(key)) {
             mOriginalGlobalSettings.put(key, TestApis.settings().global().getString(key));
@@ -4046,72 +3722,6 @@ public final class DeviceState extends HarrierRule {
     private void requireNotInstantApp(String reason, FailureMode failureMode) {
         checkFailOrSkip("Test does not run as an instant-app: " + reason,
                 !TestApis.packages().instrumented().isInstantApp(), failureMode);
-    }
-
-    private void requireFeatureFlagEnabled(String namespace, String key, FailureMode failureMode) {
-        //TODO(b/274439760): Get rid of this special case when tidying up permission stuff.
-        String coexistenceOption = TestApis.instrumentation().arguments()
-                .getString("COEXISTENCE", "?");
-        // This is to allow for forcing the coexistence flags on in btest.
-        if (namespace == NAMESPACE_DEVICE_POLICY_MANAGER
-                && (key == PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG
-                || key == ENABLE_DEVICE_POLICY_ENGINE_FLAG)) {
-            if (coexistenceOption.equals("true")) {
-                // Forcing the flags on will happen later, so we should skip the check below.
-                return;
-            } else if (coexistenceOption.equals("false")) {
-                // Definitely fail or skip if the coexistence flags are being forced off.
-                failOrSkip("Feature flag " + namespace + ":" + key + " must be enabled",
-                        failureMode);
-            }
-        }
-        checkFailOrSkip("Feature flag " + namespace + ":" + key + " must be enabled",
-                TestApis.flags().isEnabled(namespace, key), failureMode);
-    }
-
-    private void ensureFeatureFlagEnabled(String namespace, String key) {
-        ensureFeatureFlagValue(namespace, key, Flags.ENABLED_VALUE);
-    }
-
-    private void requireFeatureFlagNotEnabled(
-            String namespace, String key, FailureMode failureMode) {
-        //TODO(b/274439760): Get rid of this special case when tidying up permission stuff.
-        String coexistenceOption = TestApis.instrumentation().arguments()
-                .getString("COEXISTENCE", "?");
-        if (namespace == NAMESPACE_DEVICE_POLICY_MANAGER
-                && (key == PERMISSION_BASED_ACCESS_EXPERIMENT_FLAG
-                || key == ENABLE_DEVICE_POLICY_ENGINE_FLAG)) {
-            if (coexistenceOption.equals("false")) {
-                // Forcing the flags off will happen later, so we should skip the check below.
-                return;
-            } else if (coexistenceOption.equals("true")) {
-                // Definitely fail or skip if the coexistence flags are being forced on.
-                failOrSkip("Feature flag " + namespace + ":" + key + " must be enabled",
-                        failureMode);
-            }
-        }
-        checkFailOrSkip("Feature flag " + namespace + ":" + key + " must not be enabled",
-                !TestApis.flags().isEnabled(namespace, key), failureMode);
-    }
-
-    private void ensureFeatureFlagNotEnabled(String namespace, String key) {
-        ensureFeatureFlagValue(namespace, key, Flags.DISABLED_VALUE);
-    }
-
-    private void requireFeatureFlagValue(
-            String namespace, String key, String value, FailureMode failureMode) {
-        checkFailOrSkip("Feature flag " + namespace + ":" + key + " must be enabled",
-                Objects.equal(value, TestApis.flags().get(namespace, key)), failureMode);
-    }
-
-    private void ensureFeatureFlagValue(String namespace, String key, String value) {
-        Map<String, String> originalNamespace =
-                mOriginalFlagValues.computeIfAbsent(namespace, k -> new HashMap<>());
-        if (!originalNamespace.containsKey(key)) {
-            originalNamespace.put(key, TestApis.flags().get(namespace, key));
-        }
-
-        TestApis.flags().set(namespace, key, value);
     }
 
     /**
@@ -4259,7 +3869,6 @@ public final class DeviceState extends HarrierRule {
 
     @SuppressWarnings("unchecked")
     private AnnotationExecutor getAnnotationExecutor(String executorClassName) {
-
         Class<? extends AnnotationExecutor> executorClass;
 
         if (executorClassName.isEmpty()) {
@@ -4270,10 +3879,11 @@ public final class DeviceState extends HarrierRule {
                         (Class<? extends AnnotationExecutor>) Class.forName(executorClassName);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(
-                        "Could not find annotation executor "
-                                + executorClassName
-                                + ". Probably a dependency issue."
-                );
+                            "Could not find annotation executor "
+                                    + executorClassName
+                                    + ". Probably a dependency issue. If you are depending on a "
+                                    + "-annotations target (e.g. bedstead-root-annotations) instead "
+                                    + "depend on the non-annotations target (e.g. bedstead-root)");
             }
         }
 

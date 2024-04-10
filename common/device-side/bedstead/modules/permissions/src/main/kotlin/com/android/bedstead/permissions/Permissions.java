@@ -28,6 +28,7 @@ import android.os.Build;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
@@ -706,6 +707,18 @@ public final class Permissions {
         }
         if (!grantedPermissions.isEmpty() || !deniedPermissions.isEmpty()) {
             setPermissionStateToPackageWithoutAdoption(pkg, user, grantedPermissions, deniedPermissions);
+        }
+    }
+
+    /** Ensure that permissions are not being overridden for any packages. */
+    @Experimental
+    public void clearAllOverridePermissionStates() {
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            try {
+                TestApisReflectionKt.clearAllOverridePermissionStates(ShellCommandUtils.uiAutomation());
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error clearing all override permission states", e);
+            }
         }
     }
 
