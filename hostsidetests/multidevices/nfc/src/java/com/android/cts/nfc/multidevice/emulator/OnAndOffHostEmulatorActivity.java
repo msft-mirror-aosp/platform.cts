@@ -13,30 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.nfc.multidevice.reader;
+package com.android.cts.nfc.multidevice.emulator;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.nfc.NfcAdapter;
+import android.content.ComponentName;
 import android.os.Bundle;
 
-public class BaseReaderActivity extends Activity {
+import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
+import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 
-    // Intent action that's sent after the test condition is met.
-    protected static final String ACTION_TEST_PASSED =
-            "com.android.cts.nfc.multidevice.reader.ACTION_TEST_PASSED";
-
-    /** Call this in child classes when test condition is met */
-    protected void setTestPassed() {
-        Intent intent = new Intent(ACTION_TEST_PASSED);
-        sendBroadcast(intent);
-    }
-
-    protected NfcAdapter mAdapter;
-
+public class OnAndOffHostEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mAdapter = NfcAdapter.getDefaultAdapter(this);
+        setupServices(OffHostService.COMPONENT, TransportService1.COMPONENT);
     }
+
+    @Override
+    public void onApduSequenceComplete(ComponentName component, long duration) {}
 }
