@@ -38,6 +38,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_AE_AWB_REGIONS = 4
 _PERCENTAGE = 100
 _REGION_DURATION_MS = 1800  # 1.8 seconds
+_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 
 
 def _convert_image_coords_to_sensor_coords(
@@ -255,6 +256,11 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           log_path)
+
+      # Tap tablet to remove gallery buttons
+      if self.tablet:
+        self.tablet.adb.shell(
+            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       # Check skip conditions
       max_ae_regions = props['android.control.maxRegionsAe']
