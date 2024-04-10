@@ -254,7 +254,8 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
 
         mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(writtenBytes);
 
-        PollingCheck.waitFor(STATS_SYNC_WAIT_MS, mResourceOveruseStatsPollingCheckCondition);
+        PollingCheck.waitFor(STATS_SYNC_WAIT_MS, mResourceOveruseStatsPollingCheckCondition,
+                mResourceOveruseStatsPollingCheckCondition::getErrorMessage);
 
         // Stop the custom performance collection. This resets watchdog's I/O stat collection to
         // the default interval.
@@ -345,7 +346,8 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                 mUserHandle, writtenBytes);
 
         PollingCheck.waitFor(STATS_SYNC_WAIT_MS,
-                mResourceOveruseStatsForUserPackagePollingCheckCondition);
+                mResourceOveruseStatsForUserPackagePollingCheckCondition,
+                mResourceOveruseStatsForUserPackagePollingCheckCondition::getErrorMessage);
 
         runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
 
@@ -950,6 +952,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         public void setMinWrittenBytes(long minWrittenBytes) {
             mMinWrittenBytes = minWrittenBytes;
         }
+
+        public String getErrorMessage() {
+            IoOveruseStats ioOveruseStats = getResourceOveruseStats().getIoOveruseStats();
+            if (ioOveruseStats == null) {
+                return "PollingCheckTimeout: Expected " + mMinWrittenBytes
+                        + " bytes, but retrieved IoOveruseStats are null.";
+            }
+            return "PollingCheckTimeout: Expected " + mMinWrittenBytes + ", but retrieved "
+                    + ioOveruseStats.getTotalBytesWritten() + " bytes.";
+        }
     };
 
     private final class ResourceOveruseStatsForUserPackagePollingCheckCondition
@@ -980,6 +992,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
             mPackageName = packageName;
             mUserHandle = userHandle;
             mMinWrittenBytes = minWrittenBytes;
+        }
+
+        public String getErrorMessage() {
+            IoOveruseStats ioOveruseStats = getResourceOveruseStats().getIoOveruseStats();
+            if (ioOveruseStats == null) {
+                return "PollingCheckTimeout: Expected " + mMinWrittenBytes
+                        + " bytes, but retrieved IoOveruseStats are null.";
+            }
+            return "PollingCheckTimeout: Expected " + mMinWrittenBytes + ", but retrieved "
+                    + ioOveruseStats.getTotalBytesWritten() + " bytes.";
         }
     };
 
