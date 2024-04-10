@@ -35,6 +35,7 @@
         <option name="package" value="android.devicepolicy.cts" />
         <option name="include-annotation" value="com.android.xts.root.annotations.RequireAdbRoot" />
         <option name="include-filter" value="android.devicepolicy.cts.ApplicationHiddenTest" />
+        <option name="include-filter" value="android.devicepolicy.cts.DevicePolicyManagerTest" />
 <!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />-->
 <!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />-->
 <!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile" />-->
