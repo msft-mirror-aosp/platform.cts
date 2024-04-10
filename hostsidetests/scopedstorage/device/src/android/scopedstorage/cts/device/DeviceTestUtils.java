@@ -16,21 +16,28 @@
 
 package android.scopedstorage.cts.device;
 
+import android.app.Instrumentation;
+import android.content.pm.PackageManager;
 import android.os.FileUtils;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Assume;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class FileCreationUtils {
+public class DeviceTestUtils {
+
+    private static final Instrumentation sInstrumentation =
+            InstrumentationRegistry.getInstrumentation();
 
     protected static void createContentFromResource(int resourceId, File file) throws IOException {
         try (FileOutputStream fileOutputStream = new FileOutputStream(file);
-             InputStream in = InstrumentationRegistry.getInstrumentation().getContext()
-                     .getResources().openRawResource(resourceId)) {
+                InputStream in = sInstrumentation.getContext()
+                        .getResources().openRawResource(resourceId)) {
             // Dump the image we have to external storage
             FileUtils.copy(in, fileOutputStream);
             // Sync file to disk to ensure file is fully written to the lower fs attempting to
@@ -39,5 +46,15 @@ public class FileCreationUtils {
             fileOutputStream.getFD().sync();
         }
 
+    }
+
+    protected static void checkUISupported() {
+        PackageManager pm = sInstrumentation.getContext().getPackageManager();
+
+        // Do not run tests on Watches, TVs, Auto or devices without UI.
+        Assume.assumeTrue(!pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                && !pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                && !pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                && !pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }
 }

@@ -45,7 +45,6 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -55,8 +54,6 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -70,7 +67,7 @@ import java.util.Set;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
 public class StorageOtherFilesTest {
 
-    protected static final String TAG = "MediaProviderOtherFilePermissionTest";
+    protected static final String TAG = "StorageOtherFilesTest";
     private static final String THIS_PACKAGE_NAME =
             ApplicationProvider.getApplicationContext().getPackageName();
     private static final Instrumentation sInstrumentation =
@@ -80,11 +77,11 @@ public class StorageOtherFilesTest {
     @ClassRule
     public static final OtherAppFilesRule sFilesRule = new OtherAppFilesRule(sContentResolver);
 
-    private static final File IMAGE_FILE_READABLE = sFilesRule.getImageFile1();
-    private static final File IMAGE_FILE_NO_ACCESS = sFilesRule.getImageFile2();
+    private static final File IMAGE_FILE_READABLE = OtherAppFilesRule.getImageFile1();
+    private static final File IMAGE_FILE_NO_ACCESS = OtherAppFilesRule.getImageFile2();
 
-    private static final File VIDEO_FILE_READABLE = sFilesRule.getVideoFile1();
-    private static final File VIDEO_FILE_NO_ACCESS = sFilesRule.getVideoFile2();
+    private static final File VIDEO_FILE_READABLE = OtherAppFilesRule.getVideoFile1();
+    private static final File VIDEO_FILE_NO_ACCESS = OtherAppFilesRule.getVideoFile2();
 
     // Cannot be static as the underlying resource isn't
     private final Uri mImageUriReadable = sFilesRule.getImageUri1();
@@ -92,28 +89,13 @@ public class StorageOtherFilesTest {
     private final Uri mVideoUriReadable = sFilesRule.getVideoUri1();
     private final Uri mVideoUriNoAccess = sFilesRule.getVideoUri2();
 
-    static boolean isHardwareSupported() {
-        PackageManager pm = sInstrumentation.getContext().getPackageManager();
-
-        // Do not run tests on Watches, TVs, Auto or devices without UI.
-        return !pm.hasSystemFeature(pm.FEATURE_EMBEDDED)
-                && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_LEANBACK)
-                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
-    }
-
     @BeforeClass
     public static void init() throws Exception {
+        DeviceTestUtils.checkUISupported();
         pollForPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, true);
         // creating grants only for one
         modifyReadAccess(IMAGE_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
         modifyReadAccess(VIDEO_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        // Ensure tests are only run on supported hardware.
-        Assume.assumeTrue(isHardwareSupported());
     }
 
     @Test

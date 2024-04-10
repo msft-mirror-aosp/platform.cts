@@ -28,3 +28,56 @@ genrule {
         " < $(location requirements.txtpb)" +
         " > $(location requirements.binpb)",
 }
+
+blueprint_go_binary {
+    name: "genreqsrc",
+    srcs: ["genreqsrc.go"],
+    deps: ["requirements"],
+}
+
+bootstrap_go_package {
+    name: "requirements",
+    pkgPath: "cts/test/mediapc/requirements/requirements",
+    srcs: [
+        "requirements.go",
+    ],
+    deps: [
+        "templatefns",
+        "golang-protobuf-proto",
+        "requirements_go_proto",
+    ],
+}
+
+bootstrap_go_package {
+    name: "requirements_go_proto",
+    pkgPath: "cts/test/mediapc/requirements/requirements/requirements_go_proto",
+    srcs: [
+        "requirements.pb.go",
+        //"requirements.binpb",
+    ],
+    deps: [
+        "mpc_go_proto",
+        "golang-protobuf-reflect-protoreflect",
+        "golang-protobuf-runtime-protoimpl",
+
+    ],
+}
+
+bootstrap_go_package {
+    name: "mpc_go_proto",
+    pkgPath: "cts/test/mediapc/requirements/mpc_go_proto",
+    srcs: [
+        "mpc.pb.go",
+
+    ],
+    deps: [
+        "golang-protobuf-reflect-protoreflect",
+        "golang-protobuf-runtime-protoimpl",
+    ],
+}
+
+bootstrap_go_package {
+    name: "templatefns",
+    pkgPath: "cts/test/mediapc/requirements/templatefns",
+    srcs: ["templatefns.go"],
+}

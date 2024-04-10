@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,10 @@ import android.os.Bundle;
 
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public class SingleNonPaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mEnableComponents =
-                new ArrayList<ComponentName>(Arrays.asList(TransportService1.COMPONENT));
     }
 
     @Override
@@ -36,6 +31,12 @@ public class SingleNonPaymentEmulatorActivity extends BaseEmulatorActivity {
         if (component.equals(TransportService1.COMPONENT)) {
             setTestPassed();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setupServices(TransportService1.COMPONENT);
     }
 
     @Override

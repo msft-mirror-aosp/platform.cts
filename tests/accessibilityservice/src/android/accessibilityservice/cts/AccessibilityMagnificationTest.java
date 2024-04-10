@@ -179,9 +179,18 @@ public class AccessibilityMagnificationTest {
 
     @After
     public void tearDown() {
-        // Test cases should reset magnification themselves. Since window magnification
-        // may need times to remove the magnification window, we would like to wait and
-        // ensure the overlays for magnification are removed here.
+        // Ensure the magnification is deactivated after each test case. For some test cases that
+        // would disable mService during the test, they still need to reset magnification themselves
+        // after the test.
+        if (mService != null) {
+            mService.runOnServiceSync(() -> {
+                mService.getMagnificationController().resetCurrentMagnification(/* animate= */
+                        false);
+            });
+        }
+
+        // Since window magnification may need times to remove the magnification window, we would
+        // like to wait and ensure the overlays for magnification are removed here.
         if (isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()) {
             // Do nothing, we just want to wait for the event and check the
             // overlays for magnification are removed
@@ -362,7 +371,7 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(newConfig,
-                        /* animate= */  false)));
+                        /* animate= */ false)));
         waitUntilMagnificationConfig(controller, expectedConfig);
 
         assertTrue("Failed to set config", setConfig.get());
@@ -381,7 +390,7 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config,
-                        /* animate= */  false)));
+                        /* animate= */ false)));
         waitUntilMagnificationConfig(controller, config);
 
         assertFalse("Failed to set config", setConfig.get());
@@ -673,8 +682,8 @@ public class AccessibilityMagnificationTest {
         final float x = bounds.left + (bounds.width() / 4.0f);
         final float y = bounds.top + (bounds.height() / 4.0f);
         mService.runOnServiceSync(() -> {
-            controller.setScale(scale, /* animate= */  false);
-            controller.setCenter(x, y, /* animate= */  false);
+            controller.setScale(scale, /* animate= */ false);
+            controller.setCenter(x, y, /* animate= */ false);
             controller.reset(/* animate= */ false);
         });
 
@@ -939,6 +948,7 @@ public class AccessibilityMagnificationTest {
         final MagnificationController controller2 = service.getMagnificationController();
         assertEquals("Magnification must reset when a service dies",
                 1.0f, controller2.getScale(), 0f);
+        assertFalse(controller2.getMagnificationConfig().isActivated());
     }
 
     @Test
@@ -970,6 +980,7 @@ public class AccessibilityMagnificationTest {
         final MagnificationController controller2 = service.getMagnificationController();
         assertEquals("Magnification must reset when a service dies",
                 1.0f, controller2.getMagnificationConfig().getScale(), 0f);
+        assertFalse(controller2.getMagnificationConfig().isActivated());
     }
 
     @Test
@@ -1349,23 +1360,23 @@ public class AccessibilityMagnificationTest {
         try {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
 
-            TestUtils.waitUntil("node bounds is not changed:", TIMEOUT_CONFIG_SECONDS,
-                    () -> {
-                        buttonNode.refresh();
-                        buttonNode.getBoundsInScreen(boundsAfterMagnify);
-                        return !boundsBeforeMagnify.equals(boundsAfterMagnify);
-                    });
-
             final DisplayMetrics displayMetrics = new DisplayMetrics();
             activity.getDisplay().getMetrics(displayMetrics);
             final Rect displayRect = new Rect(0, 0,
                     displayMetrics.widthPixels, displayMetrics.heightPixels);
+
             // The boundsInScreen of button is adjusted to outside of screen by framework,
             // for example, Rect(-xxx, -xxx, -xxx, -xxx). Intersection of button and screen
             // should be empty.
-            assertFalse("Button shouldn't be on the screen, screen is " + displayRect
-                            + ", button bounds is " + boundsAfterMagnify,
-                    Rect.intersects(displayRect, boundsAfterMagnify));
+            TestUtils.waitUntil("Button shouldn't be on the screen, screen is " + displayRect
+                    + ", button bounds before magnified is " + boundsBeforeMagnify
+                    + ", button bounds after layout is " + boundsAfterMagnify,
+                    TIMEOUT_CONFIG_SECONDS,
+                    () -> {
+                        buttonNode.refresh();
+                        buttonNode.getBoundsInScreen(boundsAfterMagnify);
+                        return !Rect.intersects(displayRect, boundsAfterMagnify);
+                    });
             assertTrue("Button should be visible", buttonNode.isVisibleToUser());
         } finally {
             mService.runOnServiceSync(() -> controller.reset(false));

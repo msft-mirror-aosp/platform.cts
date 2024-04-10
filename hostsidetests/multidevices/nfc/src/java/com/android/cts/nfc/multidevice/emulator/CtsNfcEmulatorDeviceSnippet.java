@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
 public class CtsNfcEmulatorDeviceSnippet implements Snippet {
+    private BaseEmulatorActivity mActivity;
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     /** Opens single Non Payment emulator */
@@ -45,7 +46,86 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
                 instrumentation.getTargetContext(),
                 SingleNonPaymentEmulatorActivity.class.getName());
 
-        instrumentation.startActivitySync(intent);
+        mActivity = (SingleNonPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens single payment emulator activity */
+    @Rpc(description = "Open single payment emulator activity")
+    public void startSinglePaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), SinglePaymentEmulatorActivity.class.getName());
+
+        mActivity = (SinglePaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens dual payment emulator activity */
+    @Rpc(description = "Opens dual payment emulator activity")
+    public void startDualPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), DualPaymentEmulatorActivity.class.getName());
+
+        mActivity = (DualPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens foreground payment emulator activity */
+    @Rpc(description = "Opens foreground payment emulator activity")
+    public void startForegroundPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ForegroundPaymentEmulatorActivity.class.getName());
+
+        mActivity = (ForegroundPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens dynamic AID emulator activity */
+    @Rpc(description = "Opens dynamic AID emulator activity")
+    public void startDynamicAidEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), DynamicAidEmulatorActivity.class.getName());
+
+        mActivity = (DynamicAidEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens prefix payment emulator activity */
+    @Rpc(description = "Opens prefix payment emulator activity")
+    public void startPrefixPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), PrefixPaymentEmulatorActivity.class.getName());
+
+        mActivity = (PrefixPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens prefix payment emulator 2 activity */
+    @Rpc(description = "Opens prefix payment emulator 2 activity")
+    public void startPrefixPaymentEmulator2Activity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), PrefixPaymentEmulator2Activity.class.getName());
+
+        mActivity = (PrefixPaymentEmulator2Activity) instrumentation.startActivitySync(intent);
     }
 
     /** Registers receiver for Test Pass event */
@@ -53,6 +133,21 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
     public void asyncWaitForTestPass(String callbackId, String eventName) {
         registerSnippetBroadcastReceiver(
                 callbackId, eventName, BaseEmulatorActivity.ACTION_TEST_PASSED);
+    }
+
+    /** Registers receiver for Role Held event */
+    @AsyncRpc(description = "Waits for Role Held event")
+    public void asyncWaitForRoleHeld(String callbackId, String eventName) {
+        registerSnippetBroadcastReceiver(
+                callbackId, eventName, BaseEmulatorActivity.ACTION_ROLE_HELD);
+    }
+
+    /** Closes emulator activity between tests */
+    @Rpc(description = "Close activity if one was opened.")
+    public void closeActivity() {
+        if (mActivity != null) {
+            mActivity.finish();
+        }
     }
 
     /** Creates a SnippetBroadcastReceiver that listens for when the specified action is received */

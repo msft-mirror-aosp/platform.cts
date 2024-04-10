@@ -23,7 +23,7 @@ _LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH = 18
 _LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH = 90
 _BOUNDING_BOX_COLOR = (0, 255, 0)
 _BOX_MIN_SIZE = 20
-_BOX_PADDING = 5
+_BOX_PADDING_RATIO = 0.2
 _CROP_PADDING = 10
 _EXPECTED_NUM_OF_BOXES = 20  # The captured image must result in 20 detected
                              # boxes since the test scene has 20 boxes
@@ -210,10 +210,11 @@ def _compute_luminance_regions(image, boxes):
   intensities = []
   for b in boxes:
     x, y, w, h = b
-    left = int(x + _BOX_PADDING)
-    top = int(y + _BOX_PADDING)
-    right = int(x + w - _BOX_PADDING)
-    bottom = int(y + h - _BOX_PADDING)
+    padding = min(w, h) * _BOX_PADDING_RATIO
+    left = int(x + padding)
+    top = int(y + padding)
+    right = int(x + w - padding)
+    bottom = int(y + h - padding)
     box = image[top:bottom, left:right]
     box_xyz = cv2.cvtColor(box, cv2.COLOR_BGR2XYZ)
     intensity = int(np.mean(box_xyz[1]))
@@ -230,10 +231,11 @@ def _draw_luminance(image, intensities):
   """
   for (b, intensity) in intensities:
     x, y, w, h = b
-    left = int(x + _BOX_PADDING)
-    top = int(y + _BOX_PADDING)
-    right = int(x + w - _BOX_PADDING)
-    bottom = int(y + h - _BOX_PADDING)
+    padding = min(w, h) * _BOX_PADDING_RATIO
+    left = int(x + padding)
+    top = int(y + padding)
+    right = int(x + w - padding)
+    bottom = int(y + h - padding)
     cv2.rectangle(image, (left, top), (right, bottom), _BOUNDING_BOX_COLOR, 2)
     cv2.putText(image, f'{intensity}', (x, y - 10),
                 cv2.FONT_HERSHEY_PLAIN, 1, _TEXT_COLOR, 1, 2)

@@ -82,6 +82,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -550,9 +551,7 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_missingPermissions() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
 
         SecurityException e =
                 assertThrows(
@@ -687,9 +686,8 @@ public class PackageInstallerArchiveTest {
     public void archiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
 
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+
         assertThat(mPackageManager.getPackageInfo(PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived).isTrue();
     }
@@ -697,13 +695,8 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
-
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm request-unarchive %s", PACKAGE_NAME)))
-                .isEqualTo("Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+        unarchivePackageWithShellCommand(PACKAGE_NAME);
 
         assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
         assertThat(sUnarchiveReceiverAllUsers.get(1, TimeUnit.MILLISECONDS)).isFalse();
@@ -874,6 +867,18 @@ public class PackageInstallerArchiveTest {
                         () -> mContext.startActivity(callingIntent));
 
         assertThat(e).hasMessageThat().contains("Not allowed to start activity Intent");
+    }
+
+    private static void archivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format(
+                "pm archive --user %d %s", ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
+    }
+
+    private static void unarchivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format("pm request-unarchive --user %d %s",
+                ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
     }
 
     private void launchTestActivity() {

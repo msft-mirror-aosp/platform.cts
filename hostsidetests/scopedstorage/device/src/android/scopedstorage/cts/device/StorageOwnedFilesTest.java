@@ -83,12 +83,11 @@ public class StorageOwnedFilesTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
-    private static final String STR_DATA1 = "Random dest data";
-
+    private static final String STR_DATA1 = "Random test data";
     private static final byte[] BYTES_DATA1 = STR_DATA1.getBytes();
-    private static final File IMAGE_FILE_1 = sFilesRule.getImageFile1();
-    private static final File IMAGE_FILE_2_METADATA = sFilesRule.getImageFile2Metadata();
-    private static final File VIDEO_FILE_1 = sFilesRule.getVideoFile1();
+    private static final File IMAGE_FILE_1 = OwnedFilesRule.getImageFile1();
+    private static final File IMAGE_FILE_2_METADATA = OwnedFilesRule.getImageFile2Metadata();
+    private static final File VIDEO_FILE_1 = OwnedFilesRule.getVideoFile1();
 
     // Cannot be static as the underlying resource isn't
     private final Uri mImageUri1 = sFilesRule.getImageUri1();

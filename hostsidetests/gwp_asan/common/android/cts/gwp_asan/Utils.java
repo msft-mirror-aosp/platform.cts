@@ -44,7 +44,7 @@ public class Utils {
     public static final int TEST_IS_GWP_ASAN_DISABLED = 43;
     public static final int TEST_USE_AFTER_FREE = 44;
 
-    public static final String DROPBOX_TAG = "data_app_native_crash";
+    public static final String DROPBOX_NON_RECOVERABLE_TAG = "data_app_native_crash";
     public static final String DROPBOX_RECOVERABLE_TAG = "data_app_native_recoverable_crash";
 
     // Check that GWP-ASan is enabled by allocating a whole bunch of heap pointers and making sure
@@ -100,10 +100,6 @@ public class Utils {
                 "Cause: [GWP-ASan]: Use After Free",
                 "deallocated by",
                 "backtrace:");
-    }
-
-    public static DropBoxReceiver getDropboxReceiver(Context context, String processNameSuffix) {
-        return getDropboxReceiver(context, processNameSuffix, DROPBOX_TAG);
     }
 
     public static boolean appExitInfoHasReport(Context context, String processNameSuffix)

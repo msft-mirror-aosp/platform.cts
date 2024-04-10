@@ -20,6 +20,10 @@
 
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
+
+        <activity
+            android:name="android.app.Activity"
+            android:exported="false" />
     </application>
 
     <uses-feature android:name="android.software.companion_device_setup" />

@@ -335,6 +335,14 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
     assertContentEquals(snapshotInvalid, MissingIntentFilterActionCompanionService.connectedDevices)
 }
 
+fun assertDevicePresenceEvent(expected: Int, actual: Int) {
+    assertTrue("Expected event: $expected, but actual: $actual") {
+        waitFor (timeout = 2.seconds, interval = 100.milliseconds ) {
+            actual == expected
+        }
+    }
+}
+
 /**
  * @return whether the condition was met before time ran out.
  */

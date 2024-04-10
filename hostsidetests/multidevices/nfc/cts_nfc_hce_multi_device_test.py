@@ -41,7 +41,7 @@ from mobly.controllers import android_device
 
 # Timeout to give the NFC service time to perform async actions such as
 # discover tags.
-_NFC_TIMEOUT_SEC = 5
+_NFC_TIMEOUT_SEC = 10
 
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
@@ -90,11 +90,182 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         asserts.assert_is_not_none(test_pass_event,
                                    'ApduSuccess event was not received.')
 
+    def test_single_payment_service(self):
+        """Tests successful APDU exchange between payment service and
+        reader.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies emulator device sets the instrumentation emulator app to the
+        default wallet app.
+        2. Verifies a successful APDU exchange between the emulator and
+        Transport Service after _NFC_TIMEOUT_SEC.
+        """
+        # Wait for instrumentation app to hold onto wallet role before starting
+        # reader
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startSinglePaymentEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startSinglePaymentReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_dual_payment_service(self):
+        """Tests successful APDU exchange between a payment service and
+        reader when two payment services are set up in the emulator.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange between the emulator and the
+        payment service.
+        """
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startDualPaymentEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startDualPaymentReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_foreground_payment_emulator(self):
+        """Tests successful APDU exchange between non-default payment service and
+        reader when the foreground app sets a preference for the non-default
+        service.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange between the emulator and the
+        preferred service.
+        """
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startForegroundPaymentEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startForegroundPaymentReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_dynamic_aid_emulator(self):
+        """Tests successful APDU exchange between payment service and reader
+        when the payment service has registered dynamic AIDs.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange between the emulator and the
+        payment service with dynamic AIDs.
+        """
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startDynamicAidEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startDynamicAidReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_payment_prefix_emulator(self):
+        """Tests successful APDU exchange between payment service and reader
+        when the payment service has statically registered prefix AIDs.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange between the emulator and the
+        payment service with prefix AIDs.
+        """
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startPrefixPaymentEmulatorActivity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startPrefixPaymentReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_prefix_payment_emulator_2(self):
+        """Tests successful APDU exchange between payment service and reader
+        when the payment service has statically registered prefix AIDs.
+        Identical to the test above, except PrefixPaymentService2 is set up
+        first in the emulator activity.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange between the emulator and the
+        payment service with prefix AIDs.
+        """
+        role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
+            'RoleHeld')
+        self.emulator.nfc_emulator.startPrefixPaymentEmulator2Activity()
+        role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startPrefixPaymentReader2Activity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
     def teardown_test(self):
+        self.emulator.nfc_emulator.closeActivity()
+        self.reader.nfc_reader.closeActivity()
         utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
             self.current_test_info),
-            param_list=[[self.emulator], [self.reader]],
-            raise_on_exception=True)
+                              param_list=[[self.emulator], [self.reader]],
+                              raise_on_exception=True)
 
 
 if __name__ == '__main__':
