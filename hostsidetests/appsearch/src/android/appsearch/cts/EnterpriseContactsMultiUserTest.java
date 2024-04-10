@@ -167,13 +167,28 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     }
 
     @Test
-    public void testMainUser_hasEnterpriseAccess_withManagedPermission() throws Exception {
+    public void testMainUser_hasEnterpriseAccess_withManagedPermission_onUAbove() throws Exception {
+        assumeTrue(sDevice.getApiLevel() >= 34);
         // We only run this test if we know that we have managed profile contacts access; this will
         // be the case if we set up a temporary work profile. (It's not guaranteed in the case that
-        // there was an existing work profile)
+        // there was an existing work profile instead)
         assumeTrue(sIsTemporaryEnterpriseUser);
         setUpEnterpriseContactsWithManagedPermission();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testHasEnterpriseAccess",
+                sMainUserId,
+                Collections.emptyMap());
+    }
+
+    @Test
+    public void testMainUser_doesNotHaveEnterpriseAccess_withManagedPermission_onTBelow()
+            throws Exception {
+        assumeTrue(sDevice.getApiLevel() <= 33);
+        // We only run this test if we know that we have managed profile contacts access; this will
+        // be the case if we set up a temporary work profile. (It's not guaranteed in the case that
+        // there was an existing work profile instead)
+        assumeTrue(sIsTemporaryEnterpriseUser);
+        setUpEnterpriseContactsWithManagedPermission();
+        runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
                 sMainUserId,
                 Collections.emptyMap());
     }

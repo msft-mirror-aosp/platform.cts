@@ -16,6 +16,7 @@ syntax = "proto2";
 package android.media.performanceclass;
 
 option java_multiple_files = true;
+option go_package = "cts/test/mediapc/requirements/mpc_go_proto";
 
 // The  Media Performance class of a device.
 //

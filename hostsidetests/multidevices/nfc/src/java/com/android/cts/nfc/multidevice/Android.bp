@@ -27,11 +27,13 @@ android_test {
     ],
     manifest: "reader/AndroidManifest.xml",
     static_libs: [
+        "framework-nfc.impl",
         "androidx.test.runner",
         "compatibility-device-util-axt",
         "guava",
         "mobly-snippet-lib",
     ],
+    min_sdk_version: "34",
 }
 
 android_test {
@@ -43,9 +45,11 @@ android_test {
     ],
     manifest: "emulator/AndroidManifest.xml",
     static_libs: [
+        "framework-nfc.impl",
         "androidx.test.runner",
         "compatibility-device-util-axt",
         "guava",
         "mobly-snippet-lib",
     ],
+    min_sdk_version: "34",
 }

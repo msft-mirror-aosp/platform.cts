@@ -124,15 +124,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     private static final long DEFAULT_TEST_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
 
     /**
-     * The amount of milliseconds to wait for the remove user calls in {@link #tearDown}.
-     * This is a temporary measure until b/114057686 is fixed.
-     */
-    private static final long USER_REMOVE_WAIT = TimeUnit.SECONDS.toMillis(5);
-
-    /**
      * The amount of milliseconds to wait for the switch user calls in {@link #tearDown}.
      */
-    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(5);
+    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(1);
 
     // From the UserInfo class
     protected static final int FLAG_GUEST = 0x00000004;
@@ -429,7 +423,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected void switchUser(int userId) throws Exception {
         // TODO Move this logic to ITestDevice
-        int retries = 10;
+        int retries = 15;
         CLog.i("switching to user %d", userId);
         executeShellCommand("am switch-user " + userId);
         RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
@@ -530,12 +524,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             String stopUserCommand = "am stop-user -w -f " + userId;
             CLog.d("stopping and removing user " + userId);
             getDevice().executeShellCommand(stopUserCommand);
-            // TODO: Remove both sleeps and USER_REMOVE_WAIT constant when b/114057686 is fixed.
-            RunUtil.getDefault().sleep(USER_REMOVE_WAIT);
             // Ephemeral users may have already been removed after being stopped.
             if (listUsers().contains(userId)) {
                 assertTrue("Couldn't remove user", getDevice().removeUser(userId));
-                RunUtil.getDefault().sleep(USER_REMOVE_WAIT);
             }
         }
     }

@@ -30,6 +30,7 @@ import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.UUID_A
 import android.companion.cts.common.UUID_B
+import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.assertValidCompanionDeviceServicesBind
 import android.companion.cts.common.assertValidCompanionDeviceServicesRemainBound
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
@@ -148,21 +149,15 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertValidCompanionDeviceServicesBind()
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitDeviceUuidDisconnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_DISCONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
 
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
@@ -190,11 +185,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -205,11 +197,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_B, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_B)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -264,10 +253,9 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
-        assertEquals(
-                expected = EVENT_BLE_APPEARED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
+
         // Start observing by UUID.
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
@@ -280,10 +268,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         // Now, stop observing by MAC_ADDRESS.

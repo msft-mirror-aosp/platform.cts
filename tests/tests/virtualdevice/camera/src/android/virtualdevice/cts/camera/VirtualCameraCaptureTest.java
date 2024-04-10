@@ -16,6 +16,7 @@
 
 package android.virtualdevice.cts.camera;
 
+import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
@@ -70,6 +71,10 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,10 +87,6 @@ import org.mockito.MockitoAnnotations;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
 
 @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
         Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
@@ -104,7 +105,8 @@ public class VirtualCameraCaptureTest {
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
+            GRANT_RUNTIME_PERMISSIONS);
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
@@ -128,7 +130,6 @@ public class VirtualCameraCaptureTest {
     private ArgumentCaptor<Surface> mSurfaceCaptor;
 
     private VirtualDeviceManager.VirtualDevice mVirtualDevice;
-    private Context mVirtualDeviceContext;
     private CameraManager mCameraManager;
 
     @Before
@@ -145,9 +146,10 @@ public class VirtualCameraCaptureTest {
                 new VirtualDeviceParams.Builder()
                         .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
                         .build());
-        mVirtualDeviceContext = getApplicationContext().createDeviceContext(
+        Context virtualDeviceContext = getApplicationContext().createDeviceContext(
                 mVirtualDevice.getDeviceId());
-        mCameraManager = mVirtualDeviceContext.getSystemService(CameraManager.class);
+        mCameraManager = virtualDeviceContext.getSystemService(CameraManager.class);
+        VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
     }
 
     @Parameters(method = "getOutputPixelFormats")
