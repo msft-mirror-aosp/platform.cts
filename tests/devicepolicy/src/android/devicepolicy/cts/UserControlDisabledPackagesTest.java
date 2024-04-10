@@ -18,8 +18,13 @@ package android.devicepolicy.cts;
 
 import static android.app.admin.DevicePolicyIdentifiers.USER_CONTROL_DISABLED_PACKAGES_POLICY;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_EXEMPTED;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_NEVER;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
+import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
+import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
@@ -36,14 +41,15 @@ import android.app.admin.NoArgsPolicyKey;
 import android.app.admin.PolicyState;
 import android.app.admin.PolicyUpdateResult;
 import android.app.admin.StringSetUnion;
+import android.app.admin.flags.Flags;
 import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
@@ -55,6 +61,7 @@ import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
@@ -65,9 +72,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -80,9 +84,6 @@ public final class UserControlDisabledPackagesTest {
 
     private static final TestApp sTestApp =
             sDeviceState.testApps().query().whereActivities().isNotEmpty().get();
-
-    private static final TestApp sSecondTestApp =
-            sDeviceState.testApps().query().whereActivities().isEmpty().get();
 
     private static final ActivityManager sActivityManager =
             TestApis.context().instrumentedContext().getSystemService(ActivityManager.class);
@@ -99,21 +100,16 @@ public final class UserControlDisabledPackagesTest {
         assertThrows(SecurityException.class, () -> {
             sDeviceState.dpc().devicePolicyManager()
                     .setUserControlDisabledPackages(sDeviceState.dpc().componentName(),
-                            Arrays.asList(PACKAGE_NAME));
+                            List.of(PACKAGE_NAME));
         });
     }
 
     @CanSetPolicyTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "New test")
     public void setUserControlDisabledPackages_verifyMetricIsLogged() {
-        List<String> originalDisabledPackages =
-                sDeviceState.dpc().devicePolicyManager().getUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName());
-
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    Arrays.asList(PACKAGE_NAME));
+                    sDeviceState.dpc().componentName(), List.of(PACKAGE_NAME));
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_USER_CONTROL_DISABLED_PACKAGES_VALUE)
@@ -122,28 +118,22 @@ public final class UserControlDisabledPackagesTest {
                     .whereStrings().contains(PACKAGE_NAME)).wasLogged();
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    originalDisabledPackages);
+                    sDeviceState.dpc().componentName(), List.of());
         }
     }
 
     @CanSetPolicyTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     public void setUserControlDisabledPackages_toOneProtectedPackage() {
-        List<String> originalDisabledPackages =
-                sDeviceState.dpc().devicePolicyManager().getUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName());
-
-        sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(sDeviceState.dpc().componentName(),
-                Arrays.asList(PACKAGE_NAME));
+        sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                sDeviceState.dpc().componentName(), List.of(PACKAGE_NAME));
         try {
             assertThat(sDeviceState.dpc().devicePolicyManager().getUserControlDisabledPackages(
                     sDeviceState.dpc().componentName()))
                     .contains(PACKAGE_NAME);
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    originalDisabledPackages);
+                    sDeviceState.dpc().componentName(), List.of());
         }
     }
 
@@ -151,8 +141,7 @@ public final class UserControlDisabledPackagesTest {
     public void setUserControlDisabledPackages_notAllowedToSetProtectedPackages_throwsException() {
         assertThrows(SecurityException.class,
                 () -> sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(),
-                        Collections.emptyList()));
+                        sDeviceState.dpc().componentName(), List.of()));
     }
 
     @CannotSetPolicyTest(policy = UserControlDisabledPackages.class)
@@ -170,14 +159,11 @@ public final class UserControlDisabledPackagesTest {
             throws Exception {
         Assume.assumeTrue("Needs to launch activity",
                 TestApis.users().instrumented().canShowActivities());
-        List<String> originalDisabledPackages =
-                sDeviceState.dpc().devicePolicyManager().getUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName());
         String testAppPackageName = sTestApp.packageName();
 
         try (TestAppInstance instance = sTestApp.install()) {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(), Arrays.asList(testAppPackageName));
+                    sDeviceState.dpc().componentName(), List.of(testAppPackageName));
 
             instance.activities().any().start();
             int processIdBeforeStopping = instance.process().pid();
@@ -191,8 +177,7 @@ public final class UserControlDisabledPackagesTest {
             }
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    originalDisabledPackages);
+                    sDeviceState.dpc().componentName(), List.of());
         }
     }
 
@@ -203,14 +188,11 @@ public final class UserControlDisabledPackagesTest {
             throws Exception {
         Assume.assumeTrue("Needs to launch activity",
                 TestApis.users().instrumented().canShowActivities());
-        List<String> originalDisabledPackages =
-                sDeviceState.dpc().devicePolicyManager().getUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName());
         String testAppPackageName = sTestApp.packageName();
 
         try (TestAppInstance instance = sTestApp.install()) {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(), Arrays.asList(testAppPackageName));
+                    sDeviceState.dpc().componentName(), List.of(testAppPackageName));
 
             instance.activities().any().start();
             int processIdBeforeStopping = instance.process().pid();
@@ -224,8 +206,55 @@ public final class UserControlDisabledPackagesTest {
             }
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    originalDisabledPackages);
+                    sDeviceState.dpc().componentName(), List.of());
+        }
+    }
+
+    @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
+    @RequireFlagsEnabled(Flags.FLAG_DISALLOW_USER_CONTROL_BG_USAGE_FIX)
+    public void setUserControlDisabledPackages_bgUsageAllowed() {
+        try (TestAppInstance testApp = sTestApp.install()) {
+            // Take away background usage app op.
+            testApp.appOps().set(OPSTR_RUN_ANY_IN_BACKGROUND, IGNORED);
+
+            sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                    sDeviceState.dpc().componentName(), List.of(sTestApp.packageName()));
+
+            try {
+                // Background usage should be allowed again.
+                assertThat(sTestApp.pkg().appOps().get(OPSTR_RUN_ANY_IN_BACKGROUND))
+                        .isEqualTo(ALLOWED);
+            } finally {
+                sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                        sDeviceState.dpc().componentName(), List.of());
+            }
+        }
+    }
+
+    @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
+    @RequireFlagsEnabled(Flags.FLAG_DISALLOW_USER_CONTROL_BG_USAGE_FIX)
+    public void setUserControlDisabledPackages_exemptFromStandbyBuckets() {
+        try (TestAppInstance testApp = sTestApp.install()) {
+            // Put the app into a very restrictive bucket.
+            testApp.pkg().setAppStandbyBucket(STANDBY_BUCKET_NEVER);
+
+            sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                    sDeviceState.dpc().componentName(), List.of(sTestApp.packageName()));
+
+            try {
+                // The app should soon be in exempted bucket
+                Poll.forValue(() -> testApp.pkg().getAppStandbyBucket())
+                        .toMeet(bucket -> bucket == STANDBY_BUCKET_EXEMPTED)
+                        .errorOnFail("The app wasn't put into exempt bucket.")
+                        .await();
+            } finally {
+                sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                        sDeviceState.dpc().componentName(), List.of());
+            }
         }
     }
 
@@ -239,7 +268,7 @@ public final class UserControlDisabledPackagesTest {
         try (TestAppInstance instance = sTestApp.install()) {
             try {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(), Arrays.asList(testAppPackageName));
+                        sDeviceState.dpc().componentName(), List.of(testAppPackageName));
 
                 PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                         new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
@@ -249,8 +278,7 @@ public final class UserControlDisabledPackagesTest {
                         sTestApp.packageName());
             } finally {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(),
-                        new ArrayList<>());
+                        sDeviceState.dpc().componentName(), List.of());
             }
         }
     }
@@ -266,7 +294,7 @@ public final class UserControlDisabledPackagesTest {
         try (TestAppInstance instance = sTestApp.install()) {
             try {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(), Arrays.asList(testAppPackageName));
+                        sDeviceState.dpc().componentName(), List.of(testAppPackageName));
 
                 PolicySetResultUtils.assertPolicySetResultReceived(
                         sDeviceState,
@@ -274,8 +302,7 @@ public final class UserControlDisabledPackagesTest {
                         PolicyUpdateResult.RESULT_POLICY_SET, GLOBAL_USER_ID, new Bundle());
             } finally {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(),
-                        new ArrayList<>());
+                        sDeviceState.dpc().componentName(), List.of());
             }
         }
     }
@@ -290,7 +317,7 @@ public final class UserControlDisabledPackagesTest {
         try (TestAppInstance instance = sTestApp.install()) {
             try {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(), Arrays.asList(testAppPackageName));
+                        sDeviceState.dpc().componentName(), List.of(testAppPackageName));
 
                 PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                         new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
@@ -300,8 +327,7 @@ public final class UserControlDisabledPackagesTest {
                         StringSetUnion.STRING_SET_UNION);
             } finally {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                        sDeviceState.dpc().componentName(),
-                        new ArrayList<>());
+                        sDeviceState.dpc().componentName(), List.of());
             }
         }
     }
@@ -316,7 +342,7 @@ public final class UserControlDisabledPackagesTest {
                 NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
         try {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(), Arrays.asList(PACKAGE_NAME));
+                    sDeviceState.dpc().componentName(), List.of(PACKAGE_NAME));
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
             TestApis.flags().set(
@@ -332,16 +358,15 @@ public final class UserControlDisabledPackagesTest {
                     .contains(PACKAGE_NAME);
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(),
-                    new ArrayList<>());
+                    sDeviceState.dpc().componentName(), List.of());
             TestApis.flags().set(
                     NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }
     }
 
     private void stopPackage(Package pkg) throws Exception {
-        sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(sDeviceState.dpc().componentName(),
-                Collections.emptyList());
+        sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                sDeviceState.dpc().componentName(), List.of());
 
         pkg.forceStop();
     }
