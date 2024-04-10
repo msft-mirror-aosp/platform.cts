@@ -18,6 +18,8 @@ package android.packageinstaller.install.cts
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.AppOpsManager.MODE_ALLOWED
+import android.app.AppOpsManager.OPSTR_TAKE_AUDIO_FOCUS
 import android.app.Instrumentation
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -27,6 +29,7 @@ import android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
+import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.install.lib.Install
@@ -43,7 +46,6 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Assume.assumeFalse
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -105,23 +107,29 @@ class InstallConstraintsTest {
         }
     }
 
-    @Ignore("b/331166570")
     @Test
     fun testCheckInstallConstraints_AppIsInteracting() {
         // Skip this test as the current audio focus detection doesn't work on Auto
         assumeFalse(isAuto())
+
         Install.single(TestApp.A1).commit()
-        // The app will have audio focus and be considered interactive with the user
-        InstallUtils.requestAudioFocus(TestApp.A)
-        val pi = InstallUtils.getPackageInstaller()
-        val constraints = InstallConstraints.Builder().setAppNotInteractingRequired().build()
-        val future = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-        pi.checkInstallConstraints(
-            listOf(TestApp.A),
-            constraints,
-            { r -> r.run() }
-        ) { result -> future.complete(result) }
-        assertThat(future.join().areAllConstraintsSatisfied()).isFalse()
+        try {
+            // Grant the OPSTR_TAKE_AUDIO_FOCUS to the test app
+            AppOpsUtils.setOpMode(TestApp.A, OPSTR_TAKE_AUDIO_FOCUS, MODE_ALLOWED)
+            // The app will have audio focus and be considered interactive with the user
+            InstallUtils.requestAudioFocus(TestApp.A)
+            val pi = InstallUtils.getPackageInstaller()
+            val constraints = InstallConstraints.Builder().setAppNotInteractingRequired().build()
+            val future = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
+            pi.checkInstallConstraints(
+                    listOf(TestApp.A),
+                    constraints,
+                    { r -> r.run() }
+            ) { result -> future.complete(result) }
+            assertThat(future.join().areAllConstraintsSatisfied()).isFalse()
+        } finally {
+            AppOpsUtils.reset(TestApp.A)
+        }
     }
 
     @Test
