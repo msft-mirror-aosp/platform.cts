@@ -339,7 +339,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         long writtenBytes = writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
 
         assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
-                writtenBytes).isGreaterThan(0L);
+                writtenBytes).isGreaterThan((long) (FIVE_HUNDRED_KILOBYTES * 0.8));
 
         mResourceOveruseStatsForUserPackagePollingCheckCondition.setRequest(mPackageName,
                 mUserHandle, writtenBytes);
@@ -356,7 +356,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                 actualStats.getPackageName()).isEqualTo(mPackageName);
         assertWithMessage("User handle").that(actualStats.getUserHandle()).isEqualTo(mUserHandle);
         assertWithMessage("Total bytes written to disk").that(
-                ioOveruseStats.getTotalBytesWritten()).isAtLeast(FIVE_HUNDRED_KILOBYTES);
+                ioOveruseStats.getTotalBytesWritten()).isAtLeast(writtenBytes);
     }
 
     @Test
