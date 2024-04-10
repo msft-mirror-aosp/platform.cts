@@ -30,7 +30,7 @@ java_test_host {
     ],
     data: [
         ":CtsGwpAsanEnabled",
-        ":CtsGwpAsanRecoverable",
+        ":CtsGwpAsanDefault",
     ],
 }
 

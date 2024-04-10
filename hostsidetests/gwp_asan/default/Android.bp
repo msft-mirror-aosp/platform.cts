@@ -17,7 +17,7 @@ package {
 }
 
 android_test_helper_app {
-    name: "CtsGwpAsanRecoverable",
+    name: "CtsGwpAsanDefault",
     defaults: ["cts_gwp_asan_app_defaults"],
     use_embedded_native_libs: false,
 }
