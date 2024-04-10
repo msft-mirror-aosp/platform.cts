@@ -85,6 +85,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Assert;
@@ -118,6 +119,9 @@ public class ASurfaceControlTest {
     private static final PixelColor MAGENTA = new PixelColor(Color.MAGENTA);
     private static final PixelColor GREEN = new PixelColor(Color.GREEN);
     private static final PixelColor YELLOW = new PixelColor(Color.YELLOW);
+
+    @Rule
+    public DisableAnimationRule mDisableAnimationRule = new DisableAnimationRule();
 
     @Rule
     public ActivityScenarioRule<ASurfaceControlTestActivity> mActivityRule =
