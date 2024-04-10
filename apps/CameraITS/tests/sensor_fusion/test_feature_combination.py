@@ -24,8 +24,6 @@ import its_session_utils
 import preview_stabilization_utils
 import video_processing_utils
 
-_FMT_CODE_PRV = 0x22
-_FMT_CODE_JPG = 0x100
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -125,10 +123,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           size = [int(e) for e in stream['size'].split('x')]
           if stream['format'] == 'priv':
             preview_size = stream['size']
-            fmt = _FMT_CODE_PRV
+            fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             # TODO: b/269142636 - Add YUV
-            fmt = _FMT_CODE_JPG
+            fmt = capture_request_utils.FMT_CODE_JPEG
           config = [x for x in configs if
                     x['format'] == fmt and
                     x['width'] == size[0] and
