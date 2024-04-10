@@ -27,6 +27,11 @@ class ToastVerifier {
             Truth.assertThat(waitForNoToast()).isTrue()
         }
 
+        fun verifyToastDoesNotShow() {
+            // TODO: Find a way to avoid the 5 second polling here.
+            Truth.assertThat(waitForToast()).isFalse()
+        }
+
         private fun waitForToast(): Boolean {
             return WindowManagerStateHelper().waitFor({ state: WindowManagerState ->
                 state.findFirstWindowWithType(TYPE_TOAST) != null
