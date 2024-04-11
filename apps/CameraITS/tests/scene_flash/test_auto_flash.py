@@ -27,6 +27,7 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import lighting_control_utils
+import opencv_processing_utils
 
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MEAN_DELTA_ATOL = 15  # mean used for reflective charts
@@ -85,7 +86,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       )
       os.rename(path, no_flash_capture_path)
       cv2_no_flash_image = cv2.imread(str(no_flash_capture_path))
-      y, _, _ = cv2.split(cv2.cvtColor(cv2_no_flash_image, cv2.COLOR_BGR2YUV))
+      y = opencv_processing_utils.convert_to_y(cv2_no_flash_image, 'BGR')
       # Add a color channel dimension for interoperability
       y = np.expand_dims(y, axis=2)
       patch = image_processing_utils.get_image_patch(
@@ -110,7 +111,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       )
       os.rename(path, auto_flash_capture_path)
       cv2_auto_flash_image = cv2.imread(str(auto_flash_capture_path))
-      y, _, _ = cv2.split(cv2.cvtColor(cv2_auto_flash_image, cv2.COLOR_BGR2YUV))
+      y = opencv_processing_utils.convert_to_y(cv2_auto_flash_image, 'BGR')
       # Add a color channel dimension for interoperability
       y = np.expand_dims(y, axis=2)
       patch = image_processing_utils.get_image_patch(
