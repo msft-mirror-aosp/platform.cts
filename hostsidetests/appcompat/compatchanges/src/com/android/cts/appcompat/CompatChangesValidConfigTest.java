@@ -115,7 +115,8 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "RETURN_DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY",
             "OVERRIDE_ENABLE_EXPECTED_PRSENTATION_TIME",
             "ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS",
-            "SEND_CHOOSER_RESULT"
+            "SEND_CHOOSER_RESULT",
+            "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION"
     );
 
     /**

@@ -18,8 +18,9 @@ package android.media.projection;
 import static android.app.Activity.RESULT_OK;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR;
 import static android.media.cts.MediaProjectionActivity.ACCEPT_RESOURCE_ID;
+import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SPINNER_RESOURCE_ID;
-import static android.media.cts.MediaProjectionActivity.getEntireScreenString;
+import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -306,7 +307,7 @@ public class MediaProjectionSDK33Test {
         final boolean isWatch = context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WATCH);
         if (!isWatch) {
-            String entireScreenString = getEntireScreenString(context);
+            String entireScreenString = getResourceString(context, ENTIRE_SCREEN_STRING_RES_NAME);
             // if not testing on a watch device, then we need to select the entire screen option
             // (if available) before pressing "Start recording" button.
             if (entireScreenString != null && !selectEntireScreenOption(entireScreenString)) {
