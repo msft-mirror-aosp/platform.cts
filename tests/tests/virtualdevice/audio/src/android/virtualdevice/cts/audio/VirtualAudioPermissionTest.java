@@ -38,6 +38,8 @@ import android.companion.virtual.flags.Flags;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.AudioDeviceCallback;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -61,6 +63,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests for permission behavior with VirtualAudioDevice
@@ -126,7 +132,7 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
-    public void audioInjection_virtualDevice_permissionNotGranted() {
+    public void audioInjection_virtualDevice_permissionNotGranted() throws Exception {
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
         setupVirtualAudioDevice();
         PermissionActivity permissionActivity = launchPermissionActivity(mVirtualDisplayId);
@@ -143,7 +149,7 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
-    public void audioInjection_virtualDeviceWithMicrophone_permissionGranted() {
+    public void audioInjection_virtualDeviceWithMicrophone_permissionGranted() throws Exception {
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
         setupVirtualAudioDevice();
         PermissionActivity permissionActivity = launchPermissionActivity(mVirtualDisplayId);
@@ -216,11 +222,34 @@ public class VirtualAudioPermissionTest {
         mVirtualDisplayId = mVirtualDisplay.getDisplay().getDisplayId();
     }
 
-    private void setupVirtualAudioDevice() {
+    private void setupVirtualAudioDevice() throws InterruptedException, TimeoutException {
+        CountDownLatch audioDeviceInitializedLatch = new CountDownLatch(1);
+        AudioDeviceCallback audioDeviceCallback = new AudioDeviceCallback() {
+            @Override
+            public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+                for (AudioDeviceInfo device : addedDevices) {
+                    if (device.isSource()
+                            && device.getType() == AudioDeviceInfo.TYPE_REMOTE_SUBMIX) {
+                        audioDeviceInitializedLatch.countDown();
+                        return;
+                    }
+                }
+            }
+        };
+
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        audioManager.registerAudioDeviceCallback(audioDeviceCallback, null);
+
         VirtualAudioDevice virtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
         AudioInjection audioInjection = virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
         audioInjection.play();
+
+        boolean success = audioDeviceInitializedLatch.await(2, TimeUnit.SECONDS);
+        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
+        if (!success) {
+            throw new TimeoutException("Timeout while waiting for audio injection initialization");
+        }
     }
 
     private void setupAudioPolicy(int uid) {
