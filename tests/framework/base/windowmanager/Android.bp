@@ -69,7 +69,9 @@ java_defaults {
         "com.android.window.flags.window-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.app.flags-aconfig-java",
+        "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
+        "flag-junit",
     ],
 
     test_suites: [
