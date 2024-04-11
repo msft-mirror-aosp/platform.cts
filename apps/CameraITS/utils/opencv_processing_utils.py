@@ -52,7 +52,7 @@ CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
 CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
-CV2_RED = (1, 0, 0)  # color in cv2 to draw lines
+CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255)
 CV2_GREEN = (0, 255, 0)
 CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255)

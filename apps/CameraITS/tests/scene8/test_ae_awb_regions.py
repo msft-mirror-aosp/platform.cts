@@ -60,7 +60,8 @@ def _convert_image_coords_to_sensor_coords(
     sensor_coords: coordinates; corresponding coorediates on
       sensor coordinate system.
   """
-  # TODO: b/330382627 - find out if distortion correction is ON/OFF
+  # TODO: b/333139309 - Use transformation matrix to get inverse
+  # transform of the preview stream and location of coordinates.
   aa_aspect_ratio = aa_width / aa_height
   image_aspect_ratio = img_width / img_height
   if aa_aspect_ratio >= image_aspect_ratio:
@@ -102,7 +103,7 @@ def _define_metering_regions(img, img_path, chart_path, props, width, height):
       img, img_path)
   tl, tr, br, bl = (
       opencv_processing_utils.get_chart_boundary_from_aruco_markers(
-          aruco_corners, aruco_ids, img, chart_path))
+        aruco_corners, aruco_ids, img, chart_path))
 
   # Convert image coordinates to sensor coordinates for metering rectangles
   aa = props['android.sensor.info.activeArraySize']
@@ -222,6 +223,7 @@ def _get_red_blue_ratio(img):
     r_b_ratio: float; ratio of R and B channel means.
   """
   img_means = image_processing_utils.compute_image_means(img)
+  img_means = [i * _CH_FULL_SCALE for i in img_means]
   r_b_ratio = img_means[0]/img_means[2]
   return r_b_ratio
 
@@ -307,7 +309,6 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       # Extract 8 key frames per 8 seconds of preview recording
       # Meters each region of 4 (blue, light, dark, yellow) for 2 seconds
       # Unpack frames based on metering region's color
-      # pylint: disable=unbalanced-tuple-unpacking
       _, blue, _, light, _, dark, _, yellow = (
           _extract_and_process_key_frames_from_recording(
               log_path, file_name))
