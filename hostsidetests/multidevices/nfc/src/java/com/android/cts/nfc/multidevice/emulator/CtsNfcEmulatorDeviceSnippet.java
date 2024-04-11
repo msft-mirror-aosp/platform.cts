@@ -128,6 +128,32 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (PrefixPaymentEmulator2Activity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens off host emulator activity */
+    @Rpc(description = "Open off host emulator activity")
+    public void startOffHostEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), OffHostEmulatorActivity.class.getName());
+
+        mActivity = (OffHostEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens on and off host emulator activity */
+    @Rpc(description = "Open on and off host emulator activity")
+    public void startOnAndOffHostEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), OnAndOffHostEmulatorActivity.class.getName());
+
+        mActivity = (OnAndOffHostEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Registers receiver for Test Pass event */
     @AsyncRpc(description = "Waits for Test Pass event")
     public void asyncWaitForTestPass(String callbackId, String eventName) {
