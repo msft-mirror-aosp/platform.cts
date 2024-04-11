@@ -20,15 +20,6 @@ import static android.Manifest.permission.CAMERA;
 import static android.graphics.ImageFormat.JPEG;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.media.MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START;
-import static android.opengl.EGL14.EGL_NO_DISPLAY;
-import static android.opengl.EGL14.EGL_NO_SURFACE;
-import static android.opengl.EGL14.eglCreateContext;
-import static android.opengl.EGL14.eglGetDisplay;
-import static android.opengl.EGL14.eglInitialize;
-import static android.opengl.EGL14.eglMakeCurrent;
-import static android.opengl.EGL14.eglTerminate;
-import static android.opengl.GLES20.GL_EXTENSIONS;
-import static android.opengl.GLES20.glGetString;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -37,7 +28,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import static java.lang.Byte.toUnsignedInt;
 
@@ -56,10 +46,6 @@ import android.hardware.graphics.common.PixelFormat;
 import android.media.Image;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.opengl.EGL14;
-import android.opengl.EGLConfig;
-import android.opengl.EGLContext;
-import android.opengl.EGLDisplay;
 import android.os.UserHandle;
 import android.view.Surface;
 
@@ -105,32 +91,6 @@ public final class VirtualCameraUtils {
         assertThat(streamConfig.getMaximumFramesPerSecond()).isEqualTo(maximumFramesPerSecond);
         assertThat(config.getSensorOrientation()).isEqualTo(sensorOrientation);
         assertThat(config.getLensFacing()).isEqualTo(lensFacing);
-    }
-
-    static boolean hasEGLExtension(String extension) {
-        EGLDisplay eglDisplay = eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
-        assumeFalse(eglDisplay.equals(EGL_NO_DISPLAY));
-        int[] version = new int[2];
-        eglInitialize(eglDisplay, version, 0, version, 1);
-
-        int[] attribList = {EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
-                EGL14.EGL_ALPHA_SIZE, 8, EGL14.EGL_NONE};
-
-        EGLConfig[] configs = new EGLConfig[1];
-        int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(
-                eglDisplay, attribList, 0, configs, 0, configs.length, numConfigs, 0)) {
-            return false;
-        }
-
-        int[] attrib2_list = {EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE};
-        EGLContext eglContext = eglCreateContext(eglDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
-                attrib2_list, 0);
-        eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, eglContext);
-
-        String extensions = glGetString(GL_EXTENSIONS);
-        eglTerminate(eglDisplay);
-        return extensions.contains(extension);
     }
 
     static void paintSurfaceRed(Surface surface) {
