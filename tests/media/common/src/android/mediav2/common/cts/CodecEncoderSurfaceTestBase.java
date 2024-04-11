@@ -515,13 +515,12 @@ public class CodecEncoderSurfaceTestBase {
                 0 != mEncOutputCount);
         assertEquals("Decoder output count is not equal to decoder input count \n"
                 + mTestConfig + mTestEnv, mDecInputCount, mDecOutputCount);
-        /* TODO(b/153127506) - Currently disabling all encoder output checks */
-        /*assertEquals("Encoder output count is not equal to Decoder input count \n"
+        assertEquals("Encoder output count is not equal to Decoder input count \n"
                 + mTestConfig + mTestEnv, mDecInputCount, mEncOutputCount);
         if (!mOutputBuff.isOutPtsListIdenticalToInpPtsList((mEncCfgParams.mMaxBFrames != 0))) {
             fail("Input pts list and Output pts list are not identical \n" + mTestConfig
                     + mTestEnv + mOutputBuff.getErrMsg());
-        }*/
+        }
         if (mEncCfgParams.mMaxBFrames == 0 && !mOutputBuff.isPtsStrictlyIncreasing(
                 Long.MIN_VALUE)) {
             fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
