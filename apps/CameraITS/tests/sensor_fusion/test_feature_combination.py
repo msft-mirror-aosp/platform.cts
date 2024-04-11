@@ -20,6 +20,7 @@ from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
+import capture_request_utils
 import its_session_utils
 import preview_stabilization_utils
 import video_processing_utils
