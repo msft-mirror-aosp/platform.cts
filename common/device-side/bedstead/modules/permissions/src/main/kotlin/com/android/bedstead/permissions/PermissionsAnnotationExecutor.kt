@@ -16,18 +16,15 @@
 package com.android.bedstead.permissions
 
 import android.os.Build.VERSION
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.AnnotationExecutorUtil
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.utils.Tags.hasTag
 import com.android.bedstead.nene.utils.Versions
-import com.android.bedstead.permissions.PermissionContextImpl
 import com.android.bedstead.permissions.annotations.EnsureCanGetPermission
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission

@@ -3919,7 +3919,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("");
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4105,7 +4105,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("");
+        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {

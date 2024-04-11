@@ -390,12 +390,16 @@ public final class Permissions {
         return permissionContext;
     }
 
-    void undoPermission(PermissionContext permissionContext) {
+    void undoPermission(PermissionContextImpl permissionContext) {
         boolean unused = mPermissionContexts.remove(permissionContext);
-        applyPermissions();
+        applyPermissions(/* removedPermissionContext = */ permissionContext);
     }
 
     void applyPermissions() {
+        applyPermissions(null);
+    }
+
+    private void applyPermissions(PermissionContextImpl removedPermissionContext) {
         if (sIgnorePermissions.get()) {
             return;
         }
@@ -434,12 +438,23 @@ public final class Permissions {
                 TestApis.users().instrumented(),
                 grantedPermissions,
                 deniedPermissions);
+        Package appOpPackage = hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage;
         setAppOpState(
-                hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage,
+                appOpPackage,
                 TestApis.users().instrumented(),
                 grantedAppOps,
                 deniedAppOps
         );
+
+        if (removedPermissionContext != null) {
+            removedPermissionContext.grantedAppOps().stream().filter(
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
+            removedPermissionContext.deniedAppOps().stream().filter(
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
+        }
+
     }
 
     /**
