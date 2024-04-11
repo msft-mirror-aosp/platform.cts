@@ -17,11 +17,14 @@
 package com.android.cts.verifier.audio.audiolib;
 
 import android.content.Context;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.audio.Flags;
 import android.util.Log;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -262,5 +265,88 @@ public class AudioDeviceUtils {
 
         // Some mixture of NO and UNDETERMINED, so UNDETERMINED
         return SUPPORTSDEVICE_UNDETERMINED;
+    }
+
+    //
+    // USB Device Support
+    //
+    private static final int USBVENDORID_GOOGLE = 6353;
+    private static final int USBPRODUCTID_GOOGLEADAPTER = 20532;
+
+    /**
+     * Returns the UsbDevice corresponding to any connected USB peripheral.
+     * @param context The Application Context.
+     * @return the UsbDevice corresponding to any connected USB peripheral.
+     */
+    public static UsbDevice getConnectedUsbDevice(Context context) {
+        UsbManager usbManager = context.getSystemService(UsbManager.class);
+
+        if (usbManager == null) {
+            Log.e(TAG, "Can't get UsbManager!");
+        } else {
+            HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
+            Collection<UsbDevice> devices = deviceList.values();
+            UsbDevice[] deviceArray = new UsbDevice[1];
+            deviceArray = (UsbDevice[]) devices.toArray(deviceArray);
+            return deviceArray[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * Determines if the specified UsbDevice is a validated USB Audio headset adapter.
+     * At this time, only the Google, USB-C adapter has been determined to be fully compatible.
+     * @param usbDevice the device to test.
+     * @param displayWarning if true, display a warning dialog
+     * @param context The application context
+     * @return true if the specified UsbDevice is a valid USB Audio headset adapter.
+     */
+    public static boolean isUsbHeadsetValidForTest(UsbDevice usbDevice,
+                                                   boolean displayWarning, Context context) {
+        boolean isValid = usbDevice != null
+                && usbDevice.getVendorId() == USBVENDORID_GOOGLE
+                && usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER;
+
+        if (!isValid && displayWarning) {
+            UsbDeviceWarningDialog warningDialog = new UsbDeviceWarningDialog(context);
+            warningDialog.show();
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Checks for any connected USB peripheral that is a valid USB Audio headset adapter.
+     * Displays a warning dialog if validity can not be determined.
+     * @param context The application context.
+     */
+    public static void validateUsbDevice(Context context) {
+        AudioManager audioManager = context.getSystemService(AudioManager.class);
+
+        // Determine if the connected device is a USB Headset
+        AudioDeviceInfo inputUsbHeadset = null;
+        for (AudioDeviceInfo devInfo : audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+            if (devInfo.getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
+                inputUsbHeadset = devInfo;
+                break;
+            }
+        }
+
+        AudioDeviceInfo outputUsbHeadset = null;
+        for (AudioDeviceInfo devInfo : audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+            if (devInfo.getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
+                outputUsbHeadset = devInfo;
+                break;
+            }
+        }
+
+        if (inputUsbHeadset != null && outputUsbHeadset != null) {
+            // Now see if it is the (fully-functional) Google adapter
+            UsbDevice usbDevice = AudioDeviceUtils.getConnectedUsbDevice(context);
+            if (usbDevice != null) {
+                AudioDeviceUtils.isUsbHeadsetValidForTest(usbDevice, true, context);
+            }
+        }
     }
 }
