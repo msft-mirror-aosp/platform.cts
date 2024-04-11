@@ -5933,9 +5933,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_frequency_mic_test">Audio Frequency Microphone Test</string>
     <string name="frequency_mic_info">
         This test requires an external USB reference microphone and external speakers.
-        The test signals can be played from the device under test (DUT) or from a secondary device (e.g. when your DUT can’t support a USB microphone and external speakers simultaneously, or DUT does not have headphone output).
-Follow the instructions on the screen to measure the frequency response for the built in microphone.
-       </string>
+        The test signals should be played from a secondary device connected to either analog speakers connected
+        to the analog headset jack, or USB speakers connected to the USB port of the secondary device.
+        Follow the instructions on the screen to measure the frequency response for the built in microphone.
+    </string>
 
     <string name="frequency_mic_play">Play</string>
     <string name="frequency_mic_stop">Stop</string>
