@@ -127,7 +127,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mWindowAreaComponent =
                 (WindowAreaComponent) mWindowManagerJetpackTestRule.getExtensionComponent();

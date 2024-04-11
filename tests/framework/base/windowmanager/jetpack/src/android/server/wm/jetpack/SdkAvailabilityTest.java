@@ -78,7 +78,7 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         assumeTrue("Device's default display doesn't support multi window",
                 ActivityTaskManager.supportsMultiWindow(mContext));
