@@ -1872,6 +1872,7 @@ class ItsSession(object):
 
       yuv_bufs[cam_id] = {size: [] for size in yuv_sizes}
 
+    logging.debug('yuv bufs: %s', yuv_bufs)
     raw_formats = 0
     raw_formats += 1 if 'dng' in formats else 0
     raw_formats += 1 if 'raw' in formats else 0
@@ -1913,12 +1914,18 @@ class ItsSession(object):
     physical_mds = []
     widths = None
     heights = None
+    camera_id = (
+        self._camera_id
+        if not self._hidden_physical_id
+        else self._hidden_physical_id
+    )
+    logging.debug('Using camera_id %s to store buffers', camera_id)
     while nbufs < ncap * nsurf or len(mds) < ncap:
       json_obj, buf = self.__read_response_from_socket()
       if (json_obj[_TAG_STR] in ItsSession.IMAGE_FORMAT_LIST_1 and
           buf is not None):
         fmt = json_obj[_TAG_STR][:-5]
-        bufs[self._camera_id][fmt].append(buf)
+        bufs[camera_id][fmt].append(buf)
         nbufs += 1
       # Physical camera is appended to the tag string of a private capture
       elif json_obj[_TAG_STR].startswith('privImage'):
@@ -1927,7 +1934,7 @@ class ItsSession(object):
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
         buf_size = numpy.product(buf.shape)
-        yuv_bufs[self._camera_id][buf_size].append(buf)
+        yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
         mds.append(json_obj[_OBJ_VALUE_STR]['captureResult'])

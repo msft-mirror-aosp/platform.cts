@@ -170,21 +170,22 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
     raise AssertionError('y_avg change is greater than threshold value')
 
 
-def _extract_y(img_rgb, file_name):
-  """Converts an RGB img to BGR and returns a Y img.
+def _extract_y(img_uint8, file_name):
+  """Converts an RGB uint8 image to YUV and returns Y.
 
-  The y img is saved with file_name in the test dir.
+  The Y img is saved with file_name in the test dir.
+
   Args:
     img_rgb: An openCV image in RGB order.
     file_name: file name along with the path to save the image.
+
   Returns:
     An openCV image converted to Y.
   """
-  img_bgr = img_rgb[:, :, ::-1]
-  img_y = opencv_processing_utils.convert_to_y(img_bgr)
-  img_y_bgr = cv2.cvtColor(img_y, cv2.COLOR_GRAY2BGR)
-  image_processing_utils.write_image(img_y_bgr, file_name)
-  return img_y
+  y_uint8, _, _ = cv2.split(cv2.cvtColor(img_uint8, cv2.COLOR_RGB2YUV))
+  y_uint8 = np.expand_dims(y_uint8, axis=2)  # add plane to save image
+  image_processing_utils.write_image(y_uint8/_CH_FULL_SCALE, file_name)
+  return y_uint8
 
 
 def _extract_main_patch(img_rgb, img_path, lens_suffix):
@@ -379,7 +380,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       # and extract the outer box patch
       w_chart_patch = _extract_main_patch(w_img, w_path, 'w')
       w_four_patches = _get_four_quadrant_patches(
-          w_chart_patch, uw_path, 'w')
+          w_chart_patch, w_path, 'w')
 
       for uw_patch, w_patch, color in zip(
           uw_four_patches, w_four_patches, _COLORS):

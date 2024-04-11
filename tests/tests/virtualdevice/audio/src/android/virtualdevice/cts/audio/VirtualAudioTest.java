@@ -79,6 +79,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -306,7 +309,8 @@ public class VirtualAudioTest {
     public void audioInjection_receivesAudioConfigurationChangeCallback() throws Exception {
         ByteBuffer byteBuffer = createAudioData(
                 SAMPLE_RATE, NUMBER_OF_SAMPLES, CHANNEL_COUNT, FREQUENCY, AMPLITUDE);
-        try (AudioInjector ignored = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
+        try (AudioInjector injector = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
+            injector.startInjection();
 
             AudioActivity audioActivity = startAudioActivity();
             audioActivity.recordAudio(mSignalChangeListener);
@@ -346,7 +350,8 @@ public class VirtualAudioTest {
 
         ByteBuffer byteBuffer = createAudioData(
                 SAMPLE_RATE, NUMBER_OF_SAMPLES, CHANNEL_COUNT, FREQUENCY, AMPLITUDE);
-        try (AudioInjector ignored = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
+        try (AudioInjector injector = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
+            injector.startInjection();
 
             AudioActivity audioActivity = startAudioActivity();
             audioActivity.recordAudio(mSignalChangeListener);
@@ -413,6 +418,7 @@ public class VirtualAudioTest {
         private final VirtualAudioDevice mVirtualAudioDevice;
 
         private final AtomicBoolean mRunning = new AtomicBoolean(true);
+        private final CountDownLatch mInjectionInitializedLatch = new CountDownLatch(1);
 
         private final Thread mAudioInjectorThread = new Thread() {
             @Override
@@ -422,6 +428,7 @@ public class VirtualAudioTest {
                 AudioInjection audioInjection = mVirtualAudioDevice.startAudioInjection(
                         INJECTION_FORMAT);
                 audioInjection.play();
+                mInjectionInitializedLatch.countDown();
                 while (mRunning.get() && !isInterrupted()) {
                     int remaining = mAudioDataByteBuffer.remaining();
                     while (remaining > 0 && mRunning.get() && !isInterrupted()) {
@@ -438,7 +445,17 @@ public class VirtualAudioTest {
         AudioInjector(ByteBuffer audioDataByteBuffer, VirtualAudioDevice virtualAudioDevice) {
             mAudioDataByteBuffer = audioDataByteBuffer;
             mVirtualAudioDevice = virtualAudioDevice;
+        }
+
+        public void startInjection()
+                throws TimeoutException, InterruptedException {
             mAudioInjectorThread.start();
+            boolean success =
+                    mInjectionInitializedLatch.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+            if (!success) {
+                throw new TimeoutException(
+                        "Timeout while waiting for audio injection initialization");
+            }
         }
 
 

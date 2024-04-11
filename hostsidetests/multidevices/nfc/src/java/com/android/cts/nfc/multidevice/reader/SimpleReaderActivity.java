@@ -92,7 +92,8 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
                 byte[] expectedResponse = HceUtils.hexStringToBytes(mResponses[count]);
                 Log.d(TAG, HceUtils.getHexBytes("APDU response: ", response));
                 if (!wildCard && !Arrays.equals(response, expectedResponse)) {
-                    Log.d(TAG, "Unexpected APDU response: " + HceUtils.getHexBytes("", response));
+                    Log.d(TAG, "Unexpected APDU response: " + HceUtils.getHexBytes("", response)
+                            + " expected: " + mResponses[count]);
                     success = false;
                     break;
                 }
@@ -112,6 +113,7 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
                             + (System.currentTimeMillis() - startTime)
                             + " ms.\n\n");
             Log.d(TAG, sb.toString());
+            setTestPassed();
         } else {
             sb.insert(
                     0,
