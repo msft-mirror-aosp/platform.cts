@@ -306,9 +306,10 @@ public class MediaProjectionSDK33Test {
         final boolean isWatch = context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WATCH);
         if (!isWatch) {
+            String entireScreenString = getEntireScreenString(context);
             // if not testing on a watch device, then we need to select the entire screen option
-            // before pressing "Start recording" button.
-            if (!selectEntireScreenOption(getEntireScreenString(context))) {
+            // (if available) before pressing "Start recording" button.
+            if (entireScreenString != null && !selectEntireScreenOption(entireScreenString)) {
                 Log.e(TAG, "Couldn't select entire screen option");
             }
         }
