@@ -47,6 +47,7 @@ class A11ySlowKeysTest {
     companion object {
         const val KEY_A = 30
         const val THRESHOLD_MILLIS = 500
+        const val A11Y_SETTINGS_PROPAGATE_TIME_MILLIS: Long = 100
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -73,6 +74,7 @@ class A11ySlowKeysTest {
             },
             "android.permission.INTERACT_ACROSS_USERS_FULL"
         )
+        Thread.sleep(A11yBounceKeysTest.A11Y_SETTINGS_PROPAGATE_TIME_MILLIS)
     }
 
     @After
