@@ -28,6 +28,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.net.Uri;
 import android.os.Bundle;
@@ -212,11 +213,11 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    PerformanceClassEvaluator.CameraLatencyRequirement mJpegLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mJpegLatencyReq =
             mPce.addR7_5__H_1_5();
-    PerformanceClassEvaluator.CameraLatencyRequirement mLaunchLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mLaunchLatencyReq =
             mPce.addR7_5__H_1_6();
-    PerformanceClassEvaluator.CameraUltraHdrRequirement mUltraHdrReq =
+    CameraRequirement.CameraUltraHdrRequirement mUltraHdrReq =
             mPce.addR7_5__H_1_20();
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
