@@ -37,8 +37,6 @@ import android.util.ArraySet;
 import android.util.Log;
 import android.util.Xml;
 
-import com.android.modules.utils.build.SdkLevel;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -116,12 +114,35 @@ public class PermissionPolicyTest {
 
     @Test
     public void platformPermissionPolicyIsUnaltered() throws Exception {
+        StringBuilder errorMessage = new StringBuilder("Failed for not matching any of four "
+                + "sets of permissions:\n\n");
         try {
-            platformPermissionPolicyIsUnaltered(R.raw.android_manifest_q2);
+            platformPermissionPolicyIsUnaltered(R.raw.android_manifest_24Q2);
             return;
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            errorMessage.append("========\n[ 24Q2 ]\n========\n" + e.getMessage() + "\n\n");
+        }
+        try {
+            platformPermissionPolicyIsUnaltered(R.raw.android_manifest_24Q1);
+            return;
+        } catch (Throwable e) {
+            errorMessage.append("========\n[ 24Q1 ]\n========\n" + e.getMessage() + "\n\n");
+        }
+        try {
+            platformPermissionPolicyIsUnaltered(R.raw.android_manifest_qpr1);
+            return;
+        } catch (Throwable e) {
+            errorMessage.append("============\n[ UDC QPR1 ]\n============\n" + e.getMessage()
+                    + "\n\n");
+        }
+        try {
+            platformPermissionPolicyIsUnaltered(R.raw.android_manifest);
+            return;
+        } catch (Throwable e) {
+            errorMessage.append("=======\n[ UDC ]\n=======\n" + e.getMessage());
+        }
 
-        platformPermissionPolicyIsUnaltered(R.raw.android_manifest);
+        Assert.fail(errorMessage.toString());
     }
 
     public void platformPermissionPolicyIsUnaltered(int manifestRes) throws Exception {
@@ -528,17 +549,10 @@ public class PermissionPolicyTest {
 
     private boolean shouldSkipPermission(String permissionName) {
         switch (permissionName) {
-            case SYNC_FLAGS_PERMISSION:
-            case WRITE_FLAGS_PERMISSION:
-            case SET_THEME_OVERLAY_CONTROLLER_READY_PERMISSION:
-                return true;  // Added in u-qpr.
             case HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PERMISSION:
                 return parseDate(SECURITY_PATCH).before(HIDE_NON_SYSTEM_OVERLAY_WINDOWS_PATCH_DATE);
             case MANAGE_COMPANION_DEVICES_PERMISSION:
                 return parseDate(SECURITY_PATCH).before(MANAGE_COMPANION_DEVICES_PATCH_DATE);
-            case OBSERVE_APP_USAGE_PERMISSION:
-            case MODIFY_DAY_NIGHT_MODE_PERMISSION:
-                return true;
             default:
                 return false;
         }
