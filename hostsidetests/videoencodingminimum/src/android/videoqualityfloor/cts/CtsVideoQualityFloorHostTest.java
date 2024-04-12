@@ -228,7 +228,8 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         JSONArray codecConfigs = obj.getJSONArray("CodecConfigs");
         int th = Runtime.getRuntime().availableProcessors() / 2;
         th = Math.min(Math.max(1, th), 8);
-        String filter = "libvmaf=feature=name=psnr:model=version=vmaf_v0.6.1:n_threads=" + th;
+        String filter = "feature=name=psnr:model=version=vmaf_v0.6.1\\\\:enable_transform=true"
+                + ":n_threads=" + th;
         for (int i = 0; i < codecConfigs.length(); i++) {
             JSONObject codecConfig = codecConfigs.getJSONObject(i);
             String outputName = codecConfig.getString("EncodedFileName");
@@ -238,7 +239,7 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
             cmd += " -hide_banner";
             cmd += " -i " + outDir + "/" + outputName + ".mp4" + " -an";
             cmd += " -i " + "samples/" + refFileName + " -an";
-            cmd += " -filter_complex " + "\"" + filter + "\"";
+            cmd += " -lavfi libvmaf=" + "\'" + filter + "\'";
             cmd += " -f null -";
             cmd += " > " + outputVmafPath + " 2>&1";
             LogUtil.CLog.i("ffmpeg command : " + cmd);
