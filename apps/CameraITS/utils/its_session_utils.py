@@ -79,7 +79,7 @@ TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
     'yunluo': ANDROID14_API_LEVEL
     })
-TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
+TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist'
 TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
                                f'{TABLET_REQUIREMENTS_URL} in the config file')
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
@@ -125,9 +125,9 @@ _DST_SCENE_DIR = '/sdcard/Download/'
 def validate_tablet(tablet_name, brightness, device_id):
   """Ensures tablet brightness is set according to documentation.
 
-  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
+  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist
   Args:
-    tablet_name: tablet product name specified by `ro.build.product`.
+    tablet_name: tablet product name specified by `ro.product.device`.
     brightness: brightness specified by config file.
     device_id: str; ID of the device.
   """
