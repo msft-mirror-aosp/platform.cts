@@ -27,6 +27,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigura
 import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigurationWithSurfaces;
 import static android.hardware.camera2.cts.CameraTestUtils.configureReprocessableCameraSession;
 import static android.hardware.camera2.cts.CameraTestUtils.fail;
+import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigSupported;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
@@ -222,6 +223,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             ck = CameraCharacteristics.SCALER_MANDATORY_MAXIMUM_RESOLUTION_STREAM_COMBINATIONS;
         }
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : cameraIdsUnderTest) {
             openDevice(id);
             MandatoryStreamCombination[] combinations = mStaticInfo.getCharacteristics().get(ck);
@@ -259,6 +262,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                             // its stream combination through logical camera.
                             continue;
                         }
+                        if (unavailablePhysicalCameras.contains(new Pair<>(id, physicalId))) {
+                            // If physicalId is unavailable, do not attempt to test its
+                            // stream combinations.
+                            continue;
+                        }
+
                         StaticMetadata physicalStaticInfo = mAllStaticInfo.get(physicalId);
 
                         MandatoryStreamCombination[] phyCombinations =
@@ -624,7 +633,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         eq(mCameraSession),
                         eq(request),
                         isA(TotalCaptureResult.class));
-           if (ultraHighResolution) {
+            if (ultraHighResolution) {
                 verify(mockCaptureCallback,
                         timeout(TIMEOUT_FOR_RESULT_MS).atLeast(1))
                         .onCaptureCompleted(
