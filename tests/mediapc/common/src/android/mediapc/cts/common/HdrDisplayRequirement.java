@@ -39,13 +39,13 @@ public class HdrDisplayRequirement extends Requirement {
      * average.
      */
     public static HdrDisplayRequirement createR7_1_1_3__H_3_1() {
-        RequiredMeasurement<Boolean> isHdr = RequiredMeasurement
+        var isHdr = RequiredMeasurement
                 .<Boolean>builder()
                 .setId(RequirementConstants.IS_HDR)
                 .setPredicate(RequirementConstants.BOOLEAN_EQ)
                 .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
                 .build();
-        RequiredMeasurement<Float> luminance = RequiredMeasurement
+        var luminance = RequiredMeasurement
                 .<Float>builder()
                 .setId(RequirementConstants.DISPLAY_LUMINANCE_NITS)
                 .setPredicate(RequirementConstants.FLOAT_GTE)
