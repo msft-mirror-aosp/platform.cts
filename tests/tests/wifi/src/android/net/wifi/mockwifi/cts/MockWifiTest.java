@@ -25,12 +25,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.fail;
 
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
 import android.net.MacAddress;
@@ -47,6 +49,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.provider.Settings;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -388,6 +391,14 @@ public class MockWifiTest {
         if (!sWifiManager.isPreferredNetworkOffloadSupported()) {
             return;
         }
+        if (!hasLocationFeature()) {
+            Log.d(TAG, "Skipping test as location is not supported");
+            return;
+        }
+        if (!isLocationEnabled()) {
+            fail("Please enable location for this test - since Marshmallow WiFi scan results are"
+                    + " empty when location is disabled!");
+        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
@@ -509,5 +520,17 @@ public class MockWifiTest {
             sMockModemManager.disconnectMockWifiModemService();
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    // Returns true if the device has location feature.
+    private boolean hasLocationFeature() {
+        return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION);
+    }
+
+    // Return true if location is enabled.
+    private boolean isLocationEnabled() {
+        return Settings.Secure.getInt(sContext.getContentResolver(),
+                Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF)
+                        != Settings.Secure.LOCATION_MODE_OFF;
     }
 }
