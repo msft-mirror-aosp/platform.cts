@@ -18,11 +18,14 @@ package android.graphics.pdf.cts.module;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.graphics.Rect;
 import android.graphics.pdf.models.FormWidgetInfo;
 import android.graphics.pdf.models.ListItem;
+import android.os.Parcel;
 
 import org.junit.Test;
 
@@ -668,6 +671,216 @@ public class FormWidgetInfoTest {
         assertThat(readOnlySignature.getMaxLength()).isEqualTo(-1);
         assertThat(readOnlySignature.getFontSize()).isEqualTo(0f);
         assertThat(readOnlySignature.getListItems()).isEmpty();
+    }
+
+    @Test
+    public void testParcelable_clickType() {
+        Rect widgetRect = new Rect(100, 0, 150, 50);
+        String textValue = "Reset";
+        String a11yLabel = "Reset button";
+        FormWidgetInfo in = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_PUSHBUTTON,
+                /* widgetIndex= */ 4, widgetRect, textValue, a11yLabel).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormWidgetInfo out = FormWidgetInfo.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in, out);
+    }
+
+    @Test
+    public void testParcelable_choiceType() {
+        List<ListItem> listItems = List.of(new ListItem("The", /* selected= */ false),
+                new ListItem("quick", /* selected= */ true),
+                new ListItem("brown", /* selected= */ false),
+                new ListItem("fox", /* selected= */ false),
+                new ListItem("jumped", /* selected= */ false),
+                new ListItem("over", /* selected= */ false),
+                new ListItem("the", /* selected= */ false),
+                new ListItem("lazy", /* selected= */ false),
+                new ListItem("dog", /* selected= */ false));
+        Rect widgetRect = new Rect(1250, 0, 1500, 250);
+        String textValue = "quick";
+        String a11yLabel = "Combobox single select";
+        FormWidgetInfo in = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_COMBOBOX,
+                /* widgetIndex= */ 1, widgetRect, textValue, a11yLabel).setListItems(
+                listItems).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormWidgetInfo out = FormWidgetInfo.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in, out);
+    }
+
+    @Test
+    public void testParcelable_textType() {
+        Rect widgetRect = new Rect(1000, 1000, 1500, 1500);
+        String textValue = "Snake";
+        String a11yLabel = "Text field with font size";
+        FormWidgetInfo in = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(16f).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormWidgetInfo out = FormWidgetInfo.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in, out);
+    }
+
+    @Test
+    public void creator_newArray() {
+        FormWidgetInfo[] formWidgetInfos = FormWidgetInfo.CREATOR.newArray(20);
+
+        assertEquals(formWidgetInfos.length, 20);
+    }
+
+    @Test
+    public void describeContents() {
+        Rect widgetRect = new Rect(1000, 1000, 1500, 1500);
+        String textValue = "Snake";
+        String a11yLabel = "Text field with font size";
+        FormWidgetInfo formWidgetInfo = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(16f).build();
+
+        assertEquals(0, formWidgetInfo.describeContents());
+    }
+
+
+    @Test
+    public void testEqualsHashCode_clickType_matchingProperties() {
+        Rect widgetRect = new Rect(100, 0, 150, 50);
+        String textValue = "Reset";
+        String a11yLabel = "Reset button";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_PUSHBUTTON,
+                /* widgetIndex= */ 4, widgetRect, textValue, a11yLabel).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_PUSHBUTTON,
+                /* widgetIndex= */ 4, widgetRect, textValue, a11yLabel).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEqualsHashCode_clickType_notMatching() {
+        Rect widgetRect = new Rect(100, 0, 150, 50);
+        String a11yLabel = "Reset button";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_PUSHBUTTON,
+                /* widgetIndex= */ 4, widgetRect, "I am jogging", a11yLabel).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_PUSHBUTTON,
+                /* widgetIndex= */ 4, widgetRect, "The dog is big!", a11yLabel).build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEqualsHashCode_choiceType_matchingProperties() {
+        List<ListItem> listItems = List.of(new ListItem("The", /* selected= */ false),
+                new ListItem("quick", /* selected= */ true),
+                new ListItem("brown", /* selected= */ false),
+                new ListItem("fox", /* selected= */ false),
+                new ListItem("jumped", /* selected= */ false),
+                new ListItem("over", /* selected= */ false),
+                new ListItem("the", /* selected= */ false),
+                new ListItem("lazy", /* selected= */ false),
+                new ListItem("dog", /* selected= */ false));
+        Rect widgetRect = new Rect(1250, 0, 1500, 250);
+        String textValue = "quick";
+        String a11yLabel = "Combobox single select";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_COMBOBOX,
+                /* widgetIndex= */ 1, widgetRect, textValue, a11yLabel).setListItems(
+                listItems).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_COMBOBOX,
+                /* widgetIndex= */ 1, widgetRect, textValue, a11yLabel).setListItems(
+                listItems).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEqualsHashCode_choiceType_notMatching() {
+        List<ListItem> listItems = List.of(new ListItem("The", /* selected= */ false),
+                new ListItem("quick", /* selected= */ true),
+                new ListItem("brown", /* selected= */ false),
+                new ListItem("fox", /* selected= */ false),
+                new ListItem("jumped", /* selected= */ false),
+                new ListItem("over", /* selected= */ false),
+                new ListItem("the", /* selected= */ false),
+                new ListItem("lazy", /* selected= */ false),
+                new ListItem("dog", /* selected= */ false));
+        Rect widgetRect = new Rect(1250, 0, 1500, 250);
+        String textValue = "quick";
+        String a11yLabel = "Combobox single select";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_COMBOBOX,
+                /* widgetIndex= */ 1, widgetRect, textValue, a11yLabel).setListItems(
+                listItems).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_COMBOBOX,
+                /* widgetIndex= */ 1, widgetRect, textValue, a11yLabel).setListItems(
+                listItems.subList(2, 4)).build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEqualsHashCode_textType_matchingProperties() {
+        Rect widgetRect = new Rect(1000, 1000, 1500, 1500);
+        String textValue = "Snake";
+        String a11yLabel = "Text field with font size";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(16f).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(16f).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEqualsHashCode_textType_notMatching() {
+        Rect widgetRect = new Rect(1000, 1000, 1500, 1500);
+        String textValue = "Snake";
+        String a11yLabel = "Text field with font size";
+        FormWidgetInfo one = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(100f).build();
+        FormWidgetInfo two = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(16f).build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void testEquals_notFormWidgetInfo() {
+        Rect widgetRect = new Rect(1000, 1000, 1500, 1500);
+        String textValue = "Snake";
+        String a11yLabel = "Text field with font size";
+        FormWidgetInfo formWidgetInfo = new FormWidgetInfo.Builder(
+                /* widgetType= */ FormWidgetInfo.WIDGET_TYPE_TEXTFIELD,
+                /* widgetIndex= */ 22, widgetRect, textValue, a11yLabel).setFontSize(100f).build();
+
+        assertNotEquals(formWidgetInfo, new Object());
     }
 
     @Test
