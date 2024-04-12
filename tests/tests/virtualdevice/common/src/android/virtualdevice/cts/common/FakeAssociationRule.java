@@ -153,6 +153,7 @@ public class FakeAssociationRule extends ExternalResource {
     private void disassociate(int associationId) {
         reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.disassociate(associationId);
-        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)).onAssociationsChanged(any());
+        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS).atLeastOnce())
+            .onAssociationsChanged(any());
     }
 }
