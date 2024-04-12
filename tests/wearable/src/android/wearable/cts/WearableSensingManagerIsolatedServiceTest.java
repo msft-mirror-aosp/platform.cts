@@ -165,10 +165,13 @@ public class WearableSensingManagerIsolatedServiceTest {
         // This issue is way more likely to reproduce on a freshly wiped device since CDM persists
         // association IDs on disk.
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
-        for (File file : mTestDirectory.listFiles()) {
-            file.delete();
+        // mTestDirectory is null when the setUp method returns early from assumeFalse calls.
+        if (mTestDirectory != null) {
+            for (File file : mTestDirectory.listFiles()) {
+                file.delete();
+            }
+            mTestDirectory.delete();
         }
-        mTestDirectory.delete();
     }
 
     @Test

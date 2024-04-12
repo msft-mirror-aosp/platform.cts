@@ -16,10 +16,21 @@
 package com.android.cts.nfc.multidevice.reader;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
 
 public class BaseReaderActivity extends Activity {
+
+    // Intent action that's sent after the test condition is met.
+    protected static final String ACTION_TEST_PASSED =
+            "com.android.cts.nfc.multidevice.reader.ACTION_TEST_PASSED";
+
+    /** Call this in child classes when test condition is met */
+    protected void setTestPassed() {
+        Intent intent = new Intent(ACTION_TEST_PASSED);
+        sendBroadcast(intent);
+    }
 
     protected NfcAdapter mAdapter;
 

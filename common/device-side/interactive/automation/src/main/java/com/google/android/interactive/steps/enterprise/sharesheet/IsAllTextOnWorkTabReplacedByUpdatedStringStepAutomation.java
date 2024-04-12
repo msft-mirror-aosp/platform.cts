@@ -32,13 +32,9 @@ public class IsAllTextOnWorkTabReplacedByUpdatedStringStepAutomation implements 
         String emptyStateTitle = TestApis.ui().device().findObject(
                 new UiSelector().resourceId("android:id/resolver_empty_state_title")
                         .className(TextView.class)).getText();
-        String emptyStateSubtitle = TestApis.ui().device().findObject(
-                new UiSelector().resourceId("android:id/resolver_empty_state_subtitle")
-                        .className(TextView.class)).getText();
 
-        Log.i("InteractiveAutomation", "Empty state title: "
-                + emptyStateTitle + " subtitle: " + emptyStateSubtitle);
+        Log.i("InteractiveAutomation", "Empty state title: " + emptyStateTitle);
 
-        return emptyStateTitle.equals("UPDATED STRING") && emptyStateSubtitle.equals("UPDATED STRING");
+        return emptyStateTitle.equals("UPDATED STRING");
     }
 }

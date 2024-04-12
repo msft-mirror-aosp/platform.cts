@@ -28,7 +28,6 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.hasEGLExtension;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.imageHasColor;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.jpegImageToBitmap;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden;
@@ -39,7 +38,6 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNoException;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -100,7 +98,6 @@ public class VirtualCameraCaptureTest {
     private static final int CAMERA_INPUT_FORMAT = PixelFormat.RGBA_8888;
     private static final int CAMERA_MAX_FPS = 30;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
-    private static final String GL_EXT_YUV_target = "GL_EXT_YUV_target";
 
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
 
@@ -134,12 +131,6 @@ public class VirtualCameraCaptureTest {
 
     @Before
     public void setUp() {
-        // Virtual Camera currently requires GL_EXT_YUV_target extension to process input YUV
-        // buffers and perform RGB -> YUV conversion.
-        // TODO(b/316108033) Remove once there's workaround for systems without GL_EXT_YUV_target
-        // extension.
-        assumeTrue(hasEGLExtension(GL_EXT_YUV_target));
-
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(

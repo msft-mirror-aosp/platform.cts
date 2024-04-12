@@ -72,11 +72,13 @@ public class ControlledDreamSession {
 
     // Connection for accessing the dream proxy.
     private static final class ProxyServiceConnection implements ServiceConnection {
-        final CountDownLatch mLatch;
+        private final CountDownLatch mLatch;
+        private final IBinder.DeathRecipient mDeathRecipient;
         private IDreamProxy mProxy;
 
-        ProxyServiceConnection(CountDownLatch latch) {
+        ProxyServiceConnection(CountDownLatch latch, IBinder.DeathRecipient deathRecipient) {
             mLatch = latch;
+            mDeathRecipient = deathRecipient;
         }
 
         public IDreamProxy getProxy() {
@@ -86,6 +88,11 @@ public class ControlledDreamSession {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mProxy = IDreamProxy.Stub.asInterface(service);
+            try {
+                service.linkToDeath(mDeathRecipient, 0);
+            } catch (RemoteException e) {
+                Log.e(TAG, "could not link to death", e);
+            }
             mLatch.countDown();
         }
 
@@ -147,7 +154,13 @@ public class ControlledDreamSession {
         final Intent intent = new Intent();
         intent.setComponent(controllerService);
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        mServiceConnection  = new ProxyServiceConnection(countDownLatch);
+        mServiceConnection  = new ProxyServiceConnection(countDownLatch,
+                new IBinder.DeathRecipient() {
+                    @Override
+                    public void binderDied() {
+                        cleanup(true);
+                    }
+                });
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
 
@@ -185,14 +198,28 @@ public class ControlledDreamSession {
     /**
      * Stops the current dream.
      */
-    public void stop() throws RemoteException {
+    public void stop() {
+        cleanup(false);
+    }
+
+    private void cleanup(boolean dead) {
         if (mServiceConnection == null) {
             Log.e(TAG, "session not started");
             return;
         }
 
-        mControlledDream.unregisterLifecycleListener(mLifecycleListener);
+        if (!dead && mControlledDream != null) {
+            try {
+                mControlledDream.unregisterLifecycleListener(mLifecycleListener);
+            } catch (RemoteException e) {
+                Log.e(TAG, "could not unregister lifecycle listener", e);
+            }
+        }
+
+        mControlledDream = null;
+
         mContext.unbindService(mServiceConnection);
+        mServiceConnection = null;
     }
 
     /**

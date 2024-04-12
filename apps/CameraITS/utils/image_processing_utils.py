@@ -982,12 +982,16 @@ def convert_rgb_to_grayscale(img):
     img: numpy 3-D array RGB image of type [0.0, 1.0] float or [0, 255] uint8.
 
   Returns:
-    2-D grayscale image.
+    2-D grayscale image of same type as input.
   """
   chans = img.shape[2]
   if chans != 3:
     raise AssertionError(f'Not an RGB image! Depth: {chans}')
-  return numpy.dot(img[..., :3], RGB2GRAY_WEIGHTS)
+  img_gray = numpy.dot(img[..., :3], RGB2GRAY_WEIGHTS)
+  if img.dtype == 'uint8':
+    return img_gray.round().astype(numpy.uint8)
+  else:
+    return img_gray
 
 
 def normalize_img(img):

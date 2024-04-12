@@ -36,8 +36,6 @@ _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.005  # multiplied by image size
 _CIRCLE_RTOL = 0.1  # 10%
 _CM_TO_M = 1E-2
-_FMT_CODE_RAW = 0x20
-_FMT_CODE_YUV = 0x23
 _M_TO_MM = 1E3
 _MM_TO_UM = 1E3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -437,10 +435,10 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       for i, fmt in enumerate(fmts):
         physical_sizes = {}
         capture_cam_ids = physical_ids
-        fmt_code = _FMT_CODE_YUV
+        fmt_code = capture_request_utils.FMT_CODE_YUV
         if fmt == 'raw':
           capture_cam_ids = physical_raw_ids
-          fmt_code = _FMT_CODE_RAW
+          fmt_code = capture_request_utils.FMT_CODE_RAW
         for physical_id in capture_cam_ids:
           configs = physical_props[physical_id][
               'android.scaler.streamConfigurationMap'][

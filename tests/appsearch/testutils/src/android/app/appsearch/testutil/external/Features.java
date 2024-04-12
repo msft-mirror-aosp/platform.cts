@@ -118,6 +118,13 @@ public interface Features {
     String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
+     * AppSearch backend can store the descriptions returned by {@link
+     * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
+     */
+    String SCHEMA_SET_DESCRIPTION = "SCHEMA_SET_DESCRIPTION";
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * SearchSpec#GROUPING_TYPE_PER_SCHEMA}
      */
@@ -154,12 +161,6 @@ public interface Features {
      * AppSearchSession#searchSuggestion}.
      */
     String SEARCH_SUGGESTION = "SEARCH_SUGGESTION";
-
-    /**
-     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * AppSearchSchema.StringPropertyConfig.Builder#setDeletionPropagation}.
-     */
-    String SCHEMA_SET_DELETION_PROPAGATION = "SCHEMA_SET_DELETION_PROPAGATION";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers setting schemas with

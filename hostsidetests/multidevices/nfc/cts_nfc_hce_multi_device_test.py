@@ -259,6 +259,44 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.reader.nfc_reader.startPrefixPaymentReader2Activity()
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
+
+    def test_offhost_service(self):
+        """Tests successful APDU exchange between offhost service and reader.
+
+        Test Steps:
+        1. Start emulator activity.
+        2. Set callback handler for when reader TestPass event is received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange inside the reader.
+        We cannot verify the APDUs in the emulator since we don't have access to the secure element.
+        """
+        self.emulator.nfc_emulator.startOffHostEmulatorActivity()
+        test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass('ApduSuccess')
+        self.reader.nfc_reader.startOffHostReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_on_and_offhost_service(self):
+        """Tests successful APDU exchange between when reader selects both an on-host and off-host
+        service.
+
+        Test Steps:
+        1. Start emulator activity.
+        2. Set callback handler for when reader TestPass event is received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies a successful APDU exchange inside the reader.
+        We cannot verify the APDUs in the emulator since we don't have access to the secure element.
+        """
+        self.emulator.nfc_emulator.startOnAndOffHostEmulatorActivity()
+        test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass('ApduSuccess')
+        self.reader.nfc_reader.startOnAndOffHostReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
     def teardown_test(self):
         self.emulator.nfc_emulator.closeActivity()
         self.reader.nfc_reader.closeActivity()

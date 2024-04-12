@@ -21,19 +21,28 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.app.appsearch.AppSearchSchema;
-import android.app.appsearch.AppSearchSchema.DocumentPropertyConfig;
 import android.app.appsearch.AppSearchSchema.LongPropertyConfig;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.PropertyPath;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import com.android.appsearch.flags.Flags;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
 
 public class AppSearchSchemaCtsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
     public void testInvalidEnums() {
         StringPropertyConfig.Builder builder = new StringPropertyConfig.Builder("test");
@@ -204,55 +213,6 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
-    public void testEquals_failure_differentDescription() {
-        AppSearchSchema.Builder schemaBuilder =
-                new AppSearchSchema.Builder("Email")
-                        .setDescription("A type of electronic message")
-                        .addProperty(
-                                new StringPropertyConfig.Builder("subject")
-                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
-                                        .setIndexingType(
-                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
-                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
-                                        .build());
-        AppSearchSchema schema1 = schemaBuilder.build();
-        AppSearchSchema schema2 =
-                schemaBuilder.setDescription("Mail, but like with an 'e'").build();
-        assertThat(schema1).isNotEqualTo(schema2);
-        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
-    }
-
-    @Test
-    public void testEquals_failure_differentPropertyDescription() {
-        AppSearchSchema schema1 =
-                new AppSearchSchema.Builder("Email")
-                        .setDescription("A type of electronic message")
-                        .addProperty(
-                                new StringPropertyConfig.Builder("subject")
-                                        .setDescription("A summary of the contents of the email.")
-                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
-                                        .setIndexingType(
-                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
-                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
-                                        .build())
-                        .build();
-        AppSearchSchema schema2 =
-                new AppSearchSchema.Builder("Email")
-                        .setDescription("A type of electronic message")
-                        .addProperty(
-                                new StringPropertyConfig.Builder("subject")
-                                        .setDescription("The beginning of a message.")
-                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
-                                        .setIndexingType(
-                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
-                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
-                                        .build())
-                        .build();
-        assertThat(schema1).isNotEqualTo(schema2);
-        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
-    }
-
-    @Test
     public void testParentTypes() {
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("EmailMessage")
@@ -275,8 +235,8 @@ public class AppSearchSchemaCtsTest {
 
     @Test
     public void testDocumentPropertyConfig_indexableNestedPropertyStrings() {
-        DocumentPropertyConfig documentPropertyConfig =
-                new DocumentPropertyConfig.Builder("property", "Schema")
+        AppSearchSchema.DocumentPropertyConfig documentPropertyConfig =
+                new AppSearchSchema.DocumentPropertyConfig.Builder("property", "Schema")
                         .addIndexableNestedProperties("prop1", "prop2", "prop1.prop2")
                         .build();
         assertThat(documentPropertyConfig.getIndexableNestedProperties())
@@ -285,8 +245,8 @@ public class AppSearchSchemaCtsTest {
 
     @Test
     public void testDocumentPropertyConfig_indexableNestedPropertyPropertyPaths() {
-        DocumentPropertyConfig documentPropertyConfig =
-                new DocumentPropertyConfig.Builder("property", "Schema")
+        AppSearchSchema.DocumentPropertyConfig documentPropertyConfig =
+                new AppSearchSchema.DocumentPropertyConfig.Builder("property", "Schema")
                         .addIndexableNestedPropertyPaths(
                                 new PropertyPath("prop1"), new PropertyPath("prop1.prop2"))
                         .build();
@@ -296,8 +256,8 @@ public class AppSearchSchemaCtsTest {
 
     @Test
     public void testDocumentPropertyConfig_indexableNestedPropertyProperty_duplicatePaths() {
-        DocumentPropertyConfig documentPropertyConfig =
-                new DocumentPropertyConfig.Builder("property", "Schema")
+        AppSearchSchema.DocumentPropertyConfig documentPropertyConfig =
+                new AppSearchSchema.DocumentPropertyConfig.Builder("property", "Schema")
                         .addIndexableNestedPropertyPaths(
                                 new PropertyPath("prop1"), new PropertyPath("prop1.prop2"))
                         .addIndexableNestedProperties("prop1")
@@ -308,19 +268,19 @@ public class AppSearchSchemaCtsTest {
 
     @Test
     public void testDocumentPropertyConfig_reusingBuilderDoesNotAffectPreviouslyBuiltConfigs() {
-        DocumentPropertyConfig.Builder builder =
-                new DocumentPropertyConfig.Builder("property", "Schema")
+        AppSearchSchema.DocumentPropertyConfig.Builder builder =
+                new AppSearchSchema.DocumentPropertyConfig.Builder("property", "Schema")
                         .addIndexableNestedProperties("prop1");
-        DocumentPropertyConfig config1 = builder.build();
+        AppSearchSchema.DocumentPropertyConfig config1 = builder.build();
         assertThat(config1.getIndexableNestedProperties()).containsExactly("prop1");
 
         builder.addIndexableNestedProperties("prop2");
-        DocumentPropertyConfig config2 = builder.build();
+        AppSearchSchema.DocumentPropertyConfig config2 = builder.build();
         assertThat(config2.getIndexableNestedProperties()).containsExactly("prop1", "prop2");
         assertThat(config1.getIndexableNestedProperties()).containsExactly("prop1");
 
         builder.addIndexableNestedPropertyPaths(new PropertyPath("prop3"));
-        DocumentPropertyConfig config3 = builder.build();
+        AppSearchSchema.DocumentPropertyConfig config3 = builder.build();
         assertThat(config3.getIndexableNestedProperties())
                 .containsExactly("prop1", "prop2", "prop3");
         assertThat(config2.getIndexableNestedProperties()).containsExactly("prop1", "prop2");
@@ -516,6 +476,57 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    public void testEquals_failure_differentDescription() {
+        AppSearchSchema.Builder schemaBuilder =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build());
+        AppSearchSchema schema1 = schemaBuilder.build();
+        AppSearchSchema schema2 =
+                schemaBuilder.setDescription("Mail, but like with an 'e'").build();
+        assertThat(schema1).isNotEqualTo(schema2);
+        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    public void testEquals_failure_differentPropertyDescription() {
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the contents of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("The beginning of a message.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+        assertThat(schema1).isNotEqualTo(schema2);
+        assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
+    }
+
+    @Test
     public void testInvalidStringPropertyConfigsTokenizerNonNone() {
         // Setting indexing type to be NONE with tokenizer type PLAIN or VERBATIM or RFC822 should
         // fail. Regardless of whether NONE is set explicitly or just kept as default.
@@ -571,6 +582,7 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
     public void testAppSearchSchema_toString() {
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("testSchema")
@@ -774,6 +786,43 @@ public class AppSearchSchemaCtsTest {
                         + "      description: \"fifth string\",\n"
                         + "      indexingType: INDEXING_TYPE_PREFIXES,\n"
                         + "      tokenizerType: TOKENIZER_TYPE_RFC822,\n"
+                        + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
+                        + "      cardinality: CARDINALITY_REQUIRED,\n"
+                        + "      dataType: DATA_TYPE_STRING,\n"
+                        + "    }\n"
+                        + "  ]\n"
+                        + "}";
+
+        String[] lines = expectedString.split("\n");
+        for (String line : lines) {
+            assertThat(schemaString).contains(line);
+        }
+    }
+
+    @Test
+    public void testAppSearchSchema_toStringNoDescriptionSet() {
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("testSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("string1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
+                                        .setIndexingType(StringPropertyConfig.INDEXING_TYPE_NONE)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_NONE)
+                                        .build())
+                        .build();
+
+        String schemaString = schema.toString();
+
+        String expectedString =
+                "{\n"
+                        + "  schemaType: \"testSchema\",\n"
+                        + "  description: \"\",\n"
+                        + "  properties: [\n"
+                        + "    {\n"
+                        + "      name: \"string1\",\n"
+                        + "      description: \"\",\n"
+                        + "      indexingType: INDEXING_TYPE_NONE,\n"
+                        + "      tokenizerType: TOKENIZER_TYPE_NONE,\n"
                         + "      joinableValueType: JOINABLE_VALUE_TYPE_NONE,\n"
                         + "      cardinality: CARDINALITY_REQUIRED,\n"
                         + "      dataType: DATA_TYPE_STRING,\n"

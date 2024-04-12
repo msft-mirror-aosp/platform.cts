@@ -48,8 +48,8 @@ import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ImageReader;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
-import android.mediapc.cts.common.PerformanceClassEvaluator.HLGCombinationRequirement;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -506,7 +506,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        HLGCombinationRequirement hlgCombinationRequirement = pce.addR7_5__H_1_19();
+        CameraRequirement.HLGCombinationRequirement hlgCombinationRequirement =
+                pce.addR7_5__H_1_19();
         // Note: This must match the required stream combinations defined in [7.5/H-1-19]
         final int[][] hlg10Combinations = {
                 // HLG10 preview + JPEG Snapshot

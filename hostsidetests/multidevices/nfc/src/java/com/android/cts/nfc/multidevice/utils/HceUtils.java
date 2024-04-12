@@ -23,6 +23,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
+import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
@@ -47,6 +48,8 @@ public final class HceUtils {
     public static final String VISA_AID = "A0000000030000";
 
     public static final String TRANSPORT_AID = "F001020304";
+    public static final String SE_AID_1 = "A000000151000000";
+    public static final String SE_AID_2 = "A000000003000000";
 
     /** Service-specific APDU Command/Response sequences */
     public static final HashMap<String, CommandApdu[]> COMMAND_APDUS_BY_SERVICE = new HashMap<>();
@@ -119,6 +122,19 @@ public final class HceUtils {
                 new String[] {
                     "FAAA9000", "FBBB9000", "F789FFCCDD9000", "FFBAFEBECA", "F0BABEFECA"
                 });
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                OffHostService.class.getName(),
+                new CommandApdu[]{
+                        buildSelectApdu(SE_AID_1, true),
+                        buildCommandApdu("80CA9F7F00", true),
+                        buildSelectApdu(SE_AID_2, true),
+                        buildCommandApdu("80CA9F7F00", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                OffHostService.class.getName(),
+                new String[] {"*", "*", "*", "*"}
+        );
     }
 
     /** Enables specified component */

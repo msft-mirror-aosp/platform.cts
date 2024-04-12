@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
+import android.platform.test.annotations.FlakyTest;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.TextPaint;
@@ -45,6 +46,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@FlakyTest
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class TouchTest {

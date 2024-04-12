@@ -208,18 +208,6 @@ def scale_img(img, scale=1.0):
   return cv2.resize(img.copy(), dim, interpolation=cv2.INTER_AREA)
 
 
-def gray_scale_img(img):
-  """Return gray scale version of image."""
-  if len(img.shape) == 2:
-    img_gray = img.copy()
-  elif len(img.shape) == 3:
-    if img.shape[2] == 1:
-      img_gray = img[:, :, 0].copy()
-    else:
-      img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-  return img_gray
-
-
 class Chart(object):
   """Definition for chart object.
 
@@ -356,9 +344,11 @@ class Chart(object):
                   scale_start, scale_stop, scale_step)
     logging.debug('Used offset of %.3f to include stop value.', offset)
     max_match = []
-    # convert [0.0, 1.0] image to [0, 255]
+    # convert [0.0, 1.0] image to [0, 255] and then grayscale
     scene_uint8 = image_processing_utils.convert_image_to_uint8(scene)
-    scene_gray = gray_scale_img(scene_uint8)
+    scene_gray = image_processing_utils.convert_rgb_to_grayscale(scene_uint8)
+
+    # find scene
     logging.debug('Finding chart in scene...')
     for scale in numpy.arange(scale_start, scale_stop + offset, scale_step):
       scene_scaled = scale_img(scene_gray, scale)

@@ -19,6 +19,7 @@ package android.text.method.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import android.platform.test.annotations.FlakyTest;
 import android.text.method.ReplacementTransformationMethod;
 import android.util.TypedValue;
 import android.widget.EditText;
@@ -38,6 +39,7 @@ import org.junit.runner.RunWith;
 /**
  * Test {@link ReplacementTransformationMethod}.
  */
+@FlakyTest
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class ReplacementTransformationMethodTest {

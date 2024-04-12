@@ -16,6 +16,7 @@
 
 package com.android.bedstead.harrier;
 
+import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.app.admin.DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
@@ -121,6 +122,7 @@ import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
@@ -806,6 +808,11 @@ public final class DeviceState extends HarrierRule {
                 requireUserSupported(
                         requireUserSupportedAnnotation.value(),
                         requireUserSupportedAnnotation.failureMode());
+                continue;
+            }
+
+            if (annotation instanceof RequirePrivateSpaceSupported requirePrivateSpaceSupported) {
+                requirePrivateSpaceSupported(requirePrivateSpaceSupported.failureMode());
                 continue;
             }
 
@@ -1768,6 +1775,11 @@ public final class DeviceState extends HarrierRule {
                 resolvedUserType != null, failureMode);
 
         return resolvedUserType;
+    }
+
+    private void requirePrivateSpaceSupported(FailureMode failureMode) {
+        checkFailOrSkip("Device must support Private Space.",
+                TestApis.users().canAddPrivateProfile(), failureMode);
     }
 
     private static final String LOG_TAG = "DeviceState";

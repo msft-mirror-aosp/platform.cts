@@ -47,6 +47,7 @@ class A11yBounceKeysTest {
     companion object {
         const val KEY_A = 30
         const val THRESHOLD_MILLIS = 500
+        const val A11Y_SETTINGS_PROPAGATE_TIME_MILLIS: Long = 100
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -73,6 +74,7 @@ class A11yBounceKeysTest {
             },
             "android.permission.INTERACT_ACROSS_USERS_FULL"
         )
+        Thread.sleep(A11Y_SETTINGS_PROPAGATE_TIME_MILLIS)
     }
 
     @After
@@ -134,7 +136,7 @@ class A11yBounceKeysTest {
             injectKeyDown(keyboardDevice, KEY_A)
             injectKeyUp(keyboardDevice, KEY_A)
 
-            Thread.sleep(THRESHOLD_MILLIS.toLong())
+            Thread.sleep(2 * THRESHOLD_MILLIS.toLong())
 
             // Second key press should not be ignored after threshold time
             injectKeyDown(keyboardDevice, KEY_A)

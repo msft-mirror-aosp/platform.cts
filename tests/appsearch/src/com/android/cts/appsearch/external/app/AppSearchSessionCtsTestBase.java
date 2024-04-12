@@ -61,9 +61,14 @@ import android.app.appsearch.exceptions.AppSearchException;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.app.appsearch.util.DocumentIdUtil;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArrayMap;
 
 import androidx.test.core.app.ApplicationProvider;
+
+import com.android.appsearch.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -73,6 +78,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -88,6 +94,10 @@ import java.util.concurrent.ExecutorService;
 public abstract class AppSearchSessionCtsTestBase {
     static final String DB_NAME_1 = "";
     static final String DB_NAME_2 = "testDb2";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 
@@ -176,7 +186,68 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    public void testSetSchema_schemaDescription_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email1")
+                        .setDescription("Unsupported description")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request = new SetSchemaRequest.Builder().addSchemas(schema).build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mDb1.setSchemaAsync(request).get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SCHEMA_SET_DESCRIPTION
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    public void testSetSchema_propertyDescription_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email1")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("Unsupported description")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request = new SetSchemaRequest.Builder().addSchemas(schema).build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mDb1.setSchemaAsync(request).get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SCHEMA_SET_DESCRIPTION
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
     public void testSetSchema_updateSchemaDescription() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+
         AppSearchSchema schema1 =
                 new AppSearchSchema.Builder("Email")
                         .setDescription("A type of electronic message.")
@@ -232,7 +303,10 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
     public void testSetSchema_updatePropertyDescription() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+
         AppSearchSchema schema1 =
                 new AppSearchSchema.Builder("Email")
                         .setDescription("A type of electronic message.")
@@ -1385,7 +1459,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(e.getMessage())
                 .isEqualTo(
                         "StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID is not supported on"
-                                + " this AppSearch implementation.");
+                            + " this AppSearch implementation.");
     }
 
     @Test
@@ -8745,6 +8819,13 @@ public abstract class AppSearchSessionCtsTestBase {
         Set<AppSearchSchema> actual = mDb1.getSchemaAsync().get().getSchemas();
         assertThat(actual).hasSize(3);
         assertThat(actual).isEqualTo(request.getSchemas());
+
+        // Check that calling getParentType() for the EmailMessage schema returns Email and Message
+        for (AppSearchSchema schema : actual) {
+            if (schema.getSchemaType().equals("EmailMessage")) {
+                assertThat(schema.getParentTypes()).containsExactly("Email", "Message");
+            }
+        }
     }
 
     @Test

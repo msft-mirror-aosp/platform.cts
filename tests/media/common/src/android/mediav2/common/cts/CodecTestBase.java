@@ -144,12 +144,13 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
-    public static final int BOARD_FIRST_SDK =
-            SystemProperties.getInt("ro.board.first_api_level",
-                    SystemProperties.getInt("ro.board.api_level",
-                            Build.VERSION_CODES.CUR_DEVELOPMENT));
+    // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
+    // so using a default of 0 when not defined is safe to detect devices launching with 202404.
+    // These tests run on older versions where ro.vendor.api_level is not defined. So this
+    // needs to use default of 0 to ensure that this does't get treated as >= 202404 on those
+    // builds.
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
-            BOARD_FIRST_SDK >= ANDROID_VENDOR_API_202404;
+            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;

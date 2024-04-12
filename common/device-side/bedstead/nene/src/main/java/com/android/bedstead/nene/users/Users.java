@@ -28,6 +28,7 @@ import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.os.Process.myUserHandle;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
@@ -521,6 +522,16 @@ public final class Users {
         // so that the check can pass.
         Log.d(LOG_TAG, "canCreateProfile pre-T: true");
         return true;
+    }
+
+    /** Checks if private profile usertupe is supported on the device */
+    public boolean canAddPrivateProfile() {
+        if (Versions.meetsMinimumSdkVersionRequirement(VANILLA_ICE_CREAM)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return sUserManager.canAddPrivateProfile();
+            }
+        }
+        return false;
     }
 
     /** See {@link UserManager#isHeadlessSystemUserMode()}. */

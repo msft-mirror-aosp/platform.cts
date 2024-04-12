@@ -27,6 +27,7 @@ import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
@@ -58,13 +59,13 @@ public abstract class BaseEmulatorActivity extends Activity {
                     List.of(
                             TransportService1.COMPONENT, PaymentService1.COMPONENT,
                             PaymentService2.COMPONENT, PaymentServiceDynamicAids.COMPONENT,
-                            PrefixPaymentService1.COMPONENT, PrefixPaymentService2.COMPONENT));
+                            PrefixPaymentService1.COMPONENT, PrefixPaymentService2.COMPONENT,
+                            OffHostService.COMPONENT));
 
     protected static final String TAG = "BaseEmulatorActivity";
     protected NfcAdapter mAdapter;
     protected CardEmulation mCardEmulation;
     protected RoleManager mRoleManager;
-    protected ArrayList<ComponentName> mEnableComponents;
 
     final BroadcastReceiver mReceiver =
             new BroadcastReceiver() {
