@@ -27,7 +27,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor(weakValue = "com.android.interactive.InteractiveAnnotationExecutor")
+@UsesAnnotationExecutor("com.android.interactive.InteractiveAnnotationExecutor")
 annotation class Interactive(
     /**
      * Priority sets the order that annotations will be resolved.

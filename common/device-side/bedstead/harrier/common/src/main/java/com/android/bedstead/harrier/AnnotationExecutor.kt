@@ -13,32 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.android.bedstead.harrier;
-
-import java.lang.annotation.Annotation;
+package com.android.bedstead.harrier
 
 /**
  * Interface used to register a new class which can execute Harrier annotations.
  *
- * <p>This can be used to add additional harrier-compatible annotations without modifying harrier
+ * This can be used to add additional harrier-compatible annotations without modifying harrier
  */
-public interface AnnotationExecutor {
+interface AnnotationExecutor {
     /**
      * Called when an annotation should be applied.
      *
-     * <p>This should take care of recording any state necessary to correctly restore state after
+     *
+     * This should take care of recording any state necessary to correctly restore state after
      * the test.
      */
-    void applyAnnotation(Annotation annotation);
+    fun applyAnnotation(annotation: Annotation)
 
     /**
      * Requests the executor to restore the previous state of any non-shareable changes.
      */
-    void teardownShareableState();
+    fun teardownShareableState() {}
 
     /**
      * Requests the executor to restore the previous state of any shareable changes.
      */
-    void teardownNonShareableState();
+    fun teardownNonShareableState() {}
 }
