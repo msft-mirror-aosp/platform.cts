@@ -786,73 +786,7 @@ public class AudioRecordTest {
 
     @Test
     public void testRecordNoDataForIdleUids() throws Exception {
-        if (!hasMicrophone()) {
-            return;
-        }
-
-        AudioRecord recorder = null;
-        String packageName = InstrumentationRegistry.getTargetContext().getPackageName();
-        int currentUserId = Process.myUserHandle().getIdentifier();
-
-        // We will record audio for 20 sec from active and idle state expecting
-        // the recording from active state to have data while from idle silence.
-        try {
-            // Ensure no race and UID active
-            makeMyUidStateActive(packageName, currentUserId);
-
-            // Setup a recorder
-            final AudioRecord candidateRecorder = new AudioRecord.Builder()
-                    .setAudioSource(MediaRecorder.AudioSource.MIC)
-                    .setBufferSizeInBytes(1024)
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setSampleRate(8000)
-                            .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .build())
-                    .build();
-
-            // Unleash it :P
-            candidateRecorder.startRecording();
-            recorder = candidateRecorder;
-
-            final int sampleCount = AudioHelper.frameCountFromMsec(6000,
-                    candidateRecorder.getFormat()) * candidateRecorder.getFormat()
-                    .getChannelCount();
-            final ShortBuffer buffer = ShortBuffer.allocate(sampleCount);
-
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read non-empty bytes. Some systems only
-            // emulate audio devices and do not provide any actual audio data.
-            if (isAudioSilent(buffer)) {
-                Log.w(TAG, "Recording does not produce audio data");
-                return;
-            }
-
-            // Start clean
-            buffer.clear();
-            // Force idle the package
-            makeMyUidStateIdle(packageName, currentUserId);
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read empty bytes
-            assertTrue("Recording was not silenced while UID idle", isAudioSilent(buffer));
-
-            // Start clean
-            buffer.clear();
-            // Reset to active
-            makeMyUidStateActive(packageName, currentUserId);
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read non-empty bytes
-            assertFalse("Recording was silenced while UID active", isAudioSilent(buffer));
-        } finally {
-            if (recorder != null) {
-                recorder.stop();
-                recorder.release();
-            }
-            resetMyUidState(packageName, currentUserId);
-        }
+        // Removed in favor of audiorecordpermissiontests
     }
 
     @Test
@@ -1711,24 +1645,6 @@ public class AudioRecordTest {
             }
         }
         return totalSilenceCount > valueCount / 2;
-    }
-
-    private static void makeMyUidStateActive(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy set-uid-state %s active --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
-    }
-
-    private static void makeMyUidStateIdle(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy set-uid-state %s idle --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
-    }
-
-    private static void resetMyUidState(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy reset-uid-state %s --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
     }
 
     private static Context getContext() {
