@@ -24,6 +24,8 @@ import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.DeviceInfoStore;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class DisplayDeviceInfo extends DeviceInfo {
 
@@ -39,12 +41,14 @@ public class DisplayDeviceInfo extends DeviceInfo {
                 getContext().getSystemService(DisplayManager.class);
         store.startArray(HDR_CAPABILITIES);
 
-        //TODO(b/331960279): folables support different hdr capabilities
-        //on different displays
-        //Currently, we only collect the information on the default display.
-        store.startGroup();
-        Display display = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-        if (display != null && display.isHdr()) {
+        List<Display> internalDisplays = Arrays.stream(displayManager.getDisplays())
+                .filter(d -> d != null)
+                .filter(d -> d.getType() == Display.TYPE_INTERNAL)
+                .filter(d -> d.isHdr())
+                .collect(Collectors.toList());
+
+        for (Display display: internalDisplays) {
+            store.startGroup();
             int[] hdrTypes = Arrays.stream(display.getSupportedModes())
                     .map(Mode::getSupportedHdrTypes)
                     .flatMapToInt(Arrays::stream)
@@ -58,8 +62,8 @@ public class DisplayDeviceInfo extends DeviceInfo {
                     hdrCapabilities.getDesiredMaxAverageLuminance());
             store.addResult(MIN_LUMINANCE, hdrCapabilities.getDesiredMinLuminance());
             //TODO(b/329466383): add max hdr/sdr ratio to the collector
+            store.endGroup();
         }
-        store.endGroup();
 
         store.endArray(); // HDR_CAPABILITIES
     }
