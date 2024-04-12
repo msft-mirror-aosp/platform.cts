@@ -383,7 +383,7 @@ class AppHibernationIntegrationTest {
 
     private fun isArchivingEnabled(): Boolean {
         if (!SdkLevel.isAtLeastV()) return false
-        return Flags.archiving()
+        return Flags.archiving() && !hasFeatureAutomotive()
     }
 
     private fun leaveApp(packageName: String) {
