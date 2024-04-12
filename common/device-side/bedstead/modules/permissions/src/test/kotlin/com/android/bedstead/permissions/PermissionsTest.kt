@@ -25,7 +25,7 @@ import com.android.bedstead.harrier.annotations.RequireSdkVersion
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.permissions
-import com.android.bedstead.nene.appops.CommonAppOps
+import android.app.AppOpsManager
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.utils.Assert.assertDoesNotThrow
 import com.android.bedstead.nene.utils.Assert.assertThrows
@@ -415,7 +415,7 @@ class PermissionsTest {
         @JvmField
         val deviceState = DeviceState()
 
-        private const val APP_OP = CommonAppOps.OPSTR_FINE_LOCATION
+        private const val APP_OP = AppOpsManager.OPSTR_FINE_LOCATION
         private const val PERMISSION_HELD_BY_SHELL = "android.permission.INTERACT_ACROSS_PROFILES"
         private const val DIFFERENT_PERMISSION_HELD_BY_SHELL =
             "android.permission.INTERACT_ACROSS_USERS_FULL"

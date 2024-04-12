@@ -16,6 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS;
+import static android.app.AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
+import static android.app.AppOpsManager.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_POWER_RESTRICTIONS;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_SUSPENSION;
@@ -26,9 +29,6 @@ import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubje
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
 import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
