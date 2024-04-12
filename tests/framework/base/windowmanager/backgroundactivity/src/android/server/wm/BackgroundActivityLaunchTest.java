@@ -1023,14 +1023,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         runWithShellPermissionIdentity(() -> startBackgroundActivity(APP_A), INTERACT_ACROSS_USERS);
 
         // Waits for final hoop in AppA to start looking for activity
-        if (UserManager.isHeadlessSystemUserMode()) {
-            assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
-            assertTaskDoesNotHaveVisibleComponents(APP_A.BACKGROUND_ACTIVITY,
-                    APP_A.BACKGROUND_ACTIVITY);
-        } else {
-            assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
-            assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
-        }
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
     }
 
     @Test
