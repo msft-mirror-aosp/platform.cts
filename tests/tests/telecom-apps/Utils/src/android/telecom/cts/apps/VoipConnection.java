@@ -24,6 +24,7 @@ import android.telecom.VideoProfile;
 import android.util.Log;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class VoipConnection extends Connection {
     private static final String TAG = VoipConnection.class.getSimpleName();
@@ -34,6 +35,9 @@ public class VoipConnection extends Connection {
     private final Context mContext;
     private final boolean mIsOutgoingCall;
     private boolean mHasUpdatedCallStyleNotification = false;
+    // Delegates the completion of call state transition operations to potentially another entity
+    // to control the completion.
+    private Consumer<CallStateTransitionOperation> mOperationConsumer;
 
     public VoipConnection(Context context, boolean isOutgoingCall) {
         mContext = context;
@@ -91,6 +95,14 @@ public class VoipConnection extends Connection {
         mCallResources.destroyResources(context);
     }
 
+    /**
+     * Delegate operation completion to the test process so that it can control completion of the
+     * request
+     */
+    public void setOperationConsumer(Consumer<CallStateTransitionOperation> consumer) {
+        mOperationConsumer = consumer;
+    }
+
     @Override
     public void onStateChanged(int callState) {
 
@@ -109,14 +121,23 @@ public class VoipConnection extends Connection {
 
     @Override
     public void onHold() {
+        Log.i("VoipConnection", "onHold reached!");
         setOnHold();
         super.onHold();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_HOLD, System.currentTimeMillis()));
+        }
     }
 
     @Override
     public void onUnhold() {
         setActive();
         super.onUnhold();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_UNHOLD, System.currentTimeMillis()));
+        }
     }
 
     @Override
@@ -126,6 +147,10 @@ public class VoipConnection extends Connection {
         mCallResources.updateNotificationToOngoing(mContext);
         mHasUpdatedCallStyleNotification = true;
         super.onAnswer(videoState);
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_ANSWER, System.currentTimeMillis()));
+        }
     }
 
     @Override
@@ -137,8 +162,14 @@ public class VoipConnection extends Connection {
 
     @Override
     public void onDisconnect() {
+        setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
+        destroy();
         mCallResources.destroyResources(mContext);
         super.onDisconnect();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_DISCONNECT, System.currentTimeMillis()));
+        }
     }
 
     @Override

@@ -51,6 +51,7 @@ import android.telecom.cts.apps.BooleanTransaction;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.ManagedConnection;
 import android.telecom.cts.apps.NoDataTransaction;
@@ -99,6 +100,13 @@ public class ManagedAppControl extends Service {
                 @Override
                 public NoDataTransaction addCall(CallAttributes callAttributes) {
                     Log.i(TAG, "addCall: enter");
+                    return addCallWithConsumer(callAttributes, null);
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
+                        IRemoteOperationConsumer c) {
+                    Log.i(TAG, "addCallWithConsumer: enter");
                     try {
                         List<String> stackTrace =
                                 createStackTraceList(
@@ -126,7 +134,7 @@ public class ManagedAppControl extends Service {
                                         waitUntilConnectionIsNonNull(
                                                 PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
                         // track the connection so it can be manipulated later in the test stage
-                        trackConnection(connection, callAttributes, stackTrace);
+                        trackConnection(connection, callAttributes, stackTrace, c);
                         // signal to the test process the call has been added successfully
                         return new NoDataTransaction(TestAppTransaction.Success);
                     } catch (TestAppException e) {
@@ -137,7 +145,8 @@ public class ManagedAppControl extends Service {
                 private void trackConnection(
                         ManagedConnection connection,
                         CallAttributes callAttributes,
-                        List<String> stackTrace) {
+                        List<String> stackTrace,
+                        IRemoteOperationConsumer consumer) {
                     String id =
                             waitUntilIdIsSet(
                                     PACKAGE_NAME,
@@ -149,6 +158,15 @@ public class ManagedAppControl extends Service {
                             TAG,
                             String.format(
                                     "trackConnection: id=[%s], connection=[%s]", id, connection));
+                    if (consumer != null) {
+                        connection.setOperationConsumer(c -> {
+                            try {
+                                consumer.complete(c);
+                            } catch (RemoteException e) {
+                                Log.e(TAG, "trackConnection: Failed to set consumer.", e);
+                            }
+                        });
+                    }
                     mIdToConnection.put(id, connection);
                     // clear out the last connection since it has been added to tracking
                     ManagedConnectionService.sLastConnection = null;

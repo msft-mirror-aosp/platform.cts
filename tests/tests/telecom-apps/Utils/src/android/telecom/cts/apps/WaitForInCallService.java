@@ -34,12 +34,16 @@ import android.telecom.Call;
 import android.util.Log;
 
 import java.util.List;
+import java.util.Objects;
 
 public class WaitForInCallService {
     private static final String DID_NOT_BIND_IN_TIME_ERR_MSG =
             "InCallServiceVerifier did NOT bind in time";
     private static final String CALL_COUNT_WAS_NOT_INCREMENTED_ERR_MSG =
             "Call Count was not incremented in time";
+
+    private static final String NEW_ID_NOT_FOUND_MSG =
+            "New call was not found in time";
 
     public static void verifyCallState(InCallServiceMethods verifierMethods,
             String id, int targetCallState) {
@@ -92,6 +96,27 @@ public class WaitForInCallService {
                 },
                 WaitUntil.DEFAULT_TIMEOUT_MS,
                 CALL_COUNT_WAS_NOT_INCREMENTED_ERR_MSG
+        );
+    }
+
+    public static void waitUntilNewCallId(InCallServiceMethods verifierMethods,
+            String idToExclude) {
+        WaitUntil.waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return !Objects.equals(
+                                verifierMethods.getLastAddedCall().getDetails().getId(),
+                                idToExclude);
+                    }
+                },
+                WaitUntil.DEFAULT_TIMEOUT_MS,
+                NEW_ID_NOT_FOUND_MSG
         );
     }
 

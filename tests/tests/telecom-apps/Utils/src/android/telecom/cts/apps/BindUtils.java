@@ -113,7 +113,8 @@ public class BindUtils {
         TelecomTestApp name = appControl.getTelecomApps();
         Log.i(TAG, String.format("unbindFromApplication: applicationName=[%s]", name));
         if (!sTelecomAppToService.containsKey(name)) {
-            fail(String.format("cannot find the service binder for application=[%s]", name));
+            Log.i(TAG, String.format("cannot find the service binder for application=[%s]", name));
+            return;
         }
         try {
             TelecomAppServiceConnection serviceConnection = sTelecomAppToService.get(name).first;
@@ -161,7 +162,7 @@ public class BindUtils {
             case ConnectionServiceVoipAppMain, ConnectionServiceVoipAppClone -> {
                 return TelecomTestApp.VOIP_CS_CONTROL_INTERFACE_ACTION;
             }
-            case ManagedConnectionServiceApp -> {
+            case ManagedConnectionServiceApp, ManagedConnectionServiceAppClone -> {
                 return TelecomTestApp.CONTROL_INTERFACE_ACTION;
             }
         }
@@ -186,6 +187,9 @@ public class BindUtils {
             case ManagedConnectionServiceApp -> {
                 return TelecomTestApp.MANAGED_PACKAGE_NAME;
             }
+            case ManagedConnectionServiceAppClone -> {
+                return TelecomTestApp.MANAGED_CLONE_PACKAGE_NAME;
+            }
         }
         throw new Exception(
                 String.format("%s doesn't have a <PACKAGE_NAME> mapping.", app));
@@ -193,21 +197,28 @@ public class BindUtils {
 
     private AppControlWrapper waitOnBindForApp(Context context, TelecomTestApp appName)
             throws Exception {
-        CompletableFuture<IAppControl> f = new CompletableFuture<>();
-        final TelecomAppServiceConnection serviceConnection = new TelecomAppServiceConnection(f);
-        Log.i(TAG, String.format("waitOnBindForApp: requesting bind to %s", appName));
-        long startTimeMillis = SystemClock.elapsedRealtime();
-        boolean success = context.bindService(createBindIntentForApplication(appName),
-                serviceConnection, Context.BIND_AUTO_CREATE);
-        long elapsedMs = SystemClock.elapsedRealtime() - startTimeMillis;
-        Log.i(TAG, String.format("waitOnBindForApp: finished bind to %s in %d milliseconds",
-                appName, elapsedMs));
-        if (!success) {
-            fail("Failed to get control interface -- bind error");
+        TelecomAppServiceConnection serviceConnection;
+        if (sTelecomAppToService.containsKey(appName)) {
+            Log.i(TAG, String.format("returning cached service binder for application=[%s]",
+                    appName));
+            return sTelecomAppToService.get(appName).second;
+        } else {
+            CompletableFuture<IAppControl> f = new CompletableFuture<>();
+            serviceConnection = new TelecomAppServiceConnection(f);
+            Log.i(TAG, String.format("waitOnBindForApp: requesting bind to %s", appName));
+            long startTimeMillis = SystemClock.elapsedRealtime();
+            boolean success = context.bindService(createBindIntentForApplication(appName),
+                    serviceConnection, Context.BIND_AUTO_CREATE);
+            long elapsedMs = SystemClock.elapsedRealtime() - startTimeMillis;
+            Log.i(TAG, String.format("waitOnBindForApp: finished bind to %s in %d milliseconds",
+                    appName, elapsedMs));
+            if (!success) {
+                fail("Failed to get control interface -- bind error");
+            }
+            IAppControl iAppControl = f.get(WaitUntil.DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            AppControlWrapper wrapper = new AppControlWrapper(iAppControl, appName);
+            sTelecomAppToService.put(appName, new Pair<>(serviceConnection, wrapper));
+            return wrapper;
         }
-        IAppControl iAppControl = f.get(WaitUntil.DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        AppControlWrapper wrapper = new AppControlWrapper(iAppControl, appName);
-        sTelecomAppToService.put(appName, new Pair<>(serviceConnection, wrapper));
-        return wrapper;
     }
 }

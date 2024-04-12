@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.ConnectionService;
+import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.cts.apps.ManagedConnection;
@@ -49,6 +50,13 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateOutgoingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        // For calls from the same managed connection service, operations are handled at the
+        // connection service level.
+        if (getAllConnections().stream()
+                .filter(c-> c.getState() != Connection.STATE_DISCONNECTED).count() > 1) {
+            return Connection.createFailedConnection(new DisconnectCause(DisconnectCause.ERROR));
+        }
+        makeRoomForNewConnection();
         return createConnection(request, true);
     }
 
@@ -65,6 +73,17 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateIncomingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        // For calls from the same managed connection service, operations are handled at the
+        // connection service level.
+        if (getAllConnections().size() > 1) {
+            for (Connection c : getAllConnections()) {
+                if (c.getState() == Connection.STATE_HOLDING) {
+                    c.setDisconnected(new DisconnectCause(DisconnectCause.OTHER));
+                    break;
+                }
+            }
+        }
+        makeRoomForNewConnection();
         return createConnection(request, false);
     }
 
@@ -74,6 +93,17 @@ public class ManagedConnectionService extends ConnectionService {
         Log.i(LOG_TAG, String.format("onCreateIncomingConnectionFailed: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
         super.onCreateIncomingConnectionFailed(connectionManagerPhoneAccount, request);
+    }
+
+    /**
+     * Make sure that active calls are held for handling cases with calls from the same CS.
+     */
+    private void makeRoomForNewConnection() {
+        for (Connection c : getAllConnections()) {
+            if (c.getState() == Connection.STATE_ACTIVE) {
+                c.onHold();
+            }
+        }
     }
 
     private Connection createConnection(ConnectionRequest request, boolean isOutgoing) {
