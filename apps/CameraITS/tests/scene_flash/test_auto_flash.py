@@ -58,11 +58,15 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       facing_front = (props['android.lens.facing'] ==
                       camera_properties_utils.LENS_FACING['FRONT'])
-      should_run = camera_properties_utils.flash(props) or facing_front
-      camera_properties_utils.skip_unless(
-          should_run and
+      should_run_front = (
+          facing_front and
+          first_api_level >= its_session_utils.ANDROID15_API_LEVEL
+      )
+      should_run_rear = (
+          camera_properties_utils.flash(props) and
           first_api_level >= its_session_utils.ANDROID13_API_LEVEL
       )
+      camera_properties_utils.skip_unless(should_run_front or should_run_rear)
 
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
