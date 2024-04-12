@@ -23,11 +23,18 @@ import com.google.common.truth.Truth
 class ToastVerifier {
     companion object {
         fun verifyToastShowsAndGoes() {
-            val windowManagerHelper = WindowManagerStateHelper()
-            Truth.assertThat(windowManagerHelper.waitFor({ state: WindowManagerState ->
+            Truth.assertThat(waitForToast()).isTrue()
+            Truth.assertThat(waitForNoToast()).isTrue()
+        }
+
+        private fun waitForToast(): Boolean {
+            return WindowManagerStateHelper().waitFor({ state: WindowManagerState ->
                 state.findFirstWindowWithType(TYPE_TOAST) != null
-            }, "Toast")).isTrue()
-            windowManagerHelper.waitFor({ state: WindowManagerState ->
+            }, "Toast")
+        }
+
+        fun waitForNoToast(): Boolean {
+            return WindowManagerStateHelper().waitFor({ state: WindowManagerState ->
                 state.findFirstWindowWithType(TYPE_TOAST) == null
             }, "Toast")
         }
