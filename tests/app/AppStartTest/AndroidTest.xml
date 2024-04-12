@@ -24,15 +24,15 @@
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="force-install-mode" value="FULL"/>
         <option name="cleanup-apks" value="true"/>
-        <option name="test-file-name" value="CtsSimpleApp.apk"/>
+        <option name="test-file-name" value="CtsAppStartInfoApp.apk"/>
         <option name="test-file-name" value="CtsExternalServiceService.apk"/>
         <option name="test-file-name" value="CtsAppTestStubs.apk"/>
         <option name="test-file-name" value="CtsAppStartTestCases.apk"/>
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
         <option name="cleanup" value="true"/>
-        <option name="push-file" key="CtsSimpleApp.apk"
-                value="/data/local/tmp/cts/content/CtsSimpleApp.apk"/>
+        <option name="push-file" key="CtsAppStartInfoApp.apk"
+                value="/data/local/tmp/cts/content/CtsAppStartInfoApp.apk"/>
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner"/>
