@@ -360,6 +360,7 @@
         <activity android:name="android.server.wm.insets.WindowInsetsControllerTests$TestShowOnCreateActivity"/>
 
         <activity android:name="android.server.wm.other.DragDropTest$DragDropActivity"
+             android:theme="@style/OptOutEdgeToEdge"
              android:screenOrientation="locked"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
@@ -373,6 +374,7 @@
         </activity>
 
         <activity android:name="android.server.wm.other.DragDropTest$SoftwareCanvasDragDropActivity"
+            android:theme="@style/OptOutEdgeToEdge"
             android:screenOrientation="locked"
             android:turnScreenOn="true"
             android:showWhenLocked="true"
