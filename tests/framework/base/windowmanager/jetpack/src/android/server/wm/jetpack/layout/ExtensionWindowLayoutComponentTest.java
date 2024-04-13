@@ -121,7 +121,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mWindowLayoutComponent =
                 (WindowLayoutComponent) mWindowExtensionTestRule.getExtensionComponent();

@@ -4031,16 +4031,17 @@ public class CameraTestUtils extends Assert {
 
         // Verify that the return value of CameraDevice.isSessionConfigurationSupported is the
         // same as CameraDeviceSetup.isSessionConfigurationSupported.
-        // Note: This check makes the most sense if targetSdkVersion is less than V.
+        // Note: This check only makes sense if targetSdkVersion and platform's SDK Version >= V
         boolean deviceSetupSupported = false;
-        boolean configSupportedBySetup = false;
+        boolean configSupportedByDeviceSetup = false;
         String cameraId = camera.getId();
-        if (Flags.cameraDeviceSetup() && manager.isCameraDeviceSetupSupported(cameraId)) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                && Flags.cameraDeviceSetup() && manager.isCameraDeviceSetupSupported(cameraId)) {
             CameraDeviceSetup deviceSetup = manager.getCameraDeviceSetup(cameraId);
             assertNotNull("Failed to get camera device setup for " + cameraId, deviceSetup);
             deviceSetupSupported = true;
 
-            configSupportedBySetup = deviceSetup.isSessionConfigurationSupported(
+            configSupportedByDeviceSetup = deviceSetup.isSessionConfigurationSupported(
                     sessionConfig);
         }
 
@@ -4063,7 +4064,7 @@ public class CameraTestUtils extends Assert {
 
         if (deviceSetupSupported) {
             assertEquals("CameraDeviceSetup and CameraDevice must return the same value "
-                    + "for isSessionConfigurationSupported!", ret, configSupportedBySetup);
+                    + "for isSessionConfigurationSupported!", ret, configSupportedByDeviceSetup);
         }
         return new SessionConfigSupport(false/*error*/,
                 true/*callSupported*/, ret/*configSupported*/);

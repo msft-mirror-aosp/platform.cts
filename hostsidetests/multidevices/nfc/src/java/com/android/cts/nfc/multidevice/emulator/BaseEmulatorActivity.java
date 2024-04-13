@@ -27,13 +27,20 @@ import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.android.cts.nfc.multidevice.emulator.service.AccessService;
+import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
 import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
 import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 
 import java.util.ArrayList;
@@ -57,9 +64,19 @@ public abstract class BaseEmulatorActivity extends Activity {
     protected static final ArrayList<ComponentName> SERVICES =
             new ArrayList<ComponentName>(
                     List.of(
-                            TransportService1.COMPONENT, PaymentService1.COMPONENT,
-                            PaymentService2.COMPONENT, PaymentServiceDynamicAids.COMPONENT,
-                            PrefixPaymentService1.COMPONENT, PrefixPaymentService2.COMPONENT,
+                            TransportService1.COMPONENT,
+                            TransportService2.COMPONENT,
+                            AccessService.COMPONENT,
+                            PaymentService1.COMPONENT,
+                            PaymentService2.COMPONENT,
+                            PaymentServiceDynamicAids.COMPONENT,
+                            PrefixPaymentService1.COMPONENT,
+                            PrefixPaymentService2.COMPONENT,
+                            PrefixTransportService1.COMPONENT,
+                            PrefixAccessService.COMPONENT,
+                            ThroughputService.COMPONENT,
+                            LargeNumAidsService.COMPONENT,
+                            ScreenOffPaymentService.COMPONENT,
                             OffHostService.COMPONENT));
 
     protected static final String TAG = "BaseEmulatorActivity";

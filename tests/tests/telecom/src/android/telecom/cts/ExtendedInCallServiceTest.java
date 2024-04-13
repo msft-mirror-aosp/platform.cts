@@ -41,6 +41,8 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -393,12 +395,17 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             cleanupCalls();
             // Set device back to normal
             manager.disableCarMode(0);
-            if (!TestUtils.hasAutomotiveFeature()) {
-                // Make sure the UI mode has been set back
-                assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+
+            final int expectedUiMode;
+            // Make sure the UI mode has been set back
+            if (TestUtils.hasAutomotiveFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_CAR;
+            } else if (TestUtils.hasWatchFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_WATCH;
             } else {
-                assertUiMode(Configuration.UI_MODE_TYPE_CAR);
+                expectedUiMode = Configuration.UI_MODE_TYPE_NORMAL;
             }
+            assertUiMode(expectedUiMode);
         }
     }
 

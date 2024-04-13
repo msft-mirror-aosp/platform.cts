@@ -24,12 +24,19 @@ import android.content.IntentFilter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.nfc.multidevice.emulator.service.AccessService;
+import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
 import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
 import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 import com.android.cts.nfc.multidevice.utils.SnippetBroadcastReceiver;
@@ -133,6 +140,60 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
         mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens simple reader activity for non-payment prefix test */
+    @Rpc(description = "Opens simple reader activity for non-payment prefix test.")
+    public void startDualNonPaymentPrefixReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        CommandApdu[] prefixTransportService1Commands =
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(PrefixTransportService1.class.getName());
+        CommandApdu[] prefixAccessServiceCommands =
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(PrefixAccessService.class.getName());
+
+        // Combine command/response APDU arrays
+        CommandApdu[] combinedCommands =
+                new CommandApdu
+                        [prefixTransportService1Commands.length
+                                + prefixAccessServiceCommands.length];
+        System.arraycopy(
+                prefixTransportService1Commands,
+                0,
+                combinedCommands,
+                0,
+                prefixTransportService1Commands.length);
+        System.arraycopy(
+                prefixAccessServiceCommands,
+                0,
+                combinedCommands,
+                prefixTransportService1Commands.length,
+                prefixAccessServiceCommands.length);
+
+        String[] prefixTransportService1Responses =
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PrefixTransportService1.class.getName());
+        String[] prefixAccessServiceResponses =
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PrefixAccessService.class.getName());
+
+        String[] combinedResponses =
+                new String
+                        [prefixTransportService1Responses.length
+                                + prefixAccessServiceResponses.length];
+        System.arraycopy(
+                prefixTransportService1Responses,
+                0,
+                combinedResponses,
+                0,
+                prefixTransportService1Responses.length);
+        System.arraycopy(
+                prefixAccessServiceResponses,
+                0,
+                combinedResponses,
+                prefixTransportService1Responses.length,
+                prefixAccessServiceResponses.length);
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation, combinedCommands, combinedResponses);
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Open simple reader activity for off host test. */
     @Rpc(description = "Open simple reader activity for off host test")
     public void startOffHostReaderActivity() {
@@ -176,6 +237,131 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
                         combinedCommands,
                         combinedResponses);
         mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for dual non-payment test */
+    @Rpc(description = "Open simple reader activity for dual non-payment test")
+    public void startDualNonPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        CommandApdu[] transportService2CommandApdus =
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService2.class.getName());
+        String[] transportService2ResponseApdus =
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService2.class.getName());
+
+        CommandApdu[] accessServiceCommandApdus =
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(AccessService.class.getName());
+        String[] accessServiceResponseApdus =
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(AccessService.class.getName());
+        // Combine command/response APDU arrays
+        CommandApdu[] commandSequences =
+                new CommandApdu
+                        [transportService2CommandApdus.length + accessServiceCommandApdus.length];
+        System.arraycopy(
+                transportService2CommandApdus,
+                0,
+                commandSequences,
+                0,
+                transportService2CommandApdus.length);
+        System.arraycopy(
+                accessServiceCommandApdus,
+                0,
+                commandSequences,
+                transportService2CommandApdus.length,
+                accessServiceCommandApdus.length);
+        String[] responseSequences =
+                new String
+                        [transportService2ResponseApdus.length + accessServiceResponseApdus.length];
+        System.arraycopy(
+                transportService2ResponseApdus,
+                0,
+                responseSequences,
+                0,
+                transportService2ResponseApdus.length);
+        System.arraycopy(
+                accessServiceResponseApdus,
+                0,
+                responseSequences,
+                transportService2ResponseApdus.length,
+                accessServiceResponseApdus.length);
+
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation, commandSequences, responseSequences);
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for foreground non-payment test */
+    @Rpc(description = "Open simple reader activity for foreground non-payment test")
+    public void startForegroundNonPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService2.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService2.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for throughput test */
+    @Rpc(description = "Open simple reader activity for throughput test")
+    public void startThroughputReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(ThroughputService.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(ThroughputService.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for tap test */
+    @Rpc(description = "Open simple reader activity for tap test")
+    public void startTapTestReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService1.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService1.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for large num AIDs test */
+    @Rpc(description = "Open simple reader activity for large num AIDs Test")
+    public void startLargeNumAidsReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(LargeNumAidsService.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                LargeNumAidsService.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for screen off payment test */
+    @Rpc(description = "Open simple reader activity for screen off payment Test")
+    public void startScreenOffPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                ScreenOffPaymentService.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                ScreenOffPaymentService.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open protocol params reader activity */
+    @Rpc(description = "Open protocol params reader activity")
+    public void startProtocolParamsReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), ProtocolParamsReaderActivity.class.getName());
+        mActivity = (ProtocolParamsReaderActivity) instrumentation.startActivitySync(intent);
     }
 
     /** Registers receiver for Test Pass event */

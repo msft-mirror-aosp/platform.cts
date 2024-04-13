@@ -17,19 +17,28 @@
 package com.android.cts.nfc.multidevice.utils;
 
 import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
+import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 
+import com.android.cts.nfc.multidevice.emulator.service.AccessService;
+import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
 import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
 import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
 import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
 import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
+import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
 import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -50,6 +59,13 @@ public final class HceUtils {
     public static final String TRANSPORT_AID = "F001020304";
     public static final String SE_AID_1 = "A000000151000000";
     public static final String SE_AID_2 = "A000000003000000";
+    public static final String ACCESS_AID = "F005060708";
+
+    public static final String TRANSPORT_PREFIX_AID = "F001020304";
+    public static final String ACCESS_PREFIX_AID = "F005060708";
+
+    public static final String LARGE_NUM_AIDS_PREFIX = "F00102030414";
+    public static final String LARGE_NUM_AIDS_POSTFIX = "81";
 
     /** Service-specific APDU Command/Response sequences */
     public static final HashMap<String, CommandApdu[]> COMMAND_APDUS_BY_SERVICE = new HashMap<>();
@@ -135,6 +151,131 @@ public final class HceUtils {
                 OffHostService.class.getName(),
                 new String[] {"*", "*", "*", "*"}
         );
+        COMMAND_APDUS_BY_SERVICE.put(
+                TransportService2.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(TRANSPORT_AID, true), buildCommandApdu("80CA01E100", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                TransportService2.class.getName(), new String[] {"81CA9000", "7483624748FEFE9000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                AccessService.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(ACCESS_AID, true), buildCommandApdu("80CA01F000", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                AccessService.class.getName(), new String[] {"123456789000", "1481148114819000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PrefixTransportService1.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFFF", true),
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAA", true),
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAABBCCDDEEFF", true),
+                    buildCommandApdu("80CA01FFAA", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PrefixTransportService1.class.getName(),
+                new String[] {
+                    "25929000", "FFEF25929000", "FFDFFFAABB25929000", "FFDFFFAACC25929000"
+                });
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PrefixTransportService1.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFFF", true),
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAA", true),
+                    buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAABBCCDDEEFF", true),
+                    buildCommandApdu("80CA01FFAA", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PrefixTransportService1.class.getName(),
+                new String[] {
+                    "25929000", "FFEF25929000", "FFDFFFAABB25929000", "FFDFFFAACC25929000"
+                });
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                PrefixAccessService.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(ACCESS_PREFIX_AID + "FFFF", true),
+                    buildSelectApdu(ACCESS_PREFIX_AID + "FFAA", true),
+                    buildSelectApdu(ACCESS_PREFIX_AID + "FFAABBCCDDEEFF", true),
+                    buildCommandApdu("80CA010000010203", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                PrefixAccessService.class.getName(),
+                new String[] {
+                    "FAFE9000", "FAFE25929000", "FAFEAABB25929000", "FAFEFFAACC25929000"
+                });
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                ThroughputService.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu("F0010203040607FF", true),
+                    buildCommandApdu("80CA010100", true),
+                    buildCommandApdu("80CA010200", true),
+                    buildCommandApdu("80CA010300", true),
+                    buildCommandApdu("80CA010400", true),
+                    buildCommandApdu("80CA010500", true),
+                    buildCommandApdu("80CA010600", true),
+                    buildCommandApdu("80CA010700", true),
+                    buildCommandApdu("80CA010800", true),
+                    buildCommandApdu("80CA010900", true),
+                    buildCommandApdu("80CA010A00", true),
+                    buildCommandApdu("80CA010B00", true),
+                    buildCommandApdu("80CA010C00", true),
+                    buildCommandApdu("80CA010D00", true),
+                    buildCommandApdu("80CA010E00", true),
+                    buildCommandApdu("80CA010F00", true),
+                });
+
+        RESPONSE_APDUS_BY_SERVICE.put(
+                ThroughputService.class.getName(),
+                new String[] {
+                    "9000",
+                    "0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0002FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0004FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0005FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0006FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0008FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "0009FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "000AFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "000BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "000CFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "000DFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                    "000EFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF9000",
+                });
+
+        CommandApdu[] largeCommandSequence = new CommandApdu[256];
+        String[] largeResponseSequence = new String[256];
+        for (int i = 0; i < 256; ++i) {
+            largeCommandSequence[i] =
+                    buildSelectApdu(
+                            LARGE_NUM_AIDS_PREFIX
+                                    + String.format("%02X", i)
+                                    + LARGE_NUM_AIDS_POSTFIX,
+                            true);
+            largeResponseSequence[i] = "9000" + String.format("%02X", i);
+        }
+
+        COMMAND_APDUS_BY_SERVICE.put(LargeNumAidsService.class.getName(), largeCommandSequence);
+        RESPONSE_APDUS_BY_SERVICE.put(LargeNumAidsService.class.getName(), largeResponseSequence);
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                ScreenOffPaymentService.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu(HceUtils.PPSE_AID, true),
+                    buildSelectApdu(HceUtils.MC_AID, true),
+                    buildCommandApdu("80CA01F000", true)
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                ScreenOffPaymentService.class.getName(),
+                new String[] {"FFFF9000", "FFEF9000", "FFDFFFAABB9000"});
     }
 
     /** Enables specified component */
@@ -222,5 +363,21 @@ public final class HceUtils {
                     .dropShellPermissionIdentity();
         }
         return result.get();
+    }
+
+    /** Disables secure NFC so that NFC works with screen off */
+    public static boolean disableSecureNfc(NfcAdapter adapter) {
+        boolean res = false;
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
+            res = adapter.enableSecureNfc(false);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+        return res;
     }
 }

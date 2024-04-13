@@ -137,7 +137,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mSessionStateStatusValues = new ArrayList<>();
         mSupportedDeviceStates = mDeviceStateManager.getSupportedDeviceStates();

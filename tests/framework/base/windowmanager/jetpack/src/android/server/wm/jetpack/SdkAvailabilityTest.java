@@ -78,7 +78,7 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         assumeFalse("Skip Watch for WM Jetpack/Extensions availability",
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));

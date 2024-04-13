@@ -38,6 +38,11 @@
             android:label="Simple Reader"
             android:exported="true">
         </activity>
+        <activity
+            android:name=".ProtocolParamsReaderActivity"
+            android:label="Protocol Params Reader"
+            android:exported="true">
+        </activity>
     </application>
 
     <instrumentation android:name="com.google.android.mobly.snippet.SnippetRunner"

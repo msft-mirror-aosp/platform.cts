@@ -57,6 +57,6 @@
         <!-- The mobly-par-file-name should match the module name -->
         <option name="mobly-par-file-name" value="CtsNfcHceMultiDeviceTestCases" />
         <!-- Timeout limit in milliseconds for all test cases of the python binary -->
-        <option name="mobly-test-timeout" value="180000" />
+        <option name="mobly-test-timeout" value="600000" />
     </test>
 </configuration>

@@ -46,7 +46,7 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     @Override
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
 

@@ -16,9 +16,12 @@
 
 <resources>
     <string name="transportService1">Transport Service #1</string>
+    <string name="transportService2">Transport Service #2</string>
     <string name="paymentService1">Payment Service #1</string>
     <string name="paymentService2">Payment Service #2</string>
     <string name="offhostService">Offhost Service</string>
+    <string name="accessService">Access Service</string>
+    <string name="screenOffPaymentService">Screen Off Payment Service</string>
     <string name="ppse">PPSE</string>
     <string name="mastercard">MasterCard</string>
     <string name="visa">Visa</string>

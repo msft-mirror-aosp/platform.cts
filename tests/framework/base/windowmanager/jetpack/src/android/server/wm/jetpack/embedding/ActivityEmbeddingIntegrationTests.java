@@ -72,7 +72,7 @@ public class ActivityEmbeddingIntegrationTests extends ActivityEmbeddingTestBase
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mWindowLayoutComponent = getExtensionWindowLayoutComponent();
         assumeNotNull(mWindowLayoutComponent);

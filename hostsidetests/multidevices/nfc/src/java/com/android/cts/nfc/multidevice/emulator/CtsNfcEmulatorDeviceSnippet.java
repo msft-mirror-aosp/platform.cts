@@ -21,8 +21,11 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.cts.nfc.multidevice.utils.SnippetBroadcastReceiver;
 
@@ -32,8 +35,12 @@ import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
 public class CtsNfcEmulatorDeviceSnippet implements Snippet {
+
+    protected static final String TAG = "CtsNfcEmulatorDeviceSnippet";
     private BaseEmulatorActivity mActivity;
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final UiDevice mDevice =
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
     /** Opens single Non Payment emulator */
     @Rpc(description = "Open single non payment emulator activity")
@@ -128,6 +135,21 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (PrefixPaymentEmulator2Activity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens dual non payment activity */
+    @Rpc(description = "Opens dual non-payment prefix emulator activity")
+    public void startDualNonPaymentPrefixEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                DualNonPaymentPrefixEmulatorActivity.class.getName());
+
+        mActivity =
+                (DualNonPaymentPrefixEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Opens off host emulator activity */
     @Rpc(description = "Open off host emulator activity")
     public void startOffHostEmulatorActivity() {
@@ -154,6 +176,100 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (OnAndOffHostEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens dual non-payment emulator activity */
+    @Rpc(description = "Opens dual non-payment emulator activity")
+    public void startDualNonPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), DualNonPaymentEmulatorActivity.class.getName());
+
+        mActivity = (DualNonPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens foreground non-payment emulator activity */
+    @Rpc(description = "Opens foreground non-payment emulator activity")
+    public void startForegroundNonPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ForegroundNonPaymentEmulatorActivity.class.getName());
+
+        mActivity =
+                (ForegroundNonPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens throughput emulator activity */
+    @Rpc(description = "Opens throughput emulator activity")
+    public void startThroughputEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), ThroughputEmulatorActivity.class.getName());
+
+        mActivity = (ThroughputEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens tap test emulator activity */
+    @Rpc(description = "Opens tap test emulator activity")
+    public void startTapTestEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), TapTestEmulatorActivity.class.getName());
+
+        mActivity = (TapTestEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens large num AIDs emulator activity */
+    @Rpc(description = "Opens large num AIDs emulator activity")
+    public void startLargeNumAidsEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), LargeNumAidsEmulatorActivity.class.getName());
+
+        mActivity = (LargeNumAidsEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens screen off emulator activity */
+    @Rpc(description = "Opens screen off emulator activity")
+    public void startScreenOffPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ScreenOffPaymentEmulatorActivity.class.getName());
+
+        mActivity = (ScreenOffPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens protocol params emulator activity */
+    @Rpc(description = "Opens protocol params emulator activity")
+    public void startProtocolParamsEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(), ProtocolParamsEmulatorActivity.class.getName());
+
+        mActivity = (ProtocolParamsEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Registers receiver for Test Pass event */
     @AsyncRpc(description = "Waits for Test Pass event")
     public void asyncWaitForTestPass(String callbackId, String eventName) {
@@ -168,12 +284,44 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
                 callbackId, eventName, BaseEmulatorActivity.ACTION_ROLE_HELD);
     }
 
-    /** Closes emulator activity between tests */
+    /** Registers receiver for Screen Off event */
+    @AsyncRpc(description = "Waits for Screen Off event")
+    public void asyncWaitForScreenOff(String callbackId, String eventName) {
+        registerSnippetBroadcastReceiver(callbackId, eventName, Intent.ACTION_SCREEN_OFF);
+    }
+
+    /** Closes emulator activity */
     @Rpc(description = "Close activity if one was opened.")
     public void closeActivity() {
         if (mActivity != null) {
             mActivity.finish();
         }
+    }
+
+    /** Turns device screen off */
+    @Rpc(description = "Turns device screen off")
+    public void turnScreenOff() {
+        try {
+            mDevice.sleep();
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException", e);
+        }
+    }
+
+    /** Turns device screen on */
+    @Rpc(description = "Turns device screen on")
+    public void turnScreenOn() {
+        try {
+            mDevice.wakeUp();
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException", e);
+        }
+    }
+
+    /** Press device menu button to return device to home screen between tests. */
+    @Rpc(description = "Press menu button")
+    public void pressMenu() {
+        mDevice.pressMenu();
     }
 
     /** Creates a SnippetBroadcastReceiver that listens for when the specified action is received */
