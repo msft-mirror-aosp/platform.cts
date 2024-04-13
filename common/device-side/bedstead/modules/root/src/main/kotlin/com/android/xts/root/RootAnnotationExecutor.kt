@@ -29,7 +29,6 @@ import com.android.xts.root.Tags.ADB_ROOT
 import com.android.xts.root.Tags.ROOT_INSTRUMENTATION
 import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.xts.root.annotations.RequireRootInstrumentation
-import com.android.xts.root.annotations.requireRootInstrumentation
 
 /**
  * [AnnotationExecutor] used for parsing [RequireAdbRoot].
@@ -40,7 +39,7 @@ class RootAnnotationExecutor : AnnotationExecutor {
         private val isInstrumentedAsRoot: Boolean by lazy {
             // We need to replace this with a better way of discovering root instrumentation
             try {
-                ShellCommandUtils.uiAutomation().clearOverridePermissionStates(/* uid = */ -1)
+                ShellCommandUtils.uiAutomation().clearOverridePermissionStates(-1)
                 true
             } catch (e: Exception) {
                 Log.i("RootAnnotationExecutor", "Got exception while trying to act as root", e)
@@ -49,11 +48,10 @@ class RootAnnotationExecutor : AnnotationExecutor {
         }
     }
 
-    override fun applyAnnotation(annotation: Annotation?) {
-        if (annotation is RequireAdbRoot) {
-            requireAdbRoot(annotation.failureMode)
-        } else if (annotation is RequireRootInstrumentation) {
-            requireRootInstrumentation(annotation.failureMode)
+    override fun applyAnnotation(annotation: Annotation) {
+        when (annotation) {
+            is RequireAdbRoot -> requireAdbRoot(annotation.failureMode)
+            is RequireRootInstrumentation -> requireRootInstrumentation(annotation.failureMode)
         }
     }
 
@@ -71,12 +69,6 @@ class RootAnnotationExecutor : AnnotationExecutor {
         } else {
             AnnotationExecutorUtil.failOrSkip("Test is not instrumented as root.", failureMode)
         }
-    }
-
-    override fun teardownShareableState() {
-    }
-
-    override fun teardownNonShareableState() {
     }
 }
 

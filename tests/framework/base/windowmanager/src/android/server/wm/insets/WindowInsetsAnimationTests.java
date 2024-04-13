@@ -43,6 +43,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowInsetsAnimationTestBase;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsAnimation;

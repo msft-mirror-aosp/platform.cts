@@ -20,9 +20,6 @@ import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.FIRST
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
-import com.android.interactive.InteractiveAnnotationExecutor
-import java.lang.annotation.ElementType
-
 
 /**
  * Mark that a test requires the device to be untethered from the host.
@@ -32,7 +29,7 @@ import java.lang.annotation.ElementType
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor(InteractiveAnnotationExecutor::class)
+@UsesAnnotationExecutor("com.android.interactive.InteractiveAnnotationExecutor")
 annotation class UntetheredTest(
     /**
      * Priority sets the order that annotations will be resolved.

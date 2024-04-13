@@ -18,7 +18,7 @@ package com.android.interactive;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
 
-import android.util.Log;
+import androidx.annotation.NonNull;
 
 import com.android.bedstead.harrier.AnnotationExecutor;
 import com.android.bedstead.harrier.annotations.FailureMode;
@@ -33,6 +33,7 @@ import java.lang.annotation.Annotation;
 /**
  * Implementation of {@link AnnotationExecutor} for use with Interactive.
  */
+@SuppressWarnings("unused")
 public final class InteractiveAnnotationExecutor implements AnnotationExecutor {
 
     // There is a complicated implementation of @UntetheredTest here to make it work with Bedstead
@@ -47,10 +48,8 @@ public final class InteractiveAnnotationExecutor implements AnnotationExecutor {
     private boolean mRequiresUntethered = false;
 
     @Override
-    public void applyAnnotation(Annotation annotation) {
-        if (annotation instanceof RequireBooleanStepResult) {
-            RequireBooleanStepResult requireBooleanStepResultAnnotation =
-                    (RequireBooleanStepResult) annotation;
+    public void applyAnnotation(@NonNull Annotation annotation) {
+        if (annotation instanceof RequireBooleanStepResult requireBooleanStepResultAnnotation) {
             requireBooleanStepResult(requireBooleanStepResultAnnotation.step(),
                     requireBooleanStepResultAnnotation.expectedResult(),
                     requireBooleanStepResultAnnotation.reason(),

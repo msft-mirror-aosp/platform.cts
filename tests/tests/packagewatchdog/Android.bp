@@ -48,6 +48,6 @@ android_test {
     srcs: [
         "src/**/*.java",
     ],
-    sdk_version: "test_current",
+    platform_apis: true,
     min_sdk_version: "30",
 }

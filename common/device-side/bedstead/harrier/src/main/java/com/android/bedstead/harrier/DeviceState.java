@@ -476,10 +476,9 @@ public final class DeviceState extends HarrierRule {
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
 
-    private void applyAnnotations(List<Annotation> annotations, boolean isTest)
-            throws Throwable {
+    private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
-        for (Annotation annotation : annotations) {
+        for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
 
             Class<? extends Annotation> annotationType = annotation.annotationType();
@@ -1181,8 +1180,9 @@ public final class DeviceState extends HarrierRule {
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
-                AnnotationExecutor executor =
-                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value(), usesAnnotationExecutorAnnotation.weakValue());
+                AnnotationExecutor executor = getAnnotationExecutor(
+                        usesAnnotationExecutorAnnotation.value()
+                );
                 executor.applyAnnotation(annotation);
                 continue;
             }
@@ -4235,42 +4235,32 @@ public final class DeviceState extends HarrierRule {
     private final Map<String, AnnotationExecutor>
             mAnnotationExecutors = new HashMap<>();
 
-    private AnnotationExecutor getAnnotationExecutor(
-            Class<? extends AnnotationExecutor> annotationExecutorClass,
-            String weakAnnotationExecutorClass) {
+    @SuppressWarnings("unchecked")
+    private AnnotationExecutor getAnnotationExecutor(String executorClassName) {
 
         Class<? extends AnnotationExecutor> executorClass;
 
-        if (annotationExecutorClass == AnnotationExecutor.class) {
-            if (weakAnnotationExecutorClass.isEmpty()) {
-                throw new IllegalStateException(
-                        "@UsesAnnotationExecutor must declare either a value or weakValue");
-            } else {
-                try {
-                    executorClass = (Class<? extends AnnotationExecutor>) Class.forName(weakAnnotationExecutorClass);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException(
-                            "Could not find annotation executor "
-                                    + weakAnnotationExecutorClass
-                                    + ". Probably a dependency issue.");
-                }
-            }
+        if (executorClassName.isEmpty()) {
+            throw new IllegalStateException("@UsesAnnotationExecutor value is empty");
         } else {
-            if (weakAnnotationExecutorClass.isEmpty()) {
-                executorClass = annotationExecutorClass;
-            } else {
+            try {
+                executorClass =
+                        (Class<? extends AnnotationExecutor>) Class.forName(executorClassName);
+            } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(
-                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has"
-                            + " declared both.");
+                        "Could not find annotation executor "
+                                + executorClassName
+                                + ". Probably a dependency issue."
+                );
             }
         }
-
-        String executorClassName = executorClass.getCanonicalName();
 
         if (!mAnnotationExecutors.containsKey(executorClassName)) {
             try {
                 mAnnotationExecutors.put(
-                        executorClassName, executorClass.newInstance());
+                        executorClassName,
+                        executorClass.getDeclaredConstructor().newInstance()
+                );
             } catch (Exception e) {
                 throw new RuntimeException("Error creating annotation executor", e);
             }

@@ -97,15 +97,24 @@ VGA_HEIGHT = 480
 VGA_WIDTH = 640
 
 
-def convert_to_y(img):
-  """Returns a Y image from a BGR image.
+def convert_to_y(img, color_order='RGB'):
+  """Returns a Y image from a uint8 RGB or BGR ordered image.
 
   Args:
-    img: An openCV image.
+    img: a uint8 openCV image.
+    color_order: str; 'RGB' or 'BGR' to signify color plane order.
+
   Returns:
-    An openCV image converted to Y.
+    The Y plane of the input img.
   """
-  y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YUV))
+  if img.dtype != 'uint8':
+    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
+  if color_order == 'RGB':
+    y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_RGB2YUV))
+  elif color_order == 'BGR':
+    y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YUV))
+  else:
+    raise AssertionError(f'Undefined color order: {color_order}!')
   return y
 
 

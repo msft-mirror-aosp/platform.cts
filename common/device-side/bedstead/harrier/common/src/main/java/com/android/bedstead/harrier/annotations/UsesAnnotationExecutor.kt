@@ -16,7 +16,6 @@
 package com.android.bedstead.harrier.annotations
 
 import com.android.bedstead.harrier.AnnotationExecutor
-import kotlin.reflect.KClass
 
 /**
  * Annotation to apply to an annotation outside of Harrier to indicate it should be processed
@@ -25,19 +24,12 @@ import kotlin.reflect.KClass
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class UsesAnnotationExecutor(
-    /** The [AnnotationExecutor] to use when parsing this annotation.
-     *
-     * One of this and [weakValue] must be provided.
-     */
-    val value: KClass<out AnnotationExecutor> = AnnotationExecutor::class,
 
     /**
      * The fully qualified name of the [AnnotationExecutor] to use when parsing this annotation.
      *
-     * This is available for cases where the annotation needs to be defined in a separate target
+     * This works even for cases where the annotation needs to be defined in a separate target
      * to the executor, for example where the annotation cannot be defined in an Android target.
-     *
-     * One of this and [value] must be provided.
      */
-    val weakValue: String = ""
+    val value: String
 )

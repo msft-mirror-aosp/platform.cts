@@ -193,7 +193,8 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
         if quality in video_processing_utils.ITS_SUPPORTED_QUALITIES:
           logging.debug('Testing video recording for quality: %s', quality)
           hlg10_params = [False]
-          hlg10_supported = cam.is_hlg10_recording_supported_for_profile(profile_id)
+          hlg10_supported = cam.is_hlg10_recording_supported_for_profile(
+              profile_id)
           logging.debug('HLG10 supported: %s', hlg10_supported)
           if hlg10_supported:
             hlg10_params.append(hlg10_supported)

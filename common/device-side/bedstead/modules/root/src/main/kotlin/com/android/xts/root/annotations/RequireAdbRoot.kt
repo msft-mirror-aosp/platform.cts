@@ -28,7 +28,7 @@ import com.google.auto.value.AutoAnnotation
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS, AnnotationTarget.ANNOTATION_CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor(weakValue = "com.android.xts.root.RootAnnotationExecutor")
+@UsesAnnotationExecutor("com.android.xts.root.RootAnnotationExecutor")
 annotation class RequireAdbRoot(
     val reason: String = "",
 

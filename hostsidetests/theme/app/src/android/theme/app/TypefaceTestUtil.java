@@ -24,6 +24,7 @@ import android.graphics.fonts.FontVariationAxis;
 import android.graphics.fonts.SystemFonts;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
+import android.util.SparseIntArray;
 
 import java.io.File;
 
@@ -40,6 +41,7 @@ public class TypefaceTestUtil {
 
     public static Typeface getRobotoTypeface(int weight, boolean italic) {
         FontFamily.Builder builder = null;
+        SparseIntArray si = new SparseIntArray();
         for (Font font : SystemFonts.getAvailableFonts()) {
             boolean useThisFont = false;
             if (font.getFile().getName().startsWith("Roboto-")) {
@@ -51,7 +53,8 @@ public class TypefaceTestUtil {
             } else if (font.getFile().getName().equals("RobotoStatic-Regular.ttf")) {
                 useThisFont = true;
             }
-            if (useThisFont) {
+            if (useThisFont && si.get(font.getStyle().getWeight(), -1) == -1) {
+                si.append(font.getStyle().getWeight(), 0 /* unused */);
                 if (builder == null) {
                     builder = new FontFamily.Builder(font);
                 } else {

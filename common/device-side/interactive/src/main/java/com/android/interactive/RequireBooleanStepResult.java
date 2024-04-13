@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(InteractiveAnnotationExecutor.class)
+@UsesAnnotationExecutor("com.android.interactive.InteractiveAnnotationExecutor")
 @Repeatable(RequireBooleanStepResultGroup.class)
 public @interface RequireBooleanStepResult {
     /** The step to execute. */

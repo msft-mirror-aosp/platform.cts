@@ -255,6 +255,7 @@ android_test {
 
 android_test {
     name: "CtsAppStartTestCases",
+    team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     libs: [
         "android.test.runner",
@@ -284,7 +285,7 @@ android_test {
     test_config: "AppStartTest/AndroidTest.xml",
     platform_apis: true,
     data: [
-        ":CtsSimpleApp",
+        ":CtsAppStartInfoApp",
         ":CtsExternalServiceService",
         ":CtsAppTestStubs",
     ],

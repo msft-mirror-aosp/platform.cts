@@ -176,13 +176,13 @@ def _extract_y(img_uint8, file_name):
   The Y img is saved with file_name in the test dir.
 
   Args:
-    img_rgb: An openCV image in RGB order.
+    img_uint8: An openCV image in RGB order.
     file_name: file name along with the path to save the image.
 
   Returns:
     An openCV image converted to Y.
   """
-  y_uint8, _, _ = cv2.split(cv2.cvtColor(img_uint8, cv2.COLOR_RGB2YUV))
+  y_uint8 = opencv_processing_utils.convert_to_y(img_uint8, 'RGB')
   y_uint8 = np.expand_dims(y_uint8, axis=2)  # add plane to save image
   image_processing_utils.write_image(y_uint8/_CH_FULL_SCALE, file_name)
   return y_uint8

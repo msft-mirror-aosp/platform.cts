@@ -145,9 +145,9 @@ def _do_ae_check(light, dark):
     dark: RGB image; metering dark region.
   """
   # Converts img to YUV and returns Y-average
-  light_y, _, _ = cv2.split(cv2.cvtColor(light, cv2.COLOR_BGR2YUV))
+  light_y = opencv_processing_utils.convert_to_y(light, 'RGB')
   light_y_avg = numpy.average(light_y)
-  dark_y, _, _ = cv2.split(cv2.cvtColor(dark, cv2.COLOR_BGR2YUV))
+  dark_y = opencv_processing_utils.convert_to_y(dark, 'RGB')
   dark_y_avg = numpy.average(dark_y)
   logging.debug('Light image Y-average: %.4f', light_y_avg)
   logging.debug('Dark image Y-average: %.4f', dark_y_avg)
