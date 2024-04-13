@@ -23,7 +23,7 @@ import its_device_utils
 
 _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
                      'ACCESS_COARSE_LOCATION', 'WRITE_EXTERNAL_STORAGE',
-                     'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE')
+                     'READ_EXTERNAL_STORAGE')
 
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
@@ -147,6 +147,11 @@ def default_camera_app_setup(device_id, pkg_name):
   for permission in _PERMISSIONS_LIST:
     cmd = f'pm grant {pkg_name} android.permission.{permission}'
     its_device_utils.run_adb_shell_command(device_id, cmd)
+  allow_manage_storage_cmd = (
+      f'appops set {pkg_name} MANAGE_EXTERNAL_STORAGE allow'
+  )
+  its_device_utils.run_adb_shell_command(device_id, allow_manage_storage_cmd)
+
 
 
 def pull_img_files(device_id, input_path, output_path):

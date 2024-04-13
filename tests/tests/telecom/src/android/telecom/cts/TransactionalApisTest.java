@@ -52,7 +52,6 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
-import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -1060,8 +1059,6 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             return;
         }
         try {
-            InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
@@ -1080,8 +1077,6 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(DISCONNECT, mCall1);
         } finally {
             cleanup();
-            InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 

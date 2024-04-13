@@ -16,6 +16,7 @@
 
 package com.android.server.appsearch.external.localstorage;
 
+
 /**
  * Icing options for AppSearch local-storage. Note, these values are not necessarily the defaults
  * set in {@link com.google.android.icing.proto.IcingSearchEngineOptions} proto.
