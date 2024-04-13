@@ -27,10 +27,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.Manifest;
-import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -39,10 +37,8 @@ import android.provider.MediaStore;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -54,10 +50,8 @@ import java.util.List;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
 public class StorageOtherAndOwnedFilesTest {
 
-    protected static final String TAG = "MediaProviderOtherAndOwnedFilePermissionTest";
+    protected static final String TAG = "StorageOtherAndOwnedFilesTest";
 
-    private static final Instrumentation sInstrumentation =
-            InstrumentationRegistry.getInstrumentation();
     private static final ContentResolver sContentResolver = getContentResolver();
 
     @ClassRule
@@ -74,8 +68,8 @@ public class StorageOtherAndOwnedFilesTest {
      */
     @BeforeClass
     public static void init() throws Exception {
+        DeviceTestUtils.checkUISupported();
         pollForPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, true);
-        Assume.assumeTrue(isHardwareSupported());
     }
 
     @After
@@ -84,16 +78,6 @@ public class StorageOtherAndOwnedFilesTest {
         for (File file : OtherAppFilesRule.getAllFiles()) {
             modifyReadAccess(file, THIS_PACKAGE_NAME, REVOKE);
         }
-    }
-
-    static boolean isHardwareSupported() {
-        PackageManager pm = sInstrumentation.getContext().getPackageManager();
-
-        // Do not run tests on Watches, TVs, Auto or devices without UI.
-        return !pm.hasSystemFeature(pm.FEATURE_EMBEDDED)
-                && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_LEANBACK)
-                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
     @Test
