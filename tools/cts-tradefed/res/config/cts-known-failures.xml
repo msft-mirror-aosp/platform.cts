@@ -773,4 +773,10 @@
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testGetChangeLogToken" />
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_incorrect" />
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testDataApis_migrationInProgress_apisBlocked" />
+
+    <!-- b/330278028 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest#testRecordObservation" />
+
+    <!-- b/330283216 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesTopicsConnectionTests com.android.adservices.tests.cts.topics.connection.TopicsConnectionTest#testEnableGlobalKillSwitch" />
 </configuration>
