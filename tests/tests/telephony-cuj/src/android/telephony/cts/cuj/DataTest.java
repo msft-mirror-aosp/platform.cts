@@ -26,6 +26,8 @@ import android.telephony.TelephonyManager;
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ShellIdentityUtils;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,35 +53,49 @@ public class DataTest {
      */
     @Test
     public void testBasicPhoneAttributes() throws Exception {
-        assertThat(mTelephonyManager.getActiveModemCount()).isGreaterThan(0);
-        assertThat(mTelephonyManager.getPhoneType()).isEqualTo(TelephonyManager.PHONE_TYPE_GSM);
-        assertThat(mTelephonyManager.getSimState()).isEqualTo(TelephonyManager.SIM_STATE_READY);
-        assertThat(mTelephonyManager.getNetworkOperatorName()).isNotEmpty();
-        assertThat(mTelephonyManager.getLine1Number()).isNotEmpty();
-        assertThat(mTelephonyManager.getVoiceMailNumber()).isNotEmpty();
-        assertThat(mTelephonyManager.isNetworkRoaming()).isFalse();
-        assertThat(mTelephonyManager.isDeviceSmsCapable()).isTrue();
-        assertThat(mTelephonyManager.isDeviceVoiceCapable()).isTrue();
-        assertThat(mTelephonyManager.getDataNetworkType())
-                .isNotEqualTo(TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        assertThat(mTelephonyManager.getVoiceNetworkType())
-                .isNotEqualTo(TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getActiveModemCount)).isGreaterThan(0);
+        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getPhoneType))
+                        .isEqualTo(TelephonyManager.PHONE_TYPE_GSM);
+        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getSimState))
+                        .isEqualTo(TelephonyManager.SIM_STATE_READY);
+        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getNetworkOperatorName)).isNotEmpty();
+        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getLine1Number)).isNotEmpty();
+        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getVoiceMailNumber)).isNotEmpty();
+        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::isNetworkRoaming)).isFalse();
+        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::isDeviceSmsCapable)).isTrue();
+        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::isDeviceVoiceCapable)).isTrue();
+        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getDataNetworkType))
+                        .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getVoiceNetworkType))
+                        .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
     }
 
     @Test
     public void testSignalLevels() throws Exception {
         List<CellInfo> cellInfos = new ArrayList<>();
         CountDownLatch cdl = new CountDownLatch(1);
-        mTelephonyManager.requestCellInfoUpdate(mContext.getMainExecutor(),
-                new TelephonyManager.CellInfoCallback() {
-                    @Override
-                    public void onCellInfo(@NonNull List<CellInfo> cellInfo) {
-                        if (cellInfo != null) {
-                            cellInfos.addAll(cellInfo);
-                        }
-                        cdl.countDown();
-                    }
-                });
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager, (tm) -> tm.requestCellInfoUpdate(mContext.getMainExecutor(),
+                        new TelephonyManager.CellInfoCallback() {
+                            @Override
+                            public void onCellInfo(@NonNull List<CellInfo> cellInfo) {
+                                if (cellInfo != null) {
+                                    cellInfos.addAll(cellInfo);
+                                }
+                                cdl.countDown();
+                            }
+                        }));
         cdl.await();
         assertThat(cellInfos.size()).isGreaterThan(0);
         CellInfo cellInfo = cellInfos.get(0);

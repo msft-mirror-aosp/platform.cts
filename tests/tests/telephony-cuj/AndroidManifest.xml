@@ -15,10 +15,10 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.telephony.cts.cuj"
-    android:sharedUserId="android.uid.phone">
+    package="android.telephony.cts.cuj">
 
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- Must be debuggable for compat shell commands to work on user builds -->
     <application android:debuggable="true">
