@@ -18,7 +18,6 @@ package android.virtualdevice.cts.audio;
 import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
 import static android.Manifest.permission.RECORD_AUDIO;
-import static android.media.AudioFormat.CHANNEL_IN_MONO;
 import static android.media.AudioFormat.ENCODING_PCM_16BIT;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -26,13 +25,13 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.audio.AudioInjection;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.companion.virtual.flags.Flags;
 import android.content.Context;
@@ -56,6 +55,8 @@ import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,13 +76,6 @@ import java.util.concurrent.TimeoutException;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualAudioPermissionTest {
 
-    private static final int SAMPLE_RATE = 44100;
-    private static final int BUFFER_SIZE_IN_BYTES = 65536;
-    private static final AudioFormat INJECTION_FORMAT = new AudioFormat.Builder()
-            .setSampleRate(SAMPLE_RATE)
-            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-            .setChannelMask(CHANNEL_IN_MONO)
-            .build();
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -96,6 +90,7 @@ public class VirtualAudioPermissionTest {
     private int mVirtualDeviceId;
     private int mVirtualDisplayId;
     private AudioPolicy mAudioPolicy;
+    private AudioInjector mAudioInjector;
 
     @Before
     public void setUp() throws Exception {
@@ -110,6 +105,9 @@ public class VirtualAudioPermissionTest {
     public void tearDown() throws Exception {
         if (mAudioPolicy != null) {
             mContext.getSystemService(AudioManager.class).unregisterAudioPolicy(mAudioPolicy);
+        }
+        if (mAudioInjector != null) {
+            mAudioInjector.close();
         }
     }
 
@@ -191,6 +189,9 @@ public class VirtualAudioPermissionTest {
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
     public void audioInjection_virtualDeviceWithManualAudioPolicy_permissionGrantedOnlyOnDefaultDevice() {
+        // Automotive has its own audio policies that don't play well with the VDM-created ones.
+        assumeFalse(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         // The POLICY_TYPE_AUDIO for the VirtualDevice is set to DEVICE_POLICY_DEFAULT.
         // Thus device-awareness for the RECORD_AUDIO permission is disabled and falls back to the
         // default device.
@@ -242,8 +243,8 @@ public class VirtualAudioPermissionTest {
 
         VirtualAudioDevice virtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
-        AudioInjection audioInjection = virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);
-        audioInjection.play();
+        mAudioInjector = new AudioInjector(AudioInjector.createAudioData(), virtualAudioDevice);
+        mAudioInjector.startInjection();
 
         boolean success = audioDeviceInitializedLatch.await(2, TimeUnit.SECONDS);
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
@@ -262,7 +263,7 @@ public class VirtualAudioPermissionTest {
                 .build();
         AudioMix audioMix = new android.media.audiopolicy.AudioMix.Builder(mixingRule)
                 .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                .setFormat(INJECTION_FORMAT)
+                .setFormat(AudioInjector.INJECTION_FORMAT)
                 .build();
         mAudioPolicy = new AudioPolicy.Builder(deviceContext).addMix(audioMix).build();
         int res = audioManager.registerAudioPolicy(mAudioPolicy);
@@ -284,9 +285,9 @@ public class VirtualAudioPermissionTest {
     public static class PermissionActivity extends Activity {
         void recordAudio() {
             AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
-                    SAMPLE_RATE,
+                    AudioInjector.SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO, ENCODING_PCM_16BIT,
-                    BUFFER_SIZE_IN_BYTES);
+                    AudioInjector.BUFFER_SIZE_IN_BYTES);
 
             audioRecord.startRecording();
 

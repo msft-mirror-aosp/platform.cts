@@ -51,6 +51,7 @@ android_test {
         "kotlin-test",
         "ui-trace-collector",
         "collector-device-lib",
+        "platform-screenshot-diff-core",
     ],
     sdk_version: "test_current",
     data: [

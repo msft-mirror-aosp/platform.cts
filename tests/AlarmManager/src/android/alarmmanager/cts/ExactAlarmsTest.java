@@ -544,9 +544,6 @@ public class ExactAlarmsTest {
 
     @Test
     public void activityToRequestPermissionExists() {
-        // TODO(b/188070398) Remove this when auto supports the ACTION_REQUEST_SCHEDULE_EXACT_ALARM
-        assumeFalse(FeatureUtil.isAutomotive());
-
         final Intent request = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
         final PackageManager pm = sContext.getPackageManager();
 

@@ -40,6 +40,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
@@ -163,6 +164,8 @@ public class VoiceInteractionServiceTest {
     })
     @EnsureHasPrivateProfile
     @Test
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void onHandleScreenShotAndAssist_privateProfile_failed() throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
                 sDeviceState.privateProfile())) {

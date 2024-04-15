@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2022 The Android Open Source Project
  *
- * Licensed under the Apache License] = Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing] = software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND] = either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -61,13 +61,11 @@ class AppOpDefinitionTest {
 
     @Test
     fun ensureAppOpsDefinitionsAreCorrect() {
-        val appOpNames = AppOpsManager.getOpStrs()
-        for (opName in appOpNames) {
-            // Skip OP_NONE
-            if (opName == "") continue
-            Truth.assertThat(APP_OPS).containsKey(opName)
-            Truth.assertWithMessage("Op mismatch, appop name: $opName")
-                .that(APP_OPS[opName]).isEqualTo(AppOpsManager.strOpToOp(opName))
+        val frameworkOpNames = AppOpsManager.getOpStrs().toSet()
+        for ((opName, opCode) in APP_OPS) {
+            Truth.assertThat(frameworkOpNames).contains(opName)
+            Truth.assertWithMessage("Op mismatch, appop : $opName, $opCode")
+                .that(opCode).isEqualTo(AppOpsManager.strOpToOp(opName))
         }
     }
 
@@ -173,7 +171,8 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES] = 93
             APP_OPS[AppOpsManager.OPSTR_ACTIVATE_PLATFORM_VPN] = 94
             APP_OPS[AppOpsManager.OPSTR_LOADER_USAGE_STATS] = 95
-            // Op 96 was deprecated and removed
+            // Op 96 was deprecated and removed, OP_NONE uses index 96 now
+            APP_OPS[""] = 96
             APP_OPS[AppOpsManager.OPSTR_AUTO_REVOKE_PERMISSIONS_IF_UNUSED] = 97
             APP_OPS[AppOpsManager.OPSTR_AUTO_REVOKE_MANAGED_BY_INSTALLER] = 98
             APP_OPS[AppOpsManager.OPSTR_NO_ISOLATED_STORAGE] = 99
