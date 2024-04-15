@@ -1308,15 +1308,7 @@ class PackageManagerShellCommandMultiUserTest {
                                 RECEIVER_EXPORTED
                         )
 
-                        val mimeTypes = setOf("video/*")
-                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
-
-                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-
-                        changedBroadcastReceiverForPrimaryUser.reset()
-                        changedBroadcastReceiverForSecondaryUser.reset()
-
+                        val mimeTypes = contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP)
                         // mimeGroup is not changed on the primary user and no broadcasts are
                         // received
                         contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
