@@ -25,13 +25,13 @@ import static android.telecom.cts.apps.AssertOutcome.assertCountDownLatchWasCall
 import static android.telecom.cts.apps.AttributesUtil.getExtrasWithPhoneAccount;
 import static android.telecom.cts.apps.AttributesUtil.hasSetInactiveCapabilities;
 import static android.telecom.cts.apps.AttributesUtil.isOutgoing;
+import static android.telecom.cts.apps.NotificationUtils.isTargetNotificationPosted;
 import static android.telecom.cts.apps.StackTraceUtil.appendStackTraceList;
 import static android.telecom.cts.apps.StackTraceUtil.createStackTraceList;
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_CLONE_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_CLONE_PACKAGE_NAME;
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.VOIP_CS_CONTROL_INTERFACE_ACTION;
-import static android.telecom.cts.apps.NotificationUtils.isTargetNotificationPosted;
 import static android.telecom.cts.apps.WaitUntil.waitUntilAvailableEndpointsIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
@@ -63,9 +63,9 @@ import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.NoDataTransaction;
 import android.telecom.cts.apps.NotificationUtils;
 import android.telecom.cts.apps.PhoneAccountTransaction;
-import android.telecom.cts.apps.VoipConnection;
 import android.telecom.cts.apps.TestAppException;
 import android.telecom.cts.apps.TestAppTransaction;
+import android.telecom.cts.apps.VoipConnection;
 import android.telecom.cts.apps.WaitUntil;
 import android.util.Log;
 
@@ -393,6 +393,11 @@ public class VoipConnectionServiceControlMain extends Service {
             }
             return mIdToConnection.get(id);
         }
+
+        @Override
+        public void cleanup() {
+            cleanupImplementation();
+        }
     };
 
     @Nullable
@@ -411,19 +416,34 @@ public class VoipConnectionServiceControlMain extends Service {
         return null;
     }
 
-    @Override
-    public boolean onUnbind(Intent intent) {
-        Log.i(mTag, "VoipConnectionServiceControlClone: onUnbind");
+    private void disconnectAndDestroyAllCalls() {
         for (VoipConnection connection : mIdToConnection.values()) {
             connection.setDisconnected(
                     new DisconnectCause(DisconnectCause.LOCAL, "VoipCS is Unbinding"));
+            connection.destroy();
         }
         mIdToConnection.clear();
-        mTelecomManager.unregisterPhoneAccount(mPhoneAccount.getAccountHandle());
+    }
+
+    private void unregisterAllPhoneAccounts() {
+        for (PhoneAccountHandle handle : mTelecomManager.getOwnSelfManagedPhoneAccounts()) {
+            mTelecomManager.unregisterPhoneAccount(handle);
+        }
+    }
+
+    private void cleanupImplementation() {
+        disconnectAndDestroyAllCalls();
+        unregisterAllPhoneAccounts();
         // delete the call channel
         NotificationUtils.deleteNotificationChannel(
                 getApplicationContext(),
                 NOTIFICATION_CHANNEL_ID);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(mTag, "VoipConnectionServiceControlClone: onUnbind");
+        cleanupImplementation();
         mIsBound = false;
         return super.onUnbind(intent);
     }
