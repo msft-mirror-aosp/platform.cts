@@ -76,13 +76,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for injection and capturing of audio from streamed apps
@@ -93,10 +88,6 @@ public class VirtualAudioTest {
 
     public static final int FREQUENCY = 264;
     public static final int SAMPLE_RATE = 44100;
-    public static final int CHANNEL_COUNT = 1;
-    public static final int AMPLITUDE = 32767;
-    public static final int BUFFER_SIZE_IN_BYTES = 65536;
-    public static final int NUMBER_OF_SAMPLES = computeNumSamples(SAMPLE_RATE, CHANNEL_COUNT);
     private static final Duration TIMEOUT = Duration.ofMillis(5000);
 
     private static final AudioFormat CAPTURE_FORMAT = new AudioFormat.Builder()
@@ -307,8 +298,7 @@ public class VirtualAudioTest {
 
     @Test
     public void audioInjection_receivesAudioConfigurationChangeCallback() throws Exception {
-        ByteBuffer byteBuffer = createAudioData(
-                SAMPLE_RATE, NUMBER_OF_SAMPLES, CHANNEL_COUNT, FREQUENCY, AMPLITUDE);
+        ByteBuffer byteBuffer = AudioInjector.createAudioData();
         try (AudioInjector injector = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
             injector.startInjection();
 
@@ -348,8 +338,7 @@ public class VirtualAudioTest {
     public void audioInjection_appShouldRecordInjectedFrequency() throws Exception {
         assumeFalse(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
-        ByteBuffer byteBuffer = createAudioData(
-                SAMPLE_RATE, NUMBER_OF_SAMPLES, CHANNEL_COUNT, FREQUENCY, AMPLITUDE);
+        ByteBuffer byteBuffer = AudioInjector.createAudioData();
         try (AudioInjector injector = new AudioInjector(byteBuffer, mVirtualAudioDevice)) {
             injector.startInjection();
 
@@ -379,8 +368,7 @@ public class VirtualAudioTest {
 
         AudioTrack playAudio() {
 
-            ByteBuffer audioData = createAudioData(
-                    SAMPLE_RATE, NUMBER_OF_SAMPLES, CHANNEL_COUNT, FREQUENCY, AMPLITUDE);
+            ByteBuffer audioData = AudioInjector.createAudioData();
             AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE,
                     CHANNEL_OUT_MONO, ENCODING_PCM_16BIT, audioData.capacity(),
                     AudioTrack.MODE_STATIC);
@@ -393,7 +381,8 @@ public class VirtualAudioTest {
         void recordAudio(SignalObserver.SignalChangeListener signalChangeListener) {
             AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
                     SAMPLE_RATE,
-                    AudioFormat.CHANNEL_IN_MONO, ENCODING_PCM_16BIT, BUFFER_SIZE_IN_BYTES);
+                    AudioFormat.CHANNEL_IN_MONO, ENCODING_PCM_16BIT,
+                    AudioInjector.BUFFER_SIZE_IN_BYTES);
             if (mSignalObserver != null) {
                 mSignalObserver.close();
             }
@@ -410,80 +399,5 @@ public class VirtualAudioTest {
                 mSignalObserver.close();
             }
         }
-    }
-
-    private static class AudioInjector implements AutoCloseable {
-
-        private final ByteBuffer mAudioDataByteBuffer;
-        private final VirtualAudioDevice mVirtualAudioDevice;
-
-        private final AtomicBoolean mRunning = new AtomicBoolean(true);
-        private final CountDownLatch mInjectionInitializedLatch = new CountDownLatch(1);
-
-        private final Thread mAudioInjectorThread = new Thread() {
-            @Override
-            public void run() {
-                super.run();
-
-                AudioInjection audioInjection = mVirtualAudioDevice.startAudioInjection(
-                        INJECTION_FORMAT);
-                audioInjection.play();
-                mInjectionInitializedLatch.countDown();
-                while (mRunning.get() && !isInterrupted()) {
-                    int remaining = mAudioDataByteBuffer.remaining();
-                    while (remaining > 0 && mRunning.get() && !isInterrupted()) {
-                        remaining -= audioInjection.write(mAudioDataByteBuffer,
-                                mAudioDataByteBuffer.remaining(),
-                                WRITE_BLOCKING);
-                    }
-                    mAudioDataByteBuffer.rewind();
-                }
-                audioInjection.stop();
-            }
-        };
-
-        AudioInjector(ByteBuffer audioDataByteBuffer, VirtualAudioDevice virtualAudioDevice) {
-            mAudioDataByteBuffer = audioDataByteBuffer;
-            mVirtualAudioDevice = virtualAudioDevice;
-        }
-
-        public void startInjection()
-                throws TimeoutException, InterruptedException {
-            mAudioInjectorThread.start();
-            boolean success =
-                    mInjectionInitializedLatch.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-            if (!success) {
-                throw new TimeoutException(
-                        "Timeout while waiting for audio injection initialization");
-            }
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            mRunning.set(false);
-            mAudioInjectorThread.interrupt();
-            mAudioInjectorThread.join();
-        }
-    }
-
-    static int computeNumSamples(int samplingRate, int channelCount) {
-        return (int) ((long) 1000 * samplingRate * channelCount / 1000);
-    }
-
-    static ByteBuffer createAudioData(int samplingRate, int numSamples, int channelCount,
-            double signalFrequencyHz, float amplitude) {
-        ByteBuffer playBuffer =
-                ByteBuffer.allocateDirect(numSamples * 2).order(ByteOrder.nativeOrder());
-        final double multiplier = 2f * Math.PI * signalFrequencyHz / samplingRate;
-        for (int i = 0; i < numSamples; ) {
-            double vDouble = amplitude * Math.sin(multiplier * (i / channelCount));
-            short v = (short) vDouble;
-            for (int c = 0; c < channelCount; c++) {
-                playBuffer.putShort(i * 2, v);
-                i++;
-            }
-        }
-        return playBuffer;
     }
 }
