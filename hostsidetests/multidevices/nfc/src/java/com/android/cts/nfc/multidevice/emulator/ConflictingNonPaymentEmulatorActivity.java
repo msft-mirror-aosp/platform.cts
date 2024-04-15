@@ -16,41 +16,36 @@
 package com.android.cts.nfc.multidevice.emulator;
 
 import android.content.ComponentName;
-import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
+import android.util.Log;
 
-import com.android.cts.nfc.multidevice.utils.HceUtils;
-import com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService2;
 
-import java.util.ArrayList;
-
-public class DynamicAidEmulatorActivity extends BaseEmulatorActivity {
+public class ConflictingNonPaymentEmulatorActivity extends BaseEmulatorActivity {
+    protected static final String TAG = "ConflictingNonPayment";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setupServices(TransportService1.COMPONENT, TransportService2.COMPONENT);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        setupServices(PaymentServiceDynamicAids.COMPONENT);
+        Log.d(TAG, "onResume");
     }
 
     @Override
-    protected void onServicesSetup() {
-        ArrayList<String> paymentAids = new ArrayList<String>();
-        paymentAids.add(HceUtils.PPSE_AID);
-        paymentAids.add(HceUtils.VISA_AID);
-        // Register a different set of AIDs for the foreground
-        mCardEmulation.registerAidsForService(
-                PaymentServiceDynamicAids.COMPONENT, CardEmulation.CATEGORY_PAYMENT, paymentAids);
-        makeDefaultWalletRoleHolder();
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
     }
 
     @Override
     protected void onApduSequenceComplete(ComponentName component, long duration) {
-        if (component.equals(PaymentServiceDynamicAids.COMPONENT)) {
+        if (component.equals(TransportService2.COMPONENT)) {
             setTestPassed();
         }
     }
