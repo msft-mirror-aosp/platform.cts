@@ -16,6 +16,9 @@
 
 package android.assist.service;
 
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.statusBars;
+
 import android.app.assist.AssistContent;
 import android.app.assist.AssistStructure;
 import android.assist.common.Utils;
@@ -37,6 +40,9 @@ import android.view.DisplayCutout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
+import android.view.WindowManager;
+import android.view.WindowMetrics;
 
 public class MainInteractionSession extends VoiceInteractionSession {
     static final String TAG = "MainInteractionSession";
@@ -128,7 +134,13 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     mContentView.getViewTreeObserver().removeOnPreDrawListener(this);
                     Display d = mContentView.getDisplay();
                     Point displayPoint = new Point();
-                    d.getRealSize(displayPoint);
+                    WindowManager wm = mContext.getSystemService(WindowManager.class);
+                    WindowMetrics windowMetrics = wm.getCurrentWindowMetrics();
+                    WindowInsets windowInsets = windowMetrics.getWindowInsets();
+                    Rect bounds = new Rect(windowMetrics.getBounds());
+                    bounds.inset(windowInsets.getInsets(statusBars() | displayCutout()));
+                    displayPoint.y = bounds.height();
+                    displayPoint.x = bounds.width();
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area
@@ -141,7 +153,8 @@ public class MainInteractionSession extends VoiceInteractionSession {
                         }
                     }
                     Bundle bundle = new Bundle();
-                    bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_CONTENT_VIEW_HEIGHT);
+                    bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION,
+                            Utils.BROADCAST_CONTENT_VIEW_HEIGHT);
                     bundle.putInt(Utils.EXTRA_CONTENT_VIEW_HEIGHT, mContentView.getHeight());
                     bundle.putInt(Utils.EXTRA_CONTENT_VIEW_WIDTH, mContentView.getWidth());
                     bundle.putParcelable(Utils.EXTRA_DISPLAY_POINT, displayPoint);
