@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
- * Copyright (C) 2021 The Android Open Source Project
+/*
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- -->
+ */
+package android.companion.cts.common
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.companion.cts.core">
+import android.companion.AssociationInfo
+import java.util.function.Consumer
 
-    <uses-permission android:name="android.permission.DELIVER_COMPANION_MESSAGES" />
+class RecordingOnTransportsChangedListener
+private constructor(container: InvocationContainer<List<AssociationInfo>>) :
+    Consumer<List<AssociationInfo>>,
+    InvocationTracker<List<AssociationInfo>> by container {
 
-    <instrumentation
-        android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.companion.cts.core"
-        android:label="CompanionDeviceManager Core CTS tests">
+    constructor() : this(InvocationContainer())
 
-    </instrumentation>
-
-</manifest>
-
+    override fun accept(associations: List<AssociationInfo>) =
+        recordInvocation(associations)
+}
