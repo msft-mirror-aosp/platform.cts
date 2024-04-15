@@ -22,16 +22,13 @@ import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
 import android.companion.virtual.VirtualDeviceParams
 import android.content.Context
-import android.content.res.AssetManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
-import android.util.Log
 import android.view.Display
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -43,13 +40,8 @@ import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionId
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withMotionAction
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Arrays
 import kotlin.test.assertNotNull
-import kotlin.test.fail
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -58,6 +50,13 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
+import platform.test.screenshot.GoldenPathManager
+import platform.test.screenshot.PathConfig
+import platform.test.screenshot.ScreenshotTestRule
+import platform.test.screenshot.assertAgainstGolden
+import platform.test.screenshot.matchers.AlmostPerfectMatcher
+import platform.test.screenshot.matchers.BitmapMatcher
+import platform.test.screenshot.matchers.PixelPerfectMatcher
 
 /**
  * End-to-end tests for the [PointerIcon] pipeline.
@@ -74,6 +73,8 @@ import org.junit.runners.Parameterized.Parameter
 class PointerIconTest {
     private lateinit var activity: CaptureEventActivity
     private lateinit var verifier: EventVerifier
+    private lateinit var exactScreenshotMatcher: BitmapMatcher
+    private lateinit var similarScreenshotMatcher: BitmapMatcher
 
     @get:Rule
     val testName = TestName()
@@ -81,8 +82,15 @@ class PointerIconTest {
     val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
     @get:Rule
     val fakeAssociationRule = FakeAssociationRule()
-    @get: Rule
+    @get:Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
+    @get:Rule
+    val screenshotRule = ScreenshotTestRule(GoldenPathManager(
+        InstrumentationRegistry.getInstrumentation().getContext(),
+        ASSETS_PATH,
+        InstrumentationRegistry.getInstrumentation().targetContext.filesDir.absolutePath,
+        PathConfig()
+    ), disableIconPool = false)
 
     @Parameter(0)
     lateinit var device: PointerDevice
@@ -99,6 +107,10 @@ class PointerIconTest {
         device.setUp(context, virtualDisplayRule.virtualDisplay.display, fakeAssociationRule)
 
         verifier = EventVerifier(activity::getInputEvent)
+
+        exactScreenshotMatcher = PixelPerfectMatcher()
+        similarScreenshotMatcher =
+            AlmostPerfectMatcher(acceptableThreshold = SCREENSHOT_DIFF_PERCENT)
     }
 
     @After
@@ -119,11 +131,7 @@ class PointerIconTest {
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
-        val actualScreenshot = getActualScreenshot()
-        val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
-
-        assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
+        assertScreenshotsMatch()
     }
 
     @Test
@@ -137,11 +145,7 @@ class PointerIconTest {
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
-        val actualScreenshot = getActualScreenshot()
-        val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
-
-        assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
+        assertScreenshotsMatch()
     }
 
     @Test
@@ -164,11 +168,7 @@ class PointerIconTest {
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
         waitForPointerIconUpdate()
 
-        val actualScreenshot = getActualScreenshot()
-        val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
-
-        assertScreenshotPixelsEqual(actualScreenshot, expectedScreenshot)
+        assertScreenshotsMatch()
     }
 
     @Test
@@ -184,66 +184,9 @@ class PointerIconTest {
         device.hoverMove(1, 1)
         waitForPointerIconUpdate()
 
-        val actualScreenshot = getActualScreenshot()
-        val expectedScreenshot = getGoldenImageBitmap(testName.methodName + "_expected.png")
-        assertScreenshotDimensionsMatch(actualScreenshot, expectedScreenshot)
-
         // Drop shadows drawn in the hardware can be device dependent. Test that screenshots are
         // similar enough within a threshold to account for these differences.
-        assertScreenshotsSimilar(actualScreenshot, expectedScreenshot)
-    }
-
-    private fun assertScreenshotDimensionsMatch(
-        actualScreenshot: Bitmap,
-        expectedScreenshot: Bitmap
-    ) {
-        assertEquals(
-            "Actual and expected screenshots should be the same width.",
-            expectedScreenshot.width,
-            actualScreenshot.width
-        )
-        assertEquals(
-            "Actual and expected screenshots should be the same height.",
-            expectedScreenshot.height,
-            actualScreenshot.height
-        )
-    }
-
-    private fun assertScreenshotsSimilar(actualScreenshot: Bitmap, expectedScreenshot: Bitmap) {
-        if (isPixelDiffCountAboveThreshold(actualScreenshot, expectedScreenshot)) {
-            saveBitmapToLosslessFile(actualScreenshot)
-            fail("Screenshot mismatch.")
-        }
-    }
-
-    // Use a count of pixel differences as opposed to a percentage difference per-pixel. A percent
-    // threshold can make a test less flaky, but also provide a  less reliable signal: large parts
-    // of the image can change or disappear and the test could still pass. Percentage thresholds can
-    // also hide intentional changes not reflected in the golden.
-    private fun isPixelDiffCountAboveThreshold(
-        actualScreenshot: Bitmap,
-        expectedScreenshot: Bitmap
-    ): Boolean {
-        var totalPixelsDiffCount = 0
-        for (x in 0 until actualScreenshot.width) {
-            for (y in 0 until actualScreenshot.height) {
-                val actualPixel = actualScreenshot.getPixel(x, y)
-                val expectedPixel = expectedScreenshot.getPixel(x, y)
-                if ((Math.abs(Color.red(actualPixel) - Color.red(expectedPixel))
-                            > MAX_PER_CHANNEL_DIFF) ||
-                    (Math.abs(Color.green(actualPixel) - Color.green(expectedPixel))
-                            > MAX_PER_CHANNEL_DIFF) ||
-                    (Math.abs(Color.blue(actualPixel) - Color.blue(expectedPixel))
-                            > MAX_PER_CHANNEL_DIFF) ||
-                    (Math.abs(Color.alpha(actualPixel) - Color.alpha(expectedPixel))
-                            > MAX_PER_CHANNEL_DIFF)) {
-                    totalPixelsDiffCount++
-                }
-            }
-        }
-        val allowedDiffCount =
-            actualScreenshot.width * actualScreenshot.height * SCREENSHOT_DIFF_PERCENT
-        return totalPixelsDiffCount.toFloat() > allowedDiffCount
+        assertScreenshotsSimilar()
     }
 
     private fun getActualScreenshot(): Bitmap {
@@ -252,53 +195,25 @@ class PointerIconTest {
         return actualBitmap
     }
 
-    private fun assertScreenshotPixelsEqual(actualScreenshot: Bitmap, expectedScreenshot: Bitmap) {
-        val actualPixels = getBitmapPixels(actualScreenshot)
-        val expectedPixels = getBitmapPixels(expectedScreenshot)
-        if (!Arrays.equals(actualPixels, expectedPixels)) {
-            saveBitmapToLosslessFile(actualScreenshot)
-            fail("Screenshot mismatch.")
-        }
-    }
-
-    private fun getBitmapPixels(bitmap: Bitmap): IntArray {
-        val goldenPixels = IntArray(bitmap.getWidth() * bitmap.getHeight())
-        bitmap.getPixels(
-            goldenPixels,
-            0,
-            bitmap.getWidth(),
-            0,
-            0,
-            bitmap.getWidth(),
-            bitmap.getHeight()
+    private fun assertScreenshotsMatch() {
+        getActualScreenshot().assertAgainstGolden(
+            screenshotRule,
+            getParameterizedExpectedScreenshotName(),
+            exactScreenshotMatcher
         )
-        return goldenPixels
     }
 
-    private fun getGoldenImageBitmap(goldenImage: String): Bitmap {
-        val assets: AssetManager = InstrumentationRegistry.getInstrumentation().targetContext.assets
-        return BitmapFactory.decodeStream(assets.open(goldenImage))
+    private fun assertScreenshotsSimilar() {
+        getActualScreenshot().assertAgainstGolden(
+            screenshotRule,
+            getParameterizedExpectedScreenshotName(),
+            similarScreenshotMatcher
+        )
     }
 
-    private fun saveBitmapToLosslessFile(bitmap: Bitmap) {
-        val dir = InstrumentationRegistry.getInstrumentation().targetContext.filesDir
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
-        val actualScreenshot = File(dir, testName.methodName + "_actual.png")
-        if (actualScreenshot.exists()) {
-            Log.i(TAG, "Overwriting existing screenshot file: " + actualScreenshot.path)
-            actualScreenshot.delete()
-        }
-        actualScreenshot.createNewFile()
-        FileOutputStream(actualScreenshot).use { outputStream ->
-            bitmap.compress(
-                Bitmap.CompressFormat.PNG,
-                100,
-                outputStream
-            )
-        }
-        Log.d(TAG, "Actual screenshot saved to: $dir")
+    private fun getParameterizedExpectedScreenshotName(): String {
+        // Replace illegal characters '[' and ']' in expected screenshot name with underscores.
+        return "${testName.methodName}expected".replace("""\[|\]""".toRegex(), "_")
     }
 
     // We don't have a way to synchronously know when the requested pointer icon has been drawn
@@ -306,9 +221,8 @@ class PointerIconTest {
     private fun waitForPointerIconUpdate() = Thread.sleep(100)
 
     companion object {
-        const val TAG = "PointerIconTest"
-        const val SCREENSHOT_DIFF_PERCENT = 0.01f // 1% total difference threshold
-        const val MAX_PER_CHANNEL_DIFF = 0 // Default allow no difference per channel
+        const val SCREENSHOT_DIFF_PERCENT = 0.01 // 1% total difference threshold
+        const val ASSETS_PATH = "tests/input/assets"
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")

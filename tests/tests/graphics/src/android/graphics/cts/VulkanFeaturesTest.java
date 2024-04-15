@@ -34,17 +34,17 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Test that the Vulkan loader is present, supports the required extensions, and that system
@@ -236,6 +236,7 @@ public class VulkanFeaturesTest {
     private JSONObject mVkJSON = null;
     private JSONObject mVulkanDevices[];
     private JSONObject mBestDevice = null;
+    private boolean mIsTV = false;
 
     @Before
     public void setup() throws Throwable {
@@ -263,6 +264,8 @@ public class VulkanFeaturesTest {
                     if (DEBUG) {
                         Log.d(TAG, feature.name + "=" + feature.version);
                     }
+                } else if (PackageManager.FEATURE_LEANBACK.equals(feature.name)) {
+                    mIsTV = true;
                 }
             }
         }
@@ -502,6 +505,7 @@ public class VulkanFeaturesTest {
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
+        assumeTrue("Skipping because ABP is not required of TV devices", !mIsTV);
 
         if (!hasOnlyCpuDevice()) {
             assertEquals("This device must support the ABP 2021.", "", nativeGetABPSupport());

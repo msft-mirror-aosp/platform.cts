@@ -32,7 +32,6 @@ import com.android.tradefed.util.RunUtil;
 
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ReferenceType;
-import com.sun.jdi.ThreadGroupReference;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -347,13 +346,10 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
     }
 
     private void assertThreadSuspensionState(VirtualMachine vm, boolean expected) {
-        for (ThreadGroupReference tgf : vm.topLevelThreadGroups()) {
-            for (ThreadReference tr : tgf.threads()) {
-                boolean isSuspended = tr.isSuspended();
-                if (isSuspended != expected) {
-                    fail("Thread in unexpected state '" + tr.name()
-                            + "' isSuspended=" + isSuspended);
-                }
+        for (ThreadReference tr : vm.allThreads()) {
+            boolean isSuspended = tr.isSuspended();
+            if (isSuspended != expected) {
+                fail("Thread in unexpected state '" + tr.name() + "' isSuspended=" + isSuspended);
             }
         }
     }
