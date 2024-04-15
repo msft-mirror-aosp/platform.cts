@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright 2022 The Android Open Source Project
+  Copyright 2024 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,25 +14,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="android.security.cts.CVE_2021_39702"
-    android:versionCode="1"
-    android:versionName="1.0">
+    package="android.security.cts.overlay_request_manage_credentials">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <application
-        android:allowBackup="true"
-        android:label="CVE_2021_39702"
-        android:supportsRtl="true">
-        <uses-library android:name="android.test.runner" />
-        <service android:name=".PocService"
-            android:enabled="true"
-            android:exported="false" />
+    <application>
+        <service android:name=".PocService" />
+        <activity android:name=".PocActivity" />
     </application>
 
-    <instrumentation
-        android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.security.cts.CVE_2021_39702" />
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.security.cts.overlay_request_manage_credentials" />
 </manifest>
