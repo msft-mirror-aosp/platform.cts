@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (C) 2024 The Android Open Source Project
   ~
@@ -13,10 +14,9 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
-                   android:description="@string/transportService1">
-    <aid-group>
-        <aid-filter android:name="F001020304"/>
-    </aid-group>
-</host-apdu-service>
+<!-- Stub AndroidManifest.xml to build resources -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.cts.nfc.multidevice.utils">
+    <uses-sdk android:targetSdkVersion="34" android:minSdkVersion="34"/>
+    <application />
+</manifest>

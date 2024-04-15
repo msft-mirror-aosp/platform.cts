@@ -13,24 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.nfc.multidevice.emulator.service;
+package com.android.cts.nfc.multidevice.utils.service;
 
 import android.content.ComponentName;
 
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 
-public class PrefixTransportService1 extends HceService {
-    protected static final String TAG = "PrefixTransportService1";
+public class TransportService2 extends HceService {
 
     public static final ComponentName COMPONENT =
             new ComponentName(
-                    "com.android.cts.nfc.multidevice.emulator",
-                    PrefixTransportService1.class.getName());
+                    "com.android.cts.nfc.multidevice.emulator", TransportService2.class.getName());
 
-    public PrefixTransportService1() {
+    public TransportService2() {
         super(
-                HceUtils.COMMAND_APDUS_BY_SERVICE.get(PrefixTransportService1.class.getName()),
-                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PrefixTransportService1.class.getName()));
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService2.class.getName()),
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService2.class.getName()));
     }
 
     @Override
