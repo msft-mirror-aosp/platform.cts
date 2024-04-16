@@ -13,26 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.nfc.multidevice.emulator.service;
+package com.android.cts.nfc.multidevice.utils.service;
 
 import android.content.ComponentName;
 
-import com.android.cts.nfc.multidevice.utils.HceUtils;
-
-public class PaymentServiceDynamicAids extends HceService {
+public class OffHostService {
     public static final ComponentName COMPONENT =
             new ComponentName(
-                    "com.android.cts.nfc.multidevice.emulator",
-                    PaymentServiceDynamicAids.class.getName());
-
-    public PaymentServiceDynamicAids() {
-        super(
-                HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentServiceDynamicAids.class.getName()),
-                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentServiceDynamicAids.class.getName()));
-    }
-
-    @Override
-    public ComponentName getComponent() {
-        return COMPONENT;
-    }
+                    "com.android.cts.nfc.multidevice.emulator", OffHostService.class.getName());
 }

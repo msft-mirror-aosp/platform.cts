@@ -20,45 +20,33 @@ import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 
 import com.android.cts.nfc.multidevice.utils.HceUtils;
-import com.android.cts.nfc.multidevice.utils.service.LargeNumAidsService;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
 
 import java.util.ArrayList;
 
-public class LargeNumAidsEmulatorActivity extends BaseEmulatorActivity {
+public class ConflictingNonPaymentPrefixEmulatorActivity extends BaseEmulatorActivity {
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public void onApduSequenceComplete(ComponentName component, long duration) {
-        if (component.equals(LargeNumAidsService.COMPONENT)) {
-            setTestPassed();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        setupServices(LargeNumAidsService.COMPONENT);
+        setupServices(PrefixTransportService1.COMPONENT, PrefixTransportService2.COMPONENT);
     }
 
     @Override
     protected void onServicesSetup() {
-        ArrayList<String> aids = new ArrayList<String>();
-        for (int i = 0; i < 256; i++) {
-            aids.add(
-                    HceUtils.LARGE_NUM_AIDS_PREFIX
-                            + String.format("%02X", i)
-                            + HceUtils.LARGE_NUM_AIDS_POSTFIX);
-        }
+        // Do dynamic AID registration
+        ArrayList<String> service_aids = new ArrayList<>();
+        service_aids.add(HceUtils.TRANSPORT_PREFIX_AID + "*");
         mCardEmulation.registerAidsForService(
-                LargeNumAidsService.COMPONENT, CardEmulation.CATEGORY_OTHER, aids);
+                PrefixTransportService1.COMPONENT, CardEmulation.CATEGORY_OTHER, service_aids);
+        mCardEmulation.registerAidsForService(
+                PrefixTransportService2.COMPONENT, CardEmulation.CATEGORY_OTHER, service_aids);
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        mCardEmulation.unsetPreferredService(this);
+    public void onApduSequenceComplete(ComponentName component, long duration) {
+        if (component.equals(PrefixTransportService2.COMPONENT)) {
+            setTestPassed();
+        }
     }
 }

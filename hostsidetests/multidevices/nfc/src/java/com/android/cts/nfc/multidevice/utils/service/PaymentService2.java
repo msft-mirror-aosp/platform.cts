@@ -13,20 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.nfc.multidevice.emulator;
+package com.android.cts.nfc.multidevice.utils.service;
 
 import android.content.ComponentName;
-import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.utils.service.OffHostService;
+import com.android.cts.nfc.multidevice.utils.HceUtils;
 
-public class OffHostEmulatorActivity extends BaseEmulatorActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setupServices(OffHostService.COMPONENT);
+public class PaymentService2 extends HceService {
+    public static final ComponentName COMPONENT =
+            new ComponentName(
+                    "com.android.cts.nfc.multidevice.emulator", PaymentService2.class.getName());
+
+    public PaymentService2() {
+        super(
+                HceUtils.COMMAND_APDUS_BY_SERVICE.get(PaymentService2.class.getName()),
+                HceUtils.RESPONSE_APDUS_BY_SERVICE.get(PaymentService2.class.getName()));
     }
 
     @Override
-    public void onApduSequenceComplete(ComponentName component, long duration) {}
+    public ComponentName getComponent() {
+        return COMPONENT;
+    }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.nfc.multidevice.emulator.service;
+package com.android.cts.nfc.multidevice.utils.service;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -21,7 +21,6 @@ import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.BaseEmulatorActivity;
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 
@@ -29,6 +28,12 @@ import java.util.Arrays;
 
 public abstract class HceService extends HostApduService {
     private static final String TAG = "HceService";
+
+    // Intent action that's received when complete APDU sequence is received from an HCE service.
+    public static final String ACTION_APDU_SEQUENCE_COMPLETE =
+            "com.android.cts.nfc.multidevice.utils.service.ACTION_APDU_SEQUENCE_COMPLETE";
+    public static final String EXTRA_COMPONENT = "component";
+    public static final String EXTRA_DURATION = "duration";
 
     private static final int STATE_IDLE = 0;
     private static final int STATE_IN_PROGRESS = 1;
@@ -55,6 +60,7 @@ public abstract class HceService extends HostApduService {
     /** Called when service is deactivated */
     @Override
     public void onDeactivated(int arg0) {
+        Log.d(TAG, "onDeactivated");
         mApduIndex = 0;
         mState = STATE_IDLE;
     }
@@ -64,10 +70,9 @@ public abstract class HceService extends HostApduService {
 
     /** Callback when entire apdu sequence is successfully completed. */
     public void onApduSequenceComplete() {
-        Intent completionIntent = new Intent(BaseEmulatorActivity.ACTION_APDU_SEQUENCE_COMPLETE);
-        completionIntent.putExtra(BaseEmulatorActivity.EXTRA_COMPONENT, getComponent());
-        completionIntent.putExtra(
-                BaseEmulatorActivity.EXTRA_DURATION, System.currentTimeMillis() - mStartTime);
+        Intent completionIntent = new Intent(ACTION_APDU_SEQUENCE_COMPLETE);
+        completionIntent.putExtra(EXTRA_COMPONENT, getComponent());
+        completionIntent.putExtra(EXTRA_DURATION, System.currentTimeMillis() - mStartTime);
         sendBroadcast(completionIntent);
         Log.d(TAG, "Successful APDU sequence. Sent broadcast");
     }
