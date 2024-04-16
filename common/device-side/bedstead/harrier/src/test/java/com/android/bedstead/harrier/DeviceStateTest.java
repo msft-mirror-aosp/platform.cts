@@ -1126,34 +1126,30 @@ public class DeviceStateTest {
     @Test
     @RequireVisibleBackgroundUsers(reason = "Test")
     public void requireVisibleBackgroundUsersAnnotation_supported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersSupported()).isTrue();
+        assertThat(TestApis.users().isVisibleBackgroundUsersSupported()).isTrue();
     }
 
     @Test
     @RequireNotVisibleBackgroundUsers(reason = "Test")
     public void requireNotVisibleBackgroundUsersAnnotation_notSupported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersSupported()).isFalse();
+        assertThat(TestApis.users().isVisibleBackgroundUsersSupported()).isFalse();
     }
 
     @Test
     @RequireVisibleBackgroundUsersOnDefaultDisplay(reason = "Test")
     public void requireVisibleBackgroundUsersOnDefaultDisplayAnnotation_supported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersOnDefaultDisplaySupported()).isTrue();
+        assertThat(TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()).isTrue();
     }
 
     @Test
     @RequireNotVisibleBackgroundUsersOnDefaultDisplay(reason = "Test")
     public void requireNotVisibleBackgroundUsersOnDefaultDisplayAnnotation_notSupported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersOnDefaultDisplaySupported()).isFalse();
+        assertThat(TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()).isFalse();
     }
 
     @Test
     @TestTag("TestTag")
-    public void testTagAnnoation_testTagIsSet() {
+    public void testTagAnnotation_testTagIsSet() {
         assertThat(Tags.hasTag("TestTag")).isTrue();
     }
 

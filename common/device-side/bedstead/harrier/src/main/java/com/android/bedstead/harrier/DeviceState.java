@@ -177,6 +177,7 @@ import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
@@ -201,7 +202,6 @@ import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
 import com.android.bedstead.testapp.TestAppQueryBuilder;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
 
@@ -1229,7 +1229,7 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireQuickSettingsSupport requireQuickSettingsSupport) {
                 checkFailOrSkip("Device does not have quick settings",
-                        TileService.isQuickSettingsSupported(),
+                        TestApis.quickSettings().isSupported(),
                         requireQuickSettingsSupport.failureMode());
                 continue;
             }

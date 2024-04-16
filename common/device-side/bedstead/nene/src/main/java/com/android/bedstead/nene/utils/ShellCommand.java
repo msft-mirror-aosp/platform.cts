@@ -23,6 +23,8 @@ import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,11 +57,11 @@ public final class ShellCommand {
     @CheckResult
     public static Builder builderForUser(@Nullable UserReference userReference, String command) {
         Builder builder = builder(command);
-        if (userReference != null) {
-            builder.addOption("--user", userReference.id());
+        if (userReference == null) {
+            return builder;
         }
 
-        return builder;
+        return builder.addOption("--user", userReference.id());
     }
 
     public static final class Builder {
@@ -68,7 +70,6 @@ public final class ShellCommand {
         private byte[] mStdInBytes = null;
         @Nullable
         private Duration mTimeout = null;
-        @Nullable
         private boolean mAllowEmptyOutput = false;
         @Nullable
         private Function<String, Boolean> mOutputSuccessChecker = null;
@@ -91,6 +92,7 @@ public final class ShellCommand {
          *
          * <p>e.g. --user 10
          */
+        @CanIgnoreReturnValue
         @CheckResult
         public Builder addOption(String key, Object value) {
             // TODO: Deal with spaces/etc.
@@ -101,6 +103,7 @@ public final class ShellCommand {
         /**
          * Add an operand to the command.
          */
+        @CanIgnoreReturnValue
         @CheckResult
         public Builder addOperand(Object value) {
             // TODO: Deal with spaces/etc.
@@ -111,6 +114,7 @@ public final class ShellCommand {
         /**
          * Add a timeout to the execution of the command.
          */
+        @CanIgnoreReturnValue
         public Builder withTimeout(Duration timeout) {
             mTimeout = timeout;
             return this;
@@ -162,6 +166,7 @@ public final class ShellCommand {
          * See {@link #execute()} except that any {@link AdbException} is wrapped in a
          * {@link NeneException} with the message {@code errorMessage}.
          */
+        @CanIgnoreReturnValue
         public String executeOrThrowNeneException(String errorMessage) throws NeneException {
             try {
                 return execute();
@@ -171,6 +176,7 @@ public final class ShellCommand {
         }
 
         /** See {@link ShellCommandUtils#executeCommand(java.lang.String)}. */
+        @CanIgnoreReturnValue
         public String execute() throws AdbException {
             if (mTimeout == null) {
                 return executeSync();

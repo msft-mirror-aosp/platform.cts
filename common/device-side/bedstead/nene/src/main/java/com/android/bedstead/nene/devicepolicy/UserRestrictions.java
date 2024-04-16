@@ -18,6 +18,7 @@ package com.android.bedstead.nene.devicepolicy;
 
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 
+import android.annotation.SuppressLint;
 import android.os.UserManager;
 
 import com.android.bedstead.nene.TestApis;
@@ -52,6 +53,7 @@ public final class UserRestrictions {
     /**
      * {@code true} if the restriction is set on the given user.
      */
+    @SuppressLint("NewApi")
     public boolean isSet(String restriction) {
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
             return sUserManager.hasUserRestrictionForUser(restriction, mUser.userHandle());
