@@ -4506,6 +4506,39 @@ public class CameraTestUtils extends Assert {
         return unavailablePhysicalCameras;
     }
 
+    /**
+     * Get the unavailable physical cameras based on onPhysicalCameraUnavailable callback.
+     */
+    public static Set<Pair<String, String>> getUnavailablePhysicalCameras(CameraManager manager,
+            Handler handler) throws Exception {
+        final Set<Pair<String, String>> ret = new HashSet<>();
+        final ConditionVariable cv = new ConditionVariable();
+
+        CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
+            @Override
+            public void onPhysicalCameraUnavailable(String cameraId, String physicalCameraId) {
+                synchronized (ret) {
+                    ret.add(new Pair<String, String>(cameraId, physicalCameraId));
+                }
+                cv.open();
+            }
+        };
+        manager.registerAvailabilityCallback(ac, handler);
+
+        // Wait for next physical camera availability callback
+        while (cv.block(AVAILABILITY_TIMEOUT_MS)) {
+            // cv.block() returns true when open() is called
+            // false on timeout.
+            cv.close();
+        }
+
+        manager.unregisterAvailabilityCallback(ac);
+
+        synchronized (ret) {
+            return ret;
+        }
+    }
+
     public static void testPhysicalCameraAvailabilityConsistencyHelper(
             String[] cameraIds, CameraManager manager,
             Handler handler, boolean expectInitialCallbackAfterOpen) throws Throwable {
