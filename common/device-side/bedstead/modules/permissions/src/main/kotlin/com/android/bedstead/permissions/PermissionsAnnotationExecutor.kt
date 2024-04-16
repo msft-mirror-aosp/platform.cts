@@ -156,13 +156,20 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
             !packages().instrumented().isInstantApp, failureMode)
     }
 
-    override fun teardownShareableState() {
-    }
-
     override fun teardownNonShareableState() {
         permissionContext?.let {
             it.close()
             permissionContext = null
+        }
+    }
+
+    override fun onTestFailed(exception: Throwable) {
+        if (exception is SecurityException
+            || exception.stackTraceToString().contains("SecurityException")) {
+            // Commonly we have SecurityExceptions when there are missing permissions.
+
+            Log.i(LOG_TAG,
+                "SecurityException when using PermissionsAnnotationExecutor. Permission state: " + permissions().dump())
         }
     }
 

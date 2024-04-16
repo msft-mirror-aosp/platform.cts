@@ -21,14 +21,18 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.DeviceStateTester
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
-import com.google.common.truth.Truth
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assert
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
@@ -41,7 +45,7 @@ class PermissionsAnnotationExecutorTest {
     @RequireSdkVersion(min = Build.VERSION_CODES.R,
         reason = "Used permissions not available prior to R")
     fun ensureHasPermission_permissionIsGranted() {
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
     }
@@ -49,10 +53,10 @@ class PermissionsAnnotationExecutorTest {
     @Test
     @EnsureHasPermission(TEST_PERMISSION_1, TEST_PERMISSION_2)
     fun ensureHasPermission_multiplePermissions_permissionsAreGranted() {
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
     }
@@ -60,7 +64,7 @@ class PermissionsAnnotationExecutorTest {
     @Test
     @EnsureDoesNotHavePermission(TEST_PERMISSION_1)
     fun ensureDoesNotHavePermission_permissionIsDenied() {
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
@@ -68,10 +72,10 @@ class PermissionsAnnotationExecutorTest {
     @Test
     @EnsureDoesNotHavePermission(TEST_PERMISSION_1, TEST_PERMISSION_2)
     fun ensureDoesNotHavePermission_multiplePermissions_permissionsAreDenied() {
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
@@ -83,23 +87,45 @@ class PermissionsAnnotationExecutorTest {
     @RequireSdkVersion(min = Build.VERSION_CODES.R,
         reason = "Used permissions not available prior to R")
     fun ensureHasPermissionAndDoesNotHavePermission_permissionsAreCorrect() {
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
-        Truth.assertThat(context().instrumentedContext()
+        assertThat(context().instrumentedContext()
                 .checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
 
     @EnsureHasAppOp(APP_OP)
     fun ensureHasAppOpAnnotation_appOpIsAllowed() {
-        Truth.assertThat(permissions().hasAppOpAllowed(APP_OP)).isTrue()
+        assertThat(permissions().hasAppOpAllowed(APP_OP)).isTrue()
     }
 
     @Test
     @EnsureDoesNotHaveAppOp(APP_OP)
     fun ensureDoesNotHaveAppOpAnnotation_appOpIsNotAllowed() {
-        Truth.assertThat(permissions().hasAppOpAllowed(APP_OP)).isFalse()
+        assertThat(permissions().hasAppOpAllowed(APP_OP)).isFalse()
+    }
+
+    @Test
+    fun testThrowsSecurityException_usePermissionsAnnotationExecutor_dumpsToLogcat() {
+        DeviceStateTester().use { deviceState ->
+            TestApis.logcat()
+                    .listen { it.contains("SecurityException when using PermissionsAnnotationExecutor") }
+                    .use { logcat ->
+
+                        try {
+                            deviceState.stepName("testWhichThrowsSecurityException")
+                                    .apply(listOf(UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor"))) {
+                                        throw SecurityException("Testing")
+                                    }
+                            Assert.fail("Expected SecurityException")
+                        } catch (e: SecurityException) {
+                            // We expect the test to fail with a SecurityException
+                        }
+
+                        assertThat(logcat.awaitMatch()).isNotNull()
+                    }
+        }
     }
 
     companion object {
