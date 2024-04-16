@@ -205,7 +205,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             Map<ITestDevice, File> cache, String deviceFilePath,
             String tmpFileName) throws Exception {
         if (!device.doesFileExist(deviceFilePath)){
-            throw new Exception();
+            throw new Exception("File not found on the device: " + deviceFilePath);
         }
         File file;
         synchronized (cache) {
@@ -372,19 +372,20 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         try {
             return getVendorSepolicyVersionFromBuildInfo(build);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromBuildInfo failed: ", ex);
+            CLog.e("getVendorSepolicyVersionFromBuildInfo failed: " + ex);
             buildInfoEx = ex;
         }
         try {
             return getVendorSepolicyVersionFromDeviceJson(device);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromDeviceJson failed: ", ex);
+            CLog.e("getVendorSepolicyVersionFromDeviceJson failed: " + ex);
         }
         try {
             return getVendorSepolicyVersionFromManifests(device);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromManifests failed: ", ex);
-            throw buildInfoEx;
+            CLog.e("getVendorSepolicyVersionFromManifests failed: " + ex);
+            throw new Exception("Unable to get the vendor policy version from the device:",
+                buildInfoEx);
         }
     }
 
