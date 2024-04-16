@@ -42,7 +42,8 @@ android_test {
         "bedstead-flags",
         "bedstead-root",
         "device_policy_aconfig_flags_lib",
-        "TestApisReflection"
+        "TestApisReflection",
+        "bedstead-multiuser",
     ],
     srcs: [
         "src/**/*.java",
@@ -79,6 +80,7 @@ android_test {
         "flag-junit",
         "bedstead-flags",
         "bedstead-root",
+        "bedstead-multiuser",
     ],
     srcs: [
         "src/**/*.java",
@@ -116,7 +118,8 @@ android_test {
         "Interactive",
         "flag-junit",
         "bedstead-flags",
-        "bedstead-root"
+        "bedstead-root",
+        "bedstead-multiuser",
     ],
     srcs: [
         "src/**/*.java",

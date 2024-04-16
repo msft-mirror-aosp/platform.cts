@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.annotations
+package com.android.bedstead.multiuser.annotations
 
-/**
- * Mark that a test method should only run
- * when config_guestUserEphemeral is true
- *
- * This should be used with `DeviceState`.
- */
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
+
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY_GETTER,
@@ -29,21 +26,19 @@ package com.android.bedstead.harrier.annotations
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RequireResourcesBooleanValue(configName = "config_guestUserEphemeral", requiredValue = true)
-annotation class RequireGuestUserIsEphemeral(
+@RepeatingAnnotation
+annotation class EnsureCanAddUserGroup(
+    vararg val value: EnsureCanAddUser,
     /**
      * Priority sets the order that annotations will be resolved.
-     *
      *
      * Annotations with a lower priority will be resolved before annotations with a higher
      * priority.
      *
-     *
      * If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
 )
