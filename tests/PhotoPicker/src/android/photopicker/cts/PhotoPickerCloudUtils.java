@@ -54,6 +54,8 @@ public class PhotoPickerCloudUtils {
     public static final String NAMESPACE_STORAGE_NATIVE_BOOT = "storage_native_boot";
     private static final String KEY_ALLOWED_CLOUD_PROVIDERS = "allowed_cloud_providers";
     private static final String KEY_CLOUD_MEDIA_FEATURE_ENABLED = "cloud_media_feature_enabled";
+    private static final String KEY_PICKER_PICK_IMAGES_PRELOAD =
+            "picker_pick_images_preload_selected";
     private static final String DISABLE_DEVICE_CONFIG_SYNC =
             "cmd device_config set_sync_disabled_for_tests %s";
     private static final String DISABLE_DEVICE_CONFIG_SYNC_MODE = "until_reboot";
@@ -193,6 +195,20 @@ public class PhotoPickerCloudUtils {
         assertWithMessage("Failed to delete the allowed cloud providers device config")
                 .that(getAllowedProvidersDeviceConfig(namespace))
                 .isNull();
+    }
+
+    static void enablePickImagesPreload() {
+        writeDeviceConfigProp(NAMESPACE_MEDIAPROVIDER, KEY_PICKER_PICK_IMAGES_PRELOAD, true);
+    }
+
+    static void disablePickImagesPreload() {
+        writeDeviceConfigProp(NAMESPACE_MEDIAPROVIDER, KEY_PICKER_PICK_IMAGES_PRELOAD, false);
+    }
+
+    static boolean isPickImagesPreloadEnabled() {
+        return Boolean.parseBoolean(
+                readDeviceConfigProp(NAMESPACE_MEDIAPROVIDER, KEY_PICKER_PICK_IMAGES_PRELOAD)
+        );
     }
 
     @NonNull
