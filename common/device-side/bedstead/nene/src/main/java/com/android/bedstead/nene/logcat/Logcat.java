@@ -54,7 +54,7 @@ public final class Logcat {
     @Experimental
     public void clear() {
         try {
-            Retry.logic(() ->
+            String unused = Retry.logic(() ->
                             ShellCommand.builder("logcat")
                                     .addOperand("-c")
                                     .validate(String::isEmpty)

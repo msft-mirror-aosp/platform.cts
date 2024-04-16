@@ -178,6 +178,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device(self.dut)
+
       # Determine preview width and height to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
       logging.debug('supported_preview_sizes: %s', supported_preview_sizes)

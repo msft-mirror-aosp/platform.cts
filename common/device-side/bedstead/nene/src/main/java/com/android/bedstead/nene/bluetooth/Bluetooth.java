@@ -40,7 +40,7 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 /** Test APIs related to bluetooth. */
 public final class Bluetooth {
@@ -84,8 +84,8 @@ public final class Bluetooth {
             try {
                 boolean returnValue = sBluetoothAdapter.enable();
 
-                r.awaitForBroadcast();
-                Poll.forValue("Bluetooth Enabled", this::isEnabled)
+                Intent unused1 = r.awaitForBroadcast();
+                Boolean unused2 = Poll.forValue("Bluetooth Enabled", this::isEnabled)
                         .toBeEqualTo(true)
                         .errorOnFail("Waited for bluetooth to be enabled."
                                 + " .enable() returned " + returnValue)
@@ -110,8 +110,8 @@ public final class Bluetooth {
             try {
                 boolean returnValue = sBluetoothAdapter.disable();
 
-                r.awaitForBroadcast();
-                Poll.forValue("Bluetooth Enabled", this::isEnabled)
+                Intent unused1 = r.awaitForBroadcast();
+                Boolean unused2 = Poll.forValue("Bluetooth Enabled", this::isEnabled)
                         .toBeEqualTo(false)
                         .errorOnFail("Waited for bluetooth to be disabled."
                                 + " .disable() returned " + returnValue)

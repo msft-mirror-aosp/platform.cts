@@ -27,4 +27,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
 
 if __name__ == '__main__':
+    # Take test args
+    if '--' in sys.argv:
+        index = sys.argv.index('--')
+        sys.argv = sys.argv[:1] + sys.argv[index + 1:]
     test_runner.main()

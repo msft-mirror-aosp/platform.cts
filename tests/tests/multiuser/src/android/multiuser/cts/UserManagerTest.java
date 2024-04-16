@@ -87,7 +87,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import org.junit.Before;
 import org.junit.ClassRule;

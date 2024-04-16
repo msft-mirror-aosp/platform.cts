@@ -28,6 +28,8 @@ import com.android.queryable.queries.IntegerQueryHelper;
 import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onTrimMemory(int)}
  */
@@ -105,6 +107,7 @@ public class ServiceMemoryTrimmedEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceMemoryTrimmedEventLogger setService(
                 String serviceName) {
             mEvent.mService = ServiceInfo.builder()
@@ -114,6 +117,7 @@ public class ServiceMemoryTrimmedEvent extends Event {
         }
 
         /** Sets the level. */
+        @CanIgnoreReturnValue
         public ServiceMemoryTrimmedEventLogger setLevel(int level) {
             mEvent.mLevel = level;
             return this;

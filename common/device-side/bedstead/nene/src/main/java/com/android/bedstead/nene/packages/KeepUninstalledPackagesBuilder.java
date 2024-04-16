@@ -16,9 +16,10 @@
 
 package com.android.bedstead.nene.packages;
 
-import static android.Manifest.permission.KEEP_UNINSTALLED_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.KEEP_UNINSTALLED_PACKAGES;
 
 import android.content.pm.PackageManager;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 
 import androidx.annotation.CheckResult;
@@ -60,7 +61,7 @@ public final class KeepUninstalledPackagesBuilder {
 
         try (PermissionContext p =
                     TestApis.permissions().withPermission(KEEP_UNINSTALLED_PACKAGES)) {
-            packageManager.setKeepUninstalledPackages(mPackages);
+            TestApisReflectionKt.setKeepUninstalledPackages(packageManager, mPackages);
         }
     }
 
@@ -80,7 +81,7 @@ public final class KeepUninstalledPackagesBuilder {
      */
     @CheckResult
     public KeepUninstalledPackagesBuilder add(Package pkg) {
-        mPackages.add(pkg.packageName());
+        boolean unused = mPackages.add(pkg.packageName());
         return this;
     }
 
@@ -98,7 +99,7 @@ public final class KeepUninstalledPackagesBuilder {
     @CheckResult
     public KeepUninstalledPackagesBuilder add(Collection<Package> packages) {
         for (Package pkg : packages) {
-            add(pkg);
+            KeepUninstalledPackagesBuilder unused = add(pkg);
         }
         return this;
     }

@@ -53,7 +53,7 @@ public final class Flags {
      */
     public void setFlagSyncEnabled(boolean enabled) {
         Versions.requireMinimumVersion(Versions.T);
-        ShellCommand.builder("device_config")
+        String unused = ShellCommand.builder("device_config")
                 .addOperand("set_sync_disabled_for_tests")
                 .addOperand(enabled ? "none" : "persistent")
                 .allowEmptyOutput(true)

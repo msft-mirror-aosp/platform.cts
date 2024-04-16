@@ -40,9 +40,9 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;

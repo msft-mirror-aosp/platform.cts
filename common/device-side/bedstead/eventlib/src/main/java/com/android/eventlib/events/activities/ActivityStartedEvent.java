@@ -29,6 +29,8 @@ import com.android.queryable.queries.ActivityQueryHelper;
 import com.android.queryable.queries.IntegerQuery;
 import com.android.queryable.queries.IntegerQueryHelper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Activity#onStart()} is called.
  */
@@ -100,6 +102,7 @@ public final class ActivityStartedEvent extends Event {
         }
 
         /** Sets the {@link Activity} being started. */
+        @CanIgnoreReturnValue
         public ActivityStartedEventLogger setActivity(
                 android.content.pm.ActivityInfo activity) {
             mEvent.mActivity = ActivityInfo.builder(activity).build();
@@ -107,6 +110,7 @@ public final class ActivityStartedEvent extends Event {
         }
 
         /** Sets the task ID for the activity. */
+        @CanIgnoreReturnValue
         public ActivityStartedEventLogger setTaskId(int taskId) {
             mEvent.mTaskId = taskId;
             return this;

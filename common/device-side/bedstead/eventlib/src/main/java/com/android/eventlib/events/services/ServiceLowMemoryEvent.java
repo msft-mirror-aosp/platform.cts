@@ -27,6 +27,8 @@ import com.android.queryable.info.ServiceInfo;
 import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onLowMemory()}
  */
@@ -93,6 +95,7 @@ public class ServiceLowMemoryEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceLowMemoryEvent.ServiceLowMemoryEventLogger setService(
                 String serviceName) {
             mEvent.mService = ServiceInfo.builder()

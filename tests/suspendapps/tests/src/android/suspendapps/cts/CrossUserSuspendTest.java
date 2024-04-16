@@ -46,12 +46,12 @@ import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 
 import org.junit.ClassRule;
 import org.junit.Rule;

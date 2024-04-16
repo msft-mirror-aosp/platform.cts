@@ -29,6 +29,8 @@ import com.android.queryable.queries.ActivityQueryHelper;
 import com.android.queryable.queries.IntegerQuery;
 import com.android.queryable.queries.IntegerQueryHelper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Activity#onRestart()} is called.
  */
@@ -102,12 +104,14 @@ public final class ActivityRestartedEvent extends Event {
         }
 
         /** Sets the {@link Activity} being restarted. */
+        @CanIgnoreReturnValue
         public ActivityRestartedEventLogger setActivity(android.content.pm.ActivityInfo activity) {
             mEvent.mActivity = ActivityInfo.builder(activity).build();
             return this;
         }
 
         /** Sets the task ID for the activity. */
+        @CanIgnoreReturnValue
         public ActivityRestartedEventLogger setTaskId(int taskId) {
             mEvent.mTaskId = taskId;
             return this;

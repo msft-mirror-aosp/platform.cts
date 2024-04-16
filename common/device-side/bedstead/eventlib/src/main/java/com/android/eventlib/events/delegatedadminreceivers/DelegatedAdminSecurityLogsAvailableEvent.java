@@ -31,6 +31,8 @@ import com.android.queryable.queries.DelegatedAdminReceiverQueryHelper;
 import com.android.queryable.queries.IntentQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DelegatedAdminReceiver#onSecurityLogsAvailable(Context, Intent)}
  * is called.
@@ -139,6 +141,7 @@ public final class DelegatedAdminSecurityLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminSecurityLogsAvailableEventLogger setDelegatedAdminReceiver(
                 DelegatedAdminReceiver delegatedAdminReceiver) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(delegatedAdminReceiver);
@@ -154,6 +157,7 @@ public final class DelegatedAdminSecurityLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminSecurityLogsAvailableEventLogger setDelegatedAdminReceiver(
                 String delegatedAdminReceiverClassName) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(

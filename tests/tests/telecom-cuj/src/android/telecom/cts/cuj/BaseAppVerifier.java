@@ -150,6 +150,16 @@ public class BaseAppVerifier {
      /                 setUp and tearDown methods
      /***********************************************************/
 
+    /**
+     * This method will check TelecomManager#isInCall to determine if there is an ongoing call at
+     * the test start. If there is a call, the Telecom command to disconnect all ongoing calls will
+     * run and attempt to put the test class in a good state.  Also, the method will log any bound
+     * test apps.
+     */
+    public void maybeCleanupTelecom() {
+        mBaseAppVerifierImpl.maybeCleanupTelecom();
+    }
+
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
         return mBaseAppVerifierImpl.bindToApp(applicationName);
     }

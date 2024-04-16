@@ -32,6 +32,8 @@ import com.android.queryable.queries.PersistableBundleQuery;
 import com.android.queryable.queries.PersistableBundleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when
  * {@link DeviceAdminReceiver#onTransferOwnershipComplete(Context, PersistableBundle)} is called.
@@ -116,6 +118,7 @@ public final class DeviceAdminTransferOwnershipCompleteEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminTransferOwnershipCompleteEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -130,6 +133,7 @@ public final class DeviceAdminTransferOwnershipCompleteEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminTransferOwnershipCompleteEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);

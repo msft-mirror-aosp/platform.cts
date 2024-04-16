@@ -52,6 +52,7 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
 
     private String mPackageVerifier;
 
+    private int mInitialUserId;
     private Set<String> mExistingPackages;
     private List<Integer> mExistingUsers;
     private HashSet<String> mAvailableFeatures;
@@ -75,9 +76,17 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 "0",
                 USER_ALL);
 
+        mInitialUserId = getDevice().getCurrentUser();
         mExistingUsers = getDevice().listUsers();
+        Integer mainUserId = getDevice().getMainUserId();
         Integer primaryUserId = getDevice().getPrimaryUserId();
-        executeShellCommand("am switch-user " + primaryUserId);
+        if (primaryUserId != null) {
+            getDevice().switchUser(primaryUserId);
+        } else if (mainUserId != null) {
+            getDevice().switchUser(mainUserId);
+        } else {
+            // Neither a primary nor a main user exists. Just use the current one.
+        }
         executeShellCommand("wm dismiss-keyguard");
     }
 
@@ -116,6 +125,9 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
             } catch (Throwable t) {
                 lastTearDownError = t;
             }
+        }
+        if (getDevice().getCurrentUser() != mInitialUserId) {
+            getDevice().switchUser(mInitialUserId);
         }
         super.tearDown();
         if (lastTearDownError != null) {

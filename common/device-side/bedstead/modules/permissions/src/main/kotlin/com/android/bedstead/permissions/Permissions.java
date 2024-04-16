@@ -23,6 +23,7 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.util.Log;
 
@@ -62,8 +63,6 @@ public final class Permissions {
     private static final UserReference sUser = TestApis.users().instrumented();
     private static final Package sShellPackage =
             TestApis.packages().find("com.android.shell");
-    private static final Set<String> sCheckedGrantPermissions = new HashSet<>();
-    private static final Set<String> sCheckedDenyPermissions = new HashSet<>();
     private static final boolean SUPPORTS_ADOPT_SHELL_PERMISSIONS =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
 
@@ -131,7 +130,7 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withPermission(permissions);
+        PermissionContextImpl unused = permissionContext.withPermission(permissions);
 
         return permissionContext;
     }
@@ -150,7 +149,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withPermissionOnVersionAtLeast(minSdkVersion, permissions);
+        PermissionContextImpl unused =
+                permissionContext.withPermissionOnVersionAtLeast(minSdkVersion, permissions);
 
         return permissionContext;
     }
@@ -169,7 +169,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withPermissionOnVersionAtMost(maxSdkVersion, permissions);
+        PermissionContextImpl unused =
+                permissionContext.withPermissionOnVersionAtMost(maxSdkVersion, permissions);
 
         return permissionContext;
     }
@@ -188,7 +189,9 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withPermissionOnVersionBetween(minSdkVersion, maxSdkVersion, permissions);
+        PermissionContextImpl unused =
+                permissionContext.withPermissionOnVersionBetween(minSdkVersion, maxSdkVersion,
+                        permissions);
 
         return permissionContext;
     }
@@ -206,7 +209,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withPermissionOnVersion(sdkVersion, permissions);
+        PermissionContextImpl unused =
+                permissionContext.withPermissionOnVersion(sdkVersion, permissions);
 
         return permissionContext;
     }
@@ -229,7 +233,7 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withAppOp(appOps);
+        PermissionContextImpl unused = permissionContext.withAppOp(appOps);
 
         return permissionContext;
     }
@@ -254,7 +258,7 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withAppOpOnVersion(sdkVersion, appOps);
+        PermissionContextImpl unused = permissionContext.withAppOpOnVersion(sdkVersion, appOps);
 
         return permissionContext;
     }
@@ -279,7 +283,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withAppOpOnVersionAtLeast(sdkVersion, appOps);
+        PermissionContextImpl unused = permissionContext.withAppOpOnVersionAtLeast(sdkVersion,
+                appOps);
 
         return permissionContext;
     }
@@ -304,7 +309,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withAppOpOnVersionAtMost(sdkVersion, appOps);
+        PermissionContextImpl unused = permissionContext.withAppOpOnVersionAtMost(sdkVersion,
+                appOps);
 
         return permissionContext;
     }
@@ -330,7 +336,8 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withAppOpOnVersionBetween(minSdkVersion, maxSdkVersion, appOps);
+        PermissionContextImpl unused = permissionContext.withAppOpOnVersionBetween(minSdkVersion,
+                maxSdkVersion, appOps);
 
         return permissionContext;
     }
@@ -353,7 +360,7 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withoutPermission(permissions);
+        PermissionContextImpl unused = permissionContext.withoutPermission(permissions);
 
         return permissionContext;
     }
@@ -377,13 +384,13 @@ public final class Permissions {
         PermissionContextImpl permissionContext = new PermissionContextImpl(this);
         mPermissionContexts.add(permissionContext);
 
-        permissionContext.withoutAppOp(appOps);
+        PermissionContextImpl unused = permissionContext.withoutAppOp(appOps);
 
         return permissionContext;
     }
 
     void undoPermission(PermissionContext permissionContext) {
-        mPermissionContexts.remove(permissionContext);
+        boolean unused = mPermissionContexts.remove(permissionContext);
         applyPermissions();
     }
 
@@ -606,7 +613,9 @@ public final class Permissions {
         if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
             // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
             // infinite loop so won't use .appOps().set()
-            Set<String> previousAdoptedShellPermissions = ShellCommandUtils.uiAutomation().getAdoptedShellPermissions();
+            Set<String> previousAdoptedShellPermissions =
+                    TestApisReflectionKt.getAdoptedShellPermissions(
+                            ShellCommandUtils.uiAutomation());
             adoptShellPermissionIdentity(CommonPermissions.MANAGE_APP_OPS_MODES);
             for (String appOp : filteredGrantedAppOps) {
                 sAppOpsManager.setMode(appOp, pkg.uid(sUser),
@@ -701,15 +710,19 @@ public final class Permissions {
     }
 
     private void resetRootPermissionState(Package pkg, UserReference user) {
-         ShellCommandUtils.uiAutomation().clearOverridePermissionStates(pkg.uid(user));
+        TestApisReflectionKt.clearOverridePermissionStates(ShellCommandUtils.uiAutomation(),
+                pkg.uid(user));
     }
 
     private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
-         ShellCommandUtils.uiAutomation().addOverridePermissionState(pkg.uid(user), permission, granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
+        TestApisReflectionKt.addOverridePermissionState(
+                ShellCommandUtils.uiAutomation(), pkg.uid(user), permission,
+                granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
     }
 
     public void removeRootPermissionState(Package pkg, UserReference user, String permission) {
-         ShellCommandUtils.uiAutomation().removeOverridePermissionState(pkg.uid(user), permission);
+        TestApisReflectionKt.removeOverridePermissionState(
+                ShellCommandUtils.uiAutomation(), pkg.uid(user), permission);
     }
 
     private static boolean hasAdoptedShellPermissionIdentity = false;

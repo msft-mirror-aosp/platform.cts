@@ -33,6 +33,8 @@ import com.android.queryable.queries.IntentQueryHelper;
 import com.android.queryable.queries.LongQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DelegatedAdminReceiver#onNetworkLogsAvailable(Context, Intent, long,
  * int)}
@@ -196,6 +198,7 @@ public final class DelegatedAdminNetworkLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminNetworkLogsAvailableEventLogger setDelegatedAdminReceiver(
                 DelegatedAdminReceiver delegatedAdminReceiver) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(delegatedAdminReceiver);
@@ -211,6 +214,7 @@ public final class DelegatedAdminNetworkLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminNetworkLogsAvailableEventLogger setDelegatedAdminReceiver(
                 String delegatedAdminReceiverClassName) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(

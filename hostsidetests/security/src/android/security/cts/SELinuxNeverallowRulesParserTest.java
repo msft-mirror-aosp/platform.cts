@@ -19,15 +19,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import android.security.cts.SELinuxNeverallowRulesTest.NeverAllowRule;
-
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
@@ -35,7 +33,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
     @Test
     public void testParsingEmpty() throws Exception {
         String policy = "allow s t:c p;";
-        ArrayList<NeverAllowRule> rules = SELinuxNeverallowRulesTest.parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertTrue(rules.isEmpty());
     }
 
@@ -44,7 +42,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
         String policy = "# A comment, no big deal\n"
                 + "neverallow d1 d2:c1 p;\n"
                 + "neverallow d2 d3:c2 p2;\n";
-        ArrayList<NeverAllowRule> rules = SELinuxNeverallowRulesTest.parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
         assertEquals("neverallow d1 d2:c1 p;", rules.get(0).mText);
         assertEquals(false, rules.get(0).fullTrebleOnly);
@@ -62,7 +60,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
     public void testParsingMultiNeverallowOnOneLine() throws Exception {
         String policy = "# A comment\n"
                 + "neverallow d1 d2:c1 p; neverallow d2 d3:c2 p2;\n";
-        ArrayList<NeverAllowRule> rules = SELinuxNeverallowRulesTest.parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
     }
 
@@ -76,7 +74,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "  p1\n"
                 + "  p2\n"
                 + "};\n";
-        ArrayList<NeverAllowRule> rules = SELinuxNeverallowRulesTest.parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
         assertEquals(rules.get(0).mText, "neverallow d1 {   d2   d3 }:file {   p1   p2 };");
     }
@@ -87,7 +85,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d1 d2:c1 p;\n"
                 + "# END_TREBLE_ONLY\n"
                 + "neverallow d2 d3:c2 p2;\n";
-        ArrayList<NeverAllowRule> rules = SELinuxNeverallowRulesTest.parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
         assertEquals(true, rules.get(0).fullTrebleOnly);
         assertEquals(false, rules.get(1).fullTrebleOnly);
@@ -97,6 +95,6 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
     public void testParsingMissingConditions() throws Exception {
         String policy = "# BEGIN_LAUNCHING_WITH_S_ONLY\n"
                 + "neverallow d1 d2:c1 p;\n";
-        assertThrows(Exception.class, () -> SELinuxNeverallowRulesTest.parsePolicy(policy));
+        assertThrows(Exception.class, () -> SELinuxNeverallowRule.parsePolicy(policy));
     }
 }

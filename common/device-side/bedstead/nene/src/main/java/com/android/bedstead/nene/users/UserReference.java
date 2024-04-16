@@ -32,10 +32,12 @@ import static com.android.bedstead.permissions.CommonPermissions.QUERY_USERS;
 import static com.android.bedstead.nene.users.Users.users;
 import static com.android.bedstead.nene.utils.Versions.U;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.content.pm.UserInfo;
+import android.content.Intent;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -57,7 +59,7 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommand.Builder;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -136,12 +138,14 @@ public final class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
             return false;
         }
+
         return userInfo().isForTesting();
     }
 
     /**
      * {@code true} if this is the main user.
      */
+    @SuppressLint("NewApi")
     @Experimental
     public boolean isMain() {
         if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
@@ -186,7 +190,7 @@ public final class UserReference implements AutoCloseable {
 
             try {
                 // Expected success string is "Success: removed user"
-                ShellCommand.builder("pm remove-user")
+                String unused = ShellCommand.builder("pm remove-user")
                         .addOperand("-w") // Wait for remove-user to complete
                         .withTimeout(Duration.ofMinutes(1))
                         .addOperand(mId)
@@ -234,7 +238,7 @@ public final class UserReference implements AutoCloseable {
             // ("Success: user %d removed\n", userId)
             // ("Success: user %d set as ephemeral\n", userId)
             // ("Success: user %d is already being removed\n", userId)
-            ShellCommand.builder("pm remove-user")
+            String unused = ShellCommand.builder("pm remove-user")
                     .addOperand("--set-ephemeral-if-in-use")
                     .addOperand(mId)
                     .validate(ShellCommandUtils::startsWithSuccess)
@@ -290,8 +294,7 @@ public final class UserReference implements AutoCloseable {
             if (visibleOnDisplay) {
                 builder.addOperand("--display").addOperand(displayId);
             }
-            builder
-                    .addOperand(mId) // NOTE: id MUST be the last argument
+            builder.addOperand(mId) // NOTE: id MUST be the last argument
                     .validate(ShellCommandUtils::startsWithSuccess)
                     .execute();
 
@@ -367,7 +370,7 @@ public final class UserReference implements AutoCloseable {
     public UserReference switchTo() {
         UserReference parent = parent();
         if (parent != null) {
-            parent.switchTo();
+            UserReference unused = parent.switchTo();
             return this;
         }
 
@@ -478,6 +481,7 @@ public final class UserReference implements AutoCloseable {
     }
 
     /** Is the user {@link UserManager#isUserVisible() visible}? */
+    @SuppressLint("NewApi")
     public boolean isVisible() {
         if (!Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
             // Best effort to define visible as "current user or a profile of the current user"
@@ -544,7 +548,7 @@ public final class UserReference implements AutoCloseable {
                 try (PermissionContext p = TestApis.permissions()
                         .withPermission(CREATE_USERS)
                         .withPermissionOnVersionAtLeast(U, QUERY_USERS)) {
-                    String userTypeName = mUserManager.getUserType();
+                    String userTypeName = TestApisReflectionKt.getUserType(mUserManager);
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
                     }
@@ -619,7 +623,7 @@ public final class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
             return TestApis.users().all().stream().anyMatch(u -> u.equals(this));
         }
-        return users().anyMatch(ui -> ui.id == id());
+        return users().anyMatch(ui -> ui.getId() == id());
     }
 
     /**
@@ -646,7 +650,7 @@ public final class UserReference implements AutoCloseable {
                 /* user= */ this, USER_SETUP_COMPLETE_KEY, complete ? 1 : 0);
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            devicePolicyManager.forceUpdateUserSetupComplete(id());
+            TestApisReflectionKt.forceUpdateUserSetupComplete(devicePolicyManager, id());
         }
     }
 
@@ -682,12 +686,12 @@ public final class UserReference implements AutoCloseable {
                     .addOption("--user", mId);
 
             if (existingCredential != null) {
-                commandBuilder.addOption("--old", existingCredential);
+                ShellCommand.Builder unused = commandBuilder.addOption("--old", existingCredential);
             } else if (mLockCredential != null) {
-                commandBuilder.addOption("--old", mLockCredential);
+                ShellCommand.Builder unused = commandBuilder.addOption("--old", mLockCredential);
             }
 
-            commandBuilder.addOperand(lockCredential)
+            String unused = commandBuilder.addOperand(lockCredential)
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
@@ -813,7 +817,7 @@ public final class UserReference implements AutoCloseable {
         }
 
         try {
-            ShellCommand.builder("cmd lock_settings")
+            String unused = ShellCommand.builder("cmd lock_settings")
                     .addOperand("clear")
                     .addOption("--old", lockCredential)
                     .addOption("--user", mId)
@@ -908,7 +912,7 @@ public final class UserReference implements AutoCloseable {
                     .register();
             try {
                 if (mUserManager.requestQuietModeEnabled(enabled, userHandle())) {
-                    r.awaitForBroadcast();
+                    Intent unused = r.awaitForBroadcast();
                     return true;
                 }
                 return false;
@@ -949,7 +953,7 @@ public final class UserReference implements AutoCloseable {
     /** See {@link #remove}. */
     @Override
     public void close() {
-        remove();
+        UserReference unused = remove();
     }
 
     private AdbUser adbUserOrNull() {
@@ -973,7 +977,7 @@ public final class UserReference implements AutoCloseable {
     private UserInfo userInfo() {
         Versions.requireMinimumVersion(S);
 
-        return users().filter(ui -> ui.id == id()).findFirst()
+        return users().filter(ui -> ui.getId() == id()).findFirst()
                 .orElseThrow(() -> new NeneException("User does not exist " + this));
     }
 
@@ -1020,8 +1024,8 @@ public final class UserReference implements AutoCloseable {
 
         UserInfo userInfo = userInfo();
         if (!userInfo.supportsSwitchTo()) {
-            return "supportsSwitchTo=false(partial=" + userInfo.partial + ", isEnabled="
-                    + userInfo.isEnabled() + ", preCreated=" + userInfo.preCreated + ", isFull="
+            return "supportsSwitchTo=false(partial=" + userInfo.getPartial() + ", isEnabled="
+                    + userInfo.isEnabled() + ", preCreated=" + userInfo.getPreCreated() + ", isFull="
                     + userInfo.isFull() + ")";
         }
 
@@ -1052,7 +1056,7 @@ public final class UserReference implements AutoCloseable {
         try {
             return ShellCommand.builder("cmd lock_settings verify")
                     .addOperand("--user")
-                    .addOperand(userInfo().id)
+                    .addOperand(userInfo().getId())
                     .addOperand(credential.isEmpty() ? "" : "--old "+credential)
                     .execute().startsWith("Lock credential verified");
         } catch (AdbException e) {

@@ -71,25 +71,21 @@ public class HiddenApiTest extends AbstractApiTest {
     // for the first test to run needs to be sufficiently large on it to allow
     // for loadFilters() to complete.
     @Test(timeout = 900000)
-    @Ignore("b/301075649")
     public void testSignatureMethodsThroughReflection() {
         doTestSignature(METHOD_FILTER,/* reflection= */ true, /* jni= */ false);
     }
 
     @Test
-    @Ignore("b/301075649")
     public void testSignatureMethodsThroughJni() {
         doTestSignature(METHOD_FILTER, /* reflection= */ false, /* jni= */ true);
     }
 
     @Test
-    @Ignore("b/301075649")
     public void testSignatureFieldsThroughReflection() {
         doTestSignature(FIELD_FILTER, /* reflection= */ true, /* jni= */ false);
     }
 
     @Test
-    @Ignore("b/301075649")
     public void testSignatureFieldsThroughJni() {
         doTestSignature(FIELD_FILTER, /* reflection= */ false, /* jni= */ true);
     }

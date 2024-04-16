@@ -262,8 +262,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
     if (mCujTestParam.playerListener().isOrientationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation.",
-          supportOrientationRequest(mActivity));
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
+          !OrientationTestPlayerListener.getIgnoreOrientationRequest()
+              && supportOrientationRequest(mActivity));
     }
     if (mCujTestParam.playerListener().isPinchToZoomTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " as watch doesn't support zoom behaviour yet",

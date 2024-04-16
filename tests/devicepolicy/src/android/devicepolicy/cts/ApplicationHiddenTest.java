@@ -55,7 +55,7 @@ import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import org.junit.Before;
 import org.junit.ClassRule;

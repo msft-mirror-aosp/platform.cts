@@ -77,7 +77,7 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
 import com.android.interactive.annotations.NotFullyAutomated;

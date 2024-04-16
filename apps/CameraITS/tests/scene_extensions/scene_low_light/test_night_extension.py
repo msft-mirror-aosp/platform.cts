@@ -152,6 +152,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device(self.dut)
+
       # Determine capture width, height, and format
       for format_name, format_constant in _IMAGE_FORMATS_TO_CONSTANTS:
         capture_sizes = capture_request_utils.get_available_output_sizes(

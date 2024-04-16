@@ -45,9 +45,9 @@ import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_DEBUGGING_FEATURES
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.ApiTest
-import com.android.compatibility.common.util.BlockingBroadcastReceiver
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.io.File

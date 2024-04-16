@@ -16,12 +16,14 @@
 package com.android.bedstead.nene.devicepolicy
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.admin.DevicePolicyManager
 import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -733,6 +735,7 @@ object DevicePolicy {
      * See `DevicePolicyManager#getBluetoothContactSharingDisabled(UserHandle)`
      */
     @JvmOverloads
+    @SuppressLint("NewApi")
     fun getBluetoothContactSharingDisabled(user: UserReference = TestApis.users().instrumented()): Boolean =
         devicePolicyManager.getBluetoothContactSharingDisabled(user.userHandle())
 

@@ -255,7 +255,13 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         if (!rearDisplayWindowMetrics.getBounds().equals(initialWindowMetrics.getBounds())) {
             waitAndAssert(() -> mActivity.mConfigurationChanged);
         }
-        assertTrue(isActivityVisible(mActivity));
+
+        // If transitioning back to the original device state doesn't put the device to sleep, we
+        // should verify that the Activity is visible again.
+        if (!mCurrentDeviceState.hasProperty(
+                DeviceState.PROPERTY_POWER_CONFIGURATION_TRIGGER_SLEEP)) {
+            assertTrue(isActivityVisible(mActivity));
+        }
 
         verifyCallbacks();
     }

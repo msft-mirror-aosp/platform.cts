@@ -48,7 +48,6 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.UserInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
@@ -81,6 +80,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.modules.utils.build.SdkLevel;
 import com.android.window.flags.Flags;
 
 import org.junit.ClassRule;
@@ -1023,14 +1023,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         runWithShellPermissionIdentity(() -> startBackgroundActivity(APP_A), INTERACT_ACROSS_USERS);
 
         // Waits for final hoop in AppA to start looking for activity
-        if (UserManager.isHeadlessSystemUserMode()) {
-            assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
-            assertTaskDoesNotHaveVisibleComponents(APP_A.BACKGROUND_ACTIVITY,
-                    APP_A.BACKGROUND_ACTIVITY);
-        } else {
-            assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
-            assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
-        }
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
     }
 
     @Test
@@ -1408,6 +1402,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // BackgroundActivityTestBase. For backward compatibility reasons, it is only enabled
         // for apps with targetSdkVersion starting Android V.
         // TODO remove this assumption after V released.
-        assume().that(Build.VERSION.SDK_INT).isGreaterThan(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+        assume().that(SdkLevel.isAtLeastV()).isTrue();
     }
 }

@@ -34,6 +34,8 @@ import com.android.queryable.queries.IntegerQuery;
 import com.android.queryable.queries.IntegerQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onOperationSafetyStateChanged(Context, int, boolean)}
  * is called.
@@ -134,6 +136,7 @@ public final class DeviceAdminOperationSafetyStateChangedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminOperationSafetyStateChangedEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -148,6 +151,7 @@ public final class DeviceAdminOperationSafetyStateChangedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminOperationSafetyStateChangedEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);
