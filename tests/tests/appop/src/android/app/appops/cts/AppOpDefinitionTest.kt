@@ -65,7 +65,7 @@ class AppOpDefinitionTest {
         for ((opName, opCode) in APP_OPS) {
             Truth.assertThat(frameworkOpNames).contains(opName)
             Truth.assertWithMessage("Op mismatch, appop : $opName, $opCode")
-                .that(opCode).isEqualTo(AppOpsManager.strOpToOp(opName))
+                .that(AppOpsManager.strOpToOp(opName)).isEqualTo(opCode)
         }
     }
 
