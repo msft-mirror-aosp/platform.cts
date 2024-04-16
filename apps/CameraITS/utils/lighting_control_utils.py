@@ -40,13 +40,13 @@ def _toggle_screen_state(device, desired_state):
     device.adb.shell(['input', 'keyevent', 'KEYCODE_POWER'])
 
 
-def turn_off_device(device):
-  """Turn off a device via power key if screen is on."""
+def turn_off_device_screen(device):
+  """Turn off a device screen via power key if screen is on."""
   _toggle_screen_state(device, 'OFF')
 
 
-def turn_on_device(device):
-  """Turn on a device via power key if screen is on."""
+def turn_on_device_screen(device):
+  """Turn on a device screen via power key if screen is on."""
   _toggle_screen_state(device, 'ON')
 
 
