@@ -78,7 +78,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @LargeTest
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public class MultiUserTest {
