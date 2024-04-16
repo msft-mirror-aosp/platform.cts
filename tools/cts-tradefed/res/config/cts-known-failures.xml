@@ -376,4 +376,11 @@
 
     <!-- b/330278028 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest#testRecordObservation" />
+
+    <!-- b/330283216 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesTopicsConnectionTests com.android.adservices.tests.cts.topics.connection.TopicsConnectionTest#testEnableGlobalKillSwitch" />
+
+    <!-- b/325695985 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+
 </configuration>
