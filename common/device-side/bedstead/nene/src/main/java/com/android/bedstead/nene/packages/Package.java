@@ -187,6 +187,7 @@ public final class Package {
      * Install this package on the given user, using {@link #installExisting(UserReference)} if
      * possible, otherwise installing fresh.
      */
+    @CanIgnoreReturnValue
     public Package installBytes(UserReference user, Supplier<byte[]> apkFile) {
         // TODO(open bug): This was causing race conditions - need to look into it and restore
 //        if (exists()) {
@@ -199,6 +200,7 @@ public final class Package {
     /**
      * Uninstall the package for all users.
      */
+    @CanIgnoreReturnValue
     public Package uninstallFromAllUsers() {
         for (UserReference user : installedOnUsers()) {
             Package unused = uninstall(user);
@@ -212,6 +214,7 @@ public final class Package {
      *
      * <p>If the package is not installed for the given user, nothing will happen.
      */
+    @CanIgnoreReturnValue
     public Package uninstall(UserReference user) {
         if (user == null) {
             throw new NullPointerException();
@@ -362,6 +365,7 @@ public final class Package {
      * <p>The package must be installed on the user, must request the given permission, and the
      * permission must be a runtime permission.
      */
+    @CanIgnoreReturnValue
     public Package grantPermission(UserReference user, String permission) {
         // There is no readable output upon failure so we need to check ourselves
         checkCanGrantOrRevokePermission(user, permission);
@@ -410,6 +414,7 @@ public final class Package {
      *
      * <p>You can not deny permissions for the current package on the current user.
      */
+    @CanIgnoreReturnValue
     public Package denyPermission(UserReference user, String permission) {
         if (!hasPermission(user, permission)) {
             return this; // Already denied
