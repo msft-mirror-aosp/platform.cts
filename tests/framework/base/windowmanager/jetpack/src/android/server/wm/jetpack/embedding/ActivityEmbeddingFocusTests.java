@@ -78,8 +78,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
 
-        exitTouchMode(secondaryActivity);
-
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
         for (int i = 0; i < secondaryActivity.getFocusableViewCount(); i++) {
@@ -109,8 +107,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final Pair<TestFocusActivity, TestFocusActivity> activityPair = setupActivities();
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
-
-        exitTouchMode(secondaryActivity);
 
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
@@ -142,8 +138,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final Pair<TestFocusActivity, TestFocusActivity> activityPair = setupActivities();
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
-
-        exitTouchMode(secondaryActivity);
 
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
@@ -189,26 +183,34 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final TestFocusActivity secondaryActivity =
                 (TestFocusActivity) getResumedActivityById(secondaryActivityId);
         secondaryActivity.waitForFocus();
+        exitTouchMode(secondaryActivity);
+
+        assertFalse("The window of primaryActivity must not be in touch mode.",
+                primaryActivity.getWindow().getDecorView().isInTouchMode());
+        assertFalse("The window of secondaryActivity must not be in touch mode.",
+                secondaryActivity.getWindow().getDecorView().isInTouchMode());
+
+        getInstrumentation().runOnMainSync(() -> {
+            primaryActivity.resetFocusedView();
+            secondaryActivity.resetFocusedView();
+        });
         return new Pair<>(primaryActivity, secondaryActivity);
     }
 
     private void exitTouchMode(@NonNull TestFocusActivity focusedActivity) {
         sendKey(KEYCODE_1);
-        waitForIdle();
         assertEquals("The focused window must receive the key event.",
                 KEYCODE_1, focusedActivity.getLastKeyCode());
-        assertFalse("This focused window must not be in touch mode.",
-                focusedActivity.getWindow().getDecorView().isInTouchMode());
     }
 
     private static void sendKey(int keyCode) {
-        getInstrumentation().sendKeySync(new KeyEvent(ACTION_DOWN, keyCode));
-        getInstrumentation().sendKeySync(new KeyEvent(ACTION_UP, keyCode));
+        sendKey(keyCode, 0 /* metaState */);
     }
 
     private static void sendKey(int keyCode, int metaState) {
         getInstrumentation().sendKeySync(new KeyEvent(0, 0, ACTION_DOWN, keyCode, 0, metaState));
         getInstrumentation().sendKeySync(new KeyEvent(0, 0, ACTION_UP, keyCode, 0, metaState));
+        waitForIdle();
     }
 
 }
