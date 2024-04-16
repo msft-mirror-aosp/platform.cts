@@ -1125,7 +1125,46 @@ requirements {
 }
 requirements {
     id: "7.1.1.3/H-3-1"
-    description: "- HDR display"
+    name: "HDR display"
+    measurements: [{
+        key: "is_hdr"
+        value: {
+            id: "is_hdr",
+            description: "Does the display support HDR"
+            measurement_type: MEASUREMENT_TYPE_BOOL
+            comparison: COMPARISON_EQUAL
+        }
+    }, {
+            key: "display_luminance_nits"
+            value: {
+                id: "display_luminance_nits",
+                description: "The display luminance in nits."
+                measurement_type: MEASUREMENT_TYPE_DOUBLE
+                comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+            }
+        }
+    ]
+    specs {
+        key: 35
+        value {
+            mpc:   MEDIA_PERFORMANCE_CLASS_INVALID ;
+            specification: "MUST have a HDR display supporting at least 1000 nits"
+            required_values: {
+                key: "display_luminance_nits"
+                value: {
+                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+                    double_value: 1000
+                }
+            }
+            required_values: {
+                key: "is_hdr"
+                value: {
+                    comparison: COMPARISON_EQUAL
+                    bool_value: true
+                }
+            }
+        }
+    }
 }
 requirements {
     id: "7.1.4/H1-1"
@@ -1169,12 +1208,29 @@ requirements {
 }
 requirements {
     id: "8.2/H-1-1"
-    description: "- Read and write performance"
+    name: "Sequential write"
+    description: "Sequential write"
+    measurements: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+            id: "filesystem_io_rate_mbps"
+            description: "Sequential write performance in MB per second."
+            measurement_type: MEASUREMENT_TYPE_DOUBLE
+            comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+        }
+    }
     specs {
         key: 30
         value {
             mpc: MEDIA_PERFORMANCE_CLASS_11
             specification: "MUST ensure a sequential write performance of at least 100 MB/s."
+            required_values: {
+                key: "filesystem_io_rate_mbps"
+                value: {
+                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+                    double_value: 100
+                }
+            }
         }
     }
     specs {
@@ -1182,6 +1238,13 @@ requirements {
         value {
             mpc: MEDIA_PERFORMANCE_CLASS_13
             specification: "MUST ensure a sequential write performance of at least 125 MB/s."
+            required_values: {
+                key: "filesystem_io_rate_mbps"
+                value: {
+                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+                    double_value: 125
+                }
+            }
         }
     }
     specs {
@@ -1189,17 +1252,13 @@ requirements {
         value {
             mpc: MEDIA_PERFORMANCE_CLASS_14
             specification: "MUST ensure a sequential write performance of at least 150 MB/s."
-        }
-    }
-}
-requirements {
-    id: "8.2/H-2-1"
-    description: "- Read and write performance"
-    specs {
-        key: 31
-        value {
-            mpc: MEDIA_PERFORMANCE_CLASS_12
-            specification: "MUST ensure a sequential write performance of at least 125 MB/s."
+            required_values: {
+                key: "filesystem_io_rate_mbps"
+                value: {
+                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+                    double_value: 150
+                }
+            }
         }
     }
 }
@@ -1211,20 +1270,6 @@ requirements {
         value {
             mpc: MEDIA_PERFORMANCE_CLASS_11
             specification: "MUST ensure a random write performance of at least 10 MB/s."
-        }
-    }
-    specs {
-        key: 33
-        value {
-            mpc: MEDIA_PERFORMANCE_CLASS_13
-            specification: "same"
-        }
-    }
-    specs {
-        key: 34
-        value {
-            mpc: MEDIA_PERFORMANCE_CLASS_14
-            specification: "same"
         }
     }
 }
