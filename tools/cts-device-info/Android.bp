@@ -80,7 +80,7 @@ android_test_helper_app {
     optimize: {
         enabled: false,
     },
-    sdk_version: "current",
+    sdk_version: "test_current",
     manifest: ":CtsDeviceInfo_Manifest",
 }
 
