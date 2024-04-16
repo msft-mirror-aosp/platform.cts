@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,19 @@
 
 package android.display.cts;
 
-import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.view.WindowManager;
+import android.widget.ImageView;
 
-/**
- * An activity to turn on the screen
- */
-public class ScreenOnActivity extends Activity {
+import androidx.annotation.Nullable;
 
+public class HdrContentActivity extends ScreenOnActivity {
     @Override
-    public void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ImageView imageView = new ImageView(this);
+        imageView.setImageResource(R.drawable.desert_palms);
+        setContentView(imageView);
+        getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
     }
 }
