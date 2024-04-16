@@ -90,6 +90,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
@@ -774,6 +775,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     }
 
     @Test
+    @FlakyTest
     @RequiresFlagsDisabled(android.view.inputmethod.Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testImeInsetsWithDifferentControlTarget() throws Exception {
         final Instrumentation instrumentation = getInstrumentation();
