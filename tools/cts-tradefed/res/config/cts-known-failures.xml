@@ -449,4 +449,8 @@
 
     <!-- b/330283216 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesTopicsConnectionTests com.android.adservices.tests.cts.topics.connection.TopicsConnectionTest#testEnableGlobalKillSwitch" />
+
+    <!-- b/325695985 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+
 </configuration>
