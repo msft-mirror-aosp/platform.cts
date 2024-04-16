@@ -24,6 +24,7 @@ import android.content.Context;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.provider.ProviderProperties;
 import android.os.SystemClock;
 
 import com.android.bedstead.nene.TestApis;
@@ -59,8 +60,8 @@ public final class LocationProvider implements AutoCloseable {
                     /* supportsAltitude= */ false,
                     /* supportsSpeed= */ false,
                     /* supportsBearing= */ false,
-                    Criteria.POWER_MEDIUM,
-                    Criteria.ACCURACY_COARSE);
+                    ProviderProperties.POWER_USAGE_MEDIUM,
+                    ProviderProperties.ACCURACY_COARSE);
         }
     }
 

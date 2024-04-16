@@ -21,6 +21,8 @@ import android.util.Log;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -61,6 +63,7 @@ public final class Retry<E> {
     }
 
     /** Change the default timeout before the check is considered failed (default 30 seconds). */
+    @CanIgnoreReturnValue
     public Retry<E> timeout(Duration timeout) {
         mPoll.timeout(timeout);
         return this;
@@ -74,6 +77,7 @@ public final class Retry<E> {
      * <p>If true is returned, then no more retries will be attempted, otherwise retries will
      * continue until timeout.
      */
+    @CanIgnoreReturnValue
     public Retry<E> terminalException(Function<Throwable, Boolean> terminalChecker) {
         mPoll.terminalException(terminalChecker);
         return this;

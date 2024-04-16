@@ -45,6 +45,7 @@ import com.android.bedstead.nene.settings.Settings
 import com.android.bedstead.nene.systemproperties.SystemProperties
 import com.android.bedstead.nene.telecom.Telecom
 import com.android.bedstead.nene.telephony.Telephony
+import com.android.bedstead.nene.tile.QuickSettings
 import com.android.bedstead.nene.ui.Ui
 import com.android.bedstead.nene.users.Users
 import com.android.bedstead.nene.wallpaper.Wallpaper
@@ -197,4 +198,9 @@ object TestApis {
     /** Access Test APIs related to dumpsys.  */
     @JvmStatic
     fun dumpsys() = Dumpsys
+
+    /** Access Test APIs related to quick settings. */
+    @JvmStatic
+    @Experimental
+    fun quickSettings(): QuickSettings = QuickSettings
 }

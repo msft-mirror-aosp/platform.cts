@@ -48,6 +48,7 @@ import android.content.pm.CrossProfileApps;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.util.Log;
@@ -73,8 +74,10 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
-import com.android.compatibility.common.util.BlockingCallback.DefaultBlockingCallback;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.File;
 import java.util.Arrays;
@@ -129,7 +132,7 @@ public final class Package {
 
         try {
             // Expected output "Package X installed for user: Y"
-            ShellCommand.builderForUser(user, "cmd package install-existing")
+            String unused = ShellCommand.builderForUser(user, "cmd package install-existing")
                     .addOperand(mPackageName)
                     .validate(
                             (output) -> output.contains("installed for user"))
@@ -198,7 +201,7 @@ public final class Package {
      */
     public Package uninstallFromAllUsers() {
         for (UserReference user : installedOnUsers()) {
-            uninstall(user);
+            Package unused = uninstall(user);
         }
 
         return this;
@@ -232,11 +235,11 @@ public final class Package {
             if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.R)) {
                 try (PermissionContext p = TestApis.permissions().withPermission(
                         INTERACT_ACROSS_USERS_FULL)) {
-                    broadcastReceiver.register();
+                    BlockingBroadcastReceiver unused = broadcastReceiver.register();
                 }
                 canWaitForBroadcast = true;
             } else if (user.equals(TestApis.users().instrumented())) {
-                broadcastReceiver.register();
+                BlockingBroadcastReceiver unused = broadcastReceiver.register();
                 canWaitForBroadcast = true;
             }
 
@@ -295,9 +298,10 @@ public final class Package {
      * Enable this package for the given {@link UserReference}.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public Package enable(UserReference user) {
         try {
-            ShellCommand.builderForUser(user, "pm enable")
+            String unused = ShellCommand.builderForUser(user, "pm enable")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -319,11 +323,12 @@ public final class Package {
      * Disable this package for the given {@link UserReference}.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public Package disable(UserReference user) {
         try {
             // TODO(279387509): "pm disable" is currently broken for packages - restore to normal
             //  disable when fixed
-            ShellCommand.builderForUser(user, "pm disable-user")
+            String unused = ShellCommand.builderForUser(user, "pm disable-user")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -365,7 +370,7 @@ public final class Package {
             // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
             boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
-            ShellCommand.builderForUser(user, "pm grant")
+            String unused = ShellCommand.builderForUser(user, "pm grant")
                     .asRoot(shouldRunAsRoot)
                     .addOperand(packageName())
                     .addOperand(permission)
@@ -733,7 +738,7 @@ public final class Package {
 
             int previousPid = shouldCheckPreviousProcess ? runningProcess().pid() : -1;
 
-            Poll.forValue("Application flag", () -> {
+            Integer unused = Poll.forValue("Application flag", () -> {
                 userActivityManager.forceStopPackage(mPackageName);
 
                 return userPackageManager.getPackageInfo(mPackageName,
@@ -957,6 +962,7 @@ public final class Package {
      * Set this package as filling the given role on the instrumented user.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public RoleContext setAsRoleHolder(String role) {
         return setAsRoleHolder(role, TestApis.users().instrumented());
     }
@@ -965,6 +971,7 @@ public final class Package {
      * Set this package as filling the given role.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public RoleContext setAsRoleHolder(String role, UserReference user) {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_ROLE_HOLDERS, INTERACT_ACROSS_USERS_FULL)) {
@@ -1085,9 +1092,11 @@ public final class Package {
      */
     @Experimental
     public boolean canConfigureInteractAcrossProfiles(UserReference user) {
-        return TestApis.context().androidContextAsUser(user)
-                .getSystemService(CrossProfileApps.class)
-                .canConfigureInteractAcrossProfiles(packageName());
+        CrossProfileApps crossProfileApps = TestApis.context().androidContextAsUser(user)
+                .getSystemService(CrossProfileApps.class);
+
+        return TestApisReflectionKt.canConfigureInteractAcrossProfiles(crossProfileApps,
+                packageName());
     }
 
     /**
@@ -1095,7 +1104,7 @@ public final class Package {
      */
     @Experimental
     public void setAllowTestApiAccess(boolean allowed) {
-        ShellCommand.builder("am compat")
+        String unused = ShellCommand.builder("am compat")
                 .addOperand(allowed ? "enable" : "disable")
                 .addOperand("ALLOW_TEST_API_ACCESS")
                 .addOperand(packageName())
@@ -1144,7 +1153,7 @@ public final class Package {
     @Experimental
     public void setAppLinksToAllApproved() {
         try {
-            ShellCommand.builder("pm set-app-links")
+            String unused = ShellCommand.builder("pm set-app-links")
                     .addOption("--package", this.mPackageName)
                     .addOperand(2) // 2 = STATE_APPROVED
                     .addOperand("all")
@@ -1162,7 +1171,7 @@ public final class Package {
 
     @Experimental
     public void clearStorage() {
-        ShellCommand.builder("pm clear")
+        String unused = ShellCommand.builder("pm clear")
                 .addOperand(mPackageName)
                 .validate(ShellCommandUtils::startsWithSuccess)
                 .executeOrThrowNeneException("Error clearing storage for " + this);

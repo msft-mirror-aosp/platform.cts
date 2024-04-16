@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.context;
 
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -49,6 +50,7 @@ public final class Context {
     /**
      * Get the {@link android.content.Context} for the instrumented test app in another user.
      */
+    @SuppressLint("NewApi")
     public android.content.Context instrumentedContextAsUser(UserReference user) {
         return sInstrumentedContext.createContextAsUser(user.userHandle(), /* flags= */ 0);
     }
@@ -63,6 +65,7 @@ public final class Context {
     /**
      * Get the {@link android.content.Context} for the instrumentation app in another user.
      */
+    @SuppressLint("NewApi")
     public android.content.Context instrumentationContextAsUser(UserReference user) {
         return sInstrumentationContext.createContextAsUser(user.userHandle(), /* flags= */ 0);
     }

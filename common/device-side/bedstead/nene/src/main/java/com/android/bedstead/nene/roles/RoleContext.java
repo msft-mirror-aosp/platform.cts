@@ -24,6 +24,7 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A context that, when closed, will remove the package from the role.
@@ -54,7 +55,7 @@ public final class RoleContext implements AutoCloseable {
             // as we just add as one of the role holder so just removing them is fine.
             if (currentRoleHolders.isEmpty() && mPreviousRoleHolders.size() == 1) {
                 Package roleHolderPackage = Package.of(
-                        mPreviousRoleHolders.stream().toList().get(0));
+                        mPreviousRoleHolders.stream().collect(Collectors.toList()).get(0));
                 roleHolderPackage.setAsRoleHolder(mRole, mUser);
             }
         }

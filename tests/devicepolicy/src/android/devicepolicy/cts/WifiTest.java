@@ -106,8 +106,7 @@ public final class WifiTest {
     private static final String TEST_ALIAS = "test_alias";
     private static final String TEST_SSID = "\"test_ssid\"";
     private static final PrivateKey PRIVATE_KEY =
-            TestApis.certificates().generatePrivateKey(FakeKeys.FAKE_RSA_1.privateKey,
-                    Certificates.KeyAlgorithmType.RSA);
+            TestApis.certificates().generateRSAPrivateKey(FakeKeys.FAKE_RSA_1.privateKey);
     private static final Certificate CERTIFICATE =
             TestApis.certificates().generateCertificate(FakeKeys.FAKE_RSA_1.caCertificate);
     private static final Certificate[] CERTIFICATES = new Certificate[]{CERTIFICATE};
