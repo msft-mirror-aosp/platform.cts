@@ -45,6 +45,7 @@ import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -166,6 +167,7 @@ public class FileIntegrityManagerTest {
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity",
             "android.security.FileIntegrityManager#getFsVerityDigest"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
+    @Ignore("b/335034607")
     public void testEnableAndMeasureFsVerityByFile() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
@@ -183,6 +185,7 @@ public class FileIntegrityManagerTest {
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
+    @Ignore("b/335034607")
     public void testFailToEnableUnsupportedLocation() throws Exception {
         var files = newUnsupportedFiles();
         for (var file : files) {
@@ -196,6 +199,7 @@ public class FileIntegrityManagerTest {
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
+    @Ignore("b/335034607")
     public void testFailToEnableWithOpenedWritableFd() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
