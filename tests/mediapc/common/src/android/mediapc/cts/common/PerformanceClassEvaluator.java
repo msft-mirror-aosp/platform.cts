@@ -2599,11 +2599,6 @@ public class PerformanceClassEvaluator {
         return this.<DensityRequirement>addRequirement(DensityRequirement.createR7_1_1_3__H_2_1());
     }
 
-    public HdrDisplayRequirement addR7_1_1_3__H_3_1() {
-        return this.<HdrDisplayRequirement>addRequirement(
-            HdrDisplayRequirement.createR7_1_1_3__H_3_1());
-    }
-
     public MemoryRequirement addR7_6_1__H_2_1() {
         return this.<MemoryRequirement>addRequirement(MemoryRequirement.createR7_6_1__H_2_1());
     }
