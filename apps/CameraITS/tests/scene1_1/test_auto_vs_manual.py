@@ -136,11 +136,11 @@ class AutoVsManualTest(its_base_test.ItsBaseTest):
       # Check AWB gains & transform in auto results match values from do_3a
       if not np.allclose(awb_xform_a, awb_xform, atol=_AWB_AUTO_ATOL,
                          rtol=_AWB_AUTO_RTOL):
-        raise AssertionError(f'awb_xform 3A: {awb_xform}, auto: {awb_xform_a},'
+        raise AssertionError(f'awb_xform 3A: {awb_xform}, auto: {awb_xform_a}, '
                              f'RTOL={_AWB_AUTO_RTOL}, ATOL={_AWB_AUTO_ATOL}')
       if not np.allclose(awb_gains_a, awb_gains, atol=_AWB_AUTO_ATOL,
                          rtol=_AWB_AUTO_RTOL):
-        raise AssertionError(f'awb_gains 3A: {awb_gains}, auto: {awb_gains_a},'
+        raise AssertionError(f'awb_gains 3A: {awb_gains}, auto: {awb_gains_a}, '
                              f'RTOL={_AWB_AUTO_RTOL}, ATOL={_AWB_AUTO_ATOL}')
 
 if __name__ == '__main__':
