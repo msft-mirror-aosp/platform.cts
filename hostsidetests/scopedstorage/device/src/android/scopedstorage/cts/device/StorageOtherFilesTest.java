@@ -41,14 +41,23 @@ import static android.scopedstorage.cts.lib.TestUtils.getDcimDir;
 import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
 import static android.scopedstorage.cts.lib.TestUtils.revokeAccessMediaLocation;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.FileUtils;
 import android.provider.MediaStore;
+import android.provider.MediaStore.MediaColumns;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
@@ -59,6 +68,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,6 +84,8 @@ public class StorageOtherFilesTest {
             ApplicationProvider.getApplicationContext().getPackageName();
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
+
+    private static final Context sContext = sInstrumentation.getContext();
     private static final ContentResolver sContentResolver = getContentResolver();
 
     @ClassRule
@@ -187,6 +201,32 @@ public class StorageOtherFilesTest {
     }
 
     @Test
+    public void testDeleteWithParamDeleteData() throws Exception {
+        int expectedTargetSdk = sContext.getPackageManager().getApplicationInfo(
+                THIS_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0)).targetSdkVersion;
+        assumeTrue(expectedTargetSdk > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+        File testFile = stageImageFile("test" + System.nanoTime() + ".jpg",
+                RESOURCE_ID_WITH_METADATA);
+        final Uri uri = MediaStore.scanFile(sContentResolver, testFile);
+        String path;
+        try (Cursor c = sContentResolver.query(uri, new String[]{MediaColumns.DATA}, null, null,
+                null)) {
+            c.moveToNext();
+            path = c.getString(c.getColumnIndex(MediaColumns.DATA));
+        }
+
+        assertTrue(new File(path).exists());
+
+        // Delete with param "deletedata" as false
+        sContentResolver.delete(
+                uri.buildUpon().appendQueryParameter("deletedata", "false").build(), /* extras */
+                null);
+
+        // File should be deleted despite "deletedata" as false
+        assertFalse(new File(path).exists());
+    }
+
+    @Test
     public void other_accessLocationMetadata() throws Exception {
         HashMap<String, String> originalExif =
                 getExifMetadataFromRawResource(RESOURCE_ID_WITH_METADATA);
@@ -197,5 +237,18 @@ public class StorageOtherFilesTest {
         // Revoke A_M_L
         revokeAccessMediaLocation();
         assertExifMetadataMismatch(getExifMetadataFromFile(IMAGE_FILE_READABLE), originalExif);
+    }
+
+    private File stageImageFile(String name, int sourceId) throws Exception {
+        final File img = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), name);
+
+        try (InputStream in = sContext.getResources().openRawResource(sourceId);
+             OutputStream out = new FileOutputStream(img)) {
+            // Dump the image we have to external storage
+            FileUtils.copy(in, out);
+        }
+
+        return img;
     }
 }
