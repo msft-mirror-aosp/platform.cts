@@ -228,6 +228,11 @@ public final class TestApp {
         return new QueryableActivityInfoHashSet(mDetails.mActivities);
     }
 
+    /** The activity aliases which exist in the test app. */
+    public QueryableActivityInfoHashSet activityAliases() {
+        return new QueryableActivityInfoHashSet(mDetails.mActivityAliases);
+    }
+
     /**
      * The metadata declared by the test app.
      *
