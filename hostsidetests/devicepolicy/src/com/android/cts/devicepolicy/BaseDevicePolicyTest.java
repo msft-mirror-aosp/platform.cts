@@ -219,14 +219,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mInitialUserId = getDevice().getCurrentUser();
         }
 
-        if (!isHeadlessSystemUserMode()) {
-            mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
-        } else {
-            // For headless system user, all tests will be executed on current user
-            // and therefore, initial user is set as primary user for test purpose.
-            mPrimaryUserId = mInitialUserId;
-            mDeviceOwnerUserId = USER_SYSTEM;
-        }
+        mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
 
         mFixedUsers.add(mPrimaryUserId);
         if (mPrimaryUserId != USER_SYSTEM) {
@@ -351,13 +344,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected void installDeviceOwnerApp(String apk) throws Exception {
         installAppAsUser(apk, mDeviceOwnerUserId);
-
-        if (isHeadlessSystemUserMode()) {
-            // Need to explicitly install the device owner app for the current user (rather than
-            // relying on DPMS) so it has the same privileges (like INTERACT_ACROSS_USERS) as the
-            // app running on system user, otherwise some tests might fail
-            installAppAsUser(apk, mPrimaryUserId);
-        }
     }
 
     protected void removeDeviceOwnerAdmin(String componentName) throws DeviceNotAvailableException {
