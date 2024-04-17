@@ -139,7 +139,7 @@ public class BrightnessTest extends TestBase {
             assertTrue("failed " + secondEvent.brightness + " not greater than " +
                     firstEvent.brightness, secondEvent.brightness > firstEvent.brightness);
         } finally {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, previousBrightness);
+            runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
         }
     }
@@ -175,11 +175,11 @@ public class BrightnessTest extends TestBase {
             // Setup and remember some initial state.
             recordSliderEvents();
             waitForFirstSliderEvent();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 30);
+            runShellCommand("cmd display set-brightness 0.5");
             getNewEvents(1);
 
             // Update brightness
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.4");
 
             // Check we got a slider event for the change.
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
@@ -187,7 +187,7 @@ public class BrightnessTest extends TestBase {
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             assertValidLuxData(firstEvent);
             // Update brightness again
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 10);
+            runShellCommand("cmd display set-brightness 0.3");
 
             // Check we get a second slider event.
             newEvents = getNewEvents(1);
@@ -199,7 +199,7 @@ public class BrightnessTest extends TestBase {
             assertTrue("failed " + secondEvent.brightness + " not less than "
                     + firstEvent.brightness, secondEvent.brightness < firstEvent.brightness);
         } finally {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, previousBrightness);
+            runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
         }
     }
@@ -223,16 +223,16 @@ public class BrightnessTest extends TestBase {
 
             // Setup and remember some initial state.
             recordSliderEvents();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.2");
             assertTrue(getNewEvents().isEmpty());
 
             // Then change the brightness
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 80);
+            runShellCommand("cmd display set-brightness 0.5");
             Thread.sleep(200);
             // There shouldn't be any events.
             assertTrue(getNewEvents().isEmpty());
         } finally {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, previousBrightness);
+            runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
         }
     }
@@ -279,7 +279,7 @@ public class BrightnessTest extends TestBase {
             // Setup and generate one slider event.
             recordSliderEvents();
             waitForFirstSliderEvent();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.2");
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
 
             // No color samples.
@@ -288,7 +288,7 @@ public class BrightnessTest extends TestBase {
 
             // No test for sampling color as support is optional.
         } finally {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, previousBrightness);
+            runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
             mDisplayManager.setBrightnessConfiguration(previousConfig);
         }
@@ -441,12 +441,12 @@ public class BrightnessTest extends TestBase {
             // Setup and remember some initial state.
             recordSliderEvents();
             waitForFirstSliderEvent();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.2");
             getNewEvents(1);
 
             // Update brightness while we have a custom curve.
             mDisplayManager.setBrightnessConfiguration(config);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 60);
+            runShellCommand("cmd display set-brightness 0.3");
 
             // Check we got a slider event for the change.
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
@@ -457,7 +457,7 @@ public class BrightnessTest extends TestBase {
 
             // Update brightness again now with default curve.
             mDisplayManager.setBrightnessConfiguration(null);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 200);
+            runShellCommand("cmd display set-brightness 0.4");
 
             // Check we get a second slider event.
             newEvents = getNewEvents(1);
@@ -466,7 +466,7 @@ public class BrightnessTest extends TestBase {
             assertValidLuxData(secondEvent);
             assertTrue(secondEvent.isDefaultBrightnessConfig);
         } finally {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, previousBrightness);
+            runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
         }
     }
@@ -535,11 +535,11 @@ public class BrightnessTest extends TestBase {
             assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
             recordSliderEvents();
             waitForFirstSliderEvent();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.2");
             getNewEvents(1);
 
             // Get a unique display id via brightness change event
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 60);
+            runShellCommand("cmd display set-brightness 0.3");
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             String uniqueDisplayId = firstEvent.uniqueDisplayId;
