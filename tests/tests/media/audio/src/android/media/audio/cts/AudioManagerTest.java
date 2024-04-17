@@ -39,7 +39,6 @@ import static android.media.AudioManager.VIBRATE_SETTING_ON;
 import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
-import static android.media.audio.Flags.autoPublicVolumeApiHardening;
 import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
 import static android.provider.Settings.Global.APPLY_RAMPING_RINGER;
 import static android.provider.Settings.System.SOUND_EFFECTS_ENABLED;
@@ -241,8 +240,7 @@ public class AudioManagerTest {
         mIsSingleVolume = mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_single_volume", "bool", "android"));
         mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-                && autoPublicVolumeApiHardening()) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
             // setRingerMode is a no-op
             mSkipRingerTests = true;
             // volume SDK APIs are no-ops
