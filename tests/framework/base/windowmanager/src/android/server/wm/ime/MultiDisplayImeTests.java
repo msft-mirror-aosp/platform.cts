@@ -247,7 +247,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
         // Tap virtual display as top focused display & request focus on EditText to show
         // soft input.
-        tapOnDisplayCenter(newDisplay.mId);
+        touchAndCancelOnDisplayCenterSync(newDisplay.mId);
         expectEvent(stream, editorMatcher("onStartInput",
                 imeTestActivitySession2.getActivity().mEditText.getPrivateImeOptions()), TIMEOUT);
         showSoftInputAndAssertImeShownOnDisplay(newDisplay.mId, imeTestActivitySession2, stream);
