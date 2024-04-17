@@ -18,8 +18,8 @@ package com.android.cts.nfc.multidevice.emulator;
 import android.content.ComponentName;
 import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.OffHostService;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 
 public class OnAndOffHostEmulatorActivity extends BaseEmulatorActivity {
     @Override

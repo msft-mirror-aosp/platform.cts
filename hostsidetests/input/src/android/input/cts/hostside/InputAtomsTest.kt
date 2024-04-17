@@ -59,71 +59,94 @@ class InputAtomsTest : DeviceTestCase() {
 
     private val registry: ExtensionRegistry = ExtensionRegistry.newInstance()
 
+    private var initialLogTagValue: String = "UNKNOWN"
+
     override fun setUp() {
         super.setUp()
         ConfigUtils.removeConfig(device)
         ReportUtils.clearReports(device)
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
         InputExtensionAtoms.registerAllExtensions(registry)
+        initialLogTagValue =
+                device.executeShellCommand("getprop log.tag.InputReaderRawEvents")!!.trim()
+        device.executeShellCommand("setprop log.tag.InputReaderRawEvents DEBUG")
     }
 
     override fun tearDown() {
         super.tearDown()
         ConfigUtils.removeConfig(device)
         ReportUtils.clearReports(device)
+        device.executeShellCommand(
+            "setprop log.tag.InputReaderRawEvents ${initialLogTagValue.ifBlank { "UNKNOWN" } }"
+        )
     }
 
     @CddTest(requirements = ["6.1/C-0-10"])
     fun testInputDeviceUsageAtom() {
         val builder = ConfigUtils.createConfigBuilder("AID_NOBODY")
-        ConfigUtils.addEventMetric(builder,
-                InputExtensionAtoms.INPUTDEVICE_USAGE_REPORTED_FIELD_NUMBER)
+        ConfigUtils.addEventMetric(
+            builder,
+            InputExtensionAtoms.INPUTDEVICE_USAGE_REPORTED_FIELD_NUMBER
+        )
         ConfigUtils.uploadConfig(device, builder)
 
         // Connect a touchscreen, use it for at least five seconds, and disconnect it.
         // This should result in an InputDeviceUsageReported atom being logged upon disconnection
         // that documents the device being used.
         DeviceUtils.runDeviceTests(
-                device,
-                TEST_APP_PACKAGE,
-                EMULATE_INPUT_DEVICE_CLASS,
-                "useTouchscreenForFiveSeconds")
+            device,
+            TEST_APP_PACKAGE,
+            EMULATE_INPUT_DEVICE_CLASS,
+            "useTouchscreenForFiveSeconds"
+        )
         val minUsageDuration = 5_000
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
 
         val data: List<EventMetricData> = ReportUtils.getEventMetricDataList(device, registry)
 
-        assertThat("No InputDeviceUsageReported atoms logged!",
-                data.size, greaterThanOrEqualTo(1))
+        assertThat(
+            "No InputDeviceUsageReported atoms logged!",
+            data.size,
+            greaterThanOrEqualTo(1)
+        )
 
         val matchesAtom = Matchers.allOf<InputDeviceUsageReported>(
-                member("vendorId", { vendorId },
-                        equalTo(0x18d1)),
-                member("productId", { productId },
-                        equalTo(0xabcd)),
-                member("hasVersionId", { hasVersionId() },
-                        equalTo(true)),
-                member("deviceBus", { deviceBus },
-                        equalTo(InputDeviceBus.USB)),
-                member("usageDuration", { usageDurationMillis },
-                        greaterThanOrEqualTo(minUsageDuration)),
-                member("usageSourcesCount", { usageSourcesCount },
-                        equalTo(1)),
-                member("usageSources", { usageSourcesList },
-                        hasItem(equalTo(InputDeviceUsageType.TOUCHSCREEN))),
-                member("usageDurationsPerSourceCount", { usageDurationsPerSourceCount },
-                        equalTo(1)),
-                member("usageDurationsPerSource", { usageDurationsPerSourceList },
-                        hasItem(greaterThanOrEqualTo(minUsageDuration))),
-                member("uidsCount", { uidsCount },
-                        greaterThanOrEqualTo(1)),
-                member("usageDurationsPerUidCount", { usageDurationsPerUidCount },
-                        greaterThanOrEqualTo(1)),
+            member("vendorId", { vendorId }, equalTo(0x18d1)),
+            member("productId", { productId }, equalTo(0xabcd)),
+            member("hasVersionId", { hasVersionId() }, equalTo(true)),
+            member("deviceBus", { deviceBus }, equalTo(InputDeviceBus.USB)),
+            member(
+                "usageDuration",
+                { usageDurationMillis },
+                greaterThanOrEqualTo(minUsageDuration)
+            ),
+            member("usageSourcesCount", { usageSourcesCount }, equalTo(1)),
+            member(
+                "usageSources",
+                { usageSourcesList },
+                hasItem(equalTo(InputDeviceUsageType.TOUCHSCREEN))
+            ),
+            member("usageDurationsPerSourceCount", { usageDurationsPerSourceCount }, equalTo(1)),
+            member(
+                "usageDurationsPerSource",
+                { usageDurationsPerSourceList },
+                hasItem(greaterThanOrEqualTo(minUsageDuration))
+            ),
+            member("uidsCount", { uidsCount }, greaterThanOrEqualTo(1)),
+            member(
+                "usageDurationsPerUidCount",
+                { usageDurationsPerUidCount },
+                greaterThanOrEqualTo(1)
+            ),
         )
 
         assertThat(data, hasItem<EventMetricData>(
-                member("atom", { atom.getExtension(InputExtensionAtoms.inputdeviceUsageReported) },
-                        matchesAtom)))
+            member(
+                "atom",
+                { atom.getExtension(InputExtensionAtoms.inputdeviceUsageReported) },
+                matchesAtom
+            )
+        ))
     }
 
     private fun getTouchpadUsageAtom(): TouchpadUsage {
@@ -144,19 +167,19 @@ class InputAtomsTest : DeviceTestCase() {
         setupTouchpadUsageConfig()
 
         DeviceUtils.runDeviceTests(
-                device,
-                TEST_APP_PACKAGE,
-                EMULATE_INPUT_DEVICE_CLASS,
-                "useTouchpadWithFingersAndPalms")
+            device,
+            TEST_APP_PACKAGE,
+            EMULATE_INPUT_DEVICE_CLASS,
+            "useTouchpadWithFingersAndPalms"
+        )
 
         val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
-                member("vendorId", { vendorId }, equalTo(0x18d1)),
-                member("productId", { productId }, equalTo(0xabcd)),
-                member("deviceBus", { deviceBus },
-                        equalTo(InputDeviceBus.USB)),
-                member("fingerCount", { fingerCount }, equalTo(3)),
-                member("palmCount", { palmCount }, equalTo(2)),
+            member("vendorId", { vendorId }, equalTo(0x18d1)),
+            member("productId", { productId }, equalTo(0xabcd)),
+            member("deviceBus", { deviceBus }, equalTo(InputDeviceBus.USB)),
+            member("fingerCount", { fingerCount }, equalTo(3)),
+            member("palmCount", { palmCount }, equalTo(2)),
         ))
     }
 
@@ -344,7 +367,6 @@ class InputAtomsTest : DeviceTestCase() {
         }
         return metricData
     }
-
 }
 
 // Returns a matcher that helps match member variables of a class.

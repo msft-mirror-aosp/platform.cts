@@ -26,6 +26,8 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -125,6 +127,7 @@ public abstract class EventLogs<E extends Event> implements Serializable {
      * <p>This will timeout after {@link #DEFAULT_POLL_TIMEOUT} and throw an {@link AssertionError}
      * if no matching event is logged.
      */
+    @CanIgnoreReturnValue
     public E waitForEvent() {
         return waitForEvent(DEFAULT_POLL_TIMEOUT);
     }

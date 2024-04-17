@@ -38,6 +38,7 @@ android_test {
         "compatibility-device-util-axt",
         "MediaPerformanceClassCommon",
         "mediapc-auto-constants",
+        "mediapc-requirements",
     ],
     platform_apis: true,
     srcs: ["tests/src/**/*.java"],
@@ -61,4 +62,19 @@ java_library {
     srcs: [
         ":mediapc-auto-constants-gen",
     ],
+}
+
+genrule {
+    name: "mediapc-requirements-gen",
+    srcs: ["src/android/mediapc/cts/common/Requirements.java.tmpl"],
+    tools: ["genreqsrc"],
+    tool_files: [":mpc_requirements_binarypb"],
+    cmd: "cat $(in) | $(location genreqsrc) -f $(location :mpc_requirements_binarypb) > $(out) ",
+    out: ["android/mediapc/cts/common/Requirements.java"],
+}
+
+java_library {
+    name: "mediapc-requirements",
+    srcs: [":mediapc-requirements-gen"],
+    libs: ["MediaPerformanceClassCommon"],
 }

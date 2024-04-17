@@ -719,10 +719,17 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     public void testPlayAudioTwice() throws Exception {
 
         final String res = "camera_click.ogg";
+        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        int oldVolume = Integer.MIN_VALUE;
 
         Preconditions.assertTestFileExists(mInpPrefix + res);
         MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
         try {
+            // Test requires that the device is not muted. Store the current volume before setting
+            // it to a non-zero value and restore it at the end of the test.
+            oldVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 
@@ -743,6 +750,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             listener.release();
         } finally {
             mp.release();
+            if (oldVolume != Integer.MIN_VALUE) {
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVolume, 0);
+            }
         }
     }
 

@@ -51,6 +51,8 @@ import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.exceptions.NeneException;
+import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
@@ -214,13 +216,17 @@ public final class CrossProfileSharingTest {
 
             TestApis.context().instrumentedContext().startActivity(switchToOtherProfileIntent);
 
-            ComponentName chooserActivityComponent = TestApis.activities()
-                    .getTargetActivityOfIntent(CHOOSER_INTENT,
-                            PackageManager.MATCH_DEFAULT_ONLY).componentName();
+            ComponentReference chooserActivityComponentReference = TestApis.activities()
+                    .getResolvedActivityOfIntent(CHOOSER_INTENT,
+                            PackageManager.MATCH_DEFAULT_ONLY);
+
+            if (chooserActivityComponentReference == null) {
+                throw new NeneException("Unable to resolve activity of Intent: " + CHOOSER_INTENT);
+            }
 
             Poll.forValue("Chooser activity launched",
                             () -> TestApis.activities().foregroundActivity().componentName())
-                    .toBeEqualTo(chooserActivityComponent)
+                    .toBeEqualTo(chooserActivityComponentReference.componentName())
                     .errorOnFail()
                     .await();
         } finally {

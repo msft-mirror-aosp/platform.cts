@@ -25,6 +25,7 @@ android_test {
         "ctsmediav2common",
         "ctstestrunner-axt",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
     ],
     platform_apis: true,
     srcs: ["src/**/*.java"],

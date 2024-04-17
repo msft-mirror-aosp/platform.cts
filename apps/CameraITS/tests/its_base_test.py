@@ -242,7 +242,7 @@ class ItsBaseTest(base_test.BaseTestClass):
   def turn_off_tablet(self):
     """Turns off tablet, raising AssertionError if tablet is not found."""
     if self.tablet:
-      lighting_control_utils.turn_off_device(self.tablet)
+      lighting_control_utils.turn_off_device_screen(self.tablet)
     else:
       raise AssertionError('Test must be run with tablet.')
 

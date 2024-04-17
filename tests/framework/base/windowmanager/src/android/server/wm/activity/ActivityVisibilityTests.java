@@ -217,7 +217,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         // (b/308213530).
         // Wait for the existing TurnScreenOnActivity to finish and the home activity to be in
         // stopped state as the display is OFF.
-        if (supportsLockScreen()) {
+        if (!isDisplayOn(DEFAULT_DISPLAY)) {
             mWmState.waitForAllStoppedActivities();
         }
 

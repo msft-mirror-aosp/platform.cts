@@ -22,6 +22,16 @@
     <application android:label="NotEmptyTestApp">
         <meta-data android:name="test-metadata-key" android:value="test-metadata-value" />
 
+        <activity-alias
+            android:name="android.testapp.TestSchemeActivityAlias"
+            android:targetActivity="android.testapp.TestSchemeActivity"
+            android:exported="true">
+            <intent-filter >
+                <action android:name="android.intent.action.ACTIVITY_ALIAS_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+
         <!--This should only be included in a single TestApp-->
         <activity android:name="android.testapp.UniqueActivity" android:exported="true">
             <intent-filter>

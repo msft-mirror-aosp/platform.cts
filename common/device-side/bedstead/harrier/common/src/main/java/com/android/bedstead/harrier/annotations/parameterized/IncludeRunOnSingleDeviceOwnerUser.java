@@ -20,9 +20,6 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.HeadlessDeviceOwnerType.SINGLE_USER;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import android.app.admin.flags.Flags;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
@@ -50,7 +47,6 @@ import java.lang.annotation.Target;
         dpc = @Query(isHeadlessDOSingleUser = @BooleanQuery(isEqualTo = TRUE)))
 @EnsureHasNoDelegate
 @Ignore
-@RequiresFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
 public @interface IncludeRunOnSingleDeviceOwnerUser {
     /**
      * Priority sets the order that annotations will be resolved.

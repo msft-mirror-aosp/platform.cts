@@ -20,7 +20,7 @@ import android.content.ComponentName;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService1;
 
 public class SinglePaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override

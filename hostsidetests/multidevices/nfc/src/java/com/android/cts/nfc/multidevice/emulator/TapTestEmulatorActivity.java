@@ -20,7 +20,7 @@ import android.content.ComponentName;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 
 public class TapTestEmulatorActivity extends BaseEmulatorActivity {
 

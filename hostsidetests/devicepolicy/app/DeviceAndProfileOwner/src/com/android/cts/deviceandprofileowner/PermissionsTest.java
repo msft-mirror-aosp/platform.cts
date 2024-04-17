@@ -200,11 +200,6 @@ public class PermissionsTest extends BaseDeviceAdminTest {
         assertPermissionGrantState(mDevicePolicyManager, PRE_M_APP_PACKAGE_NAME, permission, value);
 
         Context context = mContext;
-        if (mIsDeviceOwnerTest && UserManager.isHeadlessSystemUserMode()) {
-            Log.d(TAG, "Using context for system user on device owner test because device uses "
-                    + "headless system user mode");
-            context = mContext.createContextAsUser(UserHandle.SYSTEM, /* flags= */ 0);
-        }
 
         // Install time permissions should always be granted
         PermissionUtils.checkPermission(context, permission, PERMISSION_GRANTED,

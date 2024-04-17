@@ -24,22 +24,23 @@ import android.content.IntentFilter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.cts.nfc.multidevice.emulator.service.AccessService;
-import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
-import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
-import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
 import com.android.cts.nfc.multidevice.utils.SnippetBroadcastReceiver;
+import com.android.cts.nfc.multidevice.utils.service.AccessService;
+import com.android.cts.nfc.multidevice.utils.service.LargeNumAidsService;
+import com.android.cts.nfc.multidevice.utils.service.OffHostService;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.utils.service.PrefixAccessService;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService2;
 
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.event.SnippetEvent;
@@ -364,6 +365,32 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
         mActivity = (ProtocolParamsReaderActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Open simple reader activity for conflicting non-payment test */
+    @Rpc(description = "Open simple reader activity for conflicting non-payment Test")
+    public void startConflictingNonPaymentReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(TransportService2.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(TransportService2.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for conflicting non-payment prefix test */
+    @Rpc(description = "Open simple reader activity for conflicting non-payment prefix Test")
+    public void startConflictingNonPaymentPrefixReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                PrefixTransportService2.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                PrefixTransportService2.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Registers receiver for Test Pass event */
     @AsyncRpc(description = "Waits for Test Pass event")
     public void asyncWaitForTestPass(String callbackId, String eventName) {
@@ -376,6 +403,24 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
     public void closeActivity() {
         if (mActivity != null) {
             mActivity.finish();
+        }
+    }
+
+    /** Disables polling for NFC TYpe-A on the reader */
+    @Rpc(description = "Disable polling for NFC Type-A on the reader")
+    public void disableTypeAPolling() {
+        if (mActivity != null && mActivity instanceof SimpleReaderActivity) {
+            ((SimpleReaderActivity) mActivity)
+                    .setReaderMode(BaseReaderActivity.NFC_TECH_A_POLLING_OFF);
+        }
+    }
+
+    /** Enables polling for NFC Type-A on the reader */
+    @Rpc(description = "Enables polling for NFC Type-A on the reader")
+    public void enableTypeAPolling() {
+        if (mActivity != null && mActivity instanceof SimpleReaderActivity) {
+            ((SimpleReaderActivity) mActivity)
+                    .setReaderMode(BaseReaderActivity.NFC_TECH_A_POLLING_ON);
         }
     }
 

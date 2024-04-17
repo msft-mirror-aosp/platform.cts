@@ -84,6 +84,7 @@ public final class WipeDataTest {
     @RequireRunOnInitialUser
     @RequireHeadlessSystemUserMode(reason = "tests headless user behaviour")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
+    @EnsureHasDeviceOwner
     public void wipeData_noAdditionalUsers_throwsException() {
         assertThrows("Should prevent the removal of last full user",
                 IllegalStateException.class,

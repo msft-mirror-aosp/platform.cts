@@ -18,8 +18,8 @@ package com.android.cts.nfc.multidevice.emulator;
 import android.content.ComponentName;
 import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2;
 
 public class PrefixPaymentEmulatorActivity extends BaseEmulatorActivity {
     private static final int STATE_IDLE = 0;

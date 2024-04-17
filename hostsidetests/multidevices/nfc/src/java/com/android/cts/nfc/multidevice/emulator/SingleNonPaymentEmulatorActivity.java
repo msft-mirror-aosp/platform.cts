@@ -18,7 +18,7 @@ package com.android.cts.nfc.multidevice.emulator;
 import android.content.ComponentName;
 import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 
 public class SingleNonPaymentEmulatorActivity extends BaseEmulatorActivity {
     @Override

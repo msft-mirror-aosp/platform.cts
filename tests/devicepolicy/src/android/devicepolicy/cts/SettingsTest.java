@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.admin.DeviceAdminInfo.HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -151,6 +152,7 @@ public final class SettingsTest {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = Build.VERSION_CODES.R))
     )
+    @Ignore("b/333377966")
     public void setSecureSetting_deviceOwnerOnly_sets() {
         int originalValue = TestApis.settings().secure()
                 .getInt(DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, /* defaultValue= */ 0);

@@ -19,8 +19,8 @@ import android.content.ComponentName;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
+import com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids;
 
 import java.util.ArrayList;
 

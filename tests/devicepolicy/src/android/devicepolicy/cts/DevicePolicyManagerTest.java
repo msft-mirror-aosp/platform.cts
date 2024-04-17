@@ -187,7 +187,9 @@ public final class DevicePolicyManagerTest {
                             sDeviceState.dpc().packageName(),
                             DpcAuthority.DPC_AUTHORITY,
                             sDeviceState.dpc().user().userHandle()));
-            TestApis.devicePolicy().forceSetMaxPolicyStorageLimit(newLimit);
+            TestApis.devicePolicy().setMaxPolicySize(newLimit);
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
 
            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
@@ -229,7 +231,7 @@ public final class DevicePolicyManagerTest {
                     sDeviceState.dpc().user().userHandle(),
                     sDeviceState.dpc().componentName());
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
-            TestApis.devicePolicy().forceSetMaxPolicyStorageLimit(NO_LIMIT);
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
 
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
@@ -262,7 +264,7 @@ public final class DevicePolicyManagerTest {
                     sDeviceState.dpc().user().userHandle(),
                     sDeviceState.dpc().componentName());
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
-            TestApis.devicePolicy().forceSetMaxPolicyStorageLimit(NO_LIMIT);
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
 
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
@@ -295,7 +297,7 @@ public final class DevicePolicyManagerTest {
                     DpcAuthority.DPC_AUTHORITY,
                     sDeviceState.dpc().user().userHandle(),
                     sDeviceState.dpc().componentName());
-            TestApis.devicePolicy().forceSetMaxPolicyStorageLimit(NO_LIMIT);
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
@@ -343,7 +345,7 @@ public final class DevicePolicyManagerTest {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
             int newLimit = 10;
-            TestApis.devicePolicy().forceSetMaxPolicyStorageLimit(newLimit);
+            TestApis.devicePolicy().setMaxPolicySize(newLimit);
 
             assertThat(sDevicePolicyManager.getMaxPolicyStorageLimit()).isEqualTo(newLimit);
 

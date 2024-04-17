@@ -474,6 +474,65 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.reader.nfc_reader.startScreenOffPaymentReaderActivity()
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
+    def test_conflicting_non_payment(self):
+        """ This test registers two non-payment services with conflicting AIDs,
+        selects a service to use, and ensures the selected service exchanges
+        an APDU sequence with the reader.
+
+        Test Steps:
+        1. Start emulator.
+        2. Start reader.
+        3. Select a service on the emulator device from the list of services.
+        4. Disable polling on the reader.
+        5. Set a callback handler on the emulator for a successful APDU
+        exchange.
+        6. Re-enable polling on the reader, which should trigger the APDU
+        exchange with the selected service.
+
+        Verifies:
+        1. Verifies APDU exchange is successful between the reader and the
+        selected service.
+        """
+        self.emulator.nfc_emulator.startConflictingNonPaymentEmulatorActivity()
+        self.reader.nfc_reader.startConflictingNonPaymentReaderActivity()
+        self.emulator.nfc_emulator.selectItem()
+        self.reader.nfc_reader.disableTypeAPolling()
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess'
+        )
+        self.reader.nfc_reader.enableTypeAPolling()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    def test_conflicting_non_payment_prefix(self):
+        """ This test registers two non-payment services with conflicting
+        prefix AIDs, selects a service to use, and ensures the selected
+        service exchanges an APDU sequence with the reader.
+
+        Test Steps:
+        1. Start emulator.
+        2. Start reader.
+        3. Select a service on the emulator device from the list of services.
+        4. Disable polling on the reader.
+        5. Set a callback handler on the emulator for a successful APDU
+        exchange.
+        6. Re-enable polling on the reader, which should trigger the APDU
+        exchange with the selected service.
+
+        Verifies:
+        1. Verifies APDU exchange is successful between the reader and the
+        selected service.
+        """
+        (self.emulator.nfc_emulator
+         .startConflictingNonPaymentPrefixEmulatorActivity())
+        self.reader.nfc_reader.startConflictingNonPaymentPrefixReaderActivity()
+        self.emulator.nfc_emulator.selectItem()
+        self.reader.nfc_reader.disableTypeAPolling()
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess'
+        )
+        self.reader.nfc_reader.enableTypeAPolling()
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
     def test_protocol_params(self):
         """ Tests that the Nfc-A and ISO-DEP protocol parameters are being
         set correctly.

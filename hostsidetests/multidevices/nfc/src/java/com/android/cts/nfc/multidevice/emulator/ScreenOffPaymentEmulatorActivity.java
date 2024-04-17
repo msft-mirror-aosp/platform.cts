@@ -23,8 +23,8 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
 
 public class ScreenOffPaymentEmulatorActivity extends BaseEmulatorActivity {
     private static final String TAG = "ScreenOffPaymentEm";

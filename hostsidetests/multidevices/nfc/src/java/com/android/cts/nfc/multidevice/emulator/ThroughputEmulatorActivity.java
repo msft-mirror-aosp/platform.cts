@@ -20,8 +20,8 @@ import android.content.ComponentName;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
+import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
 
 public class ThroughputEmulatorActivity extends BaseEmulatorActivity {
     private static final String TAG = "ThroughputEm";

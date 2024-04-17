@@ -55,6 +55,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.users.UserReference;
@@ -76,6 +77,7 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@RequirePrivateSpaceSupported
 @RunWith(BedsteadJUnit4.class)
 public class LauncherAppsForHiddenProfilesTest {
 
@@ -99,14 +101,6 @@ public class LauncherAppsForHiddenProfilesTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
-        try (PermissionContext p =
-                TestApis.permissions().withPermission(Manifest.permission.CREATE_USERS)) {
-            assumeTrue(
-                    "Private profile not enabled on the device",
-                    Objects.requireNonNull(mContext.getSystemService(UserManager.class))
-                            .canAddPrivateProfile());
-        }
 
         mLauncherApps = mContext.getSystemService(LauncherApps.class);
         mDefaultHome = getDefaultLauncher(InstrumentationRegistry.getInstrumentation());

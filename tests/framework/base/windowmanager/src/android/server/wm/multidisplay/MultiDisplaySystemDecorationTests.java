@@ -380,7 +380,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         waitAndAssertActivityStateOnDisplay(homeComponentName, STATE_RESUMED,
                 displayId, "Activity launched on secondary display must be resumed");
 
-        tapOnDisplayCenter(displayId);
+        touchAndCancelOnDisplayCenterSync(displayId);
         assertEquals("Top activity must be home type", ACTIVITY_TYPE_HOME,
                 mWmState.getFrontRootTaskActivityType(displayId));
     }

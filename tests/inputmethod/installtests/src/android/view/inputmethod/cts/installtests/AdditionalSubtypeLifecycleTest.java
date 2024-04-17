@@ -41,10 +41,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -68,7 +66,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @LargeTest
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public final class AdditionalSubtypeLifecycleTest {

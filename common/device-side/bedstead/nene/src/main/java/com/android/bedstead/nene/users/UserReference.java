@@ -61,6 +61,8 @@ import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -171,6 +173,7 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user does not exist then nothing will happen. If the removal fails for any other
      * reason, a {@link NeneException} will be thrown.
      */
+    @CanIgnoreReturnValue
     public UserReference remove() {
         Log.i(LOG_TAG, "Trying to remove user " + mId);
         if (!exists()) {
@@ -257,6 +260,7 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user does not exist, or the start fails for any other reason, a
      * {@link NeneException} will be thrown.
      */
+    @CanIgnoreReturnValue
     public UserReference start() {
         Log.i(LOG_TAG, "Starting user " + mId);
         return startUser(Display.INVALID_DISPLAY);

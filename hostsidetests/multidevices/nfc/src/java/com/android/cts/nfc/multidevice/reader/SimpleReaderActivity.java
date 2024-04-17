@@ -17,7 +17,6 @@
 package com.android.cts.nfc.multidevice.reader;
 
 import android.content.Intent;
-import android.nfc.NfcAdapter;
 import android.nfc.NfcAdapter.ReaderCallback;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
@@ -46,7 +45,8 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
         super.onResume();
         Intent intent = getIntent();
         setIntent(intent);
-        int nfcTech = intent.getIntExtra(EXTRA_NFC_TECH, NfcAdapter.FLAG_READER_NFC_A);
+        int nfcTech = intent.getIntExtra(EXTRA_NFC_TECH, NFC_TECH_A_POLLING_ON);
+        setReaderMode(nfcTech);
         mAdapter.enableReaderMode(this, this, nfcTech, null);
         Parcelable[] apdus = intent.getParcelableArrayExtra(EXTRA_APDUS);
         if (apdus != null) {
@@ -59,7 +59,17 @@ public class SimpleReaderActivity extends BaseReaderActivity implements ReaderCa
         }
 
         mResponses = intent.getStringArrayExtra(EXTRA_RESPONSES);
-        Log.d(TAG, "onResume: " + nfcTech);
+    }
+
+    protected void setReaderMode(int nfcTech) {
+        Log.d(TAG, "settingReaderMode to " + nfcTech);
+        mAdapter.enableReaderMode(this, this, nfcTech, null);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause");
     }
 
     @Override

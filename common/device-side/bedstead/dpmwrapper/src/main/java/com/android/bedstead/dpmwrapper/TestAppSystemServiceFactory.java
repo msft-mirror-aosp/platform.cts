@@ -16,6 +16,7 @@
 package com.android.bedstead.dpmwrapper;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
+import static android.app.admin.DeviceAdminInfo.HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER;
 
 import static com.android.bedstead.dpmwrapper.DataFormatter.addArg;
 import static com.android.bedstead.dpmwrapper.DataFormatter.getArg;
@@ -41,6 +42,8 @@ import android.os.HardwarePropertiesManager;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.mockito.stubbing.Answer;
 
@@ -232,7 +235,11 @@ public final class TestAppSystemServiceFactory {
         assertHasRequiredReceiver(context);
 
         int userId = context.getUserId();
-        if (userId == UserHandle.USER_SYSTEM || !Utils.isHeadlessSystemUserMode()) {
+        if (userId == UserHandle.USER_SYSTEM || !Utils.isHeadlessSystemUserMode()
+                || SystemUtil.runWithShellPermissionIdentity(
+                        () -> context.getSystemService(
+                                DevicePolicyManager.class).getHeadlessDeviceOwnerMode()
+                        == HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER)) {
             Log.i(TAG, "get(): returning 'pure' DevicePolicyManager for user " + userId);
             return manager;
         }

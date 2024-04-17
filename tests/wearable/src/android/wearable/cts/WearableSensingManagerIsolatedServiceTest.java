@@ -38,6 +38,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -49,6 +50,7 @@ import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
@@ -602,6 +604,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     private int attachTransportToCdm(ParcelFileDescriptor pfd) throws Exception {
+        // Tests that call this method will trigger a CDM attestation.
+        // On user builds, the attestation requires a certificate that is only provided to the
+        // device after it passes CTS tests, which means it can't pass the attestation. Attestation
+        // failure will cause the system to kill the WearableSensingService process, so tests that
+        // call this method will fail or become flaky, so we ignore them on user builds.
+        assumeTrue(Build.isDebuggable());
         CountDownLatch transportAvailableLatch = new CountDownLatch(1);
         AtomicInteger associationIdRef = new AtomicInteger();
         mCompanionDeviceManager.associate(

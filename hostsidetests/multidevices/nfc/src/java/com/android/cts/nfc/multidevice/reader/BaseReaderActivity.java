@@ -25,6 +25,12 @@ public class BaseReaderActivity extends Activity {
     // Intent action that's sent after the test condition is met.
     protected static final String ACTION_TEST_PASSED =
             "com.android.cts.nfc.multidevice.reader.ACTION_TEST_PASSED";
+    public static final int NFC_TECH_A_POLLING_ON =
+            NfcAdapter.FLAG_READER_NFC_A
+                    | NfcAdapter.FLAG_READER_NFC_BARCODE
+                    | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
+    public static final int NFC_TECH_A_POLLING_OFF =
+            NfcAdapter.FLAG_READER_NFC_BARCODE | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
 
     /** Call this in child classes when test condition is met */
     protected void setTestPassed() {

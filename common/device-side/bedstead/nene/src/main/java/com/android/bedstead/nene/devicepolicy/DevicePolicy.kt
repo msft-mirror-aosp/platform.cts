@@ -816,9 +816,9 @@ object DevicePolicy {
 
     /** See [DevicePolicyManager#setMaxPolicyStorageLimit]. */
     @Experimental
-    fun forceSetMaxPolicyStorageLimit(limit: Int) =
+    fun setMaxPolicySize(limitBytes: Int) =
             TestApis.permissions().withPermission(MANAGE_DEVICE_POLICY_STORAGE_LIMIT).use {
-                devicePolicyManager.forceSetMaxPolicyStorageLimit(limit)
+                devicePolicyManager.forceSetMaxPolicyStorageLimit(limitBytes)
             }
 
     /** See [DevicePolicyManager#getPolicySizeForAdmin]. */

@@ -2039,6 +2039,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         }
         assertFalse(isBobIntercepted);
 
+
         boolean isCharlieIntercepted = true;
         for (int i = 0; i < 6; i++) {
             isCharlieIntercepted = mListener.mIntercepted.get(charlie.getKey());
@@ -2047,7 +2048,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             }
             sleep();
         }
-        assertFalse(isCharlieIntercepted);
+        if (android.app.Flags.restrictAudioAttributesMedia()) {
+            // media notifications are moved to notification stream, so they should be intercepted
+            assertTrue(isCharlieIntercepted);
+        } else {
+            assertFalse(isCharlieIntercepted);
+        }
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
     }

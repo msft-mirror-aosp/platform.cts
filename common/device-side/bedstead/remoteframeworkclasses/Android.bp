@@ -17,7 +17,11 @@ android_library {
     ],
     manifest: "src/types/main/AndroidManifest.xml",
     min_sdk_version: "29",
-    plugins: ["TestApisReflection_Processor", "ConnectedAppsSDK_Processor", "RemoteFrameworkClasses_Processor"],
+    plugins: [
+        "TestApisReflection_Processor",
+        "ConnectedAppsSDK_Processor",
+        "RemoteFrameworkClasses_Processor",
+    ],
 }
 
 java_library {
@@ -42,7 +46,7 @@ java_library_host {
         "auto_service_annotations",
         "RemoteFrameworkClasses_Annotations",
         "ConnectedAppsSDK_Annotations",
-        "TestApisReflection_Annotations"
+        "TestApisReflection_Annotations",
     ],
     java_resource_dirs: [
         "java/",

@@ -23,7 +23,7 @@ import (
   "google.golang.org/protobuf/proto"
   "cts/test/mediapc/requirements/templatefns"
 
-  pb "cts/test/mediapc/requirements/requirements/requirements_go_proto"
+  pb "cts/test/mediapc/requirements/requirements_go_proto"
 )
 
 // Gensrc generates source from a template using a list of MPC requirements.

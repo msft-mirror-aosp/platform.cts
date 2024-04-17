@@ -25,20 +25,21 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 
-import com.android.cts.nfc.multidevice.emulator.service.AccessService;
-import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
-import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
-import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
+import com.android.cts.nfc.multidevice.utils.service.AccessService;
+import com.android.cts.nfc.multidevice.utils.service.LargeNumAidsService;
+import com.android.cts.nfc.multidevice.utils.service.OffHostService;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.utils.service.PrefixAccessService;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService2;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -182,17 +183,17 @@ public final class HceUtils {
                 });
 
         COMMAND_APDUS_BY_SERVICE.put(
-                PrefixTransportService1.class.getName(),
+                PrefixTransportService2.class.getName(),
                 new CommandApdu[] {
                     buildSelectApdu(TRANSPORT_PREFIX_AID + "FFFF", true),
                     buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAA", true),
                     buildSelectApdu(TRANSPORT_PREFIX_AID + "FFAABBCCDDEEFF", true),
-                    buildCommandApdu("80CA01FFAA", true)
+                    buildCommandApdu("80CA01FFBB", true)
                 });
         RESPONSE_APDUS_BY_SERVICE.put(
-                PrefixTransportService1.class.getName(),
+                PrefixTransportService2.class.getName(),
                 new String[] {
-                    "25929000", "FFEF25929000", "FFDFFFAABB25929000", "FFDFFFAACC25929000"
+                    "36039000", "FFBB25929000", "FFDFFFBBBB25929000", "FFDFFFBBCC25929000"
                 });
 
         COMMAND_APDUS_BY_SERVICE.put(
