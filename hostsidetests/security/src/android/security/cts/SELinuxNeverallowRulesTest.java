@@ -17,13 +17,12 @@
 package android.security.cts;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.RestrictedBuildTest;
 
-import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.PropertyUtil;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -36,18 +35,9 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
 
 /**
  * Neverallow Rules SELinux tests.
@@ -58,7 +48,8 @@ import java.util.stream.Stream;
  * policy.
  *
  * A set of criteria can be used in the platform policy to skip the test
- * depending on the device (e.g., launching version). See sConditions below.
+ * depending on the device (e.g., launching version). See
+ * SELinuxNeverallowRule.sConditions.
  *
  */
 @RunWith(DeviceJUnit4Parameterized.class)
@@ -77,106 +68,15 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
      */
     private ITestDevice mDevice;
 
-    private static String[] sConditions = {
-        "TREBLE_ONLY",
-        "COMPATIBLE_PROPERTY_ONLY",
-        "LAUNCHING_WITH_R_ONLY",
-        "LAUNCHING_WITH_S_ONLY",
-    };
-
-    protected static class NeverAllowRule {
-        public String mText;
-        public boolean fullTrebleOnly;
-        public boolean launchingWithROnly;
-        public boolean launchingWithSOnly;
-        public boolean compatiblePropertyOnly;
-
-        NeverAllowRule(String text, HashMap<String, Integer> conditions) {
-            mText = text;
-            if (conditions.getOrDefault("TREBLE_ONLY", 0) > 0) {
-                fullTrebleOnly = true;
-            }
-            if (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0) {
-                compatiblePropertyOnly = true;
-            }
-            if (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0) {
-                launchingWithROnly = true;
-            }
-            if (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0) {
-                launchingWithSOnly = true;
-            }
-        }
-
-        public String toString() {
-            return "Rule [text= " + mText
-                   + ", fullTrebleOnly=" + fullTrebleOnly
-                   + ", compatiblePropertyOnly=" + compatiblePropertyOnly
-                   + ", launchingWithROnly=" + launchingWithROnly
-                   + ", launchingWithSOnly=" + launchingWithSOnly
-                   + "]";
-        }
-    }
-
-    public static ArrayList<NeverAllowRule> parsePolicy(String policy) throws Exception {
-        String patternConditions = Arrays.stream(sConditions)
-                .flatMap(condition -> Stream.of("BEGIN_" + condition, "END_" + condition))
-                .collect(Collectors.joining("|"));
-
-        /* Uncomment conditions delimiter lines. */
-        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*(" + patternConditions + ")\\s*$",
-                Pattern.MULTILINE);
-        Matcher matcher = uncommentConditions.matcher(policy);
-        policy = matcher.replaceAll("$1");
-
-        /* Remove all comments. */
-        Pattern comments = Pattern.compile("#.*?$", Pattern.MULTILINE);
-        matcher = comments.matcher(policy);
-        policy = matcher.replaceAll("");
-
-        /* Use a pattern to match all the neverallow rules or a condition. */
-        Pattern neverAllowPattern = Pattern.compile(
-                "(neverallow\\s[^;]+?;|" + patternConditions + ")",
-                Pattern.MULTILINE);
-
-        ArrayList<NeverAllowRule> rules = new ArrayList();
-        HashMap<String, Integer> conditions = new HashMap();
-
-        matcher = neverAllowPattern.matcher(policy);
-        while (matcher.find()) {
-            String rule = matcher.group(1).replace("\n", " ");
-            if (rule.startsWith("BEGIN_")) {
-                String section = rule.substring(6);
-                conditions.put(section, conditions.getOrDefault(section, 0) + 1);
-            } else if (rule.startsWith("END_")) {
-                String section = rule.substring(4);
-                Integer v = conditions.getOrDefault(section, 0);
-                assertTrue("Condition " + rule + " found without BEGIN", v > 0);
-                conditions.put(section, v - 1);
-            } else if (rule.startsWith("neverallow")) {
-                rules.add(new NeverAllowRule(rule, conditions));
-            } else {
-                throw new Exception("Unknown rule: " + rule);
-            }
-        }
-
-        for (Map.Entry<String, Integer> condition : conditions.entrySet()) {
-            if (condition.getValue() != 0) {
-                throw new Exception("End of input while inside " + condition.getKey() + " section");
-            }
-        }
-
-        return rules;
-    }
-
     /**
      * Generate the test parameters based on the embedded policy (general_sepolicy.conf).
      */
     @Parameters
-    public static Iterable<NeverAllowRule> generateRules() throws Exception {
+    public static Iterable<SELinuxNeverallowRule> generateRules() throws Exception {
         File publicPolicy = SELinuxHostTest.copyResourceToTempFile("/general_sepolicy.conf");
         String policy = Files.readString(publicPolicy.toPath());
 
-        ArrayList<NeverAllowRule> rules = parsePolicy(policy);
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
 
         assertTrue("No test generated from the CTS-embedded policy", !rules.isEmpty());
         return rules;
@@ -184,20 +84,23 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
 
     /* Parameter generated by generateRules() and available to testNeverallowRules */
     @Parameter
-    public NeverAllowRule mRule;
+    public SELinuxNeverallowRule mRule;
 
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
         mBuild = getBuild();
 
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
-        sepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
-        sepolicyAnalyze.setExecutable(true);
+        assumeTrue("skipping not compatible rule", mRule.isCompatible(mDevice));
+
+        if (sepolicyAnalyze == null) {
+            sepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
+            sepolicyAnalyze.setExecutable(true);
+        }
 
         devicePolicyFile = SELinuxHostTest.getDevicePolicyFile(mDevice);
 
-        if (isSepolicySplit()) {
+        if (SELinuxHostTest.isSepolicySplit(mDevice)) {
             deviceSystemPolicyFile =
                     SELinuxHostTest.getDeviceSystemPolicyFile(mDevice);
 
@@ -215,74 +118,22 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
 
     @After
     public void tearDown() throws Exception {
-        sepolicyAnalyze.delete();
-    }
-
-    private boolean isFullTrebleDevice() throws Exception {
-        return SELinuxHostTest.isFullTrebleDevice(mDevice);
-    }
-
-    private boolean isDeviceLaunchingWithR() throws Exception {
-        return PropertyUtil.getFirstApiLevel(mDevice) > 29;
-    }
-
-    private boolean isDeviceLaunchingWithS() throws Exception {
-        return PropertyUtil.getFirstApiLevel(mDevice) > 30;
-    }
-
-    private boolean isCompatiblePropertyEnforcedDevice() throws Exception {
-        return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(mDevice);
-    }
-
-    private boolean isSepolicySplit() throws Exception {
-        return SELinuxHostTest.isSepolicySplit(mDevice);
+        if (sepolicyAnalyze != null) {
+            sepolicyAnalyze.delete();
+            sepolicyAnalyze = null;
+        }
     }
 
     @Test
     @RestrictedBuildTest
     public void testNeverallowRules() throws Exception {
-
-        if ((mRule.fullTrebleOnly) && (!isFullTrebleDevice())) {
-            // This test applies only to Treble devices but this device isn't one
-            return;
-        }
-        if ((mRule.launchingWithROnly) && (!isDeviceLaunchingWithR())) {
-            // This test applies only to devices launching with R or later but this device isn't one
-            return;
-        }
-        if ((mRule.launchingWithSOnly) && (!isDeviceLaunchingWithS())) {
-            // This test applies only to devices launching with S or later but this device isn't one
-            return;
-        }
-        if ((mRule.compatiblePropertyOnly) && (!isCompatiblePropertyEnforcedDevice())) {
-            // This test applies only to devices on which compatible property is enforced but this
-            // device isn't one
-            return;
-        }
-
         // If sepolicy is split and vendor sepolicy version is behind platform's,
         // only test against platform policy.
         File policyFile =
-                (isSepolicySplit() && mVendorSepolicyVersion < mSystemSepolicyVersion)
+                (SELinuxHostTest.isSepolicySplit(mDevice)
+                        && mVendorSepolicyVersion < mSystemSepolicyVersion)
                 ? deviceSystemPolicyFile : devicePolicyFile;
 
-        /* run sepolicy-analyze neverallow check on policy file using given neverallow rules */
-        ProcessBuilder pb = new ProcessBuilder(sepolicyAnalyze.getAbsolutePath(),
-                policyFile.getAbsolutePath(), "neverallow", "-n",
-                mRule.mText);
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        BufferedReader result = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        StringBuilder errorString = new StringBuilder();
-        while ((line = result.readLine()) != null) {
-            errorString.append(line);
-            errorString.append("\n");
-        }
-        p.waitFor();
-        assertTrue("The following errors were encountered when validating the SELinux"
-                   + "neverallow rule:\n" + mRule.mText + "\n" + errorString,
-                   errorString.length() == 0);
+        mRule.testNeverallowRule(sepolicyAnalyze, policyFile);
     }
 }
