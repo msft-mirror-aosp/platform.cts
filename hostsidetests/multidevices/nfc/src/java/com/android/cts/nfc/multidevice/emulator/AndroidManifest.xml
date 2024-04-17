@@ -118,7 +118,15 @@
             android:label="Protocol Params emulator"
             android:exported="true">
         </activity>
-        <service android:name=".service.TransportService1" android:exported="true"
+        <activity android:name=".ConflictingNonPaymentEmulatorActivity"
+            android:label="Conflicting Non-Payment Emulator"
+            android:exported="true">
+        </activity>
+        <activity android:name=".ConflictingNonPaymentPrefixEmulatorActivity"
+            android:label="Conflicting Non-Payment Prefix Emulator"
+            android:exported="true">
+        </activity>
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.TransportService1" android:exported="true"
                  android:permission="android.permission.BIND_NFC_SERVICE"
                  android:enabled="false">
             <intent-filter>
@@ -127,7 +135,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_aid_list_1"/>
         </service>
-        <service android:name=".service.TransportService2" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.TransportService2" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -136,7 +144,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_aid_list_2"/>
         </service>
-        <service android:name=".service.AccessService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.AccessService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -145,7 +153,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
         </service>
-        <service android:name=".service.PaymentService1" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PaymentService1" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -154,7 +162,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
         </service>
-        <service android:name=".service.OffHostService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.OffHostService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -163,7 +171,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.off_host_apdu_service" android:resource="@xml/offhost_aid_list"/>
         </service>
-        <service android:name=".service.PaymentService2" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PaymentService2" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -172,7 +180,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_2"/>
         </service>
-        <service android:name=".service.PaymentServiceDynamicAids" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -181,7 +189,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
         </service>
-        <service android:name=".service.PrefixPaymentService1" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
         <intent-filter>
@@ -190,7 +198,7 @@
         </intent-filter>
         <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_prefix_aid_list"/>
         </service>
-        <service android:name=".service.PrefixPaymentService2" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -199,7 +207,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_prefix_aid_list_2"/>
         </service>
-        <service android:name=".service.PrefixTransportService1" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -208,7 +216,16 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_prefix_aid_list_1"/>
         </service>
-        <service android:name=".service.PrefixAccessService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2" android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_prefix_aid_list_2"/>
+        </service>
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.PrefixAccessService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -217,7 +234,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_prefix_aid_list"/>
         </service>
-        <service android:name=".service.ThroughputService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.ThroughputService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -226,7 +243,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/throughput_aid_list"/>
         </service>
-        <service android:name=".service.LargeNumAidsService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.LargeNumAidsService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>
@@ -235,7 +252,7 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
         </service>
-        <service android:name=".service.ScreenOffPaymentService" android:exported="true"
+        <service android:name="com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService" android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE"
             android:enabled="false">
             <intent-filter>

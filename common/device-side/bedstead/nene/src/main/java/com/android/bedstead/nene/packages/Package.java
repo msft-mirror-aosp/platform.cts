@@ -27,10 +27,12 @@ import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
+import static com.android.bedstead.permissions.CommonPermissions.CHANGE_APP_IDLE_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.permissions.CommonPermissions.PACKAGE_USAGE_STATS;
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -41,6 +43,7 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.app.UiAutomation;
 import android.app.role.RoleManager;
+import android.app.usage.UsageStatsManager;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
@@ -64,18 +67,18 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Retry;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
-import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
@@ -187,6 +190,7 @@ public final class Package {
      * Install this package on the given user, using {@link #installExisting(UserReference)} if
      * possible, otherwise installing fresh.
      */
+    @CanIgnoreReturnValue
     public Package installBytes(UserReference user, Supplier<byte[]> apkFile) {
         // TODO(open bug): This was causing race conditions - need to look into it and restore
 //        if (exists()) {
@@ -199,6 +203,7 @@ public final class Package {
     /**
      * Uninstall the package for all users.
      */
+    @CanIgnoreReturnValue
     public Package uninstallFromAllUsers() {
         for (UserReference user : installedOnUsers()) {
             Package unused = uninstall(user);
@@ -212,6 +217,7 @@ public final class Package {
      *
      * <p>If the package is not installed for the given user, nothing will happen.
      */
+    @CanIgnoreReturnValue
     public Package uninstall(UserReference user) {
         if (user == null) {
             throw new NullPointerException();
@@ -362,6 +368,7 @@ public final class Package {
      * <p>The package must be installed on the user, must request the given permission, and the
      * permission must be a runtime permission.
      */
+    @CanIgnoreReturnValue
     public Package grantPermission(UserReference user, String permission) {
         // There is no readable output upon failure so we need to check ourselves
         checkCanGrantOrRevokePermission(user, permission);
@@ -410,6 +417,7 @@ public final class Package {
      *
      * <p>You can not deny permissions for the current package on the current user.
      */
+    @CanIgnoreReturnValue
     public Package denyPermission(UserReference user, String permission) {
         if (!hasPermission(user, permission)) {
             return this; // Already denied
@@ -1140,12 +1148,32 @@ public final class Package {
      */
     @Experimental
     public int getAppStandbyBucket(UserReference user) {
-        try {
-            return ShellCommand.builderForUser(user, "am get-standby-bucket")
-                .addOperand(mPackageName)
-                .executeAndParseOutput(o -> Integer.parseInt(o.trim()));
-        } catch (AdbException e) {
-            throw new NeneException("Could not get app standby bucket " + this, e);
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                PACKAGE_USAGE_STATS, INTERACT_ACROSS_USERS_FULL)) {
+            var usageStatsMgr = TestApis.context().androidContextAsUser(user)
+                    .getSystemService(UsageStatsManager.class);
+            return usageStatsMgr.getAppStandbyBucket(mPackageName);
+        }
+    }
+
+    /**
+     * Set the app standby bucket of the package.
+     */
+    @Experimental
+    public void setAppStandbyBucket(int bucket) {
+        setAppStandbyBucket(TestApis.users().instrumented(), bucket);
+    }
+
+    /**
+     * Set the app standby bucket of the package.
+     */
+    @Experimental
+    public void setAppStandbyBucket(UserReference user, int bucket) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                CHANGE_APP_IDLE_STATE, INTERACT_ACROSS_USERS_FULL)) {
+            var usageStatsMgr = TestApis.context().androidContextAsUser(user)
+                    .getSystemService(UsageStatsManager.class);
+            usageStatsMgr.setAppStandbyBucket(mPackageName, bucket);
         }
     }
 

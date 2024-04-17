@@ -26,6 +26,10 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
 
 import com.android.cts.nfc.multidevice.utils.SnippetBroadcastReceiver;
 
@@ -41,6 +45,7 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final UiDevice mDevice =
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+    private static final long TIMEOUT_MS = 10_000L;
 
     /** Opens single Non Payment emulator */
     @Rpc(description = "Open single non payment emulator activity")
@@ -257,6 +262,35 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (ScreenOffPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens conflicting non-payment emulator activity */
+    @Rpc(description = "Opens conflicting non-payment emulator activity")
+    public void startConflictingNonPaymentEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ConflictingNonPaymentEmulatorActivity.class.getName());
+        mActivity =
+                (ConflictingNonPaymentEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Opens conflicting non-payment prefix emulator activity */
+    @Rpc(description = "Opens conflicting non-payment prefix emulator activity")
+    public void startConflictingNonPaymentPrefixEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ConflictingNonPaymentPrefixEmulatorActivity.class.getName());
+        mActivity =
+                (ConflictingNonPaymentPrefixEmulatorActivity)
+                        instrumentation.startActivitySync(intent);
+    }
+
     /** Opens protocol params emulator activity */
     @Rpc(description = "Opens protocol params emulator activity")
     public void startProtocolParamsEmulatorActivity() {
@@ -322,6 +356,32 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
     @Rpc(description = "Press menu button")
     public void pressMenu() {
         mDevice.pressMenu();
+    }
+
+    /** Automatically selects TransportService2 from list of services. */
+    @Rpc(description = "Automatically selects TransportService2 from list of services.")
+    public void selectItem() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        String text = instrumentation.getTargetContext().getString(R.string.transportService2);
+        Log.d(TAG, text);
+        try {
+            UiScrollable listView = new UiScrollable(new UiSelector());
+            listView.scrollTextIntoView(text);
+            listView.waitForExists(TIMEOUT_MS);
+            UiObject listViewItem =
+                    listView.getChildByText(
+                            new UiSelector().className(android.widget.TextView.class.getName()),
+                            "" + text + "");
+            if (listViewItem.exists()) {
+                listViewItem.click();
+                Log.d(TAG, text + " ListView item was clicked.");
+            } else {
+                Log.e(TAG, "UI Object does not exist.");
+            }
+        } catch (UiObjectNotFoundException e) {
+            Log.e(TAG, "Ui Object not found.");
+        }
     }
 
     /** Creates a SnippetBroadcastReceiver that listens for when the specified action is received */

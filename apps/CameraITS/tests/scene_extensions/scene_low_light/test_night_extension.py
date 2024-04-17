@@ -153,7 +153,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       # Turn off DUT to reduce reflections
-      lighting_control_utils.turn_off_device(self.dut)
+      lighting_control_utils.turn_off_device_screen(self.dut)
 
       # Determine capture width, height, and format
       for format_name, format_constant in _IMAGE_FORMATS_TO_CONSTANTS:

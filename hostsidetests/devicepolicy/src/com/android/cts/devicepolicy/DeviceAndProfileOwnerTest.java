@@ -23,9 +23,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.permission.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
@@ -38,6 +42,7 @@ import com.android.tradefed.util.RunUtil;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -161,6 +166,10 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     // ID of the user all tests are run as. For device owner this will be the current user, for
     // profile owner it is the user id of the created profile.
     protected int mUserId;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Override
     public void tearDown() throws Exception {
@@ -654,6 +663,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @LargeTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SERVER_ROLE_CONTROLLER_ENABLED)
     public void testLockTaskAfterReboot() throws Exception {
         try {
             // Just start kiosk mode

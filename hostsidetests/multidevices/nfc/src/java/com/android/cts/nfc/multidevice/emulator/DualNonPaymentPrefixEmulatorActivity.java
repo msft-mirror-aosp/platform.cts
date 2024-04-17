@@ -19,9 +19,9 @@ import android.content.ComponentName;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 
-import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
+import com.android.cts.nfc.multidevice.utils.service.PrefixAccessService;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
 
 import java.util.ArrayList;
 

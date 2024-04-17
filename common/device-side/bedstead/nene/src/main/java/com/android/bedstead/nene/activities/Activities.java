@@ -27,6 +27,7 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.testapisreflection.ActivityTaskManagerProxy;
 import android.cts.testapisreflection.TestApisReflectionKt;
@@ -187,16 +188,28 @@ public final class Activities {
     }
 
     /**
-     * Get the Component reference of an Intent using targetActivity
+     * Get the {@link ComponentReference} of the activity the {@code intent} resolves to, if any.
+     * <p>If there's no activity with given intent, {@code Null} will be returned.
+     *
      * @param intent The intent of the activity to be resolved
-     * @param flag Additional option flags to modify the data returned
-     * @return ComponentName of the activity
+     * @param flag   Additional flags to modify the data returned. See {@link
+     * PackageManager#resolveInfo} for details.
      */
-    public ComponentReference getTargetActivityOfIntent(Intent intent, int flag) {
+    public ComponentReference getResolvedActivityOfIntent(Intent intent, int flag) {
         ResolveInfo resolveInfo = TestApis.context().instrumentedContext()
                 .getPackageManager().resolveActivity(intent, flag);
-        return new ComponentReference(new ComponentName(resolveInfo.activityInfo.packageName,
-                resolveInfo.activityInfo.targetActivity
-        ));
+
+        if (resolveInfo == null || resolveInfo.activityInfo == null) return null;
+
+        String activityName = (resolveInfo.activityInfo.targetActivity != null)
+                ? resolveInfo.activityInfo.targetActivity : resolveInfo.activityInfo.name;
+
+        if (activityName == null) {
+            return null;
+        } else {
+            return new ComponentReference(new ComponentName(resolveInfo.activityInfo.packageName,
+                    activityName
+            ));
+        }
     }
 }

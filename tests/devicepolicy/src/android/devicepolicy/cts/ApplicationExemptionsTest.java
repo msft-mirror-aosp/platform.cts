@@ -25,6 +25,8 @@ import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
+import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
+import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS;
 import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
@@ -35,6 +37,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.flags.Flags;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
@@ -42,6 +45,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.stats.devicepolicy.EventId;
 import android.util.ArrayMap;
 
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
@@ -72,7 +76,6 @@ import org.junit.runner.RunWith;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,7 +94,7 @@ public class ApplicationExemptionsTest {
                     activity().where().exported().isTrue()).get();
 
     private static final String INVALID_PACKAGE_NAME = "com.google.android.notapackage";
-    private static final Set<Integer> INVALID_EXEMPTIONS = new HashSet<>(List.of(-1));
+    private static final Set<Integer> INVALID_EXEMPTIONS = Set.of(-1);
     private static final Map<Integer, String> APPLICATION_EXEMPTION_CONSTANTS_TO_APP_OPS =
             new ArrayMap<>();
     static {
@@ -108,7 +111,7 @@ public class ApplicationExemptionsTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_noPermission_throwsSecurityException() {
-        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_SUSPENSION);
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
         try (TestAppInstance testApp = sTestApp.install()) {
             assertThrows(SecurityException.class, () ->
                     sLocalDevicePolicyManager.setApplicationExemptions(
@@ -124,7 +127,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_validExemptionSet_exemptionAppOpsGranted(
             @ApplicationExemptionConstants int exemption) throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(exemption));
+        Set<Integer> exemptionSet = Set.of(exemption);
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(), exemptionSet);
@@ -142,7 +145,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_emptyExemptionSet_unsetsAllExemptions(
             @ApplicationExemptionConstants int exemption) throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(exemption);
+        Set<Integer> exemptionSet = Set.of(exemption);
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(),
@@ -150,7 +153,7 @@ public class ApplicationExemptionsTest {
 
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(),
-                    new HashSet<>());
+                    Set.of());
 
             assertThat(sTestApp.pkg().appOps()
                     .get(APPLICATION_EXEMPTION_CONSTANTS_TO_APP_OPS.get(exemption)))
@@ -178,7 +181,7 @@ public class ApplicationExemptionsTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_invalidPackage_throwsNameNotFoundException() {
-        Set<Integer> exemptionSet = new HashSet<>(EXEMPT_FROM_SUSPENSION);
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
         assertThrows(NameNotFoundException.class, () ->
                 sLocalDevicePolicyManager.setApplicationExemptions(
                         INVALID_PACKAGE_NAME, exemptionSet));
@@ -202,7 +205,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void getApplicationExemptions_validPackage_returnsExemptionsSet(
             @ApplicationExemptionConstants int exemption) throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(exemption));
+        Set<Integer> exemptionSet = Set.of(exemption);
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(),
@@ -231,7 +234,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_reinstallApplication_exemptionAppOpsReset()
             throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_SUSPENSION));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
                     sTestApp.packageName(),
@@ -250,7 +253,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_powerRestrictionExemption_exemptedAppStandbyBucket()
             throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_POWER_RESTRICTIONS));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_POWER_RESTRICTIONS);
 
         try (TestAppInstance testApp = sTestApp.install()) {
             sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
@@ -265,12 +268,34 @@ public class ApplicationExemptionsTest {
         }
     }
 
+    @PolicyAppliesTest(policy = ApplicationExemptions.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
+    @RequireFlagsEnabled(Flags.FLAG_POWER_EXEMPTION_BG_USAGE_FIX)
+    public void setApplicationExemptions_powerRestrictionExemption_allowsBgUsage()
+            throws NameNotFoundException {
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_POWER_RESTRICTIONS);
+
+        try (TestAppInstance testApp = sTestApp.install()) {
+            // Take away background usage.
+            testApp.appOps().set(OPSTR_RUN_ANY_IN_BACKGROUND, IGNORED);
+
+            sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
+                    sTestApp.packageName(),
+                    exemptionSet);
+
+            // Background usage should be allowed again.
+            assertThat(sTestApp.pkg().appOps().get(OPSTR_RUN_ANY_IN_BACKGROUND))
+                    .isEqualTo(ALLOWED);
+        }
+    }
+
     @PolicyDoesNotApplyTest(policy = ApplicationExemptions.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_powerRestrictionExemption_notApplicable_isNotInExemptedAppStandbyBucket()
             throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_POWER_RESTRICTIONS));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_POWER_RESTRICTIONS);
 
         try (TestAppInstance localApp = sTestApp.install();
              TestAppInstance dpcUserApp = sTestApp.install(sDeviceState.dpc().user())) {
@@ -289,7 +314,7 @@ public class ApplicationExemptionsTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_notPermitted_throwsException() {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_SUSPENSION));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
 
         try (TestAppInstance app = sTestApp.install()) {
 
@@ -308,7 +333,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_validExemptionSet_logsEvent(
             @ApplicationExemptionConstants int exemption) throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(exemption));
+        Set<Integer> exemptionSet = Set.of(exemption);
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create();
             TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
@@ -356,8 +381,7 @@ public class ApplicationExemptionsTest {
     public void
             setApplicationExemptions_activityBgStartRestrictionExemption_canStartActivityFromBg()
                     throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(
-                List.of(EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION);
 
         try (TestAppInstance testApp = sTestApp.install()) {
             sLocalDevicePolicyManager.setApplicationExemptions(
@@ -405,7 +429,7 @@ public class ApplicationExemptionsTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_suspensionRestrictionExemption_appCannotBeSuspended()
             throws NameNotFoundException {
-        Set<Integer> exemptionSet = new HashSet<>(List.of(EXEMPT_FROM_SUSPENSION));
+        Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
 
         try (TestAppInstance testApp = sTestApp.install()) {
             sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationExemptions(

@@ -353,21 +353,6 @@ public final class UserRestrictionsTest {
         }
     }
 
-    @PolicyAppliesTest(policy = UserRestrictions.class)
-    @Postsubmit(reason = "new test")
-    public void clearUserRestriction_sendsBroadcastToReceiversInUser() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
-        try (BlockingBroadcastReceiver broadcastReceiver =
-                     sDeviceState.registerBroadcastReceiver(
-                             CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
-
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
-            broadcastReceiver.awaitForBroadcastOrFail();
-        }
-    }
-
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#addUserRestriction"})
     @RequireRootInstrumentation(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_CAMERA)
@@ -385,6 +370,21 @@ public final class UserRestrictionsTest {
             } catch (Exception e) {
                 // expected if dpc is no longer active
             }
+        }
+    }
+
+    @PolicyAppliesTest(policy = UserRestrictions.class)
+    @Postsubmit(reason = "new test")
+    public void clearUserRestriction_sendsBroadcastToReceiversInUser() {
+        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+        try (BlockingBroadcastReceiver broadcastReceiver =
+                     sDeviceState.registerBroadcastReceiver(
+                             CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
+
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+            broadcastReceiver.awaitForBroadcastOrFail();
         }
     }
 

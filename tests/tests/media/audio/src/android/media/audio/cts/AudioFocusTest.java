@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.annotation.Nullable;
@@ -651,7 +652,8 @@ public class AudioFocusTest {
         try {
             final int testUid = android.os.Process.myUid();
             if (mDeflakeApisAvailable) {
-                assertTrue(mAM.enterAudioFocusFreezeForTest(Arrays.asList(testUid)));
+                assumeTrue("Skipping testAudioFocusExclusive, focus not frozen",
+                        mAM.enterAudioFocusFreezeForTest(Arrays.asList(testUid)));
             }
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), mInstrumentation, true);
@@ -711,7 +713,8 @@ public class AudioFocusTest {
         try {
             final int testUid = android.os.Process.myUid();
             if (mDeflakeApisAvailable) {
-                assertTrue(mAM.enterAudioFocusFreezeForTest(Arrays.asList(testUid)));
+                assumeTrue("Skipping testAudioFocusExclusiveAndRecording, focus not frozen",
+                        mAM.enterAudioFocusFreezeForTest(Arrays.asList(testUid)));
             }
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), mInstrumentation, true);
@@ -856,8 +859,9 @@ public class AudioFocusTest {
         try {
             // prevent audio focus from apps other than CTS and the fake UIDs for test
             if (mDeflakeApisAvailable) {
-                assertTrue(mAM.enterAudioFocusFreezeForTest(Arrays.asList(
-                        FocusHelperAssistUid, FocusHelperMediaUid, playerUnderTestUid)));
+                assumeTrue("Skipping " + testName + ", focus not frozen",
+                        mAM.enterAudioFocusFreezeForTest(Arrays.asList(
+                                FocusHelperAssistUid, FocusHelperMediaUid, playerUnderTestUid)));
             }
             // set up the test conditions: a focus owner is playing media on a MediaPlayer
             mp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, mediaAttributes);

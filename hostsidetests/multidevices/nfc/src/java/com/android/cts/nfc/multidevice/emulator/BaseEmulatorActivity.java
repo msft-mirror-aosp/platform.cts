@@ -27,21 +27,23 @@ import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.android.cts.nfc.multidevice.emulator.service.AccessService;
-import com.android.cts.nfc.multidevice.emulator.service.LargeNumAidsService;
-import com.android.cts.nfc.multidevice.emulator.service.OffHostService;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentService2;
-import com.android.cts.nfc.multidevice.emulator.service.PaymentServiceDynamicAids;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixAccessService;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService1;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixPaymentService2;
-import com.android.cts.nfc.multidevice.emulator.service.PrefixTransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.ScreenOffPaymentService;
-import com.android.cts.nfc.multidevice.emulator.service.ThroughputService;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService1;
-import com.android.cts.nfc.multidevice.emulator.service.TransportService2;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
+import com.android.cts.nfc.multidevice.utils.service.AccessService;
+import com.android.cts.nfc.multidevice.utils.service.HceService;
+import com.android.cts.nfc.multidevice.utils.service.LargeNumAidsService;
+import com.android.cts.nfc.multidevice.utils.service.OffHostService;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PaymentServiceDynamicAids;
+import com.android.cts.nfc.multidevice.utils.service.PrefixAccessService;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
+import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
+import com.android.cts.nfc.multidevice.utils.service.TransportService1;
+import com.android.cts.nfc.multidevice.utils.service.TransportService2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,13 +51,8 @@ import java.util.List;
 
 public abstract class BaseEmulatorActivity extends Activity {
 
-    // Intent action that's received when complete APDU sequence is received from an HCE service.
-    public static final String ACTION_APDU_SEQUENCE_COMPLETE =
-            "com.android.cts.nfc.multidevice.emulator.ACTION_APDU_SEQUENCE_COMPLETE";
     public static final String ACTION_ROLE_HELD =
             "com.android.cts.nfc.multidevice.emulator.ACTION_ROLE_HELD";
-    public static final String EXTRA_COMPONENT = "component";
-    public static final String EXTRA_DURATION = "duration";
 
     // Intent action that's sent after the test condition is met.
     protected static final String ACTION_TEST_PASSED =
@@ -73,6 +70,7 @@ public abstract class BaseEmulatorActivity extends Activity {
                             PrefixPaymentService1.COMPONENT,
                             PrefixPaymentService2.COMPONENT,
                             PrefixTransportService1.COMPONENT,
+                            PrefixTransportService2.COMPONENT,
                             PrefixAccessService.COMPONENT,
                             ThroughputService.COMPONENT,
                             LargeNumAidsService.COMPONENT,
@@ -89,10 +87,11 @@ public abstract class BaseEmulatorActivity extends Activity {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     String action = intent.getAction();
-                    if (ACTION_APDU_SEQUENCE_COMPLETE.equals(action)) {
+                    if (HceService.ACTION_APDU_SEQUENCE_COMPLETE.equals(action)) {
                         // Get component whose sequence was completed
-                        ComponentName component = intent.getParcelableExtra(EXTRA_COMPONENT);
-                        long duration = intent.getLongExtra(EXTRA_DURATION, 0);
+                        ComponentName component =
+                                intent.getParcelableExtra(HceService.EXTRA_COMPONENT);
+                        long duration = intent.getLongExtra(HceService.EXTRA_DURATION, 0);
                         if (component != null) {
                             onApduSequenceComplete(component, duration);
                         }
@@ -107,7 +106,7 @@ public abstract class BaseEmulatorActivity extends Activity {
         mAdapter = NfcAdapter.getDefaultAdapter(this);
         mCardEmulation = CardEmulation.getInstance(mAdapter);
         mRoleManager = getSystemService(RoleManager.class);
-        IntentFilter filter = new IntentFilter(ACTION_APDU_SEQUENCE_COMPLETE);
+        IntentFilter filter = new IntentFilter(HceService.ACTION_APDU_SEQUENCE_COMPLETE);
         registerReceiver(mReceiver, filter, RECEIVER_EXPORTED);
     }
 

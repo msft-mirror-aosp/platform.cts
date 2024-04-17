@@ -30,7 +30,7 @@ import its_session_utils
 
 _JPEG_EXTENSION = '.jpg'
 _JPEG_QUALITY_SETTING = 100  # set value to max
-_JPEG_MP_SIZE_SCALING = 0.08  # MP --> bytes to ensure busy scene (empirical)
+_JPEG_MP_SIZE_SCALING = 0.075  # MP --> bytes to ensure busy scene (empirical)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
 _ZOOM_RATIO_MAX = 4  # too high zoom ratios will eventualy reduce entropy

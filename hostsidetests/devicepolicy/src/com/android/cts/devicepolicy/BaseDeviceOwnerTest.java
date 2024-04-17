@@ -53,10 +53,6 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
             fail("Failed to set device owner on user " + mDeviceOwnerUserId);
         }
 
-        if (isHeadlessSystemUserMode()) {
-            affiliateUsers(DEVICE_OWNER_PKG, mDeviceOwnerUserId, mPrimaryUserId);
-        }
-
         // Enable the notification listener
         executeShellCommand("cmd notification allow_listener com.android.cts."
                 + "deviceowner/com.android.cts.deviceowner.NotificationListener");
