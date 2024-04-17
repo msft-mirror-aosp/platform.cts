@@ -50,7 +50,7 @@ bootstrap_go_package {
 
 bootstrap_go_package {
     name: "requirements_go_proto",
-    pkgPath: "cts/test/mediapc/requirements/requirements/requirements_go_proto",
+    pkgPath: "cts/test/mediapc/requirements/requirements_go_proto",
     srcs: [
         "requirements.pb.go",
         //"requirements.binpb",
