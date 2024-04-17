@@ -43,12 +43,12 @@ ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
 CHART_DISTANCE_NO_SCALING = 0
-PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
 JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
+PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
@@ -1084,8 +1084,9 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+
     Returns:
-      List of all supported video resolutions in ascending order.
+      List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
@@ -1112,8 +1113,10 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+
     Returns:
-      List of all supported video resolutions in ascending order.
+      List of all supported preview resolutions with floor & ceiling set
+      by _CONSTANTS in ascending order.
     """
     supported_preview_sizes = self.get_all_supported_preview_sizes(camera_id)
     resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
@@ -1122,6 +1125,11 @@ class ItsSession(object):
                                    <= PREVIEW_MAX_TESTED_AREA
                                    and resolution_to_area(size)
                                    >= PREVIEW_MIN_TESTED_AREA)]
+    logging.debug(
+        'Supported preview sizes (MIN: %d, MAX: %d area in pixels): %s',
+        PREVIEW_MIN_TESTED_AREA, PREVIEW_MAX_TESTED_AREA,
+        supported_preview_sizes
+    )
     return supported_preview_sizes
 
   def get_queryable_stream_combinations(self):

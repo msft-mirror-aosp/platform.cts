@@ -165,8 +165,6 @@ class ThirtySixtyFpsPreviewFoVMatchTest(its_base_test.ItsBaseTest):
 
       # List preview resolutions and find 720P or above to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
       preview_size = video_processing_utils.get_720p_or_above_size(
           supported_preview_sizes)
       logging.debug('Testing preview resolution: %s', preview_size)
