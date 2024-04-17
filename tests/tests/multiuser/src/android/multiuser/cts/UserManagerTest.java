@@ -87,8 +87,8 @@ import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
-import com.android.compatibility.common.util.ApiTest;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -26,7 +26,11 @@ import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.UndoableContext
 import com.android.bedstead.permissions.CommonPermissions.MANAGE_CONTENT_SUGGESTIONS
 
-/** Helper methods related to content suggestions.  */
+import com.google.errorprone.annotations.CanIgnoreReturnValue
+
+/**
+ * Helper methods related to content suggestions.
+ */
 object Suggestions {
 
     private val contentSuggestionsManager =
@@ -34,6 +38,7 @@ object Suggestions {
                     ContentSuggestionsManager::class.java)!!
     private const val TEMPORARY_SERVICE_DURATION_MS = 3600000 // 1 hour
 
+    @CanIgnoreReturnValue
     @JvmOverloads
     fun setDefaultServiceEnabled(user: UserReference = TestApis.users().instrumented(),
                                  value: Boolean): UndoableContext {
@@ -65,9 +70,9 @@ object Suggestions {
         }
     }
 
+    @CanIgnoreReturnValue
     @JvmOverloads
-    fun setTemporaryService(user: UserReference = TestApis.users().instrumented(),
-                            component: ComponentReference): UndoableContext {
+    fun setTemporaryService(user: UserReference, component: ComponentReference): UndoableContext {
         TestApis.permissions().withPermission(MANAGE_CONTENT_SUGGESTIONS).use {
             contentSuggestionsManager.setTemporaryService(user.id(), component.flattenToString(),
                     TEMPORARY_SERVICE_DURATION_MS)

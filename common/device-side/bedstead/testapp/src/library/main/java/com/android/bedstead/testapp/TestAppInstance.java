@@ -79,6 +79,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.google.android.enterprise.connectedapps.ConnectionListener;
 import com.google.android.enterprise.connectedapps.ProfileConnectionHolder;
 import com.google.android.enterprise.connectedapps.exceptions.UnavailableProfileException;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -271,6 +272,7 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      *
      * <p>This will not kill the app immediately. To do that see {@link #stop()}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance stopKeepAlive() {
         mKeepAliveManually = false;
         if (mConnectionHolder != null) {
@@ -285,6 +287,7 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      *
      * <p>This will also stop keeping the target app alive (see {@link #stopKeepAlive()}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance stop() {
         stopKeepAlive();
 
