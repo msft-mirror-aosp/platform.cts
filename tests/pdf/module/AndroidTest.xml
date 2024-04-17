@@ -45,5 +45,8 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.mediaprovider" />
     </object>
+    <option
+        name="device-listeners"
+        value="com.android.modules.utils.testing.NativeCoverageHackInstrumentationListener" />
 
 </configuration>
