@@ -38,8 +38,8 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
 @EnsureHasProfileAnnotation("android.os.usertype.profile.PRIVATE")
+@RequirePrivateSpaceSupported
 public @interface EnsureHasPrivateProfile {
     int ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE = REQUIRE_RUN_ON_PRECEDENCE - 1;
 
