@@ -123,6 +123,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_yuv_plus_raw_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
+    private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
+            Pattern.compile("test_burst_capture_.*");
 
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
@@ -564,6 +566,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
 
+            Matcher burstCaptureMetricsMatcher = PERF_METRICS_BURST_CAPTURE_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches) {
                 return false;
@@ -594,6 +600,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         String value = result.split(":")[1].strip();
                         obj.put(resultKey, value);
                     }
+                }
+
+                if (burstCaptureMetricsMatches) {
+                    Log.i(TAG, "burst capture  matches");
+                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
+                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
                 }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
