@@ -718,7 +718,6 @@ public class ItsService extends Service implements SensorEventListener {
             }
             // Reset OutputConfigurations and ImageReader args
             mCaptureOutputConfigs = new ArrayList<>();
-            mImageReaderArgs = ImageReaderArgs.EMPTY;
             closeImageReaders();
         } catch (Exception e) {
             throw new ItsException("Failed to close device");
@@ -2014,6 +2013,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void closeImageReaders() {
+        Logt.i(TAG, "Closing image readers");
         if (mOutputImageReaders != null) {
             for (int i = 0; i < mOutputImageReaders.length; i++) {
                 if (mOutputImageReaders[i] != null) {
@@ -2031,6 +2031,7 @@ public class ItsService extends Service implements SensorEventListener {
             mThreeAOutputImageReader.close();
             mThreeAOutputImageReader = null;
         }
+        mImageReaderArgs = ImageReaderArgs.EMPTY;
     }
 
     private void do3A(JSONObject params) throws ItsException {
