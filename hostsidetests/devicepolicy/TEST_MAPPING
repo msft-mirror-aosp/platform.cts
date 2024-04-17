@@ -1,37 +1,18 @@
 {
+  "presubmit": [
+    {
+      "name": "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes"
+    }
+  ],
+  // Move to presubmit when not flaky.
   "presubmit-large": [
     {
-      "name": "CtsDevicePolicyManagerTestCases",
-      "options": [
-        {
-          "include-annotation": "com.android.cts.devicepolicy.annotations.PermissionsTest"
-        },
-        {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
-        }
-      ]
-    },
-    {
-      "name": "CtsDevicePolicyManagerTestCases",
-      "options": [
-        {
-          "include-annotation": "com.android.cts.devicepolicy.annotations.LockSettingsTest"
-        },
-        {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
-        }
-      ]
+      "name": "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes"
     }
   ],
   "postsubmit-devicepolicy": [
     {
       "name": "CtsDevicePolicyManagerTestCases"
-    }
-  ],
-  "postsubmit": [
-    {
-      "name": "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes",
-      "name": "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes"
     }
   ]
 }
