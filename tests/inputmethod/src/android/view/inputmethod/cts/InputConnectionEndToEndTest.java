@@ -89,6 +89,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -1925,6 +1926,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             "android.view.inputmethod.SelectGesture.Builder#setSelectionArea",
             "android.view.inputmethod.SelectGesture.Builder#setGranularity",
             "android.view.inputmethod.InputConnection#previewHandwritingGesture"})
+    @FlakyTest(bugId = 324566416)
     public void testPreviewHandwritingSelectGesture() throws Exception {
         SelectGesture.Builder builder = new SelectGesture.Builder();
         testPreviewHandwritingGesture(
