@@ -38,6 +38,7 @@ import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService1;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
 import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOnOnlyOffHostService;
 import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
 import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.service.TransportService2;
@@ -388,6 +389,21 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
                                 PrefixTransportService2.class.getName()),
                         HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
                                 PrefixTransportService2.class.getName()));
+        mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Open simple reader activity for screen on only off-host service test */
+    @Rpc(description = "Open simple reader activity for screen on only off-host service Test")
+    public void startScreenOnOnlyOffHostReaderActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent =
+                buildReaderIntentWithApduSequence(
+                        instrumentation,
+                        HceUtils.COMMAND_APDUS_BY_SERVICE.get(
+                                ScreenOnOnlyOffHostService.class.getName()),
+                        HceUtils.RESPONSE_APDUS_BY_SERVICE.get(
+                                ScreenOnOnlyOffHostService.class.getName()
+                        ));
         mActivity = (SimpleReaderActivity) instrumentation.startActivitySync(intent);
     }
 
