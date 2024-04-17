@@ -3131,7 +3131,8 @@ public class ItsService extends Service implements SensorEventListener {
             // From the end of the recording capture results, keep number of frames of recording
             // TODO: b/324255495 - use timestamps to ensure that results and frames are 1:1
             List<RecordingResult> allResults =
-                    new ArrayList<>(action.getRecordingResultListener().mRecordingCaptureResults);
+                    new ArrayList<>(
+                            action.getRecordingResultListener().getRecordingCaptureResults());
             recordingResults = allResults.subList(
                     Math.max(allResults.size() - pr.getNumFrames(), 0),
                     allResults.size());
@@ -4657,16 +4658,18 @@ public class ItsService extends Service implements SensorEventListener {
 
                 Logt.i(TAG, buildLogString(result));
 
-                RecordingResult partialResult = new RecordingResult();
-                Logt.i(TAG, "TotalCaptureResult # " + mRecordingCaptureResults.size()
-                        + " timestamp = " + result.get(CaptureResult.SENSOR_TIMESTAMP)
-                        + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
-                        + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
-                        + " phyid = "
-                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
+                synchronized(mRecordingCaptureResults) {
+                    RecordingResult partialResult = new RecordingResult();
+                    Logt.i(TAG, "TotalCaptureResult # " + mRecordingCaptureResults.size()
+                            + " timestamp = " + result.get(CaptureResult.SENSOR_TIMESTAMP)
+                            + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
+                            + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
+                            + " phyid = "
+                            + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
 
-                partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
-                mRecordingCaptureResults.add(partialResult);
+                    partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
+                    mRecordingCaptureResults.add(partialResult);
+                }
             } catch (ItsException e) {
                 throw new ItsRuntimeException("Error handling capture result", e);
             }
@@ -4678,6 +4681,14 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.e(TAG, "Script error: capture failed");
         }
 
+        /**
+         * Returns up-to-date value of recording capture results for calling thread.
+         */
+        public List<RecordingResult> getRecordingCaptureResults() {
+            synchronized (mRecordingCaptureResults) {
+                return mRecordingCaptureResults;
+            }
+        }
     }
 
     private final CaptureResultListener mCaptureResultListener = new CaptureResultListener() {
