@@ -1097,7 +1097,7 @@ def get_chart_boundary_from_aruco_markers(
   bottom_left = tuple(map(int, outer_rect_coordinates[3]))
 
   cv2.rectangle(input_img, top_left, bottom_right,
-                CV2_RED_NORM, CV2_LINE_THICKNESS)
+                CV2_RED, CV2_LINE_THICKNESS)
   image_processing_utils.write_image(input_img/255, output_img_path)
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)
