@@ -114,11 +114,11 @@ public class BrightnessTest extends TestBase {
             // Setup and remember some initial state.
             recordSliderEvents();
             waitForFirstSliderEvent();
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 20);
+            runShellCommand("cmd display set-brightness 0.3");
             getNewEvents(1);
 
             // Update brightness
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 60);
+            runShellCommand("cmd display set-brightness 0.4");
 
             // Check we got a slider event for the change.
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
@@ -127,7 +127,7 @@ public class BrightnessTest extends TestBase {
             assertValidLuxData(firstEvent);
 
             // Update brightness again
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, 200);
+            runShellCommand("cmd display set-brightness 0.5");
 
             // Check we get a second slider event.
             newEvents = getNewEvents(1);
