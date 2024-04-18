@@ -57,6 +57,7 @@ public final class Requirements {
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}Double
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}Integer
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
                         {{- else }}{{$mt}}
                         {{- end }}>builder()
                     .setId("{{$m.GetId}}")
@@ -65,6 +66,7 @@ public final class Requirements {
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}DOUBLE
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}INTEGER
                         {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}STRING
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
                         {{- else }}{{$mt}}
                         {{- end }}_
                         {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
@@ -82,6 +84,7 @@ public final class Requirements {
                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}, {{printf "%f" .GetDoubleValue}}
                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}, {{.GetIntValue}}
                        {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}, "{{.GetStringValue}}"
+                       {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}, "{{.GetLongValue}}"
                        {{- else }}{{$mt}}
                        {{- end }})
                     {{- end}}
@@ -104,6 +107,7 @@ public final class Requirements {
          {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}double
          {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}int
          {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
+         {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
          {{- else }}{{$mt}}
          {{- end }} v) {
            this.setMeasuredValue("{{$m.GetId}}", v);
