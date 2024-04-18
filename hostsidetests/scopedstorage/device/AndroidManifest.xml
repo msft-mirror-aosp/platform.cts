@@ -31,6 +31,7 @@
         <package android:name="android.scopedstorage.cts.testapp.withqueriestag" />
         <package android:name="android.scopedstorage.cts.testapp.withqueryallpackagestag" />
         <package android:name="android.scopedstorage.cts.testapp.TestAppWithAccessMediaOwnerPackageNamePermission" />
+        <package android:name="android.scopedstorage.cts.testapp.VUSelected" />
     </queries>
 
     <application android:label="Scoped Storage Device Tests">
