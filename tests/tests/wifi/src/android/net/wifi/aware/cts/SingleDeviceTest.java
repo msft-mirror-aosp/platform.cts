@@ -65,6 +65,7 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiJUnit3TestBase;
+import android.net.wifi.cts.WifiManagerTest;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -1973,6 +1974,70 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             }
             assertEquals(254, mp.get());
         } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testAwareWhenInfraStaDisabled() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(getContext())) {
+            return;
+        }
+        if (!mWifiManager.isD2dSupportedWhenInfraStaDisabled()) {
+            // skip the test if feature is not supported.
+            return;
+        }
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        WifiManagerTest.Mutable<Boolean> isQuerySucceeded =
+                new WifiManagerTest.Mutable<Boolean>(false);
+        boolean currentD2dAllowed = false;
+        boolean isRestoreRequired = false;
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            WifiManagerTest.Mutable<Boolean> isD2dAllowed =
+                    new WifiManagerTest.Mutable<Boolean>(false);
+            mWifiManager.queryD2dAllowedWhenInfraStaDisabled(
+                    Executors.newSingleThreadScheduledExecutor(),
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isD2dAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + INTERVAL_BETWEEN_TESTS_SECS * 1000;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("d2d allowed query fail", isQuerySucceeded.value);
+            currentD2dAllowed = isD2dAllowed.value;
+            isRestoreRequired = true;
+            // Now force wifi off and d2d is on
+            mWifiManager.setWifiEnabled(false);
+            mWifiManager.setD2dAllowedWhenInfraStaDisabled(true);
+            // Run a test to make sure aware can be used.
+            testAttachNoIdentity();
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
+            WifiAwareStateBroadcastReceiver receiver = new WifiAwareStateBroadcastReceiver();
+            mContext.registerReceiver(receiver, intentFilter);
+            mWifiManager.setD2dAllowedWhenInfraStaDisabled(false);
+            assertTrue("Timeout waiting for Wi-Fi Aware to change status",
+                    receiver.waitForStateChange());
+            assertFalse(mWifiAwareManager.isAvailable());
+        } finally {
+            if (isRestoreRequired) {
+                mWifiManager.setD2dAllowedWhenInfraStaDisabled(currentD2dAllowed);
+            }
             uiAutomation.dropShellPermissionIdentity();
         }
     }

@@ -17,7 +17,6 @@
 import logging
 import os.path
 
-import cv2
 from mobly import test_runner
 import numpy
 
@@ -29,11 +28,11 @@ import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
 
-_AE_CHANGE_THRESH = 1  # incorrect behavior is empirically < 0.5 percent
-_AWB_CHANGE_THRESH = 2  # incorrect behavior is empirically < 1.5 percent
-_AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
+_AE_CHANGE_THRESH = 1  # Incorrect behavior is empirically < 0.5 percent
+_AWB_CHANGE_THRESH = 2  # Incorrect behavior is empirically < 1.5 percent
+_AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 as the highest
 _ARUCO_MARKERS_COUNT = 4
-_CH_FULL_SCALE = 255
+_AE_AWB_REGIONS_AVAILABLE = 1  # Valid range is >= 0, and unavailable if 0
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_AE_AWB_REGIONS = 4
 _PERCENTAGE = 100
@@ -267,9 +266,10 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           camera_properties_utils.ae_regions(props) and
-          not camera_properties_utils.mono_camera(props) and
-          max_awb_regions > 0 and max_ae_regions > 0)
-      logging.debug('maximum AE regions: %s', max_ae_regions)
+          (max_awb_regions >= _AE_AWB_REGIONS_AVAILABLE or
+           max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE))
+      logging.debug('maximum AE regions: %d', max_ae_regions)
+      logging.debug('maximum AWB regions: %d', max_awb_regions)
 
       # Find largest preview size to define capture size to find aruco markers
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
@@ -313,10 +313,12 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
               log_path, file_name))
 
       # AE Check: Extract the Y component from rectangle patch
-      _do_ae_check(light, dark)
+      if max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE:
+        _do_ae_check(light, dark)
 
       # AWB Check : Verify R/B ratio change is greater than threshold
-      _do_awb_check(blue, yellow)
+      if max_awb_regions >= _AE_AWB_REGIONS_AVAILABLE:
+        _do_awb_check(blue, yellow)
 
 if __name__ == '__main__':
   test_runner.main()

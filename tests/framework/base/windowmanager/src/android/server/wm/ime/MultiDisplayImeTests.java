@@ -486,7 +486,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 ImeTestActivity2.class, secondDisplay.mId);
 
         // Make firstDisplay the top focus display.
-        tapOnDisplayCenter(firstDisplay.mId);
+        touchAndCancelOnDisplayCenterSync(firstDisplay.mId);
 
         mWmState.waitForWithAmState(state -> state.getFocusedDisplayId() == firstDisplay.mId,
                 "First display must be top focused.");
@@ -528,7 +528,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             configChangeVerifyStream = clearOnConfigurationChangedFromStream(stream);
 
             // Tap secondDisplay to change it to the top focused display.
-            tapOnDisplayCenter(secondDisplay.mId);
+            touchAndCancelOnDisplayCenterSync(firstDisplay.mId);
 
             // Move ImeTestActivity from firstDisplay to secondDisplay.
             getLaunchActivityBuilder()

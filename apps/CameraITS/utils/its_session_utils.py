@@ -943,7 +943,7 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doStaticPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
         'recordingDuration': duration,
@@ -987,10 +987,9 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doDynamicZoomPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
-        'recordingDuration': 0,  # for interoperability
         'stabilize': stabilize,
         'ois': False
     }
@@ -1038,10 +1037,9 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService.
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doDynamicMeteringRegionPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
-        'recordingDuration': 0,  # set to 0 to avoid JSONException
         'stabilize': stabilize,
         'ois': False,
         'aeAwbRegionDuration': ae_awb_region_duration

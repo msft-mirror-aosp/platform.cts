@@ -74,7 +74,7 @@ FOV_THRESH_TELE40 = 40
 FOV_THRESH_TELE = 60
 FOV_THRESH_UW = 90
 
-IMAGE_ROTATION_THRESHOLD = 20  # rotation by 20 pixels
+IMAGE_ROTATION_THRESHOLD = 40  # rotation by 20 pixels
 
 LOW_RES_IMG_THRESH = 320 * 240
 
@@ -992,25 +992,39 @@ def get_patch_from_aruco_markers(
   for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
     corner = corner.reshape(4, 2)  # opencv returns 3D array
     index = marker_id[0]
+    # Roll the array 4 times to align with the coordinates of the corner adjacent
+    # to the corner of the rectangle
+    # Marker id: 0 => index 2 coordinates
+    # Marker id: 1 => index 3 coordinates
+    # Marker id: 2 => index 0 coordinates
+    # Marker id: 3 => index 1 coordinates
     corner = numpy.roll(corner, 4)
+
     outer_rect_coordinates[index] = tuple(corner[index])
 
-  # Ensure that the image is not rotated
-  bottom_y_diff = outer_rect_coordinates[3][1] - outer_rect_coordinates[2][1]
-  top_y_diff = outer_rect_coordinates[1][1] - outer_rect_coordinates[0][1]
+  red_corner = tuple(map(int, outer_rect_coordinates[0]))
+  green_corner = tuple(map(int, outer_rect_coordinates[1]))
+  gray_corner = tuple(map(int, outer_rect_coordinates[2]))
+  blue_corner = tuple(map(int, outer_rect_coordinates[3]))
 
-  if ((top_y_diff > IMAGE_ROTATION_THRESHOLD) or
-      (bottom_y_diff > IMAGE_ROTATION_THRESHOLD)):
+  logging.debug('red_corner: %s', red_corner)
+  logging.debug('blue_corner: %s', blue_corner)
+  logging.debug('green_corner: %s', green_corner)
+  logging.debug('gray_corner: %s', gray_corner)
+  # Ensure that the image is not rotated
+  blue_gray_y_diff = abs(gray_corner[1] - blue_corner[1])
+  red_green_y_diff = abs(green_corner[1] - red_corner[1])
+
+  if ((blue_gray_y_diff > IMAGE_ROTATION_THRESHOLD) or
+      (red_green_y_diff > IMAGE_ROTATION_THRESHOLD)):
     raise AssertionError('Image rotation is not within the threshold. '
-                         f'Actual bottom_y_diff: {bottom_y_diff}, '
-                         f'top_y_diff: {top_y_diff} '
+                         f'Actual blue_gray_y_diff: {blue_gray_y_diff}, '
+                         f'red_green_y_diff: {red_green_y_diff} '
                          f'Expected {IMAGE_ROTATION_THRESHOLD}')
-  top_left = tuple(map(int, outer_rect_coordinates[0]))
-  bottom_right = tuple(map(int, outer_rect_coordinates[2]))
-  cv2.rectangle(input_img, top_left, bottom_right,
+  cv2.rectangle(input_img, red_corner, gray_corner,
                 CV2_RED_NORM, CV2_LINE_THICKNESS)
-  return input_img[top_left[1]:bottom_right[1],
-                   top_left[0]:bottom_right[0]].copy()
+  return input_img[red_corner[1]:gray_corner[1],
+                   red_corner[0]:gray_corner[0]].copy()
 
 
 def get_slanted_edge_from_patch(input_img):
@@ -1027,6 +1041,7 @@ def get_slanted_edge_from_patch(input_img):
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   _, _, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  logging.debug('rejected_params: %s', rejected_params)
   final_corner = {}
   for corner in rejected_params:
     final_corner = corner.reshape(4, 2)

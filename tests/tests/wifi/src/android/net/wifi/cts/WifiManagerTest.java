@@ -2818,8 +2818,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         testSoftApConfig.getMaxChannelBandwidth());
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                    && SdkLevel.isAtLeastV()) {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
@@ -3151,7 +3150,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                                     && callback.getCurrentSoftApState().getState()
                                     == WifiManager.WIFI_AP_STATE_ENABLED;
                         });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
+                if (SdkLevel.isAtLeastV()) {
                     assertThat(callback.getCurrentSoftApState().getTetheringRequest())
                             .isEqualTo(request);
                 } else {
@@ -3167,7 +3166,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                                     && callback.getCurrentSoftApState().getState()
                                     == WifiManager.WIFI_AP_STATE_DISABLED;
                         });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
+                if (SdkLevel.isAtLeastV()) {
                     assertThat(callback.getCurrentSoftApState().getTetheringRequest())
                             .isEqualTo(request);
                 } else {
@@ -3226,8 +3225,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
 
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                    && SdkLevel.isAtLeastV()) {
                 OuiKeyedData vendorDataElement =
                         new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
                 softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
@@ -3388,8 +3386,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         ScanResult.WIFI_STANDARD_UNKNOWN);
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))
+                    && SdkLevel.isAtLeastV()
                     && callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertNotNull(callback.getCurrentSoftApInfo().getVendorData());
             }

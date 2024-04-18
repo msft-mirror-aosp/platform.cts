@@ -523,7 +523,7 @@ public class GlobalSearchSessionPlatformCtsTest {
         mDb.setSchemaAsync(new SetSchemaRequest.Builder()
                 .addSchemas(AppSearchEmail.SCHEMA).build()).get();
 
-        // No pcakage can access.
+        // No package can access.
         assertPackageCannotAccess(PKG_A);
         assertPackageCannotAccess(PKG_B);
     }
@@ -1796,7 +1796,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                 executor,
                 observer);
         mGlobalSearchSession.registerObserverCallback(
-                /*observedPackage=*/fakePackage,
+                /*targetPackageName=*/fakePackage,
                 new ObserverSpec.Builder().addFilterSchemas("Gift").build(),
                 executor,
                 observer);
