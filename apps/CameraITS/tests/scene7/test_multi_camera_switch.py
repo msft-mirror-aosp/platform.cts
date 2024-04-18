@@ -39,10 +39,47 @@ _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PERCENTAGE_CHANGE_THRESHOLD = 0.5
 _RECORDING_DURATION = 400  # milliseconds
+_SENSOR_ORIENTATIONS = (90, 270)
 _SHARPNESS_RTOL = 0.02  # 2%
 _SKIP_INITIAL_FRAMES = 15
+_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
+
+
+def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
+  """Checks the sensor orientation and flips image.
+
+  The preview stream captures are flipped based on the sensor
+  orientation while using the front camera. In such cases, check the
+  sensor orientation and flip the image if needed.
+
+  Args:
+    props: camera properties object.
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+    img_name_stem: prefix for the img name to be saved
+
+  Returns:
+    numpy array of uw_img and w_img.
+  """
+  if props['android.lens.facing'] == (
+      camera_properties_utils.LENS_FACING['FRONT']):
+    uw_img_name = f'{img_name_stem}_uw.png'
+    w_img_name = f'{img_name_stem}_w.png'
+    if props['android.sensor.orientation'] in _SENSOR_ORIENTATIONS:
+      uw_img = np.ndarray.copy(np.flipud(uw_img))
+      w_img = np.ndarray.copy(np.flipud(w_img))
+      logging.debug('Found sensor orientation %d, flipping up down',
+                    props['android.sensor.orientation'])
+    else:
+      uw_img = np.ndarray.copy(np.fliplr(uw_img))
+      w_img = np.ndarray.copy(np.fliplr(w_img))
+      logging.debug('Found sensor orientation %d, flipping left right',
+                    props['android.sensor.orientation'])
+    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
+    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
+  return uw_img, w_img
 
 
 def _remove_frame_files(dir_name, save_files_list):
@@ -73,9 +110,11 @@ def _do_af_check(uw_img, w_img, log_path):
   sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
-  if not math.isclose(sharpness_w, sharpness_uw, reltol=_SHARPNESS_RTOL):
+  if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_SHARPNESS_RTOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f'RTOL: {_SHARPNESS_RTOL}')
+                         f'RTOL: {_SHARPNESS_RTOL}'
+                         f'sharpness_w: {sharpness_w}'
+                         f'sharpness_uw: {sharpness_uw}')
 
 
 def _compute_slanted_edge_sharpness(input_img, file_name):
@@ -94,7 +133,7 @@ def _compute_slanted_edge_sharpness(input_img, file_name):
   """
   slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
       input_img)
-  image_processing_utils.write_image(slanted_edge_patch/255, file_name)
+  image_processing_utils.write_image(slanted_edge_patch/_CH_FULL_SCALE, file_name)
   return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
 
 
@@ -284,6 +323,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, chart_distance)
+      # Tap tablet to remove gallery buttons
+      if self.tablet:
+        self.tablet.adb.shell(
+            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       preview_test_size = preview_stabilization_utils.get_max_preview_test_size(
           cam, self.camera_id)
@@ -369,6 +412,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           uw_name)
       w_img = image_processing_utils.convert_image_to_numpy_array(
           w_name)
+
+      # Check the sensor orientation and flip image
+      img_name_stem = os.path.join(self.log_path, 'flipped_preview')
+      uw_img, w_img = _check_orientation_and_flip(props, uw_img, w_img, img_name_stem)
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch

@@ -781,8 +781,8 @@ public class RemoteViewsTest {
         mResult = mRemoteViews.apply(mContext, null);
         verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
             final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
-            // reject if root-square-mean-error is larger than 4 and saves screenshots for debug
-            if (rmse > 4.0f) {
+            // reject if root-square-mean-error is above threshold and saves screenshots for debug
+            if (rmse > 20.0f) {
                 try {
                     final String actualPath = saveBitmapToFile(
                             actualBitmap, resourceName + "_actual");

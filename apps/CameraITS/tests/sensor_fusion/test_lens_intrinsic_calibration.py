@@ -195,7 +195,7 @@ def verify_lens_intrinsics_sample(recording_obj):
       intrinsics_samples_list.append(samples)
 
   if not intrinsics_samples_list:
-    logging.debug('Lens Intrincis Samples are not reported')
+    logging.debug('Lens Intrinsic Samples are not reported')
     # Don't change print to logging. Used for KPI.
     print(f'{_NAME}_samples_principal_points_diff_detected: false')
     return None

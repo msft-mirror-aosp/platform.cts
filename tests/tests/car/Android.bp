@@ -27,6 +27,7 @@ android_test {
         "android.car.testapi",
         "androidx.test.core",
         "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
         "android-support-v4",
         "car-integration-test-utils-lib",
         "compatibility-device-util-axt",
@@ -62,6 +63,8 @@ android_test {
     certificate: ":cts-testkey1",
     data: [
         ":CtsCarDisplayCompatApp",
+        ":CtsCarDeprecatedSdkApp",
+        ":CtsCarOverlayWindowTestAppSdk22",
     ],
     java_resources: [
         ":CarSvcProps_JSON",
