@@ -133,8 +133,9 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
     }
 
     void postValidateTestDevices(int numValidTestModules) {
-        TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
+        AudioDeviceUtils.validateUsbDevice(this);
 
+        TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
             if (mUsbDeviceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES
                     && mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
