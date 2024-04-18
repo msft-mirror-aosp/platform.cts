@@ -55,6 +55,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -444,8 +445,9 @@ public class ArchiveTest {
     private void abandonPendingUnarchivalSessions() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (ARCHIVE_APK_PACKAGE_NAME.equals(session.getAppPackageName())
-                    && mContext.getPackageName().equals(session.getInstallerPackageName())) {
+            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())
+                    && TextUtils.equals(mContext.getPackageName(),
+                        session.getInstallerPackageName())) {
                 // The test app cannot abandon draft sessions
                 try {
                     mPackageInstaller.abandonSession(session.getSessionId());
@@ -458,7 +460,7 @@ public class ArchiveTest {
     private int getUnarchivalSessionId() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (session.getAppPackageName().equals(ARCHIVE_APK_PACKAGE_NAME)) {
+            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())) {
                 return session.getSessionId();
             }
         }
@@ -477,7 +479,7 @@ public class ArchiveTest {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (!intent.getAction().equals(Intent.ACTION_UNARCHIVE_PACKAGE)) {
+            if (!TextUtils.equals(Intent.ACTION_UNARCHIVE_PACKAGE, intent.getAction())) {
                 return;
             }
             if (sUnarchiveId == null) {
