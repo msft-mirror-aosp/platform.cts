@@ -417,6 +417,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TouchDelegateTestActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
