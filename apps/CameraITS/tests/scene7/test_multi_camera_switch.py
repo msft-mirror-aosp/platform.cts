@@ -37,6 +37,7 @@ _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_PATCH_MARGIN = 50  # pixels
 _PERCENTAGE_CHANGE_THRESHOLD = 0.5
 _RECORDING_DURATION = 400  # milliseconds
 _SENSOR_ORIENTATIONS = (90, 270)
@@ -133,7 +134,8 @@ def _compute_slanted_edge_sharpness(input_img, file_name):
   """
   slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
       input_img)
-  image_processing_utils.write_image(slanted_edge_patch/_CH_FULL_SCALE, file_name)
+  image_processing_utils.write_image(
+      slanted_edge_patch/_CH_FULL_SCALE, file_name)
   return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
 
 
@@ -279,11 +281,18 @@ def _get_four_quadrant_patches(img, img_path, lens_suffix):
       h = size_y / num_columns
       w = size_x / num_rows
       patch = img[int(y):int(y+h), int(x):int(x+w)]
-      four_quadrant_patches.append(patch)
       patch_path = img_path.with_name(
           f'{img_path.stem}_{lens_suffix}_patch_'
           f'{i}_{j}{img_path.suffix}')
       image_processing_utils.write_image(patch/_CH_FULL_SCALE, patch_path)
+      cropped_patch = patch[_PATCH_MARGIN:-_PATCH_MARGIN,
+                            _PATCH_MARGIN:-_PATCH_MARGIN]
+      four_quadrant_patches.append(cropped_patch)
+      cropped_patch_path = img_path.with_name(
+          f'{img_path.stem}_{lens_suffix}_cropped_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      image_processing_utils.write_image(
+          cropped_patch/_CH_FULL_SCALE, cropped_patch_path)
   return four_quadrant_patches
 
 
