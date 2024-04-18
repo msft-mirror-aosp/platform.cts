@@ -168,7 +168,6 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
       # Find supported preview/video sizes, and their smallest and common size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug(
