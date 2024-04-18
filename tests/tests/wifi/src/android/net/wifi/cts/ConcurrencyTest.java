@@ -1733,4 +1733,62 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
         }
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
+    public void testP2pWhenInfraStaDisabled() throws Exception {
+        if (!sWifiManager.isD2dSupportedWhenInfraStaDisabled()) {
+            // skip the test if feature is not supported.
+            return;
+        }
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        WifiManagerTest.Mutable<Boolean> isQuerySucceeded =
+                new WifiManagerTest.Mutable<Boolean>(false);
+        boolean currentD2dAllowed = false;
+        boolean isRestoreRequired = false;
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            WifiManagerTest.Mutable<Boolean> isD2dAllowed =
+                    new WifiManagerTest.Mutable<Boolean>(false);
+            sWifiManager.queryD2dAllowedWhenInfraStaDisabled(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isD2dAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + DURATION;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("d2d allowed query fail", isQuerySucceeded.value);
+            currentD2dAllowed = isD2dAllowed.value;
+            isRestoreRequired = true;
+            // Now force wifi off and d2d is on
+            sWifiManager.setWifiEnabled(false);
+            sWifiManager.setD2dAllowedWhenInfraStaDisabled(true);
+            // Run a test to make sure p2p can be used.
+            testRequestDiscoveryState();
+            // Set d2d to false and check
+            sWifiManager.setD2dAllowedWhenInfraStaDisabled(false);
+            // Make sure WifiP2P is disabled
+            waitForBroadcasts(MySync.P2P_STATE);
+            assertThat(WifiP2pManager.WIFI_P2P_STATE_DISABLED).isEqualTo(MY_SYNC.expectedP2pState);
+        } finally {
+            if (isRestoreRequired) {
+                sWifiManager.setD2dAllowedWhenInfraStaDisabled(currentD2dAllowed);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
