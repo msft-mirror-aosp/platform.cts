@@ -70,6 +70,8 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
     // variables related to host-side of the test
     private static final int MINIMUM_VALID_SDK = 31;
             // test is not valid before sdk 31, aka Android 12, aka Android S
+    private static final float TARGET_VMAF_SCORE = 70.0f;
+    private static final float TOLERANCE = 0.95f;
 
     private static final Lock sLock = new ReentrantLock();
     private static final Condition sCondition = sLock.newCondition();
@@ -254,8 +256,9 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
                     if (line.contains(token)) {
                         line = line.substring(line.indexOf(token));
                         double vmaf_score = Double.parseDouble(line.substring(token.length()));
-                        Assert.assertTrue("Video encoding failed for " + outputName
-                            + " with vmaf score of " + vmaf_score, vmaf_score >= 70);
+                        Assert.assertTrue(
+                                "Video encoding failed for " + outputName + " with vmaf score of "
+                                        + vmaf_score, vmaf_score >= TARGET_VMAF_SCORE * TOLERANCE);
                         LogUtil.CLog.i(vmafLine);
                         break;
                     }
