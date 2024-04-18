@@ -60,6 +60,7 @@ import com.android.server.telecom.flags.Flags;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -707,7 +708,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall",
             "android.telecom.CallControl#disconnect",
             "android.telecom.CallControl#setActive"})
-    public void testUsingCallControlAfterDisconnect() {
+    public void testUsingCallControlAfterDisconnect() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }
@@ -717,17 +718,31 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
 
+            CountDownLatch latch = new CountDownLatch(1);
+            LinkedBlockingQueue<CallException> queue = new LinkedBlockingQueue<>();
+
             mCall1.mCallControl.setActive(Runnable::run, new OutcomeReceiver<>() {
                 @Override
                 public void onResult(Void result) {
-                    fail("testUsingCallControlAfterDisconnect:"
-                            + " onResult should not be called");
+                    latch.countDown();
                 }
 
                 @Override
                 public void onError(CallException exception) {
+                    queue.add(exception);
+                    latch.countDown();
                 }
             });
+
+            latch.await();
+
+            if (queue.isEmpty()) {
+                fail("setActive#onError(CallException) was not called");
+            }
+
+            CallException e = (CallException) queue.poll();
+            assertTrue(CallException.CODE_CALL_IS_NOT_BEING_TRACKED == e.getCode()
+                    || CallException.CODE_CALL_CANNOT_BE_SET_TO_ACTIVE == e.getCode());
         } finally {
             cleanup();
         }
