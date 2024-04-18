@@ -62,6 +62,7 @@ import android.os.ConditionVariable;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
@@ -126,6 +127,9 @@ public class MediaRecorderTest extends MediaTestBase {
     private static final int NORMAL_FPS = 30;
     private static final int TIME_LAPSE_FPS = 5;
     private static final int SLOW_MOTION_FPS = 120;
+    // limiting the ro.hw_timeout_multiplier to 6 to accommodate slower devices
+    private static final int HW_TIMEOUT_MULTIPLIER = Math.min(6,
+            SystemProperties.getInt("ro.hw_timeout_multiplier", 1));
     private static final List<VideoEncoderCap> mVideoEncoders =
             EncoderCapabilities.getVideoEncoders();
 
@@ -791,7 +795,7 @@ public class MediaRecorderTest extends MediaTestBase {
             MediaUtils.skipTest("no audio codecs or microphone");
             return;
         }
-        testSetMaxDuration(RECORD_TIME_LONG_MS, RECORDED_DUR_TOLERANCE_MS);
+        testSetMaxDuration(RECORD_TIME_LONG_MS, RECORDED_DUR_TOLERANCE_MS * HW_TIMEOUT_MULTIPLIER);
     }
 
     private void testSetMaxDuration(long durationMs, long toleranceMs) throws Exception {
