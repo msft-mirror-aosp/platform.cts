@@ -24,6 +24,7 @@ import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.S;
+import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
@@ -1066,5 +1067,22 @@ public final class UserReference implements AutoCloseable {
         } catch (AdbException e) {
             throw new NeneException("Could not verify user credential");
         }
+    }
+
+    /** Checks if a profile of type {@code userType} can be created. */
+    @Experimental
+    @SuppressWarnings("NewApi") // We include a T version check in the method.
+    public boolean canCreateProfile(UserType userType) {
+        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
+        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return mUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
+            }
+        }
+
+        // For S and older versions, we need to keep the previous behavior by returning true here
+        // so that the check can pass.
+        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
+        return true;
     }
 }
