@@ -424,6 +424,7 @@
             android:exported="true"/>
 
         <activity android:name="android.server.wm.activity.StartActivityAsUserActivity"
+             android:showForAllUsers="true"
              android:directBootAware="true"/>
 
         <activity android:name="android.server.wm.WindowInsetsAnimationTestBase$TestActivity"
