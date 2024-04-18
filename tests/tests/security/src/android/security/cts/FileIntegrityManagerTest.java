@@ -39,13 +39,13 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,6 +82,11 @@ public class FileIntegrityManagerTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            android.Manifest.permission.SETUP_FSVERITY);
 
     @Before
     public void setUp() throws Exception {
@@ -167,7 +172,6 @@ public class FileIntegrityManagerTest {
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity",
             "android.security.FileIntegrityManager#getFsVerityDigest"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
-    @Ignore("b/335034607")
     public void testEnableAndMeasureFsVerityByFile() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
@@ -185,7 +189,6 @@ public class FileIntegrityManagerTest {
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
-    @Ignore("b/335034607")
     public void testFailToEnableUnsupportedLocation() throws Exception {
         var files = newUnsupportedFiles();
         for (var file : files) {
@@ -199,7 +202,6 @@ public class FileIntegrityManagerTest {
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
     @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
-    @Ignore("b/335034607")
     public void testFailToEnableWithOpenedWritableFd() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
