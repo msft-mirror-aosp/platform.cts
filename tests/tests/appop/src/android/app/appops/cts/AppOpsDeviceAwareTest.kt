@@ -20,18 +20,19 @@ import android.Manifest
 import android.app.AppOpsManager
 import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceParams
+import android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
+import android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA
 import android.content.AttributionSource
 import android.os.Process
+import android.permission.PermissionManager
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.virtualdevice.cts.common.FakeAssociationRule
+import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,17 +42,17 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "Instant apps cannot hold GET_APP_OPS_STATS")
 class AppOpsDeviceAwareTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val context = instrumentation.context
+    private val context = instrumentation.targetContext
     private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
-    private val virtualDeviceManager = context.getSystemService(VirtualDeviceManager::class.java)!!
+    private val permissionManager = context.getSystemService(PermissionManager::class.java)!!
     private lateinit var virtualDevice: VirtualDeviceManager.VirtualDevice
 
     @get:Rule val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-    @get:Rule var mFakeAssociationRule = FakeAssociationRule()
     @get:Rule
-    val mAdoptShellPermissionsRule =
-        AdoptShellPermissionsRule(
-            instrumentation.uiAutomation,
+    var virtualDeviceRule =
+        VirtualDeviceRule.withAdditionalPermissions(
+            Manifest.permission.GRANT_RUNTIME_PERMISSIONS,
+            Manifest.permission.REVOKE_RUNTIME_PERMISSIONS,
             Manifest.permission.CREATE_VIRTUAL_DEVICE,
             Manifest.permission.GET_APP_OPS_STATS
         )
@@ -59,23 +60,73 @@ class AppOpsDeviceAwareTest {
     @Before
     fun setUp() {
         virtualDevice =
-            virtualDeviceManager.createVirtualDevice(
-                mFakeAssociationRule.associationInfo.id,
-                VirtualDeviceParams.Builder().setName("virtual_device").build()
+            virtualDeviceRule.createManagedVirtualDevice(
+                VirtualDeviceParams.Builder()
+                    .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                    .build()
             )
 
         // Reset app ops state for this test package to the system default.
         reset(context.opPackageName)
     }
 
-    @After
-    fun cleanup() {
-        virtualDevice.close()
+    @RequiresFlagsEnabled(
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+    )
+    @Test
+    fun getUidMode_shouldBeInferredFromPermissionState() {
+        val attributionSource =
+            AttributionSource.Builder(Process.myUid())
+                .setPackageName(context.opPackageName)
+                .setAttributionTag(context.attributionTag)
+                .setDeviceId(virtualDevice.deviceId)
+                .build()
+
+        // When permission is not granted, the app op mode should be IGNORED
+        assertThat(
+                appOpsManager.unsafeCheckOpRawNoThrow(AppOpsManager.OPSTR_CAMERA, attributionSource)
+            )
+            .isEqualTo(AppOpsManager.MODE_IGNORED)
+
+        // Grant permission to the default device, expect it will not affect app op mode for the
+        // external device.
+        permissionManager.grantRuntimePermission(
+            context.opPackageName,
+            Manifest.permission.CAMERA,
+            VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT
+        )
+
+        assertThat(
+                appOpsManager.unsafeCheckOpRawNoThrow(AppOpsManager.OPSTR_CAMERA, attributionSource)
+            )
+            .isEqualTo(AppOpsManager.MODE_IGNORED)
+
+        // Grant permission to the external device, expect the app op mode is affected
+        permissionManager.grantRuntimePermission(
+            context.opPackageName,
+            Manifest.permission.CAMERA,
+            virtualDevice.persistentDeviceId!!
+        )
+
+        assertThat(
+                appOpsManager.unsafeCheckOpRawNoThrow(AppOpsManager.OPSTR_CAMERA, attributionSource)
+            )
+            .isEqualTo(AppOpsManager.MODE_FOREGROUND)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED)
+    @RequiresFlagsEnabled(
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+    )
     @Test
     fun getPackagesForOps_isDeviceAware() {
+        permissionManager.grantRuntimePermission(
+            context.opPackageName,
+            Manifest.permission.CAMERA,
+            virtualDevice.persistentDeviceId!!
+        )
+
         // noteOp for an external device
         val attributionSource =
             AttributionSource.Builder(Process.myUid())
@@ -88,7 +139,7 @@ class AppOpsDeviceAwareTest {
         val mode =
             appOpsManager.noteOpNoThrow(AppOpsManager.OP_CAMERA, attributionSource, "message")
         val endTimeMillis = System.currentTimeMillis()
-        assertThat(AppOpsManager.MODE_ALLOWED).isEqualTo(mode)
+        assertThat(mode).isEqualTo(AppOpsManager.MODE_ALLOWED)
 
         // Expect noteOp doesn't create attributedOpEntry for default device
         val packagesOpsForDefaultDevice =
@@ -123,9 +174,18 @@ class AppOpsDeviceAwareTest {
         assertThat(lastAccessTime).isAtMost(endTimeMillis)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED)
+    @RequiresFlagsEnabled(
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+    )
     @Test
     fun getPermissionGroupUsageForPrivacyIndicator_isDeviceAware() {
+        permissionManager.grantRuntimePermission(
+            context.opPackageName,
+            Manifest.permission.CAMERA,
+            virtualDevice.persistentDeviceId!!
+        )
+
         // noteOp for an external device
         val attributionSource =
             AttributionSource.Builder(Process.myUid())
