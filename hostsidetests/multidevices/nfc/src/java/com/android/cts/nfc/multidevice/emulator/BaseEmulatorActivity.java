@@ -41,6 +41,7 @@ import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
 import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOnOnlyOffHostService;
 import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
 import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.service.TransportService2;
@@ -75,7 +76,8 @@ public abstract class BaseEmulatorActivity extends Activity {
                             ThroughputService.COMPONENT,
                             LargeNumAidsService.COMPONENT,
                             ScreenOffPaymentService.COMPONENT,
-                            OffHostService.COMPONENT));
+                            OffHostService.COMPONENT,
+                            ScreenOnOnlyOffHostService.COMPONENT));
 
     protected static final String TAG = "BaseEmulatorActivity";
     protected NfcAdapter mAdapter;

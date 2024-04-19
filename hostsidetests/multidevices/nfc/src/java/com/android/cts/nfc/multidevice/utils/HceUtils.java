@@ -37,6 +37,7 @@ import com.android.cts.nfc.multidevice.utils.service.PrefixPaymentService2;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService1;
 import com.android.cts.nfc.multidevice.utils.service.PrefixTransportService2;
 import com.android.cts.nfc.multidevice.utils.service.ScreenOffPaymentService;
+import com.android.cts.nfc.multidevice.utils.service.ScreenOnOnlyOffHostService;
 import com.android.cts.nfc.multidevice.utils.service.ThroughputService;
 import com.android.cts.nfc.multidevice.utils.service.TransportService1;
 import com.android.cts.nfc.multidevice.utils.service.TransportService2;
@@ -277,6 +278,14 @@ public final class HceUtils {
         RESPONSE_APDUS_BY_SERVICE.put(
                 ScreenOffPaymentService.class.getName(),
                 new String[] {"FFFF9000", "FFEF9000", "FFDFFFAABB9000"});
+
+        COMMAND_APDUS_BY_SERVICE.put(
+                ScreenOnOnlyOffHostService.class.getName(),
+                new CommandApdu[] {
+                    buildSelectApdu("A000000476416E64726F696443545340", true),
+                });
+        RESPONSE_APDUS_BY_SERVICE.put(
+                ScreenOnOnlyOffHostService.class.getName(), new String[] {"*"});
     }
 
     /** Enables specified component */
