@@ -9,6 +9,16 @@
         ]
     }
   ],
+  "mediaprovider-mainline-presubmit": [
+    {
+        "name": "CtsAppCloningHostTest",
+        "options": [
+          {
+            "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          }
+        ]
+    }
+  ],
   "mainline-postsubmit": [
     {
         "name": "CtsAppCloningHostTest[com.google.android.mediaprovider.apex]",
