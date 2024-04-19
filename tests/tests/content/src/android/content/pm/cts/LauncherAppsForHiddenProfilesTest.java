@@ -34,9 +34,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.fail;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeTrue;
 
-import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -46,7 +44,6 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
-import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -61,6 +58,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.ShellCommand;
+import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -294,7 +292,9 @@ public class LauncherAppsForHiddenProfilesTest {
                                 .map(PackageInstaller.SessionInfo::getUser)
                                 .toList())
                 .doesNotContain(targetUser);
-        assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isFalse();
+        if (canSetAppAsDistracting()) {
+            assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isFalse();
+        }
 
         try (PermissionContext p =
                 TestApis.permissions().withPermission(START_TASKS_FROM_RECENTS)) {
@@ -330,7 +330,9 @@ public class LauncherAppsForHiddenProfilesTest {
                                 .map(PackageInstaller.SessionInfo::getUser)
                                 .toList())
                 .contains(targetUser);
-        assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isTrue();
+        if (canSetAppAsDistracting()) {
+            assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isTrue();
+        }
 
         try (PermissionContext p =
                 TestApis.permissions().withPermission(START_TASKS_FROM_RECENTS)) {
@@ -352,8 +354,14 @@ public class LauncherAppsForHiddenProfilesTest {
         startInstallationSession(reference);
 
         // Required to test shouldHideFromSuggestions API
-        setAppAsDistracting(reference, mTestApp.packageName());
+        if (canSetAppAsDistracting()) {
+            setAppAsDistracting(reference, mTestApp.packageName());
+        }
         return reference;
+    }
+
+    private boolean canSetAppAsDistracting() {
+        return ShellCommandUtils.isRootAvailable();
     }
 
     private UserReference createProfile() {
