@@ -96,6 +96,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermissi
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
+import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports;
@@ -153,12 +155,16 @@ import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexis
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
+import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
@@ -171,6 +177,8 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
+import com.android.bedstead.nene.display.Display;
+import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.packages.Package;
@@ -1780,5 +1788,58 @@ public class DeviceStateTest {
         ).isFalse();
     }
 
+    @Test
+    @EnsureUsingScreenOrientation(orientation = DisplayProperties.ScreenOrientation.LANDSCAPE)
+    public void ensureUsingScreenOrientation_landscape_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.LANDSCAPE);
+    }
 
+    @Test
+    @EnsureUsingScreenOrientation(orientation = DisplayProperties.ScreenOrientation.PORTRAIT)
+    public void ensureUsingScreenOrientation_portrait_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
+    }
+
+    @Test
+    @EnsureUsingDisplayTheme(theme = DisplayProperties.Theme.DARK)
+    public void ensureUsingDisplayTheme_setDark_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.DARK);
+    }
+
+    @Test
+    @EnsureUsingDisplayTheme(theme = DisplayProperties.Theme.LIGHT)
+    public void ensureUsingDisplayTheme_setLight_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
+    }
+
+    @Test
+    @IncludeLandscapeOrientation
+    public void includeRunOnLandscapeOrientationDevice_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.LANDSCAPE);
+    }
+
+    @Test
+    @IncludePortraitOrientation
+    public void includeRunOnPortraitOrientationDevice_orientationIsSet() {
+    assertThat(Display.INSTANCE.getScreenOrientation())
+        .isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
+    }
+
+    @Test
+    @IncludeDarkMode
+    public void includeRunOnDarkModeDevice_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.DARK);
+    }
+
+    @Test
+    @IncludeLightMode
+    public void includeRunOnLightModeDevice_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
+    }
 }
