@@ -1700,9 +1700,10 @@ public class KeyAttestationTest {
         }
     }
 
-    private void checkEntropy(byte[] verifiedBootKey) {
-        assertTrue("Failed Shannon entropy check", checkShannonEntropy(verifiedBootKey));
-        assertTrue("Failed BiEntropy check", checkTresBiEntropy(verifiedBootKey));
+    private void checkEntropy(byte[] entropyData) {
+        byte[] entropyDataCopy = Arrays.copyOf(entropyData, entropyData.length);
+        assertTrue("Failed Shannon entropy check", checkShannonEntropy(entropyDataCopy));
+        assertTrue("Failed BiEntropy check", checkTresBiEntropy(entropyDataCopy));
     }
 
     private boolean checkShannonEntropy(byte[] verifiedBootKey) {
@@ -1718,6 +1719,9 @@ public class KeyAttestationTest {
         return entropy;
     }
 
+    /**
+     * Note: This method modifies the input parameter while performing bit entropy check.
+     */
     private boolean checkTresBiEntropy(byte[] verifiedBootKey) {
         double weightingFactor = 0;
         double weightedEntropy = 0;
@@ -1735,6 +1739,9 @@ public class KeyAttestationTest {
         return tresBiEntropy > 0.9;
     }
 
+    /**
+     * Note: This method modifies the input parameter - bitString.
+     */
     private void deriveBitString(byte[] bitString, int activeLength) {
         int length = activeLength / 8;
         if (activeLength % 8 != 0) {
