@@ -295,6 +295,7 @@ public class Install {
             if (mIsStaged) {
                 params.setStaged();
             }
+            params.setInstallFlagAllowTest();
             params.setRequestDowngrade(mIsDowngrade);
             params.setEnableRollback(mEnableRollback, mRollbackDataPolicy);
             if (mEnableRollback && mLifetimeMillis > 0) {
