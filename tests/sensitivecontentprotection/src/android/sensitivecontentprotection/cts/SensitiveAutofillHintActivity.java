@@ -19,18 +19,30 @@ package android.sensitivecontentprotection.cts;
 import android.app.Activity;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 
-public class InputTypePasswordActivity extends Activity {
+public class SensitiveAutofillHintActivity extends Activity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowManager.LayoutParams wmlp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-        TextView textView = new TextView(this);
-        textView.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        addContentView(textView, wmlp);
+        String autofillHint = getIntent().getExtras().getString("autofillHint");
+        if (autofillHint != null) {
+            WindowManager.LayoutParams wmlp = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+            if (autofillHint.equals("passwordAuto")) {
+                TextView textView = new TextView(this);
+                textView.setInputType(InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                addContentView(textView, wmlp);
+            } else {
+                View view = new View(this);
+                view.setAutofillHints(autofillHint);
+                addContentView(view, wmlp);
+            }
+        }
     }
 }
+
