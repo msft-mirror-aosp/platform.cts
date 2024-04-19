@@ -66,8 +66,8 @@ public class TestFocusActivity extends TestActivityWithId {
                 getClass().getSimpleName(), "onTouchModeChanged isInTouchMode=" + isInTouchMode));
     }
 
-    public void resetFocusedView() {
-        mInitialFocusedView.requestFocus();
+    public boolean resetFocusedView() {
+        return mInitialFocusedView.requestFocus();
     }
 
     public int getFocusableViewCount() {
