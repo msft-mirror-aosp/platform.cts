@@ -220,7 +220,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_RESERVED_FOR_TESTING] = 141
             APP_OPS[AppOpsManager.OPSTR_RAPID_CLEAR_NOTIFICATIONS_BY_LISTENER] = 142
             APP_OPS[AppOpsManager.OPSTR_READ_SYSTEM_GRAMMATICAL_GENDER] = 143
-            APP_OPS[AppOpsManager.OPSTR_RUN_BACKUP_JOBS] = 144
+            APP_OPS[AppOpsManager.OPSTR_DEPRECATED_4] = 144
             APP_OPS[AppOpsManager.OPSTR_ARCHIVE_ICON_OVERLAY] = 145
             APP_OPS[AppOpsManager.OPSTR_UNARCHIVAL_CONFIRMATION] = 146
             APP_OPS[AppOpsManager.OPSTR_EMERGENCY_LOCATION] = 147

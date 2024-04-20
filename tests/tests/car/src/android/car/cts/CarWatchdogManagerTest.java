@@ -866,6 +866,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         PACKAGES_DISABLED_ON_RESOURCE_OVERUSE_SEPARATOR)));
     }
 
+    // TODO(b/335920274): Move this logic to a utils class, which can be used by all
+    // host and device side CTS tests. Once done, refactor all the files which contain
+    // the duplicate logic.
     private static long writeToDisk(File dir, long size) throws Exception {
         if (!dir.exists()) {
             throw new FileNotFoundException(
@@ -882,9 +885,15 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     }
 
     private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
         long writtenBytes = 0;
         while (maxSize != 0) {
-            int writeSize = Math.toIntExact(Math.min(Runtime.getRuntime().freeMemory(), maxSize));
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
             Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
             if (writeSize == 0) {
                 Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
