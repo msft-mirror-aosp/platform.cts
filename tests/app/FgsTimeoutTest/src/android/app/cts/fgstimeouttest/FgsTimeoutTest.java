@@ -15,12 +15,14 @@
  */
 package android.app.cts.fgstimeouttest;
 
+import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.ACTIVITY;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.FGS0;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.FGS1;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.FGS2;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.HELPER_PACKAGE;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.TAG;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.flattenComponentName;
+import static android.app.nano.AppProtoEnums.PROCESS_STATE_TOP;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
@@ -30,6 +32,7 @@ import static com.android.compatibility.common.util.TestUtils.waitUntil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Flags;
+import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Service;
 import android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper;
 import android.app.cts.fgstimeouttesthelper.FgsTimeoutMessage;
@@ -37,9 +40,7 @@ import android.app.cts.fgstimeouttesthelper.FgsTimeoutMessageReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.PowerExemptionManager;
 import android.os.SystemClock;
-import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -48,6 +49,7 @@ import android.provider.DeviceConfig;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
@@ -83,19 +85,13 @@ public class FgsTimeoutTest {
      */
     public static final long SHORTENED_TIMEOUT = 5_000;
 
-    /**
-     * This is the timeout between Context.startForegroundService() and Service.startForeground().
-     * Within this duration, the app is temp-allowlisted, so any FGS could be started.
-     * This will affect some of the tests so we shorten this too.
-     *
-     * Here, we use the same value as SHORTENED_TIMEOUT.
-     */
-    public static final long SHORTENED_START_SERVICE_TIMEOUT = 5_000;
-
     @BeforeClass
     public static void setUpClass() throws Exception {
         sDeviceConfig = new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
         ShellUtils.runShellCommand("cmd device_config set_sync_disabled_for_tests until_reboot");
+
+        updateDeviceConfig("media_processing_fgs_timeout_duration", SHORTENED_TIMEOUT);
+        updateDeviceConfig("data_sync_fgs_timeout_duration", SHORTENED_TIMEOUT);
     }
 
     @AfterClass
@@ -105,48 +101,14 @@ public class FgsTimeoutTest {
 
     @Before
     public void setUp() throws Exception {
-        updateDeviceConfig("media_processing_fgs_timeout_duration", SHORTENED_TIMEOUT, false);
-        updateDeviceConfig("data_sync_fgs_timeout_duration", SHORTENED_TIMEOUT, false);
-        updateDeviceConfig("service_start_foreground_timeout_ms", SHORTENED_START_SERVICE_TIMEOUT,
-                true); // Only verify the last change (skip the other ones to speed up the test)
-
-        // Drop any pending messages
-        CallProvider.clearMessageQueue();
+        startActivityToResetLimits();
     }
 
     @After
     public void tearDown() throws Exception {
+        // Drop any pending messages
+        CallProvider.clearMessageQueue();
         forceStopHelperApps();
-    }
-
-    private static void updateDeviceConfig(String key, long value) throws Exception {
-        updateDeviceConfig(key, value, /* verify= */ true);
-    }
-
-    private static void updateDeviceConfig(String key, long value, boolean verify)
-            throws Exception {
-        Log.d(TAG, "updateDeviceConfig: setting " + key + " to " + value);
-        sDeviceConfig.set(key, String.valueOf(value));
-
-        if (verify) {
-            waitUntil("`dumpsys activity settings` didn't update", () -> {
-                final String dumpsys = ShellUtils.runShellCommand(
-                        "dumpsys activity settings");
-
-                // Look each line, rather than just doing a contains() check, so we can print
-                // the current value.
-                for (String line : dumpsys.split("\\n", -1)) {
-                    if (!line.contains(" " + key + "=")) {
-                        continue;
-                    }
-                    Log.d(TAG, "Current config: " + line);
-                    if (line.endsWith("=" + value)) {
-                        return true;
-                    }
-                }
-                return false;
-            });
-        }
     }
 
     /**
@@ -156,15 +118,12 @@ public class FgsTimeoutTest {
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout() throws Exception {
         final long serviceStartTime = SystemClock.uptimeMillis();
-
         // Start the service
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
         assertFgsRunning(FGS0);
 
         // Wait for onTimeout()
-        Thread.sleep(SHORTENED_TIMEOUT);
-
         FgsTimeoutMessage m = waitForMethodCall(FGS0, "onTimeout");
         assertThat(m.getServiceStartId()).isEqualTo(startId);
         assertThat(m.getFgsType()).isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -178,10 +137,42 @@ public class FgsTimeoutTest {
         waitForMethodCall(FGS0, "onDestroy");
         assertServiceNotRunning(FGS0);
 
-        // Wait for the timeout + extra duration
-        Thread.sleep(SHORTENED_TIMEOUT + 5000);
-        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
-        // which would break the below ensureNoMoreMessages().)
+        CallProvider.ensureNoMoreMessages();
+    }
+
+    /**
+     * Start a MEDIA_PROCESSING fgs, using Context.startService, not Context.startForegroundService.
+     * Then make sure onTimeout() is called.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    public void testTimeout_startService() throws Exception {
+        final long serviceStartTime = SystemClock.uptimeMillis();
+        // Start the service (using startService)
+        FgsTimeoutMessageReceiver.sendMessage(newMessage()
+                .setComponentName(FGS0)
+                .setDoCallStartService(true)
+                .setDoCallStartForeground(true)
+                .setFgsType(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
+                .setStartCommandResult(Service.START_NOT_STICKY));
+        waitForAckMessage();
+        final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
+        assertFgsRunning(FGS0);
+
+        // Wait for onTimeout()
+        FgsTimeoutMessage m = waitForMethodCall(FGS0, "onTimeout");
+        assertThat(m.getServiceStartId()).isEqualTo(startId);
+        assertThat(m.getFgsType()).isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+
+        // Timeout should happen after SHORTENED_TIMEOUT.
+        assertThat(m.getTimestamp()).isAtLeast(serviceStartTime + SHORTENED_TIMEOUT);
+        assertFgsRunning(FGS0);
+
+        // Stop the service.
+        sContext.stopService(new Intent().setComponent(FGS0));
+        waitForMethodCall(FGS0, "onDestroy");
+        assertServiceNotRunning(FGS0);
+
         CallProvider.ensureNoMoreMessages();
     }
 
@@ -191,8 +182,8 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testAnr() throws Exception {
-        final int anrExtraTimeout = 10_000;
-        updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout, /* verify= */ true);
+        final int anrExtraTimeout = 5000;
+        updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout);
 
         try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
                 HELPER_PACKAGE)) {
@@ -202,13 +193,14 @@ public class FgsTimeoutTest {
             waitForMethodCall(FGS0, "onStartCommand");
             assertFgsRunning(FGS0);
 
-            // Wait for the timeout + extra duration
-            Thread.sleep(SHORTENED_TIMEOUT + anrExtraTimeout + 2000);
-
-            // Wait for the ANR.
-            final long anrTime = monitor.waitForAnrAndReturnUptime(60_000);
+            // Wait for the ANR (timeout + extra duration)
+            final long anrTime = monitor.waitForAnrAndReturnUptime(30_000);
             // The ANR time should be after the timeout + the ANR grace period.
             assertThat(anrTime).isAtLeast(startTime + SHORTENED_TIMEOUT + anrExtraTimeout);
+
+            CallProvider.clearMessageQueue();
+        } finally {
+            resetDeviceConfig("fgs_anr_extra_wait_duration");
         }
     }
 
@@ -220,7 +212,6 @@ public class FgsTimeoutTest {
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_withAnotherFgs() throws Exception {
         final long serviceStartTime = SystemClock.uptimeMillis();
-
         // Start a time-restricted fgs
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
@@ -232,8 +223,6 @@ public class FgsTimeoutTest {
         assertFgsRunning(FGS1);
 
         // Wait for the timeout
-        Thread.sleep(SHORTENED_TIMEOUT);
-
         FgsTimeoutMessage m = waitForMethodCall(FGS0, "onTimeout");
         assertThat(m.getServiceStartId()).isEqualTo(startId);
         assertThat(m.getFgsType()).isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -251,49 +240,6 @@ public class FgsTimeoutTest {
         waitForMethodCall(FGS1, "onDestroy");
         assertServiceNotRunning(FGS1);
 
-        CallProvider.ensureNoMoreMessages();
-    }
-
-    /**
-     * Start a MEDIA_PROCESSING fgs, using Context.startService, not Context.startForegroundService.
-     * Then make sure onTimeout() is called.
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    public void testStart_startService() throws Exception {
-        // The helper app is in the background and can't start a BG service, so we need to put
-        // it in the temp-allowlsit first.
-        tempAllowlistPackage(HELPER_PACKAGE, 5000);
-
-        final long serviceStartTime = SystemClock.uptimeMillis();
-        FgsTimeoutMessageReceiver.sendMessage(newMessage()
-                .setComponentName(FGS0)
-                .setDoCallStartService(true)
-                .setDoCallStartForeground(true)
-                .setFgsType(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
-                .setStartCommandResult(Service.START_NOT_STICKY));
-        waitForAckMessage();
-        final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
-        assertFgsRunning(FGS0);
-
-        // Wait for onTimeout()
-        Thread.sleep(SHORTENED_TIMEOUT);
-        FgsTimeoutMessage m = waitForMethodCall(FGS0, "onTimeout");
-        assertThat(m.getServiceStartId()).isEqualTo(startId);
-        assertThat(m.getFgsType()).isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
-        // Timeout should happen after SHORTENED_TIMEOUT.
-        assertThat(m.getTimestamp()).isAtLeast(serviceStartTime + SHORTENED_TIMEOUT);
-        assertFgsRunning(FGS0);
-
-        // Stop the service.
-        sContext.stopService(new Intent().setComponent(FGS0));
-        waitForMethodCall(FGS0, "onDestroy");
-        assertServiceNotRunning(FGS0);
-
-        // Wait for the timeout + extra duration
-        Thread.sleep(SHORTENED_TIMEOUT + 5000);
-        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
-        // which would break the below ensureNoMoreMessages().)
         CallProvider.ensureNoMoreMessages();
     }
 
@@ -360,11 +306,6 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testCanStartAnotherFgsFromTimeRestrictedFgs() throws Exception {
-        // Here, we want the MEDIA_PROCESSING timeout to be significantly larger than the
-        // startForeground() timeout, because we want to check the state between them.
-        updateDeviceConfig("media_processing_fgs_timeout_duration",
-                SHORTENED_START_SERVICE_TIMEOUT + 60_000);
-
         // Start a time-restricted FGS
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         waitForMethodCall(FGS0, "onStartCommand");
@@ -374,12 +315,6 @@ public class FgsTimeoutTest {
         startForegroundService(FGS1, FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
         waitForMethodCall(FGS1, "onStartCommand");
         assertFgsRunning(FGS1);
-
-        // Because of the first Context.startForegroundService() for FGS0, the helper app is
-        // temp-allowlisted for this duration, so another Context.startForegroundService() would
-        // automatically succeed.
-        // We wait until the temp-allowlist expires, so startForegroundService() would fail.
-        Thread.sleep(SHORTENED_START_SERVICE_TIMEOUT);
 
         // Let the helper app call Context.startForegroundService, which should succeed.
         FgsTimeoutMessageReceiver.sendMessage(
@@ -405,6 +340,10 @@ public class FgsTimeoutTest {
         waitForMethodCall(FGS2, "onDestroy");
         assertServiceNotRunning(FGS2);
 
+        // Wait for the timeout + extra duration
+        Thread.sleep(SHORTENED_TIMEOUT + 5000);
+        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
+        // which would break the below ensureNoMoreMessages().)
         CallProvider.ensureNoMoreMessages();
     }
 
@@ -414,10 +353,7 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTypeChange_fromTimeRestricted_toAnother() throws Exception {
-        // Temp-allowlist the helper app for the entire test, so the app can call startForeground()
-        // any time.
-        tempAllowlistPackage(HELPER_PACKAGE, 10 * 60 * 1000);
-
+        // Start a time-restricted FGS
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         waitForMethodCall(FGS0, "onStartCommand");
 
@@ -451,6 +387,115 @@ public class FgsTimeoutTest {
         sr = assertFgsRunning(FGS0);
         assertThat(sr.foreground.foregroundServiceType)
                 .isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+
+        // Stop the service
+        sContext.stopService(new Intent().setComponent(FGS0));
+        waitForMethodCall(FGS0, "onDestroy");
+        assertServiceNotRunning(FGS0);
+
+        // Wait for the timeout + extra duration
+        Thread.sleep(SHORTENED_TIMEOUT + 5000);
+        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
+        // which would break the below ensureNoMoreMessages().)
+        CallProvider.ensureNoMoreMessages();
+    }
+
+    /**
+     * Start MEDIA_PROCESSING FGS, and make sure the timeout callback is called.
+     * Attempt to start another MEDIA_PROCESSING FGS, exception should be thrown since
+     * time limit has already been exhausted.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    public void testStartServiceThrowsExceptionAfterTimeout() throws Exception {
+        final long serviceStartTime = SystemClock.uptimeMillis();
+        // Start the service
+        startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+        final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
+        assertFgsRunning(FGS0);
+
+        // Wait for onTimeout()
+        FgsTimeoutMessage m = waitForMethodCall(FGS0, "onTimeout");
+        assertThat(m.getServiceStartId()).isEqualTo(startId);
+        assertThat(m.getFgsType()).isEqualTo(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+
+        // Timeout should happen after SHORTENED_TIMEOUT
+        assertThat(m.getTimestamp()).isAtLeast(serviceStartTime + SHORTENED_TIMEOUT);
+        assertFgsRunning(FGS0);
+
+        // Let the helper app call Context.startForegroundService, which should fail.
+        FgsTimeoutMessageReceiver.sendMessage(newMessage()
+                .setDoCallStartForeground(true)
+                .setFgsType(FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING)
+                .setComponentName(FGS0)
+                .setExpectedExceptionClass(ForegroundServiceStartNotAllowedException.class));
+
+        // It should have failed.
+        FgsTimeoutMessage m2 = waitForException();
+        assertThat(m2.getActualExceptionClass())
+                .isEqualTo(ForegroundServiceStartNotAllowedException.class.getName());
+
+        // Stop the service
+        sContext.stopService(new Intent().setComponent(FGS0));
+        waitForMethodCall(FGS0, "onDestroy");
+        assertServiceNotRunning(FGS0);
+
+        CallProvider.ensureNoMoreMessages();
+    }
+
+    private static void updateDeviceConfig(String key, long value) throws Exception {
+        Log.d(TAG, "updateDeviceConfig: setting " + key + " to " + value);
+        sDeviceConfig.set(key, String.valueOf(value));
+
+        waitUntil("`dumpsys activity settings` didn't update", () -> {
+            final String dumpsys = ShellUtils.runShellCommand("dumpsys activity settings");
+
+            // Look each line, rather than just doing a contains() check, so we can print
+            // the current value.
+            for (String line : dumpsys.split("\\n", -1)) {
+                if (!line.contains(" " + key + "=")) {
+                    continue;
+                }
+                Log.d(TAG, "Current config: " + line);
+                if (line.endsWith("=" + value)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
+    private static void resetDeviceConfig(String key) throws Exception {
+        Log.d(TAG, "resetDeviceConfig: resetting " + key);
+        sDeviceConfig.reset(key);
+    }
+
+    private void startActivityToResetLimits() throws Exception {
+        // Start an activity to bring app into TOP and reset previous time limit records.
+        sContext.startActivity(new Intent()
+                                .setComponent(ACTIVITY)
+                                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        waitForMethodCall(ACTIVITY, "onCreate");
+
+        // Wait until the procstate becomes TOP.
+        waitUntil("Procstate is not TOP", () ->
+                DumpProtoUtils.getProcessProcState(FgsTimeoutHelper.HELPER_PACKAGE).mProcState
+                        == PROCESS_STATE_TOP);
+        assertHelperPackageProcState(PROCESS_STATE_TOP);
+
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressHome();
+
+        Thread.sleep(1000); // Wait for oomadj to kick in.
+    }
+
+    private void assertHelperPackageProcState(int procState) {
+        final DumpProtoUtils.ProcStateInfo expected = new DumpProtoUtils.ProcStateInfo();
+        expected.mProcState = procState;
+
+        final DumpProtoUtils.ProcStateInfo actual =
+                DumpProtoUtils.getProcessProcState(FgsTimeoutHelper.HELPER_PACKAGE);
+
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 
     private static void ensureHelperAppNotRunning() throws Exception {
@@ -465,7 +510,6 @@ public class FgsTimeoutTest {
      */
     private static void forceStopHelperApps() throws Exception {
         SystemUtil.runShellCommand("am force-stop " + HELPER_PACKAGE);
-        untempAllowlistPackage(HELPER_PACKAGE);
         ensureHelperAppNotRunning();
     }
 
@@ -482,18 +526,13 @@ public class FgsTimeoutTest {
     }
 
     public static void startForegroundService(ComponentName cn, int fgsTypes) {
-        startForegroundService(cn, fgsTypes, Service.START_NOT_STICKY);
-    }
-
-    public static void startForegroundService(ComponentName cn, int fgsTypes,
-            int startCommandResult) {
         Log.i(TAG, "startForegroundService: Starting " + cn
                 + " types=0x" + Integer.toHexString(fgsTypes));
         FgsTimeoutMessage startMessage = newMessage()
                 .setComponentName(cn)
                 .setDoCallStartForeground(true)
                 .setFgsType(fgsTypes)
-                .setStartCommandResult(startCommandResult);
+                .setStartCommandResult(Service.START_NOT_STICKY);
 
         // Actual intent to start the FGS.
         Intent i = new Intent().setComponent(cn);
@@ -515,6 +554,15 @@ public class FgsTimeoutTest {
         return m;
     }
 
+    public static FgsTimeoutMessage waitForException() {
+        FgsTimeoutMessage m = waitForNextMessage();
+        if (m.getActualExceptionClass() != null) {
+            return m;
+        }
+        Assert.fail("Expected an exception message, but received: " + m);
+        return m;
+    }
+
     /**
      * Make sure a specified FGS is running.
      */
@@ -533,18 +581,5 @@ public class FgsTimeoutTest {
     public static void assertServiceNotRunning(ComponentName cn) {
         final ServiceRecordProto srp = DumpProtoUtils.findServiceRecord(cn);
         assertThat(srp).isNull();
-    }
-
-    public static void tempAllowlistPackage(String packageName, int durationMillis) {
-        final PowerExemptionManager pem = sContext.getSystemService(PowerExemptionManager.class);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> pem.addToTemporaryAllowList(packageName, PowerExemptionManager.REASON_OTHER,
-                        TAG, durationMillis));
-    }
-
-    public static void untempAllowlistPackage(String packageName) {
-        SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -r "
-                + " -u " + UserHandle.getUserId(android.os.Process.myUid())
-                + " " + packageName);
     }
 }

@@ -553,6 +553,45 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.reader.nfc_reader.startProtocolParamsReaderActivity()
         test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
 
+    def test_screen_on_only_off_host_service(self):
+        """
+        Test Steps:
+        1. Start emulator and turn screen off.
+        2. Start callback handler on reader for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger callback handler.
+        4. Ensure expected APDU is received.
+        5. Close reader and turn screen off on the emulator.
+
+        Verifies:
+        1. Verifies correct APDU response when screen is off.
+        2. Verifies correct APDU response between reader and off-host service
+        when screen is on.
+        """
+        #Tests APDU exchange with screen off.
+        self.emulator.nfc_emulator.startScreenOnOnlyOffHostEmulatorActivity()
+        self.emulator.nfc_emulator.turnScreenOff()
+        screen_off_handler = self.emulator.nfc_emulator.asyncWaitForScreenOff(
+            'ScreenOff')
+        screen_off_handler.waitAndGet('ScreenOff', _NFC_TIMEOUT_SEC)
+        test_pass_handler = (
+            self.reader.nfc_reader.asyncWaitForTestPass(
+                'ApduSuccessScreenOff'))
+        self.reader.nfc_reader.startScreenOnOnlyOffHostReaderActivity()
+        test_pass_handler.waitAndGet('ApduSuccessScreenOff', _NFC_TIMEOUT_SEC)
+        self.reader.nfc_reader.closeActivity()
+
+        #Tests APDU exchange with screen on.
+        screen_on_handler = self.emulator.nfc_emulator.asyncWaitForScreenOn(
+            'ScreenOn')
+        self.emulator.nfc_emulator.pressMenu()
+        screen_on_handler.waitAndGet('ScreenOn', _NFC_TIMEOUT_SEC)
+        test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass(
+            'ApduSuccessScreenOn')
+        self.reader.nfc_reader.startScreenOnOnlyOffHostReaderActivity()
+
+        test_pass_handler.waitAndGet('ApduSuccessScreenOn', _NFC_TIMEOUT_SEC)
+
     def teardown_test(self):
         self.emulator.nfc_emulator.closeActivity()
         self.reader.nfc_reader.closeActivity()

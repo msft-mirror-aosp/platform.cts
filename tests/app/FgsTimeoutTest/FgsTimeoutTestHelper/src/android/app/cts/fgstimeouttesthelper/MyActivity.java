@@ -13,24 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.app.cts.fgstimeouttesthelper;
 
-package android.sensitivecontentprotection.cts;
+import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.TAG;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.InputType;
-import android.view.WindowManager;
-import android.widget.TextView;
+import android.util.Log;
 
-public class InputTypePasswordActivity extends Activity {
+public class MyActivity extends Activity {
+    private static volatile MyActivity sInstance;
+
+    public static MyActivity getInstance() {
+        return sInstance;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "onCreate: " + this.getClass().getName());
         super.onCreate(savedInstanceState);
-        WindowManager.LayoutParams wmlp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-        TextView textView = new TextView(this);
-        textView.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        addContentView(textView, wmlp);
+
+        sInstance = this;
+
+        setShowWhenLocked(true);
+        setTurnScreenOn(true);
+
+        FgsTimeoutHelper.sendBackMethodName(this.getClass(), "onCreate");
     }
 }

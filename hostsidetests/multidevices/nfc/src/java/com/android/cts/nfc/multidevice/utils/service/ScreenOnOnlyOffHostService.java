@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.cts.nfc.multidevice.utils.service;
 
-package android.sensitivecontentprotection.cts;
+import android.content.ComponentName;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.View;
-import android.view.WindowManager;
-
-public class PasswordAutofillHintActivity extends Activity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        WindowManager.LayoutParams wmlp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-        View view = new View(this);
-        view.setAutofillHints(View.AUTOFILL_HINT_PASSWORD);
-        addContentView(view, wmlp);
-    }
+public class ScreenOnOnlyOffHostService {
+    public static final ComponentName COMPONENT =
+            new ComponentName(
+                    "com.android.cts.nfc.multidevice.emulator",
+                    ScreenOnOnlyOffHostService.class.getName());
 }

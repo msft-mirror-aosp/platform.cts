@@ -35,10 +35,13 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualC
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
+import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -53,6 +56,7 @@ import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraCaptureSession;
@@ -148,6 +152,9 @@ public class VirtualCameraTest {
 
     @Before
     public void setUp() {
+        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
+                    hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(

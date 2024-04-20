@@ -28,10 +28,13 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.grantCameraPer
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
+import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -102,6 +105,9 @@ public class VirtualCameraPermissionTest {
 
     @Before
     public void setUp() {
+        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
+                    hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(

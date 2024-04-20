@@ -190,6 +190,25 @@ public class HtmlFormatter {
     }
 
     /**
+     * Appends a link tag with the specified link target URL
+     * @param url The url for the link.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter openLink(String url) {
+        mSB.append("<a href=\"" + url + "\">");
+        return this;
+    }
+
+    /**
+     * Closes a link tag.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter closeLink() {
+        mSB.append("</a>");
+        return this;
+    }
+
+    /**
      * Appends the specified text to the HTML stream.
      * @return this HtmlFormatter to allow for cascading calls.
      */

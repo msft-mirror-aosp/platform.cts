@@ -4129,24 +4129,29 @@ public class ViewTest {
                 CtsMouseUtil.obtainMouseEvent(MotionEvent.ACTION_SCROLL, mockView,
                         mockView.getWidth() - 1, 0);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
+        mInstrumentation.waitForIdleSync();
         mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         event.setAction(MotionEvent.ACTION_DOWN);
         mInstrumentation.sendPointerSync(event);
         event.setAction(MotionEvent.ACTION_UP);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
+        mInstrumentation.waitForIdleSync();
         mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         // Stylus events should trigger touch mode.
         event.setAction(MotionEvent.ACTION_DOWN);
         event.setSource(InputDevice.SOURCE_STYLUS);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
     }
 

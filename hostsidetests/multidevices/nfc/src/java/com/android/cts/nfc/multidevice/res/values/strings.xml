@@ -22,6 +22,7 @@
     <string name="offhostService">Offhost Service</string>
     <string name="accessService">Access Service</string>
     <string name="screenOffPaymentService">Screen Off Payment Service</string>
+    <string name="screenOnOnlyOffHostService">Screen On Only OffHost Service</string>
     <string name="ppse">PPSE</string>
     <string name="mastercard">MasterCard</string>
     <string name="visa">Visa</string>

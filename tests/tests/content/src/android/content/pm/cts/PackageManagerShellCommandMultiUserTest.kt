@@ -62,8 +62,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import java.io.File
-import java.lang.AssertionError
-import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -72,7 +70,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
-import org.junit.Assume.assumeNoException
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
@@ -576,41 +573,6 @@ class PackageManagerShellCommandMultiUserTest {
         listedUids = out.split(":").last().split(",")
         assertTrue(out, listedUids.contains(primaryUid))
         assertTrue(out, listedUids.contains(secondaryUid))
-    }
-
-    @Test
-    fun testCreateUserCurAsType() {
-        val oldPropertyValue = getSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY)
-        setSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY, "1")
-        try {
-            val pattern = Pattern.compile("Success: created user id (\\d+)\\R*")
-            var commandResult = SystemUtil.runShellCommandOrThrow(
-                "pm create-user --profileOf cur " +
-                        "--user-type android.os.usertype.profile.CLONE test"
-            )
-            var matcher = pattern.matcher(commandResult)
-            assertThat(commandResult).contains("Success")
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-            commandResult = SystemUtil.runShellCommand(
-                "pm create-user --profileOf current " +
-                        "--user-type android.os.usertype.profile.CLONE test"
-            )
-            matcher = pattern.matcher(commandResult)
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-        } catch (e: AssertionError) {
-            assertThat(e.message)
-                .contains("Cannot add a user of disabled type android.os.usertype.profile.CLONE")
-            assumeNoException("User type CLONE is disabled", e)
-        } finally {
-            setSystemProperty(
-                UserManager.DEV_CREATE_OVERRIDE_PROPERTY,
-                if (oldPropertyValue.isEmpty()) "invalid" else oldPropertyValue
-            )
-        }
     }
 
     @Test

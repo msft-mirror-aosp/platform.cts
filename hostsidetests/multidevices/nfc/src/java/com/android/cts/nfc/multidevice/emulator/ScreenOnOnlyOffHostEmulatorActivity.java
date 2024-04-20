@@ -13,22 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.cts.nfc.multidevice.emulator;
 
-package android.sensitivecontentprotection.cts;
-
-import android.app.Activity;
 import android.os.Bundle;
-import android.view.View;
-import android.view.WindowManager;
+import android.util.Log;
 
-public class UserNameAutofillHintActivity extends Activity {
+import com.android.cts.nfc.multidevice.utils.service.ScreenOnOnlyOffHostService;
+
+public class ScreenOnOnlyOffHostEmulatorActivity extends BaseEmulatorActivity {
+    protected static final String TAG = "ScreenOnOnlyOffHost";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WindowManager.LayoutParams wmlp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-        View view = new View(this);
-        view.setAutofillHints(View.AUTOFILL_HINT_USERNAME);
-        addContentView(view, wmlp);
+        setupServices(ScreenOnOnlyOffHostService.COMPONENT);
+    }
+
+    @Override
+    protected void onServicesSetup() {
+        boolean setOffHostRes =
+                mCardEmulation.setOffHostForService(ScreenOnOnlyOffHostService.COMPONENT, "eSE");
+        Log.d(TAG, "OffHostService set: " + setOffHostRes);
     }
 }

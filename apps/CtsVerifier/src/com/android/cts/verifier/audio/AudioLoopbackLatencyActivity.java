@@ -19,6 +19,7 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.content.Context;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -74,6 +75,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
         /* TODO: gracefully fail/notify if the library can't be loaded */
     }
+
+    Context mContext;
     protected AudioManager mAudioManager;
 
     // UI
@@ -396,6 +399,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mContext = this;
+
         setContentView(R.layout.audio_loopback_latency_activity);
 
         // MegaAudio Initialization
@@ -677,6 +682,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
             scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
+            AudioDeviceUtils.validateUsbDevice(mContext);
         }
 
         @Override

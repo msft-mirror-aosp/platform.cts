@@ -39,7 +39,7 @@ _MAX_STR = 'max'
 _MIN_STR = 'min'
 _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
 _MIN_CIRCLE_PTS = 10
-_MIN_SIZE = 1280*720  # 720P
+_MIN_RESOLUTION_AREA = 1280*720  # 720P
 _MIN_ZOOM_SCALE_CHART = 0.70  # zoom factor to trigger scaled chart
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _OFFSET_TOL = 5  # pixels
@@ -168,14 +168,16 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
       # Find supported preview/video sizes, and their smallest and common size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug(
           'Supported video profiles and ID: %s', supported_video_qualities)
       common_size, common_video_quality = (
           video_processing_utils.get_lowest_preview_video_size(
-              supported_preview_sizes, supported_video_qualities, _MIN_SIZE))
+              supported_preview_sizes, supported_video_qualities,
+              _MIN_RESOLUTION_AREA
+          )
+      )
 
       # Start video recording over minZoom and 2x Zoom
       for quality_profile_id_pair in supported_video_qualities:

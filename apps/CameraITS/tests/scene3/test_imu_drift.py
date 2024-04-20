@@ -228,8 +228,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
 
       # determine preview size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
       preview_size = supported_preview_sizes[-1]
       logging.debug('Tested preview resolution: %s', preview_size)
 

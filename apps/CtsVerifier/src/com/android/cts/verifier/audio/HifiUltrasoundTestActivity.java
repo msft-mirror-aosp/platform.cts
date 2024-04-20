@@ -75,6 +75,16 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     }
   }
 
+  @Override
+  public void onPause() {
+    super.onPause();
+    if (audioTrack != null) {
+      audioTrack.stop();
+      audioTrack.release();
+      audioTrack = null;
+    }
+  }
+
   boolean getBoolPropValue(final String value) {
     if (value == null) {
       return false;

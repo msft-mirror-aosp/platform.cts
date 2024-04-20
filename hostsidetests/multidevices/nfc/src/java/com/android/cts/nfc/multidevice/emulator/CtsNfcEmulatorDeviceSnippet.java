@@ -168,6 +168,20 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         mActivity = (OffHostEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
+    /** Opens screen on only off host emulator activity */
+    @Rpc(description = "Open screen-on only off host emulator activity")
+    public void startScreenOnOnlyOffHostEmulatorActivity() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(
+                instrumentation.getTargetContext(),
+                ScreenOnOnlyOffHostEmulatorActivity.class.getName());
+
+        mActivity = (ScreenOnOnlyOffHostEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Opens on and off host emulator activity */
     @Rpc(description = "Open on and off host emulator activity")
     public void startOnAndOffHostEmulatorActivity() {
@@ -322,6 +336,12 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
     @AsyncRpc(description = "Waits for Screen Off event")
     public void asyncWaitForScreenOff(String callbackId, String eventName) {
         registerSnippetBroadcastReceiver(callbackId, eventName, Intent.ACTION_SCREEN_OFF);
+    }
+
+    /** Registers receiver for Screen On event */
+    @AsyncRpc(description = "Waits for Screen On event")
+    public void asyncWaitForScreenOn(String callbackId, String eventName) {
+        registerSnippetBroadcastReceiver(callbackId, eventName, Intent.ACTION_SCREEN_ON);
     }
 
     /** Closes emulator activity */

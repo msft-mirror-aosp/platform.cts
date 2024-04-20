@@ -22,8 +22,8 @@
         <!-- Skip the test if currently required EGL extension is not supported on device. -->
         <option name="run-command" value="dumpsys SurfaceFlinger | grep GL_EXT_YUV_target" />
         <!-- Skip if required aconfig flags are disabled -->
-        <option name="run-command" value="printflags | grep -E 'virtual_devices/android.companion.virtual.flags.virtual_camera.*ENABLED \(device_config\)'" />
-        <option name="run-command" value="printflags | grep -E 'virtual_devices/android.companion.virtualdevice.flags.virtual_camera_service_discovery.*ENABLED \(device_config\)'" />
+        <option name="run-command" value="[ `device_config get virtual_devices android.companion.virtual.flags.virtual_camera` = 'true' ]" />
+        <option name="run-command" value="[ `device_config get virtual_devices android.companion.virtualdevice.flags.virtual_camera_service_discovery` = 'true' ]" />
     </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />

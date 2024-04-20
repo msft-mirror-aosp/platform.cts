@@ -15,6 +15,7 @@
  */
 package android.app.cts.fgstimeouttest;
 
+import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.ComponentName;
 import android.os.ParcelFileDescriptor;
@@ -30,6 +31,8 @@ import com.android.server.am.nano.ProcessOomProto;
 import com.android.server.am.nano.ServiceRecordProto;
 
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
+
+import org.junit.Assert;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -107,6 +110,36 @@ public class DumpProtoUtils {
             }
         }
         return null;
+    }
+
+    public static class ProcStateInfo {
+        public int mProcState;
+
+        @Override
+        public String toString() {
+            return "ProcState=" + mProcState;
+        }
+    }
+
+    /**
+     * Returns {@link ProcStateInfo} of a given process.
+     */
+    @NonNull
+    public static ProcStateInfo getProcessProcState(String processName) {
+        ActivityManagerServiceDumpProcessesProto processes = dumpProcesses();
+
+        for (ProcessOomProto pop : processes.lruProcs.list) {
+            if (pop.proc == null || !processName.equals(pop.proc.processName)) {
+                continue;
+            }
+
+            ProcStateInfo ret = new ProcStateInfo();
+            ret.mProcState = pop.state;
+
+            return ret;
+        }
+        Assert.fail("Process " + processName + " not found");
+        return null; // never reaches
     }
 }
 
