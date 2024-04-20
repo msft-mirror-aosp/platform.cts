@@ -35,11 +35,14 @@ import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolv
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriDoesNotExist;
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriIsFavorite;
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriIsNotFavorite;
+import static android.scopedstorage.cts.lib.TestUtils.canOpenFileAs;
 import static android.scopedstorage.cts.lib.TestUtils.doEscalation;
 import static android.scopedstorage.cts.lib.TestUtils.getContentResolver;
 import static android.scopedstorage.cts.lib.TestUtils.getDcimDir;
 import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
-import static android.scopedstorage.cts.lib.TestUtils.revokeAccessMediaLocation;
+import static android.scopedstorage.cts.lib.TestUtils.readExifMetadataFromTestApp;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -53,6 +56,8 @@ import android.provider.MediaStore;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.cts.install.lib.TestApp;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -70,6 +75,10 @@ public class StorageOtherFilesTest {
     protected static final String TAG = "StorageOtherFilesTest";
     private static final String THIS_PACKAGE_NAME =
             ApplicationProvider.getApplicationContext().getPackageName();
+
+    private static final TestApp APP_VU_SELECTED = new TestApp("TestAppVUSelected",
+            "android.scopedstorage.cts.testapp.VUSelected", 1, false,
+            "CtsScopedStorageTestAppVUSelected.apk");
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
     private static final ContentResolver sContentResolver = getContentResolver();
@@ -188,14 +197,20 @@ public class StorageOtherFilesTest {
 
     @Test
     public void other_accessLocationMetadata() throws Exception {
+        // The current application has access to ACCESS_MEDIA_LOCATION
         HashMap<String, String> originalExif =
                 getExifMetadataFromRawResource(RESOURCE_ID_WITH_METADATA);
-
         pollForPermission(Manifest.permission.ACCESS_MEDIA_LOCATION, true);
         assertExifMetadataMatch(getExifMetadataFromFile(IMAGE_FILE_READABLE), originalExif);
 
-        // Revoke A_M_L
-        revokeAccessMediaLocation();
-        assertExifMetadataMismatch(getExifMetadataFromFile(IMAGE_FILE_READABLE), originalExif);
+        // This application doesn't, but it is given a grant
+        pollForPermission(APP_VU_SELECTED, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+                true);
+        modifyReadAccess(IMAGE_FILE_READABLE, APP_VU_SELECTED.getPackageName(), GRANT);
+        assertThat(canOpenFileAs(APP_VU_SELECTED, IMAGE_FILE_READABLE, /*forWrite*/ false))
+                .isTrue();
+        HashMap<String, String> exifFromTestApp =
+                readExifMetadataFromTestApp(APP_VU_SELECTED, IMAGE_FILE_READABLE.getPath());
+        assertExifMetadataMismatch(exifFromTestApp, originalExif);
     }
 }
