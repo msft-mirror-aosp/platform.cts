@@ -258,6 +258,12 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         final List<Object[]> expandedArgsList =
                 CodecTestBase.prepareParamList(argsList, isEncoder, needAudio, needVideo, true);
 
+        // Prior to Android U, this test was not testing persistent surface. While this has
+        // been expected behavior for a long time, we only started testing it in Android U, so
+        // some older devices might not pass this test in persistent surface mode for some
+        // combination of codecs. These may show up as failures when running MTS tests for s/w
+        // encoders with h/w decoders in such cases.
+
         // Prior to Android U, this test was using the first decoder for a given mediaType.
         // In Android U, this was updated to test the encoders with all decoders for the
         // given mediaType. There are some vendor encoders in older versions of Android
