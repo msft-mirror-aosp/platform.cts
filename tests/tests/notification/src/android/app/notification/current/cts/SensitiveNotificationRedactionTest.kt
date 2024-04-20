@@ -238,6 +238,33 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     }
 
     @Test
+    @RequiresFlagsEnabled(
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS,
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE
+    )
+    fun testBigTextRedacted() {
+        val style = Notification.BigTextStyle()
+        val bigText = "BIG TEXT"
+        val bigTitleText = "BIG TITLE TEXT"
+        val summaryText = "summary text"
+        style.bigText(bigText)
+        style.setBigContentTitle(bigTitleText)
+        style.setSummaryText(summaryText)
+        sendNotification(style = style)
+        val sbn = waitForNotification()
+        val extras = sbn.notification.extras
+        val testBigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
+        val testBigTitleText = extras.getCharSequence(Notification.EXTRA_TITLE_BIG).toString()
+        val testSummaryText = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT).toString()
+        assertWithMessage("expected big text to be redacted: $testBigText")
+            .that(testBigText).doesNotContain(bigText)
+        assertWithMessage("expected big title text to be redacted: $testBigTitleText")
+            .that(testBigTitleText).doesNotContain(bigTitleText)
+        assertWithMessage("expected summary text to be redacted: $testSummaryText")
+            .that(testSummaryText).doesNotContain(summaryText)
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testCustomExtrasNotRedacted() {
         val customExtra = Bundle()

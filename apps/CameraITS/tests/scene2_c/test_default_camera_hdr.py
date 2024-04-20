@@ -23,6 +23,7 @@ import camera_properties_utils
 import its_device_utils
 import its_session_utils
 import ui_interaction_utils
+from snippet_uiautomator import uiautomator
 
 
 class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
@@ -34,6 +35,12 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
   [2.2.7.2/7.5/H-1-20] MUST by default output JPEG_R for the primary rear
   and primary front cameras in the default camera app.
   """
+
+  def setup_class(self):
+    super().setup_class()
+    self.dut.services.register(
+        uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
+    )
 
   def test_default_camera_launch(self):
     with its_session_utils.ItsSession(

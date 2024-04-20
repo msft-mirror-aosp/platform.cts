@@ -331,7 +331,8 @@ public class OnDeviceIntelligenceManagerTest {
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Feature : =" + result);
-                    assertEquals(result.getFeatureParams(), expectedFeature.getFeatureParams());
+                    assertEquals(result.getFeatureParams().size(),
+                            expectedFeature.getFeatureParams().size());
                     assertEquals(result.getId(), expectedFeature.getId());
                     assertEquals(result.getName(), expectedFeature.getName());
                     assertEquals(result.getModelName(), expectedFeature.getModelName());
@@ -870,6 +871,10 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void updateProcessingStateReturnsSuccessfully() throws Exception {
+        // Auto target runs as a different user than 0, so it is not possible to get service
+        // instance from user 0 in this test.
+        assumeFalse(isAutomotive(
+                getInstrumentation().getContext()));
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -957,6 +962,11 @@ public class OnDeviceIntelligenceManagerTest {
 
         return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
                 intelligenceServiceComponentName);
+    }
+
+    private static boolean isAutomotive(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {

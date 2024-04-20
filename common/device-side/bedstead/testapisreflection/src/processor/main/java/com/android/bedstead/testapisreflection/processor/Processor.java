@@ -256,63 +256,60 @@ public class Processor extends AbstractProcessor {
                 String paramNames = parametersInfo[0];
                 String paramTypes = parametersInfo[1];
 
+                CodeBlock.Builder codeBuilder = CodeBlock.builder();
+
+                beginTryBlock(codeBuilder);
+
                 if (SERVICES_ALIAS.containsKey(testApiClass)) {
                     // if TestApi is a service class
-                    methodBuilder.addCode(
-                            CodeBlock.builder()
-                                    .addStatement("val clazz = Class.forName(%S)", testApiClass)
-                                    .addStatement(
-                                            "val obj = androidx.test.platform.app."
-                                                    + "InstrumentationRegistry.getInstrumentation()"
-                                                    + ".getTargetContext().getSystemService(%S)",
-                                            SERVICES_ALIAS.get(testApiClass))
-                                    .build());
+                    codeBuilder
+                            .addStatement("val clazz = Class.forName(%S)", testApiClass)
+                            .addStatement(
+                                    "val obj = androidx.test.platform.app."
+                                            + "InstrumentationRegistry.getInstrumentation()"
+                                            + ".getTargetContext().getSystemService(%S)",
+                                    SERVICES_ALIAS.get(testApiClass));
                 } else {
-                    methodBuilder.addCode(
-                            CodeBlock.builder()
-                                    .addStatement("val clazz = Class.forName(%S)", testApiClass)
-                                    .addStatement("val pc: java.lang.reflect.Constructor<*> = "
-                                            + "clazz.getDeclaredConstructor()")
-                                    .addStatement("pc.setAccessible(true)")
-                                    .addStatement("val obj = pc.newInstance()")
-                                    .build());
+                    codeBuilder
+                            .addStatement("val clazz = Class.forName(%S)", testApiClass)
+                            .addStatement("val pc: java.lang.reflect.Constructor<*> = "
+                                    + "clazz.getDeclaredConstructor()")
+                            .addStatement("pc.setAccessible(true)")
+                            .addStatement("val obj = pc.newInstance()");
                 }
 
                 for (FieldSignature field : allowlistedTestFields) {
-                    methodBuilder.addCode(
-                            CodeBlock.builder().addStatement(
-                                            "clazz.getField(%S).set(obj, this.%L)",
-                                            field.getName(), field.getName())
-                                    .build());
+                    codeBuilder.addStatement(
+                            "clazz.getField(%S).set(obj, this.%L)",
+                            field.getName(), field.getName());
                 }
 
                 if (returnTypeName != null) {
                     if (paramNames != null) {
-                        methodBuilder.addCode(
-                                CodeBlock.builder().addStatement(
-                                        "return clazz.getMethod(%S, %L).invoke("
-                                                + "obj, %L) as %L", method.getName(), paramTypes,
-                                        paramNames, returnTypeName).build());
+                        codeBuilder.addStatement(
+                                "return clazz.getMethod(%S, %L).invoke("
+                                        + "obj, %L) as %L", method.getName(), paramTypes,
+                                paramNames, returnTypeName);
                     } else {
-                        methodBuilder.addCode(
-                                CodeBlock.builder().addStatement(
-                                        "return clazz.getMethod(%S).invoke(obj) as %L",
-                                        method.getName(), returnTypeName).build());
+                        codeBuilder.addStatement(
+                                "return clazz.getMethod(%S).invoke(obj) as %L",
+                                method.getName(), returnTypeName);
                     }
                 } else {
                     if (paramNames != null) {
-                        methodBuilder.addCode(
-                                CodeBlock.builder().addStatement(
-                                                "clazz.getMethod(%S, %L).invoke(obj, %L)",
-                                                method.getName(), paramTypes, paramNames)
-                                        .build());
+                        codeBuilder.addStatement(
+                                "clazz.getMethod(%S, %L).invoke(obj, %L)",
+                                method.getName(), paramTypes, paramNames);
                     } else {
-                        methodBuilder.addCode(
-                                CodeBlock.builder().addStatement(
+                        codeBuilder.addStatement(
                                         "clazz.getMethod(%S).invoke(obj)",
-                                        method.getName()).build());
+                                        method.getName());
                     }
                 }
+
+                closeTryBlockAndBuildCatchBlock(codeBuilder);
+
+                methodBuilder.addCode(codeBuilder.build());
 
                 proxyClassBuilder.addFunction(methodBuilder.build());
             }
@@ -360,6 +357,8 @@ public class Processor extends AbstractProcessor {
             boolean isReturnTypeProxy, boolean isStatic, String paramTypes, String paramNames) {
         CodeBlock.Builder codeBuilder = CodeBlock.builder();
 
+        beginTryBlock(codeBuilder);
+
         String classReference = isStatic ? "null" : "this";
 
         if (methodBuilder.getParameters().isEmpty()) {
@@ -399,6 +398,8 @@ public class Processor extends AbstractProcessor {
                 }
             }
         }
+
+        closeTryBlockAndBuildCatchBlock(codeBuilder);
 
         return codeBuilder;
     }
@@ -449,19 +450,24 @@ public class Processor extends AbstractProcessor {
             switch (fieldTypeName.toString()) {
                 case "kotlin.Int":
                     writeToParcelMethod.addCode(
-                            CodeBlock.builder().addStatement("dest.writeInt(%L!!)", field.getName()).build());
+                            CodeBlock.builder().addStatement("dest.writeInt(%L!!)",
+                                    field.getName()).build());
                     parcelConstructorBuilder.addCode(
-                            CodeBlock.builder().addStatement("%L = source.readInt()", field.getName()).build());
+                            CodeBlock.builder().addStatement("%L = source.readInt()",
+                                    field.getName()).build());
                     break;
                 case "kotlin.Long":
                     writeToParcelMethod.addCode(
-                            CodeBlock.builder().addStatement("dest.writeLong(%L!!)", field.getName()).build());
+                            CodeBlock.builder().addStatement("dest.writeLong(%L!!)",
+                                    field.getName()).build());
                     parcelConstructorBuilder.addCode(
-                            CodeBlock.builder().addStatement("%L = source.readLong()", field.getName()).build());
+                            CodeBlock.builder().addStatement("%L = source.readLong()",
+                                    field.getName()).build());
                     break;
                 case "kotlin.String":
                     writeToParcelMethod.addCode(
-                            CodeBlock.builder().addStatement("dest.writeString(%L!!)", field.getName()).build());
+                            CodeBlock.builder().addStatement("dest.writeString(%L!!)",
+                                    field.getName()).build());
                     parcelConstructorBuilder.addCode(
                             CodeBlock.builder()
                                     .addStatement("%L = source.readString()", field.getName())
@@ -469,7 +475,8 @@ public class Processor extends AbstractProcessor {
                     break;
                 case "kotlin.Boolean":
                     writeToParcelMethod.addCode(
-                            CodeBlock.builder().addStatement("dest.writeBoolean(%L!!)", field.getName()).build());
+                            CodeBlock.builder().addStatement("dest.writeBoolean(%L!!)",
+                                    field.getName()).build());
                     parcelConstructorBuilder.addCode(
                             CodeBlock.builder()
                                     .addStatement("%L = source.readBoolean()", field.getName())
@@ -683,6 +690,19 @@ public class Processor extends AbstractProcessor {
                         processingEnv.getElementUtils()))
                 .filter(t -> typeSimpleName(t.getFrameworkClass()).equals(frameworkClass))
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static void beginTryBlock(CodeBlock.Builder codeBuilder) {
+        codeBuilder.beginControlFlow("try {");
+    }
+
+    private static void closeTryBlockAndBuildCatchBlock(CodeBlock.Builder codeBuilder) {
+        // close try block
+        codeBuilder.endControlFlow();
+        // catch InvocationTargetException and throw actual cause
+        codeBuilder.beginControlFlow("catch (e: Exception) {");
+        codeBuilder.addStatement("throw e.cause!!");
+        codeBuilder.endControlFlow();
     }
 
     private static String removeGetPrefix(String name) {

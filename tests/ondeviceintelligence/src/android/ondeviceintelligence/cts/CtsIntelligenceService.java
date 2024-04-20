@@ -140,7 +140,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetFeature(int callerUid, int featureId,
             @NonNull OutcomeReceiver<Feature, OnDeviceIntelligenceException> featureCallback) {
-        featureCallback.onResult(getSampleFeature(1));
+        featureCallback.onResult(getSampleFeature(featureId));
     }
 
     @Override

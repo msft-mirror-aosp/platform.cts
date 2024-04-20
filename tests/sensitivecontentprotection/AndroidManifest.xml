@@ -74,26 +74,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".UserNameAutofillHintActivity"
-                  android:label="UserNameActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".PasswordAutofillHintActivity"
-                  android:label="UserNameActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".InputTypePasswordActivity"
-                  android:label="UserNameActivity"
+        <activity android:name=".SensitiveAutofillHintActivity"
+                  android:label="SensitiveAutofillHintActivity"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

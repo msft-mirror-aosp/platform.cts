@@ -273,7 +273,6 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
 
       # Find largest preview size to define capture size to find aruco markers
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview sizes: %s', supported_preview_sizes)
       preview_size = supported_preview_sizes[-1]
       width = int(preview_size.split('x')[0])
       height = int(preview_size.split('x')[1])

@@ -25,6 +25,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.KeyguardManager;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
@@ -66,6 +67,8 @@ public class ActivityLaunchUtils {
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
     public static final String INPUT_KEYEVENT_KEYCODE_BACK =
             "input keyevent KEYCODE_BACK";
+    public static final String INPUT_KEYEVENT_KEYCODE_MENU =
+            "input keyevent KEYCODE_MENU";
 
     // Precision when asserting the launched activity bounds equals the reported a11y window bounds.
     private static final int BOUNDS_PRECISION_PX = 1;
@@ -145,6 +148,18 @@ public class ActivityLaunchUtils {
         serviceInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         uiAutomation.setServiceInfo(serviceInfo);
         try {
+            KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
+            if (keyguardManager != null) {
+                TestUtils.waitUntil("Screen is unlocked",
+                        (int) DEFAULT_TIMEOUT_MS / 1000,
+                        () -> {
+                            if (!keyguardManager.isKeyguardLocked()) {
+                                return true;
+                            }
+                            execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_MENU);
+                            return false;
+                        });
+            }
             execShellCommand(uiAutomation, AM_START_HOME_ACTIVITY_COMMAND);
             execShellCommand(uiAutomation, AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND);
             execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_BACK);
