@@ -132,7 +132,11 @@ static std::optional<std::string> testRegisterThermalStatusListener(JNIEnv *env,
     }
 
     // Change override level and verify the listener callback
-    for (int32_t level = ATHERMAL_STATUS_LIGHT; level <= ATHERMAL_STATUS_SHUTDOWN; level++) {
+    for (int32_t level = ATHERMAL_STATUS_NONE; level <= ATHERMAL_STATUS_SHUTDOWN; level++) {
+        if (thermalStatus == level) {
+            // skip overriding a status that is the current status which won't trigger callback
+            continue;
+        }
         setThermalStatusOverride(env, obj, level);
         if (ctx.mCv.wait_for(lock, 1s) == std::cv_status::timeout) {
             return StringPrintf("Listener callback timeout at level %" PRId32, level);
