@@ -1384,7 +1384,7 @@ public class SystemMediaRouter2Test {
     @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testLocalRouterTransferChangesTransferReasonToTransferredFromApp()
             throws InterruptedException {
-        clearPossibleTransferReason();
+        clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         ControllerCallback controllerCallback = new ControllerCallback() {
@@ -1418,7 +1418,7 @@ public class SystemMediaRouter2Test {
     @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testProxyRouterTransferChangesTransferReasonToTransferredAsSystemRequest()
             throws InterruptedException {
-        clearPossibleTransferReason();
+        clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         ControllerCallback controllerCallback = new ControllerCallback() {
@@ -1449,19 +1449,27 @@ public class SystemMediaRouter2Test {
     }
 
     /**
-     * To be able to receive {@link ControllerCallback#onControllerUpdated(RoutingController)} call
-     * we need to leave the system in some random state in which we, unlikely, end up in the tests.
-     * For this reason, we need to transfer the system in a random state.
+     * Makes a transfer to the currently selected route using placeholder initiation data.
+     *
+     * <p>This enables tests to expect {@link ControllerCallback} calls when they perform transfers
+     * that affect the routing session state (specifically {@link
+     * RoutingController#wasTransferInitiatedBySelf()}).
      */
-    private void clearPossibleTransferReason() throws InterruptedException {
+    private void clearTransferReasonAndInitiator() throws InterruptedException {
         final CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                super.onControllerUpdated(controller);
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        super.onControllerUpdated(controller);
+                        RoutingSessionInfo sessionInfo = controller.getRoutingSessionInfo();
+                        if (sessionInfo.getTransferReason()
+                                        == RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST
+                                && !controller.wasTransferInitiatedBySelf()) {
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         mAppRouter2.registerControllerCallback(mExecutor, controllerCallback);
 
@@ -1470,10 +1478,14 @@ public class SystemMediaRouter2Test {
         assertThat(selectedRoutes).isNotEmpty();
         MediaRoute2Info deviceRoute = selectedRoutes.get(0);
 
-        mSystemRouter2ForCts.transfer(controller, deviceRoute, UserHandle.SYSTEM,
-                "some_random_package_name");
+        mSystemRouter2ForCts.transfer(
+                controller, deviceRoute, UserHandle.SYSTEM, "placeholder_initiator_package_name");
 
-        assertThat(onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        // We wait for the callback to run as a result of the transfer above. But that call could be
+        // discarded upstream (because the routing session didn't change as a result of said
+        // transfer), so we don't assert that the latch was opened. We just assert later that the
+        // transfer reason / initiation data is what we expect.
+        onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         RoutingController routingController = mAppRouter2.getSystemController();
         RoutingSessionInfo sessionInfo = routingController.getRoutingSessionInfo();

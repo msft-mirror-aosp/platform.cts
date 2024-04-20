@@ -127,9 +127,14 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
     }
 
     private static void writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
         while (maxSize != 0) {
-            int writeSize = (int) Math.min(Integer.MAX_VALUE,
-                    Math.min(Runtime.getRuntime().freeMemory(), maxSize));
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
             Log.i(TAG, "writeSize:" + writeSize);
             try {
                 fos.write(new byte[writeSize]);

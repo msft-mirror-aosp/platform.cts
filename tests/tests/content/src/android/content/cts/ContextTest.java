@@ -18,11 +18,14 @@ package android.content.cts;
 
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 import static android.Manifest.permission.READ_WALLPAPER_INTERNAL;
+import static android.content.Context.RECEIVER_NOT_EXPORTED;
+import static android.content.IntentFilter.BLOCK_NULL_ACTION_INTENTS;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_GENERAL;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_GRANT;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_NONE;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.security.Flags.FLAG_BLOCK_NULL_ACTION_INTENTS;
 import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -994,6 +997,51 @@ public class ContextTest {
         assertFalse(broadcastReceiver.hadReceivedBroadCast2());
 
         mContext.unregisterReceiver(broadcastReceiver);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
+    public void testRegisterReceiverNullActions() throws InterruptedException {
+        final var receiver = new BroadcastReceiver() {
+            private CountDownLatch mLatch;
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mLatch.countDown();
+            }
+        };
+        final var filter = new IntentFilter("action");
+        filter.addDataScheme("https");
+        mContext.registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED);
+        mRegisteredReceiverList.add(receiver);
+
+        // Create an intent with null action
+        final var intent = new Intent()
+                .setPackage(mContext.getPackageName())
+                .setData(Uri.parse("https://www.google.com"))
+                .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
+
+        // Test legacy behavior
+        final var disable = Map.of(BLOCK_NULL_ACTION_INTENTS,
+                new PackageOverride.Builder().setEnabled(false).build());
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        receiver.mLatch = new CountDownLatch(1);
+        mContext.sendBroadcast(intent);
+        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
+
+        // Test new behavior
+        final var enable = Map.of(BLOCK_NULL_ACTION_INTENTS,
+                new PackageOverride.Builder().setEnabled(true).build());
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                        CompatChanges.putPackageOverrides(mContext.getPackageName(), enable),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        receiver.mLatch = new CountDownLatch(1);
+        mContext.sendBroadcast(intent);
+        assertFalse(receiver.mLatch.await(5, TimeUnit.SECONDS));
     }
 
     private static class IntentRetriever extends BroadcastReceiver {

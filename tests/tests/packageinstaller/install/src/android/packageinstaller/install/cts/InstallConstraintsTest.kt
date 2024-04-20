@@ -21,6 +21,7 @@ import android.app.ActivityManager
 import android.app.AppOpsManager.MODE_ALLOWED
 import android.app.AppOpsManager.OPSTR_TAKE_AUDIO_FOCUS
 import android.app.Instrumentation
+import android.app.UiAutomation
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.InstallConstraints
@@ -78,7 +79,8 @@ class InstallConstraintsTest {
     @After
     fun tearDown() {
         Uninstall.packages(TestApp.A, TestApp.B, TestApp.S)
-        instr.uiAutomation.dropShellPermissionIdentity()
+        val uiAutomation: UiAutomation? = instr.uiAutomation
+        uiAutomation?.dropShellPermissionIdentity()
     }
 
     @Test

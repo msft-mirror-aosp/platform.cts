@@ -339,9 +339,15 @@ public final class CarWatchdogDeviceAppTest {
     }
 
     private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
         long writtenBytes = 0;
         while (maxSize != 0) {
-            int writeSize = Math.toIntExact(Math.min(Runtime.getRuntime().freeMemory(), maxSize));
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
             Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
             if (writeSize == 0) {
                 Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
