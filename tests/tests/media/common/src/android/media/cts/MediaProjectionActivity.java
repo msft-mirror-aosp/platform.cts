@@ -39,6 +39,7 @@ import android.support.test.uiautomator.Until;
 import android.util.Log;
 import android.view.WindowManager;
 
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
@@ -154,12 +155,13 @@ public class MediaProjectionActivity extends Activity {
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    public static void dismissPermissionDialog(boolean isWatch, String entireScreenString) {
+    public static void dismissPermissionDialog(boolean isWatch,
+            @Nullable String entireScreenString) {
         // Ensure the device is initialized before interacting with any UI elements.
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        if (!isWatch) {
+        if (entireScreenString != null && !isWatch) {
             // if not testing on a watch device, then we need to select the entire screen option
-            // before pressing "Start recording" button.
+            // (if available) before pressing "Start recording" button.
             if (!selectEntireScreenOption(entireScreenString)) {
                 Log.e(TAG, "Couldn't select entire screen option");
             }
@@ -187,6 +189,7 @@ public class MediaProjectionActivity extends Activity {
     /**
      * Returns the string for the drop down option to capture the entire screen.
      */
+    @Nullable
     public static String getEntireScreenString(Context context) {
         Resources sysUiResources;
         try {
@@ -198,6 +201,10 @@ public class MediaProjectionActivity extends Activity {
         int resourceId =
                 sysUiResources.getIdentifier(
                         ENTIRE_SCREEN_STRING_RES_NAME, /* defType= */ "string", SYSTEM_UI_PACKAGE);
+        if (resourceId == 0) {
+            // Resource id not found
+            return null;
+        }
         return sysUiResources.getString(resourceId);
     }
 
