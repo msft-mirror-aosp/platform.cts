@@ -95,6 +95,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     private int mCurrentDeviceState;
     private int mCurrentDeviceBaseState;
     private int[] mSupportedDeviceStates;
+    private int[] mDeviceStatesToSleep;
     @WindowAreaStatus
     private Integer mWindowAreaStatus;
     @WindowAreaSessionState
@@ -137,6 +138,9 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 .getInteger(Resources.getSystem()
                         .getIdentifier("config_deviceStateRearDisplay", "integer", "android"));
         mRearDisplayAddress = getRearDisplayAddress();
+        mDeviceStatesToSleep = getInstrumentation().getTargetContext().getResources()
+                .getIntArray(Resources.getSystem()
+                        .getIdentifier("config_deviceStatesOnWhichToSleep", "array", "android"));
         assumeTrue(mRearDisplayState != INVALID_DEVICE_STATE);
         mDeviceStateManager.registerCallback(Runnable::run, this);
         mWindowAreaComponent.addRearDisplayStatusListener(mStatusListener);
@@ -259,7 +263,12 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         if (!rearDisplayWindowMetrics.getBounds().equals(initialWindowMetrics.getBounds())) {
             waitAndAssert(() -> mActivity.mConfigurationChanged);
         }
-        assertTrue(isActivityVisible(mActivity));
+
+        // If transitioning back to the original device state doesn't put the device to sleep, we
+        // should verify that the Activity is visible again.
+        if (!intArrayContains(mDeviceStatesToSleep, mCurrentDeviceState)) {
+            assertTrue(isActivityVisible(mActivity));
+        }
 
         verifyCallbacks();
     }
@@ -438,6 +447,15 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
         waitFor(TIMEOUT, condition);
+    }
+
+    private boolean intArrayContains(int[] array, int value) {
+        for (int i : array) {
+            if (i == value) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -349,7 +349,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         waitAndAssertActivityStateOnDisplay(homeComponentName, STATE_RESUMED,
                 newDisplay.mId, "Activity launched on secondary display must be resumed");
 
-        tapOnDisplayCenter(newDisplay.mId);
+        touchAndCancelOnDisplayCenterSync(newDisplay.mId);
         assertEquals("Top activity must be home type", ACTIVITY_TYPE_HOME,
                 mWmState.getFrontRootTaskActivityType(newDisplay.mId));
     }
@@ -753,7 +753,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
                 firstDisplay.getDisplayRect().equals(secondDisplay.getDisplayRect()));
 
         // Make firstDisplay the top focus display.
-        tapOnDisplayCenter(firstDisplay.mId);
+        touchAndCancelOnDisplayCenterSync(firstDisplay.mId);
 
         mWmState.waitForWithAmState(state -> state.getFocusedDisplayId() == firstDisplay.mId,
                 "First display must be top focused.");
@@ -790,7 +790,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
             configChangeVerifyStream = clearOnConfigurationChangedFromStream(stream);
 
             // Tap secondDisplay to change it to the top focused display.
-            tapOnDisplayCenter(secondDisplay.mId);
+            touchAndCancelOnDisplayCenterSync(secondDisplay.mId);
 
             // Move ImeTestActivity from firstDisplay to secondDisplay.
             getLaunchActivityBuilder()
