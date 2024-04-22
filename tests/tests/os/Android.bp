@@ -90,6 +90,7 @@ android_ravenwood_test {
         "compatibility-device-util-axt",
     ],
     srcs: [
+        "src/android/os/connectivity/cts/WifiActivityEnergyInfoTest.java",
         "src/android/os/cts/BadParcelableExceptionTest.java",
         "src/android/os/cts/BinderTest.java",
         "src/android/os/cts/BuildTest.java",
