@@ -35,6 +35,7 @@ _RADIUS_RTOL_MIN_FD = 0.15
 OFFSET_RTOL = 0.15
 RADIUS_RTOL = 0.10
 ZOOM_MAX_THRESH = 10.0
+ZOOM_RTOL = 0.01  # variation of zoom ratio between capture result vs req
 
 
 def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
@@ -167,8 +168,10 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     zoom_max_thresh = z_max_ratio
   test_data_max_z = (test_data[max(test_data.keys())]['z'] /
                      test_data[min(test_data.keys())]['z'])
-  logging.debug('test zoom ratio max: %.2f', test_data_max_z)
-  if test_data_max_z < zoom_max_thresh:
+  logging.debug('test zoom ratio max: %.2f vs threshold %.2f',
+                test_data_max_z, zoom_max_thresh)
+
+  if not math.isclose(test_data_max_z, zoom_max_thresh, rel_tol=ZOOM_RTOL):
     test_failed = True
     e_msg = (f'Max zoom ratio tested: {test_data_max_z:.4f}, '
              f'range advertised min: {z_min}, max: {z_max} '
