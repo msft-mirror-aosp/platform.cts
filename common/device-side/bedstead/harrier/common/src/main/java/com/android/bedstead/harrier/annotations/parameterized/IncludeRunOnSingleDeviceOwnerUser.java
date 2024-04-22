@@ -17,6 +17,7 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
+import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.HeadlessDeviceOwnerType.SINGLE_USER;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
@@ -39,7 +40,7 @@ import java.lang.annotation.Target;
 /** Parameterize a test so that it runs on the same user as the device owner. */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation
+@ParameterizedAnnotation(scope = ENTERPRISE)
 @RequireRunOnSingleUser
 @EnsureHasNoWorkProfile
 // TODO(b/320666412): Enable querying test apps using xml tags in device_admin xmls

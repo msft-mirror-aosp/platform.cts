@@ -13,37 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.bedstead.multiuser.annotations
 
-package com.android.bedstead.harrier.annotations;
-
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.FIRST;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 
 /**
  * Mark that a test method should only be run on devices which have main users.
  */
-@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface RequireHasMainUser {
-
-    /** The reason this test requires a main user. */
-    String reason();
-
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY_GETTER,
+    AnnotationTarget.PROPERTY_SETTER,
+    AnnotationTarget.ANNOTATION_CLASS,
+    AnnotationTarget.CLASS
+)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class RequireHasMainUser(
+    /** The reason this test requires a main user.  */
+    val reason: String,
     /**
      * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * Annotations with a lower priority will be resolved before annotations with a higher
      * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the priority of the
+     * If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant,
-     * or to any {@link int}.
+     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant,
+     * or to any [Int].
      */
-    int priority() default FIRST;
-}
+    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+)

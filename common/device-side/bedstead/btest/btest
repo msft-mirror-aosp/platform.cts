@@ -484,6 +484,12 @@ supported_modules = {
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
     },
+    "bedstead-multiuser-test": {
+        "package": "com.android.bedstead.multiuser.test",
+        "path": "com.android.bedstead.multiuser",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
 }
 
 TARGET_NAME = "target"
@@ -1111,7 +1117,8 @@ def create_clone_profile(device_state, args, parent_id):
 def create_private_profile(device_state, args, parent_id):
     ensure_no_dpcs(device_state, args) # avoid no_add_private_profile TODO: Be more specific
     commands = ["adb", "shell", "pm", "create-user", "--profileOf", str(parent_id), "--user-type android.os.usertype.profile.PRIVATE"]
-
+    if device_state["sdk_version"] >= 34:
+        commands.append("--for-testing")
     commands.append("user")
 
     output, err = execute_shell_command("Test", args, commands)

@@ -13,24 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.bedstead.harrier.annotations
 
+import com.android.bedstead.nene.display.DisplayProperties
+
 /**
- * Mark that a test method should only run
- * when config_guestUserEphemeral is true
+ * Ensure that the device is in given screen orientation.
  *
- * This should be used with `DeviceState`.
+ * <p>You can use {@code DeviceState} to ensure that the device enters
+ * the correct state for the method.
  */
 @Target(
     AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY_GETTER,
-    AnnotationTarget.PROPERTY_SETTER,
-    AnnotationTarget.ANNOTATION_CLASS,
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RequireResourcesBooleanValue(configName = "config_guestUserEphemeral", requiredValue = true)
-annotation class RequireGuestUserIsEphemeral(
+@RequireRunOnSystemUser
+annotation class EnsureUsingScreenOrientation(
+    val orientation: DisplayProperties.ScreenOrientation,
+
     /**
      * Priority sets the order that annotations will be resolved.
      *
@@ -45,5 +47,5 @@ annotation class RequireGuestUserIsEphemeral(
      *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
 )

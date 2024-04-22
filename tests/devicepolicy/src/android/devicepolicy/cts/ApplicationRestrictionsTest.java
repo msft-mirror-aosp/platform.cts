@@ -18,10 +18,10 @@ package android.devicepolicy.cts;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED;
 
+import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
-import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -456,22 +456,16 @@ public final class ApplicationRestrictionsTest {
     @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true, onUser = WORK_PROFILE)
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     @RequireFlagsEnabled(Flags.FLAG_DMRH_CAN_SET_APP_RESTRICTION)
-    @UserTest({WORK_PROFILE, PRIVATE_PROFILE})
+    @UserTest({INITIAL_USER, PRIVATE_PROFILE})
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_successWithBroadcastSent() {
-        skipRoleHolderTestIfFlagNotEnabled();
-        if (TestApis.users().instrumented().type().name().equals(MANAGED_PROFILE_TYPE_NAME)) {
-            ProfileOwner profileOwner = (ProfileOwner) sDeviceState.profileOwner(
-                    sDeviceState.workProfile()).devicePolicyController();
-            profileOwner.setIsOrganizationOwned(true);
-        }
         ComponentName admin = sDeviceState.dpc().componentName();
         Bundle originalApplicationRestrictions = sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(admin, sTestApp.packageName());
 
         String bundleName = "parentUserBundle";
 
-        try (TestAppInstance testApp = sTestApp.install(TestApis.users().initial())) {
+        try (TestAppInstance testApp = sTestApp.install()) {
             testApp.registerReceiver(new IntentFilter(ACTION_APPLICATION_RESTRICTIONS_CHANGED),
                     RECEIVER_EXPORTED);
 
