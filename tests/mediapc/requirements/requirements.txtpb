@@ -1152,14 +1152,12 @@ requirements {
             required_values: {
                 key: "display_luminance_nits"
                 value: {
-                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
                     double_value: 1000
                 }
             }
             required_values: {
                 key: "is_hdr"
                 value: {
-                    comparison: COMPARISON_EQUAL
                     bool_value: true
                 }
             }
@@ -1227,7 +1225,6 @@ requirements {
             required_values: {
                 key: "filesystem_io_rate_mbps"
                 value: {
-                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
                     double_value: 100
                 }
             }
@@ -1241,7 +1238,6 @@ requirements {
             required_values: {
                 key: "filesystem_io_rate_mbps"
                 value: {
-                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
                     double_value: 125
                 }
             }
@@ -1255,7 +1251,6 @@ requirements {
             required_values: {
                 key: "filesystem_io_rate_mbps"
                 value: {
-                    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
                     double_value: 150
                 }
             }
