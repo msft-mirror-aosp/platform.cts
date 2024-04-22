@@ -88,6 +88,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import com.google.common.collect.ImmutableSet;
@@ -427,6 +428,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testEcAttestation_DeviceLocked() throws Exception {
         testEcAttestation_DeviceLocked(false /* expectStrongBox */);
     }
@@ -434,6 +436,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testEcAttestation_DeviceLockedStrongbox() throws Exception {
         if (!TestUtils.hasStrongBox(getContext()))
             return;
@@ -862,6 +865,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice  // Emulators have no place to store the needed key
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLocked() throws Exception {
         testRsaAttestation_DeviceLocked(false /* expectStrongbox */);
     }
@@ -869,6 +873,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice  // Emulators have no place to store the needed key
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLockedStrongbox() throws Exception {
         if (!TestUtils.hasStrongBox(getContext()))
             return;
