@@ -124,9 +124,9 @@ class ContextualSearchManagerTest {
         // Waiting for the service to post data.
         await(callback.resultLatch, "Waiting for the service to post data.")
         // Verifying that the data posted is as expected.
-        assertThat(callback.result!!.extras.keySet().size).isEqualTo(0)
-        assertThat(callback.result!!.structure).isNull()
-        assertThat(callback.result!!.content).isNull()
+        assertThat(callback.result!!.structure).isNotNull()
+        assertThat(callback.result!!.content).isNotNull()
+        assertThat(callback.result!!.extras).isNotNull()
     }
 
     @Test

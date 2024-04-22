@@ -15,10 +15,6 @@
       "name": "CtsHardwareTestCases",
       "options": [
         {
-          // TODO(b/221102945):
-          "exclude-filter": "android.hardware.input.cts.tests.VirtualTouchscreenTest#sendTouchEvent"
-        },
-        {
           // TODO(b/266108817): android.hardware.input.cts.tests unexpected timeouts
           "exclude-filter": "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllMotions"
         },

@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.nene.users
+package com.android.bedstead.multiuser
 
 import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
@@ -30,9 +29,12 @@ import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.types.OptionalBoolean
+import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.nene.utils.Poll
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assume

@@ -20,11 +20,9 @@ import android.content.pm.PackageManager
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
-import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
@@ -34,15 +32,17 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
 import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
-import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.truth.EventLogsSubject.assertThat
@@ -320,10 +320,12 @@ class DeviceOwnerTest {
         } finally {
             // After attempting and failing to set the device owner, it will remain as an active
             // admin for a short while
-            Poll.forValue(
-                    "Active admins"
-            ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
-                    .toMeet { i: Set<ComponentReference> -> !i.contains(NOT_TEST_ONLY_DPC_COMPONENT) }
+            Poll.forValue("Active admins") {
+                TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
+            }
+                    .toMeet { i: Set<ComponentReference> ->
+                        !i.contains(NOT_TEST_ONLY_DPC_COMPONENT)
+                    }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
         }

@@ -17,6 +17,7 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
+import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
@@ -35,7 +36,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation
+@ParameterizedAnnotation(scope = ENTERPRISE)
 // Explicitly primary user which excludes headless users as this isn't a valid mode on headless
 @RequireRunOnPrimaryUser
 @EnsureHasNoDeviceOwner

@@ -510,23 +510,6 @@ public final class Users {
         }
     }
 
-    /** Checks if a profile of type {@code userType} can be created. */
-    @Experimental
-    @SuppressLint("NewApi")
-    public boolean canCreateProfile(UserType userType) {
-        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
-        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
-            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
-                return sUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
-            }
-        }
-
-        // For S and older versions, we need to keep the previous behavior by returning true here
-        // so that the check can pass.
-        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
-        return true;
-    }
-
     /** Checks if private profile usertupe is supported on the device */
     public boolean canAddPrivateProfile() {
         if (Versions.meetsMinimumSdkVersionRequirement(VANILLA_ICE_CREAM)) {

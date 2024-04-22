@@ -45,8 +45,15 @@ public final class DeviceStateTester {
      * getting/setting a state.
      */
     public void apply(List<Annotation> annotations, Runnable runnable) {
-        setup(annotations);
+        apply(annotations);
         runnable.run();
+    }
+
+    /**
+     * Apply bedstead {@code annotations} to a dynamically generated test.
+     */
+    public void apply(List<Annotation> annotations) {
+        setup(annotations);
     }
 
     /**

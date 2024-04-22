@@ -17,6 +17,7 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
+import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
@@ -34,7 +35,7 @@ import java.lang.annotation.Target;
 /** Parameterize a test so that it runs on the same user as the device owner. */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation
+@ParameterizedAnnotation(scope = ENTERPRISE)
 @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)
 @EnsureHasNoWorkProfile
 @EnsureHasDeviceOwner(isPrimary = true, key = "dpc")

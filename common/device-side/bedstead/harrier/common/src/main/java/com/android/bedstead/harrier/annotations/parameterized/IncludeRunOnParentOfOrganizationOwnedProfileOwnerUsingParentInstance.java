@@ -17,6 +17,7 @@
 package com.android.bedstead.harrier.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
+import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
@@ -32,7 +33,7 @@ import java.lang.annotation.Target;
 /** Parameterize a test so that it runs on the parent of an organization-owned profile owner. */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation(shadows = IncludeRunOnParentOfProfileOwnerUsingParentInstance.class)
+@ParameterizedAnnotation(shadows = IncludeRunOnParentOfProfileOwnerUsingParentInstance.class, scope = ENTERPRISE)
 @RequireRunOnInitialUser
 @EnsureHasWorkProfile(
         isOrganizationOwned = true,

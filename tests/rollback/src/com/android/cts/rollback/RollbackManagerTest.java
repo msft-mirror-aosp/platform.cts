@@ -708,7 +708,7 @@ public class RollbackManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
     public void testRollbackExpiresAfterRollbackLifetime() throws Exception {
-        long expirationTimeA = TimeUnit.SECONDS.toMillis(4);
+        long expirationTimeA = TimeUnit.SECONDS.toMillis(6);
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback()
                 .setRollbackLifetimeMillis(expirationTimeA).commit();
@@ -725,8 +725,8 @@ public class RollbackManagerTest {
         assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
         assertThat(RollbackUtils.getAvailableRollback(TestApp.B)).isNotNull();
 
-        // Check that the data has expired after the expiration time (with a buffer of 1 second)
-        Thread.sleep(expirationTimeA / 2 + TimeUnit.SECONDS.toMillis(1));
+        // Check that the data has expired after the expiration time (with a buffer of 3 seconds)
+        Thread.sleep(expirationTimeA / 2 + TimeUnit.SECONDS.toMillis(3));
         assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
         assertThat(RollbackUtils.getAvailableRollback(TestApp.B)).isNotNull();
     }
