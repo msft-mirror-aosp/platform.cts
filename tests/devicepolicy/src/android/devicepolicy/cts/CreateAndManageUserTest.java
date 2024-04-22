@@ -33,14 +33,14 @@ import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.CreateAndManageUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.annotations.Interactive;
 
 import org.junit.ClassRule;

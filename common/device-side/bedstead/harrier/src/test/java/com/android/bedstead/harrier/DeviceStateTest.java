@@ -35,13 +35,13 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeleg
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
-import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -60,12 +60,9 @@ import android.view.contentcapture.ContentCaptureManager;
 
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDemoMode;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -75,7 +72,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
@@ -84,7 +80,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
@@ -114,10 +109,7 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireGmsBuild;
-import com.android.bedstead.harrier.annotations.RequireGuestUserIsEphemeral;
-import com.android.bedstead.harrier.annotations.RequireGuestUserIsNotEphemeral;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice;
@@ -185,6 +177,10 @@ import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Tags;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.NotFoundException;
@@ -1103,13 +1099,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @RequireHasMainUser(reason = "Test")
-    public void requireHasMainUser_hasMainUser() {
-        assertThat(TestApis.users().main()).isNotNull();
-    }
-
-
-    @Test
     @RequireLowRamDevice(reason = "Test")
     public void requireLowRamDeviceAnnotation_isLowRamDevice() {
         assertThat(TestApis.context().instrumentedContext().getSystemService(ActivityManager.class)
@@ -1470,14 +1459,6 @@ public class DeviceStateTest {
         assertThat(TestApis.packages().instrumented().isInstantApp()).isFalse();
     }
 
-    @EnsureCanAddUser(number = 2)
-    @Test
-    public void ensureCanAddUser_canAddUsers() {
-        try (UserReference user = TestApis.users().createUser().create();
-             UserReference secondUser = TestApis.users().createUser().create()) {
-        }
-    }
-
     @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)
     @Test
     public void requireRunOnAnnotation_switchedToAny_switches() {
@@ -1799,23 +1780,5 @@ public class DeviceStateTest {
         ).isFalse();
     }
 
-    @RequireGuestUserIsEphemeral
-    @Test
-    public void requireGuestUserIsEphemeral_guestUserIsEphemeral() {
-        assertThat(TestApis
-                .resources()
-                .system()
-                .getBoolean("config_guestUserEphemeral")
-        ).isTrue();
-    }
 
-    @RequireGuestUserIsNotEphemeral
-    @Test
-    public void requireGuestUserIsNotEphemeral_guestUserIsNotEphemeral() {
-        assertThat(TestApis
-                .resources()
-                .system()
-                .getBoolean("config_guestUserEphemeral")
-        ).isFalse();
-    }
 }

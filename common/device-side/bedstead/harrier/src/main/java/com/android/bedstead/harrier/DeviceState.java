@@ -16,7 +16,6 @@
 
 package com.android.bedstead.harrier;
 
-import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.app.admin.DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
@@ -58,7 +57,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
-import android.service.quicksettings.TileService;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -67,7 +65,6 @@ import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
@@ -108,7 +105,6 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice;
@@ -141,6 +137,8 @@ import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnD
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
+import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
@@ -152,6 +150,8 @@ import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
 import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.enterprise.RequireHasPolicyExemptApps;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
@@ -945,11 +945,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireHasMainUser requireHasMainUser) {
-                requireHasMainUser(requireHasMainUser.reason());
-                continue;
-            }
-
             if (annotation instanceof EnsureCanGetPermission ensureCanGetPermissionAnnotation) {
 
                 if (!meetsSdkVersionRequirements(
@@ -1120,13 +1115,6 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof RequireNotInstantApp requireNotInstantAppAnnotation) {
                 requireNotInstantApp(requireNotInstantAppAnnotation.reason(),
                         requireNotInstantAppAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsureCanAddUser ensureCanAddUserAnnotation) {
-                ensureCanAddUser(
-                        ensureCanAddUserAnnotation.number(),
-                        ensureCanAddUserAnnotation.failureMode());
                 continue;
             }
 
@@ -2363,11 +2351,16 @@ public final class DeviceState extends HarrierRule {
         userReference.remove();
     }
 
+
     private void ensureCanAddUser() {
         ensureCanAddUser(1, FailureMode.SKIP);
     }
 
-    private void ensureCanAddUser(int number, FailureMode failureMode) {
+    /**
+     * Ensure that there is a room for additional users
+     * @param number of users to add
+     */
+    public void ensureCanAddUser(int number, FailureMode failureMode) {
         int maxUsers = getMaxNumberOfUsersSupported();
         int currentUsers = TestApis.users().all().size();
 
@@ -3564,7 +3557,11 @@ public final class DeviceState extends HarrierRule {
     /**
      * Get the most appropriate {@link RemotePolicyManager} instance for the device state.
      *
-     * <p>This method should only be used by tests which are annotated with {@link PolicyTest}.
+     * <p>This method should only be used by tests which are annotated with any of:
+     * {@link PolicyAppliesTest}
+     * {@link PolicyDoesNotApplyTest}
+     * {@link CanSetPolicyTest}
+     * {@link CannotSetPolicyTest}
      *
      * <p>This may be a DPC, a delegate, or a normal app with or without given permissions.
      *
@@ -3739,10 +3736,6 @@ public final class DeviceState extends HarrierRule {
 
     private void requireHeadlessSystemUserMode(String reason) {
         assumeTrue(reason, TestApis.users().isHeadlessSystemUserMode());
-    }
-
-    private void requireHasMainUser(String reason) {
-        assumeTrue(reason, TestApis.users().main() != null);
     }
 
     private void requireLowRamDevice(String reason, FailureMode failureMode) {
@@ -4256,16 +4249,25 @@ public final class DeviceState extends HarrierRule {
         }
 
         if (!mAnnotationExecutors.containsKey(executorClassName)) {
-            try {
-                mAnnotationExecutors.put(
-                        executorClassName,
-                        executorClass.getDeclaredConstructor().newInstance()
-                );
-            } catch (Exception e) {
-                throw new RuntimeException("Error creating annotation executor", e);
-            }
+            mAnnotationExecutors.put(executorClassName, createAnnotationExecutor(executorClass));
         }
         return mAnnotationExecutors.get(executorClassName);
+    }
+
+    private AnnotationExecutor createAnnotationExecutor(
+            Class<? extends AnnotationExecutor> executorClass
+    ) {
+        try {
+            return executorClass.getDeclaredConstructor().newInstance();
+        } catch (Exception ignored) {
+            try {
+                return executorClass
+                        .getDeclaredConstructor(DeviceState.class)
+                        .newInstance(this);
+            } catch (Exception exception) {
+                throw new RuntimeException("Error creating annotation executor", exception);
+            }
+        }
     }
 
     private void ensureHasUserRestriction(String restriction, UserType onUser) {

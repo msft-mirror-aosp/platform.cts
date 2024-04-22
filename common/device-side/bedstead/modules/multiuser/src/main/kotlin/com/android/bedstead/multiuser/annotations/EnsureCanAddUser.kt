@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.annotations
+package com.android.bedstead.multiuser.annotations
+
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.RequireMultiUserSupport
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
- * Mark that a test method should only run
- * when config_guestUserEphemeral is false
+ * Mark that a test method requires the ability to add a new user.
  *
- * This should be used with `DeviceState`.
+ * You can use `Devicestate` to ensure that the device enters the correct state for the method.
  */
 @Target(
     AnnotationTarget.FUNCTION,
@@ -29,21 +33,23 @@ package com.android.bedstead.harrier.annotations
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RequireResourcesBooleanValue(configName = "config_guestUserEphemeral", requiredValue = false)
-annotation class RequireGuestUserIsNotEphemeral(
+@JvmRepeatable(EnsureCanAddUserGroup::class)
+@RequireMultiUserSupport
+@UsesAnnotationExecutor("com.android.bedstead.multiuser.MultiUserAnnotationExecutor")
+annotation class EnsureCanAddUser(
+    /** The number of users we need space for. Defaults to 1.  */
+    val number: Int = 1,
+    val failureMode: FailureMode = FailureMode.SKIP,
     /**
      * Priority sets the order that annotations will be resolved.
-     *
      *
      * Annotations with a lower priority will be resolved before annotations with a higher
      * priority.
      *
-     *
      * If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.FIRST
+    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
 )
