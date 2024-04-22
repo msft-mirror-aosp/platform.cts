@@ -356,6 +356,11 @@ public class ArchiveTest {
         mContext.startActivity(intent);
 
         mUiDevice.waitForIdle();
+        // Check the title includes the installer's label
+        UiObject2 headerTitle = waitFor(
+                Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
+        assertThat(headerTitle.getText()).contains("Cts Package Uninstaller Tests");
+
         assertThat(waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1")))).isNotNull();
         UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
         if (clickableView == null) {
