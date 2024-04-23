@@ -45,7 +45,7 @@ func TestUniqueRequirementIDs(t *testing.T) {
 func TestUniqueRequirementNames(t *testing.T) {
 	reqList := mustUnmarshalRequirementList(t)
 
-	// Requirment names must be unique
+	// Requirement names must be unique
 	nameToID := make(map[string]string) // name to id
 	for _, req := range reqList.GetRequirements() {
 		if req.HasName() {
