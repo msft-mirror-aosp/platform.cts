@@ -66,6 +66,8 @@ public final class RequirementConstants {
     public static final String R7_1_1_3__H_1_1 = "r7_1_1_3__h_1_1"; // 7.1.1.3/H-1-1
     public static final String R7_1_1_3__H_2_1 = "r7_1_1_3__h_2_1"; // 7.1.1.3/H-2-1
     public static final String R7_1_1_3__H_3_1 = "r7_1_1_3__H_3_1"; // 7.1.1.3/H-3-1
+    public static final String R7_1_4_1__H_1_2 = "r7_1_4_1__h_1_2"; // 7.1.4.1/H-1-2
+    public static final String R7_1_4_1__H_1_3 = "r7_1_4_1__h_1_3"; // 7.1.4.1/H-1-3
     public static final String R7_5__H_1_1 = "r7_5__h_1_1"; // 7.5/H-1-1
     public static final String R7_5__H_1_2 = "r7_5__h_1_2"; // 7.5/H-1-2
     public static final String R7_5__H_1_3 = "r7_5__h_1_3"; // 7.5/H-1-3
@@ -116,6 +118,8 @@ public final class RequirementConstants {
     public static final String DISPLAY_DENSITY = "display_density_dpi";
     public static final String DISPLAY_LUMINANCE_NITS = "display_luminance_nits";
     public static final String DYNAMIC_COLOR_ASPECTS = "dynamic_color_aspects";
+    public static final String EGL_EXT_PROTECTED_CONTENT = "egl_ext_protected_content";
+    public static final String EGL_IMG_CONTEXT_PRIORITY = "egl_img_context_priority";
     public static final String EXT_YUV_EXTENSION = "ext_yuv_target_supported";
     public static final String FILESYSTEM_IO_RATE = "filesystem_io_rate_mbps";
     public static final String FRAMES_DROPPED = "frame_drops_per_30sec";
@@ -181,7 +185,12 @@ public final class RequirementConstants {
     public static final String SHORT_RESOLUTION = "short_resolution_pixels";
     public static final String SUPPORTED_PERFORMANCE_POINTS = "supported_performance_points";
     public static final String TEST_RESOLUTION = "resolution";
+    public static final String VK_EXT_GLOBAL_PRIORITY = "vk_ext_global_priority";
+    public static final String VK_NON_CPU_DEVICE_COUNT = "vk_non_cpu_device_count";
+    public static final String VK_PHYSICAL_DEVICE_PROTECTED_MEMORY =
+            "vk_physical_device_protected_memory";
     // keep-sorted end
+
 
     public enum Result {
         NA, MET, UNMET
