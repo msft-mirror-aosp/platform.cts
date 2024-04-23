@@ -2514,6 +2514,11 @@ public class PerformanceClassEvaluator {
     }
 
 
+    /** Add requirement <b>7.1.4.1/H-1-3</b> */
+    public VulkanRequirement addR7_1_4_1__H_1_3() {
+        return this.addRequirement(VulkanRequirement.createR7_1_4_1__H_1_3());
+    }
+
     /* Adds requirement 7.5/H-1-1 */
     public PrimaryCameraRequirement addPrimaryRearCameraReq() {
         return this.addRequirement(PrimaryCameraRequirement.createRearPrimaryCamera());
