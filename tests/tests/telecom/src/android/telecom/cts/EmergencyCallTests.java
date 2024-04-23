@@ -56,7 +56,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
         // Sets up this package as default dialer in super.
         super.setUp();
         NewOutgoingCallBroadcastReceiver.reset();
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
         setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
         TestUtils.executeShellCommand(getInstrumentation(),
@@ -93,7 +93,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * invocations to induce the failure method.
      */
     public void testEmergencyCallFailureDueToInvalidPhoneAccounts() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         // needed in order to call mTelecomManager.getPhoneAccountsForPackage()
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -135,7 +135,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * Place an outgoing emergency call and ensure it is started successfully.
      */
     public void testStartEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
         Connection conn = placeAndVerifyEmergencyCall(true /*supportsHold*/);
         Call eCall = getInCallService().getLastCall();
         assertCallState(eCall, Call.STATE_DIALING);
@@ -174,7 +174,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * Place an outgoing emergency call fail it to trigger persisting of diagnostic data
      */
     public void testEmergencyCallFailureCreatesDropboxEntries() throws Exception {
-        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
         long startTime = System.currentTimeMillis()
                 - DAYS_BACK_TO_SEARCH_EMERGENCY_DROP_BOX_ENTRIES_IN_MS;
         mContext.registerReceiver(new BroadcastReceiver() {
@@ -222,7 +222,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * will automatically be rejected as well.
      */
     public void testOngoingEmergencyCallAndReceiveIncomingCall() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         Connection eConnection = placeAndVerifyEmergencyCall(true /*supportsHold*/);
         assertIsInCall(true);
@@ -246,7 +246,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * rejected and logged as a new missed call.
      */
     public void testIncomingRingingCallAndPlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         Uri normalCallNumber = createRandomTestNumber();
         addAndVerifyNewIncomingCall(normalCallNumber, null);
@@ -281,7 +281,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
      * as a new missed call.
      */
     public void testActiveCallAndIncomingRingingCallAndPlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         Uri normalOutgoingCallNumber = createRandomTestNumber();
         Bundle extras = new Bundle();
@@ -318,7 +318,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
     }
 
     public void testEmergencyCallAndNoAdditionalCallPermitted() throws Exception {
-        if (!mShouldTestTelecom) return;
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) return;
 
         Connection eConnection = placeAndVerifyEmergencyCall(true);
         Call eCall = getInCallService().getLastCall();
