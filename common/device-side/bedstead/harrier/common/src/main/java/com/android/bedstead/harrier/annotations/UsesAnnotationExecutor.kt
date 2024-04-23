@@ -21,7 +21,7 @@ import com.android.bedstead.harrier.AnnotationExecutor
  * Annotation to apply to an annotation outside of Harrier to indicate it should be processed
  * with a particular [AnnotationExecutor].
  */
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class UsesAnnotationExecutor(
 

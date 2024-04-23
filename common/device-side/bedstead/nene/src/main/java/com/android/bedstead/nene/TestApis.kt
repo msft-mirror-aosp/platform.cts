@@ -190,10 +190,6 @@ object TestApis {
     @JvmStatic
     fun properties() = Properties
 
-    /** Access Test APIs related to dumpsys.  */
-    @JvmStatic
-    fun dumpsys() = Dumpsys
-
     /** Access Test APIs related to quick settings. */
     @JvmStatic
     @Experimental

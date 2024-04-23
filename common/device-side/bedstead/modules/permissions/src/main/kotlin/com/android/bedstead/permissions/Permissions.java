@@ -33,6 +33,7 @@ import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.UndoableContext;
@@ -779,5 +780,16 @@ public final class Permissions {
         Log.d(LOG_TAG, "Dropping shell permissions");
         hasAdoptedShellPermissionIdentity = false;
         ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
+    }
+
+    /** Get string dump of permissions state. */
+    public String dump() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            Log.i(LOG_TAG, "Cannot dump permission before V so dumping packages");
+            return TestApis.packages().dump();
+        }
+
+        return ShellCommand.builder("dumpsys permissionmgr").validate((s) -> !s.isEmpty())
+                .executeOrThrowNeneException("Error dumping permission state");
     }
 }

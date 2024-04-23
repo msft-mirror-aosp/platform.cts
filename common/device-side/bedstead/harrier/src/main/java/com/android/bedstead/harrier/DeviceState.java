@@ -34,7 +34,6 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
-import static com.android.bedstead.nene.utils.Versions.T;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
 import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -55,8 +54,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
 
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
@@ -178,7 +175,6 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
@@ -377,6 +373,7 @@ public final class DeviceState extends HarrierRule {
                             "Timed out executing test " + description.getDisplayName()
                                     + " after " + MAX_TEST_DURATION, e);
                     assertionError.setStackTrace(stack);
+                    onTestFailed(assertionError);
                     throw assertionError;
                 }
                 if (t != null) {
@@ -385,11 +382,13 @@ public final class DeviceState extends HarrierRule {
                             SystemServerException s = TestApis.logcat().findSystemServerException(
                                     t);
                             if (s != null) {
+                                onTestFailed(s);
                                 throw s;
                             }
                         }
                     }
 
+                    onTestFailed(t);
                     throw t;
                 }
             }
@@ -401,7 +400,6 @@ public final class DeviceState extends HarrierRule {
 
         try {
             prepareTestState(description);
-
             base.evaluate();
         } finally {
             Log.d(LOG_TAG, "Tearing down state for test " + testName);
@@ -439,6 +437,10 @@ public final class DeviceState extends HarrierRule {
         applyAnnotations(annotations, /* isTest= */ true);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
+    }
+
+    void applyAnnotation (Annotation annotation) {
+        // TODO: Refactor applyAnnotations to call into this and move everything in here
     }
 
     private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
@@ -874,6 +876,11 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof UsesAnnotationExecutor) {
+                usesAnnotationExecutor(((UsesAnnotationExecutor)annotation).value());
+                continue;
+            }
+
             if (annotation instanceof RequirePackageInstalled requirePackageInstalledAnnotation) {
                 requirePackageInstalled(
                         requirePackageInstalledAnnotation.value(),
@@ -1013,7 +1020,7 @@ public final class DeviceState extends HarrierRule {
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
-                AnnotationExecutor executor = getAnnotationExecutor(
+                AnnotationExecutor executor = usesAnnotationExecutor(
                         usesAnnotationExecutorAnnotation.value()
                 );
                 executor.applyAnnotation(annotation);
@@ -3868,7 +3875,7 @@ public final class DeviceState extends HarrierRule {
             mAnnotationExecutors = new HashMap<>();
 
     @SuppressWarnings("unchecked")
-    private AnnotationExecutor getAnnotationExecutor(String executorClassName) {
+    private AnnotationExecutor usesAnnotationExecutor(String executorClassName) {
         Class<? extends AnnotationExecutor> executorClass;
 
         if (executorClassName.isEmpty()) {
@@ -4274,5 +4281,16 @@ public final class DeviceState extends HarrierRule {
                 resourceValue,
                 is(requireResourcesBooleanValue.requiredValue())
         );
+    }
+
+    void onTestFailed(Throwable exception) {
+        mAnnotationExecutors.values().forEach((i) -> {
+            try {
+                i.onTestFailed(exception);
+            } catch (Throwable t) {
+                // Ignore exceptions otherwise they'd hide the actual failure
+                Log.e(LOG_TAG, "Error in onTestFailed for " + i, t);
+            }
+        });
     }
 }

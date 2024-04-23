@@ -23,6 +23,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.TestApis.devicePolicy
+import com.android.bedstead.nene.TestApis.permissions
 import com.android.bedstead.nene.appops.CommonAppOps
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.utils.Assert.assertDoesNotThrow
@@ -400,6 +402,11 @@ class PermissionsTest {
                     .isFalse()
 
         }
+    }
+
+    @Test
+    fun dump_dumpsState() {
+        assertThat(permissions().dump()).isNotEmpty()
     }
 
     companion object {

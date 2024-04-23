@@ -519,4 +519,9 @@ public class DevicePolicyTest {
             }
         }
     }
+
+    @Test
+    public void dump_dumpsState() {
+        assertThat(TestApis.devicePolicy().dump()).isNotEmpty();
+    }
 }
