@@ -19,6 +19,7 @@ package android.app.appops.cts
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -614,15 +615,36 @@ class AppOpsTest {
     fun testRestrictedSettingsOpsRead() {
         // Apps without manage appops permission will get security exception if it tries to access
         // restricted settings ops.
+        runWithShellPermissionIdentity {
+            setOpMode(mOpPackageName, OPSTR_ACCESS_RESTRICTED_SETTINGS, MODE_ERRORED)
+        }
         Assert.assertThrows(SecurityException::class.java) {
             mAppOps.unsafeCheckOpRawNoThrow(OPSTR_ACCESS_RESTRICTED_SETTINGS, Process.myUid(),
                     mOpPackageName)
         }
+
+        // Test for b/336323279
+        assertNull(
+            mAppOps.getOpsForPackage(
+                Process.myUid(),
+                mOpPackageName,
+                intArrayOf(AppOpsManager.OP_ACCESS_RESTRICTED_SETTINGS)
+            )
+        )
+
         // Apps with manage appops permission (shell) should be able to read restricted settings op
         // successfully.
         runWithShellPermissionIdentity {
             mAppOps.unsafeCheckOpRawNoThrow(OPSTR_ACCESS_RESTRICTED_SETTINGS, Process.myUid(),
                     mOpPackageName)
+
+            assertNotNull(
+                mAppOps.getOpsForPackage(
+                    Process.myUid(),
+                    mOpPackageName,
+                    intArrayOf(AppOpsManager.OP_ACCESS_RESTRICTED_SETTINGS)
+                )
+            )
         }
 
         // Normal apps should not receive op change callback when op is changed.
