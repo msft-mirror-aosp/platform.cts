@@ -34,21 +34,10 @@
         <option name="runtime-hint" value="14s" />
         <!-- test-timeout unit is ms, value = 60 min -->
         <option name="test-timeout" value="3600000" />
-        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
-        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- TODO(b/285554134): Remove once underlying issue is fixed-->
         <option name="run-command" value="wm set-ignore-orientation-request false" />
         <option name="run-command" value="wm set-letterbox-style --isEducationEnabled false" />
     </target_preparer>
-    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="pull-pattern-keys" value="input_.*" />
-        <!-- Pull perfetto traces from DefaultUITraceListener -->
-        <option name="pull-pattern-keys" value="perfetto_file_path*" />
-        <!-- Pull screenshot on test failure -->
-        <option name="pull-pattern-keys"
-            value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
-        <option name="collect-on-run-ended-only" value="true" />
-    </metrics_collector>
 </configuration>
