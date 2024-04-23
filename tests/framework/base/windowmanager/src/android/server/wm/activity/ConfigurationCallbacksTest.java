@@ -58,7 +58,7 @@ import org.junit.Test;
  * side {@link Configuration} change.
  *
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceWindow:ConfigurationCallbacksTest
+ *     atest CtsWindowManagerDeviceActivity:ConfigurationCallbacksTest
  */
 @Presubmit
 public class ConfigurationCallbacksTest extends WindowManagerTestBase {

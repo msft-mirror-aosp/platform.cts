@@ -61,6 +61,7 @@ android_library {
         "truth",
         "flag-junit",
         "device_policy_aconfig_flags_lib",
+        "TestApisReflection",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -70,7 +71,7 @@ android_library {
 
 android_library {
     name: "Harrier",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 
     srcs: [
         "src/main/java/**/*.java",
@@ -85,6 +86,7 @@ android_library {
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
         "auto_value_annotations",
+        "bedstead-root-annotations"
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -115,5 +117,5 @@ android_test {
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }

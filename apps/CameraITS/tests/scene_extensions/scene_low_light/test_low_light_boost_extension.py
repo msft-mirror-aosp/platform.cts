@@ -111,7 +111,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
   """
 
   def test_low_light_boost(self):
-    self.scene = 'scene_low_light_boost'
+    self.scene = 'scene_low_light'
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
@@ -177,6 +177,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       if self.tablet:
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
+
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
 
       # Determine preview width and height to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)

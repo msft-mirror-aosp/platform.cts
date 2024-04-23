@@ -57,7 +57,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
-import android.service.quicksettings.TileService;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -66,12 +65,8 @@ import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
-import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -81,10 +76,8 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -101,6 +94,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
+import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
+import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
@@ -112,7 +107,6 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice;
@@ -126,6 +120,7 @@ import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
@@ -144,6 +139,8 @@ import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnD
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
+import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
@@ -155,6 +152,8 @@ import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
 import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
 import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.enterprise.RequireHasPolicyExemptApps;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
@@ -171,22 +170,30 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
+import com.android.bedstead.nene.display.Display;
+import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextImpl;
+import com.android.bedstead.permissions.annotations.EnsureCanGetPermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
@@ -199,7 +206,6 @@ import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
 import com.android.bedstead.testapp.TestAppQueryBuilder;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
 
@@ -473,10 +479,9 @@ public final class DeviceState extends HarrierRule {
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
 
-    private void applyAnnotations(List<Annotation> annotations, boolean isTest)
-            throws Throwable {
+    private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
-        for (Annotation annotation : annotations) {
+        for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
 
             Class<? extends Annotation> annotationType = annotation.annotationType();
@@ -808,6 +813,11 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof RequirePrivateSpaceSupported requirePrivateSpaceSupported) {
+                requirePrivateSpaceSupported(requirePrivateSpaceSupported.failureMode());
+                continue;
+            }
+
             if (annotation instanceof RequireLowRamDevice requireLowRamDeviceAnnotation) {
                 requireLowRamDevice(requireLowRamDeviceAnnotation.reason(),
                         requireLowRamDeviceAnnotation.failureMode());
@@ -935,11 +945,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireHeadlessSystemUserMode requireHeadlessSystemUserModeAnnotation) {
                 requireHeadlessSystemUserMode(requireHeadlessSystemUserModeAnnotation.reason());
-                continue;
-            }
-
-            if (annotation instanceof RequireHasMainUser requireHasMainUser) {
-                requireHasMainUser(requireHasMainUser.reason());
                 continue;
             }
 
@@ -1087,6 +1092,16 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof EnsureUsingDisplayTheme ensureUsingDisplayTheme) {
+                ensureUsingDisplayTheme(ensureUsingDisplayTheme.theme());
+                continue;
+            }
+
+            if (annotation instanceof EnsureUsingScreenOrientation ensureUsingScreenOrientation) {
+                ensureUsingScreenOrientation(ensureUsingScreenOrientation.orientation());
+                continue;
+            }
+
             if (annotation instanceof EnsureGlobalSettingSet ensureGlobalSettingSetAnnotation) {
                 ensureGlobalSettingSet(
                         ensureGlobalSettingSetAnnotation.key(),
@@ -1113,13 +1128,6 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof RequireNotInstantApp requireNotInstantAppAnnotation) {
                 requireNotInstantApp(requireNotInstantAppAnnotation.reason(),
                         requireNotInstantAppAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsureCanAddUser ensureCanAddUserAnnotation) {
-                ensureCanAddUser(
-                        ensureCanAddUserAnnotation.number(),
-                        ensureCanAddUserAnnotation.failureMode());
                 continue;
             }
 
@@ -1173,8 +1181,9 @@ public final class DeviceState extends HarrierRule {
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
-                AnnotationExecutor executor =
-                        getAnnotationExecutor(usesAnnotationExecutorAnnotation.value(), usesAnnotationExecutorAnnotation.weakValue());
+                AnnotationExecutor executor = getAnnotationExecutor(
+                        usesAnnotationExecutorAnnotation.value()
+                );
                 executor.applyAnnotation(annotation);
                 continue;
             }
@@ -1221,7 +1230,7 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireQuickSettingsSupport requireQuickSettingsSupport) {
                 checkFailOrSkip("Device does not have quick settings",
-                        TileService.isQuickSettingsSupported(),
+                        TestApis.quickSettings().isSupported(),
                         requireQuickSettingsSupport.failureMode());
                 continue;
             }
@@ -1231,7 +1240,7 @@ public final class DeviceState extends HarrierRule {
                         resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 
                 checkFailOrSkip("User: " + user + " does not have a default browser",
-                        TestApis.packages().defaultBrowserForUser(user) != null,
+                        TestApis.packages().defaultBrowser(user) != null,
                         requireHasDefaultBrowser.failureMode());
                 continue;
             }
@@ -1406,8 +1415,8 @@ public final class DeviceState extends HarrierRule {
 
         checkAnnotations(annotations);
 
-        BedsteadJUnit4.resolveRecursiveAnnotations(this, annotations,
-                /* parameterizedAnnotation= */ null);
+        BedsteadJUnit4.resolveRecursiveAnnotations(
+                this, annotations, /* parameterizedAnnotations= */ List.of());
 
         checkAnnotations(annotations);
 
@@ -1769,6 +1778,11 @@ public final class DeviceState extends HarrierRule {
         return resolvedUserType;
     }
 
+    private void requirePrivateSpaceSupported(FailureMode failureMode) {
+        checkFailOrSkip("Device must support Private Space.",
+                TestApis.users().canAddPrivateProfile(), failureMode);
+    }
+
     private static final String LOG_TAG = "DeviceState";
 
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -1798,9 +1812,13 @@ public final class DeviceState extends HarrierRule {
     private DevicePolicyController mOriginalDeviceOwner;
     private Integer mOriginalDeviceOwnerType;
     private boolean mHasChangedDeviceOwnerType;
-    private final Map<UserReference, DevicePolicyController> mChangedProfileOwners = new HashMap<>();
+    private final Map<UserReference, DevicePolicyController> mChangedProfileOwners =
+            new HashMap<>();
     private UserReference mOriginalSwitchedUser;
     private Boolean mOriginalBluetoothEnabled;
+    private DisplayProperties.Theme mOriginalDisplayTheme;
+    private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
+
     private Boolean mOriginalWifiEnabled;
     private final Map<String, Map<String, String>> mOriginalFlagValues = new HashMap<>();
     private final TestAppProvider mTestAppProvider = new TestAppProvider();
@@ -2350,11 +2368,16 @@ public final class DeviceState extends HarrierRule {
         userReference.remove();
     }
 
+
     private void ensureCanAddUser() {
         ensureCanAddUser(1, FailureMode.SKIP);
     }
 
-    private void ensureCanAddUser(int number, FailureMode failureMode) {
+    /**
+     * Ensure that there is a room for additional users
+     * @param number of users to add
+     */
+    public void ensureCanAddUser(int number, FailureMode failureMode) {
         int maxUsers = getMaxNumberOfUsersSupported();
         int currentUsers = TestApis.users().all().size();
 
@@ -2375,9 +2398,9 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void ensureCanAddProfile(
-            com.android.bedstead.nene.users.UserType userType, FailureMode failureMode) {
+            UserReference parent, com.android.bedstead.nene.users.UserType userType, FailureMode failureMode) {
         checkFailOrSkip("the device cannot add more profiles of type " + userType,
-                TestApis.users().canCreateProfile(userType),
+                parent.canCreateProfile(userType),
                 failureMode);
     }
 
@@ -2597,6 +2620,18 @@ public final class DeviceState extends HarrierRule {
         mUsers.clear();
         mAnnotationHasSwitchedUser = false;
         mAdditionalUser = null;
+
+        // TODO(b/329570492): Support sharing of theme in bedstead across tests
+        if (mOriginalDisplayTheme != null) {
+            Display.INSTANCE.setDisplayTheme(mOriginalDisplayTheme);
+            mOriginalDisplayTheme = null;
+        }
+
+        // TODO(b/329570492): Support sharing of orientation in bedstead across tests
+        if (mOriginalScreenOrientation != null) {
+            Display.INSTANCE.setScreenOrientation(mOriginalScreenOrientation);
+            mOriginalScreenOrientation = null;
+        }
 
         for (Map.Entry<UserReference, Set<String>> userRestrictions
                 : mAddedUserRestrictions.entrySet()) {
@@ -2844,7 +2879,7 @@ public final class DeviceState extends HarrierRule {
     private UserReference createProfile(
             com.android.bedstead.nene.users.UserType profileType, UserReference parent) {
         ensureCanAddUser();
-        ensureCanAddProfile(profileType, FailureMode.SKIP);
+        ensureCanAddProfile(parent, profileType, FailureMode.SKIP);
 
         if (profileType.name().equals("android.os.usertype.profile.CLONE")) {
             // Special case - we can't create a clone profile if this is set
@@ -3016,7 +3051,7 @@ public final class DeviceState extends HarrierRule {
         try {
             mTestApps.get(testAppKey).permissions().withoutPermission(permissions);
         } catch (NeneException e) {
-            if (failureMode.equals(FailureMode.SKIP) && e.getMessage().contains("Cannot deny")) {
+            if (failureMode.equals(FailureMode.SKIP)) {
                 failOrSkip(e.getMessage(), FailureMode.SKIP);
             } else {
                 throw e;
@@ -3551,7 +3586,11 @@ public final class DeviceState extends HarrierRule {
     /**
      * Get the most appropriate {@link RemotePolicyManager} instance for the device state.
      *
-     * <p>This method should only be used by tests which are annotated with {@link PolicyTest}.
+     * <p>This method should only be used by tests which are annotated with any of:
+     * {@link PolicyAppliesTest}
+     * {@link PolicyDoesNotApplyTest}
+     * {@link CanSetPolicyTest}
+     * {@link CannotSetPolicyTest}
      *
      * <p>This may be a DPC, a delegate, or a normal app with or without given permissions.
      *
@@ -3632,6 +3671,10 @@ public final class DeviceState extends HarrierRule {
     private void ensureCanGetPermission(String permission) {
         if (mPermissionsInstrumentationPackage == null) {
             // We just need to check if we can get it generally
+            // TODO: replace with dependency on bedstead-root when properly modularised
+            if (Tags.hasTag("root-instrumentation") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+                return; // If we're rooted we're always able to get permissions
+            }
 
             if (TestApis.permissions().usablePermissions().contains(permission)) {
                 return;
@@ -3724,10 +3767,6 @@ public final class DeviceState extends HarrierRule {
         assumeTrue(reason, TestApis.users().isHeadlessSystemUserMode());
     }
 
-    private void requireHasMainUser(String reason) {
-        assumeTrue(reason, TestApis.users().main() != null);
-    }
-
     private void requireLowRamDevice(String reason, FailureMode failureMode) {
         checkFailOrSkip(reason,
                 TestApis.context().instrumentedContext()
@@ -3796,7 +3835,7 @@ public final class DeviceState extends HarrierRule {
     private void ensurePasswordSet(UserType forUser, String password) {
         UserReference user = resolveUserTypeToUser(forUser);
 
-        if (user.hasLockCredential()) {
+        if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
             return;
         }
 
@@ -4218,43 +4257,46 @@ public final class DeviceState extends HarrierRule {
     private final Map<String, AnnotationExecutor>
             mAnnotationExecutors = new HashMap<>();
 
-    private AnnotationExecutor getAnnotationExecutor(
-            Class<? extends AnnotationExecutor> annotationExecutorClass,
-            String weakAnnotationExecutorClass) {
+    @SuppressWarnings("unchecked")
+    private AnnotationExecutor getAnnotationExecutor(String executorClassName) {
 
         Class<? extends AnnotationExecutor> executorClass;
 
-        if (annotationExecutorClass == AnnotationExecutor.class) {
-            if (weakAnnotationExecutorClass == "") {
-                throw new IllegalStateException(
-                        "@UsesAnnotationExecutor must declare either a value or weakValue");
-            } else {
-                try {
-                    executorClass = (Class<? extends AnnotationExecutor>) Class.forName(weakAnnotationExecutorClass);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException("Could not find annotation executor " + weakAnnotationExecutorClass + ". Probably a dependency issue.");
-                }
-            }
+        if (executorClassName.isEmpty()) {
+            throw new IllegalStateException("@UsesAnnotationExecutor value is empty");
         } else {
-            if (weakAnnotationExecutorClass == "") {
-                executorClass = annotationExecutorClass;
-            } else {
+            try {
+                executorClass =
+                        (Class<? extends AnnotationExecutor>) Class.forName(executorClassName);
+            } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(
-                        "@UsesAnnotationExecutor must declare either a value or weakValue. Has declared both.");
+                        "Could not find annotation executor "
+                                + executorClassName
+                                + ". Probably a dependency issue."
+                );
             }
         }
-
-        String executorClassName = executorClass.getCanonicalName();
 
         if (!mAnnotationExecutors.containsKey(executorClassName)) {
-            try {
-                mAnnotationExecutors.put(
-                        executorClassName, executorClass.newInstance());
-            } catch (Exception e) {
-                throw new RuntimeException("Error creating annotation executor", e);
-            }
+            mAnnotationExecutors.put(executorClassName, createAnnotationExecutor(executorClass));
         }
         return mAnnotationExecutors.get(executorClassName);
+    }
+
+    private AnnotationExecutor createAnnotationExecutor(
+            Class<? extends AnnotationExecutor> executorClass
+    ) {
+        try {
+            return executorClass.getDeclaredConstructor().newInstance();
+        } catch (Exception ignored) {
+            try {
+                return executorClass
+                        .getDeclaredConstructor(DeviceState.class)
+                        .newInstance(this);
+            } catch (Exception exception) {
+                throw new RuntimeException("Error creating annotation executor", exception);
+            }
+        }
     }
 
     private void ensureHasUserRestriction(String restriction, UserType onUser) {
@@ -4267,7 +4309,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        boolean shouldRunAsRoot = Tags.hasTag("");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to set user restriction as root.");
             try {
@@ -4453,15 +4495,17 @@ public final class DeviceState extends HarrierRule {
         }
 
         // TODO use TestApis.root().testUsesAdbRoot when this is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
+        boolean shouldRunAsRoot = Tags.hasTag("");
         if (shouldRunAsRoot) {
             Log.i(LOG_TAG, "Trying to clear user restriction as root.");
             try {
                 TestApis.devicePolicy().userRestrictions(onUser).set(restriction,
                         /* set= */ false);
             } catch (AdbException e) {
-                Log.i(LOG_TAG,
-                        "Unable to clear user restriction as root, trying to clear using heuristics.",
+                Log.i(
+                        LOG_TAG,
+                        "Unable to clear user restriction as root, trying to clear using"
+                            + " heuristics.",
                         e);
                 tryClearUserRestriction(onUser, restriction);
             }
@@ -4530,12 +4574,29 @@ public final class DeviceState extends HarrierRule {
         TestApis.properties().set(key, value);
     }
 
+    private void ensureUsingDisplayTheme(DisplayProperties.Theme theme) {
+        if (mOriginalDisplayTheme == null) {
+            mOriginalDisplayTheme = Display.INSTANCE.getDisplayTheme();
+        }
+        Display.INSTANCE.setDisplayTheme(theme);
+    }
+
+    private void ensureUsingScreenOrientation(DisplayProperties.ScreenOrientation orientation) {
+        if (mOriginalScreenOrientation == null) {
+            mOriginalScreenOrientation = Display.INSTANCE.getScreenOrientation();
+        }
+        Display.INSTANCE.setScreenOrientation(orientation);
+    }
+
     private void requirePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
         boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
 
         if(packageResponded) {
-            checkFailOrSkip("Requires at least one package to respond to this intent.", /* value= */ true, failureMode);
+            checkFailOrSkip(
+                    "Requires at least one package to respond to this intent.",
+                    /* value= */ true,
+                    failureMode);
         }
         else {
             failOrSkip("Requires at least one package to respond to this intent.", failureMode);
@@ -4547,7 +4608,10 @@ public final class DeviceState extends HarrierRule {
         boolean noPackageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).isEmpty();
 
         if(noPackageResponded) {
-            checkFailOrSkip("Requires no package to respond to this intent.", /* value= */ true, failureMode);
+            checkFailOrSkip(
+                    "Requires no package to respond to this intent.",
+                    /* value= */ true,
+                    failureMode);
         }
         else {
             failOrSkip("Requires no package to respond to this intent.", failureMode);
@@ -4567,7 +4631,12 @@ public final class DeviceState extends HarrierRule {
                                 .get()
                         , user);
             } catch (NotFoundException notFoundException) {
-                failOrSkip("Could not found the testApp which contains an activity matching the intent action '" + paramIntent.action() + "'.", failureMode);
+                failOrSkip(
+                        "Could not found the testApp which contains an activity matching the intent"
+                            + " action '"
+                                + paramIntent.action()
+                                + "'.",
+                        failureMode);
             }
         }
     }

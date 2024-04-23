@@ -23,6 +23,8 @@ android_test {
     test_suites: [
         "general-tests",
         "cts",
+        "mts-mediaprovider",
+        "mcts-mediaprovider",
     ],
     sdk_version: "module_current",
     min_sdk_version: "30",
@@ -39,5 +41,9 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "junit",
+        "modules-utils-native-coverage-listener",
+    ],
+    jni_libs: [
+        "libnativecoverage",
     ],
 }

@@ -54,6 +54,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
+import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
@@ -234,6 +235,33 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 .that(messages[0].text.toString()).doesNotContain(OTP_CODE)
         assertWithMessage("expected message person to be redacted: ${messages[0].senderPerson}")
                 .that(messages[0].senderPerson?.name.toString()).isNotEqualTo(PERSON_NAME)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS,
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE
+    )
+    fun testBigTextRedacted() {
+        val style = Notification.BigTextStyle()
+        val bigText = "BIG TEXT"
+        val bigTitleText = "BIG TITLE TEXT"
+        val summaryText = "summary text"
+        style.bigText(bigText)
+        style.setBigContentTitle(bigTitleText)
+        style.setSummaryText(summaryText)
+        sendNotification(style = style)
+        val sbn = waitForNotification()
+        val extras = sbn.notification.extras
+        val testBigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
+        val testBigTitleText = extras.getCharSequence(Notification.EXTRA_TITLE_BIG).toString()
+        val testSummaryText = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT).toString()
+        assertWithMessage("expected big text to be redacted: $testBigText")
+            .that(testBigText).doesNotContain(bigText)
+        assertWithMessage("expected big title text to be redacted: $testBigTitleText")
+            .that(testBigTitleText).doesNotContain(bigTitleText)
+        assertWithMessage("expected summary text to be redacted: $testSummaryText")
+            .that(testSummaryText).doesNotContain(summaryText)
     }
 
     @Test
@@ -500,15 +528,15 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
     private fun assumeFlagEnabled() {
         // TODO b/331633527: STOPSHIP remove once flag ramped
-        runWithShellPermissionIdentity {
-            assumeTrue(
-                DeviceConfig.getBoolean(
-                "device_personalization_services",
-                "Notification__enable_otp_in_smart_suggestion",
-                false
-            ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
-            )
-        }
+        assumeTrue(
+            callWithShellPermissionIdentity {
+                return@callWithShellPermissionIdentity DeviceConfig.getBoolean(
+                    "device_personalization_services",
+                    "Notification__enable_otp_in_smart_suggestion",
+                    false
+                ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
+            }
+        )
     }
 
     private fun assertNotificationNotRedacted() {

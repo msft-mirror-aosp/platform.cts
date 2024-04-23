@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 
 import camera_properties_utils
@@ -35,7 +36,7 @@ _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
 _MIN_CIRCLE_PTS = 25
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
+_SMOOTH_ZOOM_STEP = 1.1  # [1.0, 1.1] as a reference smooth zoom step
 
 
 class LowLatencyZoomTest(its_base_test.ItsBaseTest):
@@ -46,6 +47,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
 
   Make sure that the zoomRatio in the capture result is reflected
   in the captured image.
+
+  If the device's firstApiLevel is V, make sure the zoom steps are
+  small and logarithmic to simulate a smooth zoom experience.
   """
 
   def test_low_latency_zoom(self):
@@ -67,9 +71,24 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
-      z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      if first_api_level <= its_session_utils.ANDROID14_API_LEVEL:
+        z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
+      else:
+        # Here since we're trying to follow a log scale for moving through
+        # zoom steps from min to max we determine smooth_zoom_num_steps by solving
+        # the following: z_min*(SMOOTH_ZOOM_STEP^x)  = z_max. If we solve for
+        # x, we get the equation below. As an example, if z_min
+        # was 1.0 and z_max was 5.0, we would go through our list of zooms tested
+        # [1.0, 1.1,  1.21,  1.331...]
+        smooth_zoom_num_steps = (
+            (math.log(z_max) - math.log(z_min)) / math.log(_SMOOTH_ZOOM_STEP))
+        z_list_logarithmic = np.arange(math.log(z_min), math.log(z_max),
+            (math.log(z_max) - math.log(z_min)) / smooth_zoom_num_steps)
+        z_list = [math.exp(z) for z in z_list_logarithmic]
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
 

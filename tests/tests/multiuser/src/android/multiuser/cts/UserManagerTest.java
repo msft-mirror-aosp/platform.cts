@@ -72,6 +72,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
@@ -86,8 +87,8 @@ import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -560,6 +561,7 @@ public final class UserManagerTest {
     }
 
     @Test
+    @RequirePrivateSpaceSupported
     @EnsureHasPermission({CREATE_USERS, QUERY_USERS, INTERACT_ACROSS_USERS})
     @RequireRunOnInitialUser
     @ApiTest(apis = {
@@ -1091,7 +1093,6 @@ public final class UserManagerTest {
     @AppModeFull
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
-    // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
         presetQuietModeStatus(false, profileHandle);
@@ -1107,7 +1108,6 @@ public final class UserManagerTest {
     @AppModeFull
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
-    // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
         UserReference privateProfile = sDeviceState.privateProfile();
         final UserHandle profileHandle = privateProfile.userHandle();

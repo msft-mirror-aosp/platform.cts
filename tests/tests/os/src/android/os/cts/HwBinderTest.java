@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 
 import android.hidl.manager.V1_0.IServiceManager;
 import android.hidl.manager.V1_0.IServiceNotification;
@@ -217,7 +218,14 @@ public class HwBinderTest {
         ServiceNotification notification = new ServiceNotification();
 
         IServiceManager manager = IServiceManager.getService();
-        manager.registerForNotifications(IServiceManager.kInterfaceName, "default", notification);
+        try {
+            manager.registerForNotifications(
+                    IServiceManager.kInterfaceName, "default", notification);
+        } catch (android.os.RemoteException e) {
+            assumeNoException("HIDL is not installed on this device", e);
+            return;
+        }
+
 
         Calendar deadline = Calendar.getInstance();
         deadline.add(Calendar.SECOND, 10);

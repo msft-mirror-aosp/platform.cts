@@ -28,7 +28,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 /**
  * Policy used for {@code DevicePolicyManager#setTrustAgentConfiguration}
  */
-@EnterprisePolicy(dpc = { // | APPLIED_BY_DPM_ROLE_HOLDER
+@EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
 //}, permissions = {
 //        @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_KEYGUARD, appliesTo = APPLIES_TO_OWN_USER)

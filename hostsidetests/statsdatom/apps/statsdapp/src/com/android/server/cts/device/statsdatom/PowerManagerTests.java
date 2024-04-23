@@ -16,7 +16,11 @@
 
 package com.android.server.cts.device.statsdatom;
 
+import android.app.Instrumentation;
 import android.content.Context;
+import android.content.Intent;
+import android.device.collectors.util.SendToInstrumentation;
+import android.os.Bundle;
 import android.os.PowerManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -25,6 +29,9 @@ import org.junit.Test;
 
 public class PowerManagerTests {
     private static final String TAG = PowerManagerTests.class.getSimpleName();
+
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+
 
     @Test
     public void testGetCurrentThermalStatus() {
@@ -45,5 +52,21 @@ public class PowerManagerTests {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
         powerManager.getThermalHeadroomThresholds();
+    }
+
+    @Test
+    public void testAdpfTidCleanup() {
+        final Context context = InstrumentationRegistry.getContext();
+        final Intent intent = new Intent(context, ADPFActivity.class);
+        intent.putExtra(ADPFActivity.KEY_ACTION,
+                ADPFActivity.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ADPFActivity activity =
+                (ADPFActivity) mInstrumentation.startActivitySync(intent);
+        // this will wait until onCreate finishes
+        mInstrumentation.waitForIdleSync();
+        final Bundle bundle = activity.getRunResult(
+                ADPFActivity.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND);
+        SendToInstrumentation.sendBundle(mInstrumentation, bundle);
     }
 }

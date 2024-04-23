@@ -31,6 +31,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithPa
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -47,7 +48,10 @@ import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ImageReader;
+import android.mediapc.cts.common.CameraRequirement;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.os.Build;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -56,12 +60,15 @@ import android.util.Pair;
 import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
+import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.internal.camera.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -78,10 +85,14 @@ import java.util.Set;
 @RunWith(Parameterized.class)
 public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     private static final String TAG = "FeatureCombinationTest";
+    private static final int NUM_BUFFERS_BURST = 5;
+    private static final int NUM_WARMUP_BUFFERS = 2;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule
+    public final TestName mTestName = new TestName();
 
     /**
      * Test for making sure that all expected stream combinations are consistent in that
@@ -182,8 +193,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     private void testIsSessionConfigurationSupported(CameraDeviceSetup cameraDeviceSetup,
             AspectRatio aspectRatio, int[] combination) throws Exception {
-        final int kNumBuffers = 5;
-        final int kWarmupFrames = 2;
         MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
                 cameraDeviceSetup.getId(), mContext, aspectRatio);
 
@@ -209,7 +218,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
                     privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
-                    kNumBuffers, dynamicProfile, /*hasUseCase*/ false);
+                    NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false);
             if (minFrameDuration == -1) {
                 // Stream combination isn't valid.
                 continue;
@@ -263,113 +272,10 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                             continue;
                         }
 
-                        createSessionByConfigs(outputConfigs);
-                        haveSession = true;
-
-                        Set<List<Surface>> surfaceSets = new HashSet<>();
-                        List<Surface> surfaceList = new ArrayList<>();
-                        List<Surface> secondarySurfaceList = new ArrayList<>();
-                        for (OutputConfiguration config : outputConfigs) {
-                            if (dynamicProfile == config.getDynamicRangeProfile()) {
-                                surfaceList.add(config.getSurface());
-                            } else {
-                                secondarySurfaceList.add(config.getSurface());
-                            }
-                        }
-
-                        // Check if STANDARD and HLG10 can co-exist. If they co-exist, request
-                        // all surfaces at the same time. Otherwise, store surfaces with
-                        // incompatible dynamic range profiles in 2 separate sets, and request
-                        // the 2 sets separately.
-                        if (dynamicProfile != DynamicRangeProfiles.STANDARD) {
-                            CameraCharacteristics characteristics =
-                                    mStaticInfo.getCharacteristics();
-                            DynamicRangeProfiles profiles = characteristics.get(
-                                    CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES);
-                            Set<Long> compatibleProfiles =
-                                    profiles.getProfileCaptureRequestConstraints(dynamicProfile);
-                            if (compatibleProfiles.contains(DynamicRangeProfiles.STANDARD)) {
-                                surfaceList.addAll(secondarySurfaceList);
-                            } else if (!secondarySurfaceList.isEmpty()) {
-                                surfaceSets.add(secondarySurfaceList);
-                            }
-                        }
-                        surfaceSets.add(surfaceList);
-
-                        for (List<Surface> surfaces : surfaceSets) {
-                            CaptureRequest.Builder builderForSession = mCamera.createCaptureRequest(
-                                    CameraDevice.TEMPLATE_PREVIEW);
-                            builderForSession.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
-                                    stabilizationMode);
-                            builderForSession.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-                                    fpsRange);
-
-                            for (Surface s : surfaces) {
-                                builderForSession.addTarget(s);
-                            }
-                            List<CaptureRequest> burst = new ArrayList<>();
-                            for (int i = 0; i < kNumBuffers; i++) {
-                                burst.add(builderForSession.build());
-                            }
-
-                            SimpleCaptureCallback captureCallback = new SimpleCaptureCallback();
-                            mCameraSession.captureBurst(burst, captureCallback, mHandler);
-
-                            List<Long> readoutTimestamps = null;
-                            if (hasReadoutTimestamp) {
-                                readoutTimestamps =
-                                        captureCallback.getReadoutStartTimestamps(kNumBuffers);
-                            }
-                            CaptureResult[] results = new CaptureResult[kNumBuffers];
-
-                            for (int i = 0; i < kNumBuffers; i++) {
-                                CaptureResult result = captureCallback.getCaptureResult(
-                                        CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
-                                mCollector.expectNotNull("Result is null for combination "
-                                        + combinationStr, result);
-                                results[i] = result;
-
-                                // Check video stabiliztaion mode
-                                Integer videoStabilizationMode = result.get(
-                                        CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
-                                mCollector.expectEquals(
-                                        "Stabilization mode doesn't match for combination "
-                                                + combinationStr,
-                                        videoStabilizationMode, stabilizationMode);
-
-                                // Check frame rate
-                                if (fpsRange.getUpper().equals(fpsRange.getLower())) {
-                                    Range<Integer> resultFpsRange = result.get(
-                                            CaptureResult.CONTROL_AE_TARGET_FPS_RANGE);
-                                    mCollector.expectEquals("resultFpsRange doesn't match for "
-                                                    + "combination " + combinationStr,
-                                            resultFpsRange, fpsRange);
-                                    Long frameDuration = result.get(
-                                            CaptureResult.SENSOR_FRAME_DURATION);
-                                    mCollector.expectInRange("frameDuration doesn't match for "
-                                                    + combinationStr,
-                                            (double) frameDuration,
-                                            /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
-                                            /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
-
-                                    // Check readout timestamp intervals to make sure targetFpsRange
-                                    // is met. Skip for Cuttlefish due to performance reasons.
-                                    // TODO: (b/321824310) Remove the check once cuttlefish
-                                    // performance is improved.
-                                    if (!MediaUtils.onCuttlefish() && i > kWarmupFrames
-                                            && readoutTimestamps != null) {
-                                        long readoutInterval = readoutTimestamps.get(i)
-                                                - readoutTimestamps.get(i - 1);
-                                        mCollector.expectInRange(
-                                                "Timestamp readout interval doesn't match for "
-                                                        + combinationStr,
-                                                (double) readoutInterval,
-                                                /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
-                                                /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
-                                    }
-                                }
-                            }
-                        }
+                        haveSession =
+                                verifyCombinationStreaming(outputConfigs, dynamicProfile,
+                                        stabilizationMode, fpsRange, combinationStr,
+                                        hasReadoutTimestamp, /*mpc*/false);
                     } catch (Throwable e) {
                         mCollector.addMessage(String.format(
                                 "Output combination %s failed due to: %s",
@@ -403,10 +309,259 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     }
 
+    private boolean verifyCombinationStreaming(
+            List<OutputConfiguration> outputConfigs, Long dynamicProfile,
+            int stabilizationMode, @Nullable Range<Integer> fpsRange,
+            String combinationStr, boolean checkReadoutTimeStamp, boolean mpc)
+            throws Exception {
+
+        createSessionByConfigs(outputConfigs);
+        boolean haveSession = true;
+
+        Set<List<Surface>> surfaceSets = new HashSet<>();
+        List<Surface> surfaceList = new ArrayList<>();
+        List<Surface> secondarySurfaceList = new ArrayList<>();
+        for (OutputConfiguration config : outputConfigs) {
+            if (dynamicProfile == config.getDynamicRangeProfile()) {
+                surfaceList.add(config.getSurface());
+            } else {
+                secondarySurfaceList.add(config.getSurface());
+            }
+        }
+
+        // Check if STANDARD and HLG10 can co-exist. If they co-exist, request
+        // all surfaces at the same time. Otherwise, store surfaces with
+        // incompatible dynamic range profiles in 2 separate sets, and request
+        // the 2 sets separately.
+        if (dynamicProfile != DynamicRangeProfiles.STANDARD) {
+            CameraCharacteristics characteristics =
+                    mStaticInfo.getCharacteristics();
+            DynamicRangeProfiles profiles = characteristics.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES);
+            Set<Long> compatibleProfiles =
+                    profiles.getProfileCaptureRequestConstraints(dynamicProfile);
+            if (compatibleProfiles.contains(DynamicRangeProfiles.STANDARD)) {
+                surfaceList.addAll(secondarySurfaceList);
+            } else if (!secondarySurfaceList.isEmpty()) {
+                surfaceSets.add(secondarySurfaceList);
+            }
+        }
+        surfaceSets.add(surfaceList);
+
+        for (List<Surface> surfaces : surfaceSets) {
+            CaptureRequest.Builder builderForSession = mCamera.createCaptureRequest(
+                    CameraDevice.TEMPLATE_PREVIEW);
+            builderForSession.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                    stabilizationMode);
+            if (fpsRange != null) {
+                builderForSession.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                        fpsRange);
+            }
+
+            for (Surface s : surfaces) {
+                builderForSession.addTarget(s);
+            }
+            List<CaptureRequest> burst = new ArrayList<>();
+            for (int i = 0; i < NUM_BUFFERS_BURST; i++) {
+                burst.add(builderForSession.build());
+            }
+
+            SimpleCaptureCallback captureCallback = new SimpleCaptureCallback();
+            mCameraSession.captureBurst(burst, captureCallback, mHandler);
+
+            List<Long> readoutTimestamps = null;
+            if (checkReadoutTimeStamp) {
+                readoutTimestamps =
+                        captureCallback.getReadoutStartTimestamps(NUM_BUFFERS_BURST);
+            }
+            CaptureResult[] results = new CaptureResult[NUM_BUFFERS_BURST];
+
+            for (int i = 0; i < NUM_BUFFERS_BURST; i++) {
+                CaptureResult result = captureCallback.getCaptureResult(
+                        CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
+                mCollector.expectNotNull("Result is null for combination "
+                        + combinationStr, result);
+                results[i] = result;
+
+                // Check video stabiliztaion mode
+                Integer videoStabilizationMode = result.get(
+                        CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
+                mCollector.expectEquals(
+                        "Stabilization mode doesn't match for combination "
+                                + combinationStr,
+                        videoStabilizationMode, stabilizationMode, mpc);
+
+                // Check frame rate
+                if (fpsRange != null && fpsRange.getUpper().equals(fpsRange.getLower())) {
+                    Range<Integer> resultFpsRange = result.get(
+                            CaptureResult.CONTROL_AE_TARGET_FPS_RANGE);
+                    mCollector.expectEquals("resultFpsRange doesn't match for "
+                                    + "combination " + combinationStr,
+                            resultFpsRange, fpsRange);
+                    Long frameDuration = result.get(
+                            CaptureResult.SENSOR_FRAME_DURATION);
+                    mCollector.expectInRange("frameDuration doesn't match for "
+                                    + combinationStr,
+                            (double) frameDuration,
+                            /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
+                            /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
+
+                    // Check readout timestamp intervals to make sure targetFpsRange
+                    // is met. Skip for Cuttlefish due to performance reasons.
+                    // TODO: (b/321824310) Remove the check once cuttlefish
+                    // performance is improved.
+                    if (!MediaUtils.onCuttlefish() && i > NUM_WARMUP_BUFFERS
+                            && readoutTimestamps != null) {
+                        long readoutInterval = readoutTimestamps.get(i)
+                                - readoutTimestamps.get(i - 1);
+                        mCollector.expectInRange(
+                                "Timestamp readout interval doesn't match for "
+                                        + combinationStr,
+                                (double) readoutInterval,
+                                /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
+                                /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
+                    }
+                }
+            }
+        }
+        return haveSession;
+    }
+
+    /**
+     * Tests whether a combination of streams and the HLG10 dynamic range profile is supported by
+     *  the device
+     * @param combination the V Perf class combination tested
+     * @param cameraDeviceSetup cameraDeviceSetup to call isSessionConfigurationSupported on.
+     * @param maxStreamSizes maximum stream sizes for the device being tested
+     * @throws Exception on camera2 api call operation failure
+     */
+    private void testVPerfClassCombination(int[] combination,
+                                           @Nullable CameraDeviceSetup cameraDeviceSetup,
+                                           MaxStreamSizes maxStreamSizes) throws Exception {
+        // Setup outputs
+        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+        List<SurfaceTexture> privTargets = new ArrayList<SurfaceTexture>();
+        List<ImageReader> jpegTargets = new ArrayList<ImageReader>();
+
+        setupConfigurationTargets(combination, maxStreamSizes,
+                privTargets, jpegTargets, null/*yuvTargets*/, outputConfigs,
+                null/*outputConfigs2Steps*/,
+                NUM_BUFFERS_BURST, DynamicRangeProfiles.HLG10, /*hasUseCase*/ false);
+
+        String combinationStr = MaxStreamSizes.combinationToString(combination);
+
+        boolean haveSession = false;
+        try {
+            if (cameraDeviceSetup != null) {
+                CaptureRequest.Builder builder = cameraDeviceSetup.createCaptureRequest(
+                        CameraDevice.TEMPLATE_PREVIEW);
+                builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                        CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION);
+                CaptureRequest request = builder.build();
+
+                boolean isSessionConfigSupported = isSessionConfigWithParamsSupported(
+                        cameraDeviceSetup, mHandler, outputConfigs,
+                        SessionConfiguration.SESSION_REGULAR, request);
+                mCollector.expectEquals(String.format(
+                        "isSessionConfigurationSupported false for combination %s",
+                        combinationStr), isSessionConfigSupported, true, /*mpc*/true);
+            }
+
+            haveSession = verifyCombinationStreaming(outputConfigs, DynamicRangeProfiles.HLG10,
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION,
+                    /*fpsRange*/null, combinationStr,
+                    /*checkReadoutTimeStamp*/false, /*mpc*/true);
+
+        } catch (Throwable e) {
+            Log.e(TAG, String.format("Output combination %s failed due to: %s",
+                            combinationStr, e.getMessage()));
+            mCollector.addMPCFailure();
+        }
+        if (haveSession) {
+            try {
+                Log.i(TAG, String.format(
+                        "Done with camera %s, config %s, closing session",
+                        mCamera.getId(), combinationStr));
+                stopCapture(/*fast*/false);
+            } catch (Throwable e) {
+                mCollector.addMessage(String.format(
+                        "Closing down for output combination %s failed due to: %s",
+                        combinationStr, e.getMessage()));
+            }
+        }
+
+        for (SurfaceTexture target : privTargets) {
+            target.release();
+        }
+        for (ImageReader target : jpegTargets) {
+            target.close();
+        }
+    }
+
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {"2.2.7.2/7.5/H-1-19"})
+    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    public void testVPerfClassRequirements() throws Exception {
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        CameraRequirement.HLGCombinationRequirement hlgCombinationRequirement =
+                pce.addR7_5__H_1_19();
+        // Note: This must match the required stream combinations defined in [7.5/H-1-19]
+        final int[][] hlg10Combinations = {
+                // HLG10 preview + JPEG Snapshot
+                {PRIV, S1080P, JPEG, MAXIMUM},
+                {PRIV, S720P, JPEG, MAXIMUM},
+        };
+        String rearId =  CameraTestUtils.getPrimaryRearCamera(mCameraManager,
+                getCameraIdsUnderTest());
+        if (rearId == null) {
+            Log.e(TAG, "Primary rear camera not available");
+            hlgCombinationRequirement.setHLGCombinationSupported(false);
+            pce.submitAndCheck();
+            return;
+        }
+        try {
+            // Check for static characteristics advertising HGL10 support
+            openDevice(rearId);
+            Set<Long> dynamicRangeProfiles = mStaticInfo.getAvailableDynamicRangeProfilesChecked();
+            mCollector.expectEquals(
+                    "Primary rear camera does not advertise HLG10 dynamic range profile",
+                    dynamicRangeProfiles.contains(DynamicRangeProfiles.HLG10), true,
+                    /*mpc*/ true);
+
+            CameraCharacteristics characteristics = mStaticInfo.getCharacteristics();
+            boolean supportSessionConfigurationQuery = characteristics.get(
+                    CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION)
+                    > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
+            CameraDeviceSetup cameraDeviceSetup = null;
+            if (supportSessionConfigurationQuery) {
+                cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(rearId);
+                mCollector.expectTrue("SESSION_CONFIGURATION_QUERY supported but " +
+                        " CameraDeviceSetup invalid", cameraDeviceSetup != null);
+            }
+            // Runtime test of HLG10 combinations mandated by MPC
+            for (int[] c : hlg10Combinations) {
+                MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo, mCamera.getId(),
+                        mContext, AspectRatio.AR_16_9);
+                testVPerfClassCombination(c, cameraDeviceSetup, maxStreamSizes);
+            }
+        } catch (Exception e) {
+            Log.i(TAG, String.format("MPC requirement failed due to %s", e.getMessage()));
+            mCollector.addMPCFailure();
+        } finally {
+            closeDevice(rearId);
+        }
+        hlgCombinationRequirement.setHLGCombinationSupported(mCollector.getMPCStatus());
+        pce.submitAndCheck();
+    }
+
     private long setupConfigurationTargets(int[] configs, MaxStreamSizes maxSizes,
             List<SurfaceTexture> privTargets, List<ImageReader> jpegTargets,
             List<ImageReader> yuvTargets, List<OutputConfiguration> outputConfigs,
-            List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
+            @Nullable List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
             int numBuffers, Long dynamicProfile, boolean hasUseCase) {
         ImageDropperListener imageDropperListener = new ImageDropperListener();
 
@@ -432,7 +587,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
-                    outputConfigs2Steps.add(new Pair<>(configNoSurface, textureSurface));
+                    if (outputConfigs2Steps != null) {
+                        outputConfigs2Steps.add(new Pair<>(configNoSurface, textureSurface));
+                    }
                     privTargets.add(target);
                     break;
                 }
@@ -449,7 +606,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
-                    outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
+                    if (outputConfigs2Steps != null) {
+                        outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
+                    }
                     jpegTargets.add(target);
                     break;
                 }
@@ -471,7 +630,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         configNoSurface.setStreamUseCase(configs[i + 2]);
                     }
                     outputConfigs.add(config);
-                    outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
+                    if (outputConfigs2Steps != null) {
+                        outputConfigs2Steps.add(new Pair<>(configNoSurface, target.getSurface()));
+                    }
                     yuvTargets.add(target);
                     break;
                 }

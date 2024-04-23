@@ -24,6 +24,7 @@ import android.media.cujcommon.cts.PipModeTestPlayerListener;
 import android.media.cujcommon.cts.PlaybackTestPlayerListener;
 import android.media.cujcommon.cts.ScrollTestPlayerListener;
 import android.media.cujcommon.cts.SeekTestPlayerListener;
+import android.media.cujcommon.cts.SplitScreenTestPlayerListener;
 import android.media.cujcommon.cts.SwitchAudioTrackTestPlayerListener;
 import android.media.cujcommon.cts.SwitchSubtitleTrackTestPlayerListener;
 import android.platform.test.annotations.PlatinumTest;
@@ -138,6 +139,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setTimeoutMilliSeconds(45000)
             .setPlayerListener(new PipModeTestPlayerListener(5000)).build(),
             "Hevc_720p_15sec_PipModeTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
+            .setTimeoutMilliSeconds(45000)
+            .setPlayerListener(new SplitScreenTestPlayerListener(5000)).build(),
+            "Hevc_720p_15sec_SplitScreenTest"},
     }));
     return exhaustiveArgsList;
   }
@@ -262,8 +267,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
     if (mCujTestParam.playerListener().isOrientationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation.",
-          supportOrientationRequest(mActivity));
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
+          !OrientationTestPlayerListener.getIgnoreOrientationRequest()
+              && supportOrientationRequest(mActivity));
     }
     if (mCujTestParam.playerListener().isPinchToZoomTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " as watch doesn't support zoom behaviour yet",
@@ -276,6 +282,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       Assume.assumeTrue(
           "Skipping " + mTestType + " as device doesn't support picture-in-picture feature",
           deviceSupportPipMode(mActivity));
+    }
+    if (mCujTestParam.playerListener().isSplitScreenTest()) {
+      Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+      Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

@@ -18,11 +18,9 @@ package android.server.wm.jetpack.layout;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assertEqualWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -123,7 +121,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mWindowLayoutComponent =
                 (WindowLayoutComponent) mWindowExtensionTestRule.getExtensionComponent();
@@ -145,11 +143,6 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             wm.addView(view, params);
         });
         return windowContext;
-    }
-
-    private void assumeExtensionVersionSupportsWindowContextLayout() {
-        assumeTrue("This test should only be run on devices with version: ",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
     }
 
     /**
@@ -312,7 +305,6 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     public void testWindowLayoutComponent_providesWindowLayoutFromWindowContext()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         Context windowContext = createContextWithNonActivityWindow();
 
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(windowContext);
@@ -335,7 +327,6 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_windowLayoutMatchesBetweenActivityAndWindowContext()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         TestConfigChangeHandlingActivity activity =
                 (TestConfigChangeHandlingActivity) startFullScreenActivityNewTask(
                         TestConfigChangeHandlingActivity.class, null /* activityId */);
@@ -469,7 +460,6 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     })
     public void testWindowLayoutComponent_updatesWindowLayoutFromContextAfterRotation()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         assumeSupportsRotation();
 
         final TestConfigChangeHandlingActivity activity = startFullScreenActivityNewTask(

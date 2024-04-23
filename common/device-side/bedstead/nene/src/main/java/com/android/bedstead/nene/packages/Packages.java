@@ -33,7 +33,7 @@ import static android.os.Build.VERSION_CODES.R;
 
 import static com.android.bedstead.permissions.CommonPermissions.INSTALL_TEST_ONLY_PACKAGE;
 import static com.android.bedstead.permissions.CommonPermissions.USE_SYSTEM_DATA_LOADERS;
-import static com.android.compatibility.common.util.FileUtils.readInputStreamFully;
+import static com.android.bedstead.nene.utils.FileUtils.readInputStreamFully;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -44,6 +44,7 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -66,7 +67,7 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.UndoableContext;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -292,7 +293,7 @@ public final class Packages {
                 Collection<Package> beforePackages = TestApis.packages().installedForUser(user);
 
                 // Expected output "Success"
-                ShellCommand.builderForUser(user, "pm install")
+                String unused = ShellCommand.builderForUser(user, "pm install")
                         .addOperand("-r") // Reinstall automatically
                         .addOperand("-t") // Allow test-only install
                         .addOperand(apkFile.getAbsolutePath())
@@ -370,7 +371,7 @@ public final class Packages {
             if (TestApis.packages().instrumented().isInstantApp()) {
                 // We should install using stdin with the byte array
                 try {
-                    ShellCommand.builderForUser(user, "pm install")
+                    String unused = ShellCommand.builderForUser(user, "pm install")
                             .addOperand("-t") // Allow installing test apks
                             .addOperand("-r") // Replace existing apps
                             .addOption("-S", apkFile.length) // Install from stdin
@@ -414,7 +415,7 @@ public final class Packages {
                     PackageInstaller.SessionParams sessionParams =
                             new PackageInstaller.SessionParams(
                                     MODE_FULL_INSTALL);
-                    sessionParams.setInstallFlagAllowTest();
+                    TestApisReflectionKt.setInstallFlagAllowTest(sessionParams);
                     sessionId = packageInstaller.createSession(sessionParams);
                 }
 
@@ -477,7 +478,7 @@ public final class Packages {
         try {
             Collection<Package> beforePackages = TestApis.packages().installedForUser(user);
 
-            ShellCommand.builderForUser(user, "pm install")
+            String unused = ShellCommand.builderForUser(user, "pm install")
                     .addOperand("-t") // Allow installing test apks
                     .addOperand("-r") // Replace existing apps
                     .addOption("-S", apkFile.length) // Install from stdin
@@ -584,11 +585,11 @@ public final class Packages {
                 mPackageAddedIntentFilter);
 
         if (user.equals(TestApis.users().instrumented())) {
-            broadcastReceiver.register();
+            BlockingBroadcastReceiver unused = broadcastReceiver.register();
         } else if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.Q)) {
             try (PermissionContext p =
                          TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-                broadcastReceiver.register();
+                BlockingBroadcastReceiver unused = broadcastReceiver.register();
             }
         } else {
             return null;
@@ -719,7 +720,7 @@ public final class Packages {
         TestApis.settings().global().putInt(PACKAGE_VERIFIER_INCLUDE_ADB, verify ? 1 : 0);
 
         return new UndoableContext(() -> {
-            setVerifyAdbInstalls(originalVerifyAdbInstalls);
+            UndoableContext unused = setVerifyAdbInstalls(originalVerifyAdbInstalls);
         });
     }
 
@@ -737,19 +738,29 @@ public final class Packages {
     }
 
     /**
+     * Finds the browser assigned to handle browsing intents
+     *
+     * @return the package for the default browser if there is one, null otherwise.
+     */
+    @Experimental
+    public Package defaultBrowser() {
+        return defaultBrowser(/* forUser= */ TestApis.users().instrumented());
+    }
+
+    /**
      * Finds the browser assigned to handle browsing intents by default for selected user.
      *
      * @return the package for the default browser if there is one, null otherwise.
      */
     @SuppressWarnings("NewApi")
     @Experimental
-    public Package defaultBrowserForUser(UserReference user) {
+    public Package defaultBrowser(UserReference user) {
         ResolveInfo resolvedActivity;
         List<ResolveInfo> possibleActivities;
         Intent toResolve = new Intent(ACTION_VIEW, Uri.parse("http://"));
 
         PackageManager pm = TestApis.context()
-                .instrumentationContextAsUser(user)
+                .androidContextAsUser(user)
                 .getPackageManager();
 
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.T)) {

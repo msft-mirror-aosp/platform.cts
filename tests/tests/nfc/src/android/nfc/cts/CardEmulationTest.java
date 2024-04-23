@@ -435,6 +435,30 @@ public class CardEmulationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testTypeAOneLoopPollingLoopToForeground() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext,
+                            CtsMyHostApduService.class)));
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+            ensurePreferredService(CtsMyHostApduService.class);
+            notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testTypeAPollingLoopToForegroundWithWalletHolder() {
@@ -990,11 +1014,18 @@ public class CardEmulationTest {
     }
 
     private PollingFrame createFrame(@PollingFrameType int type) {
+        if (type == PollingFrame.POLLING_LOOP_TYPE_ON
+                || type == PollingFrame.POLLING_LOOP_TYPE_OFF) {
+            return new PollingFrame(type,
+                    new byte[] { ((type == PollingFrame.POLLING_LOOP_TYPE_ON)
+                            ? (byte) 0x01 : (byte) 0x00) }, 8, 0,
+                    false);
+        }
         return new PollingFrame(type, null, 8, 0, false);
     }
 
     private PollingFrame createFrameWithData(@PollingFrameType int type, byte[] data) {
-        return new PollingFrame(type, data, 8, Integer.MAX_VALUE + 1, false);
+        return new PollingFrame(type, data, 8, (long) Integer.MAX_VALUE + 1L, false);
     }
 
     private ComponentName setDefaultPaymentService(Class serviceClass) {
@@ -1056,6 +1087,8 @@ public class CardEmulationTest {
                 Assert.assertEquals(mFrames.get(mFrameIndex).getType(), receivedFrame.getType());
                 Assert.assertEquals(mFrames.get(mFrameIndex).getVendorSpecificGain(),
                         receivedFrame.getVendorSpecificGain());
+                Assert.assertEquals(mFrames.get(mFrameIndex).getTimestamp(),
+                        receivedFrame.getTimestamp());
                 Assert.assertArrayEquals(mFrames.get(mFrameIndex).getData(),
                         receivedFrame.getData());
                 mFrameIndex++;

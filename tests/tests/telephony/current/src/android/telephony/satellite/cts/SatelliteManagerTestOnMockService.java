@@ -1949,6 +1949,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             requestSatelliteEnabledForDemoMode(true);
             assertTrue(stateCallback.waitUntilResult(1));
             assertTrue(isSatelliteEnabled());
+            assertTrue(getIsEmergency());
             sSatelliteManager.unregisterForModemStateChanged(stateCallback);
 
             logd("testSendSatelliteDatagram_DemoMode_success: sendSatelliteDatagramSuccess");
@@ -1988,6 +1989,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             transmissionUpdateCallback.clearReceiveDatagramStateChanges();
             stopTransmissionUpdates(transmissionUpdateCallback);
 
+            datagramCallback.waitUntilResult(1);
             // Because demo mode is on, the received datagram should be the same as the
             // last sent datagram
             assertTrue(Arrays.equals(
@@ -2104,6 +2106,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             stateCallback.clearModemStates();
         }
         requestSatelliteEnabledForDemoMode(true);
+        assertTrue(getIsEmergency());
         assertTrue(stateCallback.waitUntilResult(1));
         assertTrue(sMockSatelliteServiceManager.setShouldSendDatagramToModemInDemoMode(true));
 
@@ -2403,6 +2406,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             stateCallback.clearModemStates();
         }
         requestSatelliteEnabledForDemoMode(true);
+        assertTrue(getIsEmergency());
         assertTrue(stateCallback.waitUntilResult(1));
 
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
@@ -2620,6 +2624,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             stateCallback.clearModemStates();
         }
         requestSatelliteEnabledForDemoMode(true);
+        assertTrue(getIsEmergency());
         assertTrue(stateCallback.waitUntilResult(1));
 
         sSatelliteManager.setDeviceAlignedWithSatellite(true);
@@ -3288,6 +3293,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             stateCallback.clearModemStates();
         }
         requestSatelliteEnabledForDemoMode(true);
+        assertTrue(getIsEmergency());
         assertTrue(stateCallback.waitUntilResult(1));
         assertTrue(sMockSatelliteServiceManager.setShouldSendDatagramToModemInDemoMode(false));
 
@@ -4620,6 +4626,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private boolean getIsSatelliteEnabledForCarrierFromMockService() {
         Boolean receivedResult = sMockSatelliteServiceManager.getIsSatelliteEnabledForCarrier();
+        return receivedResult != null ? receivedResult : false;
+    }
+
+    private boolean getIsEmergency() {
+        Boolean receivedResult = sMockSatelliteServiceManager.getIsEmergency();
         return receivedResult != null ? receivedResult : false;
     }
 

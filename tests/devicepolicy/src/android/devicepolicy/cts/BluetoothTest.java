@@ -53,7 +53,9 @@ import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
@@ -77,7 +79,7 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
 import com.android.interactive.annotations.NotFullyAutomated;
@@ -299,6 +301,7 @@ public final class BluetoothTest {
         }
     }
 
+    @Ignore("b/333377966")
     @CannotSetPolicyTest(policy = DisallowBluetoothSharingPreU.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
@@ -411,12 +414,13 @@ public final class BluetoothTest {
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
+    @RequireRunOnInitialUser
     public void share_disallowBluetoothAndSharingRestrictionsAreNotSet_canShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
       
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
-                        .isEnabled(TestApis.users().system()))
+                        .isEnabled(TestApis.users().current()))
                 .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
@@ -466,6 +470,7 @@ public final class BluetoothTest {
                         DISALLOW_BLUETOOTH));
     }
 
+    @Ignore("b/333377966")
     @CannotSetPolicyTest(policy = DisallowBluetoothPreU.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")

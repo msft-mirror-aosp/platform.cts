@@ -60,9 +60,9 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SEARCH_SPEC_GROUPING_TYPE_PER_SCHEMA:
                 // fall through
-            case Features.SCHEMA_SET_DELETION_PROPAGATION:
-                // fall through
             case Features.SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES:
+                // fall through
+            case Features.SCHEMA_SET_DESCRIPTION:
                 // fall through
             case Features.SEARCH_SPEC_ADD_FILTER_PROPERTIES:
                 // fall through

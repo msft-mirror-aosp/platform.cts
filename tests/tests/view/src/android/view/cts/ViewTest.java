@@ -4129,24 +4129,29 @@ public class ViewTest {
                 CtsMouseUtil.obtainMouseEvent(MotionEvent.ACTION_SCROLL, mockView,
                         mockView.getWidth() - 1, 0);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
+        mInstrumentation.waitForIdleSync();
         mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         event.setAction(MotionEvent.ACTION_DOWN);
         mInstrumentation.sendPointerSync(event);
         event.setAction(MotionEvent.ACTION_UP);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
+        mInstrumentation.waitForIdleSync();
         mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         // Stylus events should trigger touch mode.
         event.setAction(MotionEvent.ACTION_DOWN);
         event.setSource(InputDevice.SOURCE_STYLUS);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
     }
 
@@ -4767,11 +4772,15 @@ public class ViewTest {
     }
 
     private boolean startDragAndDrop(View view, View.DragShadowBuilder shadowBuilder) {
-        final Point size = new Point();
-        mActivity.getWindowManager().getDefaultDisplay().getSize(size);
+        final int[] viewOnScreenXY = new int[2];
+        View decorView = mActivity.getWindow().getDecorView();
+        decorView.getLocationOnScreen(viewOnScreenXY);
+        int xOnScreen = viewOnScreenXY[0] + decorView.getWidth() / 2;
+        int yOnScreen = viewOnScreenXY[1] + decorView.getHeight() / 2;
+
         final MotionEvent event = MotionEvent.obtain(
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_DOWN, size.x / 2, size.y / 2, 1);
+                MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         mInstrumentation.sendPointerSync(event);
 

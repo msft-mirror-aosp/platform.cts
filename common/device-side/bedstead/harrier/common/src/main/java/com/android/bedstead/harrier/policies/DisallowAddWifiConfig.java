@@ -31,8 +31,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
         APPLIED_BY_DEVICE_OWNER
                 | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                 | APPLIES_GLOBALLY | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-        },
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_WIFI, appliesTo = APPLIES_GLOBALLY))
+        })//,
+// Need to split the policy due to different behaviour for permission based callers
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = MANAGE_DEVICE_POLICY_WIFI, appliesTo = APPLIES_GLOBALLY))
 public final class DisallowAddWifiConfig {
 }

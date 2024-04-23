@@ -1,0 +1,126 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.mediapc.cts.common;
+
+/**
+ * Requirements Classes.
+ */
+public final class Requirements {
+
+{{- range $r := .ReqList.GetRequirements }}
+{{- if $r.GetName }}
+    /**
+      * Create  {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}.
+      {{- with $r.GetDescription}}
+      *
+      * {{.}}{{end}}
+      */
+    public static {{UpperCamelCase $r.GetName}}Requirement create{{ SafeReqID $r.GetId | UpperCase}}() {
+        return {{UpperCamelCase $r.GetName}}Requirement.create();
+     }
+
+    /**
+      * {{ $r.GetId }} {{$r.GetName}}
+      {{- with $r.GetDescription}}
+      *
+      * {{.}}{{end}}
+      */
+    public static final class {{UpperCamelCase $r.GetName}}Requirement extends Requirement {
+
+        /**
+          * {{ $r.GetId }} {{$r.GetName}}
+          {{- with $r.GetDescription}}
+          *
+          * {{.}}{{end}}
+          */
+        public static {{UpperCamelCase $r.GetName}}Requirement create() {
+            {{- range $m_id, $m := $r.GetMeasurements }}
+            {{- $mt := $m.GetMeasurementType}}
+            {{- $c := $m.GetComparison}}
+            var {{LowerCamelCase $m.GetId}} = RequiredMeasurement
+                    .<
+                        {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}Boolean
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}Double
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}Integer
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
+                        {{- else }}{{$mt}}
+                        {{- end }}>builder()
+                    .setId("{{$m.GetId}}")
+                    .setPredicate(RequirementConstants.
+                        {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}BOOLEAN
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}DOUBLE
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}INTEGER
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}STRING
+                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
+                        {{- else }}{{$mt}}
+                        {{- end }}_
+                        {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
+                        {{- else if eq $c.String "COMPARISON_LESS_THAN" -}}LT
+                        {{- else if eq $c.String "COMPARISON_LESS_THAN_OR_EQUAL" -}}LTE
+                        {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GTE
+                        {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
+                        {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
+                        {{- else }}{{$c}}
+                        {{- end }})
+                    {{- range $mpc, $s := $r.GetSpecs }}
+                    {{- with index $s.GetRequiredValues $m.GetId}}
+                    .addRequiredValue({{$mpc}}
+                       {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}, {{.GetBoolValue}}
+                       {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}, {{printf "%f" .GetDoubleValue}}
+                       {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}, {{.GetIntValue}}
+                       {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}, "{{.GetStringValue}}"
+                       {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}, "{{.GetLongValue}}"
+                       {{- else }}{{$mt}}
+                       {{- end }})
+                    {{- end}}
+                    {{- end}}
+                    .build();
+            {{- end }}
+           return new {{UpperCamelCase $r.GetName}}Requirement(
+                    "{{SafeReqID $r.GetId }}"
+                    {{- range $m_id, $m := $r.GetMeasurements }},
+                    {{LowerCamelCase $m.GetId}}
+                    {{- end}});
+        }
+
+
+       {{- range $m_id, $m := $r.GetMeasurements }}
+       {{- $mt := $m.GetMeasurementType}}
+       /** {{$m.GetDescription}} */
+       public void set{{UpperCamelCase $m.GetId}}(
+         {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}boolean
+         {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}double
+         {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}int
+         {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
+         {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
+         {{- else }}{{$mt}}
+         {{- end }} v) {
+           this.setMeasuredValue("{{$m.GetId}}", v);
+       }
+       {{- end }}{{/* range $m_id, $m */}}
+
+       private {{UpperCamelCase $r.GetName}}Requirement(String id, RequiredMeasurement<?>... reqs) {
+           super(id, reqs);
+       }
+
+    }
+{{- end }} {{/* if $r.GetName */}}
+{{- end }} {{/* range $r */}}
+
+  private Requirements () {}
+}

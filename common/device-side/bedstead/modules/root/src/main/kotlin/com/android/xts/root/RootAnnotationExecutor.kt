@@ -16,24 +16,42 @@
 
 package com.android.xts.root
 
+import android.util.Log
 import com.android.bedstead.adb.adb
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Tags
 import com.android.xts.root.Tags.ADB_ROOT
+import com.android.xts.root.Tags.ROOT_INSTRUMENTATION
 import com.android.xts.root.annotations.RequireAdbRoot
+import com.android.xts.root.annotations.RequireRootInstrumentation
 
 /**
  * [AnnotationExecutor] used for parsing [RequireAdbRoot].
  */
 class RootAnnotationExecutor : AnnotationExecutor {
 
-    override fun applyAnnotation(annotation: Annotation?) {
-        if (annotation is RequireAdbRoot) {
-            requireAdbRoot(annotation.failureMode)
+    companion object {
+        private val isInstrumentedAsRoot: Boolean by lazy {
+            // We need to replace this with a better way of discovering root instrumentation
+            try {
+                ShellCommandUtils.uiAutomation().clearOverridePermissionStates(-1)
+                true
+            } catch (e: Exception) {
+                Log.i("RootAnnotationExecutor", "Got exception while trying to act as root", e)
+                false
+            }
+        }
+    }
+
+    override fun applyAnnotation(annotation: Annotation) {
+        when (annotation) {
+            is RequireAdbRoot -> requireAdbRoot(annotation.failureMode)
+            is RequireRootInstrumentation -> requireRootInstrumentation(annotation.failureMode)
         }
     }
 
@@ -44,12 +62,18 @@ class RootAnnotationExecutor : AnnotationExecutor {
             AnnotationExecutorUtil.failOrSkip("Device does not have root available.", failureMode)
         }
     }
-    override fun teardownShareableState() {
-    }
 
-    override fun teardownNonShareableState() {
+    private fun requireRootInstrumentation(failureMode: FailureMode) {
+        if (isInstrumentedAsRoot) {
+            Tags.addTag(ROOT_INSTRUMENTATION)
+        } else {
+            AnnotationExecutorUtil.failOrSkip("Test is not instrumented as root.", failureMode)
+        }
     }
 }
 
 /** True if the currently executing test is supposed to be run with ADB root capabilities. */
 fun DeviceState.testUsesAdbRoot() = Tags.hasTag(ADB_ROOT)
+
+/** True if the currently executing test is supposed to be run with root instrumentation. */
+fun DeviceState.testUsesRootInstrumentation() = Tags.hasTag(ROOT_INSTRUMENTATION)

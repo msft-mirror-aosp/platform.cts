@@ -23,10 +23,12 @@ import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.testapisreflection.TestApisConstants.PROVIDER_FILTER_ALL_PROVIDERS;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.credentials.CredentialManager;
-import android.credentials.CredentialProviderInfo;
+import android.cts.testapisreflection.TestApisReflectionKt;
 
 import androidx.annotation.RequiresApi;
 
@@ -36,8 +38,8 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Helper methods for using credential manager. */
 public final class Credentials {
@@ -68,23 +70,30 @@ public final class Credentials {
                                 WRITE_SECURE_SETTINGS,
                                 READ_DEVICE_CONFIG,
                                 QUERY_ALL_PACKAGES)) {
-            return new HashSet<>(
-                    credentialManager(user)
-                            .getCredentialProviderServicesForTesting(
-                                    CredentialManager.PROVIDER_FILTER_ALL_PROVIDERS));
+            return getCredentialProviderServicesForTesting(user);
         }
+    }
+
+    private static Set<CredentialProviderInfo> getCredentialProviderServicesForTesting(
+            UserReference user) {
+        return TestApisReflectionKt.getCredentialProviderServicesForTesting(
+                        credentialManager(user), PROVIDER_FILTER_ALL_PROVIDERS)
+                .stream().map(c -> new CredentialProviderInfo(c))
+                .collect(Collectors.toSet());
     }
 
     /**
      * Get the current {@link CredentialManager} service or throw a {@link
      * UnsupportedOperationException} if the service is not available.
      */
+    @SuppressLint("NewApi")
     private static CredentialManager credentialManager(UserReference user) {
         Versions.requireMinimumVersion(UPSIDE_DOWN_CAKE);
 
         Context context = TestApis.context().androidContextAsUser(user);
 
-        if (!CredentialManager.isServiceEnabled(context)) {
+        if (!TestApisReflectionKt.isServiceEnabled(
+                context.getSystemService(CredentialManager.class), context)) {
             throw new UnsupportedOperationException(
                     "Credential Manager is not available on this device");
         }

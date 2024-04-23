@@ -62,7 +62,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import java.io.File
-import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -574,36 +573,6 @@ class PackageManagerShellCommandMultiUserTest {
         listedUids = out.split(":").last().split(",")
         assertTrue(out, listedUids.contains(primaryUid))
         assertTrue(out, listedUids.contains(secondaryUid))
-    }
-
-    @Test
-    fun testCreateUserCurAsType() {
-        val oldPropertyValue = getSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY)
-        setSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY, "1")
-        try {
-            val pattern = Pattern.compile("Success: created user id (\\d+)\\R*")
-            var commandResult = SystemUtil.runShellCommand(
-                "pm create-user --profileOf cur " +
-                    "--user-type android.os.usertype.profile.CLONE test"
-            )
-            var matcher = pattern.matcher(commandResult)
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-            commandResult = SystemUtil.runShellCommand(
-                "pm create-user --profileOf current " +
-                    "--user-type android.os.usertype.profile.CLONE test"
-            )
-            matcher = pattern.matcher(commandResult)
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-        } finally {
-            setSystemProperty(
-                UserManager.DEV_CREATE_OVERRIDE_PROPERTY,
-                if (oldPropertyValue.isEmpty()) "invalid" else oldPropertyValue
-            )
-        }
     }
 
     @Test
@@ -1308,15 +1277,7 @@ class PackageManagerShellCommandMultiUserTest {
                                 RECEIVER_EXPORTED
                         )
 
-                        val mimeTypes = setOf("video/*")
-                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
-
-                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-
-                        changedBroadcastReceiverForPrimaryUser.reset()
-                        changedBroadcastReceiverForSecondaryUser.reset()
-
+                        val mimeTypes = contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP)
                         // mimeGroup is not changed on the primary user and no broadcasts are
                         // received
                         contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)

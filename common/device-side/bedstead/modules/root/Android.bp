@@ -2,6 +2,26 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+filegroup {
+    name: "bedstead-root-annotations-srcs",
+    srcs: [
+        "src/main/kotlin/com/android/xts/root/annotations/*.kt",
+    ],
+}
+
+java_library {
+    name: "bedstead-root-annotations",
+    srcs: [":bedstead-root-annotations-srcs"],
+    static_libs: [
+        "HarrierCommonAndroid",
+        "auto_value_annotations",
+    ],
+
+    sdk_version: "current",
+
+    plugins: ["auto_annotation_plugin"],
+}
+
 android_library {
     name: "bedstead-root",
     srcs: [
@@ -12,6 +32,7 @@ android_library {
     static_libs: [
         "Harrier",
         "bedstead-adb",
+        "bedstead-root-annotations",
     ],
 }
 

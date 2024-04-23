@@ -410,11 +410,10 @@ public class VideoCodecRequirementsTest {
             }
             for (boolean isEncoder : new boolean[] {true, false}) {
                 Size finalRequiredSize = requiredSize;
+                Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
                 isSupported = selectHardwareCodecs(mediaType, null, null, isEncoder).stream()
-                        .allMatch(codec -> MediaUtils.supports(codec, mediaType,
-                                finalRequiredSize.getWidth(), finalRequiredSize.getHeight())
-                                && MediaUtils.supports(codec, mediaType,
-                                finalRequiredSize.getHeight(), finalRequiredSize.getWidth()));
+                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize)
+                                && MediaUtils.supports(codec, mediaType, rotatedSize));
                 if (!isSupported) {
                     break outerloop;
                 }

@@ -20,14 +20,11 @@ from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
-import image_processing_utils
+import capture_request_utils
 import its_session_utils
 import preview_stabilization_utils
-import sensor_fusion_utils
 import video_processing_utils
 
-_FMT_CODE_PRV = 0x22
-_FMT_CODE_JPG = 0x100
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -111,10 +108,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
       logging.debug('stabilization modes: %s', stabilization_params)
 
-      # TODO: b/269142636 - Add HLG10 check for preview recording.
-      hlg10_params = [False]
-      logging.debug('hlg10 modes: %s', hlg10_params)
-
       configs = props['android.scaler.streamConfigurationMap'][
           'availableStreamConfigurations']
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
@@ -131,10 +124,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           size = [int(e) for e in stream['size'].split('x')]
           if stream['format'] == 'priv':
             preview_size = stream['size']
-            fmt = _FMT_CODE_PRV
+            fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
-            # TODO: b/269142636 - Add YUV and PRIVATE
-            fmt = _FMT_CODE_JPG
+            # TODO: b/269142636 - Add YUV
+            fmt = capture_request_utils.FMT_CODE_JPEG
           config = [x for x in configs if
                     x['format'] == fmt and
                     x['width'] == size[0] and
@@ -165,17 +158,25 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             fps[1] in _FPS_30_60 and
             max_achievable_fps >= fps[1] - _FPS_SELECTION_ATOL)]
 
-        for hlg10 in hlg10_params:
-          # Construct output surfaces
-          output_surfaces = []
-          for configured_stream in configured_streams:
-            output_surfaces.append({'format': configured_stream['format'],
-                                    'width': configured_stream['width'],
-                                    'height': configured_stream['height'],
-                                    'hlg10': hlg10})
+        for fps_range in fps_params:
+          # HLG10
+          hlg10_params = [False]
+          if cam.is_hlg10_recording_supported_for_size_and_fps(
+              preview_size, fps_range[1]):
+            hlg10_params.append(True)
 
-          for stabilize in stabilization_params:
-            for fps_range in fps_params:
+          for hlg10 in hlg10_params:
+            # Construct output surfaces
+            output_surfaces = []
+            for configured_stream in configured_streams:
+              if configured_stream['format'] != 'priv':
+                hlg10 = False
+              output_surfaces.append({'format': configured_stream['format'],
+                                      'width': configured_stream['width'],
+                                      'height': configured_stream['height'],
+                                      'hlg10': hlg10})
+
+            for stabilize in stabilization_params:
               settings = {
                   'android.control.videoStabilizationMode': stabilize,
                   'android.control.aeTargetFpsRange': fps_range,
@@ -238,7 +239,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                  stabilization_result['failure'])
                   test_failures.append(failure_msg)
 
-              # TODO: b/269142636 - Verify HLG10
+              # Verify color space
+              color_space = video_processing_utils.get_video_colorspace(
+                  self.log_path, preview_file_name_with_path)
+              if (hlg10 and
+                  video_processing_utils.COLORSPACE_HDR not in color_space):
+                failure_msg = (
+                    f'{combination_name}: video color space {color_space} '
+                    'is missing COLORSPACE_HDR')
+                test_failures.append(failure_msg)
 
       # Assert PASS/FAIL criteria
       if test_failures:

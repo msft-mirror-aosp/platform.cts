@@ -153,7 +153,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
           continue
 
         ret = do_capture_and_determine_sharpness(
-            cam, edge_mode, s, e, fd, out_surface, chart, self.log_path)
+            cam, edge_mode, s, e, fd, out_surface, chart, name_with_log_path)
         edge_mode_reported_regular.append(ret['edge_mode'])
         sharpness_regular.append(ret['sharpness'])
 

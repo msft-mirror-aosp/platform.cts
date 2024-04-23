@@ -21,6 +21,7 @@ import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
+import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -228,7 +229,8 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         JSONArray codecConfigs = obj.getJSONArray("CodecConfigs");
         int th = Runtime.getRuntime().availableProcessors() / 2;
         th = Math.min(Math.max(1, th), 8);
-        String filter = "libvmaf=feature=name=psnr:model=version=vmaf_v0.6.1:n_threads=" + th;
+        String filter = "feature=name=psnr:model=version=vmaf_v0.6.1\\\\:enable_transform=true"
+                + ":n_threads=" + th;
         for (int i = 0; i < codecConfigs.length(); i++) {
             JSONObject codecConfig = codecConfigs.getJSONObject(i);
             String outputName = codecConfig.getString("EncodedFileName");
@@ -238,7 +240,7 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
             cmd += " -hide_banner";
             cmd += " -i " + outDir + "/" + outputName + ".mp4" + " -an";
             cmd += " -i " + "samples/" + refFileName + " -an";
-            cmd += " -filter_complex " + "\"" + filter + "\"";
+            cmd += " -lavfi libvmaf=" + "\'" + filter + "\'";
             cmd += " -f null -";
             cmd += " > " + outputVmafPath + " 2>&1";
             LogUtil.CLog.i("ffmpeg command : " + cmd);
@@ -343,17 +345,24 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
                     + testRunResult.getName() + ": " + testRunResult.getRunFailureMessage());
         }
         if (testRunResult.getNumTests() != testRunResult.getPassedTests().size()) {
-            StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
             for (Map.Entry<TestDescription, TestResult> resultEntry :
                     testRunResult.getTestResults().entrySet()) {
-                if (!resultEntry.getValue().getStatus()
-                        .equals(com.android.ddmlib.testrunner.TestResult.TestStatus.PASSED)) {
+                if (resultEntry.getValue().getStatus().equals(TestStatus.FAILURE)) {
+                    StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
                     errorBuilder.append(resultEntry.getKey().toString());
                     errorBuilder.append(":\n");
                     errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    throw new AssertionError(errorBuilder.toString());
+                }
+                if (resultEntry.getValue().getStatus().equals(TestStatus.ASSUMPTION_FAILURE)) {
+                    StringBuilder errorBuilder =
+                            new StringBuilder("On-device tests assumption failed:\n");
+                    errorBuilder.append(resultEntry.getKey().toString());
+                    errorBuilder.append(":\n");
+                    errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    Assume.assumeTrue(errorBuilder.toString(), false);
                 }
             }
-            throw new AssertionError(errorBuilder.toString());
         }
     }
 }

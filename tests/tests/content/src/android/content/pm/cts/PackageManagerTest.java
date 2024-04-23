@@ -25,6 +25,7 @@ import static android.Manifest.permission.QUARANTINE_APPS;
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Intent.FLAG_EXCLUDE_STOPPED_PACKAGES;
+import static android.content.IntentFilter.BLOCK_NULL_ACTION_INTENTS;
 import static android.content.pm.ApplicationInfo.FLAG_HAS_CODE;
 import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
@@ -67,6 +68,7 @@ import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_IN
 import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.parsePackageDump;
 import static android.os.UserHandle.CURRENT;
 import static android.os.UserHandle.USER_CURRENT;
+import static android.security.Flags.FLAG_BLOCK_NULL_ACTION_INTENTS;
 import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -83,6 +85,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
+import android.Manifest;
 import android.annotation.NonNull;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -393,7 +396,8 @@ public class PackageManagerTest {
         uninstallPackage(CTS_TARGET_SDK_24_PACKAGE_NAME);
         SystemUtil.runWithShellPermissionIdentity(() ->
                         CompatChanges.removePackageOverrides(mContext.getPackageName(),
-                                Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID)),
+                                Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
+                                        BLOCK_NULL_ACTION_INTENTS)),
                 OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
     }
 
@@ -739,6 +743,49 @@ public class PackageManagerTest {
         assertEquals(1, results.size());
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
         assertEquals(1, results.size());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
+    public void testNullActionMatching() {
+        final var activityFlags = PackageManager.ResolveInfoFlags.of(
+                PackageManager.MATCH_DEFAULT_ONLY);
+        final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
+
+        // Create a package explicit intent with null action
+        Intent intent = new Intent();
+        intent.setPackage(INTENT_RESOLUTION_TEST_PKG_NAME);
+        List<ResolveInfo> results;
+
+        // Test legacy behavior
+        final var disable = Map.of(BLOCK_NULL_ACTION_INTENTS,
+                new PackageOverride.Builder().setEnabled(false).build());
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        // Null action intent should match
+        results = mPackageManager.queryIntentActivities(intent, activityFlags);
+        assertFalse(results.isEmpty());
+        results = mPackageManager.queryIntentServices(intent, emptyFlags);
+        assertFalse(results.isEmpty());
+        results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+        assertFalse(results.isEmpty());
+
+        // Test new behavior
+        final var enable = Map.of(BLOCK_NULL_ACTION_INTENTS,
+                new PackageOverride.Builder().setEnabled(true).build());
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                        CompatChanges.putPackageOverrides(mContext.getPackageName(), enable),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        // Null action intent should not match
+        results = mPackageManager.queryIntentActivities(intent, activityFlags);
+        assertTrue(results.isEmpty());
+        results = mPackageManager.queryIntentServices(intent, emptyFlags);
+        assertTrue(results.isEmpty());
+        results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+        assertTrue(results.isEmpty());
     }
 
     private boolean containsActivityInfoName(String expectedName, List<ResolveInfo> resolves) {
@@ -1487,9 +1534,11 @@ public class PackageManagerTest {
         // Check ContentProviders
         ProviderInfo provider = findPackageItemOrFail(pkgInfo.providers, PROVIDER_NAME);
         assertTrue(provider.enabled);
-        assertFalse(provider.exported); // Don't export by default.
         assertEquals(PACKAGE_NAME, provider.packageName);
         assertEquals("ctstest", provider.authority);
+        ProviderInfo nonExportedProvider =
+                findPackageItemOrFail(pkgInfo.providers, "android.content.cts.MockBuggyProvider");
+        assertFalse(nonExportedProvider.exported); // Don't export by default.
 
         // Check Receivers
         ActivityInfo receiver = findPackageItemOrFail(pkgInfo.receivers, RECEIVER_NAME);
@@ -2380,7 +2429,8 @@ public class PackageManagerTest {
             if (expectedResultStartsWith != null) {
                 assertThat(statusMessage.get()).startsWith(expectedResultStartsWith);
             }
-        }, INSTALL_PACKAGES);
+        }, INSTALL_PACKAGES, Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL);
     }
 
     @Test

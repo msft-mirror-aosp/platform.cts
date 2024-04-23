@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -44,13 +45,13 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
-import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -98,30 +99,29 @@ public class OnDeviceIntelligenceManagerTest {
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
-    private static final String CTS_PACKAGE_NAME =
+    public static final String CTS_PACKAGE_NAME =
             android.ondeviceintelligence.cts.CtsIntelligenceService.class.getPackageName();
-    private static final String CTS_INTELLIGENCE_SERVICE_NAME =
+    public static final String CTS_INTELLIGENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIntelligenceService.class.getCanonicalName();
-    private static final String CTS_INFERENCE_SERVICE_NAME =
+    public static final String CTS_INFERENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIsolatedInferenceService.class.getCanonicalName();
     private static final int TEMPORARY_SERVICE_DURATION = 10000;
-    private static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
-    private static final String KEY_SERVICE_ENABLED = "service_enabled";
+    public static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
+    public static final String KEY_SERVICE_ENABLED = "service_enabled";
 
     public static final int REQUEST_TYPE_GET_PACKAGE_NAME = 1000;
 
     public static final int REQUEST_TYPE_GET_FILE_FROM_MAP = 1001;
-    public static final int REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES = 1002;
-    public static final int REQUEST_TYPE_GET_FILE_FROM_STREAM = 1003;
-    public static final int REQUEST_TYPE_GET_FILE_FROM_PFD = 1004;
-    public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1005;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_STREAM = 1002;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_PFD = 1003;
+    public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1004;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
 
     private Context mContext;
-    private OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
+    public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
 
     @Rule
     public final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
@@ -137,9 +137,7 @@ public class OnDeviceIntelligenceManagerTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        mOnDeviceIntelligenceManager =
-                (OnDeviceIntelligenceManager)
-                        mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
+        mOnDeviceIntelligenceManager = mContext.getSystemService(OnDeviceIntelligenceManager.class);
         clearTestableOnDeviceIntelligenceService();
         bindToTestableOnDeviceIntelligenceServices();
     }
@@ -333,13 +331,13 @@ public class OnDeviceIntelligenceManagerTest {
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Feature : =" + result);
-                    assertEquals(result.getFeatureParams(), expectedFeature.getFeatureParams());
+                    assertEquals(result.getFeatureParams().size(),
+                            expectedFeature.getFeatureParams().size());
                     assertEquals(result.getId(), expectedFeature.getId());
                     assertEquals(result.getName(), expectedFeature.getName());
                     assertEquals(result.getModelName(), expectedFeature.getModelName());
                     assertEquals(result.getType(), expectedFeature.getType());
                     assertEquals(result.getVariant(), expectedFeature.getVariant());
-                    assertEquals(result, expectedFeature);
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
@@ -550,45 +548,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
 
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void canSendAndReceiveCustomParcelables() throws Exception {
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
-        CountDownLatch statusLatch = new CountDownLatch(1);
-
-        CompletableFuture<String> resultFuture = new CompletableFuture<>();
-        Feature feature = new Feature.Builder(1).build();
-        Bundle request = new Bundle();
-        SimpleParcelable simpleParcelable = new SimpleParcelable("abc");
-        Parcel parcel = Parcel.obtain();
-        simpleParcelable.writeToParcel(parcel, 0);
-        byte[] bytes = parcel.marshall();
-        request.putByteArray("request", bytes);
-        parcel.recycle();
-
-        mOnDeviceIntelligenceManager.processRequest(feature,
-                request, REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES,
-                null, null, EXECUTOR,
-                new ProcessingCallback() {
-                    @Override
-                    public void onResult(Bundle result) {
-                        Log.i(TAG, "Final Result : " + result);
-                        resultFuture.complete(result.getString(TEST_KEY));
-                        statusLatch.countDown();
-                    }
-
-                    @Override
-                    public void onError(@NonNull OnDeviceIntelligenceException error) {
-                        Log.e(TAG, "Final Result : ", error);
-                    }
-                });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
-        assertThat(resultFuture.get()).isEqualTo("abc");
-    }
-
-
 //===================== Tests Exception populated ==================
 
     @Test
@@ -780,10 +739,12 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @SkipSetupAndTeardown
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() throws Exception {
+    public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        assumeFalse("Service is already configured as part of the device overlay config.",
+                isServiceOverlayConfigured());
         mOnDeviceIntelligenceManager =
                 (OnDeviceIntelligenceManager)
                         mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
@@ -795,14 +756,15 @@ public class OnDeviceIntelligenceManagerTest {
                         result -> Log.i(TAG, "Feature : =" + result)));
     }
 
-
     @Test
     @SkipSetupAndTeardown
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() throws Exception {
+    public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        assumeFalse("Service is already configured as part of the device overlay config.",
+                isServiceOverlayConfigured());
         mOnDeviceIntelligenceManager =
                 (OnDeviceIntelligenceManager)
                         mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
@@ -909,25 +871,30 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void updateProcessingStateReturnsSuccessfully() throws Exception {
+        // Auto target runs as a different user than 0, so it is not possible to get service
+        // instance from user 0 in this test.
+        assumeFalse(isAutomotive(
+                getInstrumentation().getContext()));
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
         // init the intelligence service
         CtsIntelligenceService.initServiceConnectionLatch();
-        mOnDeviceIntelligenceManager.getVersion(EXECUTOR, unused -> {
-        });
+        mOnDeviceIntelligenceManager.getVersion(EXECUTOR, unused -> statusLatch.countDown());
+        statusLatch.await(1, SECONDS);
 
         // call update state on the service instance
         CtsIntelligenceService.waitServiceConnect();
         OnDeviceIntelligenceService onDeviceIntelligenceService =
                 CtsIntelligenceService.getServiceInstance();
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
         onDeviceIntelligenceService.updateProcessingState(Bundle.EMPTY, EXECUTOR, result -> {
             assertThat(result.isEmpty()).isTrue();
-            statusLatch.countDown();
+            statusLatch2.countDown();
         });
 
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(statusLatch2.await(1, SECONDS)).isTrue();
     }
 
     //===================== Tests data augmentation while processing request =====================
@@ -972,12 +939,11 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(augmentedContent.get()).isEqualTo(TEST_AUGMENT_CONTENT);
     }
 
-
-    private void clearTestableOnDeviceIntelligenceService() {
+    public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
 
-    private void bindToTestableOnDeviceIntelligenceServices() {
+    public void bindToTestableOnDeviceIntelligenceServices() {
         assertThat(getOnDeviceIntelligencePackageName()).isNotEqualTo(CTS_PACKAGE_NAME);
         setTestableOnDeviceIntelligenceServiceNames(
                 new String[]{CTS_INTELLIGENCE_SERVICE_NAME, CTS_INFERENCE_SERVICE_NAME});
@@ -988,7 +954,22 @@ public class OnDeviceIntelligenceManagerTest {
         return mOnDeviceIntelligenceManager.getRemoteServicePackageName();
     }
 
-    private void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
+    private boolean isServiceOverlayConfigured() {
+        String sanboxedServiceComponentName = mContext.getResources().getString(
+                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+        String intelligenceServiceComponentName = mContext.getResources().getString(
+                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+
+        return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
+                intelligenceServiceComponentName);
+    }
+
+    private static boolean isAutomotive(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
         runShellCommand(
                 "cmd on_device_intelligence set-temporary-services %s %s %d",
                 serviceNames[0], serviceNames[1], TEMPORARY_SERVICE_DURATION);

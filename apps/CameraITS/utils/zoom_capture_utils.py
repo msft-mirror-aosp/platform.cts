@@ -38,8 +38,10 @@ _OFFSET_RTOL_MIN_FD = 0.30
 _RADIUS_RTOL_MIN_FD = 0.15
 OFFSET_RTOL = 0.15
 RADIUS_RTOL = 0.10
+ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio between capture result vs req
+JPEG_STR = 'jpg'
 
 
 def get_test_tols_and_cap_size(cam, props, chart_distance, debug):

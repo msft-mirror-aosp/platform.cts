@@ -38,25 +38,25 @@ _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 _PREVIEW_DURATION = 400  # milliseconds
-_ZOOM_MIN_THRESH = 2.0
 
 
-def collect_data(cam, tablet_device, preview_size, stabilize,
-                 rot_rig, fps_range=None, hlg10=False, ois=False):
+def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
+                 zoom_ratio=None, fps_range=None, hlg10=False, ois=False):
   """Capture a new set of data from the device.
 
   Captures camera preview frames while the user is moving the device in
   the prescribed manner.
 
   Args:
-    cam: camera object
-    tablet_device: boolean; based on config file
+    cam: camera object.
+    tablet_device: boolean; based on config file.
     preview_size: str; preview stream resolution. ex. '1920x1080'
-    stabilize: boolean; whether preview stabilization is ON
-    rot_rig: dict with 'cntl' and 'ch' defined
+    stabilize: boolean; whether preview stabilization is ON.
+    rot_rig: dict with 'cntl' and 'ch' defined.
+    zoom_ratio: float; static zoom ratio. None if default zoom.
     fps_range: list; target fps range.
-    hlg10: boolean; whether to capture hlg10 output
-    ois: boolean; whether optical image stabilization is ON
+    hlg10: boolean; whether to capture hlg10 output.
+    ois: boolean; whether optical image stabilization is ON.
 
   Returns:
     recording object; a dictionary containing output path, video size, etc.
@@ -97,8 +97,9 @@ def collect_data(cam, tablet_device, preview_size, stabilize,
   min_fps = fps_range[0] if (fps_range is not None) else None
   max_fps = fps_range[1] if (fps_range is not None) else None
   recording_obj = cam.do_preview_recording(
-      preview_size, _VIDEO_DURATION, stabilize, ois, ae_target_fps_min=min_fps,
-      ae_target_fps_max=max_fps, hlg10_enabled=hlg10)
+      preview_size, _VIDEO_DURATION, stabilize, ois, zoom_ratio=zoom_ratio,
+      ae_target_fps_min=min_fps, ae_target_fps_max=max_fps, hlg10_enabled=hlg10)
+
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
 
@@ -109,15 +110,16 @@ def collect_data(cam, tablet_device, preview_size, stabilize,
 
 
 def verify_preview_stabilization(recording_obj, gyro_events,
-                                 test_name, log_path, facing):
+                                 test_name, log_path, facing, zoom_ratio=None):
   """Verify the returned recording is properly stabilized.
 
   Args:
     recording_obj: Camcorder recording object.
     gyro_events: Gyroscope events collected while recording.
-    test_name: Name of the test
-    log_path: Path for the log file
-    facing: Facing of the camera device
+    test_name: Name of the test.
+    log_path: Path for the log file.
+    facing: Facing of the camera device.
+    zoom_ratio: Static zoom ratio. None if default zoom.
 
   Returns:
     A dictionary containing the maximum gyro angle, the maximum camera angle,
@@ -141,16 +143,20 @@ def verify_preview_stabilization(recording_obj, gyro_events,
         os.path.join(log_path, file)
     )
     frames.append(img / 255)
-  frame_shape = frames[0].shape
-  logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
+  frame_h, frame_w, _ = frames[0].shape
+  logging.debug('Frame size %d x %d', frame_w, frame_h)
 
   # Extract camera rotations
-  img_h = frames[0].shape[0]
-  file_name_stem = f'{os.path.join(log_path, test_name)}_{video_size}'
+  if zoom_ratio:
+    zoom_ratio_suffix = f'{zoom_ratio:.1f}'
+  else:
+    zoom_ratio_suffix = '1'
+  file_name_stem = (
+      f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x')
   cam_rots = sensor_fusion_utils.get_cam_rotations(
       frames[_START_FRAME:],
       facing,
-      img_h,
+      frame_h,
       file_name_stem,
       _START_FRAME,
       stabilized_video=True
@@ -162,7 +168,8 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   # Extract gyro rotations
   sensor_fusion_utils.plot_gyro_events(
-      gyro_events, f'{test_name}_{video_size}', log_path)
+      gyro_events, f'{test_name}_{video_size}_{zoom_ratio_suffix}x',
+      log_path)
   gyro_rots = sensor_fusion_utils.conv_acceleration_to_movement(
       gyro_events, _VIDEO_DELAY_TIME)
   max_gyro_angle = sensor_fusion_utils.calc_max_rotation_angle(
@@ -252,7 +259,11 @@ def get_max_preview_test_size(cam, camera_id):
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
-  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
+  resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = [size for size in supported_preview_sizes
+                             if resolution_to_area(size)
+                             >= video_processing_utils.LOWEST_RES_TESTED_AREA]
   logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
 
   if _HIGH_RES_SIZE in supported_preview_sizes:

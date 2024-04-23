@@ -40,12 +40,12 @@ public final class Broadcasts {
     @Experimental
     public void waitForBroadcastBarrier(String reason) {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            ShellCommand.builder("am")
+            String unused = ShellCommand.builder("am")
                     .addOperand("wait-for-broadcast-barrier")
                     .validate(s -> s.contains("Loopers drained!") || s.contains("barrier passed"))
                     .executeOrThrowNeneException("Error waiting for broadcast barrier");
         } else {
-            ShellCommand.builder("am")
+            String unused = ShellCommand.builder("am")
                     .addOperand("wait-for-broadcast-idle")
                     .validate(s -> s.contains("are idle!"))
                     .executeOrThrowNeneException("Error waiting for broadcast idle");
@@ -62,7 +62,7 @@ public final class Broadcasts {
     @Experimental
     public void waitForBroadcastDispatch(String broadcastAction, String reason) {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            ShellCommand.builder("am")
+            String unused = ShellCommand.builder("am")
                     .addOperand("wait-for-broadcast-dispatch")
                     .addOption("-a", broadcastAction)
                     .executeOrThrowNeneException("Error waiting for broadcast barrier");

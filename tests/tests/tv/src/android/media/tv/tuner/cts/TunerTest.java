@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -42,6 +43,7 @@ import android.media.tv.tuner.cts.configuration.v1.TunerCtsConfiguration;
 import android.media.tv.tuner.cts.configuration.v1.XmlParser;
 import android.media.tv.tuner.dvr.DvrPlayback;
 import android.media.tv.tuner.dvr.DvrRecorder;
+import android.media.tv.tuner.dvr.DvrSettings;
 import android.media.tv.tuner.dvr.OnPlaybackStatusChangedListener;
 import android.media.tv.tuner.dvr.OnRecordStatusChangedListener;
 import android.media.tv.tuner.filter.AlpFilterConfiguration;
@@ -139,6 +141,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -1119,6 +1122,8 @@ public class TunerTest {
         lnbCB1.resetOnDiseqcMessageCalled();
 
         List<Integer> ids = mTuner.getFrontendIds();
+        // We don't accept a device connect to LNB but no frontend.
+        assertNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -1655,6 +1660,7 @@ public class TunerTest {
     @Test
     public void testResourceReclaimed() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -1678,6 +1684,7 @@ public class TunerTest {
     @Test
     public void testResourceReclaimedDifferentThread() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -1728,8 +1735,9 @@ public class TunerTest {
     @Test
     public void testResourceReclaimedDifferentProcess() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
-        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
@@ -1823,6 +1831,7 @@ public class TunerTest {
     public void testShareFrontendFromTuner() throws Exception {
         Tuner tuner100 = new Tuner(mContext, null, 100);
         List<Integer> ids = tuner100.getFrontendIds();
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = tuner100.getFrontendInfoById(ids.get(targetFrontendId));
@@ -1915,9 +1924,7 @@ public class TunerTest {
 
     private void testTransferFeOwnershipSingleTuner() {
         List<Integer> ids = mTuner.getFrontendIds();
-        if (ids == null) {
-            return;
-        }
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -1991,7 +1998,7 @@ public class TunerTest {
 
     private void testTransferFeAndCiCamOwnership() {
         List<Integer> ids = mTuner.getFrontendIds();
-        assertNotNull(ids);
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -2053,7 +2060,7 @@ public class TunerTest {
 
     private void testTransferFeAndLnbOwnership() {
         List<Integer> ids = mTuner.getFrontendIds();
-        assertNotNull(ids);
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
@@ -2129,7 +2136,7 @@ public class TunerTest {
         Tuner other = new Tuner(mContext, null, 100);
 
         List<Integer> ids = other.getFrontendIds();
-        if (ids == null) return;
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = other.getFrontendInfoById(ids.get(targetFrontendId));
@@ -2187,9 +2194,7 @@ public class TunerTest {
     @Test
     public void testCloseFrontend() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
-        if (ids == null) {
-            return;
-        }
+        assumeNotNull(ids);
 
         // SCENARIO 1 - without Lnb
         assertFalse(ids.isEmpty());
@@ -2702,14 +2707,9 @@ public class TunerTest {
         String token2 = f.acquireSharedFilterToken();
         assertTrue(token2 == null);
 
-        // Tune a frontend before start the filter
-        List<Integer> ids = mTuner.getFrontendIds();
-        assertFalse(ids.isEmpty());
-
-        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        int res = mTuner.tune(createFrontendSettings(info));
-        assertEquals(Tuner.RESULT_SUCCESS, res);
+        // Use DvrPlayback as data source
+        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        assertNotNull(d);
 
         Settings settings = SectionSettingsWithTableInfo
                 .builder(Filter.TYPE_TS)
@@ -2734,9 +2734,7 @@ public class TunerTest {
         assertEquals(f.read(new byte[3], 0, 3), 0);
         assertEquals(f.stop(), Tuner.RESULT_INVALID_STATE);
 
-        res = mTuner.cancelTuning();
-        assertEquals(Tuner.RESULT_SUCCESS, res);
-
+        d.close();
         f.freeSharedFilterToken(token1);
         f.close();
         f = null;
@@ -2851,19 +2849,14 @@ public class TunerTest {
         String token = f.acquireSharedFilterToken();
         assertTrue(token != null);
 
-        // Tune a frontend before start the shared filter
-        List<Integer> ids = mTuner.getFrontendIds();
-        assertFalse(ids.isEmpty());
+        // Use DvrPlayer as data source
+        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        assertNotNull(d);
 
-        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        int res = mTuner.tune(createFrontendSettings(info));
-        assertEquals(Tuner.RESULT_SUCCESS, res);
         assertTrue(mSharedFilterTestServer.verifySharedFilter(token));
 
-        res = mTuner.cancelTuning();
-        assertEquals(Tuner.RESULT_SUCCESS, res);
 
+        d.close();
         f.freeSharedFilterToken(token);
         f.close();
         f = null;
@@ -2896,29 +2889,28 @@ public class TunerTest {
 
             f.configure(config);
 
-            // Tune a frontend before starting the filter
-            List<Integer> ids = mTuner.getFrontendIds();
-            assertFalse(ids.isEmpty());
-
-            int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
-            FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-            int res = mTuner.tune(createFrontendSettings(info));
-            assertEquals(Tuner.RESULT_SUCCESS, res);
+            DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+            assertNotNull(d);
+            d.configure(getDvrSettings());
 
             // start / stop prevents initial race condition after first setting the time delay.
             f.start();
             f.stop();
 
             mLockLatch = new CountDownLatch(1);
+            d.start();
             f.start();
+
+            byte[] buffer = getTestDataBuffer();
+            d.read(buffer, 0, buffer.length);
             assertTrue(mLockLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
             Instant finish = Instant.now();
             Duration timeElapsed = Duration.between(start, finish);
             assertTrue(timeElapsed.toMillis() >= timeDelayInMs);
 
-            res = mTuner.cancelTuning();
-            assertEquals(Tuner.RESULT_SUCCESS, res);
+            d.stop();
+            d.close();
         } else {
             assertEquals(Tuner.RESULT_UNAVAILABLE, status);
         }
@@ -2941,6 +2933,7 @@ public class TunerTest {
     @Test
     public void testMaxNumberOfFrontends() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         for (int i = 0; i < ids.size(); i++) {
             int type = mTuner.getFrontendInfoById(ids.get(i)).getType();
@@ -3480,6 +3473,27 @@ public class TunerTest {
                     break;
             }
         return null;
+    }
+
+    private DvrSettings getDvrSettings() {
+        return DvrSettings
+                .builder()
+                .setStatusMask(Filter.STATUS_DATA_READY)
+                .setLowThreshold(200L)
+                .setHighThreshold(800L)
+                .setPacketSize(188L)
+                .setDataFormat(DvrSettings.DATA_FORMAT_TS)
+                .build();
+    }
+
+    private byte[] getTestDataBuffer() {
+        byte[] data = new byte[]{
+            0x47, 0x40, 0x00, 0x10, 0x00, 0x00, (byte) 0xB0, 0x0D, 0x00, 0x01,
+            (byte) 0xC1, 0x00, 0x00, 0x00, 0x01, (byte) 0xF0, 0x00, 0x2A, (byte) 0xB1,
+            0x04, (byte) 0xB2
+        };
+
+        return Arrays.copyOf(data, 188);
     }
 
     static public int getFirstCapable(int caps) {

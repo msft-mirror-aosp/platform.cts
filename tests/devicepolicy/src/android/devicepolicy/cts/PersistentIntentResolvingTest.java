@@ -148,7 +148,7 @@ public final class PersistentIntentResolvingTest {
                                 .whereType().isEqualTo(
                                         EventId.ADD_PERSISTENT_PREFERRED_ACTIVITY_VALUE)
                                 .whereAdminPackageName().isEqualTo(
-                                        sDeviceState.dpc().componentName().getPackageName())
+                                        sDeviceState.dpc().packageName())
                                 .whereStrings().contains(testAppInstance.packageName()))
                         .wasLogged();
             } finally {

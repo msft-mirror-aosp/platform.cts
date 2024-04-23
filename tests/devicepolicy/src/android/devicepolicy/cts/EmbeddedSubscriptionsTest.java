@@ -21,9 +21,8 @@ import static com.android.bedstead.nene.utils.Assert.assertThrows;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.admin.flags.Flags;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
@@ -36,8 +35,6 @@ import com.android.compatibility.common.util.ApiTest;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Set;
@@ -49,10 +46,6 @@ public final class EmbeddedSubscriptionsTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    public final TestRule mCheckFlagsRule = RuleChain
-            .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
-            .around(sDeviceState);
-
     // TODO(b/325267476): Figure out how to test the download operation as that requires
     //                    contacting a server
 
@@ -61,7 +54,7 @@ public final class EmbeddedSubscriptionsTest {
     })
     @CanSetPolicyTest(policy = EmbeddedSubscription.class)
     @Postsubmit(reason = "new test")
-    @RequiresFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
+    @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
     @Test
     public void getSubscriptionIds_initiallyEmpty() {
         Set<Integer> managedSubscriptions =
@@ -71,7 +64,7 @@ public final class EmbeddedSubscriptionsTest {
 
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getSubscriptionIds")
     @CannotSetPolicyTest(policy = EmbeddedSubscription.class)
-    @RequiresFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
+    @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     public void getSubscriptionIds_noPermission_throws() throws Exception {

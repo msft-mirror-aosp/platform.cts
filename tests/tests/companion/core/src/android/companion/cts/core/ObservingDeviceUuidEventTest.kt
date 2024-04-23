@@ -16,6 +16,8 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.BLUETOOTH_CONNECT
+import android.Manifest.permission.BLUETOOTH_SCAN
 import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
 import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
@@ -28,6 +30,7 @@ import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.UUID_A
 import android.companion.cts.common.UUID_B
+import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.assertValidCompanionDeviceServicesBind
 import android.companion.cts.common.assertValidCompanionDeviceServicesRemainBound
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
@@ -49,7 +52,7 @@ import org.junit.runner.RunWith
  *
  * @see android.companion.CompanionDeviceManager.startObservingDevicePresence
  * @see android.companion.CompanionDeviceManager.stopObservingDevicePresence
- * @see android.companion.CompanionDeviceService.onDeviceEventByUuid
+ * @see android.companion.CompanionDeviceService.onDevicePresenceEvent
  */
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
@@ -64,7 +67,9 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         PrimaryCompanionService.clearDeviceUuidPresence()
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request_A)
             cdm.stopObservingDevicePresence(request_B)
@@ -91,16 +96,29 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
             }
         }
 
+        assertFailsWith(SecurityException::class) {
+            withShellPermissionIdentity(
+                BLUETOOTH_CONNECT,
+                BLUETOOTH_SCAN
+            ) {
+                cdm.stopObservingDevicePresence(request_A)
+            }
+        }
+
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
                 cdm.startObservingDevicePresence(request_A)
         }
 
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
                 cdm.stopObservingDevicePresence(request_A)
         }
@@ -122,32 +140,30 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     fun test_startObservingDeviceUuidPresence_singleDevice() {
         withShellPermissionIdentity(
             REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
+            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request_A)
         }
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertValidCompanionDeviceServicesBind()
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitDeviceUuidDisconnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_DISCONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
 
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request_A)
         }
@@ -159,7 +175,9 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     fun test_startObservingDeviceUuidPresence_multiDevices() {
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request_A)
             cdm.startObservingDevicePresence(request_B)
@@ -167,11 +185,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -182,11 +197,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_B, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_B)
-
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -215,7 +227,9 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request_B)
             cdm.stopObservingDevicePresence(request_A)
@@ -239,24 +253,23 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
-        assertEquals(
-                expected = EVENT_BLE_APPEARED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
+
         // Start observing by UUID.
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request_A)
         }
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         // Now, stop observing by MAC_ADDRESS.
@@ -272,7 +285,9 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         // Lastly, stop observing by UUID.
         withShellPermissionIdentity(
             REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            BLUETOOTH_CONNECT,
+            BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request_A)
         }

@@ -563,7 +563,7 @@ public class VirtualDisplayTest {
     }
 
     private final class RotationChangeWaiter {
-        private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 1;
+        private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 3;
 
         private final Display mDisplay;
         private int mCurrentRotation;

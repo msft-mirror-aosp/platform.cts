@@ -27,10 +27,12 @@ import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Process.myUid;
 
+import static com.android.bedstead.permissions.CommonPermissions.CHANGE_APP_IDLE_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.FORCE_STOP_PACKAGES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.permissions.CommonPermissions.PACKAGE_USAGE_STATS;
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -41,6 +43,7 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.app.UiAutomation;
 import android.app.role.RoleManager;
+import android.app.usage.UsageStatsManager;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
@@ -48,6 +51,7 @@ import android.content.pm.CrossProfileApps;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.util.Log;
@@ -63,18 +67,20 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Retry;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
-import com.android.compatibility.common.util.BlockingCallback.DefaultBlockingCallback;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.File;
 import java.util.Arrays;
@@ -129,7 +135,7 @@ public final class Package {
 
         try {
             // Expected output "Package X installed for user: Y"
-            ShellCommand.builderForUser(user, "cmd package install-existing")
+            String unused = ShellCommand.builderForUser(user, "cmd package install-existing")
                     .addOperand(mPackageName)
                     .validate(
                             (output) -> output.contains("installed for user"))
@@ -146,9 +152,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package install(UserReference user, File apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile);
     }
@@ -158,9 +165,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package install(UserReference user, Supplier<File> apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile.get());
     }
@@ -170,9 +178,10 @@ public final class Package {
      * possible, otherwise installing fresh.
      */
     public Package installBytes(UserReference user, byte[] apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile);
     }
@@ -181,10 +190,12 @@ public final class Package {
      * Install this package on the given user, using {@link #installExisting(UserReference)} if
      * possible, otherwise installing fresh.
      */
+    @CanIgnoreReturnValue
     public Package installBytes(UserReference user, Supplier<byte[]> apkFile) {
-        if (exists()) {
-            return installExisting(user);
-        }
+        // TODO(open bug): This was causing race conditions - need to look into it and restore
+//        if (exists()) {
+//            return installExisting(user);
+//        }
 
         return TestApis.packages().install(user, apkFile.get());
     }
@@ -192,9 +203,10 @@ public final class Package {
     /**
      * Uninstall the package for all users.
      */
+    @CanIgnoreReturnValue
     public Package uninstallFromAllUsers() {
         for (UserReference user : installedOnUsers()) {
-            uninstall(user);
+            Package unused = uninstall(user);
         }
 
         return this;
@@ -205,9 +217,13 @@ public final class Package {
      *
      * <p>If the package is not installed for the given user, nothing will happen.
      */
+    @CanIgnoreReturnValue
     public Package uninstall(UserReference user) {
         if (user == null) {
             throw new NullPointerException();
+        }
+        if (!user.exists()) {
+            return this;
         }
 
         IntentFilter packageRemovedIntentFilter =
@@ -225,11 +241,11 @@ public final class Package {
             if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.R)) {
                 try (PermissionContext p = TestApis.permissions().withPermission(
                         INTERACT_ACROSS_USERS_FULL)) {
-                    broadcastReceiver.register();
+                    BlockingBroadcastReceiver unused = broadcastReceiver.register();
                 }
                 canWaitForBroadcast = true;
             } else if (user.equals(TestApis.users().instrumented())) {
-                broadcastReceiver.register();
+                BlockingBroadcastReceiver unused = broadcastReceiver.register();
                 canWaitForBroadcast = true;
             }
 
@@ -288,9 +304,10 @@ public final class Package {
      * Enable this package for the given {@link UserReference}.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public Package enable(UserReference user) {
         try {
-            ShellCommand.builderForUser(user, "pm enable")
+            String unused = ShellCommand.builderForUser(user, "pm enable")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -312,11 +329,12 @@ public final class Package {
      * Disable this package for the given {@link UserReference}.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public Package disable(UserReference user) {
         try {
             // TODO(279387509): "pm disable" is currently broken for packages - restore to normal
             //  disable when fixed
-            ShellCommand.builderForUser(user, "pm disable-user")
+            String unused = ShellCommand.builderForUser(user, "pm disable-user")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -350,6 +368,7 @@ public final class Package {
      * <p>The package must be installed on the user, must request the given permission, and the
      * permission must be a runtime permission.
      */
+    @CanIgnoreReturnValue
     public Package grantPermission(UserReference user, String permission) {
         // There is no readable output upon failure so we need to check ourselves
         checkCanGrantOrRevokePermission(user, permission);
@@ -358,7 +377,7 @@ public final class Package {
             // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
             boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
-            ShellCommand.builderForUser(user, "pm grant")
+            String unused = ShellCommand.builderForUser(user, "pm grant")
                     .asRoot(shouldRunAsRoot)
                     .addOperand(packageName())
                     .addOperand(permission)
@@ -398,6 +417,7 @@ public final class Package {
      *
      * <p>You can not deny permissions for the current package on the current user.
      */
+    @CanIgnoreReturnValue
     public Package denyPermission(UserReference user, String permission) {
         if (!hasPermission(user, permission)) {
             return this; // Already denied
@@ -411,16 +431,11 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
-
         sUiAutomation.revokeRuntimePermission(packageName(), permission);
 
         String message = "Error denying permission " + permission
                 + " to package " + this + " on user " + user
-                + ". Command appeared successful but not revoked."
-                + (shouldRunAsRoot ? "" : " If this test requires permissions that can only be "
-                + "granted on devices where adb has root. Add @RequireAdbRoot to the test.");
+                + ". Command appeared successful but not revoked.";
         assertWithMessage(message).that(hasPermission(user, permission)).isFalse();
 
         return this;
@@ -430,15 +445,6 @@ public final class Package {
         if (!installedOnUser(user)) {
             throw new NeneException("Attempting to grant " + permission + " to " + this
                     + " on user " + user + ". But it is not installed");
-        }
-
-        // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
-        boolean shouldRunAsRoot = Tags.hasTag("adb-root");
-        if (shouldRunAsRoot) {
-            // If the test is being run as root, every permission can be granted or revoked.
-            Log.i(LOG_TAG,
-                    "checkCanGrantOrRevokePermission skipped as test is being run as root");
-            return;
         }
 
         try {
@@ -458,7 +464,7 @@ public final class Package {
                         + permission + " which was not requested by package " + packageName());
             }
         } catch (PackageManager.NameNotFoundException e) {
-            throw new NeneException("Permission does not exist: " + permission);
+            throw new NeneException("Permission does not exist: " + permission, e);
         }
     }
 
@@ -740,7 +746,7 @@ public final class Package {
 
             int previousPid = shouldCheckPreviousProcess ? runningProcess().pid() : -1;
 
-            Poll.forValue("Application flag", () -> {
+            Integer unused = Poll.forValue("Application flag", () -> {
                 userActivityManager.forceStopPackage(mPackageName);
 
                 return userPackageManager.getPackageInfo(mPackageName,
@@ -964,6 +970,7 @@ public final class Package {
      * Set this package as filling the given role on the instrumented user.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public RoleContext setAsRoleHolder(String role) {
         return setAsRoleHolder(role, TestApis.users().instrumented());
     }
@@ -972,6 +979,7 @@ public final class Package {
      * Set this package as filling the given role.
      */
     @Experimental
+    @CanIgnoreReturnValue
     public RoleContext setAsRoleHolder(String role, UserReference user) {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_ROLE_HOLDERS, INTERACT_ACROSS_USERS_FULL)) {
@@ -1092,9 +1100,11 @@ public final class Package {
      */
     @Experimental
     public boolean canConfigureInteractAcrossProfiles(UserReference user) {
-        return TestApis.context().androidContextAsUser(user)
-                .getSystemService(CrossProfileApps.class)
-                .canConfigureInteractAcrossProfiles(packageName());
+        CrossProfileApps crossProfileApps = TestApis.context().androidContextAsUser(user)
+                .getSystemService(CrossProfileApps.class);
+
+        return TestApisReflectionKt.canConfigureInteractAcrossProfiles(crossProfileApps,
+                packageName());
     }
 
     /**
@@ -1102,7 +1112,7 @@ public final class Package {
      */
     @Experimental
     public void setAllowTestApiAccess(boolean allowed) {
-        ShellCommand.builder("am compat")
+        String unused = ShellCommand.builder("am compat")
                 .addOperand(allowed ? "enable" : "disable")
                 .addOperand("ALLOW_TEST_API_ACCESS")
                 .addOperand(packageName())
@@ -1138,12 +1148,32 @@ public final class Package {
      */
     @Experimental
     public int getAppStandbyBucket(UserReference user) {
-        try {
-            return ShellCommand.builderForUser(user, "am get-standby-bucket")
-                .addOperand(mPackageName)
-                .executeAndParseOutput(o -> Integer.parseInt(o.trim()));
-        } catch (AdbException e) {
-            throw new NeneException("Could not get app standby bucket " + this, e);
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                PACKAGE_USAGE_STATS, INTERACT_ACROSS_USERS_FULL)) {
+            var usageStatsMgr = TestApis.context().androidContextAsUser(user)
+                    .getSystemService(UsageStatsManager.class);
+            return usageStatsMgr.getAppStandbyBucket(mPackageName);
+        }
+    }
+
+    /**
+     * Set the app standby bucket of the package.
+     */
+    @Experimental
+    public void setAppStandbyBucket(int bucket) {
+        setAppStandbyBucket(TestApis.users().instrumented(), bucket);
+    }
+
+    /**
+     * Set the app standby bucket of the package.
+     */
+    @Experimental
+    public void setAppStandbyBucket(UserReference user, int bucket) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                CHANGE_APP_IDLE_STATE, INTERACT_ACROSS_USERS_FULL)) {
+            var usageStatsMgr = TestApis.context().androidContextAsUser(user)
+                    .getSystemService(UsageStatsManager.class);
+            usageStatsMgr.setAppStandbyBucket(mPackageName, bucket);
         }
     }
 
@@ -1151,7 +1181,7 @@ public final class Package {
     @Experimental
     public void setAppLinksToAllApproved() {
         try {
-            ShellCommand.builder("pm set-app-links")
+            String unused = ShellCommand.builder("pm set-app-links")
                     .addOption("--package", this.mPackageName)
                     .addOperand(2) // 2 = STATE_APPROVED
                     .addOperand("all")
@@ -1169,7 +1199,7 @@ public final class Package {
 
     @Experimental
     public void clearStorage() {
-        ShellCommand.builder("pm clear")
+        String unused = ShellCommand.builder("pm clear")
                 .addOperand(mPackageName)
                 .validate(ShellCommandUtils::startsWithSuccess)
                 .executeOrThrowNeneException("Error clearing storage for " + this);

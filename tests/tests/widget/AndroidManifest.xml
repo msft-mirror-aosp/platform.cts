@@ -156,6 +156,7 @@
 
         <activity android:name="android.widget.cts.SpinnerCtsActivity"
              android:label="SpinnerCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -409,6 +410,7 @@
 
         <activity android:name="android.widget.cts.TextViewCtsActivity"
                   android:label="TextViewCtsActivity"
+                  android:theme="@style/OptOutEdgeToEdgeEnforcement"
                   android:screenOrientation="locked"
                   android:exported="true"
                   android:windowSoftInputMode="stateAlwaysHidden">
@@ -559,6 +561,7 @@
 
         <activity android:name="android.widget.cts.ZoomButtonCtsActivity"
              android:label="ZoomButtonCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -595,6 +598,7 @@
 
         <activity android:name="android.widget.cts.SearchViewCtsActivity"
              android:label="SearchViewCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -641,6 +645,7 @@
 
         <activity android:name="android.widget.cts.RadioButtonCtsActivity"
              android:label="RadioButtonCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

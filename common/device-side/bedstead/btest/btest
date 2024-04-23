@@ -478,6 +478,18 @@ supported_modules = {
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
     },
+    "bedstead-flags-test": {
+        "package": "com.android.bedstead.flags.test",
+        "path": "com.android.bedstead.flags",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-multiuser-test": {
+        "package": "com.android.bedstead.multiuser.test",
+        "path": "com.android.bedstead.multiuser",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
 }
 
 TARGET_NAME = "target"
@@ -540,6 +552,7 @@ def get_args():
     parser.add_argument("-n", "--interactive", action='store', nargs='?', default="disabled", help="Run interactive tests. This will exclude non-interactive tests and will enable manual testing. Pass 'bi' to build and install automations, 't' to use automations (default) and m to enable manual interaction (default)")
     parser.add_argument("--stop-after-first-failure", action="store_true", help="If true, will stop execution after encountering a single failure")
     parser.add_argument("--rerun-after-all-pass", action="store_true", help="If true, will re-start the run if all pass")
+    parser.add_argument("-r", "--root", action="store_true", help="Run rooted tests. This will ensure that adb is running as root and will include tests annotated as @RequireAdbRoot - which are otherwise excluded.")
     # parser.add_argument("--capture-bugreport-after-crash", action="store_true", help="If true, will capture a bug report on failure due to a process or system server crash")
     parser.add_argument("--timer", action="store", choices=['junit', 'btest'], default='junit', help="Either 'junit' (default) which is the internal junit timer and reflects the numbers shown on dashboards, etc. or 'btest' which tracks the actual time from the start of the test to the result being posted (including bedstead setup and teardown)")
     args = parser.parse_args()
@@ -719,6 +732,11 @@ class Test:
             self.include_annotations.append("com.android.interactive.annotations.Interactive")
         else:
             self.exclude_annotations.append("com.android.interactive.annotations.Interactive")
+
+        if self.args.root:
+            self.include_annotations.append("com.android.xts.root.annotations.RequireAdbRoot")
+        else:
+            self.exclude_annotations.append("com.android.xts.root.annotations.RequireAdbRoot")
 
     def run(self):
         execute_shell_command("Test", self.args, ["adb", "shell", "am", "start-user ", str(self.state.get_user())])
@@ -1099,7 +1117,8 @@ def create_clone_profile(device_state, args, parent_id):
 def create_private_profile(device_state, args, parent_id):
     ensure_no_dpcs(device_state, args) # avoid no_add_private_profile TODO: Be more specific
     commands = ["adb", "shell", "pm", "create-user", "--profileOf", str(parent_id), "--user-type android.os.usertype.profile.PRIVATE"]
-
+    if device_state["sdk_version"] >= 34:
+        commands.append("--for-testing")
     commands.append("user")
 
     output, err = execute_shell_command("Test", args, commands)
@@ -1256,6 +1275,11 @@ def run_tests(args):
     instrumented_runs = {}
     for module in args.modules:
         instrumented_runs[module] = [target[1] for target in args.targets if target[0] == module and target[1] is not None]
+
+    if (args.root):
+        execute_shell_command("Test", args, ["adb", "root"])
+    else:
+        execute_shell_command("Test", args, ["adb", "unroot"])
 
     try:
         for i, state in enumerate(states):

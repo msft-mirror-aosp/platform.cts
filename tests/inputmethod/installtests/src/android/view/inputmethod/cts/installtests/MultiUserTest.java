@@ -28,6 +28,7 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.InstantAppInfo;
+import android.content.pm.PackageManager;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -51,6 +52,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -76,7 +78,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @LargeTest
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public class MultiUserTest {
@@ -128,9 +129,12 @@ public class MultiUserTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @EnsureHasSecondaryUser
-    public void testSecondaryUser() throws Exception {
+    @EnsureHasAdditionalUser  // Required on Android Automotive
+    public void testSecondaryUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser = sDeviceState.secondaryUser();
+        final UserReference secondaryUser =
+                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
+
         final int currentUserId = currentUser.id();
         final int secondaryUserId = secondaryUser.id();
 
@@ -184,6 +188,10 @@ public class MultiUserTest {
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, secondaryUserId);
+    }
+
+    private boolean isRunningOnAuto() {
+        return TestApis.packages().features().contains(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     /**

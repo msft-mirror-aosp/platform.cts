@@ -19,6 +19,7 @@ package android.server.wm.jetpack.utils;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -28,6 +29,8 @@ import androidx.annotation.Nullable;
 public class TestFocusActivity extends TestActivityWithId {
 
     private static final int FOCUSABLE_VIEW_COUNT = 3;
+
+    private View mInitialFocusedView;
 
     private int mLastKeyCode = 0;
 
@@ -45,8 +48,10 @@ public class TestFocusActivity extends TestActivityWithId {
             button.setLayoutParams(new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-            // Sets the center view as the default-focused view.
-            button.setFocusedByDefault(i == (FOCUSABLE_VIEW_COUNT + 1) / 2);
+            // Sets the center view as the initial focused view.
+            if (i == (FOCUSABLE_VIEW_COUNT + 1) / 2) {
+                mInitialFocusedView = button;
+            }
 
             // Debug only
             button.setOnFocusChangeListener((v , hasFocus) -> Log.d(getClass().getSimpleName(),
@@ -59,6 +64,10 @@ public class TestFocusActivity extends TestActivityWithId {
         // Debug only
         contentView.getViewTreeObserver().addOnTouchModeChangeListener(isInTouchMode -> Log.d(
                 getClass().getSimpleName(), "onTouchModeChanged isInTouchMode=" + isInTouchMode));
+    }
+
+    public boolean resetFocusedView() {
+        return mInitialFocusedView.requestFocus();
     }
 
     public int getFocusableViewCount() {

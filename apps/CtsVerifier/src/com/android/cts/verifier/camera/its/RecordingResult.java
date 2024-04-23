@@ -31,7 +31,9 @@ public class RecordingResult {
             CaptureResult.LENS_FOCUS_DISTANCE,
             CaptureResult.SCALER_CROP_REGION,
             CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID,
-            CaptureResult.LENS_INTRINSIC_CALIBRATION
+            CaptureResult.LENS_INTRINSIC_CALIBRATION,
+            // TODO: b/332581106 - Evaluate if data added by samples surpasses socket limit
+            CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;

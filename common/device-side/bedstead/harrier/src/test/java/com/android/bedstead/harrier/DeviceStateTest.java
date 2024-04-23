@@ -35,13 +35,13 @@ import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeleg
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
 import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
-import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -60,12 +60,9 @@ import android.view.contentcapture.ContentCaptureManager;
 
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDemoMode;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
@@ -75,7 +72,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
@@ -84,7 +80,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
@@ -101,6 +96,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermissi
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
+import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports;
@@ -114,10 +111,7 @@ import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
 import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireGmsBuild;
-import com.android.bedstead.harrier.annotations.RequireGuestUserIsEphemeral;
-import com.android.bedstead.harrier.annotations.RequireGuestUserIsNotEphemeral;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireHasMainUser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice;
@@ -161,12 +155,16 @@ import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexis
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
+import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
@@ -179,12 +177,18 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
+import com.android.bedstead.nene.display.Display;
+import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Tags;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.NotFoundException;
@@ -1103,13 +1107,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @RequireHasMainUser(reason = "Test")
-    public void requireHasMainUser_hasMainUser() {
-        assertThat(TestApis.users().main()).isNotNull();
-    }
-
-
-    @Test
     @RequireLowRamDevice(reason = "Test")
     public void requireLowRamDeviceAnnotation_isLowRamDevice() {
         assertThat(TestApis.context().instrumentedContext().getSystemService(ActivityManager.class)
@@ -1126,34 +1123,30 @@ public class DeviceStateTest {
     @Test
     @RequireVisibleBackgroundUsers(reason = "Test")
     public void requireVisibleBackgroundUsersAnnotation_supported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersSupported()).isTrue();
+        assertThat(TestApis.users().isVisibleBackgroundUsersSupported()).isTrue();
     }
 
     @Test
     @RequireNotVisibleBackgroundUsers(reason = "Test")
     public void requireNotVisibleBackgroundUsersAnnotation_notSupported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersSupported()).isFalse();
+        assertThat(TestApis.users().isVisibleBackgroundUsersSupported()).isFalse();
     }
 
     @Test
     @RequireVisibleBackgroundUsersOnDefaultDisplay(reason = "Test")
     public void requireVisibleBackgroundUsersOnDefaultDisplayAnnotation_supported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersOnDefaultDisplaySupported()).isTrue();
+        assertThat(TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()).isTrue();
     }
 
     @Test
     @RequireNotVisibleBackgroundUsersOnDefaultDisplay(reason = "Test")
     public void requireNotVisibleBackgroundUsersOnDefaultDisplayAnnotation_notSupported() {
-        assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .isVisibleBackgroundUsersOnDefaultDisplaySupported()).isFalse();
+        assertThat(TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()).isFalse();
     }
 
     @Test
     @TestTag("TestTag")
-    public void testTagAnnoation_testTagIsSet() {
+    public void testTagAnnotation_testTagIsSet() {
         assertThat(Tags.hasTag("TestTag")).isTrue();
     }
 
@@ -1472,14 +1465,6 @@ public class DeviceStateTest {
     @Test
     public void requireNotInstantAppAnnotation_isNotInstantApp() {
         assertThat(TestApis.packages().instrumented().isInstantApp()).isFalse();
-    }
-
-    @EnsureCanAddUser(number = 2)
-    @Test
-    public void ensureCanAddUser_canAddUsers() {
-        try (UserReference user = TestApis.users().createUser().create();
-             UserReference secondUser = TestApis.users().createUser().create()) {
-        }
     }
 
     @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)
@@ -1803,23 +1788,58 @@ public class DeviceStateTest {
         ).isFalse();
     }
 
-    @RequireGuestUserIsEphemeral
     @Test
-    public void requireGuestUserIsEphemeral_guestUserIsEphemeral() {
-        assertThat(TestApis
-                .resources()
-                .system()
-                .getBoolean("config_guestUserEphemeral")
-        ).isTrue();
+    @EnsureUsingScreenOrientation(orientation = DisplayProperties.ScreenOrientation.LANDSCAPE)
+    public void ensureUsingScreenOrientation_landscape_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.LANDSCAPE);
     }
 
-    @RequireGuestUserIsNotEphemeral
     @Test
-    public void requireGuestUserIsNotEphemeral_guestUserIsNotEphemeral() {
-        assertThat(TestApis
-                .resources()
-                .system()
-                .getBoolean("config_guestUserEphemeral")
-        ).isFalse();
+    @EnsureUsingScreenOrientation(orientation = DisplayProperties.ScreenOrientation.PORTRAIT)
+    public void ensureUsingScreenOrientation_portrait_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
+    }
+
+    @Test
+    @EnsureUsingDisplayTheme(theme = DisplayProperties.Theme.DARK)
+    public void ensureUsingDisplayTheme_setDark_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.DARK);
+    }
+
+    @Test
+    @EnsureUsingDisplayTheme(theme = DisplayProperties.Theme.LIGHT)
+    public void ensureUsingDisplayTheme_setLight_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
+    }
+
+    @Test
+    @IncludeLandscapeOrientation
+    public void includeRunOnLandscapeOrientationDevice_orientationIsSet() {
+        assertThat(
+                Display.INSTANCE.getScreenOrientation()
+        ).isEqualTo(DisplayProperties.ScreenOrientation.LANDSCAPE);
+    }
+
+    @Test
+    @IncludePortraitOrientation
+    public void includeRunOnPortraitOrientationDevice_orientationIsSet() {
+    assertThat(Display.INSTANCE.getScreenOrientation())
+        .isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
+    }
+
+    @Test
+    @IncludeDarkMode
+    public void includeRunOnDarkModeDevice_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.DARK);
+    }
+
+    @Test
+    @IncludeLightMode
+    public void includeRunOnLightModeDevice_themeIsSet() {
+        assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
     }
 }

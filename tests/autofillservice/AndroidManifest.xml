@@ -84,7 +84,8 @@
              android:taskAffinity=".SecondActivity"/>
         <activity android:name=".activities.ViewAttributesTestActivity"/>
         <activity android:name=".activities.AuthenticationActivity"/>
-        <activity android:name=".activities.ManualAuthenticationActivity"/>
+        <activity android:name=".activities.ManualAuthenticationActivity"
+          android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.CheckoutActivity"
              android:taskAffinity=".CheckoutActivity"/>
         <activity android:name=".activities.InitializedCheckoutActivity"/>

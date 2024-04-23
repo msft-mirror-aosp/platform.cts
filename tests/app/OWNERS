@@ -2,4 +2,5 @@
 include platform/frameworks/base:/services/core/java/com/android/server/am/OWNERS
 include NOTIFICATION_OWNERS
 
+# Bug template url: https://b.corp.google.com/issues/new?component=158088&template=1975266 = per-file *AppStartTest*
 per-file *AppStartTest* = yforta@google.com, carmenjackson@google.com

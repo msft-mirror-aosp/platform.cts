@@ -30,7 +30,7 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  * {@code DevicePolicyManager#retrieveSecurityLogs},
  * and {@code DevicePolicyManager#retrievePreRebootSecurityLogs}.
  */
-@EnterprisePolicy(dpc = APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE // | APPLIED_BY_DPM_ROLE_HOLDER
+@EnterprisePolicy(dpc = APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE
          | APPLIES_TO_OWN_USER,
         delegatedScopes = DELEGATION_SECURITY_LOGGING)
 //        permissions = @EnterprisePolicy.Permission(

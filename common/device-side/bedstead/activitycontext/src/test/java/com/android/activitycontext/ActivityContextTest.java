@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
 
 import com.android.activitycontext.annotations.RunWhenInstrumentingOtherApp;
-import com.android.compatibility.common.util.BlockingCallback;
+import com.android.bedstead.nene.utils.BlockingCallback;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

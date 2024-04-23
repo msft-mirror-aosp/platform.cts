@@ -88,6 +88,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import com.google.common.collect.ImmutableSet;
@@ -427,6 +428,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testEcAttestation_DeviceLocked() throws Exception {
         testEcAttestation_DeviceLocked(false /* expectStrongBox */);
     }
@@ -434,6 +436,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testEcAttestation_DeviceLockedStrongbox() throws Exception {
         if (!TestUtils.hasStrongBox(getContext()))
             return;
@@ -862,6 +865,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice  // Emulators have no place to store the needed key
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLocked() throws Exception {
         testRsaAttestation_DeviceLocked(false /* expectStrongbox */);
     }
@@ -869,6 +873,7 @@ public class KeyAttestationTest {
     @RestrictedBuildTest
     @RequiresDevice  // Emulators have no place to store the needed key
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLockedStrongbox() throws Exception {
         if (!TestUtils.hasStrongBox(getContext()))
             return;
@@ -1700,9 +1705,10 @@ public class KeyAttestationTest {
         }
     }
 
-    private void checkEntropy(byte[] verifiedBootKey) {
-        assertTrue("Failed Shannon entropy check", checkShannonEntropy(verifiedBootKey));
-        assertTrue("Failed BiEntropy check", checkTresBiEntropy(verifiedBootKey));
+    private void checkEntropy(byte[] entropyData) {
+        byte[] entropyDataCopy = Arrays.copyOf(entropyData, entropyData.length);
+        assertTrue("Failed Shannon entropy check", checkShannonEntropy(entropyDataCopy));
+        assertTrue("Failed BiEntropy check", checkTresBiEntropy(entropyDataCopy));
     }
 
     private boolean checkShannonEntropy(byte[] verifiedBootKey) {
@@ -1718,6 +1724,9 @@ public class KeyAttestationTest {
         return entropy;
     }
 
+    /**
+     * Note: This method modifies the input parameter while performing bit entropy check.
+     */
     private boolean checkTresBiEntropy(byte[] verifiedBootKey) {
         double weightingFactor = 0;
         double weightedEntropy = 0;
@@ -1735,6 +1744,9 @@ public class KeyAttestationTest {
         return tresBiEntropy > 0.9;
     }
 
+    /**
+     * Note: This method modifies the input parameter - bitString.
+     */
     private void deriveBitString(byte[] bitString, int activeLength) {
         int length = activeLength / 8;
         if (activeLength % 8 != 0) {

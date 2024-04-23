@@ -16,11 +16,14 @@
 package com.android.bedstead.nene.devicepolicy
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.admin.DevicePolicyManager
+import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -34,6 +37,7 @@ import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
 import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
 import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.nene.roles.RoleContext
@@ -43,6 +47,7 @@ import com.android.bedstead.nene.utils.Retry
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Versions
+import com.android.bedstead.permissions.CommonPermissions.READ_NEARBY_STREAMING_POLICY
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
 import java.util.stream.Collectors
@@ -730,6 +735,7 @@ object DevicePolicy {
      * See `DevicePolicyManager#getBluetoothContactSharingDisabled(UserHandle)`
      */
     @JvmOverloads
+    @SuppressLint("NewApi")
     fun getBluetoothContactSharingDisabled(user: UserReference = TestApis.users().instrumented()): Boolean =
         devicePolicyManager.getBluetoothContactSharingDisabled(user.userHandle())
 
@@ -772,14 +778,16 @@ object DevicePolicy {
         }
     }
 
-    /** See [DevicePolicyManager#isInputMethodSetByOwner]. */
+    /** See [DevicePolicyManager#getScreenCaptureDisabled]. */
     @Experimental
-    fun isCurrentInputMethodSetByOwner() =
-        isCurrentInputMethodSetByOwner(TestApis.users().instrumented())
+    @JvmOverloads
+    fun isScreenCaptureDisabled(user: UserReference = TestApis.users().instrumented()) =
+        devicePolicyManager(user).getScreenCaptureDisabled(/* admin = */ null)
 
     /** See [DevicePolicyManager#isInputMethodSetByOwner]. */
     @Experimental
-    fun isCurrentInputMethodSetByOwner(user: UserReference) =
+    @JvmOverloads
+    fun isCurrentInputMethodSetByOwner(user: UserReference = TestApis.users().instrumented()) =
         TestApis.permissions().withPermission(QUERY_ADMIN_POLICY).use {
             devicePolicyManager(user).isCurrentInputMethodSetByOwner
         }
@@ -794,6 +802,38 @@ object DevicePolicy {
         TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY).use {
             devicePolicyManager(user).getOwnerInstalledCaCerts(user.userHandle())
         }
+
+    /** See [DevicePolicyManager#getNearbyNotificationStreamingPolicy]. */
+    @JvmOverloads
+    @Experimental
+    @TargetApi(Build.VERSION_CODES.S)
+    fun getNearbyNotificationStreamingPolicy(user: UserReference = TestApis.users().instrumented()): NearbyNotificationStreamingPolicy {
+        return TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL, READ_NEARBY_STREAMING_POLICY).use {
+            val intDef = devicePolicyManager(user).nearbyNotificationStreamingPolicy
+            NearbyNotificationStreamingPolicy.entries.first { it.intDef == intDef }
+        }
+    }
+
+    /** See [DevicePolicyManager#setMaxPolicyStorageLimit]. */
+    @Experimental
+    fun setMaxPolicySize(limitBytes: Int) =
+            TestApis.permissions().withPermission(MANAGE_DEVICE_POLICY_STORAGE_LIMIT).use {
+                devicePolicyManager.forceSetMaxPolicyStorageLimit(limitBytes)
+            }
+
+    /** See [DevicePolicyManager#getPolicySizeForAdmin]. */
+    @Experimental
+    fun getPolicySizeForAdmin(admin: EnforcingAdmin) : Int =
+            TestApis.permissions().withPermission(MANAGE_DEVICE_POLICY_STORAGE_LIMIT).use {
+                devicePolicyManager.getPolicySizeForAdmin(admin)
+            }
+
+    enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
+        NotManaged(0),
+        Disabled(1),
+        Enabled(2),
+        SameManagedAccountOnly(3)
+    }
 
 
     private const val LOG_TAG = "DevicePolicy"

@@ -179,9 +179,18 @@ public class AccessibilityMagnificationTest {
 
     @After
     public void tearDown() {
-        // Test cases should reset magnification themselves. Since window magnification
-        // may need times to remove the magnification window, we would like to wait and
-        // ensure the overlays for magnification are removed here.
+        // Ensure the magnification is deactivated after each test case. For some test cases that
+        // would disable mService during the test, they still need to reset magnification themselves
+        // after the test.
+        if (mService != null) {
+            mService.runOnServiceSync(() -> {
+                mService.getMagnificationController().resetCurrentMagnification(/* animate= */
+                        false);
+            });
+        }
+
+        // Since window magnification may need times to remove the magnification window, we would
+        // like to wait and ensure the overlays for magnification are removed here.
         if (isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()) {
             // Do nothing, we just want to wait for the event and check the
             // overlays for magnification are removed
@@ -205,7 +214,7 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(() -> result.set(controller.setScale(scale, false)));
 
-        assertTrue("Failed to set scale", result.get());
+        assertTrue(getSetterErrorMessage("Failed to set scale"), result.get());
         assertEquals("Failed to apply scale", scale, controller.getScale(), 0f);
 
         mService.runOnServiceSync(() -> result.set(controller.reset(false)));
@@ -231,10 +240,10 @@ public class AccessibilityMagnificationTest {
             setCenter.set(controller.setCenter(x, y, false));
         });
 
-        assertTrue("Failed to set scale", setScale.get());
+        assertTrue(getSetterErrorMessage("Failed to set scale"), setScale.get());
         assertEquals("Failed to apply scale", scale, controller.getScale(), 0f);
 
-        assertTrue("Failed to set center", setCenter.get());
+        assertTrue(getSetterErrorMessage("Failed to set center"), setCenter.get());
         assertEquals("Failed to apply center X", x, controller.getCenterX(), 5.0f);
         assertEquals("Failed to apply center Y", y, controller.getCenterY(), 5.0f);
 
@@ -264,9 +273,9 @@ public class AccessibilityMagnificationTest {
         mService.runOnServiceSync(() -> {
             setConfig.set(controller.setMagnificationConfig(config, false));
         });
-        waitUntilMagnificationConfig(controller, config);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
         assertConfigEquals(config, controller.getMagnificationConfig());
 
         final float newScale = scale + 1;
@@ -281,9 +290,9 @@ public class AccessibilityMagnificationTest {
         mService.runOnServiceSync(() -> {
             controller.setMagnificationConfig(newConfig, false);
         });
-        waitUntilMagnificationConfig(controller, newConfig);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, newConfig);
         assertConfigEquals(newConfig, controller.getMagnificationConfig());
     }
 
@@ -307,9 +316,9 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config, false)));
-        waitUntilMagnificationConfig(controller, config);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
         assertConfigEquals(config, controller.getMagnificationConfig());
 
         final float newScale = scale + 1;
@@ -320,9 +329,9 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(newConfig, false)));
-        waitUntilMagnificationConfig(controller, expectedConfig);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, expectedConfig);
         assertConfigEquals(expectedConfig, controller.getMagnificationConfig());
 
         mService.runOnServiceSync(
@@ -350,9 +359,9 @@ public class AccessibilityMagnificationTest {
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config,
                         /* animate= */ false)));
-        waitUntilMagnificationConfig(controller, config);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
         assertConfigEquals(config, controller.getMagnificationConfig());
 
         final MagnificationConfig newConfig = new MagnificationConfig.Builder()
@@ -362,10 +371,10 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(newConfig,
-                        /* animate= */  false)));
-        waitUntilMagnificationConfig(controller, expectedConfig);
+                        /* animate= */ false)));
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, expectedConfig);
         assertConfigEquals(expectedConfig, controller.getMagnificationConfig());
     }
 
@@ -381,10 +390,10 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config,
-                        /* animate= */  false)));
-        waitUntilMagnificationConfig(controller, config);
+                        /* animate= */ false)));
+        assertFalse(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertFalse("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
     }
 
     @Test
@@ -408,9 +417,9 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config, false)));
-        waitUntilMagnificationConfig(controller, config);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
         assertConfigEquals(config, controller.getMagnificationConfig());
 
         final MagnificationConfig newConfig = new MagnificationConfig.Builder()
@@ -419,11 +428,12 @@ public class AccessibilityMagnificationTest {
 
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(newConfig, false)));
+        assertTrue("Set config should have failed but didn't", setConfig.get());
+
         final MagnificationConfig expectedConfig = obtainConfigBuilder(config).setMode(
                 MAGNIFICATION_MODE_FULLSCREEN).build();
 
         waitUntilMagnificationConfig(controller, expectedConfig);
-        assertTrue("Set config should have failed but didn't", setConfig.get());
         assertConfigEquals(expectedConfig, controller.getMagnificationConfig());
     }
 
@@ -441,7 +451,7 @@ public class AccessibilityMagnificationTest {
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config,
                         /* animate= */ false)));
-        assertTrue("Failed to set config", setConfig.get());
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
         assertTrue(controller.getMagnificationConfig().isActivated());
         assertEquals(1.0f, controller.getMagnificationConfig().getScale(), 0);
     }
@@ -466,9 +476,9 @@ public class AccessibilityMagnificationTest {
         mService.runOnServiceSync(
                 () -> setConfig.set(controller.setMagnificationConfig(config,
                         /* animate= */ false)));
-        waitUntilMagnificationConfig(controller, config);
+        assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
-        assertTrue("Failed to set config", setConfig.get());
+        waitUntilMagnificationConfig(controller, config);
         assertConfigEquals(config, controller.getMagnificationConfig());
 
         mService.runOnServiceSync(() -> {
@@ -497,6 +507,7 @@ public class AccessibilityMagnificationTest {
             mService.runOnServiceSync(() -> {
                 setConfig.set(controller.setMagnificationConfig(config, false));
             });
+            assertTrue(getSetterErrorMessage("Failed to set config"), setConfig.get());
 
             assertEquals("Failed to apply scale", scale, controller.getScale(), 0f);
             assertEquals("Failed to apply center X", x, controller.getCenterX(), 5.0f);
@@ -673,8 +684,8 @@ public class AccessibilityMagnificationTest {
         final float x = bounds.left + (bounds.width() / 4.0f);
         final float y = bounds.top + (bounds.height() / 4.0f);
         mService.runOnServiceSync(() -> {
-            controller.setScale(scale, /* animate= */  false);
-            controller.setCenter(x, y, /* animate= */  false);
+            controller.setScale(scale, /* animate= */ false);
+            controller.setCenter(x, y, /* animate= */ false);
             controller.reset(/* animate= */ false);
         });
 
@@ -700,7 +711,7 @@ public class AccessibilityMagnificationTest {
 
             mService.runOnServiceSync(() -> result.set(controller.setScale(scale, false)));
 
-            assertTrue("Failed to set scale", result.get());
+            assertTrue(getSetterErrorMessage("Failed to set scale"), result.get());
             verify(spyListener, timeout(LISTENER_TIMEOUT_MILLIS)).onMagnificationChanged(
                     eq(controller), any(Region.class), eq(scale), anyFloat(), anyFloat());
 
@@ -726,7 +737,7 @@ public class AccessibilityMagnificationTest {
 
             mService.runOnServiceSync(() -> result.set(controller.setScale(scale, false)));
 
-            assertTrue("Failed to set scale", result.get());
+            assertTrue(getSetterErrorMessage("Failed to set scale"), result.get());
             final ArgumentCaptor<MagnificationConfig> configCaptor = ArgumentCaptor.forClass(
                     MagnificationConfig.class);
             verify(listener, timeout(LISTENER_TIMEOUT_MILLIS)).onMagnificationChanged(
@@ -939,6 +950,7 @@ public class AccessibilityMagnificationTest {
         final MagnificationController controller2 = service.getMagnificationController();
         assertEquals("Magnification must reset when a service dies",
                 1.0f, controller2.getScale(), 0f);
+        assertFalse(controller2.getMagnificationConfig().isActivated());
     }
 
     @Test
@@ -970,6 +982,7 @@ public class AccessibilityMagnificationTest {
         final MagnificationController controller2 = service.getMagnificationController();
         assertEquals("Magnification must reset when a service dies",
                 1.0f, controller2.getMagnificationConfig().getScale(), 0f);
+        assertFalse(controller2.getMagnificationConfig().isActivated());
     }
 
     @Test
@@ -1349,23 +1362,23 @@ public class AccessibilityMagnificationTest {
         try {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
 
-            TestUtils.waitUntil("node bounds is not changed:", TIMEOUT_CONFIG_SECONDS,
-                    () -> {
-                        buttonNode.refresh();
-                        buttonNode.getBoundsInScreen(boundsAfterMagnify);
-                        return !boundsBeforeMagnify.equals(boundsAfterMagnify);
-                    });
-
             final DisplayMetrics displayMetrics = new DisplayMetrics();
             activity.getDisplay().getMetrics(displayMetrics);
             final Rect displayRect = new Rect(0, 0,
                     displayMetrics.widthPixels, displayMetrics.heightPixels);
+
             // The boundsInScreen of button is adjusted to outside of screen by framework,
             // for example, Rect(-xxx, -xxx, -xxx, -xxx). Intersection of button and screen
             // should be empty.
-            assertFalse("Button shouldn't be on the screen, screen is " + displayRect
-                            + ", button bounds is " + boundsAfterMagnify,
-                    Rect.intersects(displayRect, boundsAfterMagnify));
+            TestUtils.waitUntil("Button shouldn't be on the screen, screen is " + displayRect
+                    + ", button bounds before magnified is " + boundsBeforeMagnify
+                    + ", button bounds after layout is " + boundsAfterMagnify,
+                    TIMEOUT_CONFIG_SECONDS,
+                    () -> {
+                        buttonNode.refresh();
+                        buttonNode.getBoundsInScreen(boundsAfterMagnify);
+                        return !Rect.intersects(displayRect, boundsAfterMagnify);
+                    });
             assertTrue("Button should be visible", buttonNode.isVisibleToUser());
         } finally {
             mService.runOnServiceSync(() -> controller.reset(false));
@@ -1556,7 +1569,7 @@ public class AccessibilityMagnificationTest {
                 setScale.set(controller.setScale(newScale, false));
             });
 
-            assertTrue("Failed to set scale", setScale.get());
+            assertTrue(getSetterErrorMessage("Failed to set scale"), setScale.get());
             verify(spyListener, timeout(LISTENER_TIMEOUT_MILLIS)).onMagnificationChanged(
                     eq(controller), any(Region.class), eq(newScale), anyFloat(), anyFloat());
 
@@ -1565,7 +1578,7 @@ public class AccessibilityMagnificationTest {
                 setCenter.set(controller.setCenter(newCenterX, newCenterY, false));
             });
 
-            assertTrue("Failed to set center", setCenter.get());
+            assertTrue(getSetterErrorMessage("Failed to set center"), setCenter.get());
             verify(spyListener, timeout(LISTENER_TIMEOUT_MILLIS)).onMagnificationChanged(
                     eq(controller), any(Region.class), anyFloat(), eq(newCenterX), eq(newCenterY));
         } finally {
@@ -1683,5 +1696,17 @@ public class AccessibilityMagnificationTest {
                 .setCenterX(config.getCenterX())
                 .setCenterY(config.getCenterY());
         return builder;
+    }
+
+    private String getSetterErrorMessage(String rawMessage) {
+        if (Flags.alwaysDrawMagnificationFullscreenBorder()) {
+            String postfix = ". The failure may be because the service connection does not exist"
+                    + ", the given setter info does not make the magnification spec changed"
+                    + ", or the SystemUI connection does not exist."
+                    + " Please ensure your SystemUI implements the IMagnificationConnection AIDL.";
+            return rawMessage + postfix;
+        } else {
+            return rawMessage;
+        }
     }
 }

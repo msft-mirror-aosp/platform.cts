@@ -33,8 +33,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
         APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
         APPLIED_BY_AFFILIATED_PROFILE_OWNER | APPLIES_TO_OWN_USER
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-        },
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_STATUS_BAR, appliesTo = APPLIES_TO_OWN_USER))
+        })
+// Permission access is not enabled
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = MANAGE_DEVICE_POLICY_STATUS_BAR, appliesTo = APPLIES_TO_OWN_USER))
 public final class StatusBarDisabled {
 }

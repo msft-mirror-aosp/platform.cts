@@ -34,54 +34,19 @@ _CIRCLE_R = 2
 _CIRCLE_X = 0
 _CIRCLE_Y = 1
 _CIRCLISH_RTOL = 0.15  # contour area vs ideal circle area pi*((w+h)/4)**2
-_JPEG_STR = 'jpg'
 _LINE_COLOR = (255, 0, 0)  # red
 _MAX_STR = 'max'
 _MIN_STR = 'min'
 _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
 _MIN_CIRCLE_PTS = 10
-_MIN_SIZE = 1280*720  # 720P
+_MIN_RESOLUTION_AREA = 1280*720  # 720P
 _MIN_ZOOM_SCALE_CHART = 0.70  # zoom factor to trigger scaled chart
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _OFFSET_TOL = 5  # pixels
 _RADIUS_RTOL = 0.1  # 10% tolerance Video/Preview circle size
 _RECORDING_DURATION = 2  # seconds
 _ZOOM_COMP_MAX_THRESH = 1.15
-_ZOOM_MIN_THRESH = 2.0
 _ZOOM_RATIO = 2
-
-
-def _extract_key_frame_from_recording(log_path, file_name):
-  """Extract key frames from recordings.
-
-  Args:
-    log_path: str; file location
-    file_name: str file name for saved video
-
-  Returns:
-    dictionary of images
-  """
-  key_frame_files = []
-  key_frame_files = (
-      video_processing_utils.extract_key_frames_from_video(
-          log_path, file_name)
-  )
-  logging.debug('key_frame_files: %s', key_frame_files)
-
-  # Get the key frame file to process.
-  last_key_frame_file = (
-      video_processing_utils.get_key_frame_to_process(
-          key_frame_files)
-  )
-  logging.debug('last_key_frame: %s', last_key_frame_file)
-  last_key_frame_path = os.path.join(log_path, last_key_frame_file)
-
-  # Convert lastKeyFrame to numpy array
-  np_image = image_processing_utils.convert_image_to_numpy_array(
-      last_key_frame_path)
-  logging.debug('numpy image shape: %s', np_image.shape)
-
-  return np_image
 
 
 class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
@@ -179,12 +144,12 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           z_range and first_api_level >= its_session_utils.ANDROID14_API_LEVEL
       )
-      logging.debug('Testing zoomRatioRange: %s', str(z_range))
+      logging.debug('Testing zoomRatioRange: %s', z_range)
 
       # Determine zoom factors
       z_min = z_range[0]
       camera_properties_utils.skip_unless(
-          float(z_range[-1]) >= z_min * _ZOOM_MIN_THRESH)
+          float(z_range[-1]) >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       zoom_ratios_to_be_tested = [z_min]
       if z_min < 1.0:
         zoom_ratios_to_be_tested.append(float(_ZOOM_RATIO))
@@ -203,14 +168,16 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
       # Find supported preview/video sizes, and their smallest and common size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug(
           'Supported video profiles and ID: %s', supported_video_qualities)
       common_size, common_video_quality = (
           video_processing_utils.get_lowest_preview_video_size(
-              supported_preview_sizes, supported_video_qualities, _MIN_SIZE))
+              supported_preview_sizes, supported_video_qualities,
+              _MIN_RESOLUTION_AREA
+          )
+      )
 
       # Start video recording over minZoom and 2x Zoom
       for quality_profile_id_pair in supported_video_qualities:
@@ -281,7 +248,9 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
               # so for sensor orientation 90 or 270, it is up or down
               # Sensor orientation 0 or 180 is left or right
               img_name_stem = os.path.join(log_path, 'flipped_preview')
-              img_name = f'{img_name_stem}_zoomRatio_{z:.2f}.{_JPEG_STR}'
+              img_name = (
+                  f'{img_name_stem}_zoomRatio_{z:.2f}.'
+                  f'{zoom_capture_utils.JPEG_STR}')
               if props['android.sensor.orientation'] in (90, 270):
                 preview_img = np.ndarray.copy(np.flipud(preview_img))
                 logging.debug(
@@ -305,7 +274,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
             preview_test_data[i] = {'z': z, 'circle': circle}
 
-      # compare size and center of preview's circle to video's circle
+      # Compare size and center of preview's circle to video's circle
       preview_radius = {}
       video_radius = {}
       z_idx = {}
@@ -322,7 +291,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       zoom_factor[_MIN_STR] = preview_test_data[0]['z']
       zoom_factor[_MAX_STR] = preview_test_data[1]['z']
 
-      # compare preview circle's center with video circle's center
+      # Compare preview circle's center with video circle's center
       preview_circle_x = preview_test_data[1]['circle'][_CIRCLE_X]
       video_circle_x = video_test_data[1]['circle'][_CIRCLE_X]
       preview_circle_y = preview_test_data[1]['circle'][_CIRCLE_Y]
@@ -345,7 +314,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
         raise AssertionError('Preview and video output do not match! '
                              'Preview and video circles offset is too great')
 
-      # check zoom ratio by size of circles before and after zoom
+      # Check zoom ratio by size of circles before and after zoom
       for radius_ratio in z_idx.values():
         if not math.isclose(radius_ratio, 1, rel_tol=_RADIUS_RTOL):
           raise AssertionError('Preview and video output do not match! '
@@ -357,4 +326,3 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

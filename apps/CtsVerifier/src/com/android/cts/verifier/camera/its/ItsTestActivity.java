@@ -28,6 +28,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.net.Uri;
 import android.os.Bundle;
@@ -122,6 +123,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_yuv_plus_raw_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
+    private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
+            Pattern.compile("test_burst_capture_.*");
 
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
@@ -212,11 +215,11 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    PerformanceClassEvaluator.CameraLatencyRequirement mJpegLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mJpegLatencyReq =
             mPce.addR7_5__H_1_5();
-    PerformanceClassEvaluator.CameraLatencyRequirement mLaunchLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mLaunchLatencyReq =
             mPce.addR7_5__H_1_6();
-    PerformanceClassEvaluator.CameraUltraHdrRequirement mUltraHdrReq =
+    CameraRequirement.CameraUltraHdrRequirement mUltraHdrReq =
             mPce.addR7_5__H_1_20();
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
@@ -563,6 +566,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
 
+            Matcher burstCaptureMetricsMatcher = PERF_METRICS_BURST_CAPTURE_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches) {
                 return false;
@@ -593,6 +600,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         String value = result.split(":")[1].strip();
                         obj.put(resultKey, value);
                     }
+                }
+
+                if (burstCaptureMetricsMatches) {
+                    Log.i(TAG, "burst capture  matches");
+                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
+                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
                 }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);

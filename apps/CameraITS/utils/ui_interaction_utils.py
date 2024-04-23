@@ -23,13 +23,14 @@ import its_device_utils
 
 _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
                      'ACCESS_COARSE_LOCATION', 'WRITE_EXTERNAL_STORAGE',
-                     'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE')
+                     'READ_EXTERNAL_STORAGE')
 
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
 )
 ACTIVITY_WAIT_TIME_SECONDS = 5
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
+DONE_BUTTON_TXT = 'Done'
 FLASH_MODE_TO_CLICKS = types.MappingProxyType({
     'OFF': 3,
     'AUTO': 2
@@ -37,6 +38,7 @@ FLASH_MODE_TO_CLICKS = types.MappingProxyType({
 IMG_CAPTURE_CMD = 'am start -a android.media.action.STILL_IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JPG_FORMAT_STR = '.jpg'
+OK_BUTTON_TXT = 'OK'
 TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingDropDown'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSetFlash'
@@ -47,6 +49,7 @@ UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
 UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
 VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
 VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
+WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
 
 
 def _find_ui_object_else_click(object_to_await, object_to_click):
@@ -147,6 +150,10 @@ def default_camera_app_setup(device_id, pkg_name):
   for permission in _PERMISSIONS_LIST:
     cmd = f'pm grant {pkg_name} android.permission.{permission}'
     its_device_utils.run_adb_shell_command(device_id, cmd)
+  allow_manage_storage_cmd = (
+      f'appops set {pkg_name} MANAGE_EXTERNAL_STORAGE allow'
+  )
+  its_device_utils.run_adb_shell_command(device_id, allow_manage_storage_cmd)
 
 
 def pull_img_files(device_id, input_path, output_path):
@@ -178,6 +185,15 @@ def launch_and_take_capture(dut, pkg_name):
     logging.debug('Launching app: %s', pkg_name)
     launch_cmd = f'monkey -p {pkg_name} 1'
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
+
+    # Click OK/Done button on initial pop up windows
+    if dut.ui(text=OK_BUTTON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=OK_BUTTON_TXT).click.wait()
+    if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=DONE_BUTTON_TXT).click.wait()
+
     its_device_utils.run_adb_shell_command(device_id, IMG_CAPTURE_CMD)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')

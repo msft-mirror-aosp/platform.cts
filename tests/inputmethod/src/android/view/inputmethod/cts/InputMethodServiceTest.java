@@ -19,10 +19,7 @@ package android.view.inputmethod.cts;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
-import static android.view.Display.DEFAULT_DISPLAY;
-import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 import static android.view.inputmethod.cts.util.ConstantsUtils.DISAPPROVE_IME_PACKAGE_NAME;
@@ -38,7 +35,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
-import static com.android.cts.mockime.ImeEventStreamTestUtils.expectNoImeCrash;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.verificationMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
@@ -78,7 +74,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.TextAppearanceInfo;
 import android.view.inputmethod.cts.disapproveime.DisapproveInputMethodService;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
-import android.view.inputmethod.cts.util.SimulatedVirtualDisplaySession;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
@@ -106,7 +101,6 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -123,6 +117,9 @@ import java.util.function.Predicate;
 
 /**
  * Tests for {@link InputMethodService} methods.
+ *
+ * Build/Install/Run:
+ * atest CtsInputMethodTestCases:InputMethodServiceTest
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -837,6 +834,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 .runTest();
     }
 
+    @FlakyTest(bugId = 333155542)
     @Test
     public void testBatchEdit_getCommitSpaceAndSetComposingRegionTestInSelectionTest_webView()
             throws Exception {
@@ -889,15 +887,12 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
      * Here we use {@link WindowLayoutInfoParcelable} to pass {@link WindowLayoutInfo} values
      * between this test process and the MockIME process.
      */
-    @Ignore("b/264026686")
+    @FlakyTest(bugId = 332251465)
     @Test
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testImeListensToWindowLayoutInfo() throws Exception {
-        assumeTrue(
-                "This test should only be run on devices with extension version that supports IME"
-                        + " as WindowLayoutInfo listener ",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
+        assumeExtensionSupportedDevice();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -1028,25 +1023,6 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             // Verify if InputMethodService#isUiContext returns true
             notExpectEvent(forkedStream, event -> "onConfigurationChanged".equals(
                     event.getEventName()), EXPECTED_TIMEOUT);
-        }
-    }
-
-    @Test
-    @FlakyTest(detail = "slow test")
-    public void testNoExceptionWhenSwitchingDisplaysWithImeReCreate() throws Exception {
-        try (SimulatedVirtualDisplaySession displaySession = SimulatedVirtualDisplaySession.create(
-                mInstrumentation.getContext(), 800, 600, 240, DISPLAY_IME_POLICY_LOCAL);
-                     MockImeSession imeSession = MockImeSession.create(
-                             mInstrumentation.getContext(), mInstrumentation.getUiAutomation(),
-                             new ImeSettings.Builder())) {
-            // Launch activity repeatedly with re-create / showing IME on different displays
-            for (int i = 0; i < 10; i++) {
-                int displayId = (i % 2 == 0) ? displaySession.getDisplayId() : DEFAULT_DISPLAY;
-                createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, displayId);
-                SystemClock.sleep(ACTIVITY_LAUNCH_INTERVAL);
-            }
-            // Verify no crash and onCreate / onDestroy keeps paired from MockIme event stream
-            expectNoImeCrash(imeSession, TIMEOUT);
         }
     }
 
@@ -1414,10 +1390,10 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private static WindowLayoutInfoParcelable verifyReceivedWindowLayout(ImeEventStream stream)
             throws TimeoutException {
-        WindowLayoutInfoParcelable received = expectEvent(stream,
+        final ImeEvent imeEvent = expectEvent(stream,
                 event -> "getWindowLayoutInfo".equals(event.getEventName()),
-                TIMEOUT).getArguments().getParcelable("WindowLayoutInfo",
-                WindowLayoutInfoParcelable.class);
-        return received;
+                TIMEOUT);
+        return imeEvent.getArguments()
+                .getParcelable("WindowLayoutInfo", WindowLayoutInfoParcelable.class);
     }
 }

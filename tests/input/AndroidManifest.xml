@@ -17,7 +17,11 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="android.input.cts">
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
-    <application android:label="InputTest">
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
+    <application android:label="InputTest"
+                 android:requestLegacyExternalStorage="true">
         <activity android:name=".OverlayActivity"
                   android:label="Overlay activity"
                   android:process=":externalProcess"

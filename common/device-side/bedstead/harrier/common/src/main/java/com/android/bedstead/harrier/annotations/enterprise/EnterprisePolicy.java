@@ -151,7 +151,13 @@ public @interface EnterprisePolicy {
     // This is to be used to mark specific annotations as not generating PolicyDoesNotApply tests
     int DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS = 1 << 18;
 
-    /** A policy that the DPM Role Holder has permission access to */
+    /**
+     * A policy that the DPM Role Holder can use.
+     *
+     * <p>This should only be used when the role holder is special cased by role. If this capability
+     * is granted by some permission the role holder holds, do not use this flag and instead specify
+     * the permission on the policy.
+     */
     int APPLIED_BY_DPM_ROLE_HOLDER = 1 << 19 | (DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS);
 
     /**

@@ -138,7 +138,7 @@ class SensitiveNotificationAppHidingTest {
                 testName,
                 activity,
                 pixelChecker,
-                -1, // expectedMatchingPixels
+                .5f, // expectedMatchRatio
                 BitmapPixelChecker.getInsets(activity)
             )
         }
@@ -151,7 +151,7 @@ class SensitiveNotificationAppHidingTest {
                 testName,
                 activity,
                 pixelChecker,
-                -1, // expectedMatchingPixels
+                .5f, // expectedMatchRatio
                 BitmapPixelChecker.getInsets(activity)
             )
         }
@@ -198,10 +198,14 @@ class SensitiveNotificationAppHidingTest {
             notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
             notificationHelper.enableOtherPkgAssistantIfNeeded(previousAssistant)
         }
+
+        if (Flags.sensitiveContentImprovements()) {
+            ToastVerifier.waitForNoToast()
+        }
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyBeforeAppLaunch() {
         sendSensitiveNotification()
@@ -212,11 +216,18 @@ class SensitiveNotificationAppHidingTest {
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureProtected(activityScenario)
+            if (Flags.sensitiveContentImprovements()) {
+                ToastVerifier.verifyToastShowsAndGoes()
+                // Stop and Resume the Activity (hides and re-shows window).
+                activityScenario.moveToState(State.CREATED)
+                activityScenario.moveToState(State.RESUMED)
+                ToastVerifier.verifyToastDoesNotShow()
+            }
         }
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAfterAppLaunch() {
         uiAutomation.adoptShellPermissionIdentity()
@@ -225,15 +236,21 @@ class SensitiveNotificationAppHidingTest {
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
-
             sendSensitiveNotification()
-
             verifyScreenCaptureProtected(activityScenario)
+
+            if (Flags.sensitiveContentImprovements()) {
+                ToastVerifier.verifyToastShowsAndGoes()
+                // Stop and Resume the Activity (hides and re-shows window).
+                activityScenario.moveToState(State.CREATED)
+                activityScenario.moveToState(State.RESUMED)
+                ToastVerifier.verifyToastDoesNotShow()
+            }
         }
     }
 
     @Test
-    @CddTest(requirements = ["9.8.2/C-3-2"])
+    @CddTest(requirements = ["9.8.2/C-3-3"])
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAppInBackground() {
         uiAutomation.adoptShellPermissionIdentity()
@@ -244,14 +261,50 @@ class SensitiveNotificationAppHidingTest {
             verifyScreenCaptureNotProtected(activityScenario)
 
             activityScenario.moveToState(State.CREATED)
-
             sendSensitiveNotification()
-
             activityScenario.moveToState(State.RESUMED)
 
-            // Sometimes app needs extra time to update its window state to reflect sensitive
-            // protection state
+            if (Flags.sensitiveContentImprovements()) {
+                ToastVerifier.verifyToastShowsAndGoes()
+            }
+            // This must come after verifying the Toast, since the window can take a bit of time to
+            // update.
+            verifyScreenCaptureProtected(activityScenario)
+        }
+    }
+
+    @Test
+    @CddTest(requirements = ["9.8.2/C-3-3"])
+    @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
+    fun testScreenCaptureIsUnblockedAfterScreenshareEnd() {
+        sendSensitiveNotification()
+
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
+            mediaProjection.stop()
+
+            // Give app time to update its window state to reflect sensitive protection state
             Thread.sleep(500)
+
+            verifyScreenCaptureNotProtected(activityScenario)
+        }
+    }
+
+    @Test
+    @CddTest(requirements = ["9.8.2/C-0-5"])
+    @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
+    fun testScreenCaptureRemainsBlockedAfterScreenshareEnd_appSetFlagSecure() {
+        sendSensitiveNotification()
+
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleFlagSecureActivity::class.java).use { activityScenario ->
+            mediaProjection.stop()
 
             verifyScreenCaptureProtected(activityScenario)
         }

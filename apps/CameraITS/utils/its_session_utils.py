@@ -16,6 +16,7 @@
 
 
 import collections
+import fnmatch
 import json
 import logging
 import math
@@ -47,16 +48,21 @@ IMAGE_FORMAT_YUV_420_888 = 35
 JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
+PREVIEW_MAX_TESTED_AREA = 1920 * 1440
+PREVIEW_MIN_TESTED_AREA = 320 * 240
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
+# pylint: disable=line-too-long
 # Allowed tablets as listed on https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
 # List entries must be entered in lowercase
 TABLET_ALLOWLIST = (
     'dragon',  # Google Pixel C
     'hnhey-q',  # Honor Pad 8
     'hwcmr09',  # Huawei MediaPad M5
+    'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
+    'tb350fu',  # Lenovo Tab P11 (Gen 2)
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta9pwifi',  # Samsung Galaxy Tab A9+
@@ -73,7 +79,7 @@ TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
     'yunluo': ANDROID14_API_LEVEL
     })
-TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements'
+TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist'
 TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
                                f'{TABLET_REQUIREMENTS_URL} in the config file')
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
@@ -119,9 +125,9 @@ _DST_SCENE_DIR = '/sdcard/Download/'
 def validate_tablet(tablet_name, brightness, device_id):
   """Ensures tablet brightness is set according to documentation.
 
-  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-requirements
+  https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist
   Args:
-    tablet_name: tablet product name specified by `ro.build.product`.
+    tablet_name: tablet product name specified by `ro.product.device`.
     brightness: brightness specified by config file.
     device_id: str; ID of the device.
   """
@@ -435,6 +441,45 @@ class ItsSession(object):
     self.props = data[_OBJ_VALUE_STR]['cameraProperties']
     return data[_OBJ_VALUE_STR]['cameraProperties']
 
+  def get_session_properties(self, out_surfaces, cap_request):
+    """Get the camera properties object for a session configuration.
+
+    Args:
+      out_surfaces: output surfaces used to query session props.
+      cap_request: capture request used to query session props.
+
+    Returns:
+     The Python dictionary object for the CameraProperties object.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'getCameraSessionProperties'
+    if out_surfaces:
+      if isinstance(out_surfaces, list):
+        cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
+      formats = [
+          c['format'] if 'format' in c else 'yuv' for c in cmd['outputSurfaces']
+      ]
+      formats = [s if s != 'jpg' else 'jpeg' for s in formats]
+    else:
+      max_yuv_size = capture_request_utils.get_available_output_sizes(
+          'yuv', self.props)[0]
+      formats = ['yuv']
+      cmd['outputSurfaces'] = [{
+          'format': 'yuv',
+          'width': max_yuv_size[0],
+          'height': max_yuv_size[1]
+      }]
+    cmd['captureRequest'] = cap_request
+
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'cameraProperties':
+      raise error_util.CameraItsError('Invalid command response')
+    self.props = data[_OBJ_VALUE_STR]['cameraProperties']
+    return data[_OBJ_VALUE_STR]['cameraProperties']
+
   def get_camera_properties_by_id(self, camera_id, override_to_portrait=None):
     """Get the camera properties object for device with camera_id.
 
@@ -581,7 +626,7 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'gainmapPresent':
       raise error_util.CameraItsError(
-        'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
+          'Invalid response for command: %s' % cmd[_CMD_NAME_STR])
     return data['strValue']
 
   def start_sensor_events(self):
@@ -677,19 +722,42 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_OBJ_VALUE_STR]
 
-  def is_hlg10_recording_supported(self, profile_id):
+  def is_hlg10_recording_supported_for_profile(self, profile_id):
     """Query whether the camera device supports HLG10 video recording.
 
     Args:
       profile_id: int; profile id corresponding to the quality level.
     Returns:
-      Boolean: True, if device supports HLG10 video recording, False in
+      Boolean: True if device supports HLG10 video recording, False in
       all other cases.
     """
     cmd = {}
-    cmd[_CMD_NAME_STR] = 'isHLG10Supported'
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForProfile'
     cmd[_CAMERA_ID_STR] = self._camera_id
     cmd['profileId'] = profile_id
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'hlg10Response':
+      raise error_util.CameraItsError('Failed to query HLG10 support')
+    return data[_STR_VALUE_STR] == 'true'
+
+  def is_hlg10_recording_supported_for_size_and_fps(
+      self, video_size, max_fps):
+    """Query whether the camera device supports HLG10 video recording.
+
+    Args:
+      video_size: String; the hlg10 video recording size.
+      max_fps: int; the maximum frame rate of the camera.
+    Returns:
+      Boolean: True if device supports HLG10 video recording, False in
+      all other cases.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isHLG10SupportedForSizeAndFps'
+    cmd[_CAMERA_ID_STR] = self._camera_id
+    cmd['videoSize'] = video_size
+    cmd['maxFps'] = max_fps
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     data, _ = self.__read_response_from_socket()
@@ -875,7 +943,7 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doStaticPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
         'recordingDuration': duration,
@@ -919,10 +987,9 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doDynamicZoomPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
-        'recordingDuration': 0,  # for interoperability
         'stabilize': stabilize,
         'ois': False
     }
@@ -970,10 +1037,9 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService.
     """
     cmd = {
-        _CMD_NAME_STR: 'doPreviewRecording',
+        _CMD_NAME_STR: 'doDynamicMeteringRegionPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'videoSize': video_size,
-        'recordingDuration': 0,  # set to 0 to avoid JSONException
         'stabilize': stabilize,
         'ois': False,
         'aeAwbRegionDuration': ae_awb_region_duration
@@ -1009,7 +1075,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1018,8 +1084,9 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+
     Returns:
-      List of all supported video resolutions in ascending order.
+      List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
@@ -1034,6 +1101,36 @@ class ItsSession(object):
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No supported preview sizes')
     return data[_STR_VALUE_STR].split(';')
+
+  def get_supported_preview_sizes(self, camera_id):
+    """Get supported preview resolutions for this camera device.
+
+    ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
+
+    Note: resolutions are sorted by width x height in ascending order
+    Note: max resolution is capped at 1440x1920.
+    Note: min resolution is capped at 320x240.
+
+    Args:
+      camera_id: int; device id
+
+    Returns:
+      List of all supported preview resolutions with floor & ceiling set
+      by _CONSTANTS in ascending order.
+    """
+    supported_preview_sizes = self.get_all_supported_preview_sizes(camera_id)
+    resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if (resolution_to_area(size)
+                                   <= PREVIEW_MAX_TESTED_AREA
+                                   and resolution_to_area(size)
+                                   >= PREVIEW_MIN_TESTED_AREA)]
+    logging.debug(
+        'Supported preview sizes (MIN: %d, MAX: %d area in pixels): %s',
+        PREVIEW_MIN_TESTED_AREA, PREVIEW_MAX_TESTED_AREA,
+        supported_preview_sizes
+    )
+    return supported_preview_sizes
 
   def get_queryable_stream_combinations(self):
     """Get all queryable stream combinations for this camera device.
@@ -1496,7 +1593,8 @@ class ItsSession(object):
                  out_surfaces=None,
                  reprocess_format=None,
                  repeat_request=None,
-                 reuse_session=False):
+                 reuse_session=False,
+                 first_surface_for_3a=False):
     """Issue capture request(s), and read back the image(s) and metadata.
 
     The main top-level function for capturing one or more images using the
@@ -1635,6 +1733,8 @@ class ItsSession(object):
       repeat_request: Repeating request list.
       reuse_session: True if ItsService.java should try to use
         the existing CameraCaptureSession.
+      first_surface_for_3a: Use first surface in out_surfaces for 3A, not capture
+        Only applicable if out_surfaces contains at least 1 surface.
 
     Returns:
       An object, list of objects, or list of lists of objects, where each
@@ -1668,11 +1768,11 @@ class ItsSession(object):
     else:
       cmd['captureRequests'] = cap_request
 
-    if out_surfaces is not None:
-      if not isinstance(out_surfaces, list):
-        cmd['outputSurfaces'] = [out_surfaces]
-      else:
+    if out_surfaces:
+      if isinstance(out_surfaces, list):
         cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
       formats = [
           c['format'] if 'format' in c else 'yuv' for c in cmd['outputSurfaces']
       ]
@@ -1686,10 +1786,17 @@ class ItsSession(object):
           'width': max_yuv_size[0],
           'height': max_yuv_size[1]
       }]
+
     cmd['reuseSession'] = reuse_session
+    cmd['firstSurfaceFor3A'] = first_surface_for_3a
+
+    requested_surfaces = cmd['outputSurfaces'][:]
+    if first_surface_for_3a:
+      formats.pop(0)
+      requested_surfaces.pop(0)
 
     ncap = len(cmd['captureRequests'])
-    nsurf = 1 if out_surfaces is None else len(cmd['outputSurfaces'])
+    nsurf = len(formats)
 
     cam_ids = []
     bufs = {}
@@ -1725,22 +1832,22 @@ class ItsSession(object):
        # Only allow yuv output to multiple targets
       if cam_id == self._camera_id:
         yuv_surfaces = [
-            s for s in cmd['outputSurfaces']
+            s for s in requested_surfaces
             if s['format'] == 'yuv' and 'physicalCamera' not in s
         ]
         formats_for_id = [
             s['format']
-            for s in cmd['outputSurfaces']
+            for s in requested_surfaces
             if 'physicalCamera' not in s
         ]
       else:
         yuv_surfaces = [
-            s for s in cmd['outputSurfaces'] if s['format'] == 'yuv' and
+            s for s in requested_surfaces if s['format'] == 'yuv' and
             'physicalCamera' in s and s['physicalCamera'] == cam_id
         ]
         formats_for_id = [
             s['format']
-            for s in cmd['outputSurfaces']
+            for s in requested_surfaces
             if 'physicalCamera' in s and s['physicalCamera'] == cam_id
         ]
 
@@ -1772,6 +1879,7 @@ class ItsSession(object):
 
       yuv_bufs[cam_id] = {size: [] for size in yuv_sizes}
 
+    logging.debug('yuv bufs: %s', yuv_bufs)
     raw_formats = 0
     raw_formats += 1 if 'dng' in formats else 0
     raw_formats += 1 if 'raw' in formats else 0
@@ -1813,12 +1921,18 @@ class ItsSession(object):
     physical_mds = []
     widths = None
     heights = None
+    camera_id = (
+        self._camera_id
+        if not self._hidden_physical_id
+        else self._hidden_physical_id
+    )
+    logging.debug('Using camera_id %s to store buffers', camera_id)
     while nbufs < ncap * nsurf or len(mds) < ncap:
       json_obj, buf = self.__read_response_from_socket()
       if (json_obj[_TAG_STR] in ItsSession.IMAGE_FORMAT_LIST_1 and
           buf is not None):
         fmt = json_obj[_TAG_STR][:-5]
-        bufs[self._camera_id][fmt].append(buf)
+        bufs[camera_id][fmt].append(buf)
         nbufs += 1
       # Physical camera is appended to the tag string of a private capture
       elif json_obj[_TAG_STR].startswith('privImage'):
@@ -1827,7 +1941,7 @@ class ItsSession(object):
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
         buf_size = numpy.product(buf.shape)
-        yuv_bufs[self._camera_id][buf_size].append(buf)
+        yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
         mds.append(json_obj[_OBJ_VALUE_STR]['captureResult'])
@@ -1856,8 +1970,8 @@ class ItsSession(object):
     rets = []
     for j, fmt in enumerate(formats):
       objs = []
-      if 'physicalCamera' in cmd['outputSurfaces'][j]:
-        cam_id = cmd['outputSurfaces'][j]['physicalCamera']
+      if 'physicalCamera' in requested_surfaces[j]:
+        cam_id = requested_surfaces[j]['physicalCamera']
       else:
         cam_id = self._camera_id
 
@@ -1946,7 +2060,8 @@ class ItsSession(object):
             mono_camera=False,
             zoom_ratio=None,
             out_surfaces=None,
-            repeat_request=None):
+            repeat_request=None,
+            first_surface_for_3a=False):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -1973,6 +2088,8 @@ class ItsSession(object):
         CameraCaptureSession will only be reused if out_surfaces is specified.
       repeat_request: repeating request list.
         See do_capture() for specifications on repeat_request.
+      first_surface_for_3a: Use first surface in output_surfaces for 3A.
+        Only applicable if out_surfaces contains at least 1 surface.
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -1995,12 +2112,12 @@ class ItsSession(object):
     cmd = {}
     cmd[_CMD_NAME_STR] = 'do3A'
     reuse_session = False
-    if out_surfaces is not None:
+    if out_surfaces:
       reuse_session = True
-      if not isinstance(out_surfaces, list):
-        cmd['outputSurfaces'] = [out_surfaces]
-      else:
+      if isinstance(out_surfaces, list):
         cmd['outputSurfaces'] = out_surfaces
+      else:
+        cmd['outputSurfaces'] = [out_surfaces]
     if repeat_request is None:
       cmd['repeatRequests'] = []
     elif not isinstance(repeat_request, list):
@@ -2030,6 +2147,7 @@ class ItsSession(object):
       else:
         raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
     cmd['reuseSession'] = reuse_session
+    cmd['firstSurfaceFor3A'] = first_surface_for_3a
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     # Wait for each specified 3A to converge.
@@ -2154,10 +2272,10 @@ class ItsSession(object):
     cmd[_CMD_NAME_STR] = 'isStreamCombinationSupported'
     cmd[_CAMERA_ID_STR] = self._camera_id
 
-    if not isinstance(out_surfaces, list):
-      cmd['outputSurfaces'] = [out_surfaces]
-    else:
+    if isinstance(out_surfaces, list):
       cmd['outputSurfaces'] = out_surfaces
+    else:
+      cmd['outputSurfaces'] = [out_surfaces]
 
     if settings:
       cmd['settings'] = settings
@@ -2677,3 +2795,27 @@ def pull_file_from_dut(dut, dut_path, log_folder):
   file_name = (dut_path.split('/')[-1])
   logging.debug('%s pulled from dut', file_name)
   return file_name
+
+
+def remove_tmp_files(log_path, match_pattern):
+  """Remove temp file with given directory path.
+
+  Args:
+    log_path: path-like object, path of directory
+    match_pattern: string, pattern to be matched and removed
+
+  Returns:
+    List of error messages if encountering error while removing files
+  """
+  temp_files = []
+  try:
+    temp_files = os.listdir(log_path)
+  except FileNotFoundError:
+    logging.debug('/tmp directory: %s not found', log_path)
+  for file in temp_files:
+    if fnmatch.fnmatch(file, match_pattern):
+      file_to_remove = os.path.join(log_path, file)
+      try:
+        os.remove(file_to_remove)
+      except FileNotFoundError:
+        logging.debug('File not found: %s', str(file))

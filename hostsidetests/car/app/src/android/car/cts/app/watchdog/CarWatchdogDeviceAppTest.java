@@ -26,6 +26,7 @@ import android.car.Car;
 import android.car.watchdog.CarWatchdogManager;
 import android.car.watchdog.IoOveruseAlertThreshold;
 import android.car.watchdog.IoOveruseConfiguration;
+import android.car.watchdog.IoOveruseStats;
 import android.car.watchdog.PackageKillableState;
 import android.car.watchdog.PerStateBytes;
 import android.car.watchdog.ResourceOveruseConfiguration;
@@ -39,6 +40,8 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +49,10 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +78,10 @@ public final class CarWatchdogDeviceAppTest {
     public static final String SETTING_DISABLED = "Setting disabled";
 
     private static final long TEN_MEGABYTES = 1024 * 1024 * 10;
+    // Threshold used to make sure that at least 80% of the bytes are written to disk.
+    // This provides some leeway in the case the system cannot write the exact byte amount,
+    // which could be for multiple reasons (e.g OOM issues).
+    private static final long WRITTEN_BYTES_THRESHOLD = (long) (TEN_MEGABYTES * 0.8);
     private static final int TIMEOUT_MS = 10_000;
     private static final int WATCHDOG_IO_EVENT_SYNC_DELAY_MS = 4000;
     private static final int SYSTEM = 1;
@@ -84,6 +94,9 @@ public final class CarWatchdogDeviceAppTest {
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
     private final String mPackageName = mContext.getPackageName();
     private final UserHandle mUserHandle = mContext.getUser();
+    private final ResourceOveruseStatsPollingCheckCondition
+            mResourceOveruseStatsPollingCheckCondition =
+            new ResourceOveruseStatsPollingCheckCondition();
 
     private Car mCar;
     private CarWatchdogManager mCarWatchdogManager;
@@ -206,16 +219,35 @@ public final class CarWatchdogDeviceAppTest {
 
     @Test
     public void testVerifyInitialResourceOveruseStats() throws Exception {
-        writeToDisk(TEN_MEGABYTES);
+        long writtenBytes = writeToDisk(TEN_MEGABYTES);
 
-        verifyResourceOveruseStats(TEN_MEGABYTES);
+        assertWithMessage("Failed to write data to file '" + mTestFile.getAbsolutePath() + "'")
+            .that(writtenBytes).isGreaterThan(WRITTEN_BYTES_THRESHOLD);
+
+        mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(writtenBytes);
+
+        PollingCheck.waitFor(WATCHDOG_IO_EVENT_SYNC_DELAY_MS,
+                mResourceOveruseStatsPollingCheckCondition);
+
+        verifyResourceOveruseStats(writtenBytes);
     }
 
     @Test
     public void testVerifyResourceOveruseStatsAfterReboot() throws Exception {
-        writeToDisk(TEN_MEGABYTES);
+        // Verify that the stats before the reboot have being captured.
+        verifyResourceOveruseStats(WRITTEN_BYTES_THRESHOLD);
 
-        verifyResourceOveruseStats(TEN_MEGABYTES * 2);
+        long writtenBytes = writeToDisk(TEN_MEGABYTES);
+
+        assertWithMessage("Failed to write data to file '" + mTestFile.getAbsolutePath() + "'")
+            .that(writtenBytes).isGreaterThan(WRITTEN_BYTES_THRESHOLD);
+
+        mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(WRITTEN_BYTES_THRESHOLD * 2);
+
+        PollingCheck.waitFor(WATCHDOG_IO_EVENT_SYNC_DELAY_MS,
+                mResourceOveruseStatsPollingCheckCondition);
+
+        verifyResourceOveruseStats(WRITTEN_BYTES_THRESHOLD * 2);
     }
 
     @Test
@@ -292,21 +324,46 @@ public final class CarWatchdogDeviceAppTest {
         }
     }
 
-    private void writeToDisk(long remainingBytes) throws Exception {
-        long totalBytesWritten = 0;
+    private long writeToDisk(long size) throws Exception {
+        if (!mTestFile.exists()) {
+            throw new FileNotFoundException(
+                    "file '" + mTestFile.getAbsolutePath() + "' doesn't exist");
+        }
+        long writtenBytes = 0;
         try (FileOutputStream fos = new FileOutputStream(mTestFile)) {
-            while (remainingBytes != 0) {
-                int writeBytes = (int) Math.min(Integer.MAX_VALUE,
-                        Math.min(Runtime.getRuntime().freeMemory(), remainingBytes));
-                fos.write(new byte[writeBytes]);
-                remainingBytes -= writeBytes;
-                totalBytesWritten += writeBytes;
-            }
+            Log.d(TAG, "Attempting to write " + size + " bytes");
+            writtenBytes = writeToFos(fos, size);
             fos.getFD().sync();
         }
-        // Wait for the I/O event to propagate to the system
-        Thread.sleep(WATCHDOG_IO_EVENT_SYNC_DELAY_MS);
-        Log.d(TAG, "Wrote " + totalBytesWritten + " bytes to disk");
+        return writtenBytes;
+    }
+
+    private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        long writtenBytes = 0;
+        while (maxSize != 0) {
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
+            Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
+            if (writeSize == 0) {
+                Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
+                        + writtenBytes);
+                return writtenBytes;
+            }
+            try {
+                fos.write(new byte[writeSize]);
+            } catch (InterruptedIOException e) {
+                Thread.currentThread().interrupt();
+                continue;
+            }
+            maxSize -= writeSize;
+            writtenBytes += writeSize;
+        }
+        return writtenBytes;
     }
 
     private List<ResourceOveruseConfiguration> readConfigsFromDisk() throws Exception {
@@ -406,6 +463,29 @@ public final class CarWatchdogDeviceAppTest {
         return new IoOveruseConfiguration.Builder(componentLevelThresholds,
                 packageSpecificThresholds, appCategorySpecificThresholds, systemWideThresholds);
     }
+
+    private final class ResourceOveruseStatsPollingCheckCondition
+            implements PollingCheck.PollingCheckCondition {
+        private ResourceOveruseStats mResourceOveruseStats;
+        private long mMinWrittenBytes;
+
+        @Override
+        public boolean canProceed() {
+            mResourceOveruseStats = mCarWatchdogManager.getResourceOveruseStats(
+                    CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO,
+                    CarWatchdogManager.STATS_PERIOD_CURRENT_DAY);
+            // Flash memory usage stats are polled once every one second. The syncing of stats
+            // from proc fs -> watchdog daemon -> CarService can happen across multiple polling,
+            // so wait until the reported stats cover the entire write size.
+            IoOveruseStats ioOveruseStats = mResourceOveruseStats.getIoOveruseStats();
+            return ioOveruseStats != null
+                    && ioOveruseStats.getTotalBytesWritten() >= mMinWrittenBytes;
+        }
+
+        public void setMinWrittenBytes(long minWrittenBytes) {
+            mMinWrittenBytes = minWrittenBytes;
+        }
+    };
 
     private static String toComponentTypeStr(int componentType) {
         switch(componentType) {

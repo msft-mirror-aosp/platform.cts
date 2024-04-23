@@ -39,9 +39,10 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
         dpc = {APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER | APPLIED_BY_PROFILE_OWNER_USER
                 | CAN_BE_DELEGATED | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
         },
-        delegatedScopes = DELEGATION_PERMISSION_GRANT,
-        permissions = @EnterprisePolicy.Permission(
-        appliedWith = MANAGE_DEVICE_POLICY_RUNTIME_PERMISSIONS,
-        appliesTo = APPLIES_TO_OWN_USER))
+        delegatedScopes = DELEGATION_PERMISSION_GRANT)
+// permission APIs don't accept permission callers
+//        permissions = @EnterprisePolicy.Permission(
+//        appliedWith = MANAGE_DEVICE_POLICY_RUNTIME_PERMISSIONS,
+//        appliesTo = APPLIES_TO_OWN_USER))
 public final class SetSmsPermissionGranted {
 }

@@ -29,8 +29,7 @@ import zoom_capture_utils
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
+_NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -82,7 +81,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       logging.debug('z_range = %s', str(z_range))
       z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
           z_range, _NUM_STEPS)
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
 
       # recording preview
       capture_results, file_list = (

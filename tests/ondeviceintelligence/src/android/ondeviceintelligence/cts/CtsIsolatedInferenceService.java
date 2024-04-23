@@ -164,7 +164,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         if (requestType
-                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES) {
+                == BundleValidationTest.REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES) {
             byte[] bytes = request.getByteArray("request");
             Parcel parcel = Parcel.obtain();
             parcel.unmarshall(bytes, 0, bytes.length);
@@ -208,7 +208,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         } else {
             Log.i(TAG,
                     "Received NULL cancellation signal.");
-            callback.onResult(Bundle.EMPTY);
+            callback.onResult(request);
         }
     }
 

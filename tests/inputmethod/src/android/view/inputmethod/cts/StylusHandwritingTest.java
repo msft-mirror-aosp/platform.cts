@@ -1432,6 +1432,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             "android.view.inputmethod.InputMethodManager#acceptStylusHandwritingDelegation",
             "android.view.inputmethod.InputMethodService#onStartConnectionlessStylusHandwriting",
             "android.view.inputmethod.InputMethodService#finishConnectionlessStylusHandwriting"})
+    @FlakyTest(bugId = 329267066)
     public void testHandwriting_delegate_connectionless() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),

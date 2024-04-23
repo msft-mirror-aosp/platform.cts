@@ -16,6 +16,7 @@
 
 package android.app.appsearch.cts.app;
 
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;

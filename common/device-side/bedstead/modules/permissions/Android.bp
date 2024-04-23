@@ -11,6 +11,7 @@ filegroup {
     srcs: [
         "src/main/kotlin/com/android/bedstead/permissions/annotations/*.kt",
         "src/main/kotlin/com/android/bedstead/permissions/annotations/*.java",
+        "src/main/kotlin/com/android/bedstead/permissions/CommonPermissions.java",
     ],
 }
 
@@ -24,7 +25,7 @@ filegroup {
 android_test {
     name: "bedstead-permissions-test",
     srcs: [
-        "src/test/java/**/*.java",
+        "src/test/kotlin/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -32,6 +33,7 @@ android_test {
     static_libs: [
         "Harrier",
         "Nene",
+        "bedstead-root",
         "truth",
         "testng", // used for assertThrows
     ],

@@ -31,7 +31,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
-import com.android.compatibility.common.util.FileUtils;
+import com.android.bedstead.nene.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
