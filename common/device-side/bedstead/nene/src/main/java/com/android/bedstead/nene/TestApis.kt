@@ -29,7 +29,6 @@ import com.android.bedstead.nene.credentials.Credentials
 import com.android.bedstead.nene.device.Device
 import com.android.bedstead.nene.devicepolicy.DevicePolicy
 import com.android.bedstead.nene.dumpsys.Dumpsys
-import com.android.bedstead.nene.flags.Flags
 import com.android.bedstead.nene.inputmethods.InputMethods
 import com.android.bedstead.nene.instrumentation.Instrumentation
 import com.android.bedstead.nene.location.Locations
@@ -140,10 +139,6 @@ object TestApis {
     @Experimental
     @JvmStatic
     fun ui(): Ui = Ui.sInstance
-
-    /** Access Test APIs related to flags.  */
-    @JvmStatic
-    fun flags(): Flags = Flags.sInstance
 
     /** Access Test APIs related to resources.  */
     @JvmStatic

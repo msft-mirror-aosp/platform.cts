@@ -25,7 +25,7 @@ java_library_host {
         "common/src/main/java/**/*.kt",
 
         // TODO(329826539): Move this into a separate target
-        ":bedstead-permissions-common-srcs"
+        ":bedstead-permissions-common-srcs",
     ],
 
     static_libs: [
@@ -50,7 +50,7 @@ android_library {
         "common/src/main/java/**/*.kt",
 
         // TODO(329826539): Move this into a separate target
-        ":bedstead-permissions-common-srcs"
+        ":bedstead-permissions-common-srcs",
     ],
 
     static_libs: [
@@ -77,6 +77,8 @@ android_library {
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-harrier-srcs",
     ],
 
     static_libs: [
@@ -87,7 +89,7 @@ android_library {
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
         "auto_value_annotations",
-        "bedstead-root-annotations"
+        "bedstead-root-annotations",
     ],
 
     manifest: "src/main/AndroidManifest.xml",

@@ -31,7 +31,7 @@ android_library {
         "src/main/java/**/*.kt",
 
         // TODO(329826539): Move this into a separate target
-        ":bedstead-permissions-srcs"
+        ":bedstead-permissions-nene-srcs",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     static_libs: [
@@ -57,7 +57,7 @@ android_library {
         "src/main/java/**/*.kt",
 
         // TODO(329826539): Move this into a separate target
-        ":bedstead-permissions-srcs"
+        ":bedstead-permissions-nene-srcs",
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [

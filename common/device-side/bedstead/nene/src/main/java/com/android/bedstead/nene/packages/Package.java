@@ -431,11 +431,12 @@ public final class Package {
             throw new NeneException("Cannot deny permission from current package");
         }
 
-        sUiAutomation.revokeRuntimePermission(packageName(), permission);
+        sUiAutomation.revokeRuntimePermissionAsUser(packageName(), permission, user.userHandle());
 
         String message = "Error denying permission " + permission
                 + " to package " + this + " on user " + user
                 + ". Command appeared successful but not revoked.";
+
         assertWithMessage(message).that(hasPermission(user, permission)).isFalse();
 
         return this;

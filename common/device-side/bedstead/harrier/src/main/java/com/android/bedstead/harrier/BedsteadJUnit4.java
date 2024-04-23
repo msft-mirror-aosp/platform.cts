@@ -21,8 +21,6 @@ import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
@@ -45,7 +43,6 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
-import com.android.bedstead.harrier.annotations.RunWithFeatureFlagEnabledAndDisabled;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
@@ -206,17 +203,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     @AutoAnnotation
     private static RequireNotHeadlessSystemUserMode requireNotHeadlessSystemUserMode(String reason) {
         return new AutoAnnotation_BedsteadJUnit4_requireNotHeadlessSystemUserMode(reason);
-    }
-
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureFeatureFlagEnabled(namespace, key);
-    }
-
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagNotEnabled(
-            String namespace, String key) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureFeatureFlagNotEnabled(namespace, key);
     }
 
     // Get @Query annotation via BedsteadJunit4 class as a workaround to enable adding Query
@@ -876,7 +862,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         parseEnterpriseAnnotations(annotations);
         parsePermissionAnnotations(annotations);
         parseUserAnnotations(annotations);
-        parseFlagAnnotations(annotations);
 
         for (Annotation annotation : annotations) {
             if (isParameterizedAnnotation(annotation)) {
@@ -1118,46 +1103,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                             userPair.from().name() + "_to_" + userPair.to().name(),
                             annotations));
         }
-
-        return replacementAnnotations;
-    }
-
-    /**
-     * Parse @RunWithFeatureFlagEnabledAndDisabled annotations.
-     *
-     * <p>To be used before general annotation processing.
-     */
-    static void parseFlagAnnotations(List<Annotation> annotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            if (annotation instanceof RunWithFeatureFlagEnabledAndDisabled) {
-                annotations.remove(index);
-
-                RunWithFeatureFlagEnabledAndDisabled a =
-                        ((RunWithFeatureFlagEnabledAndDisabled) annotation);
-
-                List<Annotation> replacementAnnotations = generateFeatureFlagAnnotations(
-                        a.namespace(), a.key());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else {
-                index++;
-            }
-        }
-    }
-
-    private static List<Annotation> generateFeatureFlagAnnotations(String namespace, String key) {
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        replacementAnnotations.add(
-                new DynamicParameterizedAnnotation(namespace + "_" + key + "_true",
-                        new Annotation[]{ensureFeatureFlagEnabled(namespace, key)}));
-        replacementAnnotations.add(
-                new DynamicParameterizedAnnotation(namespace + "_" + key + "_false",
-                        new Annotation[]{ensureFeatureFlagNotEnabled(namespace, key)}));
 
         return replacementAnnotations;
     }
