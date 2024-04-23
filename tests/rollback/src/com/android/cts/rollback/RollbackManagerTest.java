@@ -677,7 +677,7 @@ public class RollbackManagerTest {
      */
     @Test
     public void testRollbackExpiresAfterLifetime() throws Exception {
-        long expirationTime = TimeUnit.SECONDS.toMillis(30);
+        long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
                 RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
                 Long.toString(expirationTime), false /* makeDefault*/);
@@ -691,8 +691,8 @@ public class RollbackManagerTest {
             Thread.sleep(expirationTime / 2);
             assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
 
-            // Check that the data has expired after the expiration time (with a buffer of 1 second)
-            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(1));
+            // Check that the data has expired after the expiration time (with a buffer of 3 second)
+            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(3));
             assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
         } finally {
             // Restore default config values
